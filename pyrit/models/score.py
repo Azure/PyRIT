@@ -130,7 +130,7 @@ class Score:
         }
 
     def __str__(self):
-        if self.scorer_class_identifier:
+        if self.scorer_class_identifier and self.scorer_class_identifier.get("__type__"):
             return f"{self.scorer_class_identifier['__type__']}: {self.score_category}: {self.score_value}"
         return f": {self.score_category}: {self.score_value}"
 

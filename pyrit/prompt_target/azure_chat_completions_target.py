@@ -9,6 +9,7 @@ from azure.core.credentials import AzureKeyCredential
 from azure.identity.aio import DefaultAzureCredential
 
 from pyrit.common import default_values
+from pyrit.exceptions import pyrit_target_retry
 from pyrit.models import (
     PromptRequestPiece,
     PromptRequestResponse,
@@ -69,6 +70,7 @@ class AzureChatCompletionsTarget(PromptChatTarget):
 
 
     @limit_requests_per_minute
+    @pyrit_target_retry
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
         self._validate_request(prompt_request=prompt_request)
@@ -92,8 +94,7 @@ class AzureChatCompletionsTarget(PromptChatTarget):
 
         response_text = response.choices[0].message.content
         azure_filter_scores = response.choices[0].get("content_filter_results")
-        if azure_filter_scores:
-            self._add_scores(azure_filter_scores=azure_filter_scores, prompt_request=request_piece)
+
         finish_reason = response.choices[0]["finish_reason"] # should be stop if things were a success
 
         response_type = "text"
@@ -103,11 +104,17 @@ class AzureChatCompletionsTarget(PromptChatTarget):
 
         logger.info(f'Received the following response from the prompt target "{response_text}"')
 
-        return construct_response_from_request(request=request_piece, response_text_pieces=[response_text], response_type=response_type)
+        response = construct_response_from_request(request=request_piece, response_text_pieces=[response_text], response_type=response_type)
+
+        if azure_filter_scores:
+            self._add_scores(azure_filter_scores=azure_filter_scores, prompt_response=response)
+
+        return response
 
 
     # The response contains scores that are automatically detected by Azure. We add these scores to the memory.
-    def _add_scores(self, *, azure_filter_scores, prompt_request):
+    def _add_scores(self, *, azure_filter_scores, prompt_response : PromptRequestResponse) -> None:
+        response_piece = prompt_response.request_pieces[0]
         scores = []
         for key, value in azure_filter_scores.items():
             score_value = value.get("detected", value.get("filtered", False))
@@ -119,8 +126,8 @@ class AzureChatCompletionsTarget(PromptChatTarget):
                     score_category=key,
                     score_rationale="",
                     score_metadata="",
-                    scorer_class_identifier=str(self.get_identifier()),
-                    prompt_request_response_id=prompt_request.id,
+                    scorer_class_identifier=self.get_identifier(),
+                    prompt_request_response_id=response_piece.id,
                 )
 
                 scores.append(score)
@@ -128,7 +135,7 @@ class AzureChatCompletionsTarget(PromptChatTarget):
         if scores:
             # need to insert the prompt first since it has a primary key constraint
             # this will be re-inserted by prompt_normalizer, but that's okay
-            self._memory.add_request_pieces_to_memory(request_pieces=[prompt_request])
+            self._memory.add_request_pieces_to_memory(request_pieces=[response_piece])
             self._memory.add_scores_to_memory(scores=scores)
 
 
