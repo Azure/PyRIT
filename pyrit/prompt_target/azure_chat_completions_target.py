@@ -117,8 +117,8 @@ class AzureChatCompletionsTarget(PromptChatTarget):
                     score_value_description="Detected automatically from Azure Completion Response",
                     score_type="true_false",
                     score_category=key,
-                    score_rationale=None,
-                    score_metadata=None,
+                    score_rationale="",
+                    score_metadata="",
                     scorer_class_identifier=str(self.get_identifier()),
                     prompt_request_response_id=prompt_request.id,
                 )
