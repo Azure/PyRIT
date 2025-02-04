@@ -9,7 +9,8 @@ from pyrit.models import ChatMessageRole, PromptDataType, PromptResponseError
 def test_prompt_data_type():
     assert get_origin(PromptDataType) is Literal
 
-    expected_literals = {"text", "image_path", "audio_path", "video_path", "url", "error"}
+    expected_literals = {"audio", "audio_path", "image", "image_path", "non-text",
+                         "other", "text", "video", "video_path", "url", "error"}
     assert set(get_args(PromptDataType)) == expected_literals
 
 
