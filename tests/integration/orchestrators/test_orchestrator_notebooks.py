@@ -12,7 +12,7 @@ from pyrit.common import path
 
 nb_directory_path = pathlib.Path(path.DOCS_CODE_PATH, "orchestrators").resolve()
 
-skipped_files = ["HITL_Scoring_Orchestrator.ipynb", "3_XPIA_Orchestrator.ipynb"]
+skipped_files = ["HITL_Scoring_Orchestrator.ipynb", "3_xpia_orchestrator.ipynb"]
 
 
 @pytest.mark.parametrize(
