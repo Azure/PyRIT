@@ -10,7 +10,7 @@ from pyrit.models import PromptRequestResponse, SeedPrompt
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter.flip_converter import FlipConverter
-from pyrit.prompt_target import PromptTarget
+from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
@@ -26,20 +26,20 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
 
     def __init__(
         self,
-        objective_target: PromptTarget,
+        objective_target: PromptChatTarget,
         scorers: Optional[list[Scorer]] = None,
         batch_size: int = 10,
         verbose: bool = False,
     ) -> None:
         """
         Args:
-            objective_target (PromptTarget): The target for sending prompts.
+            objective_target (PromptChatTarget): The target for sending prompts.
             prompt_converters (list[PromptConverter], Optional): List of prompt converters. These are stacked in
                 order.
             scorers (list[Scorer], Optional): List of scorers to use for each prompt request response, to be
                 scored immediately after receiving response. Default is None.
             batch_size (int, Optional): The (max) batch size for sending prompts. Defaults to 10.
-                Note: If providing max requests per minute on the prompt_target, this should be set to 1 to
+                Note: If providing max requests per minute on the objective_target, this should be set to 1 to
                 ensure proper rate limit management.\
             verbose (bool, Optional): Whether to log debug information. Defaults to False.
         """

@@ -238,6 +238,7 @@ class MemoryInterface(abc.ABC):
         self,
         *,
         orchestrator_id: Optional[str | uuid.UUID] = None,
+        role: Optional[str] = None,
         conversation_id: Optional[str | uuid.UUID] = None,
         prompt_ids: Optional[list[str] | list[uuid.UUID]] = None,
         labels: Optional[dict[str, str]] = None,
@@ -254,6 +255,7 @@ class MemoryInterface(abc.ABC):
 
         Args:
             orchestrator_id (Optional[str | uuid.UUID], optional): The ID of the orchestrator. Defaults to None.
+            role (Optional[str], optional): The role of the prompt. Defaults to None.
             conversation_id (Optional[str | uuid.UUID], optional): The ID of the conversation. Defaults to None.
             prompt_ids (Optional[list[str] | list[uuid.UUID]], optional): A list of prompt IDs. Defaults to None.
             labels (Optional[dict[str, str]], optional): A dictionary of labels. Defaults to None.
@@ -274,6 +276,8 @@ class MemoryInterface(abc.ABC):
         conditions = []
         if orchestrator_id:
             conditions.append(self._get_prompt_pieces_orchestrator_conditions(orchestrator_id=str(orchestrator_id)))
+        if role:
+            conditions.append(PromptMemoryEntry.role == role)
         if conversation_id:
             conditions.append(PromptMemoryEntry.conversation_id == conversation_id)
         if prompt_ids:
@@ -520,7 +524,9 @@ class MemoryInterface(abc.ABC):
         self,
         *,
         value: Optional[str] = None,
+        value_sha256: Optional[list[str]] = None,
         dataset_name: Optional[str] = None,
+        data_types: Optional[list[str]] = None,
         harm_categories: Optional[list[str]] = None,
         added_by: Optional[str] = None,
         authors: Optional[list[str]] = None,
@@ -533,7 +539,10 @@ class MemoryInterface(abc.ABC):
 
         Args:
             value (str): The value to match by substring. If None, all values are returned.
+            value_sha256 (str): The SHA256 hash of the value to match. If None, all values are returned.
             dataset_name (str): The dataset name to match. If None, all dataset names are considered.
+            data_types (Optional[list[str], Optional): List of data types to filter seed prompts by
+                (e.g., text, image_path).
             harm_categories (list[str]): A list of harm categories to filter by. If None,
             all harm categories are considered.
                 Specifying multiple harm categories returns only prompts that are marked with all harm categories.
@@ -545,7 +554,6 @@ class MemoryInterface(abc.ABC):
             source (str): The source to filter by. If None, all sources are considered.
             parameters (list[str]): A list of parameters to filter by. Specifying parameters effectively returns
                 prompt templates instead of prompts.
-                If None, only prompts without parameters are returned.
 
         Returns:
             list[SeedPrompt]: A list of prompts matching the criteria.
@@ -555,8 +563,13 @@ class MemoryInterface(abc.ABC):
         # Apply filters for non-list fields
         if value:
             conditions.append(SeedPromptEntry.value.contains(value))
+        if value_sha256:
+            conditions.append(SeedPromptEntry.value_sha256.in_(value_sha256))
         if dataset_name:
             conditions.append(SeedPromptEntry.dataset_name == dataset_name)
+        if data_types:
+            data_type_conditions = SeedPromptEntry.data_type.in_(data_types)
+            conditions.append(data_type_conditions)
         if added_by:
             conditions.append(SeedPromptEntry.added_by == added_by)
         if source:
@@ -565,7 +578,9 @@ class MemoryInterface(abc.ABC):
         self._add_list_conditions(SeedPromptEntry.harm_categories, harm_categories, conditions)
         self._add_list_conditions(SeedPromptEntry.authors, authors, conditions)
         self._add_list_conditions(SeedPromptEntry.groups, groups, conditions)
-        self._add_list_conditions(SeedPromptEntry.parameters, parameters, conditions)
+
+        if parameters:
+            self._add_list_conditions(SeedPromptEntry.parameters, parameters, conditions)
 
         try:
             memory_entries = self._query_entries(
@@ -614,7 +629,9 @@ class MemoryInterface(abc.ABC):
             serialized_prompt_value = str(serializer.value)
         return serialized_prompt_value
 
-    async def add_seed_prompts_to_memory(self, *, prompts: list[SeedPrompt], added_by: Optional[str] = None) -> None:
+    async def add_seed_prompts_to_memory_async(
+        self, *, prompts: list[SeedPrompt], added_by: Optional[str] = None
+    ) -> None:
         """
         Inserts a list of prompts into the memory storage.
 
@@ -634,9 +651,13 @@ class MemoryInterface(abc.ABC):
                 )
             if prompt.date_added is None:
                 prompt.date_added = current_time
+
             serialized_prompt_value = await self._serialize_seed_prompt_value(prompt)
             if serialized_prompt_value:
                 prompt.value = serialized_prompt_value
+
+            await prompt.set_sha256_value_async()
+
             entries.append(SeedPromptEntry(entry=prompt))
 
         self._insert_entries(entries=entries)
@@ -692,11 +713,12 @@ class MemoryInterface(abc.ABC):
             for prompt in prompt_group.prompts:
                 prompt.prompt_group_id = prompt_group_id
             all_prompts.extend(prompt_group.prompts)
-        await self.add_seed_prompts_to_memory(prompts=all_prompts, added_by=added_by)
+        await self.add_seed_prompts_to_memory_async(prompts=all_prompts, added_by=added_by)
 
     def get_seed_prompt_groups(
         self,
         *,
+        value_sha256: Optional[list[str]] = None,
         dataset_name: Optional[str] = None,
         data_types: Optional[list[str]] = None,
         harm_categories: Optional[list[str]] = None,
@@ -705,47 +727,32 @@ class MemoryInterface(abc.ABC):
         groups: Optional[list[str]] = None,
         source: Optional[str] = None,
     ) -> list[SeedPromptGroup]:
-        """Retrieves groups of seed prompts based on the provided filtering criteria._summary_
+        """Retrieves groups of seed prompts based on the provided filtering criteria.
 
         Args:
+            value_sha256 (Optional[list[str]], Optional): SHA256 hash of value to filter seed prompt groups by.
             dataset_name (Optional[str], Optional): Name of the dataset to filter seed prompts.
-            data_types (Optional[Sequence[str]], Optional): List of data types to filter seed prompts by
+            data_types (Optional[list[str]], Optional): List of data types to filter seed prompts by
             (e.g., text, image_path).
             harm_categories (Optional[Sequence[str]], Optional): List of harm categories to filter seed prompts by.
             added_by (Optional[str], Optional): The user who added the seed prompt groups to filter by.
-            authors (Optional[Sequence[str]], Optional): List of authors to filter seed prompt groups by.
-            groups (Optional[Sequence[str]], Optional): List of groups to filter seed prompt groups by.
+            authors (Optional[list[str]], Optional): List of authors to filter seed prompt groups by.
+            groups (Optional[list[str]], Optional): List of groups to filter seed prompt groups by.
             source (Optional[str], Optional): The source from which the seed prompts originated.
 
         Returns:
             list[SeedPromptGroup]: A list of `SeedPromptGroup` objects that match the filtering criteria.
         """
-        conditions = []
-
-        # Apply basic filters if provided
-        if dataset_name:
-            conditions.append(SeedPromptEntry.dataset_name == dataset_name)
-        if added_by:
-            conditions.append(SeedPromptEntry.added_by == added_by)
-        if source:
-            conditions.append(SeedPromptEntry.source == source)
-        if data_types:
-            data_type_conditions = SeedPromptEntry.data_type.in_(data_types)
-            conditions.append(data_type_conditions)
-
-        # Add conditions for lists: harm categories, authors, and groups
-        self._add_list_conditions(SeedPromptEntry.harm_categories, harm_categories, conditions)
-        self._add_list_conditions(SeedPromptEntry.authors, authors, conditions)
-        self._add_list_conditions(SeedPromptEntry.groups, groups, conditions)
-
-        # Query DB for matching entries
-        memory_entries = self._query_entries(
-            SeedPromptEntry,
-            conditions=and_(*conditions) if conditions else None,
-        )  # type: ignore
-
-        # Extract seed prompts and group them by prompt group ID
-        seed_prompts = [memory_entry.get_seed_prompt() for memory_entry in memory_entries]
+        seed_prompts = self.get_seed_prompts(
+            value_sha256=value_sha256,
+            dataset_name=dataset_name,
+            data_types=data_types,
+            harm_categories=harm_categories,
+            added_by=added_by,
+            authors=authors,
+            groups=groups,
+            source=source,
+        )
         seed_prompt_groups = SeedPromptDataset.group_seed_prompts_by_prompt_group_id(seed_prompts)
         return seed_prompt_groups
 
@@ -765,7 +772,7 @@ class MemoryInterface(abc.ABC):
         converted_value_sha256: Optional[list[str]] = None,
         file_path: Optional[Path] = None,
         export_type: str = "json",
-    ):
+    ) -> Path:
         """
         Exports conversation data with the given inputs to a specified file.
             Defaults to all conversations if no filters are provided.
@@ -807,3 +814,5 @@ class MemoryInterface(abc.ABC):
             file_path = DB_DATA_PATH / file_name
 
         self.exporter.export_data(data, file_path=file_path, export_type=export_type)
+
+        return file_path

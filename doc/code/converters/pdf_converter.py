@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.6
 #   kernelspec:
-#     display_name: Python 3 (ipykernel)
+#     display_name: pyrit-312
 #     language: python
 #     name: python3
 # ---
@@ -121,5 +121,86 @@ orchestrator = PromptSendingOrchestrator(
 await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
 await orchestrator.print_conversations_async()  # type: ignore
 
+import tempfile
+
+# %% [markdown]
+# # Modify Existing PDF with Injection Items
 # %%
+from pathlib import Path
+
+import requests
+
+from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.prompt_converter import PDFConverter
+from pyrit.prompt_target import TextTarget
+
+initialize_pyrit(memory_db_type=IN_MEMORY)
+
+# This file isn't copied to our pipeline
+url = "https://raw.githubusercontent.com/Azure/PyRIT/main/pyrit/datasets/prompt_converters/pdf_converters/fake_CV.pdf"
+
+with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+    response = requests.get(url)
+    tmp_file.write(response.content)
+
+cv_pdf_path = Path(tmp_file.name)
+
+# Define injection items
+injection_items = [
+    {
+        "page": 0,
+        "x": 50,
+        "y": 700,
+        "text": "Injected Text",
+        "font_size": 12,
+        "font": "Helvetica",
+        "font_color": (255, 0, 0),
+    },  # Red text
+    {
+        "page": 1,
+        "x": 100,
+        "y": 600,
+        "text": "Confidential",
+        "font_size": 10,
+        "font": "Helvetica",
+        "font_color": (0, 0, 255),
+    },  # Blue text
+]
+
+# Define a simple string prompt (no templates)
+prompt = "This is a simple test string for PDF generation. No templates here!"
+
+# Initialize the TextTarget (mock target for testing)
+prompt_target = TextTarget()
+
+# Initialize the PDFConverter with the existing PDF and injection items
+pdf_converter = PDFConverter(
+    prompt_template=None,  # No template provided
+    font_type="Arial",
+    font_size=12,
+    page_width=210,
+    page_height=297,
+    existing_pdf=cv_pdf_path,  # Provide the existing PDF
+    injection_items=injection_items,  # Provide the injection items
+)
+
+# Define the list of prompts as strings (required by PromptSendingOrchestrator)
+prompts = [prompt]
+
+# Initialize the orchestrator
+orchestrator = PromptSendingOrchestrator(
+    objective_target=prompt_target,
+    prompt_converters=[pdf_converter],
+    verbose=False,
+)
+
+# Run the orchestrator to modify the PDF and inspect the result
+await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
+await orchestrator.print_conversations_async()  # type: ignore
+
+# %%
+import os
+
 orchestrator.dispose_db_engine()
+os.remove(cv_pdf_path)

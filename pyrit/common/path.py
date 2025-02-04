@@ -19,6 +19,8 @@ def in_git_repo() -> bool:
 
 PYRIT_PATH = pathlib.Path(__file__, "..", "..").resolve()
 
+DOCS_PATH = pathlib.Path(PYRIT_PATH, "..", "doc").resolve()
+
 DOCS_CODE_PATH = pathlib.Path(PYRIT_PATH, "..", "doc", "code").resolve()
 DATASETS_PATH = pathlib.Path(PYRIT_PATH, "datasets").resolve()
 CONTENT_CLASSIFIERS_PATH = pathlib.Path(DATASETS_PATH, "score", "content_classifiers").resolve()

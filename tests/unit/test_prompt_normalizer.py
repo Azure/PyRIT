@@ -12,6 +12,7 @@ from unit.mocks import MockPromptTarget, get_image_request_piece
 from pyrit.exceptions import EmptyResponseException
 from pyrit.memory import CentralMemory
 from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse
+from pyrit.models.filter_criteria import PromptFilterCriteria
 from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
 from pyrit.prompt_converter import (
     Base64Converter,
@@ -382,23 +383,128 @@ async def test_convert_response_values_type(mock_memory_instance, response: Prom
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_exception_conv_id(mock_memory_instance, normalizer_piece: NormalizerRequestPiece):
+async def test_should_skip_based_on_skip_criteria_no_skip_criteria(mock_memory_instance):
+    normalizer = PromptNormalizer()  # By default, _skip_criteria is None
+
+    # Make a request with at least one piece
+    request = PromptRequestResponse(request_pieces=[PromptRequestPiece(role="user", original_value="hello")])
+
+    result = normalizer._should_skip_based_on_skip_criteria(request)
+    assert result is False, "_should_skip_based_on_skip_criteria should return False when skip_criteria is not set"
+
+
+@pytest.mark.asyncio
+async def test_should_skip_based_on_skip_criteria_no_matches(mock_memory_instance):
+    normalizer = PromptNormalizer()
+
+    skip_criteria = PromptFilterCriteria(
+        orchestrator_id="test_orchestrator",
+        conversation_id="test_conversation",
+    )
+
+    memory_piece = PromptRequestPiece(
+        role="user",
+        original_value="My user prompt",
+    )
+    memory_piece.original_value_sha256 = "some_random_hash"
+    memory_piece.converted_value_sha256 = "some random hash"
+
+    mock_memory_instance.get_prompt_request_pieces.return_value = [memory_piece]
+
+    normalizer.set_skip_criteria(skip_criteria, skip_value_type="converted")
+
+    # Construct a request piece that doesn't match the memory's hash
+    request_piece = PromptRequestPiece(role="user", original_value="My user prompt")
+    request_piece.original_value_sha256 = "completely_different_hash"
+    request_piece.converted_value_sha256 = "completely_different_hash"
+
+    request = PromptRequestResponse(request_pieces=[request_piece])
+
+    result = normalizer._should_skip_based_on_skip_criteria(request)
+    assert result is False, "Should return False if no prompt pieces in memory match"
+
+
+@pytest.mark.asyncio
+async def test_should_skip_based_on_skip_criteria_match_found(mock_memory_instance):
+    """
+    If skip criteria is set and the prompt pieces in memory DO match,
+    _should_skip_based_on_skip_criteria should return True.
+    """
+    normalizer = PromptNormalizer()
+
+    skip_criteria = PromptFilterCriteria(
+        orchestrator_id="test_orchestrator",
+        conversation_id="test_conversation",
+    )
+
+    # We'll say that memory returns one piece with the exact same converted_value_sha256
+    # as our request piece
+    matching_sha = "matching_converted_hash"
+
+    piece = PromptRequestPiece(role="user", original_value="prompt")
+    piece.converted_value_sha256 = matching_sha
+    mock_memory_instance.get_prompt_request_pieces.return_value = [piece]
+
+    # Our request piece also has that same matching sha
+    request_piece = PromptRequestPiece(role="user", original_value="My user prompt")
+    request_piece.converted_value_sha256 = matching_sha
+
+    request = PromptRequestResponse(request_pieces=[request_piece])
+
+    # Set skip criteria with 'converted' skip_value_type
+    normalizer.set_skip_criteria(skip_criteria, skip_value_type="converted")
+
+    result = normalizer._should_skip_based_on_skip_criteria(request)
+    assert result is True, "Should return True if a matching converted_value_sha256 is found"
+
+
+@pytest.mark.asyncio
+async def test_should_skip_based_on_skip_criteria_original_value_match(mock_memory_instance):
+    """
+    Same test logic but with skip_value_type='original'.
+    """
+    matching_sha = "matching_original_hash"
+
+    # Build a request piece with the same original_value_sha256
+    request_piece = PromptRequestPiece(role="user", original_value="My user prompt")
+    request_piece.original_value_sha256 = matching_sha
+
+    request = PromptRequestResponse(request_pieces=[request_piece])
+
+    # Memory returns a piece that has an original_value_sha256 matching our request piece
+    piece = PromptRequestPiece(role="user", original_value="prompt")
+    piece.original_value_sha256 = matching_sha
+    mock_memory_instance.get_prompt_request_pieces.return_value = [piece]
+
+    normalizer = PromptNormalizer()
+
+    skip_criteria = PromptFilterCriteria(
+        orchestrator_id="test_orchestrator",
+        conversation_id="test_conversation",
+    )
+
+    # This time we use 'original' skip_value_type
+    normalizer.set_skip_criteria(skip_criteria, skip_value_type="original")
+
+    result = normalizer._should_skip_based_on_skip_criteria(request)
+    assert result is True, "Should return True if a matching original_value_sha256 is found"
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_exception_conv_id(mock_memory_instance, seed_prompt_group):
     prompt_target = MagicMock(PromptTarget)
     prompt_target.send_prompt_async = AsyncMock(side_effect=Exception("Test Exception"))
-
-    normalizer_request = NormalizerRequest([normalizer_piece])
-    normalizer_request.conversation_id = "123"
 
     normalizer = PromptNormalizer()
 
     with pytest.raises(Exception, match="Error sending prompt with conversation ID: 123"):
         await normalizer.send_prompt_async(
-            normalizer_request=normalizer_request, target=prompt_target
+            seed_prompt_group=seed_prompt_group, target=prompt_target, conversation_id="123"
         )
 
     # Validate that first request is added to memory, then exception is added to memory
     assert (
-        normalizer_piece.prompt_value
+        seed_prompt_group.prompts[0].value
         == mock_memory_instance.add_request_response_to_memory.call_args_list[0][1]["request"]
         .request_pieces[0]
         .original_value

@@ -98,7 +98,7 @@ async def test_scorer_score_value_with_llm_exception_display_prompt_id():
     scorer = MockScorer()
     scorer.scorer_type = "true_false"
 
-    with pytest.raises(Exception, match="Error scoring prompt with prompt ID: 123"):
+    with pytest.raises(Exception, match="Error scoring prompt with original prompt ID: 123"):
         await scorer._score_value_with_llm(
             prompt_target=chat_target,
             system_prompt="system_prompt",
@@ -219,4 +219,3 @@ async def test_scorer_score_responses_batch_async():
 
         assert len(call_kwargs["tasks"]) == 1
         assert results == fake_scores
-    

@@ -129,7 +129,8 @@ class DiskStorageIO(StorageIO):
         """
         Converts the path to a Path object if it's a string.
         """
-        return Path(path) if isinstance(path, str) else path
+        path = Path(path) if isinstance(path, str) else path
+        return path
 
 
 class AzureBlobStorageIO(StorageIO):
