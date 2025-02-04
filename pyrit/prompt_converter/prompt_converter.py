@@ -100,3 +100,13 @@ class PromptConverter(abc.ABC, Identifier):
         public_attributes["__type__"] = self.__class__.__name__
         public_attributes["__module__"] = self.__class__.__module__
         return public_attributes
+
+    @property
+    def supported_input_types(self) -> list[PromptDataType]:
+        """
+        Returns a list of supported input types for the converter.
+
+        Returns:
+            list[PromptDataType]: A list of supported input types.
+        """
+        return [data_type for data_type in PromptDataType.__args__ if self.input_supported(data_type)]
