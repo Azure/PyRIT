@@ -15,6 +15,7 @@ from pyrit.common import initialize_pyrit
 from pyrit.memory import CentralMemory
 from pyrit.models import SeedPrompt, SeedPromptDataset
 from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_target import AzureMLChatTarget, OpenAIChatTarget, PromptTarget
 
 
@@ -33,6 +34,8 @@ class Scenario(abc.ABC):
     errors as early as possible, ideally before anything is executed.
     """
 
+    converters: List[PromptConverter]
+
     def __init__(self, scenario_config: Dict[str, Any], config: Dict[str, Any]):
         self.objective_target = validate_objective_target(config)
         self.converters = []
@@ -44,7 +47,7 @@ class Scenario(abc.ABC):
         self.memory_labels = config.get("memory_labels", {})
 
     @abc.abstractmethod
-    async def run(input_prompts: List[SeedPrompt]):
+    async def run_async(self, input_prompts: List[SeedPrompt]):
         pass
 
     @abc.abstractmethod
@@ -69,7 +72,7 @@ class PromptSendingScenario(Scenario):
         # Scorer is optional.
         pass
 
-    async def run(self, input_prompts: List[SeedPrompt]):
+    async def run_async(self, input_prompts: List[SeedPrompt]):
         await self.orchestrator.send_prompts_async(
             prompt_list=[prompt.value for prompt in input_prompts],
             memory_labels=self.memory_labels,
@@ -105,7 +108,7 @@ def load_config(config_file: Path) -> Dict[str, Any]:
     return config
 
 
-async def validate_config_and_run(config: Dict[str, Any]) -> None:
+async def validate_config_and_run_async(config: Dict[str, Any]) -> None:
     if "scenarios" not in config:
         raise KeyError("Configuration file must contain a 'scenarios' key.")
 
@@ -120,7 +123,7 @@ async def validate_config_and_run(config: Dict[str, Any]) -> None:
 
     for scenario in scenarios:
         scenario = validate_scenario(scenario, config)
-        await scenario.run(input_prompts=prompts)
+        await scenario.run_async(input_prompts=prompts)
 
 
 def validate_scenario(scenario_config: Dict[str, Any], config: Dict[str, Any]) -> Scenario:
@@ -189,7 +192,7 @@ if __name__ == "__main__":
     # Add timestamp to distinguish between scanner runs with the same memory labels
     memory_labels["scanner_execution_start_time"] = datetime.now().isoformat()
 
-    asyncio.run(validate_config_and_run(config))
+    asyncio.run(validate_config_and_run_async(config))
 
     memory = CentralMemory.get_memory_instance()
     all_pieces = memory.get_prompt_request_pieces(labels=memory_labels)
