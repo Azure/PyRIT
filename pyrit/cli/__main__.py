@@ -80,11 +80,15 @@ class PromptSendingScenario(Scenario):
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Parse the arguments for the Pyrit Scanner CLI.")
+    parser = argparse.ArgumentParser(
+        prog="pyrit_scan",
+        description="Parse the arguments for the Pyrit Scanner CLI."
+    )
     parser.add_argument(
         "--config-file",
         type=str,
         help="The path to the configuration file.",
+        required=True,
     )
 
     args = parser.parse_args()
@@ -119,7 +123,7 @@ async def validate_config_and_run_async(config: Dict[str, Any]) -> None:
 
     initialize_pyrit(memory_db_type="DuckDB")
 
-    prompts = validate_datasets(config)
+    prompts = generate_datasets(config)
 
     for scenario in scenarios:
         scenario = validate_scenario(scenario, config)
@@ -139,7 +143,7 @@ def validate_scenario(scenario_config: Dict[str, Any], config: Dict[str, Any]) -
     return scenario
 
 
-def validate_datasets(config: Dict[str, Any]) -> List[SeedPrompt]:
+def generate_datasets(config: Dict[str, Any]) -> List[SeedPrompt]:
     datasets = config.get("datasets")
 
     if not datasets:
@@ -184,7 +188,7 @@ def validate_objective_target(config: Dict[str, Any]) -> PromptTarget:
     return objective_target
 
 
-if __name__ == "__main__":
+def main():
     args = parse_args()
     config_file = args.config_file
     config = load_config(config_file)
