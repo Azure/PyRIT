@@ -122,3 +122,13 @@ class PromptConverter(abc.ABC, Identifier):
             list[PromptDataType]: A list of supported input types.
         """
         return [data_type for data_type in PromptDataType.__args__ if self.input_supported(data_type)]
+
+    @property
+    def supported_output_types(self) -> list[PromptDataType]:
+        """
+        Returns a list of supported output types for the converter.
+
+        Returns:
+            list[PromptDataType]: A list of supported output types.
+        """
+        return [data_type for data_type in PromptDataType.__args__ if self.output_supported(data_type)]
