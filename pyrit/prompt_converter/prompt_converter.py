@@ -48,6 +48,18 @@ class PromptConverter(abc.ABC, Identifier):
             bool: True if the input type is supported, False otherwise
         """
 
+    @abc.abstractmethod
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        """
+        Checks if the output type is supported by the converter
+
+        Args:
+            output_type: The output type to check
+
+        Returns:
+            bool: True if the output type is supported, False otherwise
+        """
+
     async def convert_tokens_async(
         self, *, prompt: str, input_type: PromptDataType = "text", start_token: str = "⟪", end_token: str = "⟫"
     ) -> ConverterResult:

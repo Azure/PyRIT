@@ -82,3 +82,6 @@ class HumanInTheLoopConverter(PromptConverter):
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         pass
+
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        pass
