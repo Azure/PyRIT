@@ -40,6 +40,7 @@ class FuzzerCrossOverConverter(FuzzerConverter):
         converter_target: PromptChatTarget,
         prompt_template: SeedPrompt = None,
         prompt_templates: Optional[List[str]] = None,
+        prompt_metadata: Optional[dict] = {"response_format": "json"},
     ):
         prompt_template = (
             prompt_template
@@ -51,6 +52,7 @@ class FuzzerCrossOverConverter(FuzzerConverter):
         super().__init__(converter_target=converter_target, prompt_template=prompt_template)
         self.prompt_templates = prompt_templates or []
         self.template_label = "TEMPLATE 1"
+        self.prompt_metadata = prompt_metadata
 
     def update(self, **kwargs) -> None:
         if "prompt_templates" in kwargs:
@@ -81,6 +83,7 @@ class FuzzerCrossOverConverter(FuzzerConverter):
             f"\n====TEMPLATE 2 BEGINS====\n{random.choice(self.prompt_templates)}\n====TEMPLATE 2 ENDS====\n"
         )
 
+        # prompt_metadata = {"response_format": "json"}
         request = PromptRequestResponse(
             [
                 PromptRequestPiece(
@@ -93,6 +96,7 @@ class FuzzerCrossOverConverter(FuzzerConverter):
                     original_value_data_type=input_type,
                     converted_value_data_type=input_type,
                     converter_identifiers=[self.get_identifier()],
+                    prompt_metadata=self.prompt_metadata,
                 )
             ]
         )

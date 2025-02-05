@@ -3,6 +3,7 @@
 
 import pathlib
 import uuid
+from typing import Optional
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt
@@ -17,7 +18,13 @@ from pyrit.prompt_target import PromptChatTarget
 
 
 class FuzzerExpandConverter(FuzzerConverter):
-    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: SeedPrompt = None):
+    def __init__(
+        self,
+        *,
+        converter_target: PromptChatTarget,
+        prompt_template: SeedPrompt = None,
+        prompt_metadata: Optional[dict] = {"response_format": "json"},
+    ):
         prompt_template = (
             prompt_template
             if prompt_template
@@ -25,6 +32,7 @@ class FuzzerExpandConverter(FuzzerConverter):
                 pathlib.Path(DATASETS_PATH) / "prompt_converters" / "fuzzer_converters" / "expand_converter.yaml"
             )
         )
+        self.prompt_template = prompt_template
         super().__init__(converter_target=converter_target, prompt_template=prompt_template)
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
