@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from fpdf import FPDF
+from fpdf.enums import XPos, YPos
 from pypdf import PageObject, PdfReader
 
 from pyrit.models import DataTypeSerializer, SeedPrompt
@@ -169,9 +170,9 @@ def mock_pdf_path(tmp_path):
     pdf = FPDF(format="A4")
     pdf.add_page()
     pdf.set_font("Helvetica", size=12)
-    pdf.cell(200, 10, text="Page 1 content", ln=True, align="L")
+    pdf.cell(200, 10, text="Page 1 content", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="L")
     pdf.add_page()
-    pdf.cell(200, 10, text="Page 2 content", ln=True, align="L")
+    pdf.cell(200, 10, text="Page 2 content", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="L")
 
     pdf_bytes = BytesIO()
     pdf.output(pdf_bytes)
@@ -346,7 +347,7 @@ def test_pdf_reader_repeated_access():
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Helvetica", size=12)
-    pdf.cell(200, 10, text="Test Content", ln=True)
+    pdf.cell(200, 10, text="Test Content", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     pdf_bytes = BytesIO()
     pdf.output(pdf_bytes)
     pdf_bytes.seek(0)
