@@ -6,10 +6,13 @@ from typing import Optional
 from azure.ai.inference.aio import ChatCompletionsClient
 from azure.core.credentials import AzureKeyCredential
 
+from azure.core.exceptions import HttpResponseError
+
 from azure.identity.aio import DefaultAzureCredential
 
 from pyrit.common import default_values
 from pyrit.exceptions import pyrit_target_retry
+from pyrit.exceptions.exception_classes import handle_bad_request_exception
 from pyrit.models import (
     PromptRequestPiece,
     PromptRequestResponse,
@@ -87,17 +90,29 @@ class AzureChatCompletionsTarget(PromptChatTarget):
             "messages": [msg.dict(exclude_none=True) for msg in messages],
         }
 
-        response = await self._client.complete(
-            body=payload,
-            response_format="json_object" if is_json_response else "text",
-        )
-
-        response_text = response.choices[0].message.content
-        azure_filter_scores = response.choices[0].get("content_filter_results")
-
-        finish_reason = response.choices[0]["finish_reason"] # should be stop if things were a success
-
         response_type = "text"
+
+
+        try:
+            azure_completion = await self._client.complete(
+                body=payload,
+                response_format="json_object" if is_json_response else "text",
+            )
+        except HttpResponseError as bre:
+            error_response = handle_bad_request_exception(response_text=bre.message, request=request_piece)
+            try:
+                self._add_scores(
+                    azure_filter_scores=bre.error.innererror["content_filter_result"],
+                    prompt_response=error_response)
+            except Exception as e:
+                logger.error(e)
+                pass
+            return error_response
+
+        response_text = azure_completion.choices[0].message.content
+        azure_filter_scores = azure_completion.choices[0].get("content_filter_results")
+
+        finish_reason = azure_completion.choices[0]["finish_reason"] # should be stop if things were a success
 
         if finish_reason != "stop":
             response_type = "error"
@@ -117,12 +132,27 @@ class AzureChatCompletionsTarget(PromptChatTarget):
         response_piece = prompt_response.request_pieces[0]
         scores = []
         for key, value in azure_filter_scores.items():
-            score_value = value.get("detected", value.get("filtered", False))
+
+            score_value = None
+
+            # defined here: https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/content-filter?tabs=warning%2Cuser-prompt%2Cpython-new
+            if value.get("severity"):
+                if value["severity"].lower() == "high":
+                    score_value = 1.0
+                elif value["severity"].lower() == "medium":
+                    score_value = 2.0/3.0
+                elif value["severity"].lower() == "low":
+                    score_value = 1.0/3.0
+                elif value["severity"].lower() == "safe":
+                    score_value = 0.0
+            elif value.get("filtered"):
+                score_value = 1.0 if value["filtered"] else 0.0
+
             if score_value != None:
                 score = Score(
                     score_value=str(score_value),
                     score_value_description="Detected automatically from Azure Completion Response",
-                    score_type="true_false",
+                    score_type="float_scale",
                     score_category=key,
                     score_rationale="",
                     score_metadata="",
