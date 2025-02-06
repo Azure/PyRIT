@@ -12,7 +12,7 @@ from azure.identity.aio import DefaultAzureCredential
 
 from pyrit.common import default_values
 from pyrit.exceptions import pyrit_target_retry
-from pyrit.exceptions.exception_classes import handle_bad_request_exception
+from pyrit.exceptions.exception_classes import EmptyResponseException, handle_bad_request_exception
 from pyrit.models import (
     PromptRequestPiece,
     PromptRequestResponse,
@@ -110,6 +110,10 @@ class AzureChatCompletionsTarget(PromptChatTarget):
             return error_response
 
         response_text = azure_completion.choices[0].message.content
+
+        if not response_text:
+            raise EmptyResponseException
+
         azure_filter_scores = azure_completion.choices[0].get("content_filter_results")
 
         finish_reason = azure_completion.choices[0]["finish_reason"] # should be stop if things were a success
