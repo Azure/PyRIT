@@ -17,7 +17,7 @@ prompts:
     harm_categories:
       - illegal
     source: AI Red Team
-    value: ../../../assets\molotov.wav
+    value: ../../../assets/molotov.wav
     data_type: audio_path
     sequence: 2
   - dataset_name: TestMultimodalTextImageAudioVideo
