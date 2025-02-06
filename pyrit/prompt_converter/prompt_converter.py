@@ -5,6 +5,7 @@ import abc
 import asyncio
 import re
 from dataclasses import dataclass
+from typing import get_args
 
 from pyrit.models import Identifier, PromptDataType
 
@@ -121,7 +122,7 @@ class PromptConverter(abc.ABC, Identifier):
         Returns:
             list[PromptDataType]: A list of supported input types.
         """
-        return [data_type for data_type in PromptDataType.__args__ if self.input_supported(data_type)]
+        return [data_type for data_type in get_args(PromptDataType) if self.input_supported(data_type)]
 
     @property
     def supported_output_types(self) -> list[PromptDataType]:
@@ -131,4 +132,4 @@ class PromptConverter(abc.ABC, Identifier):
         Returns:
             list[PromptDataType]: A list of supported output types.
         """
-        return [data_type for data_type in PromptDataType.__args__ if self.output_supported(data_type)]
+        return [data_type for data_type in get_args(PromptDataType) if self.output_supported(data_type)]
