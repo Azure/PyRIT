@@ -4,6 +4,7 @@
 import logging
 from enum import Enum
 from typing import Optional
+from urllib.parse import urlparse
 
 from azure.core.exceptions import ClientAuthenticationError
 from azure.storage.blob import ContentSettings
@@ -69,6 +70,7 @@ class AzureBlobStorageTarget(PromptTarget):
         """Creates an asynchronous ContainerClient for Azure Storage. If a SAS token is provided via the
         AZURE_STORAGE_ACCOUNT_SAS_TOKEN environment variable or the init sas_token parameter, it will be used
         for authentication. Otherwise, a delegation SAS token will be created using Entra ID authentication."""
+        container_url, _ = self._parse_url()
         try:
             sas_token: str = default_values.get_required_value(
                 env_var_name=self.SAS_TOKEN_ENVIRONMENT_VARIABLE, passed_value=self._sas_token
@@ -76,10 +78,9 @@ class AzureBlobStorageTarget(PromptTarget):
             logger.info("Using SAS token from environment variable or passed parameter.")
         except ValueError:
             logger.info("SAS token not provided. Creating a delegation SAS token using Entra ID authentication.")
-            sas_token = await AzureStorageAuth.get_sas_token(self._container_url)
-
+            sas_token = await AzureStorageAuth.get_sas_token(container_url)
         self._client_async = AsyncContainerClient.from_container_url(
-            container_url=self._container_url,
+            container_url=container_url,
             credential=sas_token,
         )
 
@@ -98,14 +99,12 @@ class AzureBlobStorageTarget(PromptTarget):
 
         if not self._client_async:
             await self._create_container_client_async()
-
+        # Parse the Azure Storage Blob URL to extract components
+        _, blob_prefix = self._parse_url()
+        blob_path = f"{blob_prefix}/{file_name}"
         try:
-            await self._client_async.upload_blob(
-                name=file_name,
-                data=data,
-                content_settings=content_settings,
-                overwrite=True,
-            )
+            blob_client = self._client_async.get_blob_client(blob=blob_path)
+            await blob_client.upload_blob(data=data, content_settings=content_settings)
         except Exception as exc:
             if isinstance(exc, ClientAuthenticationError):
                 logger.exception(
@@ -118,6 +117,15 @@ class AzureBlobStorageTarget(PromptTarget):
             else:
                 logger.exception(msg=f"An unexpected error occurred: {exc}")
                 raise
+
+    def _parse_url(self):
+        """Parses the Azure Storage Blob URL to extract components."""
+        parsed_url = urlparse(self._container_url)
+        path_parts = parsed_url.path.split("/")
+        container_name = path_parts[1]
+        blob_prefix = "/".join(path_parts[2:])
+        container_url = f"https://{parsed_url.netloc}/{container_name}"
+        return container_url, blob_prefix
 
     @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
