@@ -99,6 +99,7 @@ class DataTypeSerializer(abc.ABC):
     @property
     def _memory(self) -> MemoryInterface:
         from pyrit.memory import CentralMemory
+
         return CentralMemory.get_memory_instance()
 
     def _get_storage_io(self):
@@ -115,6 +116,7 @@ class DataTypeSerializer(abc.ABC):
             # Scenarios where a user utilizes an in-memory DuckDB but also needs to interact
             # with an Azure Storage Account, ex., XPiAOrchestrator.
             from pyrit.memory import AzureSQLMemory, CentralMemory
+
             CentralMemory.set_memory_instance(AzureSQLMemory())
             return self._memory.results_storage_io
         return DiskStorageIO()

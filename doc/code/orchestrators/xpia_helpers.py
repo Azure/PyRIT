@@ -85,11 +85,11 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
 
         self._kernel = Kernel()
 
-        service_id = "chat"
+        self._service_id = "chat"
 
         self._kernel.add_service(
             AzureChatCompletion(
-                service_id=service_id, deployment_name=self._deployment_name, async_client=self._async_client
+                service_id=self._service_id, deployment_name=self._deployment_name, async_client=self._async_client
             ),
         )
 
@@ -97,7 +97,7 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
         self._kernel.add_plugin(plugin, plugin_name)
 
         self._execution_settings = AzureChatPromptExecutionSettings(
-            service_id=service_id,
+            service_id=self._service_id,
             ai_model_id=self._deployment_name,
             max_tokens=max_tokens,
             temperature=temperature,
@@ -137,16 +137,36 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
             template=request.converted_value,
             name=self._plugin_name,
             template_format="semantic-kernel",
-            execution_settings=self._execution_settings,
+            execution_settings={self._service_id: self._execution_settings},
         )
         processing_function = self._kernel.add_function(
             function_name="processingFunc", plugin_name=self._plugin_name, prompt_template_config=prompt_template_config
         )
-        processing_output = await self._kernel.invoke(processing_function)
-        processing_output = str(processing_output)
+        processing_output = await self._kernel.invoke(processing_function)  # type: ignore
+        if processing_output is None:
+            raise ValueError("Processing function returned None unexpectedly.")
+        try:
+            inner_content = processing_output.get_inner_content()
+
+            if (
+                not hasattr(inner_content, "choices")
+                or not isinstance(inner_content.choices, list)
+                or not inner_content.choices
+            ):
+                raise ValueError("Invalid response: 'choices' is missing or empty.")
+
+            first_choice = inner_content.choices[0]
+
+            if not hasattr(first_choice, "message") or not hasattr(first_choice.message, "content"):
+                raise ValueError("Invalid response: 'message' or 'content' is missing in choices[0].")
+
+            processing_output = first_choice.message.content
+
+        except AttributeError as e:
+            raise ValueError(f"Unexpected structure in processing_output: {e}")
         logger.info(f'Received the following response from the prompt target "{processing_output}"')
 
-        response = construct_response_from_request(request=request, response_text_pieces=[processing_output])
+        response = construct_response_from_request(request=request, response_text_pieces=[str(processing_output)])
         return response
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
