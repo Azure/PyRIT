@@ -15,7 +15,6 @@ test_cases_sys_exit = [
     (
         "",  # No argument passed
         "the following arguments are required: --config-file",
-        Sys
     ),
     (
         "-config-file './some/path/to/a/config.yml'",  # Wrong flag passed 
@@ -40,7 +39,7 @@ def test_cli(capsys, command, expected_output):
     assert expected_output in output
 
 
-@pytest.mark.parametrize("command, expected_output,", test_cases_sys_exit)
+@pytest.mark.parametrize("command, expected_output", test_cases_sys_exit)
 def test_cli_sys_exit(capsys, command, expected_output):
     with pytest.raises(BaseException):  # Expecting SystemExit due to argparse error
         main(shlex.split(command))

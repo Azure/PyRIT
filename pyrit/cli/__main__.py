@@ -10,36 +10,21 @@ from importlib import import_module
 import inspect
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from uuid import uuid4
 
 import yaml
 
 from pyrit.common import initialize_pyrit
 from pyrit.memory import CentralMemory
 from pyrit.models import SeedPrompt, SeedPromptDataset
-from pyrit.orchestrator import PromptSendingOrchestrator, Orchestrator
+from pyrit.models.seed_prompt import SeedPromptGroup
+from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter import PromptConverter
+from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
+from pyrit.prompt_normalizer.prompt_converter_configuration import PromptConverterConfiguration
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.score.scorer import Scorer
-
-
-class PromptSendingScenario(Scenario):
-    def __init__(self, scenario_config: Dict[str, Any], config: Dict[str, Any]):
-        super().__init__(scenario_config, config)
-
-        # TODO: add scorers, converters
-
-        self.orchestrator = PromptSendingOrchestrator(
-            objective_target=self.objective_target,
-            prompt_converters=[],
-            scorers=None,
-        )
-
-    async def run_async(self, input_prompts: List[SeedPrompt]):
-        await self.orchestrator.send_prompts_async(
-            prompt_list=[prompt.value for prompt in input_prompts],
-            memory_labels=self.memory_labels,
-        )
 
 
 def parse_args(args=None) -> Namespace:
@@ -76,7 +61,7 @@ def load_config(config_file: Path) -> Dict[str, Any]:
     return config
 
 
-async def validate_config_and_run_async(config: Dict[str, Any], memory_labels) -> None:
+async def validate_config_and_run_async(config: Dict[str, Any], memory_labels: Optional[Dict[str, str]] = None) -> None:
     if "scenarios" not in config:
         raise KeyError("Configuration file must contain a 'scenarios' key.")
 
@@ -87,7 +72,7 @@ async def validate_config_and_run_async(config: Dict[str, Any], memory_labels) -
 
     initialize_pyrit(memory_db_type="DuckDB")
 
-    prompts = generate_datasets(config)
+    seed_prompts = generate_datasets(config)
     objective_target = validate_target(config, target_key="objective_target")
     prompt_converters = []
     # prompt_converters = validate_converters(config)
@@ -97,17 +82,49 @@ async def validate_config_and_run_async(config: Dict[str, Any], memory_labels) -
     adversarial_chat = None
     # adversarial_chat = validate_adversarial_chat(config)
 
+    orchestrators = []
     for scenario_config in scenarios:
-        scenario = validate_scenario(
-            scenario_config=scenario_config,
-            objective_target=objective_target,
-            adversarial_chat=adversarial_chat,
-            prompt_converters=prompt_converters,
-            scorer=scorer,
+        orchestrators.append(
+            validate_scenario(
+                scenario_config=scenario_config,
+                objective_target=objective_target,
+                adversarial_chat=adversarial_chat,
+                prompt_converters=prompt_converters,
+                scorer=scorer,
+            )
         )
     
-    for scenario in scenarios:
-        await scenario.run_async(input_prompts=prompts)
+    # This is a separate loop because we want to validate all scenarios before starting execution.
+    for orchestrator in orchestrators:
+        if hasattr(orchestrator, "run_attack_async"):
+            for seed_prompt in seed_prompts:
+                await orchestrator.run_attack_async(objective=seed_prompt.value, memory_labels=memory_labels)
+        elif hasattr(orchestrator, "send_normalizer_requests_async"):
+            converter_configurations = [
+                PromptConverterConfiguration(
+                    converters=prompt_converters if prompt_converters else []
+                )
+            ]            
+
+            normalizer_requests = [
+                NormalizerRequest(
+                    seed_prompt_group=SeedPromptGroup(
+                        prompts=[
+                            seed_prompt
+                        ]
+                    ),
+                    request_converter_configurations=converter_configurations,
+                    conversation_id=uuid4(),
+                ) for seed_prompt in seed_prompts
+            ]
+            await orchestrator.send_normalizer_requests_async(
+                prompt_request_list=normalizer_requests,
+                memory_labels=memory_labels,
+            )
+        else:
+            supported_methods = ["run_attack_async", "send_normalizer_requests_async"]
+            raise ValueError(f"The orchestrator of type {type(orchestrator).__name__} does not have a compatible "
+                             f"method to execute its attack. The supported methods are {supported_methods}.")
 
 
 def validate_scenario(
