@@ -1,4 +1,4 @@
 datasets:
   - ./pyrit/datasets/seed_prompts/illegal.prompt
-scenarios:
-  - type: send_prompts
+objective_target:
+  type: "OpenAIChatTarget"
