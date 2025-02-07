@@ -6,11 +6,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.6
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit-dev
 #     language: python
-#     name: pyrit-dev
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -68,12 +68,15 @@ if prompts:
 # %%
 import pathlib
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import DATASETS_PATH, HOME_PATH
 from pyrit.models import SeedPromptGroup
 
 seed_prompt_group = SeedPromptGroup.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal.prompt"
 )
+
+# Render the template value
+seed_prompt_group.render_template_value(pyrit_home_path=pathlib.Path(HOME_PATH).resolve())
 
 await memory.add_seed_prompt_groups_to_memory(prompt_groups=[seed_prompt_group], added_by="test multimodal illegal")  # type: ignore
 

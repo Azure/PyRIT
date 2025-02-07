@@ -93,9 +93,6 @@ class SeedPrompt(YamlLoadable):
             ValueError: If parameters are missing or invalid in the template.
         """
 
-        if self.data_type != "text":
-            raise ValueError(f"Cannot render non-text values as templates {self.data_type}")
-
         jinja_template = Template(self.value, undefined=StrictUndefined)
 
         try:
@@ -150,6 +147,22 @@ class SeedPromptGroup(YamlLoadable):
         # Check sequence and sort the prompts in the same loop
         if len(self.prompts) >= 1:
             self.prompts = sorted(self.prompts, key=lambda prompt: prompt.sequence)
+
+    def render_template_value(self, **kwargs):
+        """Renders self.value as a template, applying provided parameters in kwargs
+
+        Args:
+            kwargs:Key-value pairs to replace in the SeedPromptGroup value.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: If parameters are missing or invalid in the template.
+        """
+
+        for prompt in self.prompts:
+            prompt.value = prompt.render_template_value(**kwargs)
 
     def _enforce_consistent_group_id(self):
         """
