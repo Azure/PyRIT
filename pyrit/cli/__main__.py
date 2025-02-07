@@ -2,57 +2,25 @@
 # Licensed under the MIT License.
 
 import abc
-import argparse
+from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser, Namespace
 import asyncio
 from copy import deepcopy
 from datetime import datetime
+from importlib import import_module
+import inspect
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import yaml
 
 from pyrit.common import initialize_pyrit
 from pyrit.memory import CentralMemory
 from pyrit.models import SeedPrompt, SeedPromptDataset
-from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.orchestrator import PromptSendingOrchestrator, Orchestrator
 from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_target import AzureMLChatTarget, OpenAIChatTarget, PromptTarget
-
-
-class Scenario(abc.ABC):
-    """A scenario corresponds to an orchestrator in PyRIT.
-
-    While orchestrators have their own validation logic, the scanner is meant to simplify
-    the configuration of orchestrators and provide a common interface for running them.
-    Concretely, this means that we have additional validation logic here that does not
-    exist in the orchestrators themselves.
-    For example, we validate that the scenario has an objective target as every scenario
-    requires one.
-    Only some orchestrators require adversarial chat targets, so we don't require that in
-    the scenario base class, but we may validate that in subclasses.
-    PyRIT would raise an error in that case, of course, but we want to catch configuration
-    errors as early as possible, ideally before anything is executed.
-    """
-
-    converters: List[PromptConverter]
-
-    def __init__(self, scenario_config: Dict[str, Any], config: Dict[str, Any]):
-        self.objective_target = validate_objective_target(config)
-        self.converters = []
-        # self.converters = validate_converters(config)
-        self.scorers = None
-        # self.scorers = validate_scorers(config)
-        self.adversarial_chat = None
-        # self.adversarial_chat = validate_adversarial_chat(config)
-        self.memory_labels = config.get("memory_labels", {})
-
-    @abc.abstractmethod
-    async def run_async(self, input_prompts: List[SeedPrompt]):
-        pass
-
-    @abc.abstractmethod
-    def validate(self):
-        pass
+from pyrit.prompt_target import PromptTarget
+from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
+from pyrit.score.scorer import Scorer
 
 
 class PromptSendingScenario(Scenario):
@@ -67,11 +35,6 @@ class PromptSendingScenario(Scenario):
             scorers=None,
         )
 
-    def validate(self):
-        # The only requirement is to have an objective target and prompts.
-        # Scorer is optional.
-        pass
-
     async def run_async(self, input_prompts: List[SeedPrompt]):
         await self.orchestrator.send_prompts_async(
             prompt_list=[prompt.value for prompt in input_prompts],
@@ -79,10 +42,11 @@ class PromptSendingScenario(Scenario):
         )
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
+def parse_args(args=None) -> Namespace:
+    parser = ArgumentParser(
         prog="pyrit_scan",
-        description="Parse the arguments for the Pyrit Scanner CLI."
+        description="Parse the arguments for the Pyrit Scanner CLI.",
+        formatter_class=ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
         "--config-file",
@@ -91,11 +55,11 @@ def parse_args() -> argparse.Namespace:
         required=True,
     )
 
-    args = parser.parse_args()
-    config_file = Path(args.config_file)
+    parsed_args = parser.parse_args(args)
+    config_file = Path(parsed_args.config_file)
     if not config_file.exists():
-        raise FileNotFoundError(f"Configuration file {config_file} does not exist.")
-    return args
+        raise FileNotFoundError(f"Configuration file {config_file.absolute()} does not exist.")
+    return parsed_args
 
 
 def load_config(config_file: Path) -> Dict[str, Any]:
@@ -112,7 +76,7 @@ def load_config(config_file: Path) -> Dict[str, Any]:
     return config
 
 
-async def validate_config_and_run_async(config: Dict[str, Any]) -> None:
+async def validate_config_and_run_async(config: Dict[str, Any], memory_labels) -> None:
     if "scenarios" not in config:
         raise KeyError("Configuration file must contain a 'scenarios' key.")
 
@@ -124,23 +88,73 @@ async def validate_config_and_run_async(config: Dict[str, Any]) -> None:
     initialize_pyrit(memory_db_type="DuckDB")
 
     prompts = generate_datasets(config)
+    objective_target = validate_target(config, target_key="objective_target")
+    prompt_converters = []
+    # prompt_converters = validate_converters(config)
+    scorer = None
+    # TODO: need to find a solution for single/multiple scorers and scoring_targets
+    # scorers = validate_scorers(config)
+    adversarial_chat = None
+    # adversarial_chat = validate_adversarial_chat(config)
 
+    for scenario_config in scenarios:
+        scenario = validate_scenario(
+            scenario_config=scenario_config,
+            objective_target=objective_target,
+            adversarial_chat=adversarial_chat,
+            prompt_converters=prompt_converters,
+            scorer=scorer,
+        )
+    
     for scenario in scenarios:
-        scenario = validate_scenario(scenario, config)
         await scenario.run_async(input_prompts=prompts)
 
 
-def validate_scenario(scenario_config: Dict[str, Any], config: Dict[str, Any]) -> Scenario:
+def validate_scenario(
+    scenario_config: Dict[str, Any],
+    objective_target: PromptTarget,
+    adversarial_chat: Optional[PromptChatTarget] = None,
+    prompt_converters: Optional[List[PromptConverter]] = None,
+    scorer: Optional[Scorer] = None
+) -> Orchestrator:
     if "type" not in scenario_config:
         raise KeyError("Scenario must contain a 'type' key.")
 
     scenario_type = scenario_config["type"]
-    if scenario_type == "send_prompts":
-        scenario = PromptSendingScenario(scenario_config, config)
-        scenario.validate()
-    else:
-        raise ValueError(f"Invalid scenario type: {scenario_type}")
-    return scenario
+    scenario_args = deepcopy(scenario_config)
+    del scenario_args["type"]
+
+    try:
+        orchestrator_module = import_module("pyrit.orchestrator")
+        orchestrator_class = getattr(orchestrator_module, scenario_type)
+    except Exception as ex:
+        raise RuntimeError(f"Failed to import orchestrator {scenario_type} from pyrit.orchestrator") from ex
+
+    try:
+        constructor_arg_names = [arg.name for arg in inspect.signature(orchestrator_class.__init__).parameters.values()]
+
+        # Some orchestrator arguments have their own configuration since they
+        # are more complex. They are passed in as args to this function.
+        complex_arg_names = ["objective_target", "adversarial_chat", "prompt_converters", "scorer"]
+        for complex_arg_name in complex_arg_names:
+            if complex_arg_name in scenario_args:
+                raise ValueError(
+                    f"{complex_arg_name} needs to be configured at the top level of the scanner configuration."
+                    f"The scenario configuration cannot include {complex_arg_name}."
+                )
+            
+            # Add complex args to the argument list.
+            local_vars = locals()
+            if complex_arg_name in constructor_arg_names:
+                arg_value = local_vars[complex_arg_name]
+                if arg_value:
+                    scenario_args[complex_arg_name] = arg_value
+
+        orchestrator = orchestrator_class(**scenario_args)
+    except Exception as ex:
+        raise ValueError(f"Failed to validate scenario {scenario_type}") from ex\
+
+    return orchestrator
 
 
 def generate_datasets(config: Dict[str, Any]) -> List[SeedPrompt]:
@@ -149,54 +163,45 @@ def generate_datasets(config: Dict[str, Any]) -> List[SeedPrompt]:
     if not datasets:
         raise KeyError("Send prompts scenario must contain a 'datasets' key.")
 
-    loaded_datasets = []
+    loaded_dataset_prompts = []
     for dataset_path in datasets:
-        if not Path(dataset_path).exists():
-            raise FileNotFoundError(f"Dataset file {dataset_path} does not exist.")
+        dataset = SeedPromptDataset.from_yaml_file(dataset_path)
+        loaded_dataset_prompts.extend(dataset.prompts)
 
-        loaded_datasets.append(SeedPromptDataset.from_yaml_file(dataset_path))
-
-    consolidated_prompt_list = [prompt for dataset in loaded_datasets for prompt in dataset.prompts]
-
-    return consolidated_prompt_list
+    return loaded_dataset_prompts
 
 
-def validate_objective_target(config: Dict[str, Any]) -> PromptTarget:
-    if "objective_target" not in config:
-        raise KeyError("Configuration file must contain an 'objective_target' key.")
+def validate_target(config: Dict[str, Any], target_key: str) -> PromptTarget:
+    if target_key not in config:
+        raise KeyError(f"Configuration file must contain a '{target_key}' key.")
 
-    objective_target_type = config["objective_target"].get("type")
+    target_config = deepcopy(config[target_key])
+    target_type = target_config.get("type")
 
-    if not objective_target_type:
-        raise KeyError("Objective target must contain a 'type' key.")
+    if not target_type:
+        raise KeyError(f"Target {target_key} must contain a 'type' key.")
 
-    type_to_class_map = {
-        "azure_ml": AzureMLChatTarget,
-        "openai": OpenAIChatTarget,
-    }
+    try:
+        target_module = import_module("pyrit.prompt_target")
+        target_class = getattr(target_module, target_type)
+    except Exception as ex:
+        raise RuntimeError(f"Failed to import target {target_type} from pyrit.prompt_target") from ex
 
-    if objective_target_type not in type_to_class_map:
-        raise ValueError(
-            f"Invalid objective target type: {objective_target_type}. Must be one of {type_to_class_map.keys()}."
-        )
-
-    objective_target_class = type_to_class_map[objective_target_type]
-    objective_target_config = deepcopy(config["objective_target"])
     # type is not an actual arg so remove it
-    del objective_target_config["type"]
-    objective_target = objective_target_class(**objective_target_config)
-    return objective_target
+    del target_config["type"]
+    target = target_class(**target_config)
+    return target
 
 
-def main():
-    args = parse_args()
-    config_file = args.config_file
+def main(args=None):
+    parsed_args = parse_args(args)
+    config_file = parsed_args.config_file
     config = load_config(config_file)
     memory_labels = config.get("memory_labels", {})
     # Add timestamp to distinguish between scanner runs with the same memory labels
     memory_labels["scanner_execution_start_time"] = datetime.now().isoformat()
 
-    asyncio.run(validate_config_and_run_async(config))
+    asyncio.run(validate_config_and_run_async(config, memory_labels))
 
     memory = CentralMemory.get_memory_instance()
     all_pieces = memory.get_prompt_request_pieces(labels=memory_labels)

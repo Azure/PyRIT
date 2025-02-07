@@ -1,24 +1,25 @@
 datasets:
   - ./pyrit/datasets/seed_prompts/illegal.prompt
 scenarios:
-  - type: send_prompts
-  # - type: crescendo
-  # - type: tree_of_attacks_with_pruning
+  - type: "PromptSendingOrchestrator"
+  # - type: "CrescendoOrchestrator"
+  # - type: "TreeOfAttackWithPruningOrchestrator"
 objective_target:
-  type: "openai" # "azureml" | "huggingface" | ...
-  # endpoint_env_variable: # in case one wants to use multiple
+  type: "OpenAIChatTarget" # "AzureMLChatTarget" | "HuggingFaceEndpointTarget" | ...
+  # endpoint_env_variable: # in case one wants to use multiple you need to specify the env vars - not yet supported
   # api_key_env_variable:
   # any arg for targets can be listed here:
   # deployment_name_env_variable:
   is_azure_target: true
   # headers:
 # converters:
+#   - type: "Base64Converter"
+#   - type: "LeetspeakConverter"
 # adversarial_chat:
-#   type:
+#   type: "AzureMLChatTarget"
 #   ...
 # scoring:
 #   scorer: ...
-#   scoring_target: ...
 memory_labels:
   operator: romanlutz
   operation: scanner_setup_jan25

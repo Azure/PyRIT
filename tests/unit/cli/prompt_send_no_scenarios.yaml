@@ -1,0 +1,9 @@
+datasets:
+  - ./pyrit/datasets/seed_prompts/illegal.prompt
+objective_target:
+  type: "OpenAIChatTarget"
+memory_labels:
+  operator: operator_alias
+  operation: scanner_test
+execution_settings:
+  type: local
