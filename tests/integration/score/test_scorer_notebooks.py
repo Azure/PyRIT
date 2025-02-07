@@ -10,14 +10,12 @@ from nbconvert.preprocessors import ExecutePreprocessor
 
 from pyrit.common import path
 
-nb_directory_path = pathlib.Path(path.DOCS_CODE_PATH, "targets").resolve()
-
-skipped_files = ["4_non_llm_targets.ipynb", "5_multi_modal_targets.ipynb", "playwright_target.ipynb"]
+nb_directory_path = pathlib.Path(path.DOCS_CODE_PATH, "scoring").resolve()
 
 
 @pytest.mark.parametrize(
     "file_name",
-    [file for file in os.listdir(nb_directory_path) if file.endswith(".ipynb") and file not in skipped_files],
+    [file for file in os.listdir(nb_directory_path) if file.endswith(".ipynb")],
 )
 def test_execute_notebooks(file_name):
     nb_path = pathlib.Path(nb_directory_path, file_name).resolve()

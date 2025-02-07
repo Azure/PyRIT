@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.6
+#       jupytext_version: 1.16.4
 #   kernelspec:
 #     display_name: pyrit-312
 #     language: python
@@ -228,9 +228,7 @@ memory.export_conversations(
 # %%
 all_prompt_pieces = memory.get_prompt_request_pieces(labels=memory_labels)
 
-initialize_pyrit(memory_db_type="AzureSQL")
-
-central_memory = CentralMemory.get_memory_instance()
-
-# This last piece is commented out because we run this automatically and we don't want to upload this to our central DB.
+# These last piece is commented out because we run this automatically and we don't want to upload this to our central DB.
+# initialize_pyrit(memory_db_type="AzureSQL")
+# central_memory = CentralMemory.get_memory_instance()
 # central_memory.add_request_pieces_to_memory(request_pieces=all_prompt_pieces)

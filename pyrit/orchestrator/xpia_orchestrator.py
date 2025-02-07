@@ -62,7 +62,7 @@ class XPIAOrchestrator(Orchestrator):
         self._processing_conversation_id = str(uuid4())
         self._attack_content = str(attack_content)
 
-    async def execute_async(self) -> Union[Score, None]:
+    async def execute_async(self) -> Union[str, Score, None]:
         """Executes the entire XPIA operation.
 
         This method sends the attack content to the prompt target, processes the response

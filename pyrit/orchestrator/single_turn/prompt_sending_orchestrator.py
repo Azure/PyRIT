@@ -162,12 +162,17 @@ class PromptSendingOrchestrator(Orchestrator):
         """Prints the conversation between the objective target and the red teaming bot."""
         messages = self.get_memory()
 
+        last_conversation_id = None
+
         for message in messages:
+            if message.conversation_id != last_conversation_id:
+                print(f"{Style.NORMAL}{Fore.RESET}Conversation ID: {message.conversation_id}")
+                last_conversation_id = message.conversation_id
+
             if message.role == "user" or message.role == "system":
                 print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
             else:
                 print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
-                print(f"{Style.NORMAL}{Fore.RESET}Conversation ID: {message.conversation_id}")
                 await display_image_response(message)
 
             for score in message.scores:

@@ -52,7 +52,6 @@ class HTTPTarget(PromptTarget):
         self.prompt_regex_string = prompt_regex_string
         self.use_tls = use_tls
         self.httpx_client_kwargs = httpx_client_kwargs or {}
-        
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
