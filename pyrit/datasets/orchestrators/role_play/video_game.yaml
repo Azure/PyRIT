@@ -1,9 +1,9 @@
 dataset_name: video_game
-groups: AI Red Team
+groups: 
+  - AI Red Team
 description: This is an example first turn response to a video game role play scenario for the role_play orchestrator. Order matters for this orchestrator.
 authors:
   - Mark Russinovich
-  - AI Red Team
 prompts:
   - description: This used to rephrase the user's objective (second user turn)
     parameters:
