@@ -1,5 +1,5 @@
 dataset_name: trivia_game
-groups: 
+groups:
   - AI Red Team
 description: This is an example first turn response to a trivia game role play scenario for the role_play orchestrator. Order matters for this orchestrator.
 authors:
