@@ -139,6 +139,7 @@ all = [
     "ollama>=0.4.4",
     "types-PyYAML>=6.0.12.9",
 ]
+aws = ["boto3>=1.36.6"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
