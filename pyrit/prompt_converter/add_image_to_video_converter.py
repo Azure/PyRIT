@@ -2,8 +2,9 @@
 # Licensed under the MIT license.
 
 import logging
-import cv2
 import os
+
+import cv2
 
 from pyrit.models import PromptDataType, data_serializer_factory
 from pyrit.prompt_converter import ConverterResult, PromptConverter
@@ -27,7 +28,7 @@ class AddImageVideoConverter(PromptConverter):
         video_path: str,
         output_path: str = None,
         img_position: tuple = (10, 10),
-        img_resize_size: tuple =(500,500),
+        img_resize_size: tuple = (500, 500),
     ):
         if not video_path:
             raise ValueError("Please provide valid image path")
@@ -36,7 +37,6 @@ class AddImageVideoConverter(PromptConverter):
         self.img_position = img_position
         self.img_resize_size = img_resize_size
         self._video_path = video_path
-
 
     def _add_image_to_video(self, image_path: str, output_path: str):
         """
@@ -65,7 +65,7 @@ class AddImageVideoConverter(PromptConverter):
         fps = int(cap.get(cv2.CAP_PROP_FPS))
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec for MP4
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")  # Codec for MP4
         out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 
         # Load and resize the overlay image
@@ -87,7 +87,7 @@ class AddImageVideoConverter(PromptConverter):
                 overlay = cv2.resize(overlay, (width - x, height - y))
 
             # Blend overlay with frame
-            frame[y:y+h, x:x+w] = overlay
+            frame[y : y + h, x : x + w] = overlay
 
             # Write the modified frame to the output video
             out.write(frame)
@@ -100,7 +100,6 @@ class AddImageVideoConverter(PromptConverter):
         print(f"Video saved as {output_path}")
 
         return output_path
-
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "image_path") -> ConverterResult:
         """
@@ -115,9 +114,7 @@ class AddImageVideoConverter(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
-        output_video_serializer = data_serializer_factory(
-            category="prompt-memory-entries", data_type="video_path"
-        )
+        output_video_serializer = data_serializer_factory(category="prompt-memory-entries", data_type="video_path")
 
         if not self.output_path:
             output_video_serializer.value = output_video_serializer.get_data_filename()
@@ -125,7 +122,7 @@ class AddImageVideoConverter(PromptConverter):
             output_video_serializer.value = self.output_path
 
         # # Add video to the image
-        updated_video = self._add_image_to_video(image_path=prompt, output_path = output_video_serializer.value)
+        updated_video = self._add_image_to_video(image_path=prompt, output_path=output_video_serializer.value)
         return ConverterResult(output_text=str(updated_video), output_type="video_path")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
