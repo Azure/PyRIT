@@ -4,11 +4,12 @@
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 from pyrit.prompt_converter.add_image_text_converter import AddImageTextConverter
+from pyrit.prompt_converter.add_image_to_video_converter import AddImageVideoConverter
 from pyrit.prompt_converter.add_text_image_converter import AddTextImageConverter
 from pyrit.prompt_converter.ansi_escape.ansi_attack_converter import AnsiAttackConverter
 from pyrit.prompt_converter.ascii_art_converter import AsciiArtConverter
 from pyrit.prompt_converter.atbash_converter import AtbashConverter
-from pyrit.prompt_converter.audio_frequency_converter import AudioFrequencyConverter
+from pyrit.prompt_converter.audio_frequency_converter   import AudioFrequencyConverter
 from pyrit.prompt_converter.azure_speech_audio_to_text_converter import AzureSpeechAudioToTextConverter
 from pyrit.prompt_converter.azure_speech_text_to_audio_converter import AzureSpeechTextToAudioConverter
 from pyrit.prompt_converter.base64_converter import Base64Converter
@@ -53,6 +54,7 @@ from pyrit.prompt_converter.variation_converter import VariationConverter
 
 __all__ = [
     "AddImageTextConverter",
+    "AddImageVideoConverter",
     "AddTextImageConverter",
     "AnsiAttackConverter",
     "AsciiArtConverter",
