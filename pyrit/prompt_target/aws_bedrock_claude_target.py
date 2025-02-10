@@ -91,7 +91,6 @@ class AWSBedrockClaudeTarget(PromptTarget):
         request = json.dumps(native_request)
 
         try:
-            #response = brt.invoke_model(modelId=self._model_id, body=request)
             response = await asyncio.to_thread(brt.invoke_model, modelId=self._model_id, body=request)
         except (ClientError, Exception) as e:
             print(f"ERROR: Can't invoke '{self._model_id}'. Reason: {e}")
