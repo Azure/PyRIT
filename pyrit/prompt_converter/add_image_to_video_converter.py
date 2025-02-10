@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class AddImageVideoConverter(PromptConverter):
     """
     Adds an image to a video at a specified position.
-    
+
     Args:
         video_path (str): File path of video to add image to
         output_path (str, Optional): File path of output video. Defaults to None.
@@ -27,16 +27,16 @@ class AddImageVideoConverter(PromptConverter):
         video_path: str,
         output_path: str = None,
         img_position: tuple = (10, 10),
-        img_resize_size: tuple =(500,500),   
+        img_resize_size: tuple =(500,500),
     ):
         if not video_path:
             raise ValueError("Please provide valid image path")
-        
+
         self.output_path = output_path
         self.img_position = img_position
         self.img_resize_size = img_resize_size
         self._video_path = video_path
-        
+
 
     def _add_image_to_video(self, image_path: str, output_path: str):
         """
@@ -49,18 +49,18 @@ class AddImageVideoConverter(PromptConverter):
         """
         if not image_path:
             raise ValueError("Please provide valid image path value")
-        
+
         if not os.path.exists(image_path):
             print(image_path)
             raise ValueError("Image path does not exist")
-        
+
         if not os.path.exists(self._video_path):
             print(self._video_path)
             raise ValueError("Video path does not exist")
 
         # Open the video
         cap = cv2.VideoCapture(self._video_path)
-        
+
         # Get video properties
         fps = int(cap.get(cv2.CAP_PROP_FPS))
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -97,10 +97,10 @@ class AddImageVideoConverter(PromptConverter):
         out.release()
         cv2.destroyAllWindows()
 
-        print(f"Video saved as {output_path}") 
+        print(f"Video saved as {output_path}")
 
         return output_path
-       
+
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "image_path") -> ConverterResult:
         """
@@ -123,7 +123,7 @@ class AddImageVideoConverter(PromptConverter):
             output_video_serializer.value = output_video_serializer.get_data_filename()
         else:
             output_video_serializer.value = self.output_path
-        
+
         # # Add video to the image
         updated_video = self._add_image_to_video(image_path=prompt, output_path = output_video_serializer.value)
         return ConverterResult(output_text=str(updated_video), output_type="video_path")
