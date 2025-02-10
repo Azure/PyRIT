@@ -7,7 +7,8 @@ from pyrit.prompt_target.common.utils import limit_requests_per_minute
 from pyrit.prompt_target.openai.openai_target import OpenAITarget
 from pyrit.prompt_target.openai.openai_chat_target import OpenAIChatTarget
 
-
+from pyrit.prompt_target.aws_bedrock_claude_target import AWSBedrockClaudeTarget
+from pyrit.prompt_target.aws_bedrock_claude_chat_target import AWSBedrockClaudeChatTarget
 from pyrit.prompt_target.azure_blob_storage_target import AzureBlobStorageTarget
 from pyrit.prompt_target.azure_ml_chat_target import AzureMLChatTarget
 from pyrit.prompt_target.crucible_target import CrucibleTarget
@@ -29,6 +30,8 @@ from pyrit.prompt_target.prompt_shield_target import PromptShieldTarget
 from pyrit.prompt_target.text_target import TextTarget
 
 __all__ = [
+    "AWSBedrockClaudeTarget",
+    "AWSBedrockClaudeChatTarget",
     "AzureBlobStorageTarget",
     "AzureMLChatTarget",
     "CrucibleTarget",
