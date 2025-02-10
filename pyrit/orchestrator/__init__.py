@@ -13,6 +13,7 @@ from pyrit.orchestrator.multi_turn.pair_orchestrator import PAIROrchestrator
 from pyrit.orchestrator.multi_turn.red_teaming_orchestrator import RedTeamingOrchestrator
 from pyrit.orchestrator.single_turn.flip_attack_orchestrator import FlipAttackOrchestrator
 from pyrit.orchestrator.skeleton_key_orchestrator import SkeletonKeyOrchestrator
+from pyrit.orchestrator.single_turn.many_shot_jailbreak_orchestrator import ManyShotJailbreakOrchestrator
 from pyrit.orchestrator.xpia_orchestrator import (
     XPIAManualProcessingOrchestrator,
     XPIAOrchestrator,
@@ -31,6 +32,7 @@ __all__ = [
     "RedTeamingOrchestrator",
     "ScoringOrchestrator",
     "SkeletonKeyOrchestrator",
+    "ManyShotJailbreakOrchestrator",
     "TreeOfAttacksWithPruningOrchestrator",
     "XPIAManualProcessingOrchestrator",
     "XPIAOrchestrator",
