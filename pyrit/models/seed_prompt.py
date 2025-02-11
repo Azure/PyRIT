@@ -9,12 +9,18 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
-from jinja2 import StrictUndefined, Template
+from jinja2 import StrictUndefined, Template, BaseLoader, Undefined, Environment
+import logging
 
 from pyrit.common import utils
 from pyrit.common.yaml_loadable import YamlLoadable
 from pyrit.models.literals import PromptDataType
+from pyrit.common.path import DATASETS_PATH, HOME_PATH, PYRIT_PATH, DB_DATA_PATH, LOG_PATH, DOCS_CODE_PATH 
 
+class PartialUndefined(Undefined):
+    # Return the original placeholder format
+    def __str__(self):
+        return f"{{{{ {self._undefined_name} }}}}"
 
 @dataclass
 class SeedPrompt(YamlLoadable):
@@ -38,6 +44,15 @@ class SeedPrompt(YamlLoadable):
     prompt_group_id: Optional[uuid.UUID]
     prompt_group_alias: Optional[str]
     sequence: Optional[int]
+    
+    TEMPLATE_PATHS = {
+        "datasets_path": DATASETS_PATH,
+        "pyrit_home_path": HOME_PATH,
+        "pyrit_path": PYRIT_PATH,
+        "db_data_path": DB_DATA_PATH,
+        "log_path": LOG_PATH,
+        "docs_code_path": DOCS_CODE_PATH
+    }
 
     def __init__(
         self,
@@ -79,6 +94,9 @@ class SeedPrompt(YamlLoadable):
         self.prompt_group_id = prompt_group_id
         self.prompt_group_alias = prompt_group_alias
         self.sequence = sequence
+        
+        # Render the template to replace existing values
+        self.value = self.render_template_value_silent(**self.TEMPLATE_PATHS)
 
     def render_template_value(self, **kwargs) -> str:
         """Renders self.value as a template, applying provided parameters in kwargs
@@ -99,6 +117,29 @@ class SeedPrompt(YamlLoadable):
             return jinja_template.render(**kwargs)
         except Exception as e:
             raise ValueError(f"Error applying parameters: {str(e)}")
+
+    def render_template_value_silent(self, **kwargs) -> str:
+        """Renders self.value as a template, applying provided parameters in kwargs
+
+        Args:
+            kwargs: Key-value pairs to replace in the SeedPrompt value.
+
+        Returns:
+            A new prompt with the parameters applied.
+
+        Raises:
+            ValueError: If parameters are missing or invalid in the template.
+        """
+        # Create a Jinja template with PartialUndefined placeholders
+        env = Environment(loader=BaseLoader, undefined=PartialUndefined)
+        jinja_template = env.from_string(self.value)
+
+        try:
+            # Render the template with the provided kwargs
+            return jinja_template.render(**kwargs)
+        except Exception as e:
+            logging.error("Error rendering template: %s", e)
+            return self.value
 
     async def set_sha256_value_async(self):
         """
@@ -310,6 +351,22 @@ class SeedPromptDataset(YamlLoadable):
 
         # Now create the dataset with the newly merged prompt dicts
         return cls(prompts=merged_prompts, **dataset_defaults)
+
+    def render_template_value(self, **kwargs):
+        """Renders self.value as a template, applying provided parameters in kwargs
+
+        Args:
+            kwargs:Key-value pairs to replace in the SeedPromptDataset value.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: If parameters are missing or invalid in the template.
+        """
+
+        for prompt in self.prompts:
+            prompt.value = prompt.render_template_value(**kwargs)
 
     @staticmethod
     def _set_seed_prompt_group_id_by_alias(seed_prompts: List[dict]):
