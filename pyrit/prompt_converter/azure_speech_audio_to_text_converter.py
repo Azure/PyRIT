@@ -52,6 +52,9 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "audio_path"
 
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "text"
+
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "audio_path") -> ConverterResult:
         """
         Converter that transcribes audio to text.
