@@ -13,7 +13,7 @@ def aws_target() -> AWSBedrockClaudeChatTarget:
         temperature=0.7,
         top_p=0.9,
         top_k=50,
-        verify=True,
+        enable_ssl_verification=True,
     )
 
 @pytest.fixture
