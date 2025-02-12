@@ -29,11 +29,11 @@ from pathlib import Path
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets import fetch_many_shot_jailbreaking_dataset
+from pyrit.memory import CentralMemory
 from pyrit.models import SeedPrompt
 from pyrit.orchestrator import ManyShotJailbreakOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import LikertScalePaths, SelfAskLikertScorer
-from pyrit.memory import CentralMemory
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -53,7 +53,7 @@ template_path = Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "many_s
 # Set up the Harm Scorer with the same prompt target to ensure consistency
 harm_scorer = SelfAskLikertScorer(likert_scale_path=LikertScalePaths.HARM_SCALE.value, chat_target=prompt_target)
 
-# Set up the orchestrator configured to prepend one random example from the dataset to the prompt 
+# Set up the orchestrator configured to prepend one random example from the dataset to the prompt
 orchestrator = ManyShotJailbreakOrchestrator(objective_target=prompt_target, num_examples=1, scorers=[harm_scorer])
 
 # Load Yaml file, parse content, and create ManyShotTemplate object
