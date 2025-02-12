@@ -25,7 +25,7 @@ class AWSBedrockClaudeChatTarget(PromptChatTarget):
         temperature (float, optional): The amount of randomness injected into the response.
         top_p (float, optional): Use nucleus sampling
         top_k (int, optional): Only sample from the top K options for each subsequent token
-        verify (bool, optional): whether or not to perform SSL certificate verification
+        enable_ssl_verification (bool, optional): whether or not to perform SSL certificate verification
     """
     def __init__(
         self,
@@ -35,7 +35,7 @@ class AWSBedrockClaudeChatTarget(PromptChatTarget):
         temperature: Optional[float] = None,
         top_p: Optional[float] = None,
         top_k: Optional[int] = None,
-        verify: bool = True,
+        enable_ssl_verification: bool = True,
         chat_message_normalizer: ChatMessageNormalizer = ChatMessageNop(),
         max_requests_per_minute: Optional[int] = None,
     ) -> None:
@@ -46,7 +46,7 @@ class AWSBedrockClaudeChatTarget(PromptChatTarget):
         self._temperature = temperature
         self._top_p = top_p
         self._top_k = top_k
-        self._verify = verify
+        self._enable_ssl_verification = enable_ssl_verification
         self.chat_message_normalizer = chat_message_normalizer
 
         self._system_prompt = ''
@@ -78,7 +78,7 @@ class AWSBedrockClaudeChatTarget(PromptChatTarget):
             raise ValueError("This target only supports text prompt input.")
 
     async def _complete_chat_async(self, messages: list[ChatMessageListDictContent]) -> str:
-        brt = boto3.client(service_name="bedrock-runtime", region_name='us-east-1', verify=self._verify)
+        brt = boto3.client(service_name="bedrock-runtime", region_name='us-east-1', enable_ssl_verification=self._enable_ssl_verification)
 
         native_request = self._construct_request_body(messages)
 
