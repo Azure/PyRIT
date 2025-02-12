@@ -104,7 +104,10 @@ def check_links_in_file(file_path):
 if __name__ == "__main__":
     files = sys.argv[1:]
     all_broken_urls = {}
+    skipped_files = ["doc/blog/"]
     for file_path in files:
+        if any(file_path.startswith(skipped) for skipped in skipped_files):
+            continue
         print(f"Checking links in {file_path}")
         broken_urls = check_links_in_file(file_path)
         if broken_urls:

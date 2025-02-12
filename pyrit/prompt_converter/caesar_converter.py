@@ -60,6 +60,9 @@ class CaesarConverter(PromptConverter):
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
 
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "text"
+
     def _caesar(self, text: str) -> str:
         def shift(alphabet: str) -> str:
             return alphabet[self.caesar_offset :] + alphabet[: self.caesar_offset]
