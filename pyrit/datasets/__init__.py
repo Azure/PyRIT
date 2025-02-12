@@ -3,6 +3,7 @@
 
 from .fetch_example_datasets import (
     fetch_adv_bench_dataset,
+    fetch_aya_redteaming_dataset,
     fetch_decoding_trust_stereotypes_dataset,
     fetch_examples,
     fetch_forbidden_questions_dataset,
@@ -18,6 +19,7 @@ from .fetch_example_datasets import (
 )
 
 __all__ = [
+    "fetch_aya_redteaming_dataset",
     "fetch_decoding_trust_stereotypes_dataset",
     "fetch_examples",
     "fetch_harmbench_dataset",

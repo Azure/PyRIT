@@ -111,6 +111,7 @@ API Reference
     fetch_forbidden_questions_dataset
     fetch_llm_latent_adversarial_training_harmful_dataset
     fetch_tdc23_redteaming_dataset
+    fetch_aya_redteaming_dataset
 
 :py:mod:`pyrit.embedding`
 =========================
