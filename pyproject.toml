@@ -113,6 +113,8 @@ playwright = [
     "ollama>=0.4.4"
 ]
 
+aws = ["boto3>=1.36.6"]
+
 all = [
     "accelerate==0.34.2",
     "azureml-mlflow==1.57.0",
@@ -138,8 +140,8 @@ all = [
     "flask>=3.1.0",
     "ollama>=0.4.4",
     "types-PyYAML>=6.0.12.9",
+    "boto3>=1.36.6"
 ]
-aws = ["boto3>=1.36.6"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
