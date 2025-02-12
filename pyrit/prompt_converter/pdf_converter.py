@@ -26,7 +26,7 @@ class PDFConverter(PromptConverter):
 
     Args:
         prompt_template (Optional[SeedPrompt], optional): A `SeedPrompt` object representing a template.
-        font_type (Optional[str], optional): Font type for the PDF. Defaults to "Arial".
+        font_type (Optional[str], optional): Font type for the PDF. Defaults to "Helvetica".
         font_size (Optional[int], optional): Font size for the PDF. Defaults to 12.
         font_color (Optional[tuple], optional): Font color for the PDF in RGB format. Defaults to (255, 255, 255).
         page_width (Optional[int], optional): Width of the PDF page in mm. Defaults to 210 (A4 width).
@@ -40,7 +40,7 @@ class PDFConverter(PromptConverter):
     def __init__(
         self,
         prompt_template: Optional[SeedPrompt] = None,
-        font_type: Optional[str] = "Arial",
+        font_type: Optional[str] = "Helvetica",
         font_size: Optional[int] = 12,
         font_color: Optional[tuple] = (255, 255, 255),
         page_width: Optional[int] = 210,
