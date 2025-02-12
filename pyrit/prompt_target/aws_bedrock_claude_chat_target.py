@@ -78,7 +78,7 @@ class AWSBedrockClaudeChatTarget(PromptChatTarget):
             raise ValueError("This target only supports text prompt input.")
 
     async def _complete_chat_async(self, messages: list[ChatMessageListDictContent]) -> str:
-        brt = boto3.client(service_name="bedrock-runtime", region_name='us-east-1', enable_ssl_verification=self._enable_ssl_verification)
+        brt = boto3.client(service_name="bedrock-runtime", region_name='us-east-1', verify=self._enable_ssl_verification)
 
         native_request = self._construct_request_body(messages)
 
