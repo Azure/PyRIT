@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
     """
-    This orchestrator implements the Many Shot Jailbreak methos as discussed in research found here: 
+    This orchestrator implements the Many Shot Jailbreak methos as discussed in research found here:
     https://www.anthropic.com/research/many-shot-jailbreaking
 
     Prepends the seed prompt with a faux dialogue between a human and an AI
@@ -69,9 +69,7 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
 
         # Check that num_examples is not greater than the size of the example dataset
         if self.num_examples > len(examples):
-            logger.info(
-                f"num_examples is greater than size example dataset. Using all {len(examples)} examples."
-            )
+            logger.info(f"num_examples is greater than size example dataset. Using all {len(examples)} examples.")
             self.num_examples = len(examples)
 
         # Choose num_examples either static or random examples from the dataset
