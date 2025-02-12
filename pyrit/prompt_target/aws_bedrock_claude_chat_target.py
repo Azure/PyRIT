@@ -3,6 +3,7 @@ import logging
 import json
 import boto3
 from typing import MutableSequence, Optional
+import base64
 
 from botocore.exceptions import ClientError
 
@@ -51,6 +52,8 @@ class AWSBedrockClaudeChatTarget(PromptChatTarget):
 
         self._system_prompt = ''
 
+        self._valid_image_types = ['jpeg', 'png', 'webp', 'gif']
+
     @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         
@@ -62,7 +65,7 @@ class AWSBedrockClaudeChatTarget(PromptChatTarget):
 
         logger.info(f"Sending the following prompt to the prompt target: {prompt_request}")
 
-        messages = self._build_chat_messages(prompt_req_res_entries)
+        messages = await self._build_chat_messages(prompt_req_res_entries)
 
         response = await self._complete_chat_async(messages=messages)
 
@@ -71,11 +74,13 @@ class AWSBedrockClaudeChatTarget(PromptChatTarget):
         return response_entry
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
-        if len(prompt_request.request_pieces) != 1:
-            raise ValueError("This target only supports a single prompt request piece.")
+        converted_prompt_data_types = [
+            request_piece.converted_value_data_type for request_piece in prompt_request.request_pieces
+        ]
 
-        if prompt_request.request_pieces[0].converted_value_data_type != "text":
-            raise ValueError("This target only supports text prompt input.")
+        for prompt_data_type in converted_prompt_data_types:
+            if prompt_data_type not in ["text", "image_path"]:
+                raise ValueError("This target only supports text and image_path.")
 
     async def _complete_chat_async(self, messages: list[ChatMessageListDictContent]) -> str:
         brt = boto3.client(service_name="bedrock-runtime", region_name='us-east-1', verify=self._enable_ssl_verification)
@@ -96,7 +101,12 @@ class AWSBedrockClaudeChatTarget(PromptChatTarget):
         logger.info(f'Received the following response from the prompt target "{answer}"')
         return answer
 
-    def _build_chat_messages(self, prompt_req_res_entries: MutableSequence[PromptRequestResponse]
+    def _convert_local_image_to_base64(self, image_path: str) -> str:
+        with open(image_path, 'rb') as image_file:
+            encoded_string = base64.b64encode(image_file.read())
+        return encoded_string
+
+    async def _build_chat_messages(self, prompt_req_res_entries: MutableSequence[PromptRequestResponse]
     ) -> list[ChatMessageListDictContent]:
         chat_messages: list[ChatMessageListDictContent] = []
         for prompt_req_resp_entry in prompt_req_res_entries:
@@ -111,6 +121,17 @@ class AWSBedrockClaudeChatTarget(PromptChatTarget):
                     self._system_prompt = prompt_request_piece.converted_value
                 elif prompt_request_piece.converted_value_data_type == "text":
                     entry = {"type": "text", "text": prompt_request_piece.converted_value}
+                    content.append(entry)
+                elif prompt_request_piece.converted_value_data_type == "image_path":
+                    image_type = prompt_request_piece.converted_value.split('.')[-1]
+                    if image_type not in self._valid_image_types:
+                        raise ValueError(f"Image file {prompt_request_piece.converted_value} must have valid extension of .jpeg, .png, .webp, or .gif")
+                    
+                    data_base64_encoded = self._convert_local_image_to_base64(
+                        prompt_request_piece.converted_value
+                    )
+                    media_type = "image/"+image_type
+                    entry = {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": data_base64_encoded.decode()}}
                     content.append(entry)
                 else:
                     raise ValueError(
