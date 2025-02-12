@@ -27,7 +27,7 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
             scorers: Optional[list[Scorer]] = None,
             verbose: bool = False,
             num_examples: int = 3,
-            isTest: Optional[bool] = False
+            isTest: bool = False
     ) -> None:
         """
         Args:
