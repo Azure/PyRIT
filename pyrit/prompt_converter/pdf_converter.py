@@ -117,16 +117,10 @@ class PDFConverter(PromptConverter):
         return ConverterResult(output_text=pdf_serializer.value, output_type="url")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
-        """
-        Checks if the input type is supported by the converter.
-
-        Args:
-            input_type (PromptDataType): The type of the input.
-
-        Returns:
-            bool: True if the input type is supported, False otherwise.
-        """
         return input_type == "text"
+
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "url"
 
     def _prepare_content(self, prompt: str) -> str:
         """
