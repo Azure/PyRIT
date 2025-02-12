@@ -87,8 +87,7 @@ class AWSBedrockClaudeChatTarget(PromptChatTarget):
         try:
             response = await asyncio.to_thread(brt.invoke_model, modelId=self._model_id, body=request)
         except (ClientError, Exception) as e:
-            print(f"ERROR: Can't invoke '{self._model_id}'. Reason: {e}")
-            exit()
+            raise ValueError(f"ERROR: Can't invoke '{self._model_id}'. Reason: {e}")
 
         model_response = json.loads(response["body"].read())
 
