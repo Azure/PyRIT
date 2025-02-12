@@ -150,4 +150,4 @@ class AWSBedrockClaudeChatTarget(PromptChatTarget):
 
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""
-        return True
+        return False
