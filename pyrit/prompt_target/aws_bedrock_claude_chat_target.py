@@ -107,7 +107,7 @@ class AWSBedrockClaudeChatTarget(PromptChatTarget):
             for prompt_request_piece in prompt_request_pieces:
                 role = prompt_request_piece.role
                 if role == "system":
-                    #bedrock doesn't allow a message with role==system, but it does let you specify system role in a param
+                    # Bedrock doesn't allow a message with role==system, but it does let you specify system role in a param
                     self._system_prompt = prompt_request_piece.converted_value
                 elif prompt_request_piece.converted_value_data_type == "text":
                     entry = {"type": "text", "text": prompt_request_piece.converted_value}
