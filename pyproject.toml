@@ -141,6 +141,9 @@ all = [
     "types-PyYAML>=6.0.12.9",
 ]
 
+[project.scripts]
+pyrit_scan = "pyrit.cli.__main__:main"
+
 [tool.pytest.ini_options]
 pythonpath = ["."]
 
@@ -157,7 +160,7 @@ target-version = ["py310"]
 line-length = 120
 
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=64.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]

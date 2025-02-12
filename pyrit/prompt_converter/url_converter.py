@@ -20,3 +20,6 @@ class UrlConverter(PromptConverter):
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
+
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "text"
