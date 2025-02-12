@@ -251,7 +251,8 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """Inserts multiple entries into the database."""
         with closing(self.get_session()) as session:
             try:
-                session.add_all(entries)
+                for entry in entries:
+                    session.merge(entry)
                 session.commit()
             except SQLAlchemyError as e:
                 session.rollback()

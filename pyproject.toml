@@ -40,6 +40,7 @@ dependencies = [
     "aiofiles>=24.1.0",
     "appdirs>=1.4.0",
     "art==6.1.0",
+    "azure-ai-inference>=1.0.0b8",
     "azure-cognitiveservices-speech>=1.36.0",
     "azure-core>=1.26.1",
     "azure-identity>=1.19.0",
