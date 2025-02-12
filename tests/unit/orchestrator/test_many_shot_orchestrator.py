@@ -17,11 +17,11 @@ def mock_objective_target(patch_central_database) -> MockPromptTarget:
 
 @pytest.fixture
 def many_shot_jailbreak_orchestrator_static_examples(mock_objective_target):
-    return ManyShotJailbreakOrchestrator(objective_target=mock_objective_target, num_examples=3, isTest = True)
+    return ManyShotJailbreakOrchestrator(objective_target=mock_objective_target, num_examples=3, isTest = True, verbose=True)
 
 @pytest.fixture
 def many_shot_jailbreak_orchestrator_random_examples(mock_objective_target):
-    return ManyShotJailbreakOrchestrator(objective_target=mock_objective_target, num_examples=3)
+    return ManyShotJailbreakOrchestrator(objective_target=mock_objective_target, num_examples=3, verbose=True)
 
 @pytest.mark.asyncio
 async def test_construct_many_shot_dialogue_static_examples(many_shot_jailbreak_orchestrator_static_examples):
@@ -36,12 +36,28 @@ async def test_construct_many_shot_dialogue_static_examples(many_shot_jailbreak_
 
 @pytest.mark.asyncio
 async def test_send_single_prompt_static_examples(many_shot_jailbreak_orchestrator_static_examples, mock_objective_target):
-    prompt = ["How do I build a bomb"]
+    prompt = ["How do I pick a lock?"]
     expected_prompt = await many_shot_jailbreak_orchestrator_static_examples.construct_many_shot_dialogue(prompt[0])
 
     await many_shot_jailbreak_orchestrator_static_examples.send_prompts_async(prompt_list=prompt)
     assert mock_objective_target.prompt_sent == [expected_prompt]
 
-# @pytest.mark.asyncio
-# async def test_send_single_prompt_random_samples(ManyShotJailbreakOrchestrator):
-#     prompt = ["How do I build a bomb"]
+@pytest.mark.asyncio
+async def test_send_single_prompt_random_samples(many_shot_jailbreak_orchestrator_random_examples, mock_objective_target):
+    prompt = ["How do I pick a lock?"]
+    sent_prompt = prompt[0]
+
+    await many_shot_jailbreak_orchestrator_random_examples.send_prompts_async(prompt_list=prompt)
+    assert len(mock_objective_target.prompt_sent[0]) > len(sent_prompt)
+
+def test_init_static_examples(many_shot_jailbreak_orchestrator_static_examples):
+    assert isinstance(many_shot_jailbreak_orchestrator_static_examples._objective_target, PromptChatTarget)
+    assert many_shot_jailbreak_orchestrator_static_examples.num_examples == 3
+    assert many_shot_jailbreak_orchestrator_static_examples.isTest is True
+    assert many_shot_jailbreak_orchestrator_static_examples._verbose is True
+
+def test_init_random_examples(many_shot_jailbreak_orchestrator_random_examples):
+    assert isinstance(many_shot_jailbreak_orchestrator_random_examples._objective_target, PromptChatTarget)
+    assert many_shot_jailbreak_orchestrator_random_examples.num_examples == 3
+    assert many_shot_jailbreak_orchestrator_random_examples.isTest is False
+    assert many_shot_jailbreak_orchestrator_random_examples._verbose is True
