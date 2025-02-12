@@ -1,12 +1,19 @@
-import os
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from azure.core.exceptions import HttpResponseError
+
+from pyrit.exceptions.exception_classes import (
+    RETRY_MAX_NUM_ATTEMPTS,
+    EmptyResponseException,
+)
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target.azure_chat_completions_target import AzureChatCompletionsTarget
-from pyrit.exceptions.exception_classes import EmptyResponseException, RETRY_MAX_NUM_ATTEMPTS
+
 
 @pytest.fixture
 def sample_conversations() -> list[PromptRequestPiece]:
@@ -18,12 +25,15 @@ def sample_conversations() -> list[PromptRequestPiece]:
         )
     ]
 
+
 @pytest.fixture
 def chat_target(patch_central_database) -> AzureChatCompletionsTarget:
     return AzureChatCompletionsTarget(endpoint="test", api_key="test")
 
+
 def test_chat_target_initializes(chat_target: AzureChatCompletionsTarget):
     assert chat_target
+
 
 def test_chat_target_initializes_calls_get_required_parameters(patch_central_database):
     with patch("pyrit.common.default_values.get_required_value") as mock_get_required:
@@ -36,9 +46,8 @@ def test_chat_target_initializes_calls_get_required_parameters(patch_central_dat
         mock_get_required.assert_any_call(
             env_var_name=target.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value="endpointtest"
         )
-        mock_get_required.assert_any_call(
-            env_var_name=target.API_KEY_ENVIRONMENT_VARIABLE, passed_value="keytest"
-        )
+        mock_get_required.assert_any_call(env_var_name=target.API_KEY_ENVIRONMENT_VARIABLE, passed_value="keytest")
+
 
 @pytest.mark.asyncio
 async def test_chat_target_validate_request_length(
@@ -48,15 +57,17 @@ async def test_chat_target_validate_request_length(
     with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
         await chat_target.send_prompt_async(prompt_request=request)
 
+
 @pytest.mark.asyncio
 async def test_chat_target_validate_prompt_type(
     chat_target: AzureChatCompletionsTarget, sample_conversations: list[PromptRequestPiece]
 ):
     request_piece = sample_conversations[0]
-    request_piece.converted_value_data_type = "image"
+    request_piece.converted_value_data_type = "image_path"
     request = PromptRequestResponse(request_pieces=[request_piece])
     with pytest.raises(ValueError, match="This target only supports text prompt input."):
         await chat_target.send_prompt_async(prompt_request=request)
+
 
 @pytest.mark.asyncio
 async def test_chat_target_send_prompt_async_filter_no_exception(
@@ -79,6 +90,7 @@ async def test_chat_target_send_prompt_async_filter_no_exception(
         assert response.request_pieces[0].converted_value_data_type == "error"
 
         mock_complete.assert_called_once()
+
 
 @pytest.mark.asyncio
 async def test_chat_target_send_prompt_async_non_filter_exception(
@@ -133,7 +145,6 @@ async def test_chat_target_send_prompt_async_success(
         mock_return.choices[0].message.content = "response"
         mock_return.choices[0].finish_reason = "stop"
 
-
         mock_complete.return_value = mock_return
 
         request_piece = sample_conversations[0]
@@ -158,7 +169,6 @@ async def test_chat_target_send_prompt_async_error(
         mock_return.choices[0].message.content = "response"
         mock_return.choices[0].finish_reason = "not_stop"
 
-
         mock_complete.return_value = mock_return
 
         request_piece = sample_conversations[0]
@@ -169,7 +179,6 @@ async def test_chat_target_send_prompt_async_error(
         assert mock_complete.call_count == 1
         assert response.request_pieces[0].converted_value == "response"
         assert response.request_pieces[0].converted_value_data_type == "error"
-
 
 
 def test_is_json_response_supported(chat_target: AzureChatCompletionsTarget):
