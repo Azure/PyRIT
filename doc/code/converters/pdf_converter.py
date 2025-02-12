@@ -70,7 +70,7 @@ prompt_target = TextTarget()
 # Initialize the PDFConverter
 pdf_converter = PDFConverter(
     prompt_template=prompt_template,
-    font_type="Arial",
+    font_type="Helvetica",
     font_size=12,
     page_width=210,
     page_height=297,
@@ -102,7 +102,7 @@ prompt_target = TextTarget()
 # Initialize the PDFConverter without a template
 pdf_converter = PDFConverter(
     prompt_template=None,  # No template provided
-    font_type="Arial",
+    font_type="Helvetica",
     font_size=12,
     page_width=210,
     page_height=297,
@@ -177,7 +177,7 @@ prompt_target = TextTarget()
 # Initialize the PDFConverter with the existing PDF and injection items
 pdf_converter = PDFConverter(
     prompt_template=None,  # No template provided
-    font_type="Arial",
+    font_type="Helvetica",
     font_size=12,
     page_width=210,
     page_height=297,
