@@ -18,7 +18,8 @@ logger = logging.getLogger(__name__)
 
 class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
     """
-    This orchestrator implements the Many Shot Jailbreak methos as discussed in research found here: https://www.anthropic.com/research/many-shot-jailbreaking
+    This orchestrator implements the Many Shot Jailbreak methos as discussed in research found here: 
+    https://www.anthropic.com/research/many-shot-jailbreaking
 
     Prepends the seed prompt with a faux dialogue between a human and an AI
     """
@@ -38,7 +39,7 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
                 scored immediately after receiving response. Default is None.
             verbose (bool, Optional): Whether to log debug information. Defaults to False.
             num_examples (int, Optional): The number of examples to fetch from the dataset. Defaults to 3.
-            isTest (bool, Optional): Controls whether or not the examples are gotten at random or statically. Setting to True can be useful for testing. Defaults to False.
+            isTest (bool, Optional): Controls whether examples are random or static.
         """
 
         super().__init__(
@@ -53,10 +54,7 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
         self.num_examples = num_examples
         self.isTest = isTest
 
-    async def construct_many_shot_dialogue(
-            self, 
-            malicious_prompt: str
-        ) -> str:
+    async def construct_many_shot_dialogue(self, malicious_prompt: str) -> str:
         """
         Constructs the many shot dialogue to be prepended to the prompt
 
@@ -69,10 +67,10 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
         # Fetch the Many Shot Jailbreaking dataset
         examples = fetch_many_shot_jailbreaking_dataset()
 
-        # Choose a random subset of examples of size num_examples, check that the number of examples is not greater than the number of examples in the dataset
+        # Check that num_examples is not greater than the size of the example dataset
         if self.num_examples > len(examples):
             logger.info(
-                f"Specified example count is greater than the number of examples in the dataset. Using all {len(examples)} examples."
+                f"num_examples is greater than size example dataset. Using all {len(examples)} examples."
             )
             self.num_examples = len(examples)
 

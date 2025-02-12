@@ -1,8 +1,5 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-
-from unittest.mock import AsyncMock, MagicMock, patch
-
 import pytest
 from unit.mocks import MockPromptTarget
 
