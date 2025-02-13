@@ -349,3 +349,101 @@ def test_handle_last_prepended_assistant_message_with_no_matching_score():
 
     objective_score = orchestrator._handle_last_prepended_assistant_message()
     assert objective_score is None
+
+
+@pytest.mark.asyncio
+async def test_get_prompt_from_adversarial_chat_sends_prompt(patch_central_database):
+    scorer = MagicMock(Scorer)
+    scorer.scorer_type = "true_false"
+    orchestrator = RedTeamingOrchestrator(
+        adversarial_chat=MagicMock(),
+        objective_target=MagicMock(),
+        objective_scorer=scorer,
+    )
+
+    prompt_request_response = PromptRequestResponse(request_pieces=[
+        PromptRequestPiece(role="user", original_value="message", converted_value="message",
+                           original_value_data_type="text", converted_value_data_type="text", )])
+
+    with (
+        patch.object(
+            orchestrator, "_get_prompt_for_adversarial_chat", MagicMock(return_value="prompt_text")
+        ),
+        patch.object(
+            orchestrator._memory, "get_conversation", MagicMock(return_value=[])
+        ),
+        patch.object(
+            orchestrator._prompt_normalizer, "send_prompt_async", AsyncMock(return_value=prompt_request_response)
+        ) as mock_send_prompt,
+        patch.object(
+            orchestrator._adversarial_chat, "set_system_prompt", AsyncMock()
+        ),
+    ):
+        objective = "objective"
+        memory_labels = {"username": "user"}
+        objective_target_conversation_id = str(uuid4())
+        adversarial_chat_conversation_id = str(uuid4())
+
+        await orchestrator._get_prompt_from_adversarial_chat(
+            objective=objective,
+            objective_target_conversation_id=objective_target_conversation_id,
+            adversarial_chat_conversation_id=adversarial_chat_conversation_id,
+            memory_labels=memory_labels
+        )
+
+        mock_send_prompt.assert_called_once()
+
+        _, adv_target_send_prompt_args = mock_send_prompt.call_args
+        assert len(adv_target_send_prompt_args["seed_prompt_group"].prompts) == 1
+        assert adv_target_send_prompt_args["seed_prompt_group"].prompts[0].value == "prompt_text"
+        assert adv_target_send_prompt_args["conversation_id"] == adversarial_chat_conversation_id
+        assert adv_target_send_prompt_args["target"] == orchestrator._adversarial_chat
+        assert adv_target_send_prompt_args["orchestrator_identifier"] == orchestrator.get_identifier_with_objective(objective=objective)
+        assert adv_target_send_prompt_args["labels"].items() == memory_labels.items()
+
+
+@pytest.mark.asyncio
+async def test_retrieve_and_sends_prompt(patch_central_database):
+    scorer = MagicMock(Scorer)
+    scorer.scorer_type = "true_false"
+    orchestrator = RedTeamingOrchestrator(
+        adversarial_chat=MagicMock(),
+        objective_target=MagicMock(),
+        objective_scorer=scorer,
+    )
+
+    prompt_request_response = PromptRequestResponse(request_pieces=[
+        PromptRequestPiece(role="user", original_value="message", converted_value="message",
+                           original_value_data_type="text", converted_value_data_type="text", )])
+
+    with (
+        patch.object(
+            orchestrator, "_get_prompt_from_adversarial_chat", AsyncMock(return_value="prompt_text")
+        ),
+        patch.object(
+            orchestrator._prompt_normalizer, "send_prompt_async", AsyncMock(return_value=prompt_request_response)
+        ) as mock_send_prompt,
+    ):
+        objective = "objective"
+        memory_labels = {"username": "user"}
+        objective_target_conversation_id = str(uuid4())
+        adversarial_chat_conversation_id = str(uuid4())
+
+        await orchestrator._retrieve_and_send_prompt_async(
+            objective=objective,
+            objective_target_conversation_id=objective_target_conversation_id,
+            adversarial_chat_conversation_id=adversarial_chat_conversation_id,
+            memory_labels=memory_labels
+        )
+
+        mock_send_prompt.assert_called_once()
+
+        _, target_send_prompt_args = mock_send_prompt.call_args
+        assert len(target_send_prompt_args["seed_prompt_group"].prompts) == 1
+        assert target_send_prompt_args["seed_prompt_group"].prompts[0].value == "prompt_text"
+        assert target_send_prompt_args["conversation_id"] == objective_target_conversation_id
+        assert target_send_prompt_args["target"] == orchestrator._objective_target
+        assert target_send_prompt_args["orchestrator_identifier"] == orchestrator.get_identifier_with_objective(objective=objective)
+        assert target_send_prompt_args["labels"].items() == memory_labels.items()
+        assert len(target_send_prompt_args["request_converter_configurations"]) == 1
+        assert target_send_prompt_args["request_converter_configurations"][0].converters == orchestrator._prompt_converters

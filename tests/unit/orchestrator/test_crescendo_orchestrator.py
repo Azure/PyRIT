@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import os
+import uuid
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -602,6 +603,81 @@ async def test_get_attack_prompt_objective_score(orchestrator: CrescendoOrchestr
         assert objective in prompt_sent
         assert "Objective Score Rationale" in prompt_sent
         assert "Original prompt sent" in prompt_sent
+
+@pytest.mark.asyncio
+async def test_get_attack_prompt_adversarial_target_send_prompt(orchestrator: CrescendoOrchestrator):
+    red_team_response = (
+        '{"generated_question": "Red Teaming Response", '
+        '"last_response_summary": "Last Response Summary", '
+        '"rationale_behind_jailbreak": "Rationale Behind Jailbreak"}'
+    )
+
+    mock_request_piece = MagicMock()
+    mock_request_piece.converted_value = red_team_response
+
+    red_teaming_return_value = MagicMock()
+    red_teaming_return_value.request_pieces = [mock_request_piece]  # Mock list with proper behavior
+
+    objective = "do something extremely bad"
+    objective_score = MagicMock(score_rationale="Objective Score Rationale")
+
+    objective_score_return = MagicMock(converted_value="Objective Score Original prompt sent")
+
+    with (
+        patch.object(
+            orchestrator._prompt_normalizer, "send_prompt_async", AsyncMock(return_value=red_teaming_return_value)
+        ) as mock_prompt_normalizer,
+        patch.object(
+            orchestrator._memory, "get_prompt_request_pieces", MagicMock(return_value=[objective_score_return])
+        ),
+    ):
+        memory_labels = {"user": "user_name"}
+        await orchestrator._get_attack_prompt(
+            adversarial_chat_conversation_id="123",
+            objective=objective,
+            refused_text=None,
+            turn_num=1,
+            max_turns=1,
+            objective_score=objective_score,
+            memory_labels=memory_labels,
+        )
+
+        _, adv_target_send_prompt_args = mock_prompt_normalizer.call_args
+
+        assert adv_target_send_prompt_args["conversation_id"] == "123"
+        assert adv_target_send_prompt_args["orchestrator_identifier"] == orchestrator.get_identifier_with_objective(objective)
+        assert adv_target_send_prompt_args["labels"] == memory_labels
+        assert adv_target_send_prompt_args["target"] == orchestrator._adversarial_chat
+        assert adv_target_send_prompt_args["seed_prompt_group"] is not None # seed_prompt_group content is covered in other tests
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_to_target_prompt(orchestrator: CrescendoOrchestrator):
+    objective = "do something extremely bad"
+
+    with (
+        patch.object(
+            orchestrator._prompt_normalizer, "send_prompt_async", AsyncMock(return_value=MagicMock())
+        ) as mock_prompt_normalizer
+    ):
+        memory_labels = {"user": "user_name"}
+        conversation_id = str(uuid.uuid4())
+        attack_prompt = "the-attack-prompt"
+        await orchestrator._send_prompt_to_target_async(
+            attack_prompt=attack_prompt,
+            objective=objective,
+            objective_target_conversation_id=conversation_id,
+            memory_labels=memory_labels,
+        )
+
+        _, target_send_prompt_args = mock_prompt_normalizer.call_args
+
+        assert target_send_prompt_args["conversation_id"] == conversation_id
+        assert target_send_prompt_args["orchestrator_identifier"] == orchestrator.get_identifier_with_objective(objective)
+        assert target_send_prompt_args["labels"] == memory_labels
+        assert target_send_prompt_args["target"] == orchestrator._objective_target
+        assert len(target_send_prompt_args["seed_prompt_group"].prompts) == 1
+        assert target_send_prompt_args["seed_prompt_group"].prompts[0].value == attack_prompt
 
 
 def test_handle_last_prepended_user_message_with_prepended_message(orchestrator: CrescendoOrchestrator):

@@ -258,7 +258,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                 request_converter_configurations=[converter_configurations],
                 target=self._objective_target,
                 labels=memory_labels,
-                orchestrator_identifier=self.get_identifier(),
+                orchestrator_identifier=self.get_identifier_with_objective(objective),
             )
         ).request_pieces[0]
 
@@ -412,7 +412,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                     seed_prompt_group=seed_prompt_group,
                     conversation_id=adversarial_chat_conversation_id,
                     target=self._adversarial_chat,
-                    orchestrator_identifier=self.get_identifier(),
+                    orchestrator_identifier=self.get_identifier_with_objective(objective),
                     labels=memory_labels,
                 )
             )

@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-
+import base64
+import hashlib
 import json
 import logging
 from pathlib import Path
@@ -232,6 +233,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
             last_response = await self._send_prompt_to_target_async(
                 attack_prompt=attack_prompt,
+                objective=objective,
                 objective_target_conversation_id=objective_target_conversation_id,
                 memory_labels=updated_memory_labels,
             )
@@ -354,7 +356,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
                     seed_prompt_group=seed_prompt_group,
                     conversation_id=adversarial_chat_conversation_id,
                     target=self._adversarial_chat,
-                    orchestrator_identifier=self.get_identifier(),
+                    orchestrator_identifier=self.get_identifier_with_objective(objective),
                     labels=memory_labels,
                 )
             )
@@ -386,6 +388,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         self,
         *,
         attack_prompt: str,
+        objective: str,
         objective_target_conversation_id: str = None,
         memory_labels: Optional[dict[str, str]] = None,
     ) -> PromptRequestPiece:
@@ -402,7 +405,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
                 target=self._objective_target,
                 conversation_id=objective_target_conversation_id,
                 request_converter_configurations=[converter_configuration],
-                orchestrator_identifier=self.get_identifier(),
+                orchestrator_identifier=self.get_identifier_with_objective(objective),
                 labels=memory_labels,
             )
         ).request_pieces[0]

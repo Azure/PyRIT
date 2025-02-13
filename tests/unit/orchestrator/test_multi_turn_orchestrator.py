@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-
+import base64
+import hashlib
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -300,3 +301,20 @@ async def test_print_conversation_with_messages():
             mock_memory.get_conversation.assert_called_once_with(conversation_id="conversation_id_123")
             assert mock_display_image_response.call_count == 2
             assert mock_memory.get_scores_by_prompt_ids.call_count == 2
+
+
+def test_get_identifier_with_objective(orchestrator):
+    target_objective = 'the objective to test for'
+    orchestrator_identifier = orchestrator.get_identifier_with_objective(target_objective)
+    assert orchestrator_identifier["id"] == str(orchestrator._id)
+    assert orchestrator_identifier["__type__"] == orchestrator.__class__.__name__
+    assert orchestrator_identifier["__module__"] == orchestrator.__class__.__module__
+    assert orchestrator_identifier["objective_base64"] == str(base64.b64encode(target_objective.encode('utf-8')), encoding='utf-8')
+    assert orchestrator_identifier["objective_id"] == hashlib.md5(target_objective.encode('utf-8')).hexdigest()
+
+
+def test_get_identifier_with_objective_for_empty_objective(orchestrator):
+    with pytest.raises(ValueError) as identifier_exception:
+        orchestrator.get_identifier_with_objective('')
+
+    assert 'objective is required' in str(identifier_exception.value)
