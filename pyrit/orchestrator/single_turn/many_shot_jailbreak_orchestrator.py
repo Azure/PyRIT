@@ -30,7 +30,7 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
         scorers: Optional[list[Scorer]] = None,
         verbose: bool = False,
         num_examples: int = 3,
-        isTest: bool = False,
+        many_shot_examples: Optional[list[dict[str, str]]] = None,
     ) -> None:
         """
         Args:
@@ -52,31 +52,32 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
         template_path = Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "many_shot_template.yaml"
         self.template = SeedPrompt.from_yaml_file(template_path)
         self.num_examples = num_examples
-        self.isTest = isTest
+        # Fetch the Many Shot Jailbreaking example dataset
+        self.examples = (
+            many_shot_examples if (many_shot_examples is not None) else fetch_many_shot_jailbreaking_dataset()
+        )
 
-    async def construct_many_shot_dialogue(self, malicious_prompt: str) -> str:
+    async def _construct_many_shot_dialogue(self, prompt: str) -> str:
         """
         Constructs the many shot dialogue to be prepended to the prompt
 
         Args:
-            malicious_prompt (str): The malicious prompt to be prepended
+            prompt (str): The malicious prompt to be prepended
 
         Returns:
             str: The constructed many shot dialogue
         """
-        # Fetch the Many Shot Jailbreaking dataset
-        examples = fetch_many_shot_jailbreaking_dataset()
 
         # Check that num_examples is not greater than the size of the example dataset
-        if self.num_examples > len(examples):
-            logger.info(f"num_examples is greater than size example dataset. Using all {len(examples)} examples.")
-            self.num_examples = len(examples)
+        if self.num_examples > len(self.examples):
+            logger.info(f"num_examples is greater than size example dataset. Using all {len(self.examples)} examples.")
+            self.num_examples = len(self.examples)
 
         # Choose num_examples either static or random examples from the dataset
-        examples = examples[: self.num_examples] if (self.isTest) else random.sample(examples, self.num_examples)
+        examples = random.sample(self.examples, self.num_examples)
 
         # Construct the many shot dialogue
-        many_shot_dialogue = self.template.render_template_value(prompt=malicious_prompt, examples=examples)
+        many_shot_dialogue = self.template.render_template_value(prompt=prompt, examples=examples)
 
         return many_shot_dialogue
 
@@ -102,7 +103,7 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
             list[PromptRequestResponse]: The responses from sending the prompts.
         """
         for i in range(0, len(prompt_list)):
-            prompt_list[i] = await self.construct_many_shot_dialogue(prompt_list[i])
+            prompt_list[i] = await self._construct_many_shot_dialogue(prompt_list[i])
 
         return await super().send_prompts_async(
             prompt_list=prompt_list, prompt_type="text", memory_labels=memory_labels, metadata=metadata
