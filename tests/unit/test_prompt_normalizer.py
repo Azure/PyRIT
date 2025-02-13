@@ -74,6 +74,9 @@ class MockPromptConverter(PromptConverter):
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
 
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "text"
+
 
 def assert_prompt_piece_hashes_set(request: PromptRequestResponse):
     assert request
@@ -488,3 +491,30 @@ async def test_should_skip_based_on_skip_criteria_original_value_match(mock_memo
 
     result = normalizer._should_skip_based_on_skip_criteria(request)
     assert result is True, "Should return True if a matching original_value_sha256 is found"
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_exception_conv_id(mock_memory_instance, seed_prompt_group):
+    prompt_target = MagicMock(PromptTarget)
+    prompt_target.send_prompt_async = AsyncMock(side_effect=Exception("Test Exception"))
+
+    normalizer = PromptNormalizer()
+
+    with pytest.raises(Exception, match="Error sending prompt with conversation ID: 123"):
+        await normalizer.send_prompt_async(
+            seed_prompt_group=seed_prompt_group, target=prompt_target, conversation_id="123"
+        )
+
+    # Validate that first request is added to memory, then exception is added to memory
+    assert (
+        seed_prompt_group.prompts[0].value
+        == mock_memory_instance.add_request_response_to_memory.call_args_list[0][1]["request"]
+        .request_pieces[0]
+        .original_value
+    )
+    assert (
+        "Test Exception"
+        == mock_memory_instance.add_request_response_to_memory.call_args_list[1][1]["request"]
+        .request_pieces[0]
+        .original_value
+    )
