@@ -494,6 +494,55 @@ def fetch_decoding_trust_stereotypes_dataset(
     return seed_prompt_dataset
 
 
+def fetch_red_team_social_bias_prompts_dataset() -> SeedPromptDataset:
+    """
+    Fetch Red Team Social Bias Prompts and create a SeedPromptDataset.
+
+    Relevant Columns:
+    - "organization"
+    - "categorization"
+    - "prompt_type"
+    - "prompt_instruction"
+    - "prompt"
+    - "explanation"
+    - "ai_response"
+
+    Returns:
+        SeedPromptDataset: A SeedPromptDataset containing the examples.
+    """
+    data = load_dataset("svannie678/red_team_repo_social_bias_prompts", "default")
+
+    # Filter items where prompt_type is "Single Prompt"
+    filtered_data = [item for item in data["train"] if item.get("prompt_type") == "Single Prompt"]
+
+    seed_prompts = [
+        SeedPrompt(
+            value=item.get("prompt", ""),
+            data_type="text",
+            name="svannie678/red_team_repo_social_bias_prompts",
+            dataset_name="svannie678/red_team_repo_social_bias_prompts",
+            authors=["Simone van Taylor"],
+            description="""This dataset contains aggregated and unified existing
+                    red-teaming prompts designed to identify stereotypes,
+                    discrimination, hate speech, and other representation
+                    harms in text-based Large Language Models (LLMs).""",
+            source="https://huggingface.co/datasets/svannie678/red_team_repo_social_bias_prompts",
+            harm_categories=item.get("categorization", []),
+            metadata={
+                "organization": item.get("organization", ""),
+                "prompt_type": item.get("prompt_type", ""),
+                "prompt_instruction": item.get("prompt_instruction", ""),
+                "explanation": item.get("explanation", ""),
+                "ai_response": item.get("ai_response", ""),
+            },
+        )
+        for item in filtered_data
+    ]
+
+    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
+    return seed_prompt_dataset
+
+
 def fetch_adv_bench_dataset(
     source: str = (
         "https://raw.githubusercontent.com/llm-attacks/llm-attacks/main/data/advbench/" "harmful_behaviors.csv"
