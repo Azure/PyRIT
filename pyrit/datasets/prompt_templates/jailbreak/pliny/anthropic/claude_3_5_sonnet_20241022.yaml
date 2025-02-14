@@ -1,5 +1,7 @@
 ---
 name: anthropic_claude_3_5_sonnet_20241022
+authors:
+  - Pliny
 parameters:
   - prompt
 data_type: text

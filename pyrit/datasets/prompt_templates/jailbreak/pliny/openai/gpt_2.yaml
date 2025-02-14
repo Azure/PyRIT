@@ -1,5 +1,7 @@
 ---
 name: openai_gpt_2
+authors:
+  - Pliny
 parameters:
   - prompt
 data_type: text

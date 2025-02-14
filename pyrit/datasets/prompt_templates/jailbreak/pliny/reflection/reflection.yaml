@@ -1,5 +1,7 @@
 ---
 name: reflection
+authors:
+  - Pliny
 parameters:
   - prompt
 data_type: text

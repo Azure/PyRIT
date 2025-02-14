@@ -1,5 +1,7 @@
 ---
 name: alibaba_qwen_2
+authors:
+  - Pliny
 parameters:
   - prompt
 data_type: text

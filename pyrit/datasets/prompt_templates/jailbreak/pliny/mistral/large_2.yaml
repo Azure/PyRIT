@@ -1,5 +1,7 @@
 ---
 name: mistral_large_2
+authors:
+  - Pliny
 parameters:
   - prompt
 data_type: text

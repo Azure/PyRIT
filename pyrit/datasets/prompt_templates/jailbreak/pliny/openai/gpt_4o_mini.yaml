@@ -1,5 +1,7 @@
 ---
 name: openai_gpt_4o_mini
+authors:
+  - Pliny
 parameters:
   - prompt
 data_type: text

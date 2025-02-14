@@ -1,5 +1,7 @@
 ---
 name: meta_llama_3.1_405b
+authors:
+  - Pliny
 parameters:
   - prompt
 data_type: text

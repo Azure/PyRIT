@@ -1,5 +1,7 @@
 ---
 name: openai_chatgpt_tasks
+authors:
+  - Pliny
 parameters:
   - prompt
 data_type: text

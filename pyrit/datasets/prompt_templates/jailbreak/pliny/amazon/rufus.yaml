@@ -1,5 +1,7 @@
 ---
 name: amazon_rufus
+authors:
+  - Pliny
 parameters:
   - prompt
 data_type: text

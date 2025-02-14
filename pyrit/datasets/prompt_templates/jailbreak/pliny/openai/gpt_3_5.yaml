@@ -1,5 +1,7 @@
 ---
 name: openai_gpt_3.5
+authors:
+  - Pliny
 parameters:
   - prompt
 data_type: text

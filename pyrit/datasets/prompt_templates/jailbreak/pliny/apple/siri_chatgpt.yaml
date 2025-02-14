@@ -1,5 +1,7 @@
 ---
 name: apple_siri_chatgpt
+authors:
+  - Pliny
 parameters:
   - prompt
 data_type: text

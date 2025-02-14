@@ -1,5 +1,7 @@
 ---
 name: mistral_large_le_chat
+authors:
+  - Pliny
 parameters:
   - prompt
 data_type: text

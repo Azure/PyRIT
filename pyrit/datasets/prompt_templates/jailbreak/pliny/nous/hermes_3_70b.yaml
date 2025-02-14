@@ -1,5 +1,7 @@
 ---
 name: nous_hermes_3_70b
+authors:
+  - Pliny
 parameters:
   - prompt
 data_type: text

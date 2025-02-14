@@ -1,5 +1,7 @@
 ---
 name: amazon_nova
+authors:
+  - Pliny
 parameters:
   - prompt
 data_type: text

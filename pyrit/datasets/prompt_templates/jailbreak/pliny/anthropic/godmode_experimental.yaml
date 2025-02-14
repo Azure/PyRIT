@@ -1,5 +1,7 @@
 ---
 name: anthropic_godmode_experimental
+authors:
+  - Pliny
 parameters:
   - prompt
 data_type: text

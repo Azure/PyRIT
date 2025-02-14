@@ -1,5 +1,7 @@
 ---
 name: deepseek_r1_lite
+authors:
+  - Pliny
 parameters:
   - prompt
 data_type: text

@@ -1,5 +1,7 @@
 ---
 name: google_gemini_1.0_pro
+authors:
+  - Pliny
 parameters:
   - prompt
 data_type: text

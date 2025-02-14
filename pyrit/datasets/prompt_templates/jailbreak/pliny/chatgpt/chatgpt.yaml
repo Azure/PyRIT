@@ -1,5 +1,7 @@
 ---
 name: chatgpt
+authors:
+  - Pliny
 parameters:
   - prompt
 data_type: text

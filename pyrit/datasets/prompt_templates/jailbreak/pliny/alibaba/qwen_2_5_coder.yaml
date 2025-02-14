@@ -1,5 +1,7 @@
 ---
 name: alibaba_qwen_2_5_coder
+authors:
+  - Pliny
 parameters:
   - prompt
 data_type: text

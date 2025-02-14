@@ -1,5 +1,7 @@
 ---
 name: cohere_command_r_plus
+authors:
+  - Pliny
 parameters:
   - prompt
 data_type: text

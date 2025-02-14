@@ -1,5 +1,7 @@
 ---
 name: zyphra_zamba_7b
+authors:
+  - Pliny
 parameters:
   - prompt
 data_type: text

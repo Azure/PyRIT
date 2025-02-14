@@ -1,5 +1,7 @@
 ---
 name: nvidia_llama_3.1_nemotron_70b
+authors:
+  - Pliny
 parameters:
   - prompt
 data_type: text

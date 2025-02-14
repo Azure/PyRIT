@@ -1,5 +1,7 @@
 ---
 name: perplexity
+authors:
+  - Pliny
 parameters:
   - prompt
 data_type: text
