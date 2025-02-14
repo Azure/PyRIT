@@ -10,7 +10,7 @@ from pyrit.models import SeedPromptDataset
 
 
 @pytest.fixture
-def mock_aya_data():
+def mock_aya_redteaming_data():
     return [
         {
             "prompt": "[Prompt #001] ...",
@@ -59,8 +59,8 @@ def mock_aya_data():
 
 
 @patch("pyrit.datasets.fetch_example_datasets.fetch_examples")
-def test_fetch_aya_dataset_default(mock_fetch_examples, mock_aya_data):
-    mock_fetch_examples.return_value = mock_aya_data
+def test_fetch_aya_redteaming_dataset(mock_fetch_examples, mock_aya_redteaming_data):
+    mock_fetch_examples.return_value = mock_aya_redteaming_data
 
     # Test fetching the dataset without any filters
 
