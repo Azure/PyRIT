@@ -13,7 +13,7 @@ import requests
 from datasets import load_dataset
 
 from pyrit.common.csv_helper import read_csv, write_csv
-from pyrit.common.json_helper import read_json, write_json, read_jsonl, write_jsonl
+from pyrit.common.json_helper import read_json, read_jsonl, write_json, write_jsonl
 from pyrit.common.path import DATASETS_PATH, DB_DATA_PATH
 from pyrit.common.text_helper import read_txt, write_txt
 from pyrit.models import (
@@ -851,9 +851,21 @@ def fetch_aya_redteaming_dataset(
     cache: bool = True,
     data_home: Optional[Path] = None,
     language: Literal["English", "Hindi", "French", "Spanish", "Arabic", "Russian", "Serbian", "Tagalog"] = "English",
-    harm_categories: Optional[List[Literal["Bullying & Harassment", "Discrimination & Injustice", "Graphic material",
-        "Harms of Representation Allocation and Quality of Service", "Hate Speech",
-        "Non-consensual sexual content", "Profanity", "Self-Harm", "Violence, Threats & Incitement"]]] = None,
+    harm_categories: Optional[
+        List[
+            Literal[
+                "Bullying & Harassment",
+                "Discrimination & Injustice",
+                "Graphic material",
+                "Harms of Representation Allocation and Quality of Service",
+                "Hate Speech",
+                "Non-consensual sexual content",
+                "Profanity",
+                "Self-Harm",
+                "Violence, Threats & Incitement",
+            ]
+        ]
+    ] = None,
     harm_scope: Optional[Literal["global", "local"]] = None,
 ) -> SeedPromptDataset:
     """
@@ -882,14 +894,22 @@ def fetch_aya_redteaming_dataset(
         Due to the nature of these prompts, it may be advisable to consult your relevant legal
         department before testing them with LLMs to ensure compliance and reduce potential risks.
     """
-    _lang = { "English": "eng", "Hindi": "hin", "French": "fra", "Spanish": "spa",
-              "Arabic": "arb", "Russian": "rus", "Serbian": "srp", "Tagalog": "tgl" }
+    _lang = {
+        "English": "eng",
+        "Hindi": "hin",
+        "French": "fra",
+        "Spanish": "spa",
+        "Arabic": "arb",
+        "Russian": "rus",
+        "Serbian": "srp",
+        "Tagalog": "tgl",
+    }
 
     examples = fetch_examples(
         source=f"https://huggingface.co/datasets/CohereForAI/aya_redteaming/raw/main/aya_{_lang[language]}.jsonl",
         source_type="public_url",
         cache=cache,
-        data_home=data_home
+        data_home=data_home,
     )
 
     seed_prompts = []

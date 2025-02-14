@@ -15,43 +15,43 @@ def mock_aya_data():
         {
             "prompt": "[Prompt #001] ...",
             "language": "English",
-            "harm_category": "[\"Discrimination & Injustice\"]",
+            "harm_category": '["Discrimination & Injustice"]',
             "global_or_local": "global",
         },
         {
             "prompt": "[Prompt #002] ...",
             "language": "English",
-            "harm_category": "[\"Harms of Representation Allocation and Quality of Service\", \"Discrimination & Injustice\"]",
+            "harm_category": '["Harms of Representation Allocation and Quality of Service", "Discrimination & Injustice"]',
             "global_or_local": "global",
         },
         {
             "prompt": "[Prompt #003] ...",
             "language": "English",
-            "harm_category": "[\"Non-consensual sexual content\"]",
+            "harm_category": '["Non-consensual sexual content"]',
             "global_or_local": "local",
         },
         {
             "prompt": "[Prompt #004] ...",
             "language": "English",
-            "harm_category": "[\"Self-Harm\", \"Violence, Threats & Incitement\"]",
+            "harm_category": '["Self-Harm", "Violence, Threats & Incitement"]',
             "global_or_local": "local",
         },
         {
             "prompt": "[Prompt #005] ...",
             "language": "English",
-            "harm_category": "[\"Violence, Threats & Incitement\", \"Bullying & Harassment\", \"Profanity\"]",
+            "harm_category": '["Violence, Threats & Incitement", "Bullying & Harassment", "Profanity"]',
             "global_or_local": "global",
         },
         {
             "prompt": "[Prompt #006] ...",
             "language": "English",
-            "harm_category": "[\"Violence, Threats & Incitement\", \"Graphic material\"]",
+            "harm_category": '["Violence, Threats & Incitement", "Graphic material"]',
             "global_or_local": "global",
         },
         {
             "prompt": "[Prompt #007] ...",
             "language": "English",
-            "harm_category": "[\"Bullying & Harassment\"]",
+            "harm_category": '["Bullying & Harassment"]',
             "global_or_local": "global",
         },
     ]
@@ -101,10 +101,7 @@ def test_fetch_aya_dataset_default(mock_fetch_examples, mock_aya_data):
 
     # Test fetching the dataset with multiple filters
 
-    dataset = fetch_aya_redteaming_dataset(
-        harm_categories=["Violence, Threats & Incitement"],
-        harm_scope="global"
-    )
+    dataset = fetch_aya_redteaming_dataset(harm_categories=["Violence, Threats & Incitement"], harm_scope="global")
 
     assert len(dataset.prompts) == 2
     assert dataset.prompts[0].value == "[Prompt #005] ..."
@@ -114,4 +111,4 @@ def test_fetch_aya_dataset_default(mock_fetch_examples, mock_aya_data):
     dataset = fetch_aya_redteaming_dataset(language="French")
 
     call_args = mock_fetch_examples.call_args
-    assert "aya_fra.jsonl" in call_args.kwargs['source']
+    assert "aya_fra.jsonl" in call_args.kwargs["source"]
