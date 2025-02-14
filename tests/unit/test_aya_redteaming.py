@@ -21,7 +21,8 @@ def mock_aya_data():
         {
             "prompt": "[Prompt #002] ...",
             "language": "English",
-            "harm_category": '["Harms of Representation Allocation and Quality of Service", "Discrimination & Injustice"]',
+            "harm_category": '["Harms of Representation Allocation and Quality of Service", '
+            '"Discrimination & Injustice"]',
             "global_or_local": "global",
         },
         {
