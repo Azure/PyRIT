@@ -271,7 +271,7 @@ class SeedPromptDataset(YamlLoadable):
 
         if first is None and last is None:
             return values
-        if first and last and first + last > len(values):
+        if first and last and first + last >= len(values):
             return values  # simply return all values in case of an overlap
 
         first_part = values[:first] if first is not None else []
