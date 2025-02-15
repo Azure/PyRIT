@@ -69,11 +69,13 @@ class OpenAITTSTarget(OpenAITarget):
         self._extra_headers["api-key"] = self._api_key
 
         response_entry = None
+        endpoint_uri = (
+            f"{self._endpoint}/openai/deployments/{self._deployment_name}/audio/speech?api-version={self._api_version}"
+        )
         try:
             # Note the openai client doesn't work here, potentially due to a mismatch
             response = await net_utility.make_request_and_raise_if_error_async(
-                endpoint_uri=f"{self._endpoint}/openai/deployments/{self._deployment_name}/"
-                f"audio/speech?api-version={self._api_version}",
+                endpoint_uri=endpoint_uri,
                 method="POST",
                 headers=self._extra_headers,
                 request_body=body,

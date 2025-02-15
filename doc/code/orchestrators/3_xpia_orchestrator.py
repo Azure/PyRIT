@@ -53,7 +53,6 @@ logging.basicConfig(level=logging.INFO)
 # This is to simulate a processing target with a plugin similar to what one might expect in an XPIA-oriented AI red teaming operation.
 
 # %%
-
 from xpia_helpers import AzureStoragePlugin, SemanticKernelPluginAzureOpenAIPromptTarget
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
@@ -82,7 +81,6 @@ Now start summarizing:
 #
 # Finally, we can put all the pieces together:
 # %%
-
 from pyrit.orchestrator import XPIATestOrchestrator
 from pyrit.prompt_target import AzureBlobStorageTarget
 from pyrit.score import SubStringScorer
@@ -107,7 +105,6 @@ print(score)
 # Clean up storage container
 
 # %%
-
 import os
 
 from xpia_helpers import AzureStoragePlugin
@@ -120,3 +117,5 @@ from pyrit.memory import CentralMemory
 
 memory = CentralMemory.get_memory_instance()
 memory.dispose_engine()
+
+# %%

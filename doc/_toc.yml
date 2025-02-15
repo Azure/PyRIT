@@ -47,6 +47,7 @@ chapters:
       - file: code/orchestrators/pair_orchestrator
       - file: code/orchestrators/tree_of_attacks_with_pruning
       - file: code/orchestrators/violent_durian
+      - file: code/orchestrators/role_playing_orchestrator
     - file: code/targets/0_prompt_targets
       sections:
       - file: code/targets/1_openai_chat_target
@@ -110,6 +111,7 @@ chapters:
   - file: api.rst
   - file: blog/README
     sections:
+    - file: blog/2025_02_11
     - file: blog/2025_01_27
     - file: blog/2025_01_14
     - file: blog/2024_12_3
