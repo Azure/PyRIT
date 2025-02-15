@@ -19,7 +19,7 @@ prompt_target = TextTarget()
 
 # Fetch the dataset and limit to 5 prompts
 prompt_dataset = fetch_librAI_do_not_answer_dataset()
-prompt_list = [seed_prompt.value for seed_prompt in prompt_dataset.prompts[:5]]  # Extract values (text prompts)
+prompt_list = prompt_dataset.get_values(first=5)  # Extract values (text prompts)
 
 # Send prompts using the orchestrator and capture responses
 orchestrator = PromptSendingOrchestrator(objective_target=prompt_target)
