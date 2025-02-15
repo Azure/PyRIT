@@ -38,6 +38,9 @@ class AudioFrequencyConverter(PromptConverter):
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "audio_path"
 
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "audio_path"
+
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "audio_path") -> ConverterResult:
         """Convert an audio file by shifting its frequency.
 
