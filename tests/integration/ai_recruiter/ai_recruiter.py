@@ -1,35 +1,44 @@
+import logging
 import os
 import re
-import logging
-from pypdf import PdfReader
-from openai import OpenAI
-import pandas as pd
+
 import chromadb
+import pandas as pd
 from dotenv import load_dotenv
+from openai import OpenAI
+from pypdf import PdfReader
+
 
 load_dotenv()
 
-# Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+
 
 # -------------------------
 # Step 1: Initialize Chroma Client and Create Collection
 # -------------------------
 
-# Initialize Chroma client
+# Initialize Chroma client and create (or get) the collection
 chroma_client = chromadb.Client()
-
-# Create or get an existing collection
 collection_name = "resume_collection"
 collection = chroma_client.get_or_create_collection(name=collection_name)
+
 
 # -------------------------
 # Step 2: Extract Text from PDFs
 # -------------------------
 
 def extract_text_from_pdf(pdf_path):
-    """Extracts text from a PDF file."""
+    """
+    Extracts and cleans text from a PDF file.
+    
+    Parameters:
+        pdf_path (str): The file path to the PDF.
+        
+    Returns:
+        str: The extracted and cleaned text.
+    """
     text = ""
     with open(pdf_path, 'rb') as file:
         reader = PdfReader(file)
@@ -41,6 +50,8 @@ def extract_text_from_pdf(pdf_path):
     text = re.sub(r'\s+', ' ', text)  # Remove excessive spaces and newlines
     return text.strip()
 
+
+# Directory containing PDF résumés
 pdf_directory = r'./resume_collection'
 resumes = []
 
@@ -59,11 +70,10 @@ for filename in os.listdir(pdf_directory):
         except Exception as e:
             print(f"Error processing {pdf_path}: {e}")
         
-# If there are no resumes, throw an error
-# and inform the user of the issue
 if not resumes:
     logger.error("No resume content found. Add PDFs to the resume_collection directory.")
     raise SystemExit
+
 
 # -------------------------
 # Step 3: Generate Embeddings
@@ -72,7 +82,16 @@ if not resumes:
 client = OpenAI(api_key=os.getenv('OPENAI_KEY'))  
 
 def get_embedding(text, model="text-embedding-3-small"):
-    """Generates an embedding for the given text using OpenAI's API."""
+    """
+    Generates an embedding for the given text using OpenAI's API.
+    
+    Parameters:
+        text (str): The input text.
+        model (str): The embedding model to use.
+        
+    Returns:
+        list: The embedding vector.
+    """
     text = text.replace("\n", " ")
     response = client.embeddings.create(input=[text], model=model)
     return response.data[0].embedding
@@ -106,12 +125,22 @@ collection.add(
 
 logger.info(f"Stored {len(resumes)} resumes in ChromaDB.")
 
+
 # -------------------------
 # Step 5: Perform Semantic Search with ChromaDB
 # -------------------------
 
-def search_candidates(job_description_text, k=5):
-    """Searches for the top k candidates that best match the job description."""
+def search_candidates(job_description_text, k=3):
+    """
+    Searches for the top k candidates that best match the job description.
+    
+    Parameters:
+        job_description_text (str): The job description text.
+        k (int): The number of top candidates to retrieve.
+        
+    Returns:
+        list: A list of dictionaries, each containing candidate details.
+    """
     # Generate embedding for the job description
     job_embedding = get_embedding(job_description_text)
 
@@ -150,6 +179,7 @@ def search_candidates(job_description_text, k=5):
 
     return top_candidates
 
+
 # -------------------------
 # Step 6: AI Recruiter (GPT-4o) to Evaluate Résumés
 # -------------------------
@@ -157,9 +187,16 @@ def search_candidates(job_description_text, k=5):
 def evaluate_candidate(job_description, candidate_name, candidate_text, model="gpt-4o"):
     """
     Uses GPT-4o to evaluate how well a candidate matches the job description.
-    Returns an evaluation summary, strengths, and a rating out of 10.
+    
+    Parameters:
+        job_description (str): The job description text.
+        candidate_name (str): The candidate's name.
+        candidate_text (str): The candidate's résumé text.
+        model (str): The GPT model to use for evaluation.
+        
+    Returns:
+        str: The evaluation response from GPT-4o.
     """
-    # Define system prompt with a focus on decision-making
     system_prompt = (
         "You are an experienced hiring manager tasked with evaluating candidates for a software engineering position. "
         "Each candidate has a résumé, and you are provided with the job description. For each candidate, provide:\n"
@@ -196,10 +233,18 @@ def evaluate_candidate(job_description, candidate_name, candidate_text, model="g
 
     return response
 
+
 def evaluate_candidates(job_description, candidates, model="gpt-4o"):
     """
-    Evaluates a list of candidate dictionaries (each with 'name' and 'text') 
-    against a job description using GPT-4o.
+    Evaluates a list of candidates against a job description using GPT-4o.
+    
+    Parameters:
+        job_description (str): The job description text.
+        candidates (list): A list of candidate dictionaries with 'name' and 'text' keys.
+        model (str): The GPT model to use for evaluation.
+        
+    Returns:
+        tuple: A tuple containing a list of evaluations and a final decision string.
     """
     evaluations = []  # To store detailed evaluations
     memory = []  # Short-term memory for decision-making
@@ -239,18 +284,34 @@ def evaluate_candidates(job_description, candidates, model="gpt-4o"):
 
     return evaluations, decision
 
+
 def extract_match_score(evaluation_text):
     """
     Extracts the match score from GPT-4o's evaluation text.
-    Assumes the score is mentioned explicitly as "Match Score: X/10".
+    
+    Assumes the evaluation includes a line like "Match Score: X/10".
+    
+    Parameters:
+        evaluation_text (str): The evaluation text from GPT-4o.
+        
+    Returns:
+        int or None: The extracted match score, or None if not found.
     """
     match = re.search(r'Match Score: (\d+)/10', evaluation_text)
     return int(match.group(1)) if match else None
 
+
 def make_final_decision(memory):
     """
-    Analyzes short-term memory of candidate evaluations and determines the best match.
+    Analyzes candidate evaluations to determine the best match.
+    
     Uses tie-breaking logic for candidates with equal scores.
+    
+    Parameters:
+        memory (list): A list of dictionaries containing candidate details and scores.
+        
+    Returns:
+        str: A summary indicating the best candidate.
     """
     if not memory:
         return "No candidates available for decision-making."
