@@ -37,7 +37,7 @@ classifiers = [
 requires-python = ">=3.10, <3.13"
 dependencies = [
     "aioconsole>=0.7.1",
-    "aiofiles>=24.1.0",
+    "aiofiles>=23.2.1",
     "appdirs>=1.4.0",
     "art==6.1.0",
     "azure-cognitiveservices-speech>=1.36.0",
@@ -111,6 +111,12 @@ playwright = [
     "playwright==1.49.0",
     "flask>=3.1.0",
     "ollama>=0.4.4"
+]
+
+gradio = [
+    "gradio>=5.16.0",
+    "rpyc>=6.0.1",
+    "pywebview>==5.4"
 ]
 
 all = [
