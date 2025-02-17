@@ -196,7 +196,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         self._adversarial_chat.set_system_prompt(
             system_prompt=adversarial_chat_system_prompt,
             conversation_id=adversarial_chat_conversation_id,
-            orchestrator_identifier=self.get_identifier(),
+            orchestrator_identifier=self.get_identifier_with_objective(objective),
             labels=updated_memory_labels,
         )
 

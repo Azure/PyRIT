@@ -269,6 +269,47 @@ async def test_apply_crescendo_attack_succeed_num_turns(
 
 
 @pytest.mark.asyncio
+async def test_run_attack_async_calls_set_system_prompt(
+        orchestrator: CrescendoOrchestrator,
+        did_not_refuse_score: Score,
+        true_eval_score: Score,
+):
+    objective = "attack objective"
+    memory_labels = {"sample": "label"}
+    with (
+        patch.object(
+            orchestrator._adversarial_chat, "set_system_prompt"
+        ) as mock_set_system_prompt,
+        patch.object(
+            orchestrator, "_get_attack_prompt", AsyncMock(return_value="attack_prompt")
+        ),
+        patch.object(
+            orchestrator._refusal_scorer,
+            "score_async",
+            AsyncMock(return_value=[did_not_refuse_score]),
+        ),
+        patch.object(
+            orchestrator._objective_scorer,
+            "score_async",
+            AsyncMock(return_value=[true_eval_score]),
+        ),
+    ):
+        await orchestrator.run_attack_async(objective=objective, memory_labels=memory_labels)
+
+        expected_system_prompt = orchestrator._adversarial_chat_system_seed_prompt.render_template_value(
+            objective=objective,
+            max_turns=orchestrator._max_turns,
+        )
+
+        mock_set_system_prompt.assert_called_once()
+
+        _, adv_chat_system_prompt_args = mock_set_system_prompt.call_args
+        assert adv_chat_system_prompt_args["system_prompt"] == expected_system_prompt
+        assert isinstance(adv_chat_system_prompt_args["conversation_id"], str)
+        assert adv_chat_system_prompt_args["orchestrator_identifier"] == orchestrator.get_identifier_with_objective(objective)
+        assert adv_chat_system_prompt_args["labels"].items() == memory_labels.items()
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("turns", [1, 6, 11])
 async def test_no_backtracks_occurred(
     orchestrator: CrescendoOrchestrator, false_eval_score: Score, did_not_refuse_score: Score, turns: int

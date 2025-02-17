@@ -398,7 +398,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
             self._adversarial_chat.set_system_prompt(
                 system_prompt=str(system_prompt),
                 conversation_id=adversarial_chat_conversation_id,
-                orchestrator_identifier=self.get_identifier(),
+                orchestrator_identifier=self.get_identifier_with_objective(objective=objective),
                 labels=memory_labels,
             )
 
