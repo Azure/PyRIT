@@ -6,7 +6,7 @@ import uuid
 from unittest.mock import MagicMock
 
 import pytest
-from sqlalchemy import ARRAY, INTEGER, DateTime, String, inspect
+from sqlalchemy import ARRAY, DateTime, Integer, String, inspect
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql.sqltypes import NullType
@@ -84,7 +84,7 @@ def test_conversation_data_column_types(duckdb_instance):
         "id": UUID,
         "role": String,
         "conversation_id": String,
-        "sequence": INTEGER,
+        "sequence": Integer,
         "timestamp": DateTime,
         "labels": String,
         "prompt_metadata": String,
@@ -101,10 +101,10 @@ def test_conversation_data_column_types(duckdb_instance):
     for column, expected_type in expected_column_types.items():
         if column != "labels":
             assert column in column_types, f"{column} not found in PromptMemoryEntries schema."
-            if column_types[column] != NullType:
-                assert issubclass(
-                    column_types[column], expected_type
-                ), f"Expected {column} to be a subclass of {expected_type}, got {column_types[column]} instead."
+            # if column_types[column] != NullType:
+            assert issubclass(
+                column_types[column], expected_type
+            ), f"Expected {column} to be a subclass of {expected_type}, got {column_types[column]} instead."
 
 
 def test_embedding_data_column_types(duckdb_instance):
@@ -123,10 +123,9 @@ def test_embedding_data_column_types(duckdb_instance):
         if column != "embedding":
             assert column in column_types, f"{column} not found in EmbeddingStore schema."
             # Allow for flexibility in type representation (String vs. VARCHAR)
-            if column_types[column] != NullType:
-                assert issubclass(
-                    column_types[column], expected_type
-                ), f"Expected {column} to be a subclass of {expected_type}, got {column_types[column]} instead."
+            assert issubclass(
+                column_types[column], expected_type
+            ), f"Expected {column} to be a subclass of {expected_type}, got {column_types[column]} instead."
     # Handle 'embedding' column separately
     assert "embedding" in column_types, "'embedding' column not found in EmbeddingData schema."
     # Check if 'embedding' column type is either NullType (due to reflection issue) or ARRAY
