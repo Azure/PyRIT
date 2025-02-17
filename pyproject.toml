@@ -93,7 +93,7 @@ dev = [
     "pytest-asyncio>=0.23.5",
     "pytest-cov>=4.0.0",
     "respx>=0.22.0",
-    "semantic-kernel==0.9.4b1",
+    "semantic-kernel>=1.20.0",
     "types-PyYAML>=6.0.12.9",
 ]
 torch = [
@@ -131,7 +131,7 @@ all = [
     "pytest-asyncio>=0.23.5",
     "pytest-cov>=4.0.0",
     "respx>=0.20.2",
-    "semantic-kernel==0.9.4b1",
+    "semantic-kernel>=1.20.0",
     "sentencepiece==0.2.0",
     "torch>=2.3.0",
     "playwright==1.49.0",
