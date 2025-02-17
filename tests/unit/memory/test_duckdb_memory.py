@@ -101,7 +101,6 @@ def test_conversation_data_column_types(duckdb_instance):
     for column, expected_type in expected_column_types.items():
         if column != "labels":
             assert column in column_types, f"{column} not found in PromptMemoryEntries schema."
-            # if column_types[column] != NullType:
             assert issubclass(
                 column_types[column], expected_type
             ), f"Expected {column} to be a subclass of {expected_type}, got {column_types[column]} instead."
