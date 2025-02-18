@@ -1,7 +1,3 @@
-from typing import TYPE_CHECKING
-if not TYPE_CHECKING:
-    import rpyc
-
 import time
 import logging
 
@@ -45,6 +41,64 @@ class RpcServerStoppedException(RpcAppException):
 
 # RPC Server
 class AppRpcServer:
+    import rpyc
+    # RPC Service
+    class RpcService(rpyc.Service):
+        """
+        RPC service is the service that RPyC is using
+        """
+        def __init__(self, score_received_sem: Semaphore, client_ready_sem: Semaphore):
+            super().__init__()
+            self.__callback_score_prompt = None
+            self.__last_ping = None
+            self.__scores_received = []
+            self.__score_received_sem = score_received_sem
+            self.__client_ready_sem = client_ready_sem
+        
+        def on_connect(self, conn):
+            logger.info("Client connected")
+
+        def on_disconnect(self, conn):
+            logger.info("Client disconnected")
+
+        def exposed_receive_score(self, score: Score):
+            logger.info(f"Score received: {score}")
+            self.__scores_received.append(score)
+            self.__score_received_sem.release()
+
+        def exposed_receive_ping(self):
+            # A ping should be received every 2s from the client. If a client misses a ping then the server should stoped
+            self.__last_ping = time.time()
+            logger.debug("Ping received")
+
+        def exposed_callback_score_prompt(self, callback: Callable[[PromptRequestPiece, Optional[str]], None]):
+            self.__callback_score_prompt = callback
+            self.__client_ready_sem.release()
+        
+        def is_client_ready(self):
+            if self.__callback_score_prompt is None:
+                return False
+            return True
+        
+        def send_score_prompt(self, prompt: PromptRequestPiece, task: Optional[str] = None):
+            if not self.is_client_ready():
+                raise RpcClientNotReadyException()
+            self.__callback_score_prompt(prompt, task)
+
+        def is_ping_missed(self):
+            if self.__last_ping is None:
+                return False
+            
+            return time.time() - self.__last_ping > 2
+        
+        def pop_score_received(self) -> Score | None:
+            try:
+                return self.__scores_received.pop()
+            except IndexError:
+                return None
+
+
+
     def __init__(self, open_browser: bool = False):
         self.__server = None
         self.__server_thread = None
@@ -70,8 +124,8 @@ class AppRpcServer:
         self.__client_ready_sem = Semaphore(0)
 
         # Start the RPC server.
-        self.__rpc_service = RpcService(self.__score_received_sem, self.__client_ready_sem)
-        self.__server = rpyc.ThreadedServer(self.__rpc_service, port=DEFAULT_PORT, protocol_config={"allow_all_attrs": True})
+        self.__rpc_service = self.RpcService(self.__score_received_sem, self.__client_ready_sem)
+        self.__server = self.rpyc.ThreadedServer(self.__rpc_service, port=DEFAULT_PORT, protocol_config={"allow_all_attrs": True})
         self.__server_thread = Thread(target=self.__server.start)
         self.__server_thread.start()
 
@@ -184,58 +238,3 @@ class AppRpcServer:
                 self.stop_request()
                 break
             time.sleep(1)
-
-# RPC Service
-class RpcService(rpyc.Service):
-    """
-    RPC service is the service that RPyC is using
-    """
-    def __init__(self, score_received_sem: Semaphore, client_ready_sem: Semaphore):
-        super().__init__()
-        self.__callback_score_prompt = None
-        self.__last_ping = None
-        self.__scores_received = []
-        self.__score_received_sem = score_received_sem
-        self.__client_ready_sem = client_ready_sem
-    
-    def on_connect(self, conn):
-        logger.info("Client connected")
-
-    def on_disconnect(self, conn):
-        logger.info("Client disconnected")
-
-    def exposed_receive_score(self, score: Score):
-        logger.info(f"Score received: {score}")
-        self.__scores_received.append(score)
-        self.__score_received_sem.release()
-
-    def exposed_receive_ping(self):
-        # A ping should be received every 2s from the client. If a client misses a ping then the server should stoped
-        self.__last_ping = time.time()
-        logger.debug("Ping received")
-
-    def exposed_callback_score_prompt(self, callback: Callable[[PromptRequestPiece, Optional[str]], None]):
-        self.__callback_score_prompt = callback
-        self.__client_ready_sem.release()
-    
-    def is_client_ready(self):
-        if self.__callback_score_prompt is None:
-            return False
-        return True
-    
-    def send_score_prompt(self, prompt: PromptRequestPiece, task: Optional[str] = None):
-        if not self.is_client_ready():
-            raise RpcClientNotReadyException()
-        self.__callback_score_prompt(prompt, task)
-
-    def is_ping_missed(self):
-        if self.__last_ping is None:
-            return False
-        
-        return time.time() - self.__last_ping > 2
-    
-    def pop_score_received(self) -> Score | None:
-        try:
-            return self.__scores_received.pop()
-        except IndexError:
-            return None
