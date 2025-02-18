@@ -5,14 +5,14 @@ import traceback
 
 GLOBAL_MUTEX_NAME = "PyRIT-Gradio"
 
-def launch_app():
+def launch_app(open_browser=False):
     # Launch a new process to run the gradio UI.
     # Locate the python executable and run this file.
     current_path = os.path.abspath(__file__)
     python_path = sys.executable
 
     # Start a new process to run it
-    subprocess.Popen([python_path, current_path], creationflags=subprocess.CREATE_NEW_CONSOLE)
+    subprocess.Popen([python_path, current_path, str(open_browser)], creationflags=subprocess.CREATE_NEW_CONSOLE)
 
 def is_app_running():
     if sys.platform != "win32":
@@ -48,9 +48,13 @@ if __name__ == "__main__":
         sys.exit(1)
     print("Starting Gradio Interface please wait...")
     try:
+        open_browser = False
+        if len(sys.argv) > 1:
+            open_browser = sys.argv[1] == "True"
+
         from scorer import GradioApp
         app = GradioApp()
-        app.start_gradio(open_browser=True)
+        app.start_gradio(open_browser=open_browser)
     except:
         # Print the error message and traceback
         print(traceback.format_exc())

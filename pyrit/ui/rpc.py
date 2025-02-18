@@ -5,8 +5,7 @@ import logging
 from typing import Callable, Optional
 from threading import Thread, Semaphore
 
-from ui.app import is_app_running, launch_app
-
+from pyrit.ui.app import is_app_running, launch_app
 from pyrit.models import Score, PromptRequestPiece
 
 
@@ -43,7 +42,7 @@ class RpcServerStoppedException(RpcAppException):
 
 # RPC Server
 class AppRpcServer:
-    def __init__(self):
+    def __init__(self, open_browser: bool = False):
         self.__server = None
         self.__server_thread = None
         self.__rpc_service = None
@@ -52,6 +51,7 @@ class AppRpcServer:
         self.__score_received_sem = None
         self.__client_ready_sem = None
         self.__server_is_running = False
+        self.__open_browser = open_browser
 
     def start(self):
         """
@@ -83,7 +83,7 @@ class AppRpcServer:
 
         if not is_app_running():
             logger.info("Launching Gradio UI")
-            launch_app()
+            launch_app(open_browser=self.__open_browser)
         else:
             logger.info("Gradio UI is already running. Will not launch another instance.")
 
@@ -143,6 +143,8 @@ class AppRpcServer:
         score = self.__rpc_service.pop_score_received()
         if score is None:
             return None
+
+        self.__client_ready_sem.release()
         return score
     
     def wait_for_client(self):
@@ -152,8 +154,6 @@ class AppRpcServer:
         if self.__client_ready_sem is None:
             raise RpcAppException("RPC server is not running.")
         
-        if self.__rpc_service.is_client_ready():
-            return
         
         logger.info("Waiting for client to be ready")
         self.__client_ready_sem.acquire()

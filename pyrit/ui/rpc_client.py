@@ -40,7 +40,7 @@ class RpcClient:
     
     def send_prompt_response(self, response: bool):
         score = Score(
-            score_value=response,
+            score_value=str(response),
             score_type="true_false",
             score_category="safety",
             score_value_description="Safe" if response else "Unsafe",

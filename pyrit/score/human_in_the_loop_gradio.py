@@ -3,21 +3,21 @@ from pyrit.score.scorer import Scorer
 from pyrit.models import Score, PromptRequestPiece
 from typing import Optional
 
-from ui.rpc import AppRpcServer
+from pyrit.ui.rpc import AppRpcServer
 
 
 class HumanInTheLoopScorerGradio(Scorer):
 
-    def __init__(self, *, scorer: Scorer = None, re_scorers: list[Scorer] = None) -> None:
+    def __init__(self, *, open_browser=False, scorer: Scorer = None, re_scorers: list[Scorer] = None) -> None:
         self._scorer = scorer
         self._re_scorers = re_scorers
-        self._rpc_server = AppRpcServer()
+        self._rpc_server = AppRpcServer(open_browser=open_browser)
         self._rpc_server.start()
 
 
-    async def score_async(self, request: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         try:
-            return await asyncio.to_thread(self.score_prompt_manually, request, task=task)
+            return await asyncio.to_thread(self.score_prompt_manually, request_response, task=task)
         except asyncio.CancelledError:
             self._rpc_server.stop()
             raise
