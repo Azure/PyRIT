@@ -1,4 +1,7 @@
-import rpyc
+from typing import TYPE_CHECKING
+if not TYPE_CHECKING:
+    import rpyc
+
 import time
 import logging
 
@@ -153,7 +156,7 @@ class AppRpcServer:
         """
         if self.__client_ready_sem is None:
             raise RpcAppException("RPC server is not running.")
-        
+
         
         logger.info("Waiting for client to be ready")
         self.__client_ready_sem.acquire()
