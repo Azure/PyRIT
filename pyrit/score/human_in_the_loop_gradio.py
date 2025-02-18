@@ -3,15 +3,14 @@ from pyrit.score.scorer import Scorer
 from pyrit.models import Score, PromptRequestPiece
 from typing import Optional
 
-from pyrit.ui.rpc import AppRpcServer
-
-
 class HumanInTheLoopScorerGradio(Scorer):
+    # Import here to avoid importing rpyc in the main module that might not be installed
+    from pyrit.ui.rpc import AppRpcServer
 
     def __init__(self, *, open_browser=False, scorer: Scorer = None, re_scorers: list[Scorer] = None) -> None:
         self._scorer = scorer
         self._re_scorers = re_scorers
-        self._rpc_server = AppRpcServer(open_browser=open_browser)
+        self._rpc_server = self.AppRpcServer(open_browser=open_browser)
         self._rpc_server.start()
 
 
