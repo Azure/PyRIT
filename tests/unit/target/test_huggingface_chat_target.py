@@ -116,9 +116,10 @@ async def test_initialization():
     assert not hf_chat.use_cuda
     assert hf_chat.device == "cpu"
 
-    await hf_chat.load_model_and_tokenizer()
-    assert hf_chat.model is not None
-    assert hf_chat.tokenizer is not None
+    with patch("pyrit.common.download_hf_model.download_specific_files", return_value=None) as mock_download:
+        await hf_chat.load_model_and_tokenizer()
+        assert hf_chat.model is not None
+        assert hf_chat.tokenizer is not None
 
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
