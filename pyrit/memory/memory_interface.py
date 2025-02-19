@@ -273,13 +273,21 @@ class MemoryInterface(abc.ABC):
             Exception: If there is an error retrieving the prompts,
                 an exception is logged and an empty list is returned.
         """
+        match prompt_ids:
+            case [uuid.UUID() as first_uuid, *rest]:
+                prompt_ids = [str(pi) for pi in prompt_ids]
+            case [str() as first_uuid, *rest]:
+                prompt_ids = prompt_ids
+            case _:
+                pass
+
         conditions = []
         if orchestrator_id:
             conditions.append(self._get_prompt_pieces_orchestrator_conditions(orchestrator_id=str(orchestrator_id)))
         if role:
             conditions.append(PromptMemoryEntry.role == role)
         if conversation_id:
-            conditions.append(PromptMemoryEntry.conversation_id == conversation_id)
+            conditions.append(PromptMemoryEntry.conversation_id == str(conversation_id))
         if prompt_ids:
             conditions.append(PromptMemoryEntry.id.in_(prompt_ids))
         if labels:
