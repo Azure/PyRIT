@@ -72,7 +72,7 @@ dependencies = [
     "termcolor>=2.4.0",
     "tenacity>=8.2.3",
     "tqdm>=4.66.2",
-    "transformers>=4.40.0",
+    "transformers==4.48.3",
     "treelib>=1.7.0",
     "types-requests>=2.31.0.20240406",
     "websockets>=12.0",
