@@ -5,6 +5,7 @@ from asyncio import Task
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+import pytest_asyncio
 
 from pyrit.models.prompt_request_response import (
     PromptRequestPiece,
@@ -37,7 +38,7 @@ def mock_get_required_value(request):
 
 
 # Fixture to mock download_specific_files globally for all tests
-@pytest.fixture(autouse=True)
+@pytest_asyncio.fixture(autouse=True)
 def mock_download_specific_files():
     with patch("pyrit.common.download_hf_model.download_specific_files", return_value=None) as mock_download:
         yield mock_download
@@ -109,7 +110,7 @@ def test_init_with_no_token_var_raises(monkeypatch):
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
 @pytest.mark.asyncio
-async def test_initialization():
+async def test_initialization(patch_central_database):
     # Test the initialization without loading the actual models
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
     assert hf_chat.model_id == "test_model"
