@@ -7,6 +7,7 @@ from pyrit.prompt_converter.add_image_text_converter import AddImageTextConverte
 from pyrit.prompt_converter.add_text_image_converter import AddTextImageConverter
 from pyrit.prompt_converter.ansi_escape.ansi_attack_converter import AnsiAttackConverter
 from pyrit.prompt_converter.ascii_art_converter import AsciiArtConverter
+from pyrit.prompt_converter.ascii_smuggler_converter import AsciiSmugglerConverter
 from pyrit.prompt_converter.atbash_converter import AtbashConverter
 from pyrit.prompt_converter.audio_frequency_converter import AudioFrequencyConverter
 from pyrit.prompt_converter.azure_speech_audio_to_text_converter import AzureSpeechAudioToTextConverter
@@ -15,7 +16,10 @@ from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_converter.binary_converter import BinaryConverter
 from pyrit.prompt_converter.caesar_converter import CaesarConverter
 from pyrit.prompt_converter.character_space_converter import CharacterSpaceConverter
+from pyrit.prompt_converter.charswap_attack_converter import CharSwapGenerator
 from pyrit.prompt_converter.codechameleon_converter import CodeChameleonConverter
+from pyrit.prompt_converter.colloquial_wordswap_converter import ColloquialWordswapConverter
+from pyrit.prompt_converter.diacritic_converter import DiacriticConverter
 from pyrit.prompt_converter.emoji_converter import EmojiConverter
 from pyrit.prompt_converter.flip_converter import FlipConverter
 from pyrit.prompt_converter.fuzzer_converter import (
@@ -56,6 +60,7 @@ __all__ = [
     "AddTextImageConverter",
     "AnsiAttackConverter",
     "AsciiArtConverter",
+    "AsciiSmugglerConverter",
     "AtbashConverter",
     "AudioFrequencyConverter",
     "AzureSpeechAudioToTextConverter",
@@ -64,7 +69,10 @@ __all__ = [
     "BinaryConverter",
     "CaesarConverter",
     "CharacterSpaceConverter",
+    "CharSwapGenerator",
     "CodeChameleonConverter",
+    "ColloquialWordswapConverter",
+    "DiacriticConverter",
     "ConverterResult",
     "EmojiConverter",
     "FlipConverter",
