@@ -318,3 +318,30 @@ def test_prune_nodes_over_width():
     assert len(pruned_nodes) == 2
     assert pruned_nodes[0].node_id == "2", "Highest score should be first"
     assert pruned_nodes[1].node_id == "5", "Highest score should be first"
+
+@pytest.mark.asyncio
+async def test_tree_of_attacks_with_pruning_orchestrator_constructs_tree_of_attack_nodes(patch_central_database):
+    tap_orchestrator = TreeOfAttacksWithPruningOrchestrator(
+        adversarial_chat=MagicMock(),
+        objective_target=MagicMock(),
+        scoring_target=MagicMock(),
+        width=1,
+        branching_factor=1,
+        depth=1,
+    )
+
+    with (
+        patch.object(tap_orchestrator, "_prune_nodes_over_width") as mock_prune_nodes_over_width,
+        patch.object(tap_orchestrator, "_send_prompt_to_nodes_async", AsyncMock()),
+    ):
+        objective = "objective"
+        await tap_orchestrator.run_attack_async(objective=objective)
+
+        assert mock_prune_nodes_over_width.call_count == 1
+
+        expected_identifier_with_objective = tap_orchestrator.get_identifier_with_objective(objective=objective)
+        args, kwargs = mock_prune_nodes_over_width.call_args
+        tree_of_attack_nodes = args[0]
+        for node in tree_of_attack_nodes:
+            assert node._orchestrator_id == expected_identifier_with_objective
+

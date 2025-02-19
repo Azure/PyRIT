@@ -188,7 +188,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
                         objective_scorer=self._objective_scorer,
                         on_topic_scorer=self._get_on_topic_scorer(objective),
                         prompt_converters=self._prompt_converters,
-                        orchestrator_id=self.get_identifier(),
+                        orchestrator_id=self.get_identifier_with_objective(objective),
                         memory_labels=updated_memory_labels,
                         desired_response_prefix=self._desired_response_prefix,
                     )
