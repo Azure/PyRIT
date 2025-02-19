@@ -45,7 +45,7 @@ from pyrit.datasets import fetch_xstest_dataset
 xstest_dataset = fetch_xstest_dataset()
 
 # Use the first 4 examples
-prompt_list = [prompt.value for prompt in xstest_dataset.prompts[:4]]
+prompt_list = xstest_dataset.get_values(first=4)
 print(xstest_dataset.prompts[0])
 
 # %% [markdown]
