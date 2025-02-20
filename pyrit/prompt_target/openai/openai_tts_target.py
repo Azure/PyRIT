@@ -46,9 +46,9 @@ class OpenAITTSTarget(OpenAITarget):
         self._language = language
         self._api_version = api_version
 
-    def _set_azure_openai_env_configuration_vars(self):
-        self.deployment_environment_variable = "AZURE_OPENAI_TTS_DEPLOYMENT"
-        self.endpoint_uri_environment_variable = "AZURE_OPENAI_TTS_ENDPOINT"
+    def _set_openai_env_configuration_vars(self):
+        self.model_name_environment_variable = "AZURE_OPENAI_TTS_DEPLOYMENT"
+        self.target_uri_environment_variable = "AZURE_OPENAI_TTS_ENDPOINT"
         self.api_key_environment_variable = "AZURE_OPENAI_TTS_KEY"
 
     @limit_requests_per_minute
@@ -70,7 +70,7 @@ class OpenAITTSTarget(OpenAITarget):
 
         response_entry = None
         endpoint_uri = (
-            f"{self._endpoint}/openai/deployments/{self._deployment_name}/audio/speech?api-version={self._api_version}"
+            f"{self._target_uri}/openai/deployments/{self._model_name}/audio/speech?api-version={self._api_version}"
         )
         try:
             # Note the openai client doesn't work here, potentially due to a mismatch

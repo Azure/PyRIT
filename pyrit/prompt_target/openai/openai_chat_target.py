@@ -1,12 +1,15 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import json
 import logging
 from typing import MutableSequence, Optional
 
+import httpx
 from openai import NOT_GIVEN, BadRequestError, NotGiven
 from openai.types.chat import ChatCompletion
 
+from pyrit.common import net_utility
 from pyrit.exceptions import (
     EmptyResponseException,
     PyritException,
@@ -39,18 +42,33 @@ class OpenAIChatTarget(OpenAITarget):
 
     def __init__(
         self,
-        max_completion_tokens: Optional[int] | NotGiven = NOT_GIVEN,
-        max_tokens: Optional[int] | NotGiven = NOT_GIVEN,
-        temperature: float = 1.0,
-        top_p: float = 1.0,
-        frequency_penalty: float = 0.0,
-        presence_penalty: float = 0.0,
+        *,
+        max_completion_tokens: Optional[int] = None,
+        max_tokens: Optional[int] = None,
+        temperature: Optional[float] = None,
+        top_p: Optional[float] = None,
+        frequency_penalty: Optional[float] = None,
+        presence_penalty: Optional[float] = None,
         seed: Optional[int] = None,
-        *args,
+        httpx_client_kwargs: Optional[dict] = None,
         **kwargs,
     ):
         """
         Args:
+            model_name (str, Optional): The name of the model.
+            target_uri (str, Optional): The target URL for the OpenAI service.
+            api_key (str, Optional): The API key for accessing the Azure OpenAI service.
+                Defaults to the AZURE_OPENAI_CHAT_KEY environment variable.
+            headers (str, Optional): Headers of the endpoint (JSON).
+            use_aad_auth (bool, Optional): When set to True, user authentication is used
+                instead of API Key. DefaultAzureCredential is taken for
+                https://cognitiveservices.azure.com/.default . Please run `az login` locally
+                to leverage user AuthN.
+            api_version (str, Optional): The version of the Azure OpenAI API. Defaults to
+                "2024-06-01".
+            max_requests_per_minute (int, Optional): Number of requests the target can handle per
+                minute before hitting a rate limit. The number of requests sent to the target
+                will be capped at the value provided.
             max_completion_tokens (int, Optional): An upper bound for the number of tokens that
                 can be generated for a completion, including visible output tokens and
                 reasoning tokens.
@@ -63,19 +81,19 @@ class OpenAIChatTarget(OpenAITarget):
                 This value is now deprecated in favor of `max_completion_tokens`, and IS NOT
                 COMPATIBLE with o1 series models.
             temperature (float, Optional): The temperature parameter for controlling the
-                randomness of the response. Defaults to 1.0.
+                randomness of the response.
             top_p (float, Optional): The top-p parameter for controlling the diversity of the
-                response. Defaults to 1.0.
+                response.
             frequency_penalty (float, Optional): The frequency penalty parameter for penalizing
-                frequently generated tokens. Defaults to 0.
+                frequently generated tokens.
             presence_penalty (float, Optional): The presence penalty parameter for penalizing
-                tokens that are already present in the conversation history. Defaults to 0.
+                tokens that are already present in the conversation history.
             seed (int, Optional): If specified, openAI will make a best effort to sample deterministically,
                 such that repeated requests with the same seed and parameters should return the same result.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
 
-        if max_completion_tokens is not NOT_GIVEN and max_tokens is not NOT_GIVEN:
+        if max_completion_tokens and max_tokens:
             raise ValueError("Cannot provide both max_tokens and max_completion_tokens.")
 
         self._max_completion_tokens = max_completion_tokens
@@ -85,11 +103,12 @@ class OpenAIChatTarget(OpenAITarget):
         self._frequency_penalty = frequency_penalty
         self._presence_penalty = presence_penalty
         self._seed = seed
+        self._httpx_client_kwargs = httpx_client_kwargs or {}
 
-    def _set_azure_openai_env_configuration_vars(self) -> None:
-        self.deployment_environment_variable = "AZURE_OPENAI_CHAT_DEPLOYMENT"
-        self.endpoint_uri_environment_variable = "AZURE_OPENAI_CHAT_ENDPOINT"
-        self.api_key_environment_variable = "AZURE_OPENAI_CHAT_KEY"
+    def _set_openai_env_configuration_vars(self) -> None:
+        self.model_name_environment_variable = "OPENAI_CHAT_MODEL"
+        self.target_uri_environment_variable = "OPENAI_CHAT_ENDPOINT"
+        self.api_key_environment_variable = "OPENAI_CHAT_KEY"
 
     @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
@@ -199,18 +218,6 @@ class OpenAIChatTarget(OpenAITarget):
             chat_messages.append(chat_message)
         return chat_messages
 
-    def _parse_chat_completion(self, response):
-        """
-        Parses chat message to get response
-
-        Args:
-            response (ChatMessage): The chat messages object containing the generated response message
-
-        Returns:
-            str: The generated response message
-        """
-        response_message = response.choices[0].message.content
-        return response_message
 
     @pyrit_target_retry
     async def _complete_chat_async(self, messages: list[ChatMessageListDictContent], is_json_response: bool) -> str:
@@ -226,26 +233,56 @@ class OpenAIChatTarget(OpenAITarget):
         Returns:
             str: The generated response message.
         """
-        response: ChatCompletion = await self._async_client.chat.completions.create(
-            model=self._deployment_name,
-            max_completion_tokens=self._max_completion_tokens,
-            max_tokens=self._max_tokens,
-            temperature=self._temperature,
-            top_p=self._top_p,
-            frequency_penalty=self._frequency_penalty,
-            presence_penalty=self._presence_penalty,
-            n=1,
-            stream=False,
-            seed=self._seed,
-            messages=[{"role": msg.role, "content": msg.content} for msg in messages],  # type: ignore
-            response_format={"type": "json_object"} if is_json_response else None,
+
+        if self._api_key:
+            self._extra_headers["api-key"] = self._api_key
+
+        if self._token_provider:
+            self._extra_headers["Authorization"] = f"Bearer {self._token_provider()}"
+
+        # TODO api_version to the end of the endpoint
+
+        body_parameters = {
+            "model": self._model_name,
+            "max_completion_tokens": self._max_completion_tokens,
+            "max_tokens": self._max_tokens,
+            "temperature": self._temperature,
+            "top_p": self._top_p,
+            "frequency_penalty": self._frequency_penalty,
+            "presence_penalty": self._presence_penalty,
+            "n": 1,
+            "stream": False,
+            "seed": self._seed,
+            "messages": [{"role": msg.role, "content": msg.content} for msg in messages],
+            "response_format": {"type": "json_object"} if is_json_response else None,
+        }
+
+        # Filter out None values
+        body = {k: v for k, v in body_parameters.items() if v is not None}
+
+        params = {
+            "api-version": self._api_version
+        }
+
+        #TODO rate limit exceptions
+        str_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(
+            endpoint_uri=self._target_uri,
+            method="POST",
+            headers=self._extra_headers,
+            request_body=body,
+            params=params,
+            **self._httpx_client_kwargs
         )
-        finish_reason = response.choices[0].finish_reason
+
+        response = json.loads(str_response.text)
+
+        finish_reason = response["choices"][0]["finish_reason"]
         extracted_response: str = ""
         # finish_reason="stop" means API returned complete message and
         # "length" means API returned incomplete message due to max_tokens limit.
         if finish_reason in ["stop", "length"]:
-            extracted_response = self._parse_chat_completion(response)
+            extracted_response = response["choices"][0]["message"]["content"]
+
             # Handle empty response
             if not extracted_response:
                 logger.log(logging.ERROR, "The chat returned an empty response.")

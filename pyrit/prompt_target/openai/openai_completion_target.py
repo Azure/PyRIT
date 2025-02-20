@@ -44,9 +44,9 @@ class OpenAICompletionTarget(OpenAITarget):
         self._frequency_penalty = frequency_penalty
         self._presence_penalty = presence_penalty
 
-    def _set_azure_openai_env_configuration_vars(self):
-        self.deployment_environment_variable = "AZURE_OPENAI_COMPLETION_DEPLOYMENT"
-        self.endpoint_uri_environment_variable = "AZURE_OPENAI_COMPLETION_ENDPOINT"
+    def _set_openai_env_configuration_vars(self):
+        self.model_name_environment_variable = "AZURE_OPENAI_COMPLETION_DEPLOYMENT"
+        self.target_uri_environment_variable = "AZURE_OPENAI_COMPLETION_ENDPOINT"
         self.api_key_environment_variable = "AZURE_OPENAI_COMPLETION_KEY"
 
     @limit_requests_per_minute
@@ -60,7 +60,7 @@ class OpenAICompletionTarget(OpenAITarget):
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
         text_response: Completion = await self._async_client.completions.create(
-            model=self._deployment_name,
+            model=self._model_name,
             prompt=request.converted_value,
             top_p=self._top_p,
             temperature=self._temperature,

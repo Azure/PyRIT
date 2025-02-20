@@ -31,7 +31,7 @@ def sample_conversations() -> list[PromptRequestPiece]:
 
 def test_initialization_with_required_parameters(dalle_target: OpenAIDALLETarget):
     assert dalle_target
-    assert dalle_target._deployment_name == "test"
+    assert dalle_target._model_name == "test"
     assert dalle_target._async_client is not None
 
 

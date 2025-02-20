@@ -8,7 +8,10 @@ from typing import Optional
 
 from openai import AsyncAzureOpenAI, AsyncOpenAI
 
-from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
+from pyrit.auth.azure_auth import (
+    get_token_provider_from_default_azure_credential,
+    get_default_scope
+)
 from pyrit.common import default_values
 from pyrit.prompt_target import PromptChatTarget
 
@@ -19,18 +22,17 @@ class OpenAITarget(PromptChatTarget):
 
     ADDITIONAL_REQUEST_HEADERS: str = "OPENAI_ADDITIONAL_REQUEST_HEADERS"
 
-    deployment_environment_variable: str
-    endpoint_uri_environment_variable: str
+    model_name_environment_variable: str
+    target_uri_environment_variable: str
     api_key_environment_variable: str
 
     def __init__(
         self,
         *,
-        deployment_name: str = None,
-        endpoint: str = None,
+        model_name: str = None,
+        target_uri: str = None,
         api_key: str = None,
         headers: str = None,
-        is_azure_target=True,
         use_aad_auth: bool = False,
         api_version: str = "2024-06-01",
         max_requests_per_minute: Optional[int] = None,
@@ -43,14 +45,11 @@ class OpenAITarget(PromptChatTarget):
 
 
         Args:
-            deployment_name (str, Optional): The name of the deployment. Defaults to the
-                AZURE_OPENAI_CHAT_DEPLOYMENT environment variable .
-            endpoint (str, Optional): The endpoint URL for the Azure OpenAI service.
-                Defaults to the AZURE_OPENAI_CHAT_ENDPOINT environment variable.
+            model_name (str, Optional): The name of the model.
+            target_uri (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
                 Defaults to the AZURE_OPENAI_CHAT_KEY environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
-            is_azure_target (bool, Optional): Whether the target is an Azure target.
             use_aad_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default . Please run `az login` locally
@@ -73,78 +72,35 @@ class OpenAITarget(PromptChatTarget):
             self._extra_headers = json.loads(request_headers)
 
         self._api_version = api_version
-        self._is_azure_target = is_azure_target
 
-        if self._is_azure_target:
-            self._initialize_azure_vars(deployment_name, endpoint, api_key, use_aad_auth)
-        else:
-            # Initialize for non-Azure OpenAI
-            self._initialize_non_azure_vars(deployment_name, endpoint, api_key)
-            if not self._deployment_name:
-                # OpenAI deployments listed here: https://platform.openai.com/docs/models
-                raise ValueError("The deployment name must be provided for non-Azure OpenAI targets. e.g. gpt-4o")
+        self._set_openai_env_configuration_vars()
 
-    def _initialize_azure_vars(self, deployment_name: str, endpoint: str, api_key: str, use_aad_auth: bool):
-        self._set_azure_openai_env_configuration_vars()
-
-        self._deployment_name = default_values.get_required_value(
-            env_var_name=self.deployment_environment_variable, passed_value=deployment_name
+        self._model_name = default_values.get_non_required_value(
+            env_var_name=self.model_name_environment_variable, passed_value=model_name
         )
-        self._endpoint = default_values.get_required_value(
-            env_var_name=self.endpoint_uri_environment_variable, passed_value=endpoint
+        self._target_uri = default_values.get_required_value(
+            env_var_name=self.target_uri_environment_variable, passed_value=target_uri
         ).rstrip("/")
+
+
+        self._api_key = None
+        self._token_provider = None
 
         if use_aad_auth:
             logger.info("Authenticating with DefaultAzureCredential() for Azure Cognitive Services")
-            token_provider = get_token_provider_from_default_azure_credential()
 
-            self._async_client = AsyncAzureOpenAI(
-                azure_ad_token_provider=token_provider,
-                api_version=self._api_version,
-                azure_endpoint=self._endpoint,
-                default_headers=self._extra_headers,
-            )
+            scope = get_default_scope(self._target_uri)
+            self._token_provider = get_token_provider_from_default_azure_credential(scope=scope)
+
         else:
             self._api_key = default_values.get_required_value(
                 env_var_name=self.api_key_environment_variable, passed_value=api_key
             )
 
-            self._async_client = AsyncAzureOpenAI(
-                api_key=self._api_key,
-                api_version=self._api_version,
-                azure_endpoint=self._endpoint,
-                default_headers=self._extra_headers,
-            )
-
-    def _initialize_non_azure_vars(self, deployment_name: str, endpoint: str, api_key: str):
-        """
-        Initializes variables to communicate with the (non-Azure) OpenAI API
-        """
-        self._api_key = default_values.get_required_value(env_var_name="OPENAI_KEY", passed_value=api_key)
-        if not self._api_key:
-            raise ValueError("API key for OpenAI is missing. Ensure OPENAI_KEY is set in the environment.")
-
-        # Any available model. See https://platform.openai.com/docs/models
-        self._deployment_name = default_values.get_required_value(
-            env_var_name="OPENAI_DEPLOYMENT", passed_value=deployment_name
-        )
-        if not self._deployment_name:
-            raise ValueError(
-                "Deployment name for OpenAI is missing. Ensure OPENAI_DEPLOYMENT is set in the environment."
-            )
-
-        endpoint = endpoint if endpoint else "https://api.openai.com/v1/chat/completions"
-
-        # Ignoring mypy type error. The OpenAI client and Azure OpenAI client have the same private base class
-        self._async_client = AsyncOpenAI(  # type: ignore
-            api_key=self._api_key,
-            default_headers=self._extra_headers,
-        )
-
     @abstractmethod
-    def _set_azure_openai_env_configuration_vars(self) -> None:
+    def _set_openai_env_configuration_vars(self) -> None:
         """
-        Sets deployment_environment_variable, endpoint_uri_environment_variable, and api_key_environment_variable
+        Sets deployment_environment_variable, target_uri_environment_variable, and api_key_environment_variable
         which are read from .env
         """
         raise NotImplementedError

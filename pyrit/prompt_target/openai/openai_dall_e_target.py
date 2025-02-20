@@ -75,9 +75,9 @@ class OpenAIDALLETarget(OpenAITarget):
 
         super().__init__(*args, **kwargs)
 
-    def _set_azure_openai_env_configuration_vars(self):
-        self.deployment_environment_variable = "AZURE_OPENAI_DALLE_DEPLOYMENT"
-        self.endpoint_uri_environment_variable = "AZURE_OPENAI_DALLE_ENDPOINT"
+    def _set_openai_env_configuration_vars(self):
+        self.model_name_environment_variable = "AZURE_OPENAI_DALLE_DEPLOYMENT"
+        self.target_uri_environment_variable = "AZURE_OPENAI_DALLE_ENDPOINT"
         self.api_key_environment_variable = "AZURE_OPENAI_DALLE_API_KEY"
 
     @limit_requests_per_minute
@@ -100,7 +100,7 @@ class OpenAIDALLETarget(OpenAITarget):
         prompt = request.converted_value
 
         image_generation_args: Dict[str, Any] = {
-            "model": self._deployment_name,
+            "model": self._model_name,
             "prompt": prompt,
             "n": self.num_images,
             "size": self.image_size,

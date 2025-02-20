@@ -56,9 +56,9 @@ class RealtimeTarget(OpenAITarget):
         self.voice = voice
         self._existing_conversation = existing_convo
 
-    def _set_azure_openai_env_configuration_vars(self):
-        self.deployment_environment_variable = "AZURE_OPENAI_REALTIME_DEPLOYMENT"
-        self.endpoint_uri_environment_variable = "AZURE_OPENAI_REALTIME_API_WEBSOCKET_URL"
+    def _set_openai_env_configuration_vars(self):
+        self.model_name_environment_variable = "AZURE_OPENAI_REALTIME_DEPLOYMENT"
+        self.target_uri_environment_variable = "AZURE_OPENAI_REALTIME_API_WEBSOCKET_URL"
         self.api_key_environment_variable = "AZURE_OPENAI_REALTIME_API_KEY"
 
     async def connect(self):
@@ -67,15 +67,15 @@ class RealtimeTarget(OpenAITarget):
         Returns the WebSocket connection.
         """
 
-        logger.info(f"Connecting to WebSocket: {self._endpoint}")
+        logger.info(f"Connecting to WebSocket: {self._target_uri}")
 
         query_params = {
             "api-version": self._api_version,
-            "deployment": self._deployment_name,
+            "deployment": self._model_name,
             "api-key": self._api_key,
             "OpenAI-Beta": "realtime=v1",
         }
-        url = f"{self._endpoint}?{urlencode(query_params)}"
+        url = f"{self._target_uri}?{urlencode(query_params)}"
 
         websocket = await websockets.connect(url)
         logger.info("Successfully connected to AzureOpenAI Realtime API")
@@ -212,7 +212,7 @@ class RealtimeTarget(OpenAITarget):
         for conversation_id, websocket in self._existing_conversation.items():
             if websocket:
                 await websocket.close()
-                logger.info(f"Disconnected from {self._endpoint} with conversation ID: {conversation_id}")
+                logger.info(f"Disconnected from {self._target_uri} with conversation ID: {conversation_id}")
         self._existing_conversation = {}
 
     async def cleanup_conversation(self, conversation_id: str):
@@ -222,7 +222,7 @@ class RealtimeTarget(OpenAITarget):
         websocket = self._existing_conversation.get(conversation_id)
         if websocket:
             await websocket.close()
-            logger.info(f"Disconnected from {self._endpoint} with conversation ID: {conversation_id}")
+            logger.info(f"Disconnected from {self._target_uri} with conversation ID: {conversation_id}")
             del self._existing_conversation[conversation_id]
 
     async def send_response_create(self, conversation_id: str):
