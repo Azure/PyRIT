@@ -46,7 +46,7 @@ jobs:
         run: make unit-test-cov-xml
       - name: Publish Pytest Results
         uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always()
+        if: runner.os == 'ubuntu-latest'
         with:
           files: '**/test-*.xml'
       - name: Code Coverage Report
