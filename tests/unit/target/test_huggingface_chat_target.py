@@ -110,14 +110,18 @@ def test_init_with_no_token_var_raises(monkeypatch):
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
 @pytest.mark.asyncio
-async def test_initialization(patch_central_database):
+async def test_initialization(patch_central_database, mock_download_specific_files):
     # Test the initialization without loading the actual models
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
     assert hf_chat.model_id == "test_model"
     assert not hf_chat.use_cuda
     assert hf_chat.device == "cpu"
 
-    await hf_chat.load_model_and_tokenizer()
+    with patch("pyrit.common.download_hf_model.download_specific_files", new_callable=AsyncMock) as mock_download:
+        from pyrit.common.download_hf_model import download_specific_files
+        print(download_specific_files)
+        await download_specific_files()
+        await hf_chat.load_model_and_tokenizer()
     assert hf_chat.model is not None
     assert hf_chat.tokenizer is not None
 
