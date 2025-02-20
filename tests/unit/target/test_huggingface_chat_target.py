@@ -1,8 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from asyncio import Task
 import platform
+from asyncio import Task
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
