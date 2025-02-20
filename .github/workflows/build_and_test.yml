@@ -22,7 +22,7 @@ jobs:
   main-job:
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [windows-latest]
         python: ["3.10", "3.11", "3.12"]
         package_name: ["pyrit"]
         package_extras: ["dev", "all"]
