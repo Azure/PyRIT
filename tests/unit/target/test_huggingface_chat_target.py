@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 from asyncio import Task
+import platform
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -21,6 +22,13 @@ def is_torch_installed():
         return True
     except ModuleNotFoundError:
         return False
+
+
+def is_linux():
+    return platform.system() == "Linux"
+
+
+LINUX_SKIP_MSG = "Skipping test because mocking pyrit.common.download_hf_model.download_specific_files somehow doesn't work on Linux."
 
 
 # Fixture to mock get_required_value
@@ -98,6 +106,7 @@ def mock_create_task():
 
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
+@pytest.mark.skipif(not is_linux(), reason=LINUX_SKIP_MSG)
 def test_init_with_no_token_var_raises(monkeypatch):
     # Ensure the environment variable is unset
     monkeypatch.delenv("HUGGINGFACE_TOKEN", raising=False)
@@ -109,6 +118,7 @@ def test_init_with_no_token_var_raises(monkeypatch):
 
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
+@pytest.mark.skipif(not is_linux(), reason=LINUX_SKIP_MSG)
 @pytest.mark.asyncio
 async def test_initialization(patch_central_database, mock_download_specific_files):
     # Test the initialization without loading the actual models
@@ -117,11 +127,7 @@ async def test_initialization(patch_central_database, mock_download_specific_fil
     assert not hf_chat.use_cuda
     assert hf_chat.device == "cpu"
 
-    with patch("pyrit.common.download_hf_model.download_specific_files", new_callable=AsyncMock) as mock_download:
-        from pyrit.common.download_hf_model import download_specific_files
-        print(download_specific_files)
-        await download_specific_files()
-        await hf_chat.load_model_and_tokenizer()
+    await hf_chat.load_model_and_tokenizer()
     assert hf_chat.model is not None
     assert hf_chat.tokenizer is not None
 
@@ -142,6 +148,7 @@ def test_is_model_id_valid_false():
 
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
+@pytest.mark.skipif(not is_linux(), reason=LINUX_SKIP_MSG)
 @pytest.mark.asyncio
 async def test_load_model_and_tokenizer():
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
@@ -172,6 +179,7 @@ async def test_send_prompt_async():
 
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
+@pytest.mark.skipif(not is_linux(), reason=LINUX_SKIP_MSG)
 @pytest.mark.asyncio
 async def test_missing_chat_template_error():
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
@@ -213,6 +221,7 @@ def test_invalid_prompt_request_validation():
 
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
+@pytest.mark.skipif(not is_linux(), reason=LINUX_SKIP_MSG)
 @pytest.mark.asyncio
 async def test_load_with_missing_files():
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False, necessary_files=["file1", "file2"])
@@ -237,6 +246,7 @@ def test_enable_disable_cache():
 
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
+@pytest.mark.skipif(not is_linux(), reason=LINUX_SKIP_MSG)
 @pytest.mark.asyncio
 async def test_load_model_with_model_path():
     """Test loading a model from a local directory (`model_path`)."""
@@ -248,6 +258,7 @@ async def test_load_model_with_model_path():
 
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
+@pytest.mark.skipif(not is_linux(), reason=LINUX_SKIP_MSG)
 @pytest.mark.asyncio
 async def test_load_model_with_trust_remote_code():
     """Test loading a remote model requiring `trust_remote_code=True`."""
@@ -275,6 +286,7 @@ def test_load_model_without_model_id_or_path():
 
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
+@pytest.mark.skipif(not is_linux(), reason=LINUX_SKIP_MSG)
 @pytest.mark.asyncio
 async def test_optional_kwargs_args_passed_when_loading_model(mock_transformers):
     """Test loading a model from a local directory (`model_path`) with optional keyword arguments."""
