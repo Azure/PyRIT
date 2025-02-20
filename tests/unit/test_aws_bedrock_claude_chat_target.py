@@ -1,9 +1,20 @@
-import pytest
-import json
-from unittest.mock import AsyncMock, patch, MagicMock
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
 
-from pyrit.models import PromptRequestResponse, PromptRequestPiece, ChatMessageListDictContent
-from pyrit.prompt_target.aws_bedrock_claude_chat_target import AWSBedrockClaudeChatTarget
+import json
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from pyrit.models import (
+    ChatMessageListDictContent,
+    PromptRequestPiece,
+    PromptRequestResponse,
+)
+from pyrit.prompt_target.aws_bedrock_claude_chat_target import (
+    AWSBedrockClaudeChatTarget,
+)
+
 
 @pytest.fixture
 def aws_target() -> AWSBedrockClaudeChatTarget:
@@ -16,14 +27,14 @@ def aws_target() -> AWSBedrockClaudeChatTarget:
         enable_ssl_verification=True,
     )
 
+
 @pytest.fixture
 def mock_prompt_request():
     request_piece = PromptRequestPiece(
-        role="user",
-        original_value="Hello, Claude!",
-        converted_value="Hello, how are you?"
+        role="user", original_value="Hello, Claude!", converted_value="Hello, how are you?"
     )
     return PromptRequestResponse(request_pieces=[request_piece])
+
 
 @pytest.mark.asyncio
 async def test_send_prompt_async(aws_target, mock_prompt_request):
@@ -32,10 +43,11 @@ async def test_send_prompt_async(aws_target, mock_prompt_request):
         mock_client.invoke_model.return_value = {
             "body": MagicMock(read=MagicMock(return_value=json.dumps({"content": [{"text": "I'm good, thanks!"}]})))
         }
-        
+
         response = await aws_target.send_prompt_async(prompt_request=mock_prompt_request)
-        
+
         assert response.request_pieces[0].converted_value == "I'm good, thanks!"
+
 
 @pytest.mark.asyncio
 async def test_validate_request_valid(aws_target, mock_prompt_request):
@@ -44,11 +56,16 @@ async def test_validate_request_valid(aws_target, mock_prompt_request):
 
 @pytest.mark.asyncio
 async def test_validate_request_invalid_data_type(aws_target):
-    request_pieces = [PromptRequestPiece(role="user", original_value="test", converted_value="ImageData", converted_value_data_type="video")]
+    request_pieces = [
+        PromptRequestPiece(
+            role="user", original_value="test", converted_value="ImageData", converted_value_data_type="video"
+        )
+    ]
     invalid_request = PromptRequestResponse(request_pieces=request_pieces)
-    
+
     with pytest.raises(ValueError, match="This target only supports text and image_path."):
         aws_target._validate_request(prompt_request=invalid_request)
+
 
 @pytest.mark.asyncio
 async def test_complete_chat_async(aws_target):
@@ -57,7 +74,9 @@ async def test_complete_chat_async(aws_target):
         mock_client.invoke_model.return_value = {
             "body": MagicMock(read=MagicMock(return_value=json.dumps({"content": [{"text": "Test Response"}]})))
         }
-        
-        response = await aws_target._complete_chat_async(messages=[ChatMessageListDictContent(role="user", content=[{"type":"text", "text":"Test input"}])])
-        
+
+        response = await aws_target._complete_chat_async(
+            messages=[ChatMessageListDictContent(role="user", content=[{"type": "text", "text": "Test input"}])]
+        )
+
         assert response == "Test Response"
