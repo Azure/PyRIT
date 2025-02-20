@@ -158,6 +158,7 @@ async def test_load_model_and_tokenizer():
 
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
+@pytest.mark.skipif(is_linux(), reason=LINUX_SKIP_MSG)
 @pytest.mark.asyncio
 async def test_send_prompt_async():
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
