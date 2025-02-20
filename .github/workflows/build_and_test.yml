@@ -51,6 +51,7 @@ jobs:
           files: '**/test-*.xml'
       - name: Code Coverage Report
         uses: irongut/CodeCoverageSummary@v1.3.0
+        if: runner.os == 'ubuntu-latest'
         with:
           filename: coverage.xml
           badge: true
