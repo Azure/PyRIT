@@ -28,7 +28,10 @@ def is_linux():
     return platform.system() == "Linux"
 
 
-LINUX_SKIP_MSG = "Skipping test because mocking pyrit.common.download_hf_model.download_specific_files somehow doesn't work on Linux."
+LINUX_SKIP_MSG = (
+    "Skipping test because mocking pyrit.common.download_hf_model.download_specific_files "
+    "somehow doesn't work on Linux."
+)
 
 
 # Fixture to mock get_required_value
