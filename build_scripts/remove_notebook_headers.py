@@ -13,6 +13,7 @@ def remove_kernelspec_from_ipynb_files(file_path: str):
 
             # Remove the "kernelspec" metadata section if it exists
             if "metadata" in content and "kernelspec" in content["metadata"]:
+                print("Modifying this notebook to remove headers: ", file_path)
                 del content["metadata"]["kernelspec"]
             # Save the modified content back to the .ipynb file
             with open(file_path, "w", encoding="utf-8") as f:
