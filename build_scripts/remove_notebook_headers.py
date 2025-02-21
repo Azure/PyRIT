@@ -6,7 +6,7 @@ import sys
 
 
 def remove_kernelspec_from_ipynb_files(file_path: str):
-    # Iterate through all .ipynb files in the specified directory and its subdirectories
+    # Iterate through all .ipynb files in the specified file
     if file_path.endswith(".ipynb"):
         with open(file_path, "r", encoding="utf-8") as f:
             content = json.load(f)
