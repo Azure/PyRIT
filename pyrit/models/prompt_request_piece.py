@@ -89,14 +89,14 @@ class PromptRequestPiece(abc.ABC):
         self.sequence = sequence
 
         self.timestamp = timestamp if timestamp else datetime.now()
-        self.labels = labels
-        self.prompt_metadata = prompt_metadata
+        self.labels = labels or {}
+        self.prompt_metadata = prompt_metadata or {}
 
         self.converter_identifiers = converter_identifiers if converter_identifiers else []
 
-        self.prompt_target_identifier = prompt_target_identifier
-        self.orchestrator_identifier = orchestrator_identifier
-        self.scorer_identifier = scorer_identifier
+        self.prompt_target_identifier = prompt_target_identifier or {}
+        self.orchestrator_identifier = orchestrator_identifier or {}
+        self.scorer_identifier = scorer_identifier or {}
 
         self.original_value = original_value
 

@@ -64,7 +64,12 @@ if prompts:
     print(prompts[0].__dict__)
 
 # %% [markdown]
-# ## Adding seed prompt groups to the database
+# ## Adding multimodal seed prompt groups to the database
+# In the following example, we will add a seed prompt group containing text, image, audio, and video prompts.
+# When we add non-text seed prompts to memory, encoding data will automatically populate in the seed prompt's `metadata` field,
+# including `format` (i.e. png, mp4, wav, etc.) as well as additional metadata for audio and video files, including `bitdepth`,
+# `bitrate`, `duration`, `filesize`, and `samplerate`. These may be helpful to filter for as some targets have specific requirements
+# for valid prompts.
 # %%
 import pathlib
 
@@ -84,8 +89,10 @@ await memory.add_seed_prompt_groups_to_memory(prompt_groups=[seed_prompt_group],
 multimodal_dataset_name = "TestMultimodalTextImageAudioVideo"
 seed_prompt_groups = memory.get_seed_prompt_groups(dataset_name=multimodal_dataset_name)
 print(f"Total number of the seed prompt groups with dataset name '{multimodal_dataset_name}':", len(seed_prompt_groups))
-if seed_prompt_groups:
-    print(seed_prompt_groups[0].__dict__)
+# Retrieving the auto-populated metadata for each seed prompt in the multimodal seed prompt group.
+for seed_prompt in seed_prompt_group.prompts:
+    print(f"SeedPrompt value: {seed_prompt.value}, SeedPrompt metadata: {seed_prompt.metadata}")
+
 
 # %%
 from pyrit.memory import CentralMemory

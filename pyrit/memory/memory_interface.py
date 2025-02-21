@@ -657,6 +657,7 @@ class MemoryInterface(abc.ABC):
                 prompt.value = serialized_prompt_value
 
             await prompt.set_sha256_value_async()
+            prompt.set_encoding_metadata()
 
             entries.append(SeedPromptEntry(entry=prompt))
 

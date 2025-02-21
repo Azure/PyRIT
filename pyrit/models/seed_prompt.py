@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass
@@ -10,10 +11,14 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
 from jinja2 import StrictUndefined, Template
+from tinytag import TinyTag
 
 from pyrit.common import utils
 from pyrit.common.yaml_loadable import YamlLoadable
+from pyrit.models import DataTypeSerializer
 from pyrit.models.literals import PromptDataType
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -74,7 +79,7 @@ class SeedPrompt(YamlLoadable):
         self.source = source
         self.date_added = date_added
         self.added_by = added_by
-        self.metadata = metadata
+        self.metadata = metadata or {}
         self.parameters = parameters or []
         self.prompt_group_id = prompt_group_id
         self.prompt_group_alias = prompt_group_alias
@@ -119,6 +124,40 @@ class SeedPrompt(YamlLoadable):
         )
 
         self.value_sha256 = await original_serializer.get_sha256()
+
+    def set_encoding_metadata(self):
+        """
+        This method sets the encoding data for the prompt within metadata dictionary. For images, this is just the
+        file format. For audio and video, this also includes bitrate (kBits/s), samplerate (samples/second),
+        bitdepth, filesize (bytes), and duration (seconds) if the file type is supported by TinyTag.
+        Example suppported file types include: MP3, MP4, M4A, and WAV.
+        """
+        if self.data_type not in ["audio_path", "video_path", "image_path"]:
+            return
+        extension = DataTypeSerializer.get_extension(self.value)
+        if extension:
+            extension = extension.lstrip(".")
+            self.metadata.update({"format": extension})
+        if self.data_type in ["audio_path", "video_path"]:
+            if TinyTag.is_supported(self.value):
+                try:
+                    tag = TinyTag.get(self.value)
+                    self.metadata.update(
+                        {
+                            "bitrate": tag.bitrate,
+                            "samplerate": tag.samplerate,
+                            "bitdepth": tag.bitdepth,
+                            "filesize": tag.filesize,
+                            "duration": tag.duration,
+                        }
+                    )
+                except Exception as ex:
+                    logger.error(f"Error getting audio/video data for {self.value}: {ex}")
+            else:
+                logger.warning(
+                    f"Getting audio/video data via TinyTag is not supported for {self.value}.\
+                                If needed, update metadata manually."
+                )
 
 
 class SeedPromptGroup(YamlLoadable):

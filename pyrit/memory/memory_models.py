@@ -280,7 +280,8 @@ class SeedPromptEntry(Base):
         source (str): The source of the seed prompt.
         date_added (DateTime): The date the seed prompt was added.
         added_by (str): The user who added the seed prompt.
-        prompt_metadata (dict[str, str]): The metadata associated with the seed prompt.
+        prompt_metadata (dict[str, str]): The metadata associated with the seed prompt. This includes
+        information that is useful for the specific target you're probing, such as encoding data.
         parameters (List[str]): The parameters included in the value.
             Note that seed prompts do not have parameters, only prompt templates do.
             However, they are stored in the same table.
