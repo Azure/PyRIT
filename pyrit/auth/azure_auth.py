@@ -3,6 +3,7 @@
 
 import logging
 import time
+from urllib.parse import urlparse
 
 import msal
 from azure.core.credentials import AccessToken
@@ -145,7 +146,11 @@ def get_default_scope(endpoint: str) -> str:
     Returns:
         The default scope for the given endpoint.
     """
-    if endpoint.lower().endswith(f".ai.azure.com"):
-        return "https://ml.azure.com/.default"
+    try:
+        parsed_uri = urlparse(endpoint)
+        if parsed_uri.hostname.lower().endswith(f".ai.azure.com"):
+            return "https://ml.azure.com/.default"
+    except Exception:
+        pass
 
     return "https://cognitiveservices.azure.com/.default"

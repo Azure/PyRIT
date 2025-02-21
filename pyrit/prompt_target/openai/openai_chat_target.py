@@ -16,6 +16,7 @@ from pyrit.exceptions import (
     handle_bad_request_exception,
     pyrit_target_retry,
 )
+from pyrit.exceptions.exception_classes import RateLimitException
 from pyrit.models import (
     ChatMessageListDictContent,
     DataTypeSerializer,
@@ -107,10 +108,11 @@ class OpenAIChatTarget(OpenAITarget):
 
     def _set_openai_env_configuration_vars(self) -> None:
         self.model_name_environment_variable = "OPENAI_CHAT_MODEL"
-        self.target_uri_environment_variable = "OPENAI_CHAT_ENDPOINT"
+        self.target_uri_environment_variable = "OPENAI_CHAT_TARGET_URI"
         self.api_key_environment_variable = "OPENAI_CHAT_KEY"
 
     @limit_requests_per_minute
+    @pyrit_target_retry
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """Asynchronously sends a prompt request and handles the response within a managed conversation context.
 
@@ -120,27 +122,53 @@ class OpenAIChatTarget(OpenAITarget):
         Returns:
             PromptRequestResponse: The updated conversation entry with the response from the prompt target.
         """
+
         self._validate_request(prompt_request=prompt_request)
         request_piece: PromptRequestPiece = prompt_request.request_pieces[0]
 
         is_json_response = self.is_response_format_json(request_piece)
 
-        prompt_req_res_entries = self._memory.get_conversation(conversation_id=request_piece.conversation_id)
-        prompt_req_res_entries.append(prompt_request)
+        conversation = self._memory.get_conversation(conversation_id=request_piece.conversation_id)
+        conversation.append(prompt_request)
 
         logger.info(f"Sending the following prompt to the prompt target: {prompt_request}")
 
-        messages = await self._build_chat_messages(prompt_req_res_entries)
+
+        if self._api_key:
+            self._extra_headers["api-key"] = self._api_key
+
+        if self._token_provider:
+            self._extra_headers["Authorization"] = f"Bearer {self._token_provider()}"
+
+        body = await self._construct_request_body(conversation=conversation, is_json_response=is_json_response)
+
+        params = {
+            "api-version": self._api_version
+        }
+
         try:
-            resp_text = await self._complete_chat_async(messages=messages, is_json_response=is_json_response)
+            str_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(
+                endpoint_uri=self._target_uri,
+                method="POST",
+                headers=self._extra_headers,
+                request_body=body,
+                params=params,
+                debug=True,
+                **self._httpx_client_kwargs
+            )
+        except httpx.HTTPStatusError as StatusError:
+            if StatusError.response.status_code == 400:
+                # Handle Bad Request
+                return handle_bad_request_exception(response_text=StatusError.response.text, request=request_piece)
+            elif StatusError.response.status_code == 429:
+                raise RateLimitException()
+            else:
+                raise
 
-            logger.info(f'Received the following response from the prompt target "{resp_text}"')
+        logger.info(f'Received the following response from the prompt target "{str_response.text}"')
+        response: PromptRequestResponse = self._construct_prompt_response_from_request(open_ai_str_response=str_response.text, request_piece=request_piece)
 
-            response_entry = construct_response_from_request(request=request_piece, response_text_pieces=[resp_text])
-        except BadRequestError as bre:
-            response_entry = handle_bad_request_exception(response_text=bre.message, request=request_piece)
-
-        return response_entry
+        return response
 
     async def _convert_local_image_to_data_url(self, image_path: str) -> str:
         """Converts a local image file to a data URL encoded in base64.
@@ -218,63 +246,35 @@ class OpenAIChatTarget(OpenAITarget):
             chat_messages.append(chat_message)
         return chat_messages
 
-
-    @pyrit_target_retry
-    async def _complete_chat_async(self, messages: list[ChatMessageListDictContent], is_json_response: bool) -> str:
-        """
-        Completes asynchronous chat request.
-
-        Sends a chat message to the OpenAI chat model and retrieves the generated response.
-
-        Args:
-            messages (list[ChatMessageListDictContent]): The chat message objects containing the role and content.
-            is_json_response (bool): Boolean indicating if the response should be in JSON format.
-
-        Returns:
-            str: The generated response message.
-        """
-
-        if self._api_key:
-            self._extra_headers["api-key"] = self._api_key
-
-        if self._token_provider:
-            self._extra_headers["Authorization"] = f"Bearer {self._token_provider()}"
-
-        # TODO api_version to the end of the endpoint
+    async def _construct_request_body(self, conversation: list[PromptRequestResponse], is_json_response: bool) -> dict:
+        messages = await self._build_chat_messages(conversation)
 
         body_parameters = {
-            "model": self._model_name,
-            "max_completion_tokens": self._max_completion_tokens,
-            "max_tokens": self._max_tokens,
-            "temperature": self._temperature,
-            "top_p": self._top_p,
-            "frequency_penalty": self._frequency_penalty,
-            "presence_penalty": self._presence_penalty,
-            "n": 1,
-            "stream": False,
-            "seed": self._seed,
-            "messages": [{"role": msg.role, "content": msg.content} for msg in messages],
-            "response_format": {"type": "json_object"} if is_json_response else None,
-        }
+                "model": self._model_name,
+                "max_completion_tokens": self._max_completion_tokens,
+                "max_tokens": self._max_tokens,
+                "temperature": self._temperature,
+                "top_p": self._top_p,
+                "frequency_penalty": self._frequency_penalty,
+                "presence_penalty": self._presence_penalty,
+                "stream": False,
+                "seed": self._seed,
+                "messages": [{"role": msg.role, "content": msg.content} for msg in messages],
+                "response_format": {"type": "json_object"} if is_json_response else None,
+            }
 
         # Filter out None values
-        body = {k: v for k, v in body_parameters.items() if v is not None}
+        return {k: v for k, v in body_parameters.items() if v is not None}
 
-        params = {
-            "api-version": self._api_version
-        }
 
-        #TODO rate limit exceptions
-        str_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(
-            endpoint_uri=self._target_uri,
-            method="POST",
-            headers=self._extra_headers,
-            request_body=body,
-            params=params,
-            **self._httpx_client_kwargs
-        )
+    def _construct_prompt_response_from_request(
+            self,
+            *,
+            open_ai_str_response: str,
+            request_piece: PromptRequestPiece,
+        ) -> PromptRequestResponse:
 
-        response = json.loads(str_response.text)
+        response = json.loads(open_ai_str_response)
 
         finish_reason = response["choices"][0]["finish_reason"]
         extracted_response: str = ""
@@ -288,9 +288,10 @@ class OpenAIChatTarget(OpenAITarget):
                 logger.log(logging.ERROR, "The chat returned an empty response.")
                 raise EmptyResponseException(message="The chat returned an empty response.")
         else:
-            raise PyritException(message=f"Unknown finish_reason {finish_reason}")
+            raise PyritException(message=f"Unknown finish_reason {finish_reason} from response: {response}")
 
-        return extracted_response
+        return construct_response_from_request(request=request_piece, response_text_pieces=[extracted_response])
+
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         """Validates the structure and content of a prompt request for compatibility of this target.
