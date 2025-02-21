@@ -65,7 +65,7 @@ repos:
       entry: python ./build_scripts/remove_notebook_headers.py
       language: python
       files: ^doc.*\.(ipynb|py)$
-      
+
   - repo: https://github.com/pycqa/pylint
     rev: v3.3.3
     hooks:

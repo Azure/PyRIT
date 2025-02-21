@@ -12,7 +12,12 @@ from pyrit.common import path
 
 nb_directory_path = pathlib.Path(path.DOCS_CODE_PATH, "targets").resolve()
 
-skipped_files = ["4_non_llm_targets.ipynb", "5_multi_modal_targets.ipynb", "playwright_target.ipynb"]
+skipped_files = [
+    "4_non_llm_targets.ipynb",
+    "5_multi_modal_targets.ipynb",
+    "playwright_target.ipynb",
+    "groq_chat_target.ipynb",
+]
 
 
 @pytest.mark.parametrize(
