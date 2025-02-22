@@ -1,19 +1,20 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+import logging
 import os
 import shutil
-import logging
 
-from fastapi import FastAPI, UploadFile, File
-from fastapi.responses import JSONResponse
 import uvicorn
-
 from ai_recruiter import (
-    search_candidates,
+    collection,
     evaluate_candidates,
     extract_text_from_pdf,
     get_embedding,
-    collection
+    search_candidates,
 )
-
+from fastapi import FastAPI, File, UploadFile
+from fastapi.responses import JSONResponse
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -25,15 +26,17 @@ app = FastAPI()
 UPLOAD_FOLDER = "./resume_collection"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+
 @app.get("/health")
 def health_check():
     """
     Health Check Endpoint.
-    
+
     Returns:
         dict: A simple JSON response indicating that the service is running.
     """
     return {"status": "ok"}
+
 
 @app.post("/upload/")
 async def upload_resume(file: UploadFile = File(...)):
@@ -72,12 +75,13 @@ async def upload_resume(file: UploadFile = File(...)):
         documents=[extracted_text],
         metadatas=[{"name": os.path.splitext(file.filename)[0]}],
         ids=[file.filename],
-        embeddings=[embedding]
+        embeddings=[embedding],
     )
 
     logger.info(f"Stored {file.filename} in ChromaDB.")
-    
+
     return JSONResponse(content={"message": "File uploaded successfully", "filename": file.filename})
+
 
 @app.post("/search_candidates/")
 async def search_and_evaluate(top_k: int = 5):
@@ -96,8 +100,10 @@ async def search_and_evaluate(top_k: int = 5):
     """
 
     job_description = """
-    We are seeking a highly motivated and experienced Software Engineer with strong expertise in Python and Machine Learning. 
-    The ideal candidate will have experience designing and developing scalable machine learning models and integrating them into software systems.
+    We are seeking a highly motivated and experienced Software Engineer
+    with strong expertise in Python and Machine Learning.
+    The ideal candidate will have experience designing and developing scalable machine learning models
+    and integrating them into software systems.
 
     Key Responsibilities:
     - Design, develop, and deploy machine learning models in production.
@@ -118,13 +124,14 @@ async def search_and_evaluate(top_k: int = 5):
     - Familiarity with React or Node.js is a plus.
     - Strong communication skills and experience working in Agile teams.
     """
-    
+
     top_matches = search_candidates(job_description, k=top_k)
     if not top_matches:
         return JSONResponse(content={"message": "No candidates found."})
-    
+
     candidate_evaluations, final_decision = evaluate_candidates(job_description, top_matches)
     return JSONResponse(content={"top_candidates": candidate_evaluations, "final_decision": final_decision})
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
