@@ -3,24 +3,43 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
-from jinja2 import StrictUndefined, Template, BaseLoader, Undefined, Environment
-import logging
+from jinja2 import BaseLoader, Environment, StrictUndefined, Template, Undefined
 
 from pyrit.common import utils
+from pyrit.common.path import (
+    DATASETS_PATH,
+    DB_DATA_PATH,
+    DOCS_CODE_PATH,
+    HOME_PATH,
+    LOG_PATH,
+    PYRIT_PATH,
+)
 from pyrit.common.yaml_loadable import YamlLoadable
 from pyrit.models.literals import PromptDataType
-from pyrit.common.path import DATASETS_PATH, HOME_PATH, PYRIT_PATH, DB_DATA_PATH, LOG_PATH, DOCS_CODE_PATH 
+
 
 class PartialUndefined(Undefined):
     # Return the original placeholder format
     def __str__(self):
-        return f"{{{{ {self._undefined_name} }}}}"
+        return f"{{{{ {self._undefined_name} }}}}" if self._undefined_name else ""
+
+    def __repr__(self):
+        return f"{{{{ {self._undefined_name} }}}}" if self._undefined_name else ""
+
+    def __iter__(self):
+        """Prevent Jinja from evaluating loops by returning a placeholder string instead of an iterable."""
+        return self
+
+    def __bool__(self):
+        return True  # Ensures it doesn't evaluate to False
+
 
 @dataclass
 class SeedPrompt(YamlLoadable):
@@ -44,14 +63,14 @@ class SeedPrompt(YamlLoadable):
     prompt_group_id: Optional[uuid.UUID]
     prompt_group_alias: Optional[str]
     sequence: Optional[int]
-    
+
     TEMPLATE_PATHS = {
         "datasets_path": DATASETS_PATH,
         "pyrit_home_path": HOME_PATH,
         "pyrit_path": PYRIT_PATH,
         "db_data_path": DB_DATA_PATH,
         "log_path": LOG_PATH,
-        "docs_code_path": DOCS_CODE_PATH
+        "docs_code_path": DOCS_CODE_PATH,
     }
 
     def __init__(
@@ -94,7 +113,7 @@ class SeedPrompt(YamlLoadable):
         self.prompt_group_id = prompt_group_id
         self.prompt_group_alias = prompt_group_alias
         self.sequence = sequence
-        
+
         # Render the template to replace existing values
         self.value = self.render_template_value_silent(**self.TEMPLATE_PATHS)
 
@@ -131,7 +150,7 @@ class SeedPrompt(YamlLoadable):
             ValueError: If parameters are missing or invalid in the template.
         """
         # Create a Jinja template with PartialUndefined placeholders
-        env = Environment(loader=BaseLoader, undefined=PartialUndefined)
+        env = Environment(loader=BaseLoader, undefined=PartialUndefined)  # type: ignore
         jinja_template = env.from_string(self.value)
 
         try:

@@ -37,7 +37,9 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.memory import CentralMemory
 from pyrit.models import SeedPromptDataset
 
-seed_prompt_dataset = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal-dataset.prompt")
+seed_prompt_dataset = SeedPromptDataset.from_yaml_file(
+    pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal-dataset.prompt"
+)
 
 print(seed_prompt_dataset.prompts[0])
 

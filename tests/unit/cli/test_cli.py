@@ -9,7 +9,7 @@ import pytest
 from pyrit.cli.__main__ import main
 from pyrit.orchestrator import PromptSendingOrchestrator
 
-test_cases_success = ["--config-file 'tests/unit/cli/prompt_send_success.yaml'"]
+test_cases_success = ["--config-file './PyRIT/tests/unit/cli/prompt_send_success.yaml'"]
 
 
 test_cases_sys_exit = [
@@ -25,27 +25,27 @@ test_cases_sys_exit = [
 
 test_cases_error = [
     (
-        "--config-file 'tests/unit/cli/prompt_send_no_objective_target.yaml'",
+        "--config-file './PyRIT/tests/unit/cli/prompt_send_no_objective_target.yaml'",
         "Configuration file must contain a 'objective_target' key.",
         KeyError,
     ),
     (
-        "--config-file 'tests/unit/cli/prompt_send_no_objective_target_type.yaml'",
+        "--config-file './PyRIT/tests/unit/cli/prompt_send_no_objective_target_type.yaml'",
         "Target objective_target must contain a 'type' key.",
         KeyError,
     ),
     (
-        "--config-file 'tests/unit/cli/prompt_send_no_scenarios.yaml'",
+        "--config-file './PyRIT/tests/unit/cli/prompt_send_no_scenarios.yaml'",
         "Scenarios list is empty.",
         ValueError,
     ),
     (
-        "--config-file 'tests/unit/cli/prompt_send_no_scenarios_key.yaml'",
+        "--config-file './PyRIT/tests/unit/cli/prompt_send_no_scenarios_key.yaml'",
         "Configuration file must contain a 'scenarios' key.",
         KeyError,
     ),
     (
-        "--config-file 'tests/unit/cli/prompt_send_no_scenario_type.yaml'",
+        "--config-file './PyRIT/tests/unit/cli/prompt_send_no_scenario_type.yaml'",
         "Scenario must contain a 'type' key.",
         KeyError,
     ),
