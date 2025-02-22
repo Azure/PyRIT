@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import json
 import os
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -16,12 +17,23 @@ from pyrit.prompt_target import OpenAIDALLETarget
 
 
 @pytest.fixture
-def dalle_target() -> OpenAIDALLETarget:
+def dalle_target(patch_central_database) -> OpenAIDALLETarget:
     return OpenAIDALLETarget(
-        deployment_name="test",
-        endpoint="test",
+        model_name="test",
+        target_uri="test",
         api_key="test",
     )
+
+@pytest.fixture
+def dalle_response_json() -> dict:
+    return {
+        "data": [
+            {
+                "b64_json": "aGVsbG8=",
+            }
+        ],
+        "model": "dall-e-3",
+    }
 
 
 @pytest.fixture
@@ -32,14 +44,13 @@ def sample_conversations() -> list[PromptRequestPiece]:
 def test_initialization_with_required_parameters(dalle_target: OpenAIDALLETarget):
     assert dalle_target
     assert dalle_target._model_name == "test"
-    assert dalle_target._async_client is not None
 
 
 def test_initialization_invalid_num_images():
     with pytest.raises(ValueError):
         OpenAIDALLETarget(
-            deployment_name="test",
-            endpoint="test",
+            model_name="test",
+            target_uri="test",
             api_key="test",
             dalle_version="dall-e-3",
             num_images=3,
@@ -47,13 +58,20 @@ def test_initialization_invalid_num_images():
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async(dalle_target: OpenAIDALLETarget, sample_conversations: list[PromptRequestPiece]):
+async def test_send_prompt_async(
+    dalle_target: OpenAIDALLETarget,
+    sample_conversations: list[PromptRequestPiece],
+    dalle_response_json: dict
+):
     request = sample_conversations[0]
-    with patch(
-        "pyrit.prompt_target.openai.openai_dall_e_target.OpenAIDALLETarget._generate_image_response_async",
-        new_callable=AsyncMock,
-    ) as mock_gen_img:
-        mock_gen_img.return_value = "aGVsbG8="
+
+    openai_mock_return = MagicMock()
+    openai_mock_return.text = json.dumps(dalle_response_json)
+
+    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock) as mock_request:
+
+        mock_request.return_value = openai_mock_return
+
         resp = await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
         assert resp
         path = resp.request_pieces[0].original_value
@@ -68,19 +86,26 @@ async def test_send_prompt_async(dalle_target: OpenAIDALLETarget, sample_convers
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_empty_response(
-    dalle_target: OpenAIDALLETarget, sample_conversations: list[PromptRequestPiece]
+    dalle_target: OpenAIDALLETarget,
+    sample_conversations: list[PromptRequestPiece],
+    dalle_response_json: dict
 ):
     request = sample_conversations[0]
     request.conversation_id = str(uuid.uuid4())
 
-    mock_return = MagicMock()
-    # make b64_json value empty to test retries when empty response was returned
-    mock_return.model_dump_json.return_value = '{"data": [{"b64_json": ""}]}'
-    setattr(dalle_target._async_client.images, "generate", AsyncMock(return_value=mock_return))
 
-    with pytest.raises(EmptyResponseException) as e:
-        await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
-    assert str(e.value) == "Status Code: 204, Message: The chat returned an empty response."
+    dalle_response_json["data"][0]["b64_json"] = ""
+    openai_mock_return = MagicMock()
+    openai_mock_return.text = json.dumps(dalle_response_json)
+
+    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock) as mock_request:
+
+        mock_request.return_value = openai_mock_return
+
+        with pytest.raises(EmptyResponseException) as e:
+            await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+            assert str(e.value) == "Status Code: 204, Message: The chat returned an empty response."
+            assert mock_request.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
 
 
 @pytest.mark.asyncio

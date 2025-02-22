@@ -51,7 +51,6 @@ class OpenAIChatTarget(OpenAITarget):
         frequency_penalty: Optional[float] = None,
         presence_penalty: Optional[float] = None,
         seed: Optional[int] = None,
-        httpx_client_kwargs: Optional[dict] = None,
         **kwargs,
     ):
         """
@@ -104,7 +103,6 @@ class OpenAIChatTarget(OpenAITarget):
         self._frequency_penalty = frequency_penalty
         self._presence_penalty = presence_penalty
         self._seed = seed
-        self._httpx_client_kwargs = httpx_client_kwargs or {}
 
     def _set_openai_env_configuration_vars(self) -> None:
         self.model_name_environment_variable = "OPENAI_CHAT_MODEL"
@@ -153,7 +151,6 @@ class OpenAIChatTarget(OpenAITarget):
                 headers=self._extra_headers,
                 request_body=body,
                 params=params,
-                debug=True,
                 **self._httpx_client_kwargs
             )
         except httpx.HTTPStatusError as StatusError:
@@ -166,7 +163,7 @@ class OpenAIChatTarget(OpenAITarget):
                 raise
 
         logger.info(f'Received the following response from the prompt target "{str_response.text}"')
-        response: PromptRequestResponse = self._construct_prompt_response_from_request(open_ai_str_response=str_response.text, request_piece=request_piece)
+        response: PromptRequestResponse = self._construct_prompt_response_from_openai_json(open_ai_str_response=str_response.text, request_piece=request_piece)
 
         return response
 
@@ -267,7 +264,7 @@ class OpenAIChatTarget(OpenAITarget):
         return {k: v for k, v in body_parameters.items() if v is not None}
 
 
-    def _construct_prompt_response_from_request(
+    def _construct_prompt_response_from_openai_json(
             self,
             *,
             open_ai_str_response: str,

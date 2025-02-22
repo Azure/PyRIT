@@ -36,6 +36,7 @@ class OpenAITarget(PromptChatTarget):
         use_aad_auth: bool = False,
         api_version: str = "2024-06-01",
         max_requests_per_minute: Optional[int] = None,
+        httpx_client_kwargs: Optional[dict] = None,
     ) -> None:
         """
         Abstract class that initializes an Azure or non-Azure OpenAI chat target.
@@ -59,10 +60,14 @@ class OpenAITarget(PromptChatTarget):
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
+            httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
+                httpx.AsyncClient() constructor.
         """
         PromptChatTarget.__init__(self, max_requests_per_minute=max_requests_per_minute)
 
         self._extra_headers: dict = {}
+        self._httpx_client_kwargs = httpx_client_kwargs or {}
+
 
         request_headers = default_values.get_non_required_value(
             env_var_name=self.ADDITIONAL_REQUEST_HEADERS, passed_value=headers
