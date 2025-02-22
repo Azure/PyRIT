@@ -117,7 +117,7 @@ def test_init_with_no_token_var_raises(monkeypatch):
 @pytest.mark.skip(reason="skipping temporarily due to isues with mocking download_hf_model")
 @pytest.mark.asyncio
 async def test_hf_initialization(patch_central_database):
-    with patch("pyrit.common.download_hf_model.download_specific_files", new_callable=AsyncMock) as mock:
+    with patch("pyrit.prompt_target.hugging_face.hugging_face_chat_target.download_specific_files", new_callable=AsyncMock) as mock:
         # Test the initialization without loading the actual models
         hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
         assert hf_chat.model_id == "test_model"
