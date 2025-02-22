@@ -100,6 +100,14 @@ def mock_create_task():
         yield
 
 
+@pytest.fixture(autouse=True)
+def mock_download_specific_files():
+    with patch(
+        "pyrit.prompt_target.hugging_face.hugging_face_chat_target.download_specific_files", new_callable=AsyncMock
+    ) as mock:
+        yield mock
+
+
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
 @pytest.mark.skipif(is_linux(), reason=LINUX_SKIP_MSG)
 def test_init_with_no_token_var_raises(monkeypatch):
@@ -115,20 +123,17 @@ def test_init_with_no_token_var_raises(monkeypatch):
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
 @pytest.mark.skipif(is_linux(), reason=LINUX_SKIP_MSG)
 @pytest.mark.asyncio
-async def test_hf_initialization(patch_central_database):
-    with patch(
-        "pyrit.prompt_target.hugging_face.hugging_face_chat_target.download_specific_files", new_callable=AsyncMock
-    ) as mock:
-        # Test the initialization without loading the actual models
-        hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
-        assert hf_chat.model_id == "test_model"
-        assert not hf_chat.use_cuda
-        assert hf_chat.device == "cpu"
+async def test_hf_initialization(patch_central_database, mock_download_specific_files):
+    # Test the initialization without loading the actual models
+    hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
+    assert hf_chat.model_id == "test_model"
+    assert not hf_chat.use_cuda
+    assert hf_chat.device == "cpu"
 
-        await hf_chat.load_model_and_tokenizer()
-        assert hf_chat.model is not None
-        assert hf_chat.tokenizer is not None
-        mock.assert_awaited_once()
+    await hf_chat.load_model_and_tokenizer()
+    assert hf_chat.model is not None
+    assert hf_chat.tokenizer is not None
+    mock_download_specific_files.assert_awaited_once()
 
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")

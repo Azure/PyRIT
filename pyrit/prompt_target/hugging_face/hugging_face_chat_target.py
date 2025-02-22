@@ -173,9 +173,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
                 if self.necessary_files is None:
                     # Download all files if no specific files are provided
                     logger.info(f"Downloading all files for {self.model_id}...")
-                    print("HERE")
                     await download_specific_files(self.model_id, None, self.huggingface_token, cache_dir)
-                    print("THERE")
                 else:
                     # Download only the necessary files
                     logger.info(f"Downloading specific files for {self.model_id}...")
