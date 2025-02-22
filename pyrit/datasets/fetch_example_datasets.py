@@ -532,6 +532,9 @@ def fetch_adv_bench_dataset(
     # Extract and append the data to respective containers
     prompts = [item["goal"] for item in examples if "goal" in item]
 
+    # harm_categories = _fetch_from_file("pyrit/datasets/harm_categories/adv_bench_dataset.json", "json")
+    # harm_categories_list = list(harm_categories.values())
+
     harm_categories = [
         "Endangering National Security",
         "Insulting Behavior",
@@ -562,6 +565,7 @@ def fetch_adv_bench_dataset(
             name="AdvBench Dataset",
             dataset_name="AdvBench Dataset",
             harm_categories=harm_categories,
+            # harm_categories=harm_categories_list[i],
             description="""AdvBench is a set of 520 harmful behaviors formulated as instructions. These behaviors
         range over the same themes as the harmful strings setting, but the adversary's goal is instead to find
         a single attack string that will cause the model to generate any response that attempts to comply with
@@ -569,6 +573,7 @@ def fetch_adv_bench_dataset(
             source="https://github.com/llm-attacks/llm-attacks/tree/main/data/advbench",
         )
         for prompt in prompts
+        # for i, prompt in enumerate(prompts)
     ]
 
     seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
