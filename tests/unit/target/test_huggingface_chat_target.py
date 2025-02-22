@@ -6,7 +6,6 @@ from asyncio import Task
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-import pytest_asyncio
 
 from pyrit.models.prompt_request_response import (
     PromptRequestPiece,
