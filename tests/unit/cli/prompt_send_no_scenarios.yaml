@@ -1,5 +1,5 @@
 datasets:
-  - ./PyRIT/pyrit/datasets/seed_prompts/illegal.prompt
+  - ./pyrit/datasets/seed_prompts/illegal.prompt
 objective_target:
   type: "OpenAIChatTarget"
 scenarios:

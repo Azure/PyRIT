@@ -1,4 +1,4 @@
 datasets:
-  - ./PyRIT/pyrit/datasets/seed_prompts/illegal.prompt
+  - ./pyrit/datasets/seed_prompts/illegal.prompt
 scenarios:
   - type: send_prompts
