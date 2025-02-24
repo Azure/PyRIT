@@ -103,6 +103,12 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
+    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, str]):
+        """
+        Returns a list of conditions for filtering seed prompts based on metadata.
+        """
+
+    @abc.abstractmethod
     def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.
@@ -533,6 +539,7 @@ class MemoryInterface(abc.ABC):
         groups: Optional[list[str]] = None,
         source: Optional[str] = None,
         parameters: Optional[list[str]] = None,
+        metadata: Optional[dict[str, str]] = None,
     ) -> list[SeedPrompt]:
         """
         Retrieves a list of seed prompts based on the specified filters.
@@ -581,6 +588,9 @@ class MemoryInterface(abc.ABC):
 
         if parameters:
             self._add_list_conditions(SeedPromptEntry.parameters, parameters, conditions)
+
+        if metadata:
+            conditions.append(self._get_seed_prompts_metadata_conditions(metadata=metadata))
 
         try:
             memory_entries = self._query_entries(
@@ -652,12 +662,13 @@ class MemoryInterface(abc.ABC):
             if prompt.date_added is None:
                 prompt.date_added = current_time
 
+            prompt.set_encoding_metadata()
+
             serialized_prompt_value = await self._serialize_seed_prompt_value(prompt)
             if serialized_prompt_value:
                 prompt.value = serialized_prompt_value
 
             await prompt.set_sha256_value_async()
-            prompt.set_encoding_metadata()
 
             entries.append(SeedPromptEntry(entry=prompt))
 

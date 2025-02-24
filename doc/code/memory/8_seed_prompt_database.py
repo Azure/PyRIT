@@ -92,6 +92,8 @@ print(f"Total number of the seed prompt groups with dataset name '{multimodal_da
 # Retrieving the auto-populated metadata for each seed prompt in the multimodal seed prompt group.
 for seed_prompt in seed_prompt_group.prompts:
     print(f"SeedPrompt value: {seed_prompt.value}, SeedPrompt metadata: {seed_prompt.metadata}")
+# Filter by metadata to get seed prompts in .wav format and sample rate 24000 kBits/s
+memory.get_seed_prompts(metadata={"format": "wav", "samplerate": 24000})
 
 
 # %%

@@ -207,6 +207,16 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             "ISJSON(orchestrator_identifier) = 1 AND JSON_VALUE(orchestrator_identifier, '$.id') = :json_id"
         ).bindparams(json_id=str(orchestrator_id))
 
+    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, str]):
+        json_validation = "ISJSON(prompt_metadata) = 1"
+        json_conditions = " AND ".join([f"JSON_VALUE(prompt_metadata, '$.{key}') = :{key}" for key in metadata])
+        # Combine both conditions
+        conditions = f"{json_validation} AND {json_conditions}"
+
+        # Create SQL condition using SQLAlchemy's text() with bindparams
+        # for safe parameter passing, preventing SQL injection
+        return text(conditions).bindparams(**{key: str(value) for key, value in metadata.items()})
+
     def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.
