@@ -58,13 +58,7 @@ class BinaryConverter(PromptConverter):
         return ConverterResult(output_text=binary_representation, output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
-        """
-        Checks if the converter supports the given input type.
-
-        Args:
-            input_type (PromptDataType): The input type to check.
-
-        Returns:
-            bool: True if the input type is 'text', False otherwise.
-        """
         return input_type == "text"
+
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "text"

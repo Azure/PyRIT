@@ -1344,7 +1344,7 @@ async def test_add_seed_prompt_groups_to_memory_with_textimage_modalities(duckdb
 
 @pytest.mark.asyncio
 async def test_get_seed_prompts_with_param_filters(duckdb_instance: MemoryInterface):
-    template_value = "Test template {{param1}}"
+    template_value = "Test template {{ param1 }}"
     dataset_name = "dataset_1"
     harm_categories = ["category1"]
     added_by = "tester"

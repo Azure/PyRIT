@@ -6,11 +6,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.3
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit-dev
 #     language: python
-#     name: pyrit-dev
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -37,9 +37,14 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.memory import CentralMemory
 from pyrit.models import SeedPromptDataset
 
-seed_prompt_dataset = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
+seed_prompt_dataset = SeedPromptDataset.from_yaml_file(
+    pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal-dataset.prompt"
+)
 
 print(seed_prompt_dataset.prompts[0])
+
+# Render user-defined values for yaml template
+seed_prompt_dataset.render_template_value(stolen_item="a car")
 
 memory = CentralMemory.get_memory_instance()
 await memory.add_seed_prompts_to_memory_async(prompts=seed_prompt_dataset.prompts, added_by="test")  # type: ignore
@@ -72,8 +77,11 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPromptGroup
 
 seed_prompt_group = SeedPromptGroup.from_yaml_file(
-    pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal.prompt"
+    pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal-group.prompt"
 )
+
+# Render user-defined values for yaml template
+seed_prompt_group.render_template_value(stolen_item="a car")
 
 await memory.add_seed_prompt_groups_to_memory(prompt_groups=[seed_prompt_group], added_by="test multimodal illegal")  # type: ignore
 
