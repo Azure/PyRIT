@@ -12,7 +12,7 @@ import pytest
 from openai import BadRequestError, RateLimitError
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
-from unit.mocks import get_image_request_piece
+from unit.mocks import get_image_request_piece, openai_response_json_dict
 
 from pyrit.exceptions.exception_classes import EmptyResponseException, PyritException, RateLimitException
 from pyrit.memory.duckdb_memory import DuckDBMemory
@@ -51,19 +51,7 @@ def gpt4o_chat_engine(patch_central_database) -> OpenAIChatTarget:
 
 @pytest.fixture
 def openai_response_json() -> dict:
-    return {
-        "id": "12345678-1a2b-3c4e5f-a123-12345678abcd",
-        "object": "chat.completion",
-        "choices": [
-            {
-                "index": 0,
-                "message": { "role": "assistant", "content": "hi"},
-                "finish_reason": "stop",
-            }
-        ],
-        "model": "gpt-4-v",
-    }
-
+    return openai_response_json_dict()
 
 class MockChatCompletionsAsync(AbstractAsyncContextManager):
     async def __call__(self, *args, **kwargs):
