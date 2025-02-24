@@ -48,6 +48,22 @@ def test_seed_prompt_render_template_success(seed_prompt_fixture):
     assert result == expected_output
 
 
+def test_seed_prompt_render_template_silent_success():
+    template_value = "Test prompt with param1={{ param1 }} with dataset path = {{ datasets_path }}"
+    template = SeedPrompt(
+        value=template_value,
+        data_type="text",
+    )
+
+    # Assert the template is rendered partially
+    assert template.value == "Test prompt with param1={{ param1 }} with dataset path = " + str(DATASETS_PATH)
+    result = template.render_template_value(param1="value1")
+
+    # Assert the result is formatted as expected (change expected_output accordingly)
+    expected_output = f"Test prompt with param1=value1 with dataset path = {DATASETS_PATH}"
+    assert result == expected_output
+
+
 def test_seed_prompt_render_template_no_param_success(seed_prompt_fixture):
     seed_prompt_fixture.value = "Test prompt with no parameters"
     result = seed_prompt_fixture.render_template_value(param1="value1")
