@@ -6,7 +6,7 @@ import uuid
 from unittest.mock import MagicMock
 
 import pytest
-from sqlalchemy import ARRAY, INTEGER, DateTime, String, inspect
+from sqlalchemy import ARRAY, DateTime, Integer, String, inspect
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql.sqltypes import NullType
@@ -84,7 +84,7 @@ def test_conversation_data_column_types(duckdb_instance):
         "id": UUID,
         "role": String,
         "conversation_id": String,
-        "sequence": INTEGER,
+        "sequence": Integer,
         "timestamp": DateTime,
         "labels": String,
         "prompt_metadata": String,
