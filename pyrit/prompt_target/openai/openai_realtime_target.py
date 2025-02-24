@@ -26,11 +26,11 @@ class RealtimeTarget(OpenAITarget):
 
     def __init__(
         self,
+        *,
         api_version: str = "2024-10-01-preview",
         system_prompt: Optional[str] = "You are a helpful AI assistant",
         voice: Optional[RealTimeVoice] = None,
         existing_convo: Optional[dict] = {},
-        *args,
         **kwargs,
     ) -> None:
         """
@@ -38,19 +38,31 @@ class RealtimeTarget(OpenAITarget):
         Read more at https://learn.microsoft.com/en-us/azure/ai-services/openai/realtime-audio-reference
             and https://platform.openai.com/docs/guides/realtime-websocket
         Args:
+            model_name (str, Optional): The name of the model.
+            target_uri (str, Optional): The target URL for the OpenAI service.
+            api_key (str, Optional): The API key for accessing the Azure OpenAI service.
+                Defaults to the AZURE_OPENAI_CHAT_KEY environment variable.
+            headers (str, Optional): Headers of the endpoint (JSON).
+            use_aad_auth (bool, Optional): When set to True, user authentication is used
+                instead of API Key. DefaultAzureCredential is taken for
+                https://cognitiveservices.azure.com/.default . Please run `az login` locally
+                to leverage user AuthN.
+            api_version (str, Optional): The version of the Azure OpenAI API. Defaults to
+                "2024-06-01".
+            max_requests_per_minute (int, Optional): Number of requests the target can handle per
+                minute before hitting a rate limit. The number of requests sent to the target
+                will be capped at the value provided.
             api_version (str, Optional): The version of the Azure OpenAI API. Defaults to "2024-10-01-preview".
             system_prompt (str, Optional): The system prompt to use. Defaults to "You are a helpful AI assistant".
             voice (literal str, Optional): The voice to use. Defaults to None.
                 the only supported voices by the AzureOpenAI Realtime API are "alloy", "echo", and "shimmer".
             existing_convo (dict[str, websockets.WebSocketClientProtocol], Optional): Existing conversations.
-            *args: Additional positional arguments to be passed.
-            **kwargs: Additional keyword arguments to be passed.
         """
 
         if (kwargs.get("use_aad_auth") is not None) and (kwargs.get("use_aad_auth") is True):
             raise NotImplementedError("AAD authentication not implemented for Realtime yet.")
 
-        super().__init__(api_version=api_version, *args, **kwargs)
+        super().__init__(api_version=api_version, **kwargs)
 
         self.system_prompt = system_prompt
         self.voice = voice

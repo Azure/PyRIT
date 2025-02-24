@@ -11,7 +11,7 @@ from pyrit.prompt_target import RealtimeTarget
 
 @pytest.fixture
 def target(duckdb_instance):
-    return RealtimeTarget(api_key="test_key", endpoint="wss://test_url", deployment_name="test", api_version="v1")
+    return RealtimeTarget(api_key="test_key", target_uri="wss://test_url", model_name="test", api_version="v1")
 
 
 @pytest.mark.asyncio

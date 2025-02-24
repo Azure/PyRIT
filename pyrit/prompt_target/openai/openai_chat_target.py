@@ -201,7 +201,7 @@ class OpenAIChatTarget(OpenAITarget):
         # https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/gpt-with-vision?tabs=rest%2Csystem-assigned%2Cresource#call-the-chat-completion-apis
         return f"data:{mime_type};base64,{base64_encoded_data}"
 
-    async def _build_chat_messages(
+    async def _build_chat_messages_async(
         self, prompt_req_res_entries: MutableSequence[PromptRequestResponse]
     ) -> list[ChatMessageListDictContent]:
         """
@@ -244,7 +244,7 @@ class OpenAIChatTarget(OpenAITarget):
         return chat_messages
 
     async def _construct_request_body(self, conversation: list[PromptRequestResponse], is_json_response: bool) -> dict:
-        messages = await self._build_chat_messages(conversation)
+        messages = await self._build_chat_messages_async(conversation)
 
         body_parameters = {
                 "model": self._model_name,

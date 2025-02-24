@@ -18,7 +18,6 @@ from pyrit.exceptions.exception_classes import EmptyResponseException, PyritExce
 from pyrit.memory.duckdb_memory import DuckDBMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import (
-    ChatMessageListDictContent,
     PromptRequestPiece,
     PromptRequestResponse,
 )
@@ -186,7 +185,7 @@ async def test_build_chat_messages_with_consistent_roles(gpt4o_chat_engine: Open
         "_convert_local_image_to_data_url",
         return_value="data:image/jpeg;base64,encoded_string",
     ):
-        messages = await gpt4o_chat_engine._build_chat_messages(entries)
+        messages = await gpt4o_chat_engine._build_chat_messages_async(entries)
 
     assert len(messages) == 1
     assert messages[0].role == "user"
@@ -203,7 +202,7 @@ async def test_build_chat_messages_with_unsupported_data_types(gpt4o_chat_engine
     entry.converted_value_data_type = "audio_path"
 
     with pytest.raises(ValueError) as excinfo:
-        await gpt4o_chat_engine._build_chat_messages([PromptRequestResponse(request_pieces=[entry])])
+        await gpt4o_chat_engine._build_chat_messages_async([PromptRequestResponse(request_pieces=[entry])])
     assert "Multimodal data type audio_path is not yet supported." in str(excinfo.value)
 
 
