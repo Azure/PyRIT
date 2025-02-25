@@ -55,7 +55,7 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
         if not self._examples:
             raise ValueError("Many shot examples must be provided.")
 
-    async def send_prompts_async(
+    async def send_prompts_async(  # type: ignore[override]
         self,
         *,
         prompt_list: list[str],

@@ -54,7 +54,7 @@ template_path = Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "many_s
 harm_scorer = SelfAskLikertScorer(likert_scale_path=LikertScalePaths.HARM_SCALE.value, chat_target=prompt_target)
 
 # Set up the orchestrator configured to prepend one random example from the dataset to the prompt
-orchestrator = ManyShotJailbreakOrchestrator(objective_target=prompt_target, num_examples=1, scorers=[harm_scorer])
+orchestrator = ManyShotJailbreakOrchestrator(objective_target=prompt_target, scorers=[harm_scorer])
 
 # Load Yaml file, parse content, and create ManyShotTemplate object
 template = SeedPrompt.from_yaml_file(template_path)
