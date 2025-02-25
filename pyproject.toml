@@ -1,6 +1,6 @@
 [project]
 name = "pyrit"
-version = "0.5.3.dev0"
+version = "0.6.1.dev0"
 description = "The Python Risk Identification Tool for LLMs (PyRIT) is a library used to assess the robustness of LLMs"
 authors = [
     { name = "Microsoft AI Red Team", email = "airedteam@microsoft.com" },
@@ -49,8 +49,8 @@ dependencies = [
     "confusables==1.2.0",
     "confusable-homoglyphs==3.3.1",
     "datasets>=3.0.0",
-    "duckdb==0.10.0",
-    "duckdb-engine==0.11.2",
+    "duckdb>=1.1.0",
+    "duckdb-engine>=0.15.0",
     "fpdf2>=2.8.2",
     "httpx[http2]>=0.27.2",
     "jupyter>=1.0.0",
@@ -148,6 +148,8 @@ pyrit_scan = "pyrit.cli.__main__:main"
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+asyncio_default_fixture_loop_scope = "function"
+asyncio_mode = "auto"
 
 [tool.mypy]
 plugins = []
