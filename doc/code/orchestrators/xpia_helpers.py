@@ -1,5 +1,6 @@
 import logging
 from typing import Any, Optional
+from urllib.parse import urlparse
 
 from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
 from openai import AsyncAzureOpenAI
@@ -84,19 +85,19 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
 
         self._kernel = Kernel()
 
-        service_id = "chat"
+        self._service_id = "chat"
 
         self._kernel.add_service(
             AzureChatCompletion(
-                service_id=service_id, deployment_name=self._deployment_name, async_client=self._async_client
+                service_id=self._service_id, deployment_name=self._deployment_name, async_client=self._async_client
             ),
         )
 
         self._plugin_name = plugin_name
-        self._kernel.import_plugin_from_object(plugin, plugin_name)
+        self._kernel.add_plugin(plugin, plugin_name)
 
         self._execution_settings = AzureChatPromptExecutionSettings(
-            service_id=service_id,
+            service_id=self._service_id,
             ai_model_id=self._deployment_name,
             max_tokens=max_tokens,
             temperature=temperature,
@@ -136,16 +137,36 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
             template=request.converted_value,
             name=self._plugin_name,
             template_format="semantic-kernel",
-            execution_settings=self._execution_settings,
+            execution_settings={self._service_id: self._execution_settings},
         )
-        processing_function = self._kernel.create_function_from_prompt(
+        processing_function = self._kernel.add_function(
             function_name="processingFunc", plugin_name=self._plugin_name, prompt_template_config=prompt_template_config
         )
-        processing_output = await self._kernel.invoke(processing_function)
-        processing_output = str(processing_output)
+        processing_output = await self._kernel.invoke(processing_function)  # type: ignore
+        if processing_output is None:
+            raise ValueError("Processing function returned None unexpectedly.")
+        try:
+            inner_content = processing_output.get_inner_content()
+
+            if (
+                not hasattr(inner_content, "choices")
+                or not isinstance(inner_content.choices, list)
+                or not inner_content.choices
+            ):
+                raise ValueError("Invalid response: 'choices' is missing or empty.")
+
+            first_choice = inner_content.choices[0]
+
+            if not hasattr(first_choice, "message") or not hasattr(first_choice.message, "content"):
+                raise ValueError("Invalid response: 'message' or 'content' is missing in choices[0].")
+
+            processing_output = first_choice.message.content
+
+        except AttributeError as e:
+            raise ValueError(f"Unexpected structure in processing_output: {e}")
         logger.info(f'Received the following response from the prompt target "{processing_output}"')
 
-        response = construct_response_from_request(request=request, response_text_pieces=[processing_output])
+        response = construct_response_from_request(request=request, response_text_pieces=[str(processing_output)])
         return response
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
@@ -182,6 +203,7 @@ class AzureStoragePlugin:
         """Creates an asynchronous ContainerClient for Azure Storage. If a SAS token is provided via the
         AZURE_STORAGE_ACCOUNT_SAS_TOKEN environment variable or the init sas_token parameter, it will be used
         for authentication. Otherwise, a delegation SAS token will be created using Entra ID authentication."""
+        container_url, _ = self._parse_url()
         try:
             sas_token: str = default_values.get_required_value(
                 env_var_name=self.SAS_TOKEN_ENVIRONMENT_VARIABLE, passed_value=self._sas_token
@@ -189,9 +211,9 @@ class AzureStoragePlugin:
             logger.info("Using SAS token from environment variable or passed parameter.")
         except ValueError:
             logger.info("SAS token not provided. Creating a delegation SAS token using Entra ID authentication.")
-            sas_token = await AzureStorageAuth.get_sas_token(self._container_url)
+            sas_token = await AzureStorageAuth.get_sas_token(container_url)
         self._storage_client = AsyncContainerClient.from_container_url(
-            container_url=self._container_url,
+            container_url=container_url,
             credential=sas_token,
         )
 
@@ -204,8 +226,10 @@ class AzureStoragePlugin:
             await self._create_container_client_async()
 
         all_blobs = ""
+        # Parse the Azure Storage Blob URL to extract components
+        _, blob_prefix = self._parse_url()
         async with self._storage_client as client:
-            async for blob in client.list_blobs():
+            async for blob in client.list_blobs(name_starts_with=blob_prefix):
                 logger.info(f"Downloading Azure storage blob {blob.name}")
                 blob_client = client.get_blob_client(blob=blob.name)
                 blob_data = await blob_client.download_blob()
@@ -223,11 +247,21 @@ class AzureStoragePlugin:
             await self._create_container_client_async()
         logger.info("Deleting all blobs in the container.")
         try:
+            _, blob_prefix = self._parse_url()
             async with self._storage_client as client:
-                async for blob in client.list_blobs():
+                async for blob in client.list_blobs(name_starts_with=blob_prefix):
                     print("blob name is given as", blob.name)
                     await client.get_blob_client(blob=blob.name).delete_blob()
                     logger.info(f"Deleted blob: {blob.name}")
         except Exception as ex:
             logger.exception(msg=f"An error occurred while deleting blobs: {ex}")
             raise
+
+    def _parse_url(self):
+        """Parses the Azure Storage Blob URL to extract components."""
+        parsed_url = urlparse(self._container_url)
+        path_parts = parsed_url.path.split("/")
+        container_name = path_parts[1]
+        blob_prefix = "/".join(path_parts[2:])
+        container_url = f"https://{parsed_url.netloc}/{container_name}"
+        return container_url, blob_prefix
