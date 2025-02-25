@@ -13,7 +13,7 @@ repos:
       entry: python ./build_scripts/remove_notebook_headers.py
       language: python
       files: ^doc.*\.(ipynb)$
-    
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
