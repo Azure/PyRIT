@@ -2,12 +2,12 @@
 # Licensed under the MIT license.
 
 import random
-import string
 import re
+import string
 from typing import List, Optional
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter, ConverterResult
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 
 class InsertPunctuationConverter(PromptConverter):
