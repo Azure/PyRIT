@@ -69,9 +69,8 @@ target = OpenAIChatTarget()
 orchestrator = PromptSendingOrchestrator(objective_target=target, prompt_converters=[Base64Converter()])
 
 seed_prompt_dataset = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
-prompts = [seed_prompt.value for seed_prompt in seed_prompt_dataset.prompts]
 
-await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
+await orchestrator.send_prompts_async(prompt_list=seed_prompt_dataset.get_values())  # type: ignore
 await orchestrator.print_conversations_async()  # type: ignore
 
 # %% [markdown]
