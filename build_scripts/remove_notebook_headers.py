@@ -26,7 +26,6 @@ def remove_kernelspec_from_ipynb_files(file_path: str):
 
 if __name__ == "__main__":
     files = sys.argv[1:]
-    print("HERE: files", files)
     # # Remove the "kernelspec" section from all .ipynb files in the specified file
     for file in files:
         remove_kernelspec_from_ipynb_files(file)
