@@ -37,7 +37,7 @@ prompt_dataset = fetch_llm_latent_adversarial_training_harmful_dataset()
 # prompt_dataset = fetch_pku_safe_rlhf_dataset(False)
 
 # Use the first 8 examples for red teaming
-prompt_list = [prompt.value for prompt in prompt_dataset.prompts[:8]]
+prompt_list = prompt_dataset.get_values(first=8)
 
 # Send prompts using the orchestrator and capture responses
 orchestrator = PromptSendingOrchestrator(objective_target=prompt_target)
@@ -70,7 +70,7 @@ prompt_dataset = fetch_decoding_trust_stereotypes_dataset(
 )
 
 # Use the first 4 examples
-prompt_list = [prompt.value for prompt in prompt_dataset.prompts[:4]]
+prompt_list = prompt_dataset.get_values(first=4)
 
 # Send prompts using the orchestrator and capture responses
 try:
