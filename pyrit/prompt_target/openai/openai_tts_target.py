@@ -2,16 +2,18 @@
 # Licensed under the MIT license.
 
 import logging
-from httpx import HTTPStatusError
 from typing import Literal
 
-from pyrit.common import net_utility
-from pyrit.exceptions import RateLimitException
-from pyrit.exceptions import handle_bad_request_exception
-from pyrit.models import PromptRequestResponse
-from pyrit.models import data_serializer_factory, construct_response_from_request
-from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
+from httpx import HTTPStatusError
 
+from pyrit.common import net_utility
+from pyrit.exceptions import RateLimitException, handle_bad_request_exception
+from pyrit.models import (
+    PromptRequestResponse,
+    construct_response_from_request,
+    data_serializer_factory,
+)
+from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
@@ -67,11 +69,13 @@ class OpenAITTSTarget(OpenAITarget):
         self._extra_headers["api-key"] = self._api_key
 
         response_entry = None
+        endpoint_uri = (
+            f"{self._endpoint}/openai/deployments/{self._deployment_name}/audio/speech?api-version={self._api_version}"
+        )
         try:
             # Note the openai client doesn't work here, potentially due to a mismatch
             response = await net_utility.make_request_and_raise_if_error_async(
-                endpoint_uri=f"{self._endpoint}/openai/deployments/{self._deployment_name}/"
-                f"audio/speech?api-version={self._api_version}",
+                endpoint_uri=endpoint_uri,
                 method="POST",
                 headers=self._extra_headers,
                 request_body=body,
@@ -87,7 +91,9 @@ class OpenAITTSTarget(OpenAITarget):
 
         logger.info("Received valid response from the prompt target")
 
-        audio_response = data_serializer_factory(data_type="audio_path", extension=self._response_format)
+        audio_response = data_serializer_factory(
+            category="prompt-memory-entries", data_type="audio_path", extension=self._response_format
+        )
 
         data = response.content
 
@@ -112,3 +118,7 @@ class OpenAITTSTarget(OpenAITarget):
 
         if len(messages) > 0:
             raise ValueError("This target only supports a single turn conversation.")
+
+    def is_json_response_supported(self) -> bool:
+        """Indicates that this target supports JSON response format."""
+        return False

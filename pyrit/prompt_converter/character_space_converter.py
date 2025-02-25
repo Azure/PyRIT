@@ -4,7 +4,7 @@
 import re
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter, ConverterResult
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 
 class CharacterSpaceConverter(PromptConverter):
@@ -22,3 +22,6 @@ class CharacterSpaceConverter(PromptConverter):
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
+
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "text"

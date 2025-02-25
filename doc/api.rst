@@ -70,7 +70,23 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
-
+    combine_dict
+    combine_list
+    display_image_response
+    download_chunk
+    download_file
+    download_files
+    download_specific_files
+    get_available_files
+    get_httpx_client
+    get_non_required_value
+    get_required_value
+    initialize_pyrit
+    is_in_ipython_session
+    make_request_and_raise_if_error_async
+    print_chat_messages_with_color
+    Singleton
+    YamlLoadable
 
 :py:mod:`pyrit.datasets`
 ========================
@@ -83,18 +99,19 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
-    fetch_decoding_trust_stereotypes_examples
+    fetch_decoding_trust_stereotypes_dataset
     fetch_examples
-    fetch_harmbench_examples
-    fetch_many_shot_jailbreaking_examples
-    fetch_seclists_bias_testing_examples
-    fetch_xstest_examples
+    fetch_harmbench_dataset
+    fetch_many_shot_jailbreaking_dataset
+    fetch_seclists_bias_testing_dataset
+    fetch_xstest_dataset
     fetch_pku_safe_rlhf_dataset
     fetch_adv_bench_dataset
     fetch_wmdp_dataset
-    fetch_forbidden_questions_df
+    fetch_forbidden_questions_dataset
     fetch_llm_latent_adversarial_training_harmful_dataset
     fetch_tdc23_redteaming_dataset
+    fetch_aya_redteaming_dataset
 
 :py:mod:`pyrit.embedding`
 =========================
@@ -298,8 +315,7 @@ API Reference
     :toctree: _autosummary/
 
     PromptNormalizer
-    PromptResponseConverterConfiguration
-    NormalizerRequestPiece
+    PromptConverterConfiguration
     NormalizerRequest
 
 :py:mod:`pyrit.prompt_target`

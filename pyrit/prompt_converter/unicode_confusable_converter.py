@@ -6,12 +6,11 @@ import random
 import re
 from typing import Literal
 
-from confusables import confusable_characters
 from confusable_homoglyphs.confusables import is_confusable
+from confusables import confusable_characters
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter, ConverterResult
-
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 
@@ -145,3 +144,6 @@ class UnicodeConfusableConverter(PromptConverter):
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
+
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "text"

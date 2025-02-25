@@ -6,7 +6,7 @@ import re
 from typing import Dict, List, Optional
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter, ConverterResult
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 
 class ColloquialWordswapConverter(PromptConverter):
@@ -21,7 +21,7 @@ class ColloquialWordswapConverter(PromptConverter):
         Args:
         deterministic (bool): If True, use the first substitution for each wordswap.
                               If False, randomly choose a substitution for each wordswap. Defaults to False.
-        custom_substitutions (Optional[Dict[str, List[str]]], optional): A dictionary of custom substitutions to
+        custom_substitutions (Optional[Dict[str, List[str]]], Optional): A dictionary of custom substitutions to
                                                                         override the defaults. Defaults to None.
         """
         default_substitutions = {
@@ -88,3 +88,6 @@ class ColloquialWordswapConverter(PromptConverter):
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
+
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "text"

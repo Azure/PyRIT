@@ -20,7 +20,7 @@ class ToneConverter(LLMGenericTextConverter):
         Args:
             converter_target (PromptChatTarget): The target chat support for the conversion which will translate
             tone (str): The tone for the conversation. E.g. upset, sarcastic, indifferent, etc.
-            prompt_template (SeedPrompt, optional): The prompt template for the conversion.
+            prompt_template (SeedPrompt, Optional): The prompt template for the conversion.
 
         Raises:
             ValueError: If the language is not provided.

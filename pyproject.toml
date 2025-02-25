@@ -1,6 +1,6 @@
 [project]
 name = "pyrit"
-version = "0.4.1.dev0"
+version = "0.6.1.dev0"
 description = "The Python Risk Identification Tool for LLMs (PyRIT) is a library used to assess the robustness of LLMs"
 authors = [
     { name = "Microsoft AI Red Team", email = "airedteam@microsoft.com" },
@@ -12,6 +12,8 @@ authors = [
     { name = "romanlutz" },
     { name = "jbolor21" },
     { name = "nina-msft" },
+    { name = "jsong468" },
+    { name = "eugeniavkim" },
 ]
 readme = "README.md"
 license = { text = "MIT" }
@@ -47,22 +49,21 @@ dependencies = [
     "confusables==1.2.0",
     "confusable-homoglyphs==3.3.1",
     "datasets>=3.0.0",
-    "duckdb==0.10.0",
-    "duckdb-engine==0.11.2",
+    "duckdb>=1.1.0",
+    "duckdb-engine>=0.15.0",
+    "fpdf2>=2.8.2",
     "httpx[http2]>=0.27.2",
-    "jsonpickle>=3.0.4",
     "jupyter>=1.0.0",
+    "jinja2>=3.1.4",
     "ipykernel>=6.29.4",
-    "logzero>=1.7.0",
     "numpy>=1.26.4",
-    "onnxruntime>=1.14.1",
-    "onnx>=1.16.0",
-    "openai>=1.52.2",
+    "openai>=1.58.1",
     "pillow>=10.3.0",
     "pydantic>=2.7.1",
     "pyodbc>=5.1.0",
     "pycountry>=24.6.1",
     "python-dotenv>=1.0.1",
+    "pypdf==5.1.0",
     "segno>=1.6.1",
     "scikit-learn>=1.4.2",
     "scipy>=1.14.1",
@@ -70,15 +71,15 @@ dependencies = [
     "sqlalchemy-stubs==0.4",
     "termcolor>=2.4.0",
     "tenacity>=8.2.3",
-    "tokenizers>=0.19.1",
     "tqdm>=4.66.2",
     "transformers>=4.40.0",
     "treelib>=1.7.0",
     "types-requests>=2.31.0.20240406",
-    "torch==2.4.1"
+    "websockets>=12.0",
 ]
 
 [project.optional-dependencies]
+# always make sure the individual ones are in sync with the all group
 dev = [
     "black>=24.4.0",
     "flake8>=7.0.0",
@@ -91,25 +92,61 @@ dev = [
     "pytest>=7.3.1",
     "pytest-asyncio>=0.23.5",
     "pytest-cov>=4.0.0",
-    "respx>=0.20.2",
-    "semantic-kernel==0.9.4b1",
+    "respx>=0.22.0",
+    "semantic-kernel>=1.20.0",
     "types-PyYAML>=6.0.12.9",
 ]
 torch = [
-    "torch>=2.3.0"
+    "torch>=2.3.0",
 ]
 gcg = [
-    "numpy<2",
+    "accelerate==0.34.2",
+    "azureml-mlflow==1.57.0",
     "mlflow==2.16.2",
     "ml-collections==0.1.1",
-    "azureml-mlflow==1.57.0",
-    "accelerate==0.34.2",
-    "transformers==4.45.1",
+    "numpy<2",
     "sentencepiece==0.2.0",
 ]
+playwright = [
+    "playwright==1.49.0",
+    "flask>=3.1.0",
+    "ollama>=0.4.4"
+]
+
+all = [
+    "accelerate==0.34.2",
+    "azureml-mlflow==1.57.0",
+    "black>=24.4.0",
+    "flake8>=7.0.0",
+    "flake8-copyright>=0.2.4",
+    "jupyter-book>=1.0.2",
+    "jupytext>=1.16.1",
+    "mlflow==2.16.2",
+    "ml-collections==0.1.1",
+    "mypy>=1.9.0",
+    "mock-alchemy>=0.2.6",
+    "numpy<2",
+    "pre-commit>=3.3.3",
+    "pytest>=7.3.1",
+    "pytest-asyncio>=0.23.5",
+    "pytest-cov>=4.0.0",
+    "respx>=0.20.2",
+    "semantic-kernel>=1.20.0",
+    "sentencepiece==0.2.0",
+    "torch>=2.3.0",
+    "playwright==1.49.0",
+    "flask>=3.1.0",
+    "ollama>=0.4.4",
+    "types-PyYAML>=6.0.12.9",
+]
+
+[project.scripts]
+pyrit_scan = "pyrit.cli.__main__:main"
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+asyncio_default_fixture_loop_scope = "function"
+asyncio_mode = "auto"
 
 [tool.mypy]
 plugins = []
@@ -124,7 +161,7 @@ target-version = ["py310"]
 line-length = 120
 
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=64.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]

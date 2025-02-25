@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import csv
-from typing import List, Dict
+from typing import Dict, List
 
 
 def read_csv(file) -> List[Dict[str, str]]:

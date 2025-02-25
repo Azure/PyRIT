@@ -3,9 +3,10 @@
 
 from __future__ import annotations
 
-from abc import abstractmethod, ABC
+from abc import ABC, abstractmethod
 from hashlib import sha256
 from pathlib import Path
+
 from pydantic import BaseModel, ConfigDict
 
 
@@ -37,7 +38,7 @@ class EmbeddingResponse(BaseModel):
         Returns:
             The full path to the file that was saved
         """
-        embedding_json = self.json()
+        embedding_json = self.model_dump_json()
         embedding_hash = sha256(embedding_json.encode()).hexdigest()
         embedding_output_file_path = Path(directory_path, f"{embedding_hash}.json")
         embedding_output_file_path.write_text(embedding_json)

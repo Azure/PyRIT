@@ -3,12 +3,11 @@
 
 import csv
 import json
-from pathlib import Path
 import sys
-
+from pathlib import Path
 from typing import IO
 
-from pyrit.models import PromptRequestResponse, PromptRequestPiece
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import PromptTarget
 
 
@@ -67,4 +66,8 @@ class TextTarget(PromptTarget):
         return request_responses
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+        pass
+
+    async def cleanup_target(self):
+        """Target does not require cleanup."""
         pass

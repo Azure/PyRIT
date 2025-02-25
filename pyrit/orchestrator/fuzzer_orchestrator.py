@@ -3,24 +3,23 @@
 
 from __future__ import annotations
 
-from colorama import Fore, Style
-from dataclasses import dataclass
 import logging
 import random
-from typing import Optional, Union
 import uuid
+from dataclasses import dataclass
+from typing import Optional, Union
 
 import numpy as np
+from colorama import Fore, Style
 
 from pyrit.exceptions import MissingPromptPlaceholderException, pyrit_placeholder_retry
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import SeedPrompt
 from pyrit.orchestrator import Orchestrator
-from pyrit.prompt_converter import PromptConverter, FuzzerConverter
+from pyrit.prompt_converter import FuzzerConverter, PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
-from pyrit.prompt_target import PromptTarget, PromptChatTarget
-from pyrit.score import SelfAskScaleScorer, FloatScaleThresholdScorer
-
+from pyrit.prompt_target import PromptChatTarget, PromptTarget
+from pyrit.score import FloatScaleThresholdScorer, SelfAskScaleScorer
 
 TEMPLATE_PLACEHOLDER = "{{ prompt }}"
 logger = logging.getLogger(__name__)
@@ -95,7 +94,7 @@ class FuzzerResult:
         for conversation_id in self.prompt_target_conversation_ids:
             print(f"\nConversation ID: {conversation_id}")
 
-            target_messages = memory._get_prompt_pieces_with_conversation_id(conversation_id=str(conversation_id))
+            target_messages = memory.get_prompt_request_pieces(conversation_id=str(conversation_id))
 
             if not target_messages or len(target_messages) == 0:
                 print("No conversation with the target")
@@ -125,7 +124,6 @@ class FuzzerOrchestrator(Orchestrator):
         prompt_converters: Optional[list[PromptConverter]] = None,
         template_converters: list[FuzzerConverter],
         scoring_target: PromptChatTarget,
-        memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
         frequency_weight: float = 0.5,
         reward_penalty: float = 0.1,
@@ -156,7 +154,6 @@ class FuzzerOrchestrator(Orchestrator):
             template_converters: The converters that will be applied on the jailbreak template that was
                 selected by MCTS-explore. The converters will not be applied to the prompts.
                 In each iteration of the algorithm, one converter is chosen at random.
-            memory_labels: The labels to use for the memory. This is useful to identify the messages in the memory.
             verbose: Whether to print debug information.
             frequency_weight: constant that balances between the seed with high reward and the seed that is
                 selected fewer times.
@@ -165,14 +162,14 @@ class FuzzerOrchestrator(Orchestrator):
             minimum_reward: Minimal reward prevents the reward of the current node and its ancestors
                 from being too small or negative.
             non_leaf_node_probability: parameter which decides the likelihood of selecting a non-leaf node.
-            batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
+            batch_size (int, Optional): The (max) batch size for sending prompts. Defaults to 10.
             target_jailbreak_goal_count: target number of the jailbreaks after which the fuzzer will stop.
             max_query_limit: Maximum number of times the fuzzer will run. By default, it calculates the product
                 of prompts and prompt templates and multiplies it by 10. Each iteration makes as many calls as
                 the number of prompts.
         """
 
-        super().__init__(prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose)
+        super().__init__(prompt_converters=prompt_converters, verbose=verbose)
 
         if not prompt_templates:
             raise ValueError("The initial set of prompt templates cannot be empty.")
@@ -319,7 +316,6 @@ class FuzzerOrchestrator(Orchestrator):
                     prompt_type="text",
                     converters=self._prompt_converters,
                 )
-                request.validate()
                 requests.append(request)
 
             responses = await self._prompt_normalizer.send_prompt_batch_to_target_async(
@@ -333,7 +329,7 @@ class FuzzerOrchestrator(Orchestrator):
             response_pieces = [response.request_pieces[0] for response in responses]
 
             # 5. Score responses.
-            scores = await self._scorer.score_prompts_batch_async(
+            scores = await self._scorer.score_prompts_with_tasks_batch_async(
                 request_responses=response_pieces, tasks=self._prompts
             )
             score_values = [score.get_value() for score in scores]

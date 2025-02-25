@@ -15,16 +15,17 @@ on:
 concurrency:
   # This ensures after each commit the old jobs are cancelled and the new ones
   # run instead.
-  group: ${{ github.head_ref || github.run_id }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:
   main-job:
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, windows-latest]
         python: ["3.10", "3.11", "3.12"]
         package_name: ["pyrit"]
+        package_extras: ["dev", "all"]
     runs-on: ${{ matrix.os }}
     # EnricoMi/publish-unit-test-result-action@v2 requires the following permissions
     permissions:
@@ -40,16 +41,17 @@ jobs:
       - name: Install setuptools and pip
         run: pip install --upgrade setuptools pip
       - name: Install PyRIT with pip
-        run: pip install .[dev,gcg]
+        run: pip install .[${{ matrix.package_extras }}]
       - name: Run unit tests with code coverage
-        run: make test-cov-xml
+        run: make unit-test-cov-xml
       - name: Publish Pytest Results
         uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always()
+        if: runner.os == 'ubuntu-latest'
         with:
           files: '**/test-*.xml'
       - name: Code Coverage Report
         uses: irongut/CodeCoverageSummary@v1.3.0
+        if: runner.os == 'ubuntu-latest'
         with:
           filename: coverage.xml
           badge: true

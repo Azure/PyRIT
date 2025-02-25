@@ -1,8 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.prompt_converter import PromptConverter, ConverterResult
 from pyrit.models import PromptDataType
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 
 class ZeroWidthConverter(PromptConverter):
@@ -14,17 +14,10 @@ class ZeroWidthConverter(PromptConverter):
     ZERO_WIDTH_SPACE = "\u200B"
 
     def input_supported(self, input_type: PromptDataType) -> bool:
-        """
-        Checks if the input type is supported by this converter.
-        Supports only 'text' input type.
-
-        Args:
-            input_type (PromptDataType): The type of input to check (e.g., "text").
-
-        Returns:
-            bool: True if the input type is "text", otherwise False.
-        """
         return input_type == "text"
+
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "text"
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """

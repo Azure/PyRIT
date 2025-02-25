@@ -3,6 +3,7 @@
 
 import logging
 import time
+
 import azure.cognitiveservices.speech as speechsdk
 
 from pyrit.common import default_values
@@ -51,6 +52,9 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "audio_path"
 
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "text"
+
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "audio_path") -> ConverterResult:
         """
         Converter that transcribes audio to text.
@@ -67,7 +71,9 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         if not prompt.endswith(".wav"):
             raise ValueError("Please provide a .wav audio file. Compressed formats are not currently supported.")
 
-        audio_serializer = data_serializer_factory(data_type="audio_path", value=prompt)
+        audio_serializer = data_serializer_factory(
+            category="prompt-memory-entries", data_type="audio_path", value=prompt
+        )
         audio_bytes = await audio_serializer.read_data()
 
         try:

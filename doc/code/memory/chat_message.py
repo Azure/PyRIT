@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# # Chat messages
+# # Chat messages - optional
 #
 # This notebook gives an introduction to the concept of `ChatMessage` and `ChatMessageNormalizer` and how it can be helpful as you start to work with different models.
 #
@@ -26,8 +26,8 @@
 #
 # Below is an example that converts a list of chat messages to chatml format and back.
 # %%
-from pyrit.models import ChatMessage
 from pyrit.chat_message_normalizer import ChatMessageNormalizerChatML
+from pyrit.models import ChatMessage
 
 messages = [
     ChatMessage(role="system", content="You are a helpful AI assistant"),
@@ -60,16 +60,16 @@ chat_messages = normalizer.from_chatml(
 print(chat_messages)
 
 # %% [markdown]
-# To see how to use this in action, check out the [aml endpoint](../targets/4_non_open_ai_chat_targets.ipynb) notebook. It takes a `chat_message_normalizer` parameter so that an AML model can support various chat message formats.
+# To see how to use this in action, check out the [aml endpoint](../targets/3_non_open_ai_chat_targets.ipynb) notebook. It takes a `chat_message_normalizer` parameter so that an AML model can support various chat message formats.
 
 # %% [markdown]
 # Besides chatml, there are many other chat templates that a model might be trained on. If you would like to apply the template stored in a Hugging Face tokenizer,
 # you can utilize `ChatMessageNormalizerTokenizerTemplate`. In the example below, we load the tokenizer for Mistral-7B-Instruct-v0.1 and apply its chat template to
 # the messages. Note that this template only adds `[INST]` and `[/INST]` tokens to the user messages for instruction fine-tuning.
-
 # %%
-from pyrit.chat_message_normalizer import ChatMessageNormalizerTokenizerTemplate
 from transformers import AutoTokenizer
+
+from pyrit.chat_message_normalizer import ChatMessageNormalizerTokenizerTemplate
 
 messages = [
     ChatMessage(role="user", content="Hello, how are you?"),

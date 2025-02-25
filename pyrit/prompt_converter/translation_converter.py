@@ -1,12 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from textwrap import dedent
-
 import json
 import logging
-import uuid
 import pathlib
+import uuid
+from textwrap import dedent
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions import (
@@ -14,8 +13,13 @@ from pyrit.exceptions import (
     pyrit_json_retry,
     remove_markdown_json,
 )
-from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, SeedPrompt
-from pyrit.prompt_converter import PromptConverter, ConverterResult
+from pyrit.models import (
+    PromptDataType,
+    PromptRequestPiece,
+    PromptRequestResponse,
+    SeedPrompt,
+)
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -29,7 +33,7 @@ class TranslationConverter(PromptConverter):
         Args:
             converter_target (PromptChatTarget): The target chat support for the conversion which will translate
             language (str): The language for the conversion. E.g. Spanish, French, leetspeak, etc.
-            prompt_template (SeedPrompt, optional): The prompt template for the conversion.
+            prompt_template (SeedPrompt, Optional): The prompt template for the conversion.
 
         Raises:
             ValueError: If the language is not provided.
@@ -121,3 +125,6 @@ class TranslationConverter(PromptConverter):
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
+
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "text"

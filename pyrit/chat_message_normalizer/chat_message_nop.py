@@ -1,8 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.models import ChatMessage
 from pyrit.chat_message_normalizer import ChatMessageNormalizer
+from pyrit.models import ChatMessage
 
 
 class ChatMessageNop(ChatMessageNormalizer[list[ChatMessage]]):

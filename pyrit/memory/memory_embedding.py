@@ -3,9 +3,10 @@
 
 import os
 from typing import Optional
+
 from pyrit.embedding import AzureTextEmbedding
-from pyrit.models import PromptRequestPiece, EmbeddingSupport
 from pyrit.memory.memory_models import EmbeddingDataEntry
+from pyrit.models import EmbeddingSupport, PromptRequestPiece
 
 
 class MemoryEmbedding:

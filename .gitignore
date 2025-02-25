@@ -1,6 +1,7 @@
 # PyRIT-specific configs
 submodules/
 results/
+dbdata/
 eval/
 default_memory.json.memory
 
@@ -119,6 +120,7 @@ celerybeat.pid
 
 # Environments
 .env
+.env.*
 .venv
 env/
 venv/
@@ -173,6 +175,9 @@ doc/_autosummary/
 
 # ignore all VSCode settings
 .vscode/*
+
+# ignore jetbrains IDE settings
+.idea/
 
 # Ignore DS_STORE files
 **/.DS_Store

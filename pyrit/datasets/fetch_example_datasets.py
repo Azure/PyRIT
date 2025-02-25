@@ -5,27 +5,24 @@ import hashlib
 import io
 import random
 import tempfile
-from datasets import load_dataset
 from pathlib import Path
+from typing import Callable, Dict, List, Literal, Optional, TextIO
 
 import pycountry
 import requests
+from datasets import load_dataset
 
 from pyrit.common.csv_helper import read_csv, write_csv
-from pyrit.common.json_helper import read_json, write_json
+from pyrit.common.json_helper import read_json, read_jsonl, write_json, write_jsonl
+from pyrit.common.path import DATASETS_PATH, DB_DATA_PATH
 from pyrit.common.text_helper import read_txt, write_txt
-from pyrit.common.path import DATASETS_PATH, RESULTS_PATH
 from pyrit.models import (
-    SeedPromptDataset,
     QuestionAnsweringDataset,
     QuestionAnsweringEntry,
     QuestionChoice,
+    SeedPromptDataset,
 )
-
-from typing import Callable, Dict, List, Optional, Literal, TextIO
-
 from pyrit.models.seed_prompt import SeedPrompt
-
 
 # Define the type for the file handlers
 FileHandlerRead = Callable[[TextIO], List[Dict[str, str]]]
@@ -33,6 +30,7 @@ FileHandlerWrite = Callable[[TextIO, List[Dict[str, str]]], None]
 
 FILE_TYPE_HANDLERS: Dict[str, Dict[str, Callable]] = {
     "json": {"read": read_json, "write": write_json},
+    "jsonl": {"read": read_jsonl, "write": write_jsonl},
     "csv": {"read": read_csv, "write": write_csv},
     "txt": {"read": read_txt, "write": write_txt},
 }
@@ -134,7 +132,7 @@ def fetch_examples(
         raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
 
     if not data_home:
-        data_home = RESULTS_PATH / "datasets"
+        data_home = DB_DATA_PATH / "seed-prompt-entries"
     else:
         data_home = Path(data_home)
 
@@ -157,9 +155,9 @@ def fetch_examples(
     return examples
 
 
-def fetch_many_shot_jailbreaking_examples() -> List[Dict[str, str]]:
+def fetch_many_shot_jailbreaking_dataset() -> List[Dict[str, str]]:
     """
-    Fetch many-shot jailbreaking examples from a specified source.
+    Fetch many-shot jailbreaking dataset from a specified source.
 
     Returns:
         List[Dict[str, str]]: A list of many-shot jailbreaking examples.
@@ -171,7 +169,7 @@ def fetch_many_shot_jailbreaking_examples() -> List[Dict[str, str]]:
     return fetch_examples(source, source_type)
 
 
-def fetch_seclists_bias_testing_examples(
+def fetch_seclists_bias_testing_dataset(
     source: str = (
         "https://raw.githubusercontent.com/danielmiessler/SecLists/4e747a4/Ai/LLM_Testing/Bias_Testing/"
         "nationality_geographic_bias.txt"
@@ -265,7 +263,7 @@ def fetch_seclists_bias_testing_examples(
     return seed_prompt_dataset
 
 
-def fetch_xstest_examples(
+def fetch_xstest_dataset(
     source: str = "https://raw.githubusercontent.com/paul-rottger/exaggerated-safety/a3bb396/xstest_v2_prompts.csv",
     source_type: Literal["public_url"] = "public_url",
     cache: bool = True,
@@ -318,7 +316,7 @@ def fetch_xstest_examples(
     return seed_prompt_dataset
 
 
-def fetch_harmbench_examples(
+def fetch_harmbench_dataset(
     source: str = (
         "https://raw.githubusercontent.com/centerforaisafety/HarmBench/c0423b9/data/behavior_datasets/"
         "harmbench_behaviors_text_all.csv"
@@ -386,6 +384,194 @@ def fetch_harmbench_examples(
 
     seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
 
+    return seed_prompt_dataset
+
+
+def fetch_decoding_trust_stereotypes_dataset(
+    source: str = (
+        "https://raw.githubusercontent.com/AI-secure/DecodingTrust/main/data/stereotype/dataset/user_prompts.csv"
+    ),
+    source_type: Literal["public_url"] = "public_url",
+    cache: bool = True,
+    data_home: Optional[Path] = None,
+    stereotype_topics: Optional[List[str]] = None,
+    target_groups: Optional[List[str]] = None,
+    system_prompt_type: Literal["benign", "untargeted", "targeted"] = "targeted",
+) -> SeedPromptDataset:
+    """
+    Fetch DecodingTrust examples and create a SeedPromptDataset.
+
+    Args:
+        source (str): The source from which to fetch examples. Defaults to the DecodingTrust repository.
+        source_type (Literal["public_url"]): The type of source ('public_url').
+        cache (bool): Whether to cache the fetched examples. Defaults to True.
+        data_home (Optional[Path]): Directory to store cached data. Defaults to None.
+        stereotype_topics (Optional[List[str]]): List of stereotype topics to filter the examples. Defaults to None.
+            The list of all 16 stereotype_topics can be found here:
+            https://github.com/AI-secure/DecodingTrust/tree/main/data/stereotype
+            Defaults to None, which means all topics are included.
+        target_groups (Optional[List[str]]): List of target groups to filter the examples. Defaults to None.
+            The list of all 24 target_groups can be found here:
+            https://github.com/AI-secure/DecodingTrust/tree/main/data/stereotype
+            Defaults to None, which means all target groups are included.
+        system_prompt_type (Literal["benign", "untargeted", "targeted"]): The type of system prompt to use.
+            Defaults to "targeted".
+
+    Returns:
+        SeedPromptDataset: A SeedPromptDataset containing the examples.
+
+    Note:
+        For more information and access to the original dataset and related materials, visit:
+        https://github.com/centerforaisafety/HarmBench
+    """
+    if system_prompt_type not in ["benign", "untargeted", "targeted"]:
+        raise ValueError("Invalid system_prompt_type. Expected 'benign', 'untargeted', or 'targeted'}")
+    # Determine the file type from the source URL
+    file_type = source.split(".")[-1]
+    if file_type not in FILE_TYPE_HANDLERS:
+        valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
+        raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
+
+    if system_prompt_type == "targeted":
+        system_prompt = SeedPrompt.from_yaml_file(
+            Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dt_stereotypes_targeted.yaml"
+        )
+    elif system_prompt_type == "untargeted":
+        system_prompt = SeedPrompt.from_yaml_file(
+            Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dt_stereotypes_untargeted.yaml"
+        )
+    else:
+        system_prompt = SeedPrompt.from_yaml_file(
+            Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dt_stereotypes_benign.yaml"
+        )
+
+    # Required keys to validate each example
+    required_keys = {"stereotype_topic", "target_group", "user_prompt"}
+
+    # Initialize containers for prompts and semantic categories
+    prompts = []
+
+    # Fetch the examples using the provided `fetch_examples` function
+    examples = fetch_examples(source, source_type, cache, data_home)
+
+    is_targeted = system_prompt_type == "targeted"
+    # Validate each example and extract data
+    for example in examples:
+        # Check for missing keys in the example
+        missing_keys = required_keys - example.keys()
+        if missing_keys:
+            raise ValueError(f"Missing keys in example: {', '.join(missing_keys)}")
+        # Check if the example should be filtered based on the provided topics and target groups
+        if (
+            stereotype_topics
+            and example["stereotype_topic"] not in stereotype_topics
+            or (target_groups and example["target_group"] not in target_groups)
+        ):
+            continue
+
+        prompt = (
+            system_prompt.render_template_value(prompt=example["user_prompt"], target_group=example["target_group"])
+            if is_targeted
+            else system_prompt.render_template_value(prompt=example["user_prompt"])
+        )
+        prompts.append(prompt)
+
+    seed_prompts = [
+        SeedPrompt(
+            value=prompt,
+            data_type="text",
+            name="DecodingTrust Stereotypes Examples",
+            dataset_name="DecodingTrust Stereotypes Examples",
+            harm_categories=["stereotypes"],
+            description="""A dataset of Decoding Trust 'Stereotypes' example prompts across many different topics
+            and target groups. These prompts attempt to convince the target to agree with a harmful
+            stereotype.""",
+        )
+        for prompt in prompts
+    ]
+
+    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
+    return seed_prompt_dataset
+
+
+def fetch_adv_bench_dataset(
+    source: str = (
+        "https://raw.githubusercontent.com/llm-attacks/llm-attacks/main/data/advbench/" "harmful_behaviors.csv"
+    ),
+    source_type: Literal["public_url"] = "public_url",
+    cache: bool = True,
+    data_home: Optional[Path] = None,
+) -> SeedPromptDataset:
+    """
+    Fetch AdvBench examples and create a SeedPromptDataset.
+
+    Args:
+        source (str): The source from which to fetch examples. Defaults to the AdvBench repository.
+        source_type (Literal["public_url"]): The type of source ('public_url').
+        cache (bool): Whether to cache the fetched examples. Defaults to True.
+        data_home (Optional[Path]): Directory to store cached data. Defaults to None.
+
+    Returns:
+        SeedPromptDataset: A SeedPromptDataset containing the examples.
+
+    Note:
+        For more information and access to the original dataset and related materials, visit:
+        https://github.com/llm-attacks/llm-attacks/blob/main/data/advbench. Based on research in paper:
+        https://arxiv.org/abs/2307.15043 written by Andy Zou, Zifan Wang, Nicholas Carlini, Milad Nasr,
+        J. Zico Kolter, Matt Fredrikson
+    """
+    # Determine the file type from the source URL
+    file_type = source.split(".")[-1]
+    if file_type not in FILE_TYPE_HANDLERS:
+        valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
+        raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
+
+    # Fetch the examples using the provided `fetch_examples` function
+    examples = fetch_examples(source, source_type, cache, data_home)
+
+    # Extract and append the data to respective containers
+    prompts = [item["goal"] for item in examples if "goal" in item]
+
+    harm_categories = [
+        "Endangering National Security",
+        "Insulting Behavior",
+        "Discriminatory Behavior",
+        "Endangering Public Health",
+        "Copyright Issues",
+        "Violence",
+        "Drugs",
+        "Privacy Violation",
+        "Economic Crime",
+        "Mental Manipulation",
+        "Human Trafficking",
+        "Physical Harm",
+        "Sexual Content",
+        "Cybercrime",
+        "Disrupting Public Order",
+        "Environmental Damage",
+        "Psychological Harm",
+        "White-Collar Crime",
+        "Animal Abuse",
+    ]
+
+    # Create SeedPrompt instances from each example in 'prompts'
+    seed_prompts = [
+        SeedPrompt(
+            value=prompt,
+            data_type="text",
+            name="AdvBench Dataset",
+            dataset_name="AdvBench Dataset",
+            harm_categories=harm_categories,
+            description="""AdvBench is a set of 520 harmful behaviors formulated as instructions. These behaviors
+        range over the same themes as the harmful strings setting, but the adversary's goal is instead to find
+        a single attack string that will cause the model to generate any response that attempts to comply with
+        the instruction, and to do so over as many harmful behaviors as possible.""",
+            source="https://github.com/llm-attacks/llm-attacks/tree/main/data/advbench",
+        )
+        for prompt in prompts
+    ]
+
+    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
     return seed_prompt_dataset
 
 
@@ -514,85 +700,82 @@ def fetch_tdc23_redteaming_dataset() -> SeedPromptDataset:
     return seed_prompt_dataset
 
 
-def fetch_adv_bench_dataset(
-    source: str = (
-        "https://raw.githubusercontent.com/llm-attacks/llm-attacks/main/data/advbench/" "harmful_behaviors.csv"
-    ),
-    source_type: Literal["public_url"] = "public_url",
-    cache: bool = True,
-    data_home: Optional[Path] = None,
-) -> SeedPromptDataset:
+def fetch_forbidden_questions_dataset() -> SeedPromptDataset:
     """
-    Fetch AdvBench examples and create a SeedPromptDataset.
+    Fetch Forbidden question dataset and return it as a SeedPromptDataset
 
-    Args:
-        source (str): The source from which to fetch examples. Defaults to the AdvBench repository.
-        source_type (Literal["public_url"]): The type of source ('public_url').
-        cache (bool): Whether to cache the fetched examples. Defaults to True.
-        data_home (Optional[Path]): Directory to store cached data. Defaults to None.
+    Returns: SeedPromptDataset
 
-    Returns:
-        SeedPromptDataset: A SeedPromptDataset containing the examples.
-
-    Note:
-        For more information and access to the original dataset and related materials, visit:
-        https://github.com/llm-attacks/llm-attacks/blob/main/data/advbench. Based on research in paper:
-        https://arxiv.org/abs/2307.15043 written by Andy Zou, Zifan Wang, Nicholas Carlini, Milad Nasr,
-        J. Zico Kolter, Matt Fredrikson
+    Note: For more info
+        Paper - https://arxiv.org/abs/2308.03825
+        Github - https://github.com/verazuo/jailbreak_llms/
+        Website - https://jailbreak-llms.xinyueshen.me/
     """
-    # Determine the file type from the source URL
-    file_type = source.split(".")[-1]
-    if file_type not in FILE_TYPE_HANDLERS:
-        valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
-        raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
+    data = load_dataset("TrustAIRLab/forbidden_question_set", "default")
 
-    # Fetch the examples using the provided `fetch_examples` function
-    examples = fetch_examples(source, source_type, cache, data_home)
-
-    # Extract and append the data to respective containers
-    prompts = [item["goal"] for item in examples if "goal" in item]
-
-    harm_categories = [
-        "Endangering National Security",
-        "Insulting Behavior",
-        "Discriminatory Behavior",
-        "Endangering Public Health",
-        "Copyright Issues",
-        "Violence",
-        "Drugs",
-        "Privacy Violation",
-        "Economic Crime",
-        "Mental Manipulation",
-        "Human Trafficking",
-        "Physical Harm",
-        "Sexual Content",
-        "Cybercrime",
-        "Disrupting Public Order",
-        "Environmental Damage",
-        "Psychological Harm",
-        "White-Collar Crime",
-        "Animal Abuse",
-    ]
-
-    # Create SeedPrompt instances from each example in 'prompts'
+    authors = ["Xinyue Shen", "Zeyuan Chen", "Michael Backes", "Yun Shen", "Yang Zhang"]
     seed_prompts = [
         SeedPrompt(
-            value=prompt,
+            value=item["question"],
             data_type="text",
-            name="AdvBench Dataset",
-            dataset_name="AdvBench Dataset",
-            harm_categories=harm_categories,
-            description="""AdvBench is a set of 520 harmful behaviors formulated as instructions. These behaviors
-        range over the same themes as the harmful strings setting, but the adversary's goal is instead to find
-        a single attack string that will cause the model to generate any response that attempts to comply with
-        the instruction, and to do so over as many harmful behaviors as possible.""",
-            source="https://github.com/llm-attacks/llm-attacks/tree/main/data/advbench",
+            name="TrustAIRLab/forbidden_question_set",
+            dataset_name="TrustAIRLab/forbidden_question_set",
+            authors=authors,
+            harm_categories=item["content_policy_name"],
+            source="https://huggingface.co/datasets/TrustAIRLab/forbidden_question_set",
+            description="""This is the Forbidden Question Set dataset proposed in the ACM CCS 2024 paper
+        "Do Anything Now'': Characterizing and Evaluating In-The-Wild Jailbreak Prompts on Large Language Models.
+        It contains 390 questions (= 13 scenarios x 30 questions) adopted from OpenAI Usage Policy.
+        The focus is on 13 scenarios, including Illegal Activity, Hate Speech, Malware Generation,
+        Physical Harm, Economic Harm, Fraud, Pornography, Political Lobbying, Privacy Violence, Legal Opinion,
+        Financial Advice, Health Consultation, and Government Decision.""",
         )
-        for prompt in prompts
+        for item in data["train"]
     ]
 
     seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
     return seed_prompt_dataset
+
+
+def fetch_librAI_do_not_answer_dataset() -> SeedPromptDataset:
+    """
+    Fetch the LibrAI 'Do Not Answer' dataset and return it as a SeedPromptDataset.
+
+    Relevant Columns:
+    - "risk_area"
+    - "types_of_harm"
+    - "specific_harms"
+    - "question"
+
+    Returns:
+        SeedPromptDataset: A SeedPromptDataset containing the examples.
+
+    Note: For more info
+    - Paper       - https://arxiv.org/abs/2308.13387
+    - Github      - https://github.com/libr-ai/do-not-answer
+    - HF Dataset  - https://huggingface.co/datasets/LibrAI/do-not-answer
+    """
+    # Load dataset from Hugging Face
+    data = load_dataset("LibrAI/do-not-answer", split="train")
+
+    seed_prompts = [
+        SeedPrompt(
+            value=entry["question"],
+            data_type="text",
+            name="",
+            dataset_name="LibrAI/Do-Not-Answer",
+            harm_categories=[entry["risk_area"], entry["types_of_harm"], entry["specific_harms"]],
+            description=(
+                f"This is a prompt from the 'Do Not Answer' dataset under the risk area: {entry['risk_area']}, "
+                f"harm type: {entry['types_of_harm']}, and specific harm: {entry['specific_harms']}."
+            ),
+            source="https://huggingface.co/datasets/LibrAI/do-not-answer",
+        )
+        for entry in data
+    ]
+
+    # Create a SeedPromptDataset from the list of SeedPrompt instances
+    return SeedPromptDataset(prompts=seed_prompts)
 
 
 def fetch_wmdp_dataset(category: Optional[str] = None) -> QuestionAnsweringDataset:
@@ -664,162 +847,87 @@ def fetch_wmdp_dataset(category: Optional[str] = None) -> QuestionAnsweringDatas
     return dataset
 
 
-def fetch_decoding_trust_stereotypes_examples(
-    source: str = (
-        "https://raw.githubusercontent.com/AI-secure/DecodingTrust/main/data/stereotype/dataset/user_prompts.csv"
-    ),
-    source_type: Literal["public_url"] = "public_url",
+def fetch_aya_redteaming_dataset(
     cache: bool = True,
     data_home: Optional[Path] = None,
-    stereotype_topics: Optional[List[str]] = None,
-    target_groups: Optional[List[str]] = None,
-    system_prompt_type: Literal["benign", "untargeted", "targeted"] = "targeted",
+    language: Literal["English", "Hindi", "French", "Spanish", "Arabic", "Russian", "Serbian", "Tagalog"] = "English",
+    harm_categories: Optional[
+        List[
+            Literal[
+                "Bullying & Harassment",
+                "Discrimination & Injustice",
+                "Graphic material",
+                "Harms of Representation Allocation and Quality of Service",
+                "Hate Speech",
+                "Non-consensual sexual content",
+                "Profanity",
+                "Self-Harm",
+                "Violence, Threats & Incitement",
+            ]
+        ]
+    ] = None,
+    harm_scope: Optional[Literal["global", "local"]] = None,
 ) -> SeedPromptDataset:
     """
-    Fetch DecodingTrust examples and create a SeedPromptDataset.
+    Fetch examples from the Aya Red-teaming dataset with optional filtering and create a SeedPromptDataset.
 
     Args:
-        source (str): The source from which to fetch examples. Defaults to the DecodingTrust repository.
-        source_type (Literal["public_url"]): The type of source ('public_url').
         cache (bool): Whether to cache the fetched examples. Defaults to True.
-        data_home (Optional[Path]): Directory to store cached data. Defaults to None.
-        stereotype_topics (Optional[List[str]]): List of stereotype topics to filter the examples. Defaults to None.
-            The list of all 16 stereotype_topics can be found here:
-            https://github.com/AI-secure/DecodingTrust/tree/main/data/stereotype
-            Defaults to None, which means all topics are included.
-        target_groups (Optional[List[str]]): List of target groups to filter the examples. Defaults to None.
-            The list of all 24 target_groups can be found here:
-            https://github.com/AI-secure/DecodingTrust/tree/main/data/stereotype
-            Defaults to None, which means all target groups are included.
-        system_prompt_type (Literal["benign", "untargeted", "targeted"]): The type of system prompt to use.
-            Defaults to "targeted".
+        data_home: Directory to store cached data. Defaults to None.
+        language: The language to fetch prompts for. Defaults to "English".
+        harm_categories: List of harm categories to filter the examples.
+            Defaults to None, which means all categories are included.
+            Otherwise, only prompts with at least one matching category are included.
+        harm_scope: Whether to fetch globally or locally harmful prompts.
+            Defaults to None, which means all examples are included.
 
     Returns:
-        SeedPromptDataset: A SeedPromptDataset containing the examples.
+        SeedPromptDataset: A SeedPromptDataset containing the filtered examples.
 
     Note:
         For more information and access to the original dataset and related materials, visit:
-        https://github.com/centerforaisafety/HarmBench
+        https://huggingface.co/datasets/CohereForAI/aya_redteaming/blob/main/README.md \n
+        Related paper: https://arxiv.org/abs/2406.18682 \n
+        The dataset license: Apache 2.0
+
+    Warning:
+        Due to the nature of these prompts, it may be advisable to consult your relevant legal
+        department before testing them with LLMs to ensure compliance and reduce potential risks.
     """
-    if system_prompt_type not in ["benign", "untargeted", "targeted"]:
-        raise ValueError("Invalid system_prompt_type. Expected 'benign', 'untargeted', or 'targeted'}")
-    # Determine the file type from the source URL
-    file_type = source.split(".")[-1]
-    if file_type not in FILE_TYPE_HANDLERS:
-        valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
-        raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
+    _lang = {
+        "English": "eng",
+        "Hindi": "hin",
+        "French": "fra",
+        "Spanish": "spa",
+        "Arabic": "arb",
+        "Russian": "rus",
+        "Serbian": "srp",
+        "Tagalog": "tgl",
+    }
 
-    if system_prompt_type == "targeted":
-        system_prompt = SeedPrompt.from_yaml_file(
-            Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dt_stereotypes_targeted.yaml"
-        )
-    elif system_prompt_type == "untargeted":
-        system_prompt = SeedPrompt.from_yaml_file(
-            Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dt_stereotypes_untargeted.yaml"
-        )
-    else:
-        system_prompt = SeedPrompt.from_yaml_file(
-            Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dt_stereotypes_benign.yaml"
-        )
+    examples = fetch_examples(
+        source=f"https://huggingface.co/datasets/CohereForAI/aya_redteaming/raw/main/aya_{_lang[language]}.jsonl",
+        source_type="public_url",
+        cache=cache,
+        data_home=data_home,
+    )
 
-    # Required keys to validate each example
-    required_keys = {"stereotype_topic", "target_group", "user_prompt"}
+    seed_prompts = []
 
-    # Initialize containers for prompts and semantic categories
-    prompts = []
-
-    # Fetch the examples using the provided `fetch_examples` function
-    examples = fetch_examples(source, source_type, cache, data_home)
-
-    is_targeted = system_prompt_type == "targeted"
-    # Validate each example and extract data
     for example in examples:
-        # Check for missing keys in the example
-        missing_keys = required_keys - example.keys()
-        if missing_keys:
-            raise ValueError(f"Missing keys in example: {', '.join(missing_keys)}")
-        # Check if the example should be filtered based on the provided topics and target groups
-        if (
-            stereotype_topics
-            and example["stereotype_topic"] not in stereotype_topics
-            or (target_groups and example["target_group"] not in target_groups)
-        ):
-            continue
-
-        prompt = (
-            system_prompt.render_template_value(prompt=example["user_prompt"], target_group=example["target_group"])
-            if is_targeted
-            else system_prompt.render_template_value(prompt=example["user_prompt"])
-        )
-        prompts.append(prompt)
-
-    seed_prompts = [
-        SeedPrompt(
-            value=prompt,
-            data_type="text",
-            name="DecodingTrust Stereotypes Examples",
-            dataset_name="DecodingTrust Stereotypes Examples",
-            harm_categories=["stereotypes"],
-            description="""A dataset of Decoding Trust 'Stereotypes' example prompts across many different topics
-            and target groups. These prompts attempt to convince the target to agree with a harmful
-            stereotype.""",
-        )
-        for prompt in prompts
-    ]
-
-    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
-    return seed_prompt_dataset
-
-
-def fetch_forbidden_questions_df() -> SeedPromptDataset:
-    """
-    Fetch Forbidden question dataset and return it as a SeedPromptDataset
-
-    Returns: SeedPromptDataset
-
-    Note: For more info
-        Paper - https://arxiv.org/abs/2308.03825
-        Github - https://github.com/verazuo/jailbreak_llms/
-        Website - https://jailbreak-llms.xinyueshen.me/
-    """
-    data = load_dataset("TrustAIRLab/forbidden_question_set", "default")
-
-    harm_categories = [
-        "Illegal Activity",
-        "Hate Speech",
-        "Malware Generation",
-        "Physical Harm",
-        "Economic Harm",
-        "Fraud",
-        "Pornography",
-        "Political Lobbying",
-        "Privacy Violence",
-        "Legal Opinion",
-        "Financial Advice",
-        "Health Consultation",
-        "Government Decision",
-    ]
-    authors = ["Xinyue Shen", "Zeyuan Chen", "Michael Backes", "Yun Shen", "Yang Zhang"]
-    prompts = [item["question"] for item in data["train"]]
-
-    seed_prompts = [
-        SeedPrompt(
-            value=prompt,
-            data_type="text",
-            name="TrustAIRLab/forbidden_question_set",
-            dataset_name="TrustAIRLab/forbidden_question_set",
-            authors=authors,
-            harm_categories=harm_categories,
-            source="https://huggingface.co/datasets/TrustAIRLab/forbidden_question_set",
-            description="""This is the Forbidden Question Set dataset proposed in the ACM CCS 2024 paper
-        "Do Anything Now'': Characterizing and Evaluating In-The-Wild Jailbreak Prompts on Large Language Models.
-        It contains 390 questions (= 13 scenarios x 30 questions) adopted from OpenAI Usage Policy.
-        The focus is on 13 scenarios, including Illegal Activity, Hate Speech, Malware Generation,
-        Physical Harm, Economic Harm, Fraud, Pornography, Political Lobbying, Privacy Violence, Legal Opinion,
-        Financial Advice, Health Consultation, and Government Decision.""",
-        )
-        for prompt in prompts
-    ]
+        categories = eval(example["harm_category"])
+        if harm_categories is None or any(cat in categories for cat in harm_categories):
+            if harm_scope is None or example["global_or_local"] == harm_scope:
+                seed_prompts.append(
+                    SeedPrompt(
+                        value=example["prompt"],
+                        data_type="text",
+                        name="Aya Red-teaming Examples",
+                        dataset_name="Aya Red-teaming Examples",
+                        harm_categories=categories,
+                        source="https://huggingface.co/datasets/CohereForAI/aya_redteaming",
+                    )
+                )
 
     seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
     return seed_prompt_dataset

@@ -2,12 +2,21 @@
 # Licensed under the MIT license.
 import json
 import logging
+from typing import Any, Dict, Literal
 
-from typing import Literal, Dict, Any
 from openai import BadRequestError
 
-from pyrit.exceptions import EmptyResponseException, pyrit_target_retry, handle_bad_request_exception
-from pyrit.models import PromptRequestResponse, data_serializer_factory, construct_response_from_request, PromptDataType
+from pyrit.exceptions import (
+    EmptyResponseException,
+    handle_bad_request_exception,
+    pyrit_target_retry,
+)
+from pyrit.models import (
+    PromptDataType,
+    PromptRequestResponse,
+    construct_response_from_request,
+    data_serializer_factory,
+)
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
@@ -33,15 +42,15 @@ class OpenAIDALLETarget(OpenAITarget):
         Initialize the DALL-E target with specified parameters.
 
         Args:
-            image_size (Literal["256x256", "512x512", "1024x1024"], optional): The size of the generated images.
+            image_size (Literal["256x256", "512x512", "1024x1024"], Optional): The size of the generated images.
                 Defaults to "1024x1024".
-            num_images (int, optional): The number of images to generate. Defaults to 1. For DALL-E-2, this can be
+            num_images (int, Optional): The number of images to generate. Defaults to 1. For DALL-E-2, this can be
                 between 1 and 10. For DALL-E-3, this must be 1.
-            dalle_version (Literal["dall-e-2", "dall-e-3"], optional): The version of DALL-E to use. Defaults to
+            dalle_version (Literal["dall-e-2", "dall-e-3"], Optional): The version of DALL-E to use. Defaults to
                 "dall-e-2".
-            quality (Literal["standard", "hd"], optional): The quality of the generated images. Only applicable for
+            quality (Literal["standard", "hd"], Optional): The quality of the generated images. Only applicable for
                 DALL-E-3. Defaults to "standard".
-            style (Literal["natural", "vivid"], optional): The style of the generated images. Only applicable for
+            style (Literal["natural", "vivid"], Optional): The style of the generated images. Only applicable for
                 DALL-E-3. Defaults to "natural".
             *args: Additional positional arguments to be passed to AzureOpenAITarget.
             **kwargs: Additional keyword arguments to be passed to AzureOpenAITarget.
@@ -103,7 +112,7 @@ class OpenAIDALLETarget(OpenAITarget):
 
         try:
             b64_data = await self._generate_image_response_async(image_generation_args)
-            data = data_serializer_factory(data_type="image_path")
+            data = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
             await data.save_b64_image(data=b64_data)
             resp_text = data.value
             response_type: PromptDataType = "image_path"
@@ -150,3 +159,7 @@ class OpenAIDALLETarget(OpenAITarget):
 
         if prompt_request.request_pieces[0].converted_value_data_type != "text":
             raise ValueError("This target only supports text prompt input.")
+
+    def is_json_response_supported(self) -> bool:
+        """Indicates that this target supports JSON response format."""
+        return False

@@ -2,16 +2,24 @@
 # Licensed under the MIT license.
 
 
-import httpx
 import json
 import logging
 import re
-from typing import Callable
+from typing import Any, Callable, Optional
 
-from pyrit.models import construct_response_from_request, PromptRequestPiece, PromptRequestResponse
+import httpx
+
+from pyrit.models import (
+    PromptRequestPiece,
+    PromptRequestResponse,
+    construct_response_from_request,
+)
 from pyrit.prompt_target import PromptTarget
 
 logger = logging.getLogger(__name__)
+
+
+RequestBody = dict[str, Any] | str
 
 
 class HTTPTarget(PromptTarget):
@@ -26,6 +34,7 @@ class HTTPTarget(PromptTarget):
         use_tls: (bool): whether to use TLS or not. Default is True
         callback_function (function): function to parse HTTP response.
             These are the customizable functions which determine how to parse the output
+        httpx_client_kwargs: (dict): additional keyword arguments to pass to the HTTP client
     """
 
     def __init__(
@@ -33,13 +42,16 @@ class HTTPTarget(PromptTarget):
         http_request: str,
         prompt_regex_string: str = "{PROMPT}",
         use_tls: bool = True,
-        callback_function: Callable = None,
+        callback_function: Callable | None = None,
+        max_requests_per_minute: Optional[int] = None,
+        **httpx_client_kwargs: Any,
     ) -> None:
-
+        super().__init__(max_requests_per_minute=max_requests_per_minute)
         self.http_request = http_request
         self.callback_function = callback_function
         self.prompt_regex_string = prompt_regex_string
         self.use_tls = use_tls
+        self.httpx_client_kwargs = httpx_client_kwargs or {}
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
@@ -52,9 +64,11 @@ class HTTPTarget(PromptTarget):
         # Add Prompt into URL (if the URL takes it)
         re_pattern = re.compile(self.prompt_regex_string)
         if re.search(self.prompt_regex_string, self.http_request):
-            self.http_request = re_pattern.sub(request.converted_value, self.http_request)
+            http_request_w_prompt = re_pattern.sub(request.converted_value, self.http_request)
+        else:
+            http_request_w_prompt = self.http_request
 
-        header_dict, http_body, url, http_method, http_version = self.parse_raw_http_request()
+        header_dict, http_body, url, http_method, http_version = self.parse_raw_http_request(http_request_w_prompt)
 
         # Make the actual HTTP request:
 
@@ -66,14 +80,24 @@ class HTTPTarget(PromptTarget):
         if http_version and "HTTP/2" in http_version:
             http2_version = True
 
-        async with httpx.AsyncClient(http2=http2_version) as client:
-            response = await client.request(
-                method=http_method,
-                url=url,
-                headers=header_dict,
-                data=http_body,
-                follow_redirects=True,
-            )
+        async with httpx.AsyncClient(http2=http2_version, **self.httpx_client_kwargs) as client:
+            match http_body:
+                case dict():
+                    response = await client.request(
+                        method=http_method,
+                        url=url,
+                        headers=header_dict,
+                        data=http_body,
+                        follow_redirects=True,
+                    )
+                case str():
+                    response = await client.request(
+                        method=http_method,
+                        url=url,
+                        headers=header_dict,
+                        content=http_body,
+                        follow_redirects=True,
+                    )
         response_content = response.content
 
         if self.callback_function:
@@ -83,9 +107,13 @@ class HTTPTarget(PromptTarget):
 
         return response_entry
 
-    def parse_raw_http_request(self):
+    def parse_raw_http_request(self, http_request: str) -> tuple[dict[str, str], RequestBody, str, str, str]:
         """
         Parses the HTTP request string into a dictionary of headers
+
+        Parameters:
+            http_request: the header parameters as a request str with
+                          prompt already injected
 
         Returns:
             headers_dict (dict): dictionary of all http header values
@@ -96,13 +124,13 @@ class HTTPTarget(PromptTarget):
         """
 
         headers_dict = {}
-        if not self.http_request:
-            return {}, "", "", ""
+        if not http_request:
+            return {}, "", "", "", ""
 
         body = ""
 
         # Split the request into headers and body by finding the double newlines (\n\n)
-        request_parts = self.http_request.strip().split("\n\n", 1)
+        request_parts = http_request.strip().split("\n\n", 1)
 
         # Parse out the header components
         header_lines = request_parts[0].strip().split("\n")

@@ -1,9 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.models import ChatMessage
-from pyrit.chat_message_normalizer import ChatMessageNormalizer
 from transformers import PreTrainedTokenizer, PreTrainedTokenizerFast
+
+from pyrit.chat_message_normalizer import ChatMessageNormalizer
+from pyrit.models import ChatMessage
 
 
 class ChatMessageNormalizerTokenizerTemplate(ChatMessageNormalizer[str]):

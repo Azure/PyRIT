@@ -5,9 +5,8 @@ import abc
 import logging
 from typing import Optional
 
-from pyrit.memory import MemoryInterface, CentralMemory
-from pyrit.models import PromptRequestResponse, Identifier
-
+from pyrit.memory import CentralMemory, MemoryInterface
+from pyrit.models import Identifier, PromptRequestResponse
 
 logger = logging.getLogger(__name__)
 

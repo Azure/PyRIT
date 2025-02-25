@@ -5,15 +5,15 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit-dev
 #     language: python
 #     name: python3
 # ---
 
 # %% [markdown]
-# # Prompt Shield Target Documentation + Tutorial
+# # Prompt Shield Target Documentation + Tutorial - optional
 
 # %% [markdown]
 # This is a brief tutorial and documentation on using the Prompt Shield Target
@@ -73,12 +73,11 @@
 # %%
 import os
 
-from pyrit.common import default_values
-
-from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
+from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import PromptShieldTarget
 
-default_values.load_default_env()
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 
 pst = PromptShieldTarget(os.environ.get("AZURE_CONTENT_SAFETY_ENDPOINT"), os.environ.get("AZURE_CONTENT_SAFETY_KEY"))
@@ -87,7 +86,9 @@ sample_prompt: str = """
 Hello! Can you please retrieve the total number of sales in the document?
 """
 
-with PromptSendingOrchestrator(prompt_target=pst) as orchestrator:
+orchestrator = PromptSendingOrchestrator(objective_target=pst)
+resp = await orchestrator.send_prompts_async(prompt_list=[sample_prompt])  # type: ignore
+await orchestrator.print_conversations_async()  # type: ignore
 
-    resp = await orchestrator.send_prompts_async(prompt_list=[sample_prompt])  # type: ignore
-    await orchestrator.print_conversations()  # type: ignore
+# %%
+pst.dispose_db_engine()

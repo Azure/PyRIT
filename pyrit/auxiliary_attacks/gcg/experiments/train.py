@@ -3,17 +3,24 @@
 
 import time
 from typing import Union
+
 import mlflow
 import numpy as np
 import torch.multiprocessing as mp
 from ml_collections import config_dict
+
 import pyrit.auxiliary_attacks.gcg.attack.gcg.gcg_attack as attack_lib
 from pyrit.auxiliary_attacks.gcg.attack.base.attack_manager import (
     IndividualPromptAttack,
     ProgressiveMultiPromptAttack,
+    get_goals_and_targets,
+    get_workers,
 )
-from pyrit.auxiliary_attacks.gcg.attack.base.attack_manager import get_goals_and_targets, get_workers
-from pyrit.auxiliary_attacks.gcg.experiments.log import log_gpu_memory, log_params, log_train_goals
+from pyrit.auxiliary_attacks.gcg.experiments.log import (
+    log_gpu_memory,
+    log_params,
+    log_train_goals,
+)
 
 
 class GreedyCoordinateGradientAdversarialSuffixGenerator:

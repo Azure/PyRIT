@@ -1,35 +1,36 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import segno
 from typing import Optional
+
+import segno
 
 from pyrit.models import PromptDataType
 from pyrit.models.data_type_serializer import data_serializer_factory
-from pyrit.prompt_converter import PromptConverter, ConverterResult
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 
 class QRCodeConverter(PromptConverter):
     """Converts a text string to a QR code image.
 
     Args:
-        scale (int, optional): Scaling factor that determines the width/height in pixels of each
+        scale (int, Optional): Scaling factor that determines the width/height in pixels of each
             black/white square (known as a "module") in the QR code. Defaults to 3.
-        border (int, optional): Controls how many modules thick the border should be.
+        border (int, Optional): Controls how many modules thick the border should be.
             Defaults to recommended value of 4.
-        dark_color (tuple, optional): Sets color of dark modules, using RGB values.
+        dark_color (tuple, Optional): Sets color of dark modules, using RGB values.
             Defaults to black: (0, 0, 0).
-        light_color (tuple, optional): Sets color of light modules, using RGB values.
+        light_color (tuple, Optional): Sets color of light modules, using RGB values.
             Defaults to white: (255, 255, 255).
-        data_dark_color (tuple, optional): Sets color of dark data modules (the modules that actually
+        data_dark_color (tuple, Optional): Sets color of dark data modules (the modules that actually
             stores the data), using RGB values. Defaults to dark_color.
-        data_light_color (tuple, optional): Sets color of light data modules, using RGB values.
+        data_light_color (tuple, Optional): Sets color of light data modules, using RGB values.
             Defaults to light_color.
-        finder_dark_color (tuple, optional): Sets dark module color of finder patterns (squares located in
+        finder_dark_color (tuple, Optional): Sets dark module color of finder patterns (squares located in
             three corners), using RGB values. Defaults to dark_color.
-        finder_light_color (tuple, optional): Sets light module color of finder patterns, using RGB values.
+        finder_light_color (tuple, Optional): Sets light module color of finder patterns, using RGB values.
             Defaults to light_color.
-        border_color (tuple, optional): Sets color of border, using RGB values. Defaults to light_color.
+        border_color (tuple, Optional): Sets color of border, using RGB values. Defaults to light_color.
     """
 
     def __init__(
@@ -53,7 +54,7 @@ class QRCodeConverter(PromptConverter):
         self._finder_dark_color = finder_dark_color or dark_color
         self._finder_light_color = finder_light_color or light_color
         self._border_color = border_color or light_color
-        self._img_serializer = data_serializer_factory(data_type="image_path")
+        self._img_serializer = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
@@ -91,3 +92,6 @@ class QRCodeConverter(PromptConverter):
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
+
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "image_path"

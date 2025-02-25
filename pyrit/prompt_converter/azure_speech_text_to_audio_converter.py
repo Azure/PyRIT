@@ -7,8 +7,7 @@ from typing import Literal
 import azure.cognitiveservices.speech as speechsdk
 
 from pyrit.common import default_values
-from pyrit.models import data_serializer_factory
-from pyrit.models import PromptDataType
+from pyrit.models import PromptDataType, data_serializer_factory
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
@@ -58,6 +57,9 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
 
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "audio_path"
+
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
@@ -65,7 +67,9 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         if prompt.strip() == "":
             raise ValueError("Prompt was empty. Please provide valid input prompt.")
 
-        audio_serializer = data_serializer_factory(data_type="audio_path", extension=self._output_format)
+        audio_serializer = data_serializer_factory(
+            category="prompt-memory-entries", data_type="audio_path", extension=self._output_format
+        )
 
         audio_serializer_file = None
         try:

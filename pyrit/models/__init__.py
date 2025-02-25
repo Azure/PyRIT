@@ -7,36 +7,34 @@ from pyrit.models.chat_message import (
     ChatMessageListDictContent,
     ChatMessagesDataset,
 )
+from pyrit.models.prompt_request_piece import PromptRequestPiece, sort_request_pieces
+
 from pyrit.models.data_type_serializer import (
+    AllowedCategories,
+    AudioPathDataTypeSerializer,
     DataTypeSerializer,
-    data_serializer_factory,
-    TextDataTypeSerializer,
     ErrorDataTypeSerializer,
     ImagePathDataTypeSerializer,
-    AudioPathDataTypeSerializer,
+    TextDataTypeSerializer,
+    data_serializer_factory,
 )
 from pyrit.models.embeddings import EmbeddingData, EmbeddingResponse, EmbeddingSupport, EmbeddingUsageInformation
 from pyrit.models.identifiers import Identifier
-from pyrit.models.literals import PromptDataType, PromptResponseError, ChatMessageRole
-from pyrit.models.seed_prompt import (
-    SeedPromptDataset,
-    SeedPrompt,
-    SeedPromptGroup,
-)
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError
 from pyrit.models.prompt_request_response import (
     PromptRequestResponse,
-    group_conversation_request_pieces_by_sequence,
     construct_response_from_request,
+    group_conversation_request_pieces_by_sequence,
 )
 from pyrit.models.prompt_response import PromptResponse
 from pyrit.models.question_answering import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
 from pyrit.models.score import Score, ScoreType, UnvalidatedScore
+from pyrit.models.seed_prompt import SeedPrompt, SeedPromptDataset, SeedPromptGroup
 from pyrit.models.storage_io import AzureBlobStorageIO, DiskStorageIO, StorageIO
-
 
 __all__ = [
     "ALLOWED_CHAT_MESSAGE_ROLES",
+    "AllowedCategories",
     "AudioPathDataTypeSerializer",
     "AzureBlobStorageIO",
     "ChatMessage",
@@ -55,6 +53,7 @@ __all__ = [
     "group_conversation_request_pieces_by_sequence",
     "Identifier",
     "ImagePathDataTypeSerializer",
+    "sort_request_pieces",
     "PromptRequestPiece",
     "PromptResponse",
     "PromptResponseError",

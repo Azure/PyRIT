@@ -5,11 +5,22 @@ import uuid
 from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
-from pyrit.models import PromptDataType, PromptRequestPiece, Score, SeedPrompt
-from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index, INTEGER, ARRAY, Unicode
+from sqlalchemy import (
+    ARRAY,
+    INTEGER,
+    JSON,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    String,
+    Unicode,
+)
+from sqlalchemy.orm import DeclarativeBase, Mapped, relationship  # type: ignore
 from sqlalchemy.types import Uuid  # type: ignore
-from sqlalchemy.orm import DeclarativeBase  # type: ignore
-from sqlalchemy.orm import Mapped  # type: ignore
+
+from pyrit.models import PromptDataType, PromptRequestPiece, Score, SeedPrompt
 
 
 class Base(DeclarativeBase):
@@ -46,7 +57,7 @@ class PromptMemoryEntry(Base):
         converted_value_sha256 (str): The SHA256 hash of the original prompt data.
         idx_conversation_id (Index): The index for the conversation ID.
         original_prompt_id (UUID): The original prompt id. It is equal to id unless it is a duplicate.
-
+        scores (list[ScoreEntry]): The list of scores associated with the prompt.
     Methods:
         __str__(): Returns a string representation of the memory entry.
     """
@@ -59,7 +70,7 @@ class PromptMemoryEntry(Base):
     sequence = Column(INTEGER, nullable=False)
     timestamp = Column(DateTime, nullable=False)
     labels: Mapped[dict[str, str]] = Column(JSON)
-    prompt_metadata = Column(String, nullable=True)
+    prompt_metadata: Mapped[dict[str, str]] = Column(JSON)
     converter_identifiers: Mapped[dict[str, str]] = Column(JSON)
     prompt_target_identifier: Mapped[dict[str, str]] = Column(JSON)
     orchestrator_identifier: Mapped[dict[str, str]] = Column(JSON)
@@ -80,6 +91,13 @@ class PromptMemoryEntry(Base):
     idx_conversation_id = Index("idx_conversation_id", "conversation_id")
 
     original_prompt_id = Column(Uuid, nullable=False)
+
+    scores: Mapped[List["ScoreEntry"]] = relationship(
+        "ScoreEntry",
+        primaryjoin="ScoreEntry.prompt_request_response_id == PromptMemoryEntry.original_prompt_id",
+        back_populates="prompt_request_piece",
+        foreign_keys="ScoreEntry.prompt_request_response_id",
+    )
 
     def __init__(self, *, entry: PromptRequestPiece):
         self.id = entry.id
@@ -106,10 +124,12 @@ class PromptMemoryEntry(Base):
         self.original_prompt_id = entry.original_prompt_id
 
     def get_prompt_request_piece(self) -> PromptRequestPiece:
-        return PromptRequestPiece(
+        prompt_request_piece = PromptRequestPiece(
             role=self.role,
             original_value=self.original_value,
+            original_value_sha256=self.original_value_sha256,
             converted_value=self.converted_value,
+            converted_value_sha256=self.converted_value_sha256,
             id=self.id,
             conversation_id=self.conversation_id,
             sequence=self.sequence,
@@ -122,7 +142,10 @@ class PromptMemoryEntry(Base):
             converted_value_data_type=self.converted_value_data_type,
             response_error=self.response_error,
             original_prompt_id=self.original_prompt_id,
+            timestamp=self.timestamp,
         )
+        prompt_request_piece.scores = [score.get_score() for score in self.scores]
+        return prompt_request_piece
 
     def __str__(self):
         if self.prompt_target_identifier:
@@ -172,6 +195,7 @@ class ScoreEntry(Base):  # type: ignore
     prompt_request_response_id = Column(Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
     timestamp = Column(DateTime, nullable=False)
     task = Column(String, nullable=True)
+    prompt_request_piece: Mapped["PromptMemoryEntry"] = relationship("PromptMemoryEntry", back_populates="scores")
 
     def __init__(self, *, entry: Score):
         self.id = entry.id
@@ -200,6 +224,21 @@ class ScoreEntry(Base):  # type: ignore
             timestamp=self.timestamp,
             task=self.task,
         )
+
+    def to_dict(self) -> dict:
+        return {
+            "id": str(self.id),
+            "score_value": self.score_value,
+            "score_value_description": self.score_value_description,
+            "score_type": self.score_type,
+            "score_category": self.score_category,
+            "score_rationale": self.score_rationale,
+            "score_metadata": self.score_metadata,
+            "scorer_class_identifier": self.scorer_class_identifier,
+            "prompt_request_response_id": str(self.prompt_request_response_id),
+            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
+            "task": self.task,
+        }
 
 
 class ConversationMessageWithSimilarity(BaseModel):
@@ -231,6 +270,7 @@ class SeedPromptEntry(Base):
         __table_args__ (dict): Additional arguments for the database table.
         id (Uuid): The unique identifier for the memory entry.
         value (str): The value of the seed prompt.
+        value_sha256 (str): The SHA256 hash of the value of the seed prompt data.
         data_type (PromptDataType): The data type of the seed prompt.
         dataset_name (str): The name of the dataset the seed prompt belongs to.
         harm_categories (List[str]): The harm categories associated with the seed prompt.
@@ -257,6 +297,7 @@ class SeedPromptEntry(Base):
     __table_args__ = {"extend_existing": True}
     id = Column(Uuid, nullable=False, primary_key=True)
     value = Column(Unicode, nullable=False)
+    value_sha256 = Column(Unicode, nullable=True)
     data_type: Mapped[PromptDataType] = Column(String, nullable=False)
     name = Column(String, nullable=True)
     dataset_name = Column(String, nullable=True)
@@ -275,6 +316,7 @@ class SeedPromptEntry(Base):
     def __init__(self, *, entry: SeedPrompt):
         self.id = entry.id
         self.value = entry.value
+        self.value_sha256 = entry.value_sha256
         self.data_type = entry.data_type
         self.name = entry.name
         self.dataset_name = entry.dataset_name
@@ -294,6 +336,7 @@ class SeedPromptEntry(Base):
         return SeedPrompt(
             id=self.id,
             value=self.value,
+            value_sha256=self.value_sha256,
             data_type=self.data_type,
             name=self.name,
             dataset_name=self.dataset_name,

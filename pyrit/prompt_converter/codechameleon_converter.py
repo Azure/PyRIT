@@ -1,16 +1,15 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import textwrap
 import inspect
 import pathlib
 import re
+import textwrap
 from typing import Callable, Optional
 
-from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter, ConverterResult
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import SeedPrompt
+from pyrit.models import PromptDataType, SeedPrompt
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 
 class CodeChameleonConverter(PromptConverter):
@@ -110,6 +109,9 @@ class CodeChameleonConverter(PromptConverter):
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
+
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "text"
 
     def _stringify_decrypt(self, elements: list) -> str:
         output_text = "The following is the decryption function.\n```python\n"

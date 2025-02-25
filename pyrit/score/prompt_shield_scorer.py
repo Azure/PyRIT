@@ -1,14 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import json
 import logging
 import uuid
-import json
 from typing import Any, Optional
 
-from pyrit.prompt_target import PromptShieldTarget
-from pyrit.models import PromptRequestResponse, PromptRequestPiece, Score, ScoreType
 from pyrit.memory import PromptMemoryEntry
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score, ScoreType
+from pyrit.prompt_target import PromptShieldTarget
 from pyrit.score.scorer import Scorer
 
 logger = logging.getLogger(__name__)
@@ -30,9 +30,7 @@ class PromptShieldScorer(Scorer):
         self._prompt_target = prompt_shield_target
         self.scorer_type = "true_false"
 
-    async def score_async(
-        self, request_response: PromptRequestPiece | PromptMemoryEntry, *, task: Optional[str] = None
-    ) -> list[Score]:
+    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         self.validate(request_response=request_response)
 
         self._conversation_id = str(uuid.uuid4())

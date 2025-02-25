@@ -1,25 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import dotenv
+import logging
 import os
 
-
-from pyrit.common import path
-
-
-def load_default_env() -> None:
-    """
-    Loads an environment file from the $PROJECT_ROOT/.env file if it exists,
-    or if not, loads from the default dotenv .env file
-    """
-    file_path = path.HOME_PATH / ".env"
-
-    if not file_path.exists():
-        dotenv.load_dotenv()
-        return
-
-    dotenv.load_dotenv(file_path, override=True)
+logger = logging.getLogger(__name__)
 
 
 def get_required_value(*, env_var_name: str, passed_value: str) -> str:

@@ -1,12 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import os
-import yaml
 import argparse
-from typing import Union, Dict, Any
-from pyrit.common import default_values
+import os
+from typing import Any, Dict, Union
+
+import yaml
 from train import GreedyCoordinateGradientAdversarialSuffixGenerator
+
+from pyrit.common.initialization import _load_environment_files
 
 
 def _load_yaml_to_dict(config_path: str) -> dict:
@@ -38,7 +40,7 @@ def run_trainer(*, model_name: str, setup: str = "single", **extra_config_parame
             "Model name not supported. Currently supports 'mistral', 'llama_2', 'llama_3', 'vicuna', and 'phi_3_mini'"
         )
 
-    default_values.load_default_env()
+    _load_environment_files()
     hf_token = os.environ.get("HF_TOKEN")
     if not hf_token:
         raise ValueError("Please set the HF_TOKEN environment variable")

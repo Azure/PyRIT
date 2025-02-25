@@ -3,10 +3,9 @@
 
 import pathlib
 
-from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter, ConverterResult
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import SeedPrompt
+from pyrit.models import PromptDataType, SeedPrompt
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 
 class MorseConverter(PromptConverter):
@@ -52,6 +51,9 @@ class MorseConverter(PromptConverter):
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
+
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "text"
 
     def _morse(self, text: str) -> str:
         text_clean = " ".join([line.strip() for line in str.splitlines(text)])

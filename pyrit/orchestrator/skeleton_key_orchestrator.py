@@ -3,19 +3,26 @@
 
 import logging
 from pathlib import Path
-
 from typing import Optional
 from uuid import uuid4
 
+from colorama import Fore, Style
 
 from pyrit.common.batch_helper import batch_task_async
-from pyrit.models import SeedPromptDataset, PromptRequestResponse
 from pyrit.common.path import DATASETS_PATH
+from pyrit.models import (
+    PromptRequestResponse,
+    SeedPrompt,
+    SeedPromptDataset,
+    SeedPromptGroup,
+)
 from pyrit.orchestrator import Orchestrator
-from pyrit.prompt_normalizer import PromptNormalizer
-from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_converter import PromptConverter
-from colorama import Style, Fore
+from pyrit.prompt_normalizer import PromptNormalizer
+from pyrit.prompt_normalizer.prompt_converter_configuration import (
+    PromptConverterConfiguration,
+)
+from pyrit.prompt_target import PromptTarget
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +34,7 @@ class SkeletonKeyOrchestrator(Orchestrator):
     The orchestrator sends an inital skeleton key prompt to the target, and then follows
     up with a separate attack prompt.
     If successful, the first prompt makes the target comply even with malicious follow-up prompts.
-    In our experiments, using two separate prompts was significantly more effective than using a single combined prompt.
+    In our experiments, using two separate prompts was more effective than using a single combined prompt.
 
     Learn more about attack at the link below:
     https://www.microsoft.com/en-us/security/blog/2024/06/26/mitigating-skeleton-key-a-new-type-of-generative-ai-jailbreak-technique/
@@ -39,26 +46,21 @@ class SkeletonKeyOrchestrator(Orchestrator):
         skeleton_key_prompt: Optional[str] = None,
         prompt_target: PromptTarget,
         prompt_converters: Optional[list[PromptConverter]] = None,
-        memory_labels: Optional[dict[str, str]] = None,
         batch_size: int = 10,
         verbose: bool = False,
     ) -> None:
         """
         Args:
-            skeleton_key_prompt (str, optional): The skeleton key sent to the target, Default: skeleton_key.prompt
+            skeleton_key_prompt (str, Optional): The skeleton key sent to the target, Default: skeleton_key.prompt
             prompt_target (PromptTarget): The target for sending prompts.
-            prompt_converters (list[PromptConverter], optional): List of prompt converters. These are stacked in
+            prompt_converters (list[PromptConverter], Optional): List of prompt converters. These are stacked in
                 the order they are provided. E.g. the output of converter1 is the input of converter2.
-            memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
-            These labels can be used to track all prompts sent as part of an operation, score prompts based on
-            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
-            Users can define any key-value pairs according to their needs. Defaults to None.
-            batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
+            batch_size (int, Optional): The (max) batch size for sending prompts. Defaults to 10.
                 Note: If providing max requests per minute on the prompt_target, this should be set to 1 to
                 ensure proper rate limit management.
-            verbose (bool, optional): If set to True, verbose output will be enabled. Defaults to False.
+            verbose (bool, Optional): If set to True, verbose output will be enabled. Defaults to False.
         """
-        super().__init__(prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose)
+        super().__init__(prompt_converters=prompt_converters, verbose=verbose)
 
         self._prompt_normalizer = PromptNormalizer()
 
@@ -87,7 +89,7 @@ class SkeletonKeyOrchestrator(Orchestrator):
         Args
 
             prompt (str): The prompt to be sent.
-            prompt_type (PromptDataType, optional): The type of the prompt (e.g., "text"). Defaults to "text".
+            prompt_type (PromptDataType, Optional): The type of the prompt (e.g., "text"). Defaults to "text".
 
         Returns:
             PromptRequestResponse: The response from the prompt target.
@@ -95,27 +97,25 @@ class SkeletonKeyOrchestrator(Orchestrator):
 
         conversation_id = str(uuid4())
 
-        target_skeleton_prompt_obj = self._create_normalizer_request(
-            prompt_text=self._skeleton_key_prompt,
-            conversation_id=conversation_id,
-            converters=self._prompt_converters,
-        )
+        skeleton_key_prompt = SeedPromptGroup(prompts=[SeedPrompt(value=self._skeleton_key_prompt, data_type="text")])
+
+        converter_configuration = PromptConverterConfiguration(converters=self._prompt_converters)
 
         await self._prompt_normalizer.send_prompt_async(
-            normalizer_request=target_skeleton_prompt_obj,
+            seed_prompt_group=skeleton_key_prompt,
+            conversation_id=conversation_id,
+            request_converter_configurations=[converter_configuration],
             target=self._prompt_target,
             labels=self._global_memory_labels,
             orchestrator_identifier=self.get_identifier(),
         )
 
-        target_prompt_obj = self._create_normalizer_request(
-            prompt_text=prompt,
-            conversation_id=conversation_id,
-            converters=self._prompt_converters,
-        )
+        objective_prompt = SeedPromptGroup(prompts=[SeedPrompt(value=prompt, data_type="text")])
 
         return await self._prompt_normalizer.send_prompt_async(
-            normalizer_request=target_prompt_obj,
+            seed_prompt_group=objective_prompt,
+            conversation_id=conversation_id,
+            request_converter_configurations=[converter_configuration],
             target=self._prompt_target,
             labels=self._global_memory_labels,
             orchestrator_identifier=self.get_identifier(),
@@ -131,7 +131,7 @@ class SkeletonKeyOrchestrator(Orchestrator):
 
         Args:
             prompt_list (list[str]): The list of prompts to be sent.
-            prompt_type (PromptDataType, optional): The type of the prompts (e.g., "text"). Defaults to "text".
+            prompt_type (PromptDataType, Optional): The type of the prompts (e.g., "text"). Defaults to "text".
 
         Returns:
             list[PromptRequestResponse]: The responses from the prompt target.

@@ -3,23 +3,23 @@
 
 import logging
 import struct
-
 from contextlib import closing
+from datetime import datetime, timedelta, timezone
 from typing import MutableSequence, Optional, Sequence
-from azure.identity import DefaultAzureCredential
-from azure.core.credentials import AccessToken
 
-from sqlalchemy import create_engine, event, text, MetaData
+from azure.core.credentials import AccessToken
+from azure.identity import DefaultAzureCredential
+from sqlalchemy import MetaData, create_engine, event, text
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import joinedload, sessionmaker
 from sqlalchemy.orm.session import Session
 
 from pyrit.common import default_values
 from pyrit.common.singleton import Singleton
-from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry, ScoreEntry
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import AzureBlobStorageIO, PromptRequestPiece, Score
+from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry
+from pyrit.models import AzureBlobStorageIO, PromptRequestPiece
 
 logger = logging.getLogger(__name__)
 
@@ -33,38 +33,45 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
     and session management to perform database operations.
     """
 
+    # Azure SQL configuration
     SQL_COPT_SS_ACCESS_TOKEN = 1256  # Connection option for access tokens, as defined in msodbcsql.h
     TOKEN_URL = "https://database.windows.net/.default"  # The token URL for any Azure SQL database
     AZURE_SQL_DB_CONNECTION_STRING = "AZURE_SQL_DB_CONNECTION_STRING"
-    AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE: str = "AZURE_STORAGE_ACCOUNT_RESULTS_CONTAINER_URL"
-    SAS_TOKEN_ENVIRONMENT_VARIABLE: str = "AZURE_STORAGE_ACCOUNT_RESULTS_SAS_TOKEN"
+
+    # Azure Storage Account Container datasets and results environment variables
+    AZURE_STORAGE_ACCOUNT_DB_DATA_CONTAINER_URL: str = "AZURE_STORAGE_ACCOUNT_DB_DATA_CONTAINER_URL"
+    AZURE_STORAGE_ACCOUNT_DB_DATA_SAS_TOKEN: str = "AZURE_STORAGE_ACCOUNT_DB_DATA_SAS_TOKEN"
 
     def __init__(
         self,
         *,
         connection_string: Optional[str] = None,
-        container_url: Optional[str] = None,
-        sas_token: Optional[str] = None,
+        results_container_url: Optional[str] = None,
+        results_sas_token: Optional[str] = None,
         verbose: bool = False,
     ):
         self._connection_string = default_values.get_required_value(
             env_var_name=self.AZURE_SQL_DB_CONNECTION_STRING, passed_value=connection_string
         )
-        self._container_url: str = default_values.get_required_value(
-            env_var_name=self.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE, passed_value=container_url
-        )
-        try:
-            self._sas_token: str = default_values.get_required_value(
-                env_var_name=self.SAS_TOKEN_ENVIRONMENT_VARIABLE, passed_value=sas_token
-            )
-        except ValueError:
-            self._sas_token = None  # To use delegation SAS
 
-        self.results_path = self._container_url
+        self._results_container_url: str = default_values.get_required_value(
+            env_var_name=self.AZURE_STORAGE_ACCOUNT_DB_DATA_CONTAINER_URL, passed_value=results_container_url
+        )
+
+        self._results_container_sas_token: Optional[str] = self._resolve_sas_token(
+            self.AZURE_STORAGE_ACCOUNT_DB_DATA_SAS_TOKEN, results_sas_token
+        )
+
+        self._auth_token: Optional[AccessToken] = None
+        self._auth_token_expiry: Optional[int] = None
+
+        self.results_path = self._results_container_url
 
         self.engine = self._create_engine(has_echo=verbose)
 
-        self._auth_token = self._create_auth_token()
+        # Generate the initial auth token
+        self._create_auth_token()
+        # Enable token-based authorization
         self._enable_azure_authorization()
 
         self.SessionFactory = sessionmaker(bind=self.engine)
@@ -72,13 +79,48 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         super(AzureSQLMemory, self).__init__()
 
+    @staticmethod
+    def _resolve_sas_token(env_var_name: str, passed_value: Optional[str]) -> Optional[str]:
+        """
+        Resolve the SAS token value, allowing a fallback to None for delegation SAS.
+
+        Args:
+            env_var_name (str): The environment variable name to look up.
+            passed_value (Optional[str]): A passed-in value for the SAS token.
+
+        Returns:
+            Optional[str]: Resolved SAS token or None if not provided.
+        """
+        try:
+            return default_values.get_required_value(env_var_name=env_var_name, passed_value=passed_value)
+        except ValueError:
+            return None
+
     def _init_storage_io(self):
         # Handle for Azure Blob Storage when using Azure SQL memory.
-        self.storage_io = AzureBlobStorageIO(container_url=self._container_url, sas_token=self._sas_token)
+        self.results_storage_io = AzureBlobStorageIO(
+            container_url=self._results_container_url, sas_token=self._results_container_sas_token
+        )
 
-    def _create_auth_token(self) -> AccessToken:
+    def _create_auth_token(self):
+        """
+        Creates an Azure Entra ID access token.
+        Stores the token and its expiry time.
+        """
         azure_credentials = DefaultAzureCredential()
-        return azure_credentials.get_token(self.TOKEN_URL)
+        token: AccessToken = azure_credentials.get_token(self.TOKEN_URL)
+        self._auth_token = token
+        self._auth_token_expiry = token.expires_on
+
+    def _refresh_token_if_needed(self) -> None:
+        """
+        Refresh the access token if it is close to expiry (within 5 minutes).
+        """
+        if datetime.now(timezone.utc) >= datetime.fromtimestamp(self._auth_token_expiry, tz=timezone.utc) - timedelta(
+            minutes=5
+        ):
+            logger.info("Refreshing Microsoft Entra ID access token...")
+            self._create_auth_token()
 
     def _create_engine(self, *, has_echo: bool) -> Engine:
         """Creates the SQLAlchemy engine for Azure SQL Server.
@@ -92,7 +134,11 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         try:
             # Create the SQLAlchemy engine.
-            engine = create_engine(self._connection_string, echo=has_echo)
+            # Use pool_pre_ping (health check) to gracefully handle server-closed connections
+            # by testing and replacing stale connections.
+            # Set pool_recycle to 1800 seconds to prevent connections from being closed due to server timeout.
+
+            engine = create_engine(self._connection_string, pool_recycle=1800, pool_pre_ping=True, echo=has_echo)
             logger.info(f"Engine created successfully for database: {engine.name}")
             return engine
         except SQLAlchemyError as e:
@@ -113,6 +159,9 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         @event.listens_for(self.engine, "do_connect")
         def provide_token(_dialect, _conn_rec, cargs, cparams):
+            # Refresh token if it's close to expiry
+            self._refresh_token_if_needed()
+
             # remove the "Trusted_Connection" parameter that SQLAlchemy adds
             cargs[0] = cargs[0].replace(";Trusted_Connection=Yes", "")
 
@@ -141,62 +190,29 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         Inserts embedding data into memory storage
         """
-        self.insert_entries(entries=embedding_data)
+        self._insert_entries(entries=embedding_data)
 
-    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: str) -> list[PromptRequestPiece]:
-        """
-        Retrieves a list of PromptMemoryEntry Base objects that have the specified orchestrator ID.
+    def _get_prompt_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]):
+        json_validation = "ISJSON(labels) = 1"
+        json_conditions = " AND ".join([f"JSON_VALUE(labels, '$.{key}') = :{key}" for key in memory_labels])
+        # Combine both conditions
+        conditions = f"{json_validation} AND {json_conditions}"
 
-        Args:
-            orchestrator_id (str): The id of the orchestrator.
-                Can be retrieved by calling orchestrator.get_identifier()["id"]
+        # Create SQL condition using SQLAlchemy's text() with bindparams
+        # for safe parameter passing, preventing SQL injection
+        return text(conditions).bindparams(**{key: str(value) for key, value in memory_labels.items()})
 
-        Returns:
-            list[PromptRequestPiece]: A list of PromptMemoryEntry Base objects matching the specified orchestrator ID.
-        """
-        try:
-            sql_condition = text(
-                "ISJSON(orchestrator_identifier) = 1 AND JSON_VALUE(orchestrator_identifier, '$.id') = :json_id"
-            ).bindparams(json_id=str(orchestrator_id))
-            entries = self.query_entries(PromptMemoryEntry, conditions=sql_condition)  # type: ignore
-            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
-
-            return result
-        except Exception as e:
-            logger.exception(
-                f"Unexpected error: Failed to retrieve ConversationData with orchestrator {orchestrator_id}. {e}"
-            )
-            return []
-
-    def _get_prompt_pieces_with_conversation_id(self, *, conversation_id: str) -> list[PromptRequestPiece]:
-        """
-        Retrieves a list of PromptRequestPiece objects that have the specified conversation ID.
-
-        Args:
-            conversation_id (str): The conversation ID to match.
-
-        Returns:
-            list[PromptRequestPiece]: A list of PromptRequestPieces with the specified conversation ID.
-        """
-        try:
-            entries = self.query_entries(
-                PromptMemoryEntry,
-                conditions=PromptMemoryEntry.conversation_id == str(conversation_id),
-            )  # type: ignore
-
-            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
-            return result
-
-        except Exception as e:
-            logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
-            return []
+    def _get_prompt_pieces_orchestrator_conditions(self, *, orchestrator_id: str):
+        return text(
+            "ISJSON(orchestrator_identifier) = 1 AND JSON_VALUE(orchestrator_identifier, '$.id') = :json_id"
+        ).bindparams(json_id=str(orchestrator_id))
 
     def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.
 
         """
-        self.insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in request_pieces])
+        self._insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in request_pieces])
 
     def dispose_engine(self):
         """
@@ -210,85 +226,10 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         Fetches all entries from the specified table and returns them as model instances.
         """
-        result = self.query_entries(EmbeddingDataEntry)
+        result = self._query_entries(EmbeddingDataEntry)
         return result
 
-    def get_all_prompt_pieces(self) -> list[PromptRequestPiece]:
-        """
-        Fetches all entries from the specified table and returns them as model instances.
-        """
-        result: list[PromptMemoryEntry] = self.query_entries(PromptMemoryEntry)
-        return [entry.get_prompt_request_piece() for entry in result]
-
-    def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> list[PromptRequestPiece]:
-        """
-        Retrieves a list of PromptRequestPiece objects that have the specified prompt ids.
-
-        Args:
-            prompt_ids (list[str]): The prompt IDs to match.
-
-        Returns:
-            list[PromptRequestPiece]: A list of PromptRequestPiece with the specified conversation ID.
-        """
-        try:
-            entries = self.query_entries(
-                PromptMemoryEntry,
-                conditions=PromptMemoryEntry.id.in_(prompt_ids),
-            )
-            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
-            return result
-        except Exception as e:
-            logger.exception(
-                f"Unexpected error: Failed to retrieve ConversationData with orchestrator {prompt_ids}. {e}"
-            )
-            return []
-
-    def get_prompt_request_piece_by_memory_labels(
-        self, *, memory_labels: dict[str, str] = {}
-    ) -> list[PromptRequestPiece]:
-        """
-        Retrieves a list of PromptRequestPiece objects that have the specified memory labels.
-
-        Args:
-            memory_labels (dict[str, str]): A free-form dictionary for tagging prompts with custom labels.
-            These labels can be used to track all prompts sent as part of an operation, score prompts based on
-            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
-            Users can define any key-value pairs according to their needs. Defaults to an empty dictionary.
-
-        Returns:
-            list[PromptRequestPiece]: A list of PromptRequestPiece with the specified memory labels.
-        """
-        try:
-            json_validation = "ISJSON(labels) = 1"
-            json_conditions = " AND ".join([f"JSON_VALUE(labels, '$.{key}') = :{key}" for key in memory_labels])
-            # Combine both conditions
-            conditions = f"{json_validation} AND {json_conditions}"
-
-            # Create SQL condition using SQLAlchemy's text() with bindparams
-            # for safe parameter passing, preventing SQL injection
-            sql_condition = text(conditions).bindparams(**{key: str(value) for key, value in memory_labels.items()})
-
-            entries = self.query_entries(PromptMemoryEntry, conditions=sql_condition)
-            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
-            return result
-        except Exception as e:
-            logger.exception(
-                f"Unexpected error: Failed to retrieve {PromptMemoryEntry.__tablename__} "
-                f"with memory labels {memory_labels}. {e}"
-            )
-            return []
-
-    def get_scores_by_prompt_ids(self, *, prompt_request_response_ids: list[str]) -> list[Score]:
-        """
-        Gets a list of scores based on prompt_request_response_ids.
-        """
-        entries = self.query_entries(
-            ScoreEntry, conditions=ScoreEntry.prompt_request_response_id.in_(prompt_request_response_ids)
-        )
-
-        return [entry.get_score() for entry in entries]
-
-    def insert_entry(self, entry: Base) -> None:  # type: ignore
+    def _insert_entry(self, entry: Base) -> None:  # type: ignore
         """
         Inserts an entry into the Table.
 
@@ -306,7 +247,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
     # The following methods are not part of MemoryInterface, but seem
     # common between SQLAlchemy-based implementations, regardless of engine.
     # Perhaps we should find a way to refactor
-    def insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
+    def _insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
         """Inserts multiple entries into the database."""
         with closing(self.get_session()) as session:
             try:
@@ -323,16 +264,17 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         return self.SessionFactory()
 
-    def query_entries(
-        self, model, *, conditions: Optional = None, distinct: bool = False  # type: ignore
+    def _query_entries(
+        self, model, *, conditions: Optional = None, distinct: bool = False, join_scores: bool = False  # type: ignore
     ) -> list[Base]:
         """
         Fetches data from the specified table model with optional conditions.
 
         Args:
             model: The SQLAlchemy model class corresponding to the table you want to query.
-            conditions: SQLAlchemy filter conditions (optional).
+            conditions: SQLAlchemy filter conditions (Optional).
             distinct: Flag to return distinct rows (defaults to False).
+            join_scores: Flag to join the scores table with entries (defaults to False).
 
         Returns:
             List of model instances representing the rows fetched from the table.
@@ -340,6 +282,8 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         with closing(self.get_session()) as session:
             try:
                 query = session.query(model)
+                if join_scores and model == PromptMemoryEntry:
+                    query = query.options(joinedload(PromptMemoryEntry.scores))
                 if conditions is not None:
                     query = query.filter(conditions)
                 if distinct:
@@ -349,7 +293,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 logger.exception(f"Error fetching data from table {model.__tablename__}: {e}")
                 return []
 
-    def update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
+    def _update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
         """
         Updates the given entries with the specified field values.
 

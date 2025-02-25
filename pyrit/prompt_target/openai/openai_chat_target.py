@@ -4,16 +4,24 @@
 import logging
 from typing import MutableSequence, Optional
 
-from openai import BadRequestError, NotGiven, NOT_GIVEN
+from openai import NOT_GIVEN, BadRequestError, NotGiven
 from openai.types.chat import ChatCompletion
 
-
-from pyrit.exceptions import PyritException, EmptyResponseException
-from pyrit.exceptions import handle_bad_request_exception, pyrit_target_retry
-from pyrit.models import ChatMessageListDictContent, PromptRequestResponse, PromptRequestPiece, DataTypeSerializer
-from pyrit.models import data_serializer_factory, construct_response_from_request
+from pyrit.exceptions import (
+    EmptyResponseException,
+    PyritException,
+    handle_bad_request_exception,
+    pyrit_target_retry,
+)
+from pyrit.models import (
+    ChatMessageListDictContent,
+    DataTypeSerializer,
+    PromptRequestPiece,
+    PromptRequestResponse,
+    construct_response_from_request,
+    data_serializer_factory,
+)
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
-
 
 logger = logging.getLogger(__name__)
 
@@ -43,26 +51,26 @@ class OpenAIChatTarget(OpenAITarget):
     ):
         """
         Args:
-            max_completion_tokens (int, optional): An upper bound for the number of tokens that
+            max_completion_tokens (int, Optional): An upper bound for the number of tokens that
                 can be generated for a completion, including visible output tokens and
                 reasoning tokens.
 
                 NOTE: Specify this value when using an o1 series model.
-            max_tokens (int, optional): The maximum number of tokens that can be
+            max_tokens (int, Optional): The maximum number of tokens that can be
                 generated in the chat completion. This value can be used to control
                 costs for text generated via API.
 
                 This value is now deprecated in favor of `max_completion_tokens`, and IS NOT
                 COMPATIBLE with o1 series models.
-            temperature (float, optional): The temperature parameter for controlling the
+            temperature (float, Optional): The temperature parameter for controlling the
                 randomness of the response. Defaults to 1.0.
-            top_p (float, optional): The top-p parameter for controlling the diversity of the
+            top_p (float, Optional): The top-p parameter for controlling the diversity of the
                 response. Defaults to 1.0.
-            frequency_penalty (float, optional): The frequency penalty parameter for penalizing
+            frequency_penalty (float, Optional): The frequency penalty parameter for penalizing
                 frequently generated tokens. Defaults to 0.
-            presence_penalty (float, optional): The presence penalty parameter for penalizing
+            presence_penalty (float, Optional): The presence penalty parameter for penalizing
                 tokens that are already present in the conversation history. Defaults to 0.
-            seed (int, optional): If specified, openAI will make a best effort to sample deterministically,
+            seed (int, Optional): If specified, openAI will make a best effort to sample deterministically,
                 such that repeated requests with the same seed and parameters should return the same result.
         """
         super().__init__(*args, **kwargs)
@@ -96,6 +104,8 @@ class OpenAIChatTarget(OpenAITarget):
         self._validate_request(prompt_request=prompt_request)
         request_piece: PromptRequestPiece = prompt_request.request_pieces[0]
 
+        is_json_response = self.is_response_format_json(request_piece)
+
         prompt_req_res_entries = self._memory.get_conversation(conversation_id=request_piece.conversation_id)
         prompt_req_res_entries.append(prompt_request)
 
@@ -103,7 +113,7 @@ class OpenAIChatTarget(OpenAITarget):
 
         messages = await self._build_chat_messages(prompt_req_res_entries)
         try:
-            resp_text = await self._complete_chat_async(messages=messages)
+            resp_text = await self._complete_chat_async(messages=messages, is_json_response=is_json_response)
 
             logger.info(f'Received the following response from the prompt target "{resp_text}"')
 
@@ -136,7 +146,9 @@ class OpenAIChatTarget(OpenAITarget):
         if not mime_type:
             mime_type = "application/octet-stream"
 
-        image_serializer = data_serializer_factory(value=image_path, data_type="image_path", extension=ext)
+        image_serializer = data_serializer_factory(
+            category="prompt-memory-entries", value=image_path, data_type="image_path", extension=ext
+        )
         base64_encoded_data = await image_serializer.read_data_base64()
         # Azure OpenAI GPT-4o documentation doesn't specify the local image upload format for API.
         # GPT-4o image upload format is determined using "view code" functionality in Azure OpenAI deployments
@@ -201,7 +213,7 @@ class OpenAIChatTarget(OpenAITarget):
         return response_message
 
     @pyrit_target_retry
-    async def _complete_chat_async(self, messages: list[ChatMessageListDictContent]) -> str:
+    async def _complete_chat_async(self, messages: list[ChatMessageListDictContent], is_json_response: bool) -> str:
         """
         Completes asynchronous chat request.
 
@@ -209,11 +221,11 @@ class OpenAIChatTarget(OpenAITarget):
 
         Args:
             messages (list[ChatMessageListDictContent]): The chat message objects containing the role and content.
+            is_json_response (bool): Boolean indicating if the response should be in JSON format.
 
         Returns:
             str: The generated response message.
         """
-
         response: ChatCompletion = await self._async_client.chat.completions.create(
             model=self._deployment_name,
             max_completion_tokens=self._max_completion_tokens,
@@ -226,6 +238,7 @@ class OpenAIChatTarget(OpenAITarget):
             stream=False,
             seed=self._seed,
             messages=[{"role": msg.role, "content": msg.content} for msg in messages],  # type: ignore
+            response_format={"type": "json_object"} if is_json_response else None,
         )
         finish_reason = response.choices[0].finish_reason
         extracted_response: str = ""
@@ -261,3 +274,7 @@ class OpenAIChatTarget(OpenAITarget):
         for prompt_data_type in converted_prompt_data_types:
             if prompt_data_type not in ["text", "image_path"]:
                 raise ValueError("This target only supports text and image_path.")
+
+    def is_json_response_supported(self) -> bool:
+        """Indicates that this target supports JSON response format."""
+        return True

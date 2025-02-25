@@ -4,7 +4,7 @@
 import random
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter, ConverterResult
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 
 class LeetspeakConverter(PromptConverter):
@@ -17,7 +17,7 @@ class LeetspeakConverter(PromptConverter):
         Args:
             deterministic (bool): If True, use the first substitution for each character.
                 If False, randomly choose a substitution for each character.
-            custom_substitutions (dict, optional): A dictionary of custom substitutions to override the defaults.
+            custom_substitutions (dict, Optional): A dictionary of custom substitutions to override the defaults.
         """
         default_substitutions = {
             "a": ["4", "@", "/\\", "@", "^", "/-\\"],
@@ -69,3 +69,6 @@ class LeetspeakConverter(PromptConverter):
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
+
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "text"

@@ -1,18 +1,17 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import logging
 import base64
+import logging
 import string
+import textwrap
+from io import BytesIO
 from typing import Optional
 
 from PIL import Image, ImageDraw, ImageFont
-import textwrap
-from io import BytesIO
 
-from pyrit.models import data_serializer_factory
-from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter, ConverterResult
+from pyrit.models import PromptDataType, data_serializer_factory
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 
@@ -23,17 +22,17 @@ class AddTextImageConverter(PromptConverter):
 
     Args:
         text_to_add (str): Text to add to an image. Defaults to empty string.
-        font_name (str, optional): Path of font to use. Must be a TrueType font (.ttf). Defaults to "arial.ttf".
-        color (tuple, optional): Color to print text in, using RGB values. Defaults to (0, 0, 0).
-        font_size (float, optional): Size of font to use. Defaults to 15.
-        x_pos (int, optional): X coordinate to place text in (0 is left most). Defaults to 10.
-        y_pos (int, optional): Y coordinate to place text in (0 is upper most). Defaults to 10.
+        font_name (str, Optional): Path of font to use. Must be a TrueType font (.ttf). Defaults to "helvetica.ttf".
+        color (tuple, Optional): Color to print text in, using RGB values. Defaults to (0, 0, 0).
+        font_size (float, Optional): Size of font to use. Defaults to 15.
+        x_pos (int, Optional): X coordinate to place text in (0 is left most). Defaults to 10.
+        y_pos (int, Optional): Y coordinate to place text in (0 is upper most). Defaults to 10.
     """
 
     def __init__(
         self,
         text_to_add: str,
-        font_name: Optional[str] = "arial.ttf",
+        font_name: Optional[str] = "helvetica.ttf",
         color: Optional[tuple[int, int, int]] = (0, 0, 0),
         font_size: Optional[int] = 15,
         x_pos: Optional[int] = 10,
@@ -118,7 +117,7 @@ class AddTextImageConverter(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
-        img_serializer = data_serializer_factory(value=prompt, data_type="image_path")
+        img_serializer = data_serializer_factory(category="prompt-memory-entries", value=prompt, data_type="image_path")
 
         # Open the image
         original_img_bytes = await img_serializer.read_data()
@@ -138,3 +137,6 @@ class AddTextImageConverter(PromptConverter):
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "image_path"
+
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "image_path"

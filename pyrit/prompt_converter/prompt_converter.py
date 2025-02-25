@@ -3,10 +3,11 @@
 
 import abc
 import asyncio
-from dataclasses import dataclass
 import re
+from dataclasses import dataclass
+from typing import get_args
 
-from pyrit.models import PromptDataType, Identifier
+from pyrit.models import Identifier, PromptDataType
 
 
 @dataclass
@@ -35,7 +36,6 @@ class PromptConverter(abc.ABC, Identifier):
         Returns:
             str: The converted representation of the prompts.
         """
-        pass
 
     @abc.abstractmethod
     def input_supported(self, input_type: PromptDataType) -> bool:
@@ -48,7 +48,18 @@ class PromptConverter(abc.ABC, Identifier):
         Returns:
             bool: True if the input type is supported, False otherwise
         """
-        pass
+
+    @abc.abstractmethod
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        """
+        Checks if the output type is supported by the converter
+
+        Args:
+            output_type: The output type to check
+
+        Returns:
+            bool: True if the output type is supported, False otherwise
+        """
 
     async def convert_tokens_async(
         self, *, prompt: str, input_type: PromptDataType = "text", start_token: str = "⟪", end_token: str = "⟫"
@@ -102,3 +113,23 @@ class PromptConverter(abc.ABC, Identifier):
         public_attributes["__type__"] = self.__class__.__name__
         public_attributes["__module__"] = self.__class__.__module__
         return public_attributes
+
+    @property
+    def supported_input_types(self) -> list[PromptDataType]:
+        """
+        Returns a list of supported input types for the converter.
+
+        Returns:
+            list[PromptDataType]: A list of supported input types.
+        """
+        return [data_type for data_type in get_args(PromptDataType) if self.input_supported(data_type)]
+
+    @property
+    def supported_output_types(self) -> list[PromptDataType]:
+        """
+        Returns a list of supported output types for the converter.
+
+        Returns:
+            list[PromptDataType]: A list of supported output types.
+        """
+        return [data_type for data_type in get_args(PromptDataType) if self.output_supported(data_type)]

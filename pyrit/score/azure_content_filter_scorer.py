@@ -2,15 +2,25 @@
 # Licensed under the MIT license.
 
 from typing import Optional
-from pyrit.common import default_values
-from pyrit.models import data_serializer_factory, DataTypeSerializer, PromptRequestPiece, Score
-from pyrit.score.scorer import Scorer
 
-from azure.ai.contentsafety.models import AnalyzeTextOptions, AnalyzeImageOptions, TextCategory, ImageData
 from azure.ai.contentsafety import ContentSafetyClient
+from azure.ai.contentsafety.models import (
+    AnalyzeImageOptions,
+    AnalyzeTextOptions,
+    ImageData,
+    TextCategory,
+)
 from azure.core.credentials import AzureKeyCredential
 from azure.identity import DefaultAzureCredential
 
+from pyrit.common import default_values
+from pyrit.models import (
+    DataTypeSerializer,
+    PromptRequestPiece,
+    Score,
+    data_serializer_factory,
+)
+from pyrit.score.scorer import Scorer
 
 # Supported image formats for Azure as per https://learn.microsoft.com/en-us/azure/ai-services/content-safety/
 # quickstart-image?tabs=visual-studio%2Cwindows&pivots=programming-language-rest
@@ -43,11 +53,11 @@ class AzureContentFilterScorer(Scorer):
         Class that initializes an Azure Content Filter Scorer
 
         Args:
-            api_key (str, optional): The API key for accessing the Azure OpenAI service.
+            api_key (str, Optional): The API key for accessing the Azure OpenAI service.
                 Defaults to the API_KEY_ENVIRONMENT_VARIABLE environment variable.
-            endpoint (str, optional): The endpoint URL for the Azure OpenAI service.
+            endpoint (str, Optional): The endpoint URL for the Azure OpenAI service.
                 Defaults to the ENDPOINT_URI_ENVIRONMENT_VARIABLE environment variable.
-            use_aad_auth (bool, optional): Attempt to use DefaultAzureCredential
+            use_aad_auth (bool, Optional): Attempt to use DefaultAzureCredential
                 If set to true, attempt to use DefaultAzureCredential for auth
             harm_categories: The harm categories you want to query for as per defined in
                 azure.ai.contentsafety.models.TextCategory.
@@ -151,7 +161,9 @@ class AzureContentFilterScorer(Scorer):
     async def _get_base64_image_data(self, request_response: PromptRequestPiece):
         image_path = request_response.converted_value
         ext = DataTypeSerializer.get_extension(image_path)
-        image_serializer = data_serializer_factory(value=image_path, data_type="image_path", extension=ext)
+        image_serializer = data_serializer_factory(
+            category="prompt-memory-entries", value=image_path, data_type="image_path", extension=ext
+        )
         base64_encoded_data = await image_serializer.read_data_base64()
         return base64_encoded_data
 

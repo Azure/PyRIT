@@ -2,13 +2,12 @@
 # Licensed under the MIT license.
 
 import logging
-
-from pyrit.prompt_converter import LLMGenericTextConverter, ConverterResult
-from pyrit.models import PromptDataType, SeedPrompt
-from pyrit.prompt_target import PromptChatTarget
+import pathlib
 
 from pyrit.common.path import DATASETS_PATH
-import pathlib
+from pyrit.models import PromptDataType, SeedPrompt
+from pyrit.prompt_converter import ConverterResult, LLMGenericTextConverter
+from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
 
@@ -42,3 +41,9 @@ class MaliciousQuestionGeneratorConverter(LLMGenericTextConverter):
         # Add the prompt to _prompt_kwargs before calling the base method
         self._prompt_kwargs["prompt"] = prompt
         return await super().convert_async(prompt=prompt, input_type=input_type)
+
+    def input_supported(self, input_type: PromptDataType) -> bool:
+        return input_type == "text"
+
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "text"

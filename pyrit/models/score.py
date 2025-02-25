@@ -1,11 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import uuid
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, Literal, Optional, get_args
-import uuid
-
 
 ScoreType = Literal["true_false", "float_scale"]
 
@@ -33,7 +32,7 @@ class Score:
     # specific scorer that uses it.
     score_metadata: str
 
-    # The identifier of the scorer class, including relavent information
+    # The identifier of the scorer class, including relevant information
     # e.g. {"scorer_name": "SelfAskScorer", "classifier": "current_events.yml"}
     scorer_class_identifier: Dict[str, str]
 
@@ -115,10 +114,27 @@ class Score:
             except ValueError:
                 raise ValueError(f"Float scale scorers require a numeric score value. Got {score_value}")
 
+    def to_dict(self):
+        return {
+            "id": str(self.id),
+            "score_value": self.score_value,
+            "score_value_description": self.score_value_description,
+            "score_type": self.score_type,
+            "score_category": self.score_category,
+            "score_rationale": self.score_rationale,
+            "score_metadata": self.score_metadata,
+            "scorer_class_identifier": self.scorer_class_identifier,
+            "prompt_request_response_id": str(self.prompt_request_response_id),
+            "timestamp": self.timestamp.isoformat(),
+            "task": self.task,
+        }
+
     def __str__(self):
         if self.scorer_class_identifier:
             return f"{self.scorer_class_identifier['__type__']}: {self.score_category}: {self.score_value}"
         return f": {self.score_category}: {self.score_value}"
+
+    __repr__ = __str__
 
 
 @dataclass

@@ -2,15 +2,20 @@
 # Licensed under the MIT license.
 
 import abc
+import ast
 import logging
 import uuid
-
 from typing import Optional
 
-from pyrit.memory import MemoryInterface, CentralMemory
-from pyrit.models import PromptDataType, Identifier
+from pyrit.common import default_values
+from pyrit.memory import CentralMemory, MemoryInterface
+from pyrit.models import Identifier, PromptDataType
+from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
 from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece
+from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
+from pyrit.prompt_normalizer.prompt_converter_configuration import (
+    PromptConverterConfiguration,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +28,6 @@ class Orchestrator(abc.ABC, Identifier):
         self,
         *,
         prompt_converters: Optional[list[PromptConverter]] = None,
-        memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
     ):
         self._prompt_converters = prompt_converters if prompt_converters else []
@@ -31,7 +35,11 @@ class Orchestrator(abc.ABC, Identifier):
         self._verbose = verbose
         self._id = uuid.uuid4()
 
-        self._global_memory_labels = memory_labels if memory_labels else {}
+        # Pull in global memory labels from .env.local. memory_labels. These labels will be applied to all prompts
+        # sent via orchestrator.
+        self._global_memory_labels: dict[str, str] = ast.literal_eval(
+            default_values.get_non_required_value(env_var_name="GLOBAL_MEMORY_LABELS", passed_value=None) or "{}"
+        )
 
         if self._verbose:
             logging.basicConfig(level=logging.INFO)
@@ -54,33 +62,38 @@ class Orchestrator(abc.ABC, Identifier):
         self,
         prompt_text: str,
         prompt_type: PromptDataType = "text",
+        conversation_id: str = None,
         converters=None,
         metadata=None,
-        conversation_id=None,
-    ):
+    ) -> NormalizerRequest:
 
         if converters is None:
             converters = self._prompt_converters
 
-        request_piece = NormalizerRequestPiece(
-            request_converters=converters, prompt_value=prompt_text, prompt_data_type=prompt_type, metadata=metadata
+        seed_prompt_group = SeedPromptGroup(
+            prompts=[
+                SeedPrompt(
+                    value=prompt_text,
+                    data_type=prompt_type,
+                    metadata=metadata,
+                )
+            ]
         )
 
-        request = NormalizerRequest(request_pieces=[request_piece], conversation_id=conversation_id)
-        return request
+        converter_configurations = [PromptConverterConfiguration(converters=converters if converters else [])]
 
-    def _combine_with_global_memory_labels(self, memory_labels: dict[str, str]) -> dict[str, str]:
-        """
-        Combines the global memory labels with the provided memory labels.
-        The passed memory_labels take precedence with collisions.
-        """
-        return {**(self._global_memory_labels or {}), **(memory_labels or {})}
+        request = NormalizerRequest(
+            seed_prompt_group=seed_prompt_group,
+            request_converter_configurations=converter_configurations,
+            conversation_id=conversation_id,
+        )
+        return request
 
     def get_memory(self):
         """
         Retrieves the memory associated with this orchestrator.
         """
-        return self._memory.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=self._id)
+        return self._memory.get_prompt_request_pieces(orchestrator_id=self._id)
 
     def get_score_memory(self):
         """

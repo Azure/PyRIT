@@ -4,11 +4,10 @@
 import asyncio
 import logging
 import os
-import httpx
 from pathlib import Path
 
+import httpx
 from huggingface_hub import HfApi
-
 
 logger = logging.getLogger(__name__)
 

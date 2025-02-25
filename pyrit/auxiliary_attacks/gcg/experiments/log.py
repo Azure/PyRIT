@@ -1,9 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import time
-import mlflow
 import subprocess as sp
+import time
+
+import mlflow
 
 
 def log_params(params, param_keys=["model_name", "transfer", "n_train_data", "n_test_data", "n_steps", "batch_size"]):

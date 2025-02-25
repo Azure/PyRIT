@@ -1,16 +1,16 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import uuid
 from textwrap import dedent
 from typing import Optional
 
 import requests
 from openai import BadRequestError
-import uuid
 
 from pyrit.exceptions import PyritException, pyrit_target_retry
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
-from pyrit.prompt_target import PromptChatTarget, GandalfLevel
+from pyrit.prompt_target import GandalfLevel, PromptChatTarget
 from pyrit.score.scorer import Scorer
 
 
@@ -156,7 +156,5 @@ class GandalfScorer(Scorer):
         return [score]
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
-        if task:
-            raise ValueError("This scorer does not support tasks")
         if request_response.converted_value_data_type != "text":
             raise ValueError("Gandalf scorer only supports text data type")

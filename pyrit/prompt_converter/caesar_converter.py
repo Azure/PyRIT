@@ -1,13 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import string
 import pathlib
+import string
 
-from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter, ConverterResult
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import SeedPrompt
+from pyrit.models import PromptDataType, SeedPrompt
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 
 class CaesarConverter(PromptConverter):
@@ -60,6 +59,9 @@ class CaesarConverter(PromptConverter):
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
+
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "text"
 
     def _caesar(self, text: str) -> str:
         def shift(alphabet: str) -> str:

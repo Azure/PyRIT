@@ -1,16 +1,16 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import io
 import logging
 from typing import Literal
 
-import io
 import numpy as np
 from scipy.io import wavfile
 
 from pyrit.models import PromptDataType
 from pyrit.models.data_type_serializer import data_serializer_factory
-from pyrit.prompt_converter import PromptConverter, ConverterResult
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +38,9 @@ class AudioFrequencyConverter(PromptConverter):
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "audio_path"
 
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "audio_path"
+
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "audio_path") -> ConverterResult:
         """Convert an audio file by shifting its frequency.
 
@@ -56,7 +59,7 @@ class AudioFrequencyConverter(PromptConverter):
         try:
             # Create serializer to read audio data
             audio_serializer = data_serializer_factory(
-                data_type="audio_path", extension=self._output_format, value=prompt
+                category="prompt-memory-entries", data_type="audio_path", extension=self._output_format, value=prompt
             )
             audio_bytes = await audio_serializer.read_data()
 

@@ -1,10 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import MutableSequence, Optional, Sequence
+from typing import Dict, MutableSequence, Optional, Sequence
 
-from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.literals import PromptDataType, PromptResponseError
+from pyrit.models.prompt_request_piece import PromptRequestPiece
 
 
 class PromptRequestResponse:
@@ -48,6 +48,19 @@ class PromptRequestResponse:
         for request_piece in self.request_pieces:
             ret += str(request_piece) + "\n"
         return "\n".join([str(request_piece) for request_piece in self.request_pieces])
+
+    @staticmethod
+    def flatten_to_prompt_request_pieces(
+        request_responses: Sequence["PromptRequestResponse"],
+    ) -> list[PromptRequestPiece]:
+        if not request_responses:
+            return []
+        response_pieces = []
+
+        for response in request_responses:
+            response_pieces.extend(response.request_pieces)
+
+        return response_pieces
 
 
 def group_conversation_request_pieces_by_sequence(
@@ -114,7 +127,7 @@ def construct_response_from_request(
     request: PromptRequestPiece,
     response_text_pieces: list[str],
     response_type: PromptDataType = "text",
-    prompt_metadata: Optional[str] = None,
+    prompt_metadata: Optional[Dict[str, str]] = None,
     error: PromptResponseError = "none",
 ) -> PromptRequestResponse:
     """

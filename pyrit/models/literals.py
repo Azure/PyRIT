@@ -3,8 +3,7 @@
 
 from typing import Literal
 
-
-PromptDataType = Literal["text", "image_path", "audio_path", "url", "error"]
+PromptDataType = Literal["text", "image_path", "audio_path", "video_path", "url", "error"]
 
 """
 The type of the error in the prompt response
@@ -13,6 +12,6 @@ none: no exception is raised
 processing: there is an exception thrown unrelated to the query
 unknown: the type of error is unknown
 """
-PromptResponseError = Literal["blocked", "none", "processing", "unknown"]
+PromptResponseError = Literal["blocked", "none", "processing", "empty", "unknown"]
 
 ChatMessageRole = Literal["system", "user", "assistant"]

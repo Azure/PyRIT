@@ -4,8 +4,13 @@
 import logging
 import uuid
 
-from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, SeedPrompt
-from pyrit.prompt_converter import PromptConverter, ConverterResult
+from pyrit.models import (
+    PromptDataType,
+    PromptRequestPiece,
+    PromptRequestResponse,
+    SeedPrompt,
+)
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -18,7 +23,7 @@ class LLMGenericTextConverter(PromptConverter):
 
         Args:
             converter_target (PromptChatTarget): The endpoint that converts the prompt
-            prompt_template (SeedPrompt, optional): The prompt template to set as the system prompt.
+            prompt_template (SeedPrompt, Optional): The prompt template to set as the system prompt.
             kwargs: Additional parameters for the prompt template.
 
         """
@@ -32,7 +37,7 @@ class LLMGenericTextConverter(PromptConverter):
 
         Parameters:
             prompt (str): The prompt to convert.
-            input_type (PromptDataType, optional): The data type of the input prompt. Defaults to "text".
+            input_type (PromptDataType, Optional): The data type of the input prompt. Defaults to "text".
 
         Returns:
             ConverterResult: The result of the conversion, including the converted output text and output type.
@@ -77,3 +82,6 @@ class LLMGenericTextConverter(PromptConverter):
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
+
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "text"

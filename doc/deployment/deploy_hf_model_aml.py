@@ -59,10 +59,11 @@
 
 # %%
 
-from dotenv import load_dotenv
 import os
 import random
 import string
+
+from dotenv import load_dotenv
 
 # Load the environment variables from the .env file
 load_dotenv()
@@ -95,12 +96,12 @@ print(f"Liveness probe initial delay in secs: {liveness_probe_initial_delay}")
 #
 # Set up the `DefaultAzureCredential` for seamless authentication with Azure services. This method should handle most authentication scenarios. If you encounter issues, refer to the [Azure Identity documentation](https://docs.microsoft.com/en-us/python/api/azure-identity/azure.identity?view=azure-python) for alternative credentials.
 #
-
 # %%
-from azure.ai.ml import MLClient
-from azure.identity import DefaultAzureCredential, InteractiveBrowserCredential
-from azure.core.exceptions import ResourceNotFoundError
 from typing import Union
+
+from azure.ai.ml import MLClient
+from azure.core.exceptions import ResourceNotFoundError
+from azure.identity import DefaultAzureCredential, InteractiveBrowserCredential
 
 try:
     credential: Union[DefaultAzureCredential, InteractiveBrowserCredential] = DefaultAzureCredential()
@@ -194,7 +195,12 @@ print(f"Endpoint name: {endpoint_name}")
 # Authentication mode: The authentication method for the endpoint. Choose between key-based authentication and Azure Machine Learning token-based authentication. A key doesn't expire, but a token does expire.
 
 # %%
-from azure.ai.ml.entities import ManagedOnlineEndpoint, ManagedOnlineDeployment, OnlineRequestSettings, ProbeSettings
+from azure.ai.ml.entities import (
+    ManagedOnlineDeployment,
+    ManagedOnlineEndpoint,
+    OnlineRequestSettings,
+    ProbeSettings,
+)
 
 # create an online endpoint
 endpoint = ManagedOnlineEndpoint(

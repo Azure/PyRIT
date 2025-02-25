@@ -1,16 +1,19 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 import textwrap
+from pathlib import Path
 from typing import Optional
-import yaml
 from uuid import uuid4
+
+import yaml
+
+from pyrit.common.path import DATASETS_PATH
+from pyrit.models import SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator.orchestrator_class import Orchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
-from pyrit.score.question_answer_scorer import QuestionAnswerScorer
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.common.path import DATASETS_PATH
-from pathlib import Path
+from pyrit.score.question_answer_scorer import QuestionAnswerScorer
 
 
 class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
@@ -32,7 +35,6 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
         chat_model_under_evaluation: PromptChatTarget,
         scorer: QuestionAnswerScorer,
         prompt_converters: list[PromptConverter] = [],
-        memory_labels: Optional[dict[str, str]] = None,
         evaluation_prompt: Optional[str] = None,
         verbose: bool = False,
     ) -> None:
@@ -42,18 +44,13 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
         Args:
             chat_model_under_evaluation (PromptChatTarget): The chat model to be evaluated.
             scorer (QuestionAnswerScorer): The scorer used to evaluate the chat model's responses.
-            prompt_converters (list[PromptConverter], optional): The prompt converters to be used.
-            memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
-            These labels can be used to track all prompts sent as part of an operation, score prompts based on
-            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
-            Users can define any key-value pairs according to their needs. Defaults to None.
-            evaluation_prompt (str, optional): The evaluation prompt to be used. Defaults to None.
-            verbose (bool, optional): Whether to print verbose output. Defaults to False.
+            prompt_converters (list[PromptConverter], Optional): The prompt converters to be used.
+            evaluation_prompt (str, Optional): The evaluation prompt to be used. Defaults to None.
+            verbose (bool, Optional): Whether to print verbose output. Defaults to False.
         """
         super().__init__(
             prompt_converters=prompt_converters,
             verbose=verbose,
-            memory_labels=memory_labels,
         )
 
         self._chat_model_under_evaluation = chat_model_under_evaluation
@@ -81,12 +78,18 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
 
         for idx, (question_entry, question_prompt) in enumerate(self._scorer.get_next_question_prompt_pair()):
 
-            request = self._create_normalizer_request(
-                prompt_text=question_prompt, conversation_id=self._conversation_id
+            seed_prompt_group = SeedPromptGroup(
+                prompts=[
+                    SeedPrompt(
+                        value=question_prompt,
+                        data_type="text",
+                    )
+                ]
             )
 
             response = await self._normalizer.send_prompt_async(
-                normalizer_request=request,
+                seed_prompt_group=seed_prompt_group,
+                conversation_id=self._conversation_id,
                 target=self._chat_model_under_evaluation,
                 labels=self._global_memory_labels,
                 orchestrator_identifier=self.get_identifier(),

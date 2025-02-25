@@ -1,16 +1,30 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.4
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
-# ### Insecure Code Scorer Demonstration
+# # Insecure Code Scorer
 # This script demonstrates how to use InsecureCodeScorer to evaluate a code snippet for potential security vulnerabilities.
 # InsecureCodeScorer uses a language model (LLM) to analyze the code and identify security risks, returning a score based on a predefined threshold.
 
 # %%
+from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import InsecureCodeScorer
-from pyrit.models import PromptRequestPiece
-from pyrit.common.default_values import load_default_env
 
-# Load default environment configurations if needed
-load_default_env()
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 # Initialize the LLM model target
 chat_target = OpenAIChatTarget()
@@ -38,3 +52,9 @@ for score in scores:
     print(f"Score Value: {score.score_value}")
     print(f"Score Rationale: {score.score_rationale}")
     print(f"Score Metadata: {score.score_metadata}")
+
+# %%
+from pyrit.memory import CentralMemory
+
+memory = CentralMemory.get_memory_instance()
+memory.dispose_engine()

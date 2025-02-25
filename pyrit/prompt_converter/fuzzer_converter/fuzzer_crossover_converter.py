@@ -4,13 +4,16 @@
 import pathlib
 import random
 import uuid
-from pyrit.common.path import DATASETS_PATH
 from typing import List, Optional
+
+from pyrit.common.path import DATASETS_PATH
+from pyrit.models import SeedPrompt
 from pyrit.models.literals import PromptDataType
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
-from pyrit.models import SeedPrompt
-from pyrit.prompt_converter.fuzzer_converter.fuzzer_converter_base import FuzzerConverter
+from pyrit.prompt_converter.fuzzer_converter.fuzzer_converter_base import (
+    FuzzerConverter,
+)
 from pyrit.prompt_converter.prompt_converter import ConverterResult
 from pyrit.prompt_target import PromptChatTarget
 
@@ -78,6 +81,7 @@ class FuzzerCrossOverConverter(FuzzerConverter):
             f"\n====TEMPLATE 2 BEGINS====\n{random.choice(self.prompt_templates)}\n====TEMPLATE 2 ENDS====\n"
         )
 
+        prompt_metadata = {"response_format": "json"}
         request = PromptRequestResponse(
             [
                 PromptRequestPiece(
@@ -90,6 +94,7 @@ class FuzzerCrossOverConverter(FuzzerConverter):
                     original_value_data_type=input_type,
                     converted_value_data_type=input_type,
                     converter_identifiers=[self.get_identifier()],
+                    prompt_metadata=prompt_metadata,
                 )
             ]
         )

@@ -2,13 +2,12 @@
 # Licensed under the MIT license.
 
 import logging
-
-from pyrit.prompt_converter import ConverterResult, LLMGenericTextConverter
-from pyrit.models import SeedPrompt, PromptDataType
-from pyrit.prompt_target import PromptChatTarget
+import pathlib
 
 from pyrit.common.path import DATASETS_PATH
-import pathlib
+from pyrit.models import PromptDataType, SeedPrompt
+from pyrit.prompt_converter import ConverterResult, LLMGenericTextConverter
+from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
 
@@ -74,3 +73,9 @@ class MathPromptConverter(LLMGenericTextConverter):
 
         # Return the full conversion as a ConverterResult
         return ConverterResult(output_text=full_conversion, output_type="text")
+
+    def input_supported(self, input_type: PromptDataType) -> bool:
+        return input_type == "text"
+
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "text"

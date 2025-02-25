@@ -2,9 +2,9 @@
 # Licensed under the MIT license.
 
 import csv
-
 from pathlib import Path
 from typing import Optional
+
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.score.scorer import Scorer
 
@@ -13,7 +13,7 @@ class HumanInTheLoopScorer(Scorer):
     """
     Create scores from manual human input and adds them to the database.
 
-    Attributes:
+    Parameters:
         scorer (Scorer): The scorer to use for the initial scoring.
         re_scorers (list[Scorer]): The scorers to use for re-scoring.
     """
@@ -49,10 +49,13 @@ class HumanInTheLoopScorer(Scorer):
     def score_prompt_manually(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Manually score the prompt
+
         Args:
             request_response (PromptRequestPiece): The prompt request piece to score.
             task (str): The task based on which the text should be scored (the original attacker model's objective).
-        Returns: list of scores
+
+        Returns:
+            list of scores
         """
         self.validate(request_response, task=task)
 
@@ -92,17 +95,20 @@ class HumanInTheLoopScorer(Scorer):
 
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
+        Score the prompt with a human in the loop.
+
         When the HumanInTheLoopScorer is used, user is given three options to choose from for each score:
         (1) Proceed with scoring the prompt as is
         (2) Manually modify the score & associated metadata
-            If the user chooses to manually modify the score,
-            they are prompted to enter the new score value, score category,
-            score value description, score rationale, and score metadata
+        If the user chooses to manually modify the score,
+        they are prompted to enter the new score value, score category,
+        score value description, score rationale, and score metadata
         (3) Re-score the prompt
-            If the user chooses to re-score the prompt,
-            they are prompted to select a re-scorer from the list of re-scorers provided
+        If the user chooses to re-score the prompt,
+        they are prompted to select a re-scorer from the list of re-scorers provided
 
         If the user initializes this scorer without a scorer, they will be prompted to manually score the prompt.
+
         Args:
             request_response (PromptRequestPiece): The prompt request piece to score.
             task (str): The task based on which the text should be scored (the original attacker model's objective).
@@ -194,7 +200,9 @@ class HumanInTheLoopScorer(Scorer):
         """
         Checks score value to make sure it is a valid float scale score or true/false score and returns the score type.
 
-        Parameters: score_value (str): The score value to check.
+        Parameters:
+            score_value (str): The score value to check.
+
         Returns:
             str: The score type which is either true/false or float_scale.
         """
@@ -212,12 +220,15 @@ class HumanInTheLoopScorer(Scorer):
     ) -> Score:
         """
         Edit an existing score.
+
         Parameters:
             existing_score (Score): The existing score to edit.
             original_prompt (str): The original prompt.
             request_response (PromptRequestPiece): The request response to score.
             task (str): The task based on which the text should be scored (the original attacker model's objective).
-        Returns: new score after all changes
+
+        Returns:
+            new score after all changes
         """
         # Update each field
         value_description = "(e.g., 'True' for true_false or a value between '0.0' and '1.0 for float_scale)"
@@ -273,12 +284,15 @@ class HumanInTheLoopScorer(Scorer):
     ) -> str:
         """
         Get the modified value for the score.
+
         Args:
             original_prompt (str): The original prompt.
             score_value (str): The existing value in the Score object.
             field_name (str): The name of the field to change.
             extra_value_description (Optional str): Extra information to show user describing the score value.
-        Returns: The value after modification or the original value if the user does not want to change it.
+
+        Returns:
+            The value after modification or the original value if the user does not want to change it.
         """
         formatted_message = f"""Re-scoring the prompt. The prompt is: {original_prompt}
         The previous {field_name.capitalize()} is {score_value}.
@@ -304,5 +318,4 @@ class HumanInTheLoopScorer(Scorer):
         return await re_scorer.score_async(request_response=request_response, task=task)
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
-        if task:
-            raise ValueError("This scorer does not support tasks")
+        pass

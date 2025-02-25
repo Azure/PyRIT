@@ -2,9 +2,9 @@
 # Licensed under the MIT license.
 
 import logging
+import pathlib
 import textwrap
 from typing import Optional
-import pathlib
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt
@@ -30,7 +30,7 @@ class NoiseConverter(LLMGenericTextConverter):
             converter_target (PromptChatTarget): The endpoint that converts the prompt
             noise (str): The noise to inject. Grammar error, delete random letter, insert random space, etc.
             number_errors (int): The number of errors to inject
-            prompt_template (SeedPrompt, optional): The prompt template for the conversion.
+            prompt_template (SeedPrompt, Optional): The prompt template for the conversion.
 
         """
         # set to default strategy if not provided
