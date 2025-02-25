@@ -1,12 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from unit.mocks import MockPromptTarget
 
 from pyrit.orchestrator import ManyShotJailbreakOrchestrator
-from pyrit.prompt_target import PromptChatTarget
 
 
 @pytest.fixture
@@ -27,7 +26,9 @@ def many_shot_examples():
 @pytest.mark.parametrize("explicit_examples", [True, False])
 @pytest.mark.asyncio
 async def test_many_shot_orchestrator(explicit_examples, n_prompts, many_shot_examples, mock_objective_target):
-    with patch("pyrit.orchestrator.single_turn.many_shot_jailbreak_orchestrator.fetch_many_shot_jailbreaking_dataset") as mock_fetch:
+    with patch(
+        "pyrit.orchestrator.single_turn.many_shot_jailbreak_orchestrator.fetch_many_shot_jailbreaking_dataset"
+    ) as mock_fetch:
         mock_fetch.return_value = many_shot_examples
         if explicit_examples:
             examples = many_shot_examples
@@ -35,7 +36,9 @@ async def test_many_shot_orchestrator(explicit_examples, n_prompts, many_shot_ex
             examples = None
 
         prompts = [f"prompt{i}" for i in range(n_prompts)]
-        orchestrator = ManyShotJailbreakOrchestrator(objective_target=mock_objective_target, many_shot_examples=examples)
+        orchestrator = ManyShotJailbreakOrchestrator(
+            objective_target=mock_objective_target, many_shot_examples=examples
+        )
         assert len(orchestrator._examples) == len(many_shot_examples)
 
         await orchestrator.send_prompts_async(prompt_list=prompts)
@@ -50,7 +53,7 @@ async def test_many_shot_orchestrator(explicit_examples, n_prompts, many_shot_ex
         if explicit_examples:
             assert mock_fetch.call_count == 0
         else:
-            mock_fetch.assert_called_once()    
+            mock_fetch.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -58,4 +61,3 @@ async def test_send_prompts_async_empty_prompt_list(many_shot_examples, mock_obj
     orchestrator = ManyShotJailbreakOrchestrator(objective_target=mock_objective_target)
     with pytest.raises(ValueError, match="Prompt list must not be empty."):
         await orchestrator.send_prompts_async(prompt_list=[])
-
