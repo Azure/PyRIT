@@ -22,7 +22,7 @@ class AddTextImageConverter(PromptConverter):
 
     Args:
         text_to_add (str): Text to add to an image. Defaults to empty string.
-        font_name (str, Optional): Path of font to use. Must be a TrueType font (.ttf). Defaults to "arial.ttf".
+        font_name (str, Optional): Path of font to use. Must be a TrueType font (.ttf). Defaults to "helvetica.ttf".
         color (tuple, Optional): Color to print text in, using RGB values. Defaults to (0, 0, 0).
         font_size (float, Optional): Size of font to use. Defaults to 15.
         x_pos (int, Optional): X coordinate to place text in (0 is left most). Defaults to 10.
@@ -32,7 +32,7 @@ class AddTextImageConverter(PromptConverter):
     def __init__(
         self,
         text_to_add: str,
-        font_name: Optional[str] = "arial.ttf",
+        font_name: Optional[str] = "helvetica.ttf",
         color: Optional[tuple[int, int, int]] = (0, 0, 0),
         font_size: Optional[int] = 15,
         x_pos: Optional[int] = 10,
@@ -137,3 +137,6 @@ class AddTextImageConverter(PromptConverter):
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "image_path"
+
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "image_path"

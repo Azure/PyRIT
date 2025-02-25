@@ -19,14 +19,14 @@ def image_text_converter_sample_image():
 def test_add_image_text_converter_initialization(image_text_converter_sample_image):
     converter = AddImageTextConverter(
         img_to_add=image_text_converter_sample_image,
-        font_name="arial.ttf",
+        font_name="helvetica.ttf",
         color=(255, 255, 255),
         font_size=20,
         x_pos=10,
         y_pos=10,
     )
     assert converter._img_to_add == "test.png"
-    assert converter._font_name == "arial.ttf"
+    assert converter._font_name == "helvetica.ttf"
     assert converter._color == (255, 255, 255)
     assert converter._font_size == 20
     assert converter._x_pos == 10
@@ -39,14 +39,14 @@ def test_add_image_text_converter_initialization(image_text_converter_sample_ima
 def test_add_image_text_converter_invalid_font(image_text_converter_sample_image):
     with pytest.raises(ValueError):
         AddImageTextConverter(
-            img_to_add=image_text_converter_sample_image, font_name="arial.otf"
+            img_to_add=image_text_converter_sample_image, font_name="helvetica.otf"
         )  # Invalid font extension
     os.remove("test.png")
 
 
 def test_add_image_text_converter_null_img_to_add():
     with pytest.raises(ValueError):
-        AddImageTextConverter(img_to_add="", font_name="arial.ttf")
+        AddImageTextConverter(img_to_add="", font_name="helvetica.ttf")
 
 
 def test_add_image_text_converter_fallback_to_default_font(image_text_converter_sample_image, caplog):
@@ -66,7 +66,7 @@ def test_add_image_text_converter_fallback_to_default_font(image_text_converter_
 
 def test_image_text_converter_add_text_to_image(image_text_converter_sample_image):
     converter = AddImageTextConverter(
-        img_to_add=image_text_converter_sample_image, font_name="arial.ttf", color=(255, 255, 255)
+        img_to_add=image_text_converter_sample_image, font_name="helvetica.ttf", color=(255, 255, 255)
     )
     image = Image.open("test.png")
     pixels_before = list(image.getdata())
@@ -88,13 +88,15 @@ async def test_add_image_text_converter_invalid_input_text(image_text_converter_
 
 @pytest.mark.asyncio
 async def test_add_image_text_converter_invalid_file_path():
-    converter = AddImageTextConverter(img_to_add="nonexistent_image.png", font_name="arial.ttf")
+    converter = AddImageTextConverter(img_to_add="nonexistent_image.png", font_name="helvetica.ttf")
     with pytest.raises(FileNotFoundError):
         assert await converter.convert_async(prompt="Sample Text!", input_type="text")  # type: ignore
 
 
 @pytest.mark.asyncio
-async def test_add_image_text_converter_convert_async(image_text_converter_sample_image, duckdb_instance) -> None:
+async def test_add_image_text_converter_convert_async(
+    image_text_converter_sample_image, patch_central_database
+) -> None:
     converter = AddImageTextConverter(img_to_add=image_text_converter_sample_image)
     converted_image = await converter.convert_async(prompt="Sample Text!", input_type="text")
     assert converted_image
@@ -113,7 +115,7 @@ def test_text_image_converter_input_supported(image_text_converter_sample_image)
 
 @pytest.mark.asyncio
 async def test_add_image_text_converter_equal_to_add_text_image(
-    image_text_converter_sample_image, duckdb_instance
+    image_text_converter_sample_image, patch_central_database
 ) -> None:
     converter = AddImageTextConverter(img_to_add=image_text_converter_sample_image)
     converted_image = await converter.convert_async(prompt="Sample Text!", input_type="text")
@@ -124,4 +126,5 @@ async def test_add_image_text_converter_equal_to_add_text_image(
     assert pixels_image_text == pixels_text_image
     os.remove(converted_image.output_text)
     os.remove("test.png")
-    os.remove(converted_text_image.output_text)
+    if os.path.exists(converted_text_image.output_text):
+        os.remove(converted_text_image.output_text)

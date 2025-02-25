@@ -54,6 +54,9 @@ class AnsiAttackConverter(PromptConverter):
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
 
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "text"
+
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")

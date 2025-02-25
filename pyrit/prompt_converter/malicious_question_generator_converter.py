@@ -41,3 +41,9 @@ class MaliciousQuestionGeneratorConverter(LLMGenericTextConverter):
         # Add the prompt to _prompt_kwargs before calling the base method
         self._prompt_kwargs["prompt"] = prompt
         return await super().convert_async(prompt=prompt, input_type=input_type)
+
+    def input_supported(self, input_type: PromptDataType) -> bool:
+        return input_type == "text"
+
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "text"

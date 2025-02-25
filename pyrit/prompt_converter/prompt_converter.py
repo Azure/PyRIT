@@ -5,6 +5,7 @@ import abc
 import asyncio
 import re
 from dataclasses import dataclass
+from typing import get_args
 
 from pyrit.models import Identifier, PromptDataType
 
@@ -46,6 +47,18 @@ class PromptConverter(abc.ABC, Identifier):
 
         Returns:
             bool: True if the input type is supported, False otherwise
+        """
+
+    @abc.abstractmethod
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        """
+        Checks if the output type is supported by the converter
+
+        Args:
+            output_type: The output type to check
+
+        Returns:
+            bool: True if the output type is supported, False otherwise
         """
 
     async def convert_tokens_async(
@@ -100,3 +113,23 @@ class PromptConverter(abc.ABC, Identifier):
         public_attributes["__type__"] = self.__class__.__name__
         public_attributes["__module__"] = self.__class__.__module__
         return public_attributes
+
+    @property
+    def supported_input_types(self) -> list[PromptDataType]:
+        """
+        Returns a list of supported input types for the converter.
+
+        Returns:
+            list[PromptDataType]: A list of supported input types.
+        """
+        return [data_type for data_type in get_args(PromptDataType) if self.input_supported(data_type)]
+
+    @property
+    def supported_output_types(self) -> list[PromptDataType]:
+        """
+        Returns a list of supported output types for the converter.
+
+        Returns:
+            list[PromptDataType]: A list of supported output types.
+        """
+        return [data_type for data_type in get_args(PromptDataType) if self.output_supported(data_type)]

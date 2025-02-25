@@ -55,6 +55,9 @@ class AtbashConverter(PromptConverter):
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
 
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "text"
+
     def _atbash(self, text: str) -> str:
         def reverse(alphabet: str) -> str:
             return alphabet[::-1]

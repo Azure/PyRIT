@@ -41,16 +41,10 @@ class DiacriticConverter(PromptConverter):
         self._accent = accent
 
     def input_supported(self, input_type: PromptDataType) -> bool:
-        """
-        Checks if the input type is supported by this converter.
-
-        Args:
-            input_type (PromptDataType): The type of input to check (e.g., "text").
-
-        Returns:
-            bool: True if the input type is "text", otherwise False.
-        """
         return input_type == "text"
+
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "text"
 
     def _get_accent_mark(self) -> str:
         """

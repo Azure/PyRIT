@@ -24,6 +24,9 @@ class RandomCapitalLettersConverter(PromptConverter):
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
 
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "text"
+
     # function to check if character is lower case returns True or False
     def is_lowercase_letter(self, char):
         return char.islower()

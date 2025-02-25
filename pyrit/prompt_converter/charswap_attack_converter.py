@@ -7,6 +7,7 @@ import random
 import re
 import string
 
+from pyrit.models import PromptDataType
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 # Use logger
@@ -40,11 +41,11 @@ class CharSwapGenerator(PromptConverter):
         self.max_iterations = max_iterations
         self.word_swap_ratio = word_swap_ratio
 
-    def input_supported(self, input_type) -> bool:
-        """
-        Checks if the input type is supported by the converter.
-        """
+    def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
+
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "text"
 
     def _perturb_word(self, word: str) -> str:
         """

@@ -110,6 +110,9 @@ class CodeChameleonConverter(PromptConverter):
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
 
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "text"
+
     def _stringify_decrypt(self, elements: list) -> str:
         output_text = "The following is the decryption function.\n```python\n"
         for element in elements:

@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from fpdf import FPDF
+from fpdf.enums import XPos, YPos
 from pypdf import PageObject, PdfReader
 
 from pyrit.models import DataTypeSerializer, SeedPrompt
@@ -168,10 +169,10 @@ def mock_pdf_path(tmp_path):
     # Create a multi-page PDF
     pdf = FPDF(format="A4")
     pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt="Page 1 content", ln=True, align="L")
+    pdf.set_font("Helvetica", size=12)
+    pdf.cell(200, 10, text="Page 1 content", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="L")
     pdf.add_page()
-    pdf.cell(200, 10, txt="Page 2 content", ln=True, align="L")
+    pdf.cell(200, 10, text="Page 2 content", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="L")
 
     pdf_bytes = BytesIO()
     pdf.output(pdf_bytes)
@@ -286,7 +287,7 @@ def test_inject_text_negative_x(dummy_page):
             x=-10,
             y=100,
             text="Test Text",
-            font="Arial",
+            font="Helvetica",
             font_size=12,
             font_color=(0, 0, 0),
         )
@@ -302,7 +303,7 @@ def test_inject_text_x_exceeds_page_width(dummy_page):
             x=600,  # 600 exceeds the A4 width of 595
             y=100,
             text="Test Text",
-            font="Arial",
+            font="Helvetica",
             font_size=12,
             font_color=(0, 0, 0),
         )
@@ -318,7 +319,7 @@ def test_inject_text_negative_y(dummy_page):
             x=100,
             y=-20,
             text="Test Text",
-            font="Arial",
+            font="Helvetica",
             font_size=12,
             font_color=(0, 0, 0),
         )
@@ -334,7 +335,7 @@ def test_inject_text_y_exceeds_page_height(dummy_page):
             x=100,
             y=850,  # 850 exceeds the A4 height of 842
             text="Test Text",
-            font="Arial",
+            font="Helvetica",
             font_size=12,
             font_color=(0, 0, 0),
         )
@@ -345,8 +346,8 @@ def test_pdf_reader_repeated_access():
     # Create a simple PDF in memory
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt="Test Content", ln=True)
+    pdf.set_font("Helvetica", size=12)
+    pdf.cell(200, 10, text="Test Content", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     pdf_bytes = BytesIO()
     pdf.output(pdf_bytes)
     pdf_bytes.seek(0)

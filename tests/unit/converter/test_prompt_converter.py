@@ -2,24 +2,52 @@
 # Licensed under the MIT license.
 
 import pytest
+from unit.mocks import MockPromptTarget
 
+from pyrit.memory import CentralMemory, DuckDBMemory
+from pyrit.models import SeedPrompt
 from pyrit.prompt_converter import (
+    AddImageTextConverter,
+    AddTextImageConverter,
+    AnsiAttackConverter,
     AsciiArtConverter,
+    AsciiSmugglerConverter,
     AtbashConverter,
+    AudioFrequencyConverter,
+    AzureSpeechAudioToTextConverter,
+    AzureSpeechTextToAudioConverter,
     Base64Converter,
+    BinaryConverter,
     CaesarConverter,
     CharacterSpaceConverter,
+    CharSwapGenerator,
+    CodeChameleonConverter,
+    ColloquialWordswapConverter,
+    DiacriticConverter,
     EmojiConverter,
     FlipConverter,
+    FuzzerConverter,
+    HumanInTheLoopConverter,
     LeetspeakConverter,
+    LLMGenericTextConverter,
+    MaliciousQuestionGeneratorConverter,
+    MathPromptConverter,
     MorseConverter,
+    PDFConverter,
+    PersuasionConverter,
+    QRCodeConverter,
     RandomCapitalLettersConverter,
+    RepeatTokenConverter,
     ROT13Converter,
     SearchReplaceConverter,
     StringJoinConverter,
     SuffixAppendConverter,
+    TextToHexConverter,
+    TranslationConverter,
+    UnicodeConfusableConverter,
     UnicodeSubstitutionConverter,
     UrlConverter,
+    VariationConverter,
 )
 
 
@@ -397,3 +425,90 @@ def test_input_supported_text_only(converter_class):
     converter = converter_class
     assert converter.input_supported("text") is True
     assert converter.input_supported("image_path") is False
+
+
+@pytest.fixture
+def setup_memory():
+    memory = DuckDBMemory(db_path=":memory:")
+    CentralMemory.set_memory_instance(memory)
+    mock_target = MockPromptTarget()
+    yield mock_target
+    CentralMemory.set_memory_instance(None)
+
+
+@pytest.mark.parametrize(
+    "converter, expected_input_types, expected_output_types",
+    [
+        (AddImageTextConverter(img_to_add="test.jpg"), ["text"], ["image_path"]),
+        (AddTextImageConverter(text_to_add="test"), ["image_path"], ["image_path"]),
+        (AnsiAttackConverter(), ["text"], ["text"]),
+        (AsciiArtConverter(), ["text"], ["text"]),
+        (AsciiSmugglerConverter(), ["text"], ["text"]),
+        (AtbashConverter(), ["text"], ["text"]),
+        (AudioFrequencyConverter(), ["audio_path"], ["audio_path"]),
+        (
+            AzureSpeechAudioToTextConverter(azure_speech_region="region", azure_speech_key="key"),
+            ["audio_path"],
+            ["text"],
+        ),
+        (
+            AzureSpeechTextToAudioConverter(azure_speech_region="region", azure_speech_key="key"),
+            ["text"],
+            ["audio_path"],
+        ),
+        (Base64Converter(), ["text"], ["text"]),
+        (BinaryConverter(), ["text"], ["text"]),
+        (CaesarConverter(caesar_offset=3), ["text"], ["text"]),
+        (CharacterSpaceConverter(), ["text"], ["text"]),
+        (CharSwapGenerator(), ["text"], ["text"]),
+        (CodeChameleonConverter(encrypt_type="reverse"), ["text"], ["text"]),
+        (ColloquialWordswapConverter(), ["text"], ["text"]),
+        (DiacriticConverter(), ["text"], ["text"]),
+        (EmojiConverter(), ["text"], ["text"]),
+        (FlipConverter(), ["text"], ["text"]),
+        (HumanInTheLoopConverter(), [], []),
+        (LeetspeakConverter(), ["text"], ["text"]),
+        (MorseConverter(), ["text"], ["text"]),
+        (PDFConverter(), ["text"], ["url"]),
+        (QRCodeConverter(), ["text"], ["image_path"]),
+        (RandomCapitalLettersConverter(), ["text"], ["text"]),
+        (RepeatTokenConverter(token_to_repeat="test"), ["text"], ["text"]),
+        (ROT13Converter(), ["text"], ["text"]),
+        (SearchReplaceConverter(old_value=" ", new_value="_"), ["text"], ["text"]),
+        (StringJoinConverter(), ["text"], ["text"]),
+        (SuffixAppendConverter(suffix="test"), ["text"], ["text"]),
+        (TextToHexConverter(), ["text"], ["text"]),
+        (UnicodeConfusableConverter(), ["text"], ["text"]),
+        (UnicodeSubstitutionConverter(), ["text"], ["text"]),
+        (UrlConverter(), ["text"], ["text"]),
+    ],
+)
+def test_simple_converters_supported_types(converter, expected_input_types, expected_output_types):
+    assert sorted(converter.supported_input_types) == sorted(expected_input_types)
+    assert sorted(converter.supported_output_types) == sorted(expected_output_types)
+
+
+@pytest.mark.parametrize(
+    "converter_class, converter_args, expected_input_types, expected_output_types",
+    [
+        (FuzzerConverter, {"prompt_template": SeedPrompt(data_type="text", value="test prompt")}, ["text"], ["text"]),
+        (
+            LLMGenericTextConverter,
+            {"prompt_template": SeedPrompt(data_type="text", value="test template")},
+            ["text"],
+            ["text"],
+        ),
+        (MaliciousQuestionGeneratorConverter, {}, ["text"], ["text"]),
+        (MathPromptConverter, {}, ["text"], ["text"]),
+        (PersuasionConverter, {"persuasion_technique": "misrepresentation"}, ["text"], ["text"]),
+        (TranslationConverter, {"language": "es"}, ["text"], ["text"]),
+        (VariationConverter, {}, ["text"], ["text"]),
+    ],
+)
+def test_llm_based_converters_supported_types(
+    setup_memory, converter_class, converter_args, expected_input_types, expected_output_types
+):
+    converter_args["converter_target"] = setup_memory
+    converter = converter_class(**converter_args)
+    assert sorted(converter.supported_input_types) == sorted(expected_input_types)
+    assert sorted(converter.supported_output_types) == sorted(expected_output_types)

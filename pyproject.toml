@@ -1,6 +1,6 @@
 [project]
 name = "pyrit"
-version = "0.5.3.dev0"
+version = "0.6.1.dev0"
 description = "The Python Risk Identification Tool for LLMs (PyRIT) is a library used to assess the robustness of LLMs"
 authors = [
     { name = "Microsoft AI Red Team", email = "airedteam@microsoft.com" },
@@ -49,8 +49,8 @@ dependencies = [
     "confusables==1.2.0",
     "confusable-homoglyphs==3.3.1",
     "datasets>=3.0.0",
-    "duckdb==0.10.0",
-    "duckdb-engine==0.11.2",
+    "duckdb>=1.1.0",
+    "duckdb-engine>=0.15.0",
     "fpdf2>=2.8.2",
     "httpx[http2]>=0.27.2",
     "jupyter>=1.0.0",
@@ -94,7 +94,7 @@ dev = [
     "pytest-asyncio>=0.23.5",
     "pytest-cov>=4.0.0",
     "respx>=0.22.0",
-    "semantic-kernel==0.9.4b1",
+    "semantic-kernel>=1.20.0",
     "types-PyYAML>=6.0.12.9",
 ]
 torch = [
@@ -132,7 +132,7 @@ all = [
     "pytest-asyncio>=0.23.5",
     "pytest-cov>=4.0.0",
     "respx>=0.20.2",
-    "semantic-kernel==0.9.4b1",
+    "semantic-kernel>=1.20.0",
     "sentencepiece==0.2.0",
     "torch>=2.3.0",
     "playwright==1.49.0",
@@ -141,8 +141,13 @@ all = [
     "types-PyYAML>=6.0.12.9",
 ]
 
+[project.scripts]
+pyrit_scan = "pyrit.cli.__main__:main"
+
 [tool.pytest.ini_options]
 pythonpath = ["."]
+asyncio_default_fixture_loop_scope = "function"
+asyncio_mode = "auto"
 
 [tool.mypy]
 plugins = []
@@ -157,7 +162,7 @@ target-version = ["py310"]
 line-length = 120
 
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=64.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
