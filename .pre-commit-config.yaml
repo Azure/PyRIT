@@ -1,4 +1,12 @@
 repos:
+  - repo: local
+    hooks:
+    - id: remove-notebook-headers
+      name: Remove Notebook Headers
+      entry: python ./build_scripts/remove_notebook_headers.py
+      language: python
+      files: ^doc.*\.(ipynb)$
+
   - repo: https://github.com/kynan/nbstripout
     rev: 0.8.1
     hooks:
