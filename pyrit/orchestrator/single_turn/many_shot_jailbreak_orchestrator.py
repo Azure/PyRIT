@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import logging
-import random
 from pathlib import Path
 from typing import Optional
 
@@ -18,10 +17,10 @@ logger = logging.getLogger(__name__)
 
 class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
     """
-    This orchestrator implements the Many Shot Jailbreak methos as discussed in research found here:
+    This orchestrator implements the Many Shot Jailbreak method as discussed in research found here:
     https://www.anthropic.com/research/many-shot-jailbreaking
 
-    Prepends the seed prompt with a faux dialogue between a human and an AI
+    Prepends the seed prompt with a faux dialogue between a human and an AI.
     """
 
     def __init__(
@@ -29,7 +28,6 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
         objective_target: PromptChatTarget,
         scorers: Optional[list[Scorer]] = None,
         verbose: bool = False,
-        num_examples: int = 3,
         many_shot_examples: Optional[list[dict[str, str]]] = None,
     ) -> None:
         """
@@ -38,8 +36,7 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
             scorers (list[Scorer], Optional): List of scorers to use for each prompt request response, to be
                 scored immediately after receiving response. Default is None.
             verbose (bool, Optional): Whether to log debug information. Defaults to False.
-            num_examples (int, Optional): The number of examples to fetch from the dataset. Defaults to 3.
-            isTest (bool, Optional): Controls whether examples are random or static.
+            many_shot_examples (list[dict[str, str]], Optional): The many shot jailbreaking examples to use.
         """
 
         super().__init__(
@@ -50,38 +47,15 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
 
         # Template for the faux dialogue to be prepended
         template_path = Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "many_shot_template.yaml"
-        self.template = SeedPrompt.from_yaml_file(template_path)
-        self.num_examples = num_examples
+        self._template = SeedPrompt.from_yaml_file(template_path)
         # Fetch the Many Shot Jailbreaking example dataset
-        self.examples = (
+        self._examples = (
             many_shot_examples if (many_shot_examples is not None) else fetch_many_shot_jailbreaking_dataset()
         )
+        if not self._examples:
+            raise ValueError("Many shot examples must be provided.")
 
-    async def _construct_many_shot_dialogue(self, prompt: str) -> str:
-        """
-        Constructs the many shot dialogue to be prepended to the prompt
-
-        Args:
-            prompt (str): The malicious prompt to be prepended
-
-        Returns:
-            str: The constructed many shot dialogue
-        """
-
-        # Check that num_examples is not greater than the size of the example dataset
-        if self.num_examples > len(self.examples):
-            logger.info(f"num_examples is greater than size example dataset. Using all {len(self.examples)} examples.")
-            self.num_examples = len(self.examples)
-
-        # Choose num_examples either static or random examples from the dataset
-        examples = random.sample(self.examples, self.num_examples)
-
-        # Construct the many shot dialogue
-        many_shot_dialogue = self.template.render_template_value(prompt=prompt, examples=examples)
-
-        return many_shot_dialogue
-
-    async def send_prompts_async(  # type: ignore[override]
+    async def send_prompts_async(
         self,
         *,
         prompt_list: list[str],
@@ -89,7 +63,7 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
         metadata: Optional[dict[str, str]] = None,
     ) -> list[PromptRequestResponse]:
         """
-        Sends the prompts to the target using the Many Shot Jailbreak
+        Sends the prompts to the target using the Many Shot Jailbreak.
 
         Args:
             prompt_list (list[str]): The list of prompts to be sent.
@@ -102,9 +76,13 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
         Returns:
             list[PromptRequestResponse]: The responses from sending the prompts.
         """
-        for i in range(0, len(prompt_list)):
-            prompt_list[i] = await self._construct_many_shot_dialogue(prompt_list[i])
+        if not prompt_list:
+            raise ValueError("Prompt list must not be empty.")
+
+        many_shot_prompt_list = [
+            self._template.render_template_value(prompt=prompt, examples=self._examples) for prompt in prompt_list
+        ]
 
         return await super().send_prompts_async(
-            prompt_list=prompt_list, prompt_type="text", memory_labels=memory_labels, metadata=metadata
+            prompt_list=many_shot_prompt_list, prompt_type="text", memory_labels=memory_labels, metadata=metadata
         )
