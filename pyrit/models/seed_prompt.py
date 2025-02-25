@@ -3,17 +3,43 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
-from jinja2 import StrictUndefined, Template
+from jinja2 import BaseLoader, Environment, StrictUndefined, Template, Undefined
+from pydantic.types import PositiveInt
 
 from pyrit.common import utils
+from pyrit.common.path import (
+    DATASETS_PATH,
+    DB_DATA_PATH,
+    DOCS_CODE_PATH,
+    HOME_PATH,
+    LOG_PATH,
+    PYRIT_PATH,
+)
 from pyrit.common.yaml_loadable import YamlLoadable
 from pyrit.models.literals import PromptDataType
+
+
+class PartialUndefined(Undefined):
+    # Return the original placeholder format
+    def __str__(self):
+        return f"{{{{ {self._undefined_name} }}}}" if self._undefined_name else ""
+
+    def __repr__(self):
+        return f"{{{{ {self._undefined_name} }}}}" if self._undefined_name else ""
+
+    def __iter__(self):
+        """Prevent Jinja from evaluating loops by returning a placeholder string instead of an iterable."""
+        return self
+
+    def __bool__(self):
+        return True  # Ensures it doesn't evaluate to False
 
 
 @dataclass
@@ -38,6 +64,15 @@ class SeedPrompt(YamlLoadable):
     prompt_group_id: Optional[uuid.UUID]
     prompt_group_alias: Optional[str]
     sequence: Optional[int]
+
+    TEMPLATE_PATHS = {
+        "datasets_path": DATASETS_PATH,
+        "pyrit_home_path": HOME_PATH,
+        "pyrit_path": PYRIT_PATH,
+        "db_data_path": DB_DATA_PATH,
+        "log_path": LOG_PATH,
+        "docs_code_path": DOCS_CODE_PATH,
+    }
 
     def __init__(
         self,
@@ -80,6 +115,9 @@ class SeedPrompt(YamlLoadable):
         self.prompt_group_alias = prompt_group_alias
         self.sequence = sequence
 
+        # Render the template to replace existing values
+        self.value = self.render_template_value_silent(**self.TEMPLATE_PATHS)
+
     def render_template_value(self, **kwargs) -> str:
         """Renders self.value as a template, applying provided parameters in kwargs
 
@@ -93,15 +131,35 @@ class SeedPrompt(YamlLoadable):
             ValueError: If parameters are missing or invalid in the template.
         """
 
-        if self.data_type != "text":
-            raise ValueError(f"Cannot render non-text values as templates {self.data_type}")
-
         jinja_template = Template(self.value, undefined=StrictUndefined)
 
         try:
             return jinja_template.render(**kwargs)
         except Exception as e:
             raise ValueError(f"Error applying parameters: {str(e)}")
+
+    def render_template_value_silent(self, **kwargs) -> str:
+        """Renders self.value as a template, applying provided parameters in kwargs
+
+        Args:
+            kwargs: Key-value pairs to replace in the SeedPrompt value.
+
+        Returns:
+            A new prompt with the parameters applied.
+
+        Raises:
+            ValueError: If parameters are missing or invalid in the template.
+        """
+        # Create a Jinja template with PartialUndefined placeholders
+        env = Environment(loader=BaseLoader, undefined=PartialUndefined)  # type: ignore
+        jinja_template = env.from_string(self.value)
+
+        try:
+            # Render the template with the provided kwargs
+            return jinja_template.render(**kwargs)
+        except Exception as e:
+            logging.error("Error rendering template: %s", e)
+            return self.value
 
     async def set_sha256_value_async(self):
         """
@@ -150,6 +208,22 @@ class SeedPromptGroup(YamlLoadable):
         # Check sequence and sort the prompts in the same loop
         if len(self.prompts) >= 1:
             self.prompts = sorted(self.prompts, key=lambda prompt: prompt.sequence)
+
+    def render_template_value(self, **kwargs):
+        """Renders self.value as a template, applying provided parameters in kwargs
+
+        Args:
+            kwargs:Key-value pairs to replace in the SeedPromptGroup value.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: If parameters are missing or invalid in the template.
+        """
+
+        for prompt in self.prompts:
+            prompt.value = prompt.render_template_value(**kwargs)
 
     def _enforce_consistent_group_id(self):
         """
@@ -255,6 +329,29 @@ class SeedPromptDataset(YamlLoadable):
             else:
                 raise ValueError("Prompts should be either dicts or SeedPrompt objects. Got something else.")
 
+    def get_values(self, first: Optional[PositiveInt] = None, last: Optional[PositiveInt] = None) -> List[str]:
+        """
+        Extracts and returns a list of prompt values from the dataset. By default, returns all of them.
+
+        Args:
+            first (Optional[int]): If provided, values from the first N prompts are included.
+            last (Optional[int]): If provided, values from the last N prompts are included.
+
+        Returns:
+            List[str]: A list of prompt values.
+        """
+        values = [prompt.value for prompt in self.prompts]
+
+        if first is None and last is None:
+            return values
+        if first and last and first + last >= len(values):
+            return values  # simply return all values in case of an overlap
+
+        first_part = values[:first] if first is not None else []
+        last_part = values[-last:] if last is not None else []
+
+        return first_part + last_part
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "SeedPromptDataset":
         """
@@ -297,6 +394,22 @@ class SeedPromptDataset(YamlLoadable):
 
         # Now create the dataset with the newly merged prompt dicts
         return cls(prompts=merged_prompts, **dataset_defaults)
+
+    def render_template_value(self, **kwargs):
+        """Renders self.value as a template, applying provided parameters in kwargs
+
+        Args:
+            kwargs:Key-value pairs to replace in the SeedPromptDataset value.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: If parameters are missing or invalid in the template.
+        """
+
+        for prompt in self.prompts:
+            prompt.value = prompt.render_template_value(**kwargs)
 
     @staticmethod
     def _set_seed_prompt_group_id_by_alias(seed_prompts: List[dict]):
