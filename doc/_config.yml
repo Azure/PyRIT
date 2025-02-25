@@ -4,7 +4,7 @@
 title: PyRIT Documentation
 author: Microsoft AI Red Team
 copyright: Copyright 2024, Microsoft AI Red Team
-logo: roakey.jpg
+logo: roakey.png
 
 # Force re-execution of notebooks on each build.
 # See https://jupyterbook.org/content/execute.html
@@ -29,7 +29,7 @@ repository:
 # Add GitHub buttons to your book
 # See https://jupyterbook.org/customize/config.html#add-a-link-to-your-repository
 html:
-  favicon: 'roakey.jpg'
+  favicon: 'roakey.png'
   use_issues_button: true
   use_repository_button: true
   use_edit_page_button: true
