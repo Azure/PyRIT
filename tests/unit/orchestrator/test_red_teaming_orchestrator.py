@@ -23,12 +23,12 @@ from unit.mocks import openai_response_json_dict
 
 @pytest.fixture
 def chat_completion_engine(patch_central_database) -> OpenAIChatTarget:
-    return OpenAIChatTarget(model_name="test", target_uri="test", api_key="test")
+    return OpenAIChatTarget(model_name="test", endpoint="test", api_key="test")
 
 
 @pytest.fixture
 def prompt_target(patch_central_database) -> OpenAIChatTarget:
-    return OpenAIChatTarget(model_name="test", target_uri="test", api_key="test")
+    return OpenAIChatTarget(model_name="test", endpoint="test", api_key="test")
 
 
 @pytest.fixture

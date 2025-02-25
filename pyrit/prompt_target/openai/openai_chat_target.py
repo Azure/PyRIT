@@ -6,8 +6,6 @@ import logging
 from typing import MutableSequence, Optional
 
 import httpx
-from openai import NOT_GIVEN, BadRequestError, NotGiven
-from openai.types.chat import ChatCompletion
 
 from pyrit.common import net_utility
 from pyrit.exceptions import (
@@ -25,6 +23,7 @@ from pyrit.models import (
     construct_response_from_request,
     data_serializer_factory,
 )
+from pyrit.models.chat_message import ChatMessage
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
@@ -56,7 +55,7 @@ class OpenAIChatTarget(OpenAITarget):
         """
         Args:
             model_name (str, Optional): The name of the model.
-            target_uri (str, Optional): The target URL for the OpenAI service.
+            endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
                 Defaults to the AZURE_OPENAI_CHAT_KEY environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
@@ -106,7 +105,7 @@ class OpenAIChatTarget(OpenAITarget):
 
     def _set_openai_env_configuration_vars(self) -> None:
         self.model_name_environment_variable = "OPENAI_CHAT_MODEL"
-        self.target_uri_environment_variable = "OPENAI_CHAT_TARGET_URI"
+        self.endpoint_environment_variable = "OPENAI_CHAT_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_CHAT_KEY"
 
     @limit_requests_per_minute
@@ -146,7 +145,7 @@ class OpenAIChatTarget(OpenAITarget):
 
         try:
             str_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(
-                endpoint_uri=self._target_uri,
+                endpoint_uri=self._endpoint,
                 method="POST",
                 headers=self._extra_headers,
                 request_body=body,
@@ -201,20 +200,84 @@ class OpenAIChatTarget(OpenAITarget):
         # https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/gpt-with-vision?tabs=rest%2Csystem-assigned%2Cresource#call-the-chat-completion-apis
         return f"data:{mime_type};base64,{base64_encoded_data}"
 
-    async def _build_chat_messages_async(
-        self, prompt_req_res_entries: MutableSequence[PromptRequestResponse]
-    ) -> list[ChatMessageListDictContent]:
+
+    async def _build_chat_messages_async(self, conversation: MutableSequence[PromptRequestResponse]) -> list[dict]:
+        """Builds chat messages based on prompt request response entries.
+
+        Args:
+            conversation (list[PromptRequestResponse]): A list of PromptRequestResponse objects.
+
+        Returns:
+            list[dict]: The list of constructed chat messages.
+        """
+        if self._is_text_message_format(conversation):
+            return self._build_chat_messages_for_text(conversation)
+        else:
+            return await self._build_chat_messages_for_multi_modal_async(conversation)
+
+
+    def _is_text_message_format(self, conversation: list[PromptRequestResponse]) -> bool:
+        """Checks if the request piece is in text message format.
+
+        Args:
+            conversation list[PromptRequestResponse]: The conversation
+
+        Returns:
+            bool: True if the request piece is in text message format, False otherwise.
+        """
+        for turn in conversation:
+            if len(turn.request_pieces) != 1:
+                return False
+            if turn.request_pieces[0].converted_value_data_type != "text":
+                return False
+        return True
+
+
+    def _build_chat_messages_for_text(
+        self, conversation: list[PromptRequestResponse]
+    ) -> list[dict]:
+        """
+        Builds chat messages based on prompt request response entries. This is needed because many
+        openai "compatible" models don't support ChatMessageListDictContent format (this is more univerally accepted)
+
+        Args:
+            conversation (list[PromptRequestResponse]): A list of PromptRequestResponse objects.
+
+        Returns:
+            list[dict]: The list of constructed chat messages.
+        """
+        chat_messages: list[dict] = []
+        for prompt_req_resp_entry in conversation:
+            # validated to only have one text entry
+
+            if len(prompt_req_resp_entry.request_pieces) != 1:
+                raise ValueError("_build_chat_messages_for_text only supports a single prompt request piece.")
+
+            prompt_request_piece = prompt_req_resp_entry.request_pieces[0]
+
+            if prompt_request_piece.converted_value_data_type != "text":
+                raise ValueError("_build_chat_messages_for_text only supports text.")
+
+
+            message = ChatMessage(role=prompt_request_piece.role, content=prompt_request_piece.converted_value)
+            chat_messages.append(message.model_dump(exclude_none=True))
+
+        return chat_messages
+
+    async def _build_chat_messages_for_multi_modal_async(
+        self, conversation: MutableSequence[PromptRequestResponse]
+    ) -> list[dict]:
         """
         Builds chat messages based on prompt request response entries.
 
         Args:
-            prompt_req_res_entries (list[PromptRequestResponse]): A list of PromptRequestResponse objects.
+            conversation (list[PromptRequestResponse]): A list of PromptRequestResponse objects.
 
         Returns:
-            list[ChatMessageListDictContent]: The list of constructed chat messages.
+            list[dict]: The list of constructed chat messages.
         """
-        chat_messages: list[ChatMessageListDictContent] = []
-        for prompt_req_resp_entry in prompt_req_res_entries:
+        chat_messages: list[dict] = []
+        for prompt_req_resp_entry in conversation:
             prompt_request_pieces = prompt_req_resp_entry.request_pieces
 
             content = []
@@ -240,7 +303,7 @@ class OpenAIChatTarget(OpenAITarget):
                 raise ValueError("No role could be determined from the prompt request pieces.")
 
             chat_message = ChatMessageListDictContent(role=role, content=content)  # type: ignore
-            chat_messages.append(chat_message)
+            chat_messages.append(chat_message.model_dump(exclude_none=True))
         return chat_messages
 
     async def _construct_request_body(self, conversation: list[PromptRequestResponse], is_json_response: bool) -> dict:
@@ -256,7 +319,7 @@ class OpenAIChatTarget(OpenAITarget):
                 "presence_penalty": self._presence_penalty,
                 "stream": False,
                 "seed": self._seed,
-                "messages": [{"role": msg.role, "content": msg.content} for msg in messages],
+                "messages": messages,
                 "response_format": {"type": "json_object"} if is_json_response else None,
             }
 

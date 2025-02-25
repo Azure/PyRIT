@@ -23,14 +23,14 @@ class OpenAITarget(PromptChatTarget):
     ADDITIONAL_REQUEST_HEADERS: str = "OPENAI_ADDITIONAL_REQUEST_HEADERS"
 
     model_name_environment_variable: str
-    target_uri_environment_variable: str
+    endpoint_environment_variable: str
     api_key_environment_variable: str
 
     def __init__(
         self,
         *,
         model_name: str = None,
-        target_uri: str = None,
+        endpoint: str = None,
         api_key: str = None,
         headers: str = None,
         use_aad_auth: bool = False,
@@ -47,7 +47,7 @@ class OpenAITarget(PromptChatTarget):
 
         Args:
             model_name (str, Optional): The name of the model.
-            target_uri (str, Optional): The target URL for the OpenAI service.
+            endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
                 Defaults to the AZURE_OPENAI_CHAT_KEY environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
@@ -83,8 +83,8 @@ class OpenAITarget(PromptChatTarget):
         self._model_name = default_values.get_non_required_value(
             env_var_name=self.model_name_environment_variable, passed_value=model_name
         )
-        self._target_uri = default_values.get_required_value(
-            env_var_name=self.target_uri_environment_variable, passed_value=target_uri
+        self._endpoint = default_values.get_required_value(
+            env_var_name=self.endpoint_environment_variable, passed_value=endpoint
         ).rstrip("/")
 
 
@@ -94,7 +94,7 @@ class OpenAITarget(PromptChatTarget):
         if use_aad_auth:
             logger.info("Authenticating with DefaultAzureCredential() for Azure Cognitive Services")
 
-            scope = get_default_scope(self._target_uri)
+            scope = get_default_scope(self._endpoint)
             self._token_provider = get_token_provider_from_default_azure_credential(scope=scope)
 
         else:
@@ -105,7 +105,7 @@ class OpenAITarget(PromptChatTarget):
     @abstractmethod
     def _set_openai_env_configuration_vars(self) -> None:
         """
-        Sets deployment_environment_variable, target_uri_environment_variable, and api_key_environment_variable
+        Sets deployment_environment_variable, endpoint_environment_variable, and api_key_environment_variable
         which are read from .env
         """
         raise NotImplementedError

@@ -28,7 +28,7 @@ def openai_response_json() -> dict:
 @pytest.fixture
 def azure_openai_target(patch_central_database):
     return OpenAIChatTarget(
-        target_uri="test",
+        endpoint="test",
         api_key="test",
     )
 

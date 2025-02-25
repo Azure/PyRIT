@@ -42,7 +42,7 @@ def dummy_text_request_piece() -> PromptRequestPiece:
 def gpt4o_chat_engine(patch_central_database) -> OpenAIChatTarget:
     return OpenAIChatTarget(
         model_name="gpt-o",
-        target_uri="https://mock.azure.com/",
+        endpoint="https://mock.azure.com/",
         api_key="mock-api-key",
         api_version="some_version",
     )
@@ -83,7 +83,7 @@ def test_init_with_no_env_var_raises():
         with pytest.raises(ValueError):
             OpenAIChatTarget(
                 model_name="gpt-4",
-                target_uri="https://mock.azure.com/",
+                endpoint="https://mock.azure.com/",
                 api_key="",
                 api_version="some_version",
             )
@@ -100,7 +100,7 @@ def test_init_with_no_endpoint_uri_var_raises():
         with pytest.raises(ValueError):
             OpenAIChatTarget(
                 model_name="gpt-4",
-                target_uri="",
+                endpoint="",
                 api_key="xxxxx",
                 api_version="some_version",
             )
@@ -110,7 +110,7 @@ def test_init_with_no_additional_request_headers_var_raises():
     with patch.dict(os.environ, {}, clear=True):
         with pytest.raises(ValueError):
             OpenAIChatTarget(
-                model_name="gpt-4", target_uri="", api_key="xxxxx", api_version="some_version", headers=""
+                model_name="gpt-4", endpoint="", api_key="xxxxx", api_version="some_version", headers=""
             )
 
 
@@ -164,8 +164,12 @@ async def test_convert_image_to_data_url_success(
     os.remove(tmp_file_name)
 
 
+#TODO test_build_chat_messages_for_text
+
+#TODO other tests around this
+
 @pytest.mark.asyncio()
-async def test_build_chat_messages_with_consistent_roles(gpt4o_chat_engine: OpenAIChatTarget):
+async def test_build_chat_messages_for_multi_modal(gpt4o_chat_engine: OpenAIChatTarget):
 
     image_request = get_image_request_piece()
     entries = [
@@ -185,24 +189,24 @@ async def test_build_chat_messages_with_consistent_roles(gpt4o_chat_engine: Open
         "_convert_local_image_to_data_url",
         return_value="data:image/jpeg;base64,encoded_string",
     ):
-        messages = await gpt4o_chat_engine._build_chat_messages_async(entries)
+        messages = await gpt4o_chat_engine._build_chat_messages_for_multi_modal_async(entries)
 
     assert len(messages) == 1
-    assert messages[0].role == "user"
-    assert messages[0].content[0]["type"] == "text"  # type: ignore
-    assert messages[0].content[1]["type"] == "image_url"  # type: ignore
+    assert messages[0]["role"] == "user"
+    assert messages[0]["content"][0]["type"] == "text"  # type: ignore
+    assert messages[0]["content"][1]["type"] == "image_url"  # type: ignore
 
     os.remove(image_request.original_value)
 
 
 @pytest.mark.asyncio
-async def test_build_chat_messages_with_unsupported_data_types(gpt4o_chat_engine: OpenAIChatTarget):
+async def test_build_chat_messages_for_multi_modal_with_unsupported_data_types(gpt4o_chat_engine: OpenAIChatTarget):
     # Like an image_path, the audio_path requires a file, but doesn't validate any contents
     entry = get_image_request_piece()
     entry.converted_value_data_type = "audio_path"
 
     with pytest.raises(ValueError) as excinfo:
-        await gpt4o_chat_engine._build_chat_messages_async([PromptRequestResponse(request_pieces=[entry])])
+        await gpt4o_chat_engine._build_chat_messages_for_multi_modal_async([PromptRequestResponse(request_pieces=[entry])])
     assert "Multimodal data type audio_path is not yet supported." in str(excinfo.value)
 
 

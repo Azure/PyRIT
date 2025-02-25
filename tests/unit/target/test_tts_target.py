@@ -24,7 +24,7 @@ def sample_conversations() -> list[PromptRequestPiece]:
 
 @pytest.fixture
 def tts_target(patch_central_database) -> OpenAITTSTarget:
-    return OpenAITTSTarget(model_name="test", target_uri="test", api_key="test")
+    return OpenAITTSTarget(model_name="test", endpoint="test", api_key="test")
 
 
 def test_tts_initializes(tts_target: OpenAITTSTarget):
@@ -35,14 +35,14 @@ def test_tts_initializes_calls_get_required_parameters(patch_central_database):
     with patch("pyrit.common.default_values.get_required_value") as mock_get_required:
         target = OpenAITTSTarget(
             model_name="deploymenttest",
-            target_uri="endpointtest",
+            endpoint="endpointtest",
             api_key="keytest",
         )
 
         assert mock_get_required.call_count == 2
 
         mock_get_required.assert_any_call(
-            env_var_name=target.target_uri_environment_variable, passed_value="endpointtest"
+            env_var_name=target.endpoint_environment_variable, passed_value="endpointtest"
         )
 
         mock_get_required.assert_any_call(env_var_name=target.api_key_environment_variable, passed_value="keytest")
@@ -84,7 +84,7 @@ async def test_tts_send_prompt_file_save_async(
     response_format: TTSResponseFormat,
 ) -> None:
     tts_target = OpenAITTSTarget(
-        model_name="test", target_uri="test", api_key="test", response_format=response_format
+        model_name="test", endpoint="test", api_key="test", response_format=response_format
     )
 
     request_piece = sample_conversations[0]

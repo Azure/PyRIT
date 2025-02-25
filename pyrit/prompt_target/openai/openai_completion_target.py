@@ -36,7 +36,7 @@ class OpenAICompletionTarget(OpenAITarget):
         """
         Args:
             model_name (str, Optional): The name of the model.
-            target_uri (str, Optional): The target URL for the OpenAI service.
+            endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
                 Defaults to the AZURE_OPENAI_CHAT_KEY environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
@@ -76,7 +76,7 @@ class OpenAICompletionTarget(OpenAITarget):
 
     def _set_openai_env_configuration_vars(self):
         self.model_name_environment_variable = "OPENAI_COMPLETION_MODEL"
-        self.target_uri_environment_variable = "OPENAI_COMPLETEION_TARGET_URI"
+        self.endpoint_environment_variable = "OPENAI_COMPLETEION_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_COMPLETION_API_KEY"
 
     @limit_requests_per_minute
@@ -103,7 +103,7 @@ class OpenAICompletionTarget(OpenAITarget):
 
         try:
             str_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(
-                endpoint_uri=self._target_uri,
+                endpoint_uri=self._endpoint,
                 method="POST",
                 headers=self._extra_headers,
                 request_body=body,

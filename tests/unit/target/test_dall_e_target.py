@@ -21,7 +21,7 @@ from pyrit.prompt_target import OpenAIDALLETarget
 def dalle_target(patch_central_database) -> OpenAIDALLETarget:
     return OpenAIDALLETarget(
         model_name="test",
-        target_uri="test",
+        endpoint="test",
         api_key="test",
     )
 
@@ -51,7 +51,7 @@ def test_initialization_invalid_num_images():
     with pytest.raises(ValueError):
         OpenAIDALLETarget(
             model_name="test",
-            target_uri="test",
+            endpoint="test",
             api_key="test",
             dalle_version="dall-e-3",
             num_images=3,
@@ -259,5 +259,5 @@ def test_is_json_response_supported(patch_central_database):
     mock_memory.get_conversation.return_value = []
     mock_memory.add_request_response_to_memory = AsyncMock()
 
-    mock_dalle_target = OpenAIDALLETarget(model_name="test", target_uri="test", api_key="test")
+    mock_dalle_target = OpenAIDALLETarget(model_name="test", endpoint="test", api_key="test")
     assert mock_dalle_target.is_json_response_supported() is False

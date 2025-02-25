@@ -176,7 +176,7 @@ async def test_build_chat_messages_with_consistent_roles(groq_chat_engine: GroqC
         "_convert_local_image_to_data_url",
         return_value="data:image/jpeg;base64,encoded_string",
     ):
-        messages = await groq_chat_engine._build_chat_messages_async(entries)
+        messages = await groq_chat_engine._build_chat_messages_for_multi_modal_async(entries)
 
     assert len(messages) == 1
     assert messages[0].role == "user"
@@ -193,7 +193,7 @@ async def test_build_chat_messages_with_unsupported_data_types(groq_chat_engine:
     entry.converted_value_data_type = "audio_path"
 
     with pytest.raises(ValueError) as excinfo:
-        await groq_chat_engine._build_chat_messages_async([PromptRequestResponse(request_pieces=[entry])])
+        await groq_chat_engine._build_chat_messages_for_multi_modal_async([PromptRequestResponse(request_pieces=[entry])])
     assert "Multimodal data type audio_path is not yet supported." in str(excinfo.value)
 
 

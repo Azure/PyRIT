@@ -37,7 +37,7 @@ def completions_response_json() -> dict:
 def azure_completion_target(patch_central_database) -> OpenAICompletionTarget:
     return OpenAICompletionTarget(
         model_name="gpt-35-turbo",
-        target_uri="https://mock.azure.com/",
+        endpoint="https://mock.azure.com/",
         api_key="mock-api-key",
         api_version="some_version",
     )
@@ -107,7 +107,7 @@ def test_azure_invalid_key_raises():
             with pytest.raises(ValueError):
                 OpenAICompletionTarget(
                     model_name="gpt-4",
-                    target_uri="https://mock.azure.com/",
+                    endpoint="https://mock.azure.com/",
                     api_key="",
                     api_version="some_version",
                 )
@@ -126,7 +126,7 @@ def test_azure_invalid_endpoint_raises():
             with pytest.raises(ValueError):
                 OpenAICompletionTarget(
                     model_name="gpt-4",
-                    target_uri="",
+                    endpoint="",
                     api_key="xxxxx",
                     api_version="some_version",
                 )
