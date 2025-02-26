@@ -1,5 +1,5 @@
 ---
-name: openai_gpt_3.5
+name: pliny_jailbreak_openai_gpt_3.5
 authors:
   - Pliny
 parameters:

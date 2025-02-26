@@ -1,5 +1,5 @@
 ---
-name: google_gemini_2_0_flash_thinking_experimental
+name: pliny_jailbreak_google_gemini_2_0_flash_thinking_experimental
 authors:
   - Pliny
 parameters:

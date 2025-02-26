@@ -1,5 +1,5 @@
 ---
-name: cohere_command_r_plus
+name: pliny_jailbreak_cohere_command_r_plus
 authors:
   - Pliny
 parameters:

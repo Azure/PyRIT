@@ -1,5 +1,5 @@
 ---
-name: openai_chatgpt_tasks
+name: pliny_jailbreak_openai_chatgpt_tasks
 authors:
   - Pliny
 parameters:

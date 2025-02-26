@@ -1,5 +1,5 @@
 ---
-name: nvidia_llama_3.1_nemotron_70b
+name: pliny_jailbreak_nvidia_llama_3.1_nemotron_70b
 authors:
   - Pliny
 parameters:

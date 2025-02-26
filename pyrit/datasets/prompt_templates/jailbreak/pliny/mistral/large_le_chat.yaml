@@ -1,5 +1,5 @@
 ---
-name: mistral_large_le_chat
+name: pliny_jailbreak_mistral_large_le_chat
 authors:
   - Pliny
 parameters:
