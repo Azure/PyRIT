@@ -1104,6 +1104,28 @@ async def test_add_seed_prompts_to_memory_empty_list(duckdb_instance: MemoryInte
     assert len(stored_prompts) == 0
 
 
+@pytest.mark.asyncio
+async def test_add_seed_prompts_duplicate_entries(duckdb_instance: MemoryInterface):
+    prompts: list[SeedPrompt] = [
+        SeedPrompt(value="prompt1", dataset_name="test_dataset", data_type="text"),
+        SeedPrompt(value="prompt2", dataset_name="test_dataset", data_type="text"),
+    ]
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=prompts, added_by="tester")
+    stored_prompts = duckdb_instance.get_seed_prompts(dataset_name="test_dataset")
+    assert len(stored_prompts) == 2
+
+    # Try to add prompt list with one duplicate prompt and one new prompt
+    duplicate_prompts: list[SeedPrompt] = [
+        SeedPrompt(value="prompt1", dataset_name="test_dataset", data_type="text"),
+        SeedPrompt(value="prompt3", dataset_name="test_dataset", data_type="text"),
+    ]
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=duplicate_prompts, added_by="tester")
+
+    # Validate that only new prompt is added and the total prompt count is 3
+    stored_prompts = duckdb_instance.get_seed_prompts(dataset_name="test_dataset")
+    assert len(stored_prompts) == 3
+
+
 def test_get_seed_prompt_dataset_names_empty(duckdb_instance: MemoryInterface):
     assert duckdb_instance.get_seed_prompt_dataset_names() == []
 
