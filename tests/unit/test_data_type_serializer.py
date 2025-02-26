@@ -134,7 +134,7 @@ async def test_image_path_read_data_base64(duckdb_instance):
     assert base_64_data == "QUFBQQ=="
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_path_not_exists(duckdb_instance):
     file_path = "non_existing_file.txt"
     serializer = data_serializer_factory(category="prompt-memory-entries", data_type="image_path", value=file_path)
