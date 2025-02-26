@@ -113,7 +113,7 @@ class AddImageVideoConverter(PromptConverter):
             h, w, _ = overlay.shape
             x, y = self._img_position  # Position where the overlay will be placed
 
-            while cap.isOpened():  # TODO: use dataserializer to write
+            while cap.isOpened():
                 ret, frame = cap.read()
                 if not ret:
                     break
@@ -157,7 +157,7 @@ class AddImageVideoConverter(PromptConverter):
         output_video_serializer = data_serializer_factory(category="prompt-memory-entries", data_type="video_path")
 
         if not self._output_path:
-            output_video_serializer.value = output_video_serializer.get_data_filename()
+            output_video_serializer.value = await output_video_serializer.get_data_filename()
         else:
             output_video_serializer.value = self._output_path
 
