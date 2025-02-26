@@ -11,6 +11,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
 from jinja2 import BaseLoader, Environment, StrictUndefined, Template, Undefined
+from pydantic.types import PositiveInt
 from tinytag import TinyTag
 
 from pyrit.common import utils
@@ -366,6 +367,29 @@ class SeedPromptDataset(YamlLoadable):
                 self.prompts.append(p)
             else:
                 raise ValueError("Prompts should be either dicts or SeedPrompt objects. Got something else.")
+
+    def get_values(self, first: Optional[PositiveInt] = None, last: Optional[PositiveInt] = None) -> List[str]:
+        """
+        Extracts and returns a list of prompt values from the dataset. By default, returns all of them.
+
+        Args:
+            first (Optional[int]): If provided, values from the first N prompts are included.
+            last (Optional[int]): If provided, values from the last N prompts are included.
+
+        Returns:
+            List[str]: A list of prompt values.
+        """
+        values = [prompt.value for prompt in self.prompts]
+
+        if first is None and last is None:
+            return values
+        if first and last and first + last >= len(values):
+            return values  # simply return all values in case of an overlap
+
+        first_part = values[:first] if first is not None else []
+        last_part = values[-last:] if last is not None else []
+
+        return first_part + last_part
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "SeedPromptDataset":
