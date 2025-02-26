@@ -5,7 +5,7 @@ import logging
 import struct
 from contextlib import closing
 from datetime import datetime, timedelta, timezone
-from typing import MutableSequence, Optional, Sequence
+from typing import MutableSequence, Optional, Sequence, Union
 
 from azure.core.credentials import AccessToken
 from azure.identity import DefaultAzureCredential
@@ -202,12 +202,22 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         # for safe parameter passing, preventing SQL injection
         return text(conditions).bindparams(**{key: str(value) for key, value in memory_labels.items()})
 
+    def _get_prompt_pieces_prompt_metadata_conditions(self, *, prompt_metadata):
+        json_validation = "ISJSON(prompt_metadata) = 1"
+        json_conditions = " AND ".join([f"JSON_VALUE(prompt_metadata, '$.{key}') = :{key}" for key in prompt_metadata])
+        # Combine both conditions
+        conditions = f"{json_validation} AND {json_conditions}"
+
+        # Create SQL condition using SQLAlchemy's text() with bindparams
+        # for safe parameter passing, preventing SQL injection
+        return text(conditions).bindparams(**{key: str(value) for key, value in prompt_metadata.items()})
+
     def _get_prompt_pieces_orchestrator_conditions(self, *, orchestrator_id: str):
         return text(
             "ISJSON(orchestrator_identifier) = 1 AND JSON_VALUE(orchestrator_identifier, '$.id') = :json_id"
         ).bindparams(json_id=str(orchestrator_id))
 
-    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, str]):
+    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]):
         json_validation = "ISJSON(prompt_metadata) = 1"
         json_conditions = " AND ".join([f"JSON_VALUE(prompt_metadata, '$.{key}') = :{key}" for key in metadata])
         # Combine both conditions

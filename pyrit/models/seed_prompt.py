@@ -28,8 +28,6 @@ from pyrit.models.literals import PromptDataType
 
 logger = logging.getLogger(__name__)
 
-logger = logging.getLogger(__name__)
-
 
 class PartialUndefined(Undefined):
     # Return the original placeholder format
@@ -64,7 +62,7 @@ class SeedPrompt(YamlLoadable):
     source: Optional[str]
     date_added: Optional[datetime]
     added_by: Optional[str]
-    metadata: Optional[Dict[str, str]]
+    metadata: Optional[Dict[str, Union[str, int]]]
     parameters: Optional[List[str]]
     prompt_group_id: Optional[uuid.UUID]
     prompt_group_alias: Optional[str]
@@ -95,7 +93,7 @@ class SeedPrompt(YamlLoadable):
         source: Optional[str] = None,
         date_added: Optional[datetime] = datetime.now(),
         added_by: Optional[str] = None,
-        metadata: Optional[Dict[str, str]] = None,
+        metadata: Optional[Dict[str, Union[str, int]]] = None,
         parameters: Optional[List[str]] = None,
         prompt_group_id: Optional[uuid.UUID] = None,
         prompt_group_alias: Optional[str] = None,
@@ -144,7 +142,8 @@ class SeedPrompt(YamlLoadable):
             raise ValueError(f"Error applying parameters: {str(e)}")
 
     def render_template_value_silent(self, **kwargs) -> str:
-        """Renders self.value as a template, applying provided parameters in kwargs
+        """Renders self.value as a template, applying provided parameters in kwargs. For parameters in the template
+         that are not provided as kwargs here, this function will leave them as is instead of raising an error.
 
         Args:
             kwargs: Key-value pairs to replace in the SeedPrompt value.
@@ -186,8 +185,8 @@ class SeedPrompt(YamlLoadable):
     def set_encoding_metadata(self):
         """
         This method sets the encoding data for the prompt within metadata dictionary. For images, this is just the
-        file format. For audio and video, this also includes bitrate (kBits/s as float), samplerate (samples/second
-        as int), bitdepth (as int), filesize (bytes as int), and duration (seconds as float) if the file type is
+        file format. For audio and video, this also includes bitrate (kBits/s as int), samplerate (samples/second
+        as int), bitdepth (as int), filesize (bytes as int), and duration (seconds as int) if the file type is
         supported by TinyTag. Example suppported file types include: MP3, MP4, M4A, and WAV.
         """
         if self.data_type not in ["audio_path", "video_path", "image_path"]:
@@ -202,11 +201,11 @@ class SeedPrompt(YamlLoadable):
                     tag = TinyTag.get(self.value)
                     self.metadata.update(
                         {
-                            "bitrate": tag.bitrate,
+                            "bitrate": int(round(tag.bitrate)),
                             "samplerate": tag.samplerate,
                             "bitdepth": tag.bitdepth,
                             "filesize": tag.filesize,
-                            "duration": tag.duration,
+                            "duration": int(round(tag.duration)),
                         }
                     )
                 except Exception as ex:

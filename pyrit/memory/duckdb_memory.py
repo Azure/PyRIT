@@ -100,10 +100,16 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         conditions = [PromptMemoryEntry.labels.op("->>")(key) == value for key, value in memory_labels.items()]
         return and_(*conditions)
 
+    def _get_prompt_pieces_prompt_metadata_conditions(self, *, prompt_metadata):
+        conditions = [
+            PromptMemoryEntry.prompt_metadata.op("->>")(key) == value for key, value in prompt_metadata.items()
+        ]
+        return and_(*conditions)
+
     def _get_prompt_pieces_orchestrator_conditions(self, *, orchestrator_id: str):
         return PromptMemoryEntry.orchestrator_identifier.op("->>")("id") == orchestrator_id
 
-    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, str]):
+    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]):
         conditions = [SeedPromptEntry.prompt_metadata.op("->>")(key) == value for key, value in metadata.items()]
         return and_(*conditions)
 

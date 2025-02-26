@@ -65,16 +65,18 @@ memory.get_seed_prompt_dataset_names()
 dataset_name = "test illegal"
 prompts = memory.get_seed_prompts(dataset_name=dataset_name)
 print(f"Total number of the prompts with dataset name '{dataset_name}':", len(prompts))
-if prompts:
-    print(prompts[0].__dict__)
+for prompt in prompts:
+    print(prompt.__dict__)
 
 # %% [markdown]
 # ## Adding multimodal seed prompt groups to the database
 # In the following example, we will add a seed prompt group containing text, image, audio, and video prompts.
-# When we add non-text seed prompts to memory, encoding data will automatically populate in the seed prompt's `metadata` field,
-# including `format` (i.e. png, mp4, wav, etc.) as well as additional metadata for audio and video files, including `bitdepth`,
-# `bitrate`, `duration`, `filesize`, and `samplerate`. These may be helpful to filter for as some targets have specific requirements
-# for valid prompts.
+# When we add non-text seed prompts to memory, encoding data will automatically populate in the seed prompt's
+# `metadata` field, including `format` (i.e. png, mp4, wav, etc.) as well as additional metadata for audio
+# and video files, inclduing `bitrate` (kBits/s as int), `samplerate` (samples/second as int), `bitdepth` (as int),
+# `filesize` (bytes as int), and `duration` (seconds as int) if the file type is supported by TinyTag.
+# Example suppported file types include: MP3, MP4, M4A, and WAV. These may be helpful to filter for as some targets
+# have specific input prompt requirements.
 # %%
 import pathlib
 
@@ -100,6 +102,10 @@ print(f"Total number of the seed prompt groups with dataset name '{multimodal_da
 # Retrieving the auto-populated metadata for each seed prompt in the multimodal seed prompt group.
 for seed_prompt in seed_prompt_group.prompts:
     print(f"SeedPrompt value: {seed_prompt.value}, SeedPrompt metadata: {seed_prompt.metadata}")
+
+# %% [markdown]
+# ## Filtering seed prompts by metadata
+# %%
 # Filter by metadata to get seed prompts in .wav format and sample rate 24000 kBits/s
 memory.get_seed_prompts(metadata={"format": "wav", "samplerate": 24000})
 
