@@ -1,11 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pathlib import Path
-import cv2
 import logging
-import numpy as np
 import os
+from pathlib import Path
+
+import cv2
+import numpy as np
 
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.models import PromptDataType, data_serializer_factory
@@ -23,9 +24,10 @@ video_encoding_map = {
     "mkv": "X264",
 }
 
+
 class AddImageVideoConverter(PromptConverter):
     """
-    Adds an image to a video at a specified position. 
+    Adds an image to a video at a specified position.
     Also, currently the image is placed in the whole video, not at a specific timepoint
 
     Args:
@@ -63,15 +65,19 @@ class AddImageVideoConverter(PromptConverter):
         if not image_path:
             raise ValueError("Please provide valid image path value")
 
-        input_image_data = data_serializer_factory(category="prompt-memory-entries", data_type="image_path", value=image_path)
-        input_video_data = data_serializer_factory(category="prompt-memory-entries", data_type="video_path", value=self._video_path)
+        input_image_data = data_serializer_factory(
+            category="prompt-memory-entries", data_type="image_path", value=image_path
+        )
+        input_video_data = data_serializer_factory(
+            category="prompt-memory-entries", data_type="video_path", value=self._video_path
+        )
 
         # Open the video to ensure it exists
         video_bytes = await input_video_data.read_data()
-        
+
         azure_storage_flag = False
         video_path = self._video_path
-        
+
         try:
             if input_video_data._is_azure_storage_url(self._video_path):
                 # If the video is in Azure storage, download it first
@@ -83,7 +89,6 @@ class AddImageVideoConverter(PromptConverter):
                 video_path = str(local_temp_path)
                 azure_storage_flag = True
 
-       
             cap = cv2.VideoCapture(video_path)
 
             # Get video properties
@@ -96,7 +101,6 @@ class AddImageVideoConverter(PromptConverter):
                 out = cv2.VideoWriter(output_path, video_char_code, fps, (width, height))
             else:
                 raise ValueError(f"Unsupported video format: {file_extension}")
-            
 
             # Load and resize the overlay image
 
@@ -109,7 +113,7 @@ class AddImageVideoConverter(PromptConverter):
             h, w, _ = overlay.shape
             x, y = self._img_position  # Position where the overlay will be placed
 
-            while cap.isOpened(): # TODO: use dataserializer to write
+            while cap.isOpened():  # TODO: use dataserializer to write
                 ret, frame = cap.read()
                 if not ret:
                     break
@@ -125,7 +129,7 @@ class AddImageVideoConverter(PromptConverter):
                 # Write the modified frame to the output video
                 out.write(frame)
 
-        finally: 
+        finally:
             # Release everything
             cap.release()
             out.release()
@@ -163,6 +167,6 @@ class AddImageVideoConverter(PromptConverter):
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "image_path"
-    
+
     def output_supported(self, output_type: PromptDataType) -> bool:
         return output_type == "video_path"
