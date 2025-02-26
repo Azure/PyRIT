@@ -147,7 +147,11 @@ class AWSBedrockClaudeChatTarget(PromptChatTarget):
                     media_type = "image/" + image_type
                     entry = {
                         "type": "image",
-                        "source": {"type": "base64", "media_type": media_type, "data": data_base64_encoded},
+                        "source": {
+                            "type": "base64",
+                            "media_type": media_type,
+                            "data": data_base64_encoded,
+                        },  # type: ignore
                     }
                     content.append(entry)
                 else:
