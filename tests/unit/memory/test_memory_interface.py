@@ -1569,7 +1569,7 @@ def test_get_prompt_request_pieces_labels(duckdb_instance: MemoryInterface):
 
 
 def test_get_prompt_request_pieces_metadata(duckdb_instance: MemoryInterface):
-    metadata = {"key1": "value1", "key2": "value2"}
+    metadata: dict[str, str | int] = {"key1": "value1", "key2": "value2"}
     entries = [
         PromptMemoryEntry(
             entry=PromptRequestPiece(

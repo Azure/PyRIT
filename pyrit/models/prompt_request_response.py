@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Dict, MutableSequence, Optional, Sequence
+from typing import Dict, MutableSequence, Optional, Sequence, Union
 
 from pyrit.models.literals import PromptDataType, PromptResponseError
 from pyrit.models.prompt_request_piece import PromptRequestPiece
@@ -127,7 +127,7 @@ def construct_response_from_request(
     request: PromptRequestPiece,
     response_text_pieces: list[str],
     response_type: PromptDataType = "text",
-    prompt_metadata: Optional[Dict[str, str]] = None,
+    prompt_metadata: Optional[Dict[str, Union[str, int]]] = None,
     error: PromptResponseError = "none",
 ) -> PromptRequestResponse:
     """
