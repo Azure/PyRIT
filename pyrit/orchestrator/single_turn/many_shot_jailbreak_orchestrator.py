@@ -3,7 +3,7 @@
 
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets import fetch_many_shot_jailbreaking_dataset
@@ -60,7 +60,7 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
         *,
         prompt_list: list[str],
         memory_labels: Optional[dict[str, str]] = None,
-        metadata: Optional[dict[str, str]] = None,
+        metadata: Optional[dict[str, Union[str, int]]] = None,
     ) -> list[PromptRequestResponse]:
         """
         Sends the prompts to the target using the Many Shot Jailbreak.
