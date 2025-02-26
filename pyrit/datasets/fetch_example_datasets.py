@@ -928,11 +928,14 @@ def fetch_aya_redteaming_dataset(
                         source="https://huggingface.co/datasets/CohereForAI/aya_redteaming",
                     )
                 )
-          
+
     seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
     return seed_prompt_dataset
-  
-def fetch_babelscape_alert_dataset(category: Optional[str] = None) -> SeedPromptDataset:
+
+
+def fetch_babelscape_alert_dataset(
+    category: Literal["alert", "alert_adversarial"] = "alert_adversarial"
+) -> SeedPromptDataset:
     """
     Fetch the Babelscape/ALERT dataset and create a SeedPromptDataset.
 
@@ -961,7 +964,7 @@ def fetch_babelscape_alert_dataset(category: Optional[str] = None) -> SeedPrompt
         SeedPrompt(
             value=prompt,
             data_type="text",
-            name="Babelscape/ALERT",
+            name="",
             dataset_name="Babelscape/ALERT",
             description="""ALERT by Babelscape is a dataset that consists
             of two different categories, 'alert' with 15k red teaming prompts,
@@ -970,6 +973,6 @@ def fetch_babelscape_alert_dataset(category: Optional[str] = None) -> SeedPrompt
         )
         for prompt in prompts
     ]
-    
+
     seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
     return seed_prompt_dataset
