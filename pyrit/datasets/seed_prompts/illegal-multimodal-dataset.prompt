@@ -19,6 +19,6 @@ prompts:
     data_type: text
     prompt_group_alias: image_request_1
   - value: |
-      {{ pyrit_home_path }}/assets/pyrit_architecture.png
+      {{ datasets_path }}/seed_prompts/multimodal_data/pyrit_architecture.png
     data_type: image_path
     prompt_group_alias: image_request_1

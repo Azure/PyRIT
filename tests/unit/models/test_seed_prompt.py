@@ -5,8 +5,12 @@ import os
 import pathlib
 import tempfile
 import uuid
+from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
+from PIL import Image
+from scipy.io import wavfile
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt, SeedPromptDataset, SeedPromptGroup
@@ -256,3 +260,81 @@ async def test_hashes_generated_files():
         assert entry.value_sha256 == "948edbe7ede5aa7423476ae29dcd7d61e7711a071aea0d83698377effa896525"
 
     os.remove(filename)
+
+
+@pytest.mark.asyncio
+async def test_memory_encoding_metadata_image(duckdb_instance):
+    mock_image = Image.new("RGB", (400, 300), (255, 255, 255))
+    mock_image.save("test.png")
+    sp = SeedPrompt(
+        value="test.png",
+        data_type="image_path",
+    )
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=[sp], added_by="test")
+    entry = duckdb_instance.get_seed_prompts()[0]
+    assert len(entry.metadata) == 1
+    assert entry.metadata["format"] == "png"
+    os.remove("test.png")
+
+
+@pytest.mark.asyncio
+@patch("pyrit.models.seed_prompt.TinyTag")
+async def test_memory_encoding_metadata_audio(mock_tinytag, duckdb_instance):
+    # Simulate WAV data
+    sample_rate = 44100
+    mock_audio_data = np.random.randint(-32768, 32767, size=(100,), dtype=np.int16)
+
+    # Create a temporary file for the WAV file
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_wav_file:
+        original_wav_path = temp_wav_file.name
+        wavfile.write(original_wav_path, sample_rate, mock_audio_data)
+    sp = SeedPrompt(
+        value=original_wav_path,
+        data_type="audio_path",
+    )
+    mock_tag = MagicMock()
+    mock_tag.bitrate = 128
+    mock_tag.samplerate = 44100
+    mock_tag.bitdepth = 16
+    mock_tag.filesize = 1024
+    mock_tag.duration = 180
+    mock_tinytag.get.return_value = mock_tag
+
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=[sp], added_by="test")
+    entry = duckdb_instance.get_seed_prompts()[0]
+    assert entry.metadata["format"] == "wav"
+    assert entry.metadata["bitrate"] == 128
+    assert entry.metadata["samplerate"] == 44100
+    assert entry.metadata["bitdepth"] == 16
+    assert entry.metadata["filesize"] == 1024
+    assert entry.metadata["duration"] == 180
+
+    os.remove(original_wav_path)
+
+
+@patch("pyrit.models.seed_prompt.logger")
+@patch("pyrit.models.seed_prompt.TinyTag")
+def test_set_encoding_metadata_tinytag_exception(mock_tinytag, mock_logger):
+    mock_tinytag.get.side_effect = Exception("Tinytag error")
+    sp = SeedPrompt(
+        value="test.mp3",
+        data_type="audio_path",
+    )
+
+    sp.set_encoding_metadata()
+    assert len(sp.metadata) == 1
+    assert sp.metadata["format"] == "mp3"
+    mock_logger.error.assert_called_once()
+
+
+@patch("pyrit.models.seed_prompt.logger")
+def test_set_encoding_metadata_unsupported_audio(mock_logger):
+    sp = SeedPrompt(
+        value="unsupported_audio.xyz",
+        data_type="audio_path",
+    )
+
+    sp.set_encoding_metadata()
+    assert len(sp.metadata) == 1
+    assert sp.metadata["format"] == "xyz"
+    mock_logger.warning.assert_called_once()

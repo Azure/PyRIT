@@ -81,7 +81,7 @@ class FuzzerCrossOverConverter(FuzzerConverter):
             f"\n====TEMPLATE 2 BEGINS====\n{random.choice(self.prompt_templates)}\n====TEMPLATE 2 ENDS====\n"
         )
 
-        prompt_metadata = {"response_format": "json"}
+        prompt_metadata: dict[str, str | int] = {"response_format": "json"}
         request = PromptRequestResponse(
             [
                 PromptRequestPiece(
