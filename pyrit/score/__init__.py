@@ -5,6 +5,7 @@ from pyrit.score.azure_content_filter_scorer import AzureContentFilterScorer
 from pyrit.score.float_scale_threshold_scorer import FloatScaleThresholdScorer
 from pyrit.score.gandalf_scorer import GandalfScorer
 from pyrit.score.human_in_the_loop_scorer import HumanInTheLoopScorer
+from pyrit.score.human_in_the_loop_gradio import HumanInTheLoopScorerGradio
 from pyrit.score.insecure_code_scorer import InsecureCodeScorer
 from pyrit.score.markdown_injection import MarkdownInjectionScorer
 from pyrit.score.prompt_shield_scorer import PromptShieldScorer
@@ -23,6 +24,7 @@ __all__ = [
     "FloatScaleThresholdScorer",
     "GandalfScorer",
     "HumanInTheLoopScorer",
+    "HumanInTheLoopScorerGradio",
     "InsecureCodeScorer",
     "LikertScalePaths",
     "MarkdownInjectionScorer",
