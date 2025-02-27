@@ -26,6 +26,7 @@ class OpenAITarget(PromptChatTarget):
     endpoint_environment_variable: str
     api_key_environment_variable: str
 
+    #TODO extra_body_parameters
     def __init__(
         self,
         *,

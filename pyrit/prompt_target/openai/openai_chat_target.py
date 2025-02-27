@@ -131,11 +131,17 @@ class OpenAIChatTarget(OpenAITarget):
         logger.info(f"Sending the following prompt to the prompt target: {prompt_request}")
 
 
+        # TODO update other methods
         if self._api_key:
+            # This header is set as api-key in azure and bearer in openai
+            # But azure still functions if it's in both places and in fact,
+            # in Azure foundry it needs to be set as a bearer
             self._extra_headers["api-key"] = self._api_key
+            self._extra_headers["Authorization"] = f"Bearer {self._api_key}"
 
         if self._token_provider:
             self._extra_headers["Authorization"] = f"Bearer {self._token_provider()}"
+
 
         body = await self._construct_request_body(conversation=conversation, is_json_response=is_json_response)
 
