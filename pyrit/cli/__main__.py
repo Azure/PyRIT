@@ -77,11 +77,11 @@ async def validate_config_and_run_async(config: Dict[str, Any], memory_labels: O
     objective_target = validate_target(config, target_key="objective_target")
     prompt_converters: list[PromptConverter] = []
     # prompt_converters = validate_converters(config)
-    scorer = None
-    # TODO: need to find a solution for single/multiple scorers and scoring_targets
-    # scorers = validate_scorers(config)
     adversarial_chat = None
-    # adversarial_chat = validate_adversarial_chat(config)
+    if "adversarial_chat" in config:
+        adversarial_chat = validate_target(config, target_key="adversarial_chat")
+    scoring_target = validate_scoring_target(config, adversarial_chat=adversarial_chat)
+    objective_scorer = validate_objective_scorer(config, scoring_target=scoring_target)
 
     orchestrators = []
     for scenario_config in scenarios:
@@ -91,7 +91,8 @@ async def validate_config_and_run_async(config: Dict[str, Any], memory_labels: O
                 objective_target=objective_target,
                 adversarial_chat=adversarial_chat,
                 prompt_converters=prompt_converters,
-                scorer=scorer,
+                scoring_target=scoring_target,
+                objective_scorer=objective_scorer,
             )
         )
 
@@ -130,7 +131,8 @@ def validate_scenario(
     objective_target: PromptTarget,
     adversarial_chat: Optional[PromptChatTarget] = None,
     prompt_converters: Optional[List[PromptConverter]] = None,
-    scorer: Optional[Scorer] = None,
+    scoring_target: Optional[PromptChatTarget] = None,
+    objective_scorer: Optional[Scorer] = None,
 ) -> Orchestrator:
     if "type" not in scenario_config:
         raise KeyError("Scenario must contain a 'type' key.")
@@ -150,7 +152,7 @@ def validate_scenario(
 
         # Some orchestrator arguments have their own configuration since they
         # are more complex. They are passed in as args to this function.
-        complex_arg_names = ["objective_target", "adversarial_chat", "prompt_converters", "scorer"]
+        complex_arg_names = ["objective_target", "adversarial_chat", "prompt_converters", "scoring_target", "objective_scorer"]
         for complex_arg_name in complex_arg_names:
             if complex_arg_name in scenario_args:
                 raise ValueError(
@@ -205,6 +207,44 @@ def validate_target(config: Dict[str, Any], target_key: str) -> PromptTarget:
     del target_config["type"]
     target = target_class(**target_config)
     return target
+
+
+def validate_scoring_target(config: Dict[str, Any], adversarial_chat: Optional[PromptChatTarget]) -> PromptChatTarget | None:
+    if "scoring" not in config:
+        return None
+    scoring_config = config["scoring"]
+    
+    # If a scoring_target has been configured use it.
+    # Otherwise, use the adversarial_chat target for scoring.
+    if "scoring_target" in scoring_config:
+        return validate_target(scoring_config, target_key="scoring_target")
+    return adversarial_chat
+
+
+def validate_objective_scorer(config: Dict[str, Any], scoring_target: Optional[PromptChatTarget]) -> Scorer | None:
+    if "scoring" not in config:
+        return None
+    scoring_config = config["scoring"]
+    if "objective_scorer" not in scoring_config:
+        return None
+    
+    scorer_args = deepcopy(scoring_config["objective_scorer"])
+
+    if "type" not in scorer_args:
+        raise KeyError("Scorer definition must contain a 'type' key.")
+
+    scorer_type = scorer_args.pop("type")
+    
+    try:
+        scorer_module = import_module("pyrit.score")
+        scorer_class = getattr(scorer_module, scorer_type)
+    except Exception as ex:
+        raise RuntimeError(f"Failed to import target {scorer_type} from pyrit.score") from ex
+    
+    if scoring_target and "chat_target" in inspect.signature(scorer_class.__init__).parameters:
+        scorer_args["chat_target"] = scoring_target
+
+    return scorer_class(**scorer_args)
 
 
 def main(args=None):
