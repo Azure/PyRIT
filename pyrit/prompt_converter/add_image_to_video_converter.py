@@ -14,7 +14,6 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 
-# Get input file extension
 
 # Choose the codec based on extension
 video_encoding_map = {
@@ -45,7 +44,7 @@ class AddImageVideoConverter(PromptConverter):
         img_resize_size: tuple = (500, 500),
     ):
         if not video_path:
-            raise ValueError("Please provide valid image path")
+            raise ValueError("Please provide valid video path")
 
         self._output_path = output_path
         self._img_position = img_position
@@ -56,10 +55,11 @@ class AddImageVideoConverter(PromptConverter):
         """
         Adds image to video
         Args:
-            Image Path (str): The image path to add to video.
+            image_path (str): The image path to add to video.
+            output_path (str): The output video path.
 
         Returns:
-            Image.Image: The image with added text.
+            output_path (str): The output video path.
         """
 
         if not image_path:
@@ -75,11 +75,11 @@ class AddImageVideoConverter(PromptConverter):
         # Open the video to ensure it exists
         video_bytes = await input_video_data.read_data()
 
-        azure_storage_flag = False
+        azure_storage_flag = input_video_data._is_azure_storage_url(self._video_path)
         video_path = self._video_path
 
         try:
-            if input_video_data._is_azure_storage_url(self._video_path):
+            if azure_storage_flag:
                 # If the video is in Azure storage, download it first
 
                 # Save the video bytes to a temporary file
@@ -87,7 +87,6 @@ class AddImageVideoConverter(PromptConverter):
                 with open(local_temp_path, "wb") as f:
                     f.write(video_bytes)
                 video_path = str(local_temp_path)
-                azure_storage_flag = True
 
             cap = cv2.VideoCapture(video_path)
 
@@ -143,7 +142,7 @@ class AddImageVideoConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "image_path") -> ConverterResult:
         """
-        Converter that overlays input text on the img_to_add.
+        Converter that adds an image to a video
 
         Args:
             prompt (str): The image file name to be added to the video.
