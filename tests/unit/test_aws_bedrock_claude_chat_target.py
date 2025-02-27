@@ -77,6 +77,7 @@ async def test_validate_request_invalid_data_type(aws_target):
         aws_target._validate_request(prompt_request=invalid_request)
 
 
+@pytest.mark.skipif(not is_boto3_installed(), reason="boto3 is not installed")
 @pytest.mark.asyncio
 async def test_complete_chat_async(aws_target):
     with patch("boto3.client", new_callable=MagicMock) as mock_boto:
