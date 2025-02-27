@@ -7,9 +7,6 @@ import json
 import logging
 from typing import MutableSequence, Optional
 
-import boto3
-from botocore.exceptions import ClientError
-
 from pyrit.chat_message_normalizer import ChatMessageNop, ChatMessageNormalizer
 from pyrit.models import (
     ChatMessageListDictContent,
@@ -62,6 +59,13 @@ class AWSBedrockClaudeChatTarget(PromptChatTarget):
         self._system_prompt = ""
 
         self._valid_image_types = ["jpeg", "png", "webp", "gif"]
+
+        try:
+            import boto3
+            from botocore.exceptions import ClientError
+        except ModuleNotFoundError as e:
+            logger.error("Could not import boto. You may need to install it via 'pip install pyrit[all]'")
+            raise e
 
     @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:

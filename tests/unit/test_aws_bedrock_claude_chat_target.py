@@ -16,6 +16,15 @@ from pyrit.prompt_target.aws_bedrock_claude_chat_target import (
 )
 
 
+def is_boto3_installed():
+    try:
+        import boto3
+
+        return True
+    except ModuleNotFoundError:
+        return False
+
+
 @pytest.fixture
 def aws_target() -> AWSBedrockClaudeChatTarget:
     return AWSBedrockClaudeChatTarget(
@@ -36,6 +45,7 @@ def mock_prompt_request():
     return PromptRequestResponse(request_pieces=[request_piece])
 
 
+@pytest.mark.skipif(not is_boto3_installed(), reason="boto3 is not installed")
 @pytest.mark.asyncio
 async def test_send_prompt_async(aws_target, mock_prompt_request):
     with patch("boto3.client", new_callable=MagicMock) as mock_boto:
