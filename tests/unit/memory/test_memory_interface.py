@@ -1144,7 +1144,7 @@ async def test_add_seed_prompts_duplicate_entries_different_datasets(duckdb_inst
     await duckdb_instance.add_seed_prompts_to_memory_async(prompts=duplicate_prompts, added_by="tester")
 
     # Validate that only new prompt is added and the total prompt count is 3
-    stored_prompts = duckdb_instance.get_seed_prompts(dataset_name="test_dataset")
+    stored_prompts = duckdb_instance.get_seed_prompts()
     assert len(stored_prompts) == 4
 
 
