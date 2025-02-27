@@ -11,9 +11,10 @@ from pyrit.prompt_target import OpenAIChatTarget
 
 from pyrit.common import path
 from pyrit.prompt_target.azure_ml_chat_target import AzureMLChatTarget
+from pyrit.prompt_target.openai.openai_completion_target import OpenAICompletionTarget
 
 
-async def _assert_can_send_prompt(target):
+async def _assert_can_send_prompt(target, verify_response_text=True):
     simple_prompt = "simply repeat this word back to me. Don't say anything else. Say: 'test'"
     orchestrator = PromptSendingOrchestrator(objective_target=target)
 
@@ -22,7 +23,8 @@ async def _assert_can_send_prompt(target):
     result = await orchestrator.send_prompts_async(prompt_list=all_prompts)
     assert len(result) == 1
     assert len(result[0].request_pieces) == 1
-    assert "test" in result[0].request_pieces[0].converted_value.lower()
+    if verify_response_text:
+        assert "test" in result[0].request_pieces[0].converted_value.lower()
 
 
 @pytest.mark.asyncio
@@ -52,8 +54,68 @@ async def test_connect_required_openai_text_targets(endpoint, api_key, model_nam
     await _assert_can_send_prompt(target)
 
 
-# These tests are not run in our pipeline because they just use personal secrets
-# but still useful to check the endpoints work
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("endpoint", "api_key"),
+    [
+        ("AZURE_ML_MANAGED_ENDPOINT", "AZURE_ML_KEY"),
+        ("AZURE_ML_MIXTRAL_ENDPOINT", "AZURE_ML_MIXTRAL_KEY"),
+    ]
+)
+async def test_connect_required_aml_text_targets(endpoint, api_key):
+
+    initialize_pyrit(memory_db_type=IN_MEMORY)
+
+    target = AzureMLChatTarget(
+        endpoint=os.getenv(endpoint),
+        api_key=os.getenv(api_key),
+    )
+
+    await _assert_can_send_prompt(target)
+
+
+async def test_connect_openai_completion():
+
+    endpoint = "OPENAI_COMPLETEION_ENDPOINT"
+    api_key="OPENAI_COMPLETION_API_KEY"
+    model="OPENAI_COMPLETION_MODEL"
+
+    initialize_pyrit(memory_db_type=IN_MEMORY)
+
+    target = OpenAICompletionTarget(
+        endpoint=os.getenv(endpoint),
+        api_key=os.getenv(api_key),
+        model_name=os.getenv(model)
+    )
+
+    await _assert_can_send_prompt(target, verify_response_text=False)
+
+
+async def test_connect_openai_embedding():
+
+    endpoint = "AZURE_OPENAI_EMBEDDING_ENDPOINT"
+    api_key="AZURE_OPENAI_EMBEDDING_KEY"
+    model="OPENAI_COMPLETION_MODEL"
+
+    initialize_pyrit(memory_db_type=IN_MEMORY)
+
+    target = OpenAICompletionTarget(
+        endpoint=os.getenv(endpoint),
+        api_key=os.getenv(api_key),
+        model_name=os.getenv(model)
+    )
+
+    await _assert_can_send_prompt(target, verify_response_text=False)
+
+
+
+##################################################
+# Optional tests - not run in pipeline, only locally
+# Need RUN_ALL_TESTS=true environment variable to run
+###################################################
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("endpoint", "api_key", "model_name"),
@@ -74,27 +136,6 @@ async def test_connect_non_required_openai_text_targets(endpoint, api_key, model
         endpoint=os.getenv(endpoint),
         api_key=os.getenv(api_key),
         model_name=os.getenv(model_name)
-    )
-
-    await _assert_can_send_prompt(target)
-
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize(
-    ("endpoint", "api_key"),
-    [
-        ("AZURE_ML_MANAGED_ENDPOINT", "AZURE_ML_KEY"),
-        ("AZURE_ML_MIXTRAL_ENDPOINT", "AZURE_ML_MIXTRAL_KEY"),
-    ]
-)
-async def test_connect_required_aml_text_targets(endpoint, api_key):
-
-    initialize_pyrit(memory_db_type=IN_MEMORY)
-
-    target = AzureMLChatTarget(
-        endpoint=os.getenv(endpoint),
-        api_key=os.getenv(api_key),
     )
 
     await _assert_can_send_prompt(target)
