@@ -77,7 +77,7 @@ class Score:
         self.score_category = score_category
         self.score_rationale = score_rationale
         self.score_metadata = score_metadata
-        self.scorer_class_identifier = scorer_class_identifier
+        self.scorer_class_identifier = scorer_class_identifier or {}
         self.prompt_request_response_id = prompt_request_response_id
         self.task = task
 
