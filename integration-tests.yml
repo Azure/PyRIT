@@ -10,6 +10,10 @@ pool:
   vmImage: ubuntu-latest
 
 steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.12'
+    addToPath: true
 - task: AzureKeyVault@2
   displayName: Azure Key Vault - retrieve .env file secret
   inputs:
@@ -28,11 +32,11 @@ steps:
   env:
     PYRIT_TEST_SECRET: $(env-integration-test)
   name: create_env_file
-- bash: pip install --upgrade setuptools pip
+- bash: pip install --upgrade setuptools pip packaging
   name: upgrade_pip_and_setuptools_before_installing_PyRIT
 - bash: sudo apt-get install python3-tk
   name: install_tkinter
-- bash: pip install .[all]
+- bash: pip install .[all] -v
   name: install_PyRIT
 - bash: make integration-test
   name: run_integration_tests
