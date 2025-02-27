@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import uuid
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import (
@@ -70,7 +70,7 @@ class PromptMemoryEntry(Base):
     sequence = Column(INTEGER, nullable=False)
     timestamp = Column(DateTime, nullable=False)
     labels: Mapped[dict[str, str]] = Column(JSON)
-    prompt_metadata: Mapped[dict[str, str]] = Column(JSON)
+    prompt_metadata: Mapped[dict[str, Union[str, int]]] = Column(JSON)
     converter_identifiers: Mapped[dict[str, str]] = Column(JSON)
     prompt_target_identifier: Mapped[dict[str, str]] = Column(JSON)
     orchestrator_identifier: Mapped[dict[str, str]] = Column(JSON)
@@ -280,7 +280,8 @@ class SeedPromptEntry(Base):
         source (str): The source of the seed prompt.
         date_added (DateTime): The date the seed prompt was added.
         added_by (str): The user who added the seed prompt.
-        prompt_metadata (dict[str, str]): The metadata associated with the seed prompt.
+        prompt_metadata (dict[str, str | int]): The metadata associated with the seed prompt. This includes
+            information that is useful for the specific target you're probing, such as encoding data.
         parameters (List[str]): The parameters included in the value.
             Note that seed prompts do not have parameters, only prompt templates do.
             However, they are stored in the same table.
@@ -308,7 +309,7 @@ class SeedPromptEntry(Base):
     source = Column(String, nullable=True)
     date_added = Column(DateTime, nullable=False)
     added_by = Column(String, nullable=False)
-    prompt_metadata: Mapped[dict[str, str]] = Column(JSON, nullable=True)
+    prompt_metadata: Mapped[dict[str, Union[str, int]]] = Column(JSON, nullable=True)
     parameters: Mapped[Optional[List[str]]] = Column(JSON, nullable=True)
     prompt_group_id: Mapped[Optional[uuid.UUID]] = Column(Uuid, nullable=True)
     sequence: Mapped[Optional[int]] = Column(INTEGER, nullable=True)

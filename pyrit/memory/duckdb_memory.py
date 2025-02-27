@@ -15,7 +15,12 @@ from sqlalchemy.orm.session import Session
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.common.singleton import Singleton
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry
+from pyrit.memory.memory_models import (
+    Base,
+    EmbeddingDataEntry,
+    PromptMemoryEntry,
+    SeedPromptEntry,
+)
 from pyrit.models import DiskStorageIO, PromptRequestPiece
 
 logger = logging.getLogger(__name__)
@@ -95,8 +100,18 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         conditions = [PromptMemoryEntry.labels.op("->>")(key) == value for key, value in memory_labels.items()]
         return and_(*conditions)
 
+    def _get_prompt_pieces_prompt_metadata_conditions(self, *, prompt_metadata):
+        conditions = [
+            PromptMemoryEntry.prompt_metadata.op("->>")(key) == value for key, value in prompt_metadata.items()
+        ]
+        return and_(*conditions)
+
     def _get_prompt_pieces_orchestrator_conditions(self, *, orchestrator_id: str):
         return PromptMemoryEntry.orchestrator_identifier.op("->>")("id") == orchestrator_id
+
+    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]):
+        conditions = [SeedPromptEntry.prompt_metadata.op("->>")(key) == value for key, value in metadata.items()]
+        return and_(*conditions)
 
     def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
         """

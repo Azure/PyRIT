@@ -4,7 +4,7 @@
 import enum
 import logging
 import pathlib
-from typing import Optional
+from typing import Optional, Union
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import (
@@ -80,7 +80,7 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
         *,
         prompt_list: list[str],
         memory_labels: Optional[dict[str, str]] = None,
-        metadata: Optional[dict[str, str] | None] = None,
+        metadata: Optional[dict[str, Union[str, int]] | None] = None,
     ) -> list[PromptRequestResponse]:
         """
         Sends the prompts to the prompt target using a defined role playing scenario.
@@ -90,7 +90,8 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
             memory_labels (dict[str, str], Optional): A free-form dictionary of additional labels to apply to the
                 prompts. Any labels passed in will be combined with self._global_memory_labels with the passed
                 in labels taking precedence in the case of collisions. Defaults to None.
-            metadata: Any additional information to be added to the memory entry corresponding to the prompts sent.
+            metadata (dict[str, str | int], Optional): Any additional information to be added to the memory entry
+                corresponding to the prompts sent.
 
         Returns:
             list[PromptRequestResponse]: The responses from sending the prompts.

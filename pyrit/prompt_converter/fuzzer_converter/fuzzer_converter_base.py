@@ -65,7 +65,7 @@ class FuzzerConverter(PromptConverter):
         )
 
         formatted_prompt = f"===={self.template_label} BEGINS====\n{prompt}\n===={self.template_label} ENDS===="
-        prompt_metadata = {"response_format": "json"}
+        prompt_metadata: dict[str, str | int] = {"response_format": "json"}
         request = PromptRequestResponse(
             [
                 PromptRequestPiece(
