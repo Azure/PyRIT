@@ -90,10 +90,10 @@ class OpenAICompletionTarget(OpenAITarget):
 
 
         if self._api_key:
-            self._extra_headers["api-key"] = self._api_key
+            self._headers["api-key"] = self._api_key
 
         if self._token_provider:
-            self._extra_headers["Authorization"] = f"Bearer {self._token_provider()}"
+            self._headers["Authorization"] = f"Bearer {self._token_provider()}"
 
         body = await self._construct_request_body(request=request_piece)
 
@@ -105,7 +105,7 @@ class OpenAICompletionTarget(OpenAITarget):
             str_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(
                 endpoint_uri=self._endpoint,
                 method="POST",
-                headers=self._extra_headers,
+                headers=self._headers,
                 request_body=body,
                 params=params,
                 **self._httpx_client_kwargs

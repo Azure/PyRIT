@@ -2,16 +2,16 @@
 # Licensed under the MIT license.
 
 import os
-import uuid
 import pytest
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 
-from pyrit.common import path
 from pyrit.prompt_target.azure_ml_chat_target import AzureMLChatTarget
 from pyrit.prompt_target.openai.openai_completion_target import OpenAICompletionTarget
+from pyrit.prompt_target.openai.openai_dall_e_target import OpenAIDALLETarget
+from pyrit.prompt_target.openai.openai_tts_target import OpenAITTSTarget
 
 
 async def _assert_can_send_prompt(target, verify_response_text=True):
@@ -31,8 +31,9 @@ async def _assert_can_send_prompt(target, verify_response_text=True):
 @pytest.mark.parametrize(
     ("endpoint", "api_key", "model_name"),
     [
-        ("OPENAI_CHAT_ENDPOINT", "OPENAI_CHAT_KEY", "OPENAI_CHAT_MODEL"),
         ("AZURE_OPENAI_GPT4O_ENDPOINT", "AZURE_OPENAI_GPT4O_KEY", ""),
+        ("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT", "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY", ""),
+        ("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2", "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2", ""),
         ("AZURE_OPENAI_GPT3_5_CHAT_ENDPOINT", "AZURE_OPENAI_GPT3_5_CHAT_KEY",""),
         ("AZURE_OPENAI_GPT4_CHAT_ENDPOINT", "AZURE_OPENAI_GPT4_CHAT_KEY", ""),
         ("AZURE_OPENAI_GPTV_CHAT_ENDPOINT", "AZURE_OPENAI_GPTV_CHAT_KEY", ""),
@@ -74,7 +75,7 @@ async def test_connect_required_aml_text_targets(endpoint, api_key):
 
     await _assert_can_send_prompt(target)
 
-
+@pytest.mark.asyncio
 async def test_connect_openai_completion():
 
     endpoint = "OPENAI_COMPLETEION_ENDPOINT"
@@ -91,19 +92,41 @@ async def test_connect_openai_completion():
 
     await _assert_can_send_prompt(target, verify_response_text=False)
 
-
-async def test_connect_openai_embedding():
-
-    endpoint = "AZURE_OPENAI_EMBEDDING_ENDPOINT"
-    api_key="AZURE_OPENAI_EMBEDDING_KEY"
-    model="OPENAI_COMPLETION_MODEL"
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("endpoint", "api_key"),
+    [
+        ("OPENAI_DALLE_ENDPOINT1", "OPENAI_DALLE_API_KEY1"),
+        ("OPENAI_DALLE_ENDPOINT2", "OPENAI_DALLE_API_KEY2"),
+    ]
+)
+async def test_connect_dall_e(endpoint, api_key):
 
     initialize_pyrit(memory_db_type=IN_MEMORY)
 
-    target = OpenAICompletionTarget(
+    target = OpenAIDALLETarget(
         endpoint=os.getenv(endpoint),
         api_key=os.getenv(api_key),
-        model_name=os.getenv(model)
+    )
+
+    await _assert_can_send_prompt(target, verify_response_text=False)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("endpoint", "api_key"),
+    [
+        ("OPENAI_TTS_ENDPOINT1", "OPENAI_TTS_KEY1"),
+        ("OPENAI_TTS_ENDPOINT2", "OPENAI_TTS_KEY2"),
+    ]
+)
+async def test_connect_tts(endpoint, api_key):
+
+    initialize_pyrit(memory_db_type=IN_MEMORY)
+
+    target = OpenAITTSTarget(
+        endpoint=os.getenv(endpoint),
+        api_key=os.getenv(api_key),
     )
 
     await _assert_can_send_prompt(target, verify_response_text=False)
@@ -116,6 +139,7 @@ async def test_connect_openai_embedding():
 ###################################################
 
 
+@pytest.mark.run_only_if_all_tests
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("endpoint", "api_key", "model_name"),
@@ -128,9 +152,6 @@ async def test_connect_openai_embedding():
 async def test_connect_non_required_openai_text_targets(endpoint, api_key, model_name):
 
     initialize_pyrit(memory_db_type=IN_MEMORY)
-
-    if os.getenv("RUN_ALL_TESTS").lower() != "true":
-        pytest.skip("Skipping test because RUN_ALL_TESTS is not set to true")
 
     target = OpenAIChatTarget(
         endpoint=os.getenv(endpoint),

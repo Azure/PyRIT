@@ -86,12 +86,6 @@ class OpenAITTSTarget(OpenAITarget):
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
-        if self._api_key:
-            self._extra_headers["api-key"] = self._api_key
-
-        if self._token_provider:
-            self._extra_headers["Authorization"] = f"Bearer {self._token_provider()}"
-
         body = self._construct_request_body(request=request)
 
         params = {
@@ -102,7 +96,7 @@ class OpenAITTSTarget(OpenAITarget):
             response = await net_utility.make_request_and_raise_if_error_async(
                 endpoint_uri=self._endpoint,
                 method="POST",
-                headers=self._extra_headers,
+                headers=self._headers,
                 request_body=body,
                 params=params,
                 **self._httpx_client_kwargs

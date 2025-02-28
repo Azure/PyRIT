@@ -79,7 +79,7 @@ class GroqChatTarget(OpenAIChatTarget):
 
         # Ignoring mypy type error. The OpenAI client and Azure OpenAI client have the same private base class
         self._async_client = AsyncOpenAI(  # type: ignore
-            api_key=self._api_key, default_headers=self._extra_headers, base_url=endpoint
+            api_key=self._api_key, default_headers=self._headers, base_url=endpoint
         )
 
     @pyrit_target_retry

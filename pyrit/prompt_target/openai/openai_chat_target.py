@@ -3,7 +3,7 @@
 
 import json
 import logging
-from typing import MutableSequence, Optional
+from typing import Any, MutableSequence, Optional
 
 import httpx
 
@@ -50,6 +50,7 @@ class OpenAIChatTarget(OpenAITarget):
         frequency_penalty: Optional[float] = None,
         presence_penalty: Optional[float] = None,
         seed: Optional[int] = None,
+        extra_body_parameters: Optional[dict[str, Any]] = None,
         **kwargs,
     ):
         """
@@ -89,6 +90,7 @@ class OpenAIChatTarget(OpenAITarget):
                 tokens that are already present in the conversation history.
             seed (int, Optional): If specified, openAI will make a best effort to sample deterministically,
                 such that repeated requests with the same seed and parameters should return the same result.
+            extra_body_parameters (dict, Optional): Additional parameters to be included in the request body.
         """
         super().__init__(**kwargs)
 
@@ -102,6 +104,7 @@ class OpenAIChatTarget(OpenAITarget):
         self._frequency_penalty = frequency_penalty
         self._presence_penalty = presence_penalty
         self._seed = seed
+        self._extra_body_parameters = extra_body_parameters
 
     def _set_openai_env_configuration_vars(self) -> None:
         self.model_name_environment_variable = "OPENAI_CHAT_MODEL"
@@ -130,19 +133,6 @@ class OpenAIChatTarget(OpenAITarget):
 
         logger.info(f"Sending the following prompt to the prompt target: {prompt_request}")
 
-
-        # TODO update other methods
-        if self._api_key:
-            # This header is set as api-key in azure and bearer in openai
-            # But azure still functions if it's in both places and in fact,
-            # in Azure foundry it needs to be set as a bearer
-            self._extra_headers["api-key"] = self._api_key
-            self._extra_headers["Authorization"] = f"Bearer {self._api_key}"
-
-        if self._token_provider:
-            self._extra_headers["Authorization"] = f"Bearer {self._token_provider()}"
-
-
         body = await self._construct_request_body(conversation=conversation, is_json_response=is_json_response)
 
         params = {
@@ -153,9 +143,10 @@ class OpenAIChatTarget(OpenAITarget):
             str_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(
                 endpoint_uri=self._endpoint,
                 method="POST",
-                headers=self._extra_headers,
+                headers=self._headers,
                 request_body=body,
                 params=params,
+                debug=True,
                 **self._httpx_client_kwargs
             )
         except httpx.HTTPStatusError as StatusError:
@@ -328,6 +319,11 @@ class OpenAIChatTarget(OpenAITarget):
                 "messages": messages,
                 "response_format": {"type": "json_object"} if is_json_response else None,
             }
+
+        #TODO test to make sure this is added
+        if self._extra_body_parameters:
+            for key, value in self._extra_body_parameters.items():
+                body_parameters[key] = value
 
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}

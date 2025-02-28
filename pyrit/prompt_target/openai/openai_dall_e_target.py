@@ -120,10 +120,10 @@ class OpenAIDALLETarget(OpenAITarget):
         request_body = self._construct_request_body(prompt=prompt)
 
         if self._api_key:
-            self._extra_headers["api-key"] = self._api_key
+            self._headers["api-key"] = self._api_key
 
         if self._token_provider:
-            self._extra_headers["Authorization"] = f"Bearer {self._token_provider()}"
+            self._headers["Authorization"] = f"Bearer {self._token_provider()}"
 
         params = {
             "api-version": self._api_version
@@ -133,7 +133,7 @@ class OpenAIDALLETarget(OpenAITarget):
             http_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(
                 endpoint_uri=self._endpoint,
                 method="POST",
-                headers=self._extra_headers,
+                headers=self._headers,
                 request_body=request_body,
                 params=params,
                 **self._httpx_client_kwargs

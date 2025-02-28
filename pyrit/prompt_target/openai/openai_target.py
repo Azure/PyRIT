@@ -51,7 +51,7 @@ class OpenAITarget(PromptChatTarget):
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
                 Defaults to the AZURE_OPENAI_CHAT_KEY environment variable.
-            headers (str, Optional): Headers of the endpoint (JSON).
+            headers (str, Optional): Extra headers of the endpoint (JSON).
             use_aad_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default . Please run `az login` locally
@@ -66,7 +66,7 @@ class OpenAITarget(PromptChatTarget):
         """
         PromptChatTarget.__init__(self, max_requests_per_minute=max_requests_per_minute)
 
-        self._extra_headers: dict = {}
+        self._headers: dict = {}
         self._httpx_client_kwargs = httpx_client_kwargs or {}
 
 
@@ -75,7 +75,7 @@ class OpenAITarget(PromptChatTarget):
         )
 
         if request_headers and isinstance(request_headers, str):
-            self._extra_headers = json.loads(request_headers)
+            self._headers = json.loads(request_headers)
 
         self._api_version = api_version
 
@@ -92,6 +92,11 @@ class OpenAITarget(PromptChatTarget):
         self._api_key = None
         self._token_provider = None
 
+        self._set_auth_headers(use_aad_auth=use_aad_auth, passed_api_key=api_key)
+
+
+
+    def _set_auth_headers(self, use_aad_auth, passed_api_key) -> None:
         if use_aad_auth:
             logger.info("Authenticating with DefaultAzureCredential() for Azure Cognitive Services")
 
@@ -100,8 +105,19 @@ class OpenAITarget(PromptChatTarget):
 
         else:
             self._api_key = default_values.get_required_value(
-                env_var_name=self.api_key_environment_variable, passed_value=api_key
+                env_var_name=self.api_key_environment_variable, passed_value=passed_api_key
             )
+
+        if self._api_key:
+            # This header is set as api-key in azure and bearer in openai
+            # But azure still functions if it's in both places and in fact,
+            # in Azure foundry it needs to be set as a bearer
+            self._headers["Api-Key"] = self._api_key
+            self._headers["Authorization"] = f"Bearer {self._api_key}"
+
+        if self._token_provider:
+            self._headers["Authorization"] = f"Bearer {self._token_provider()}"
+
 
     @abstractmethod
     def _set_openai_env_configuration_vars(self) -> None:
