@@ -135,9 +135,7 @@ class OpenAIChatTarget(OpenAITarget):
 
         body = await self._construct_request_body(conversation=conversation, is_json_response=is_json_response)
 
-        params = {
-            "api-version": self._api_version
-        }
+        params = {"api-version": self._api_version}
 
         try:
             str_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(
@@ -147,7 +145,7 @@ class OpenAIChatTarget(OpenAITarget):
                 request_body=body,
                 params=params,
                 debug=True,
-                **self._httpx_client_kwargs
+                **self._httpx_client_kwargs,
             )
         except httpx.HTTPStatusError as StatusError:
             if StatusError.response.status_code == 400:
@@ -159,7 +157,9 @@ class OpenAIChatTarget(OpenAITarget):
                 raise
 
         logger.info(f'Received the following response from the prompt target "{str_response.text}"')
-        response: PromptRequestResponse = self._construct_prompt_response_from_openai_json(open_ai_str_response=str_response.text, request_piece=request_piece)
+        response: PromptRequestResponse = self._construct_prompt_response_from_openai_json(
+            open_ai_str_response=str_response.text, request_piece=request_piece
+        )
 
         return response
 
@@ -197,7 +197,6 @@ class OpenAIChatTarget(OpenAITarget):
         # https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/gpt-with-vision?tabs=rest%2Csystem-assigned%2Cresource#call-the-chat-completion-apis
         return f"data:{mime_type};base64,{base64_encoded_data}"
 
-
     async def _build_chat_messages_async(self, conversation: MutableSequence[PromptRequestResponse]) -> list[dict]:
         """Builds chat messages based on prompt request response entries.
 
@@ -212,8 +211,7 @@ class OpenAIChatTarget(OpenAITarget):
         else:
             return await self._build_chat_messages_for_multi_modal_async(conversation)
 
-
-    def _is_text_message_format(self, conversation: list[PromptRequestResponse]) -> bool:
+    def _is_text_message_format(self, conversation: MutableSequence[PromptRequestResponse]) -> bool:
         """Checks if the request piece is in text message format.
 
         Args:
@@ -229,10 +227,7 @@ class OpenAIChatTarget(OpenAITarget):
                 return False
         return True
 
-
-    def _build_chat_messages_for_text(
-        self, conversation: list[PromptRequestResponse]
-    ) -> list[dict]:
+    def _build_chat_messages_for_text(self, conversation: MutableSequence[PromptRequestResponse]) -> list[dict]:
         """
         Builds chat messages based on prompt request response entries. This is needed because many
         openai "compatible" models don't support ChatMessageListDictContent format (this is more univerally accepted)
@@ -254,7 +249,6 @@ class OpenAIChatTarget(OpenAITarget):
 
             if prompt_request_piece.converted_value_data_type != "text":
                 raise ValueError("_build_chat_messages_for_text only supports text.")
-
 
             message = ChatMessage(role=prompt_request_piece.role, content=prompt_request_piece.converted_value)
             chat_messages.append(message.model_dump(exclude_none=True))
@@ -303,24 +297,25 @@ class OpenAIChatTarget(OpenAITarget):
             chat_messages.append(chat_message.model_dump(exclude_none=True))
         return chat_messages
 
-    async def _construct_request_body(self, conversation: list[PromptRequestResponse], is_json_response: bool) -> dict:
+    async def _construct_request_body(
+        self, conversation: MutableSequence[PromptRequestResponse], is_json_response: bool
+    ) -> dict:
         messages = await self._build_chat_messages_async(conversation)
 
         body_parameters = {
-                "model": self._model_name,
-                "max_completion_tokens": self._max_completion_tokens,
-                "max_tokens": self._max_tokens,
-                "temperature": self._temperature,
-                "top_p": self._top_p,
-                "frequency_penalty": self._frequency_penalty,
-                "presence_penalty": self._presence_penalty,
-                "stream": False,
-                "seed": self._seed,
-                "messages": messages,
-                "response_format": {"type": "json_object"} if is_json_response else None,
-            }
+            "model": self._model_name,
+            "max_completion_tokens": self._max_completion_tokens,
+            "max_tokens": self._max_tokens,
+            "temperature": self._temperature,
+            "top_p": self._top_p,
+            "frequency_penalty": self._frequency_penalty,
+            "presence_penalty": self._presence_penalty,
+            "stream": False,
+            "seed": self._seed,
+            "messages": messages,
+            "response_format": {"type": "json_object"} if is_json_response else None,
+        }
 
-        #TODO test to make sure this is added
         if self._extra_body_parameters:
             for key, value in self._extra_body_parameters.items():
                 body_parameters[key] = value
@@ -328,13 +323,12 @@ class OpenAIChatTarget(OpenAITarget):
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
 
-
     def _construct_prompt_response_from_openai_json(
-            self,
-            *,
-            open_ai_str_response: str,
-            request_piece: PromptRequestPiece,
-        ) -> PromptRequestResponse:
+        self,
+        *,
+        open_ai_str_response: str,
+        request_piece: PromptRequestPiece,
+    ) -> PromptRequestResponse:
 
         response = json.loads(open_ai_str_response)
 
@@ -353,7 +347,6 @@ class OpenAIChatTarget(OpenAITarget):
             raise PyritException(message=f"Unknown finish_reason {finish_reason} from response: {response}")
 
         return construct_response_from_request(request=request_piece, response_text_pieces=[extracted_response])
-
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         """Validates the structure and content of a prompt request for compatibility of this target.

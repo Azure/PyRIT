@@ -4,12 +4,14 @@
 import logging
 from typing import Literal, Optional
 
-from httpx import HTTPStatusError
 import httpx
-from openai import OpenAI
 
 from pyrit.common import net_utility
-from pyrit.exceptions import RateLimitException, handle_bad_request_exception, pyrit_target_retry
+from pyrit.exceptions import (
+    RateLimitException,
+    handle_bad_request_exception,
+    pyrit_target_retry,
+)
 from pyrit.models import (
     PromptRequestResponse,
     construct_response_from_request,
@@ -64,7 +66,7 @@ class OpenAITTSTarget(OpenAITarget):
 
         super().__init__(**kwargs)
 
-        if self._model_name is None:
+        if not self._model_name:
             self._model_name = "tts-1"
 
         self._voice = voice
@@ -88,9 +90,7 @@ class OpenAITTSTarget(OpenAITarget):
 
         body = self._construct_request_body(request=request)
 
-        params = {
-            "api-version": self._api_version
-        }
+        params = {"api-version": self._api_version}
 
         try:
             response = await net_utility.make_request_and_raise_if_error_async(
@@ -99,7 +99,7 @@ class OpenAITTSTarget(OpenAITarget):
                 headers=self._headers,
                 request_body=body,
                 params=params,
-                **self._httpx_client_kwargs
+                **self._httpx_client_kwargs,
             )
         except httpx.HTTPStatusError as StatusError:
             if StatusError.response.status_code == 400:

@@ -8,11 +8,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
-from openai import BadRequestError, RateLimitError
 from unit.mocks import get_sample_conversations
 
-from pyrit.exceptions.exception_classes import EmptyResponseException, RateLimitException
-from pyrit.memory.central_memory import CentralMemory
+from pyrit.exceptions.exception_classes import (
+    EmptyResponseException,
+    RateLimitException,
+)
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import OpenAIDALLETarget
 
@@ -24,6 +25,7 @@ def dalle_target(patch_central_database) -> OpenAIDALLETarget:
         endpoint="test",
         api_key="test",
     )
+
 
 @pytest.fixture
 def dalle_response_json() -> dict:
@@ -60,16 +62,16 @@ def test_initialization_invalid_num_images():
 
 @pytest.mark.asyncio
 async def test_send_prompt_async(
-    dalle_target: OpenAIDALLETarget,
-    sample_conversations: list[PromptRequestPiece],
-    dalle_response_json: dict
+    dalle_target: OpenAIDALLETarget, sample_conversations: list[PromptRequestPiece], dalle_response_json: dict
 ):
     request = sample_conversations[0]
 
     openai_mock_return = MagicMock()
     openai_mock_return.text = json.dumps(dalle_response_json)
 
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock) as mock_request:
+    with patch(
+        "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
+    ) as mock_request:
 
         mock_request.return_value = openai_mock_return
 
@@ -87,9 +89,7 @@ async def test_send_prompt_async(
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_empty_response(
-    dalle_target: OpenAIDALLETarget,
-    sample_conversations: list[PromptRequestPiece],
-    dalle_response_json: dict
+    dalle_target: OpenAIDALLETarget, sample_conversations: list[PromptRequestPiece], dalle_response_json: dict
 ):
     request = sample_conversations[0]
     request.conversation_id = str(uuid.uuid4())
@@ -98,7 +98,9 @@ async def test_send_prompt_async_empty_response(
     openai_mock_return = MagicMock()
     openai_mock_return.text = json.dumps(dalle_response_json)
 
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock) as mock_request:
+    with patch(
+        "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
+    ) as mock_request:
 
         mock_request.return_value = openai_mock_return
 
@@ -118,17 +120,16 @@ async def test_send_prompt_async_rate_limit_exception(
     response = MagicMock()
     response.status_code = 429
 
-    side_effect=httpx.HTTPStatusError("Rate Limit Reached", response=response, request=MagicMock())
+    side_effect = httpx.HTTPStatusError("Rate Limit Reached", response=response, request=MagicMock())
 
-
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect) as mock_request:
+    with patch(
+        "pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect
+    ) as mock_request:
 
         with pytest.raises(RateLimitException) as rle:
             await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
             assert mock_request.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
             assert str(rle.value) == "Rate Limit Reached"
-
-
 
 
 @pytest.mark.asyncio
@@ -141,9 +142,11 @@ async def test_send_prompt_async_bad_request_error(
     response = MagicMock()
     response.status_code = 400
 
-    side_effect=httpx.HTTPStatusError("Bad Request Error", response=response, request=MagicMock())
+    side_effect = httpx.HTTPStatusError("Bad Request Error", response=response, request=MagicMock())
 
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect) as mock_request:
+    with patch(
+        "pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect
+    ) as mock_request:
         with pytest.raises(httpx.HTTPStatusError) as rle:
             await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
             assert mock_request.call_count == 1
@@ -170,12 +173,9 @@ async def test_dalle_validate_prompt_type(
         await dalle_target.send_prompt_async(prompt_request=request)
 
 
-
 @pytest.mark.asyncio
 async def test_send_prompt_async_empty_response_adds_memory(
-    dalle_target: OpenAIDALLETarget,
-    sample_conversations: list[PromptRequestPiece],
-    dalle_response_json: dict
+    dalle_target: OpenAIDALLETarget, sample_conversations: list[PromptRequestPiece], dalle_response_json: dict
 ) -> None:
 
     mock_memory = MagicMock()
@@ -189,15 +189,16 @@ async def test_send_prompt_async_empty_response_adds_memory(
     openai_mock_return = MagicMock()
     openai_mock_return.text = json.dumps(dalle_response_json)
 
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock) as mock_request:
+    with patch(
+        "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
+    ) as mock_request:
 
         mock_request.return_value = openai_mock_return
         dalle_target._memory = mock_memory
 
-        with pytest.raises(EmptyResponseException) as e:
+        with pytest.raises(EmptyResponseException):
             await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
             assert mock_memory.add_request_response_to_memory.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
-
 
 
 @pytest.mark.asyncio
@@ -215,16 +216,15 @@ async def test_send_prompt_async_rate_limit_adds_memory(
     response = MagicMock()
     response.status_code = 429
 
-    side_effect=httpx.HTTPStatusError("Rate Limit Reached", response=response, request=MagicMock())
+    side_effect = httpx.HTTPStatusError("Rate Limit Reached", response=response, request=MagicMock())
 
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect) as mock_request:
+    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect):
 
         dalle_target._memory = mock_memory
 
-        with pytest.raises(RateLimitException) as rle:
+        with pytest.raises(RateLimitException):
             await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
             assert mock_memory.add_request_response_to_memory.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
-
 
 
 @pytest.mark.asyncio
@@ -245,9 +245,9 @@ async def test_send_prompt_async_bad_request_adds_memory(
     response = MagicMock()
     response.status_code = 400
 
-    side_effect=httpx.HTTPStatusError("Bad Request Error", response=response, request=MagicMock())
+    side_effect = httpx.HTTPStatusError("Bad Request Error", response=response, request=MagicMock())
 
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect) as mock_request:
+    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect):
         with pytest.raises(httpx.HTTPStatusError) as rle:
             await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
             assert dalle_target._memory.add_request_response_to_memory.assert_called_once()

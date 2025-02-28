@@ -58,8 +58,10 @@ def test_cli_success(command):
     # but just the CLI part.
     # And patching OpenAI target initialization which depends on environment variables
     # which we are not providing here.
-    with patch.object(PromptSendingOrchestrator, "send_normalizer_requests_async"), \
-         patch("pyrit.common.default_values.get_required_value", return_value="value") as mock_get_value:
+    with (
+        patch.object(PromptSendingOrchestrator, "send_normalizer_requests_async"),
+        patch("pyrit.common.default_values.get_required_value", return_value="value"),
+    ):
         main(shlex.split(command))
 
 
@@ -76,6 +78,6 @@ def test_cli_sys_exit(capsys, command, expected_output):
 def test_cli_error(command, expected_output, error_type):
     # Patching OpenAI target initialization which depends on environment variables
     # which we are not providing here.
-    with patch("pyrit.common.default_values.get_required_value", return_value="value") as mock_get_value:
+    with patch("pyrit.common.default_values.get_required_value", return_value="value"):
         with pytest.raises(error_type, match=expected_output):
             main(shlex.split(command))

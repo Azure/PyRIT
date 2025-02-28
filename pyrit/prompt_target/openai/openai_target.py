@@ -6,11 +6,9 @@ import logging
 from abc import abstractmethod
 from typing import Optional
 
-from openai import AsyncAzureOpenAI, AsyncOpenAI
-
 from pyrit.auth.azure_auth import (
+    get_default_scope,
     get_token_provider_from_default_azure_credential,
-    get_default_scope
 )
 from pyrit.common import default_values
 from pyrit.prompt_target import PromptChatTarget
@@ -26,16 +24,17 @@ class OpenAITarget(PromptChatTarget):
     endpoint_environment_variable: str
     api_key_environment_variable: str
 
-    #TODO extra_body_parameters
+    _model_name: Optional[str]
+
     def __init__(
         self,
         *,
-        model_name: str = None,
-        endpoint: str = None,
-        api_key: str = None,
-        headers: str = None,
-        use_aad_auth: bool = False,
-        api_version: str = "2024-06-01",
+        model_name: Optional[str] = None,
+        endpoint: Optional[str] = None,
+        api_key: Optional[str] = None,
+        headers: Optional[str] = None,
+        use_aad_auth: Optional[bool] = False,
+        api_version: Optional[str] = "2024-06-01",
         max_requests_per_minute: Optional[int] = None,
         httpx_client_kwargs: Optional[dict] = None,
     ) -> None:
@@ -69,7 +68,6 @@ class OpenAITarget(PromptChatTarget):
         self._headers: dict = {}
         self._httpx_client_kwargs = httpx_client_kwargs or {}
 
-
         request_headers = default_values.get_non_required_value(
             env_var_name=self.ADDITIONAL_REQUEST_HEADERS, passed_value=headers
         )
@@ -81,20 +79,17 @@ class OpenAITarget(PromptChatTarget):
 
         self._set_openai_env_configuration_vars()
 
-        self._model_name = default_values.get_non_required_value(
+        self._model_name: str = default_values.get_non_required_value(
             env_var_name=self.model_name_environment_variable, passed_value=model_name
         )
         self._endpoint = default_values.get_required_value(
             env_var_name=self.endpoint_environment_variable, passed_value=endpoint
         ).rstrip("/")
 
-
-        self._api_key = None
+        self._api_key = api_key
         self._token_provider = None
 
         self._set_auth_headers(use_aad_auth=use_aad_auth, passed_api_key=api_key)
-
-
 
     def _set_auth_headers(self, use_aad_auth, passed_api_key) -> None:
         if use_aad_auth:
@@ -117,7 +112,6 @@ class OpenAITarget(PromptChatTarget):
 
         if self._token_provider:
             self._headers["Authorization"] = f"Bearer {self._token_provider()}"
-
 
     @abstractmethod
     def _set_openai_env_configuration_vars(self) -> None:

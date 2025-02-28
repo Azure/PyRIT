@@ -5,15 +5,12 @@ import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from openai.types.chat import ChatCompletion, ChatCompletionMessage
-from openai.types.chat.chat_completion import Choice
-from unit.mocks import get_sample_conversations
+from unit.mocks import get_sample_conversations, openai_response_json_dict
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.orchestrator.orchestrator_class import Orchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 
-from unit.mocks import openai_response_json_dict
 
 @pytest.fixture
 def sample_entries() -> list[PromptRequestPiece]:
@@ -48,8 +45,6 @@ def test_set_system_prompt(azure_openai_target: OpenAIChatTarget):
 
 
 @pytest.mark.asyncio
-
-
 @pytest.mark.asyncio
 async def test_set_system_prompt_adds_memory(azure_openai_target: OpenAIChatTarget):
     azure_openai_target.set_system_prompt(

@@ -2,10 +2,9 @@
 # Licensed under the MIT license.
 
 import os
-import pytest
-
-
 from typing import Generator
+
+import pytest
 from sqlalchemy import inspect
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
@@ -44,10 +43,8 @@ def azuresql_instance() -> Generator[AzureSQLMemory, None, None]:
 
 def pytest_configure(config):
     # Let pytest know about your custom marker for help/usage info
-    config.addinivalue_line(
-        "markers",
-        "run_only_if_all_tests: skip test unless RUN_ALL_TESTS is set to true"
-    )
+    config.addinivalue_line("markers", "run_only_if_all_tests: skip test unless RUN_ALL_TESTS is set to true")
+
 
 def pytest_collection_modifyitems(config, items):
     run_all = os.getenv("RUN_ALL_TESTS", "").lower() == "true"

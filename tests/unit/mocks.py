@@ -226,7 +226,7 @@ def openai_response_json_dict() -> dict:
         "choices": [
             {
                 "index": 0,
-                "message": { "role": "assistant", "content": "hi"},
+                "message": {"role": "assistant", "content": "hi"},
                 "finish_reason": "stop",
             }
         ],

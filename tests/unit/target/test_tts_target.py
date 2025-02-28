@@ -83,9 +83,7 @@ async def test_tts_send_prompt_file_save_async(
     sample_conversations: list[PromptRequestPiece],
     response_format: TTSResponseFormat,
 ) -> None:
-    tts_target = OpenAITTSTarget(
-        model_name="test", endpoint="test", api_key="test", response_format=response_format
-    )
+    tts_target = OpenAITTSTarget(model_name="test", endpoint="test", api_key="test", response_format=response_format)
 
     request_piece = sample_conversations[0]
     request_piece.conversation_id = str(uuid.uuid4())

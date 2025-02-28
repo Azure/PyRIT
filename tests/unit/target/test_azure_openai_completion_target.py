@@ -6,9 +6,6 @@ import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from openai.types.completion import Completion
-from openai.types.completion_choice import CompletionChoice
-from openai.types.completion_usage import CompletionUsage
 from unit.mocks import get_sample_conversations
 
 from pyrit.memory.central_memory import CentralMemory
@@ -29,7 +26,7 @@ def completions_response_json() -> dict:
                 "logprobs": None,
             }
         ],
-        "model":"gpt-35-turbo",
+        "model": "gpt-35-turbo",
     }
 
 
@@ -94,7 +91,9 @@ async def test_azure_complete_async_return(
     openai_mock_return = MagicMock()
     openai_mock_return.text = json.dumps(completions_response_json)
 
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock) as mock_request:
+    with patch(
+        "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
+    ) as mock_request:
         mock_request.return_value = openai_mock_return
         response: PromptRequestResponse = await azure_completion_target.send_prompt_async(prompt_request=request)
         assert len(response.request_pieces) == 1

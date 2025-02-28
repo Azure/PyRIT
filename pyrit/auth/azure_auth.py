@@ -16,7 +16,6 @@ from azure.identity import (
 )
 
 from pyrit.auth.auth_config import REFRESH_TOKEN_BEFORE_MSEC
-
 from pyrit.auth.authenticator import Authenticator
 
 logger = logging.getLogger(__name__)
@@ -89,7 +88,7 @@ def get_access_token_from_azure_msi(*, client_id: str, scope: str):
         raise
 
 
-def get_access_token_from_msa_public_client(*, client_id: str):
+def get_access_token_from_msa_public_client(*, client_id: str, scope: str):
     """Uses MSA account to connect to an AOAI endpoint via interactive login. A browser window
     will open and ask for login credentials.
 
@@ -148,7 +147,7 @@ def get_default_scope(endpoint: str) -> str:
     """
     try:
         parsed_uri = urlparse(endpoint)
-        if parsed_uri.hostname.lower().endswith(f".ai.azure.com"):
+        if parsed_uri.hostname.lower().endswith(".ai.azure.com"):
             return "https://ml.azure.com/.default"
     except Exception:
         pass

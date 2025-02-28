@@ -8,12 +8,13 @@ from typing import Optional
 import httpx
 
 from pyrit.common import net_utility
-from pyrit.exceptions.exception_classes import EmptyResponseException, PyritException, RateLimitException, handle_bad_request_exception, pyrit_target_retry
-from pyrit.models import (
-    PromptRequestResponse,
-    PromptResponse,
-    construct_response_from_request,
+from pyrit.exceptions.exception_classes import (
+    EmptyResponseException,
+    RateLimitException,
+    handle_bad_request_exception,
+    pyrit_target_retry,
 )
+from pyrit.models import PromptRequestResponse, construct_response_from_request
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
@@ -88,18 +89,9 @@ class OpenAICompletionTarget(OpenAITarget):
 
         logger.info(f"Sending the following prompt to the prompt target: {request_piece}")
 
-
-        if self._api_key:
-            self._headers["api-key"] = self._api_key
-
-        if self._token_provider:
-            self._headers["Authorization"] = f"Bearer {self._token_provider()}"
-
         body = await self._construct_request_body(request=request_piece)
 
-        params = {
-            "api-version": self._api_version
-        }
+        params = {"api-version": self._api_version}
 
         try:
             str_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(
@@ -108,7 +100,7 @@ class OpenAICompletionTarget(OpenAITarget):
                 headers=self._headers,
                 request_body=body,
                 params=params,
-                **self._httpx_client_kwargs
+                **self._httpx_client_kwargs,
             )
         except httpx.HTTPStatusError as StatusError:
             if StatusError.response.status_code == 400:
@@ -122,13 +114,12 @@ class OpenAICompletionTarget(OpenAITarget):
         logger.info(f'Received the following response from the prompt target "{str_response.text}"')
 
         response_entry = self._construct_prompt_response_from_openai_json(
-            open_ai_str_response=str_response.text,
-            request_piece=request_piece
+            open_ai_str_response=str_response.text, request_piece=request_piece
         )
 
         return response_entry
 
-    async def _construct_request_body(self, request:PromptRequestPiece) -> dict:
+    async def _construct_request_body(self, request: PromptRequestPiece) -> dict:
 
         body_parameters = {
             "model": self._model_name,
@@ -138,18 +129,18 @@ class OpenAICompletionTarget(OpenAITarget):
             "frequency_penalty": self._frequency_penalty,
             "presence_penalty": self._presence_penalty,
             "max_tokens": self._max_tokens,
-            "n": self._n
+            "n": self._n,
         }
 
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
 
     def _construct_prompt_response_from_openai_json(
-            self,
-            *,
-            open_ai_str_response: str,
-            request_piece: PromptRequestPiece,
-        ) -> PromptRequestResponse:
+        self,
+        *,
+        open_ai_str_response: str,
+        request_piece: PromptRequestPiece,
+    ) -> PromptRequestResponse:
 
         response = json.loads(open_ai_str_response)
 
@@ -162,7 +153,6 @@ class OpenAICompletionTarget(OpenAITarget):
             raise EmptyResponseException(message="The chat returned an empty response.")
 
         return construct_response_from_request(request=request_piece, response_text_pieces=extracted_response)
-
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         if len(prompt_request.request_pieces) != 1:

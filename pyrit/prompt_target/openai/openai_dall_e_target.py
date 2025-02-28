@@ -91,7 +91,6 @@ class OpenAIDALLETarget(OpenAITarget):
 
         super().__init__(*args, **kwargs)
 
-
     def _set_openai_env_configuration_vars(self):
         self.model_name_environment_variable = "OPENAI_DALLE_MODEL"
         self.endpoint_environment_variable = "OPENAI_DALLE_ENDPOINT"
@@ -119,15 +118,7 @@ class OpenAIDALLETarget(OpenAITarget):
 
         request_body = self._construct_request_body(prompt=prompt)
 
-        if self._api_key:
-            self._headers["api-key"] = self._api_key
-
-        if self._token_provider:
-            self._headers["Authorization"] = f"Bearer {self._token_provider()}"
-
-        params = {
-            "api-version": self._api_version
-        }
+        params = {"api-version": self._api_version}
 
         try:
             http_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(
@@ -136,7 +127,7 @@ class OpenAIDALLETarget(OpenAITarget):
                 headers=self._headers,
                 request_body=request_body,
                 params=params,
-                **self._httpx_client_kwargs
+                **self._httpx_client_kwargs,
             )
         except httpx.HTTPStatusError as StatusError:
             if StatusError.response.status_code == 400:
@@ -153,7 +144,6 @@ class OpenAIDALLETarget(OpenAITarget):
         # Handle empty response using retry
         if not b64_data:
             raise EmptyResponseException(message="The chat returned an empty response.")
-
 
         data = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
         await data.save_b64_image(data=b64_data)
@@ -179,7 +169,6 @@ class OpenAIDALLETarget(OpenAITarget):
             image_generation_args["style"] = self.style
 
         return image_generation_args
-
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         if len(prompt_request.request_pieces) != 1:
