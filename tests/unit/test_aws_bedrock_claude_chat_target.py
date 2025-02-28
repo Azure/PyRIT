@@ -59,11 +59,13 @@ async def test_send_prompt_async(aws_target, mock_prompt_request):
         assert response.request_pieces[0].converted_value == "I'm good, thanks!"
 
 
+@pytest.mark.skipif(not is_boto3_installed(), reason="boto3 is not installed")
 @pytest.mark.asyncio
 async def test_validate_request_valid(aws_target, mock_prompt_request):
     aws_target._validate_request(prompt_request=mock_prompt_request)
 
 
+@pytest.mark.skipif(not is_boto3_installed(), reason="boto3 is not installed")
 @pytest.mark.asyncio
 async def test_validate_request_invalid_data_type(aws_target):
     request_pieces = [
