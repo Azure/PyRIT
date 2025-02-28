@@ -18,7 +18,7 @@ from pyrit.prompt_target.aws_bedrock_claude_chat_target import (
 
 def is_boto3_installed():
     try:
-        import boto3
+        import boto3  # noqa: F401
 
         return True
     except ModuleNotFoundError:

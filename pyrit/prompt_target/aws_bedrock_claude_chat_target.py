@@ -5,7 +5,7 @@ import asyncio
 import base64
 import json
 import logging
-from typing import MutableSequence, Optional
+from typing import TYPE_CHECKING, MutableSequence, Optional
 
 from pyrit.chat_message_normalizer import ChatMessageNop, ChatMessageNormalizer
 from pyrit.models import (
@@ -16,6 +16,10 @@ from pyrit.models import (
 from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    import boto3
+    from botocore.exceptions import ClientError
 
 
 class AWSBedrockClaudeChatTarget(PromptChatTarget):
@@ -61,8 +65,8 @@ class AWSBedrockClaudeChatTarget(PromptChatTarget):
         self._valid_image_types = ["jpeg", "png", "webp", "gif"]
 
         try:
-            import boto3
-            from botocore.exceptions import ClientError
+            import boto3  # noqa: F401
+            from botocore.exceptions import ClientError  # noqa: F401
         except ModuleNotFoundError as e:
             logger.error("Could not import boto. You may need to install it via 'pip install pyrit[all]'")
             raise e
