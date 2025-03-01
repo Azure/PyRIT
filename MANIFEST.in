@@ -1,2 +1,3 @@
 recursive-include pyrit *.yaml
 recursive-include pyrit *.prompt
+recursive-include pyrit/datasets/seed_prompts *
