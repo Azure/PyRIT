@@ -37,6 +37,7 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
                 scored immediately after receiving response. Default is None.
             verbose (bool, Optional): Whether to log debug information. Defaults to False.
             many_shot_examples (list[dict[str, str]], Optional): The many shot jailbreaking examples to use.
+                If not provided, uses all examples from the Many Shot Jailbreaking dataset.
         """
 
         super().__init__(
