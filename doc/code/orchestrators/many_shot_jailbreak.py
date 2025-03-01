@@ -7,10 +7,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.16.4
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -25,7 +21,6 @@
 # %%
 # Import necessary packages
 from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.datasets import fetch_many_shot_jailbreaking_dataset
 from pyrit.memory import CentralMemory
 from pyrit.orchestrator import ManyShotJailbreakOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
@@ -48,15 +43,11 @@ prompt_target = OpenAIChatTarget()
 # Set up the Harm Scorer with the same prompt target to ensure consistency
 harm_scorer = SelfAskLikertScorer(likert_scale_path=LikertScalePaths.HARM_SCALE.value, chat_target=prompt_target)
 
-# Import examples
-examples = fetch_many_shot_jailbreaking_dataset()
-
-# Use only 4 examples
-examples = examples[3:7]
-
-# Set up the orchestrator
+# Set up the orchestrator with the first 5 examples from the dataset
 orchestrator = ManyShotJailbreakOrchestrator(
-    objective_target=prompt_target, scorers=[harm_scorer], many_shot_examples=examples
+    objective_target=prompt_target,
+    scorers=[harm_scorer],
+    example_count=5,
 )
 
 # Define a malicious prompt

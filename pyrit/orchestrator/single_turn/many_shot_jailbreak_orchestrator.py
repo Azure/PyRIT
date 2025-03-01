@@ -28,6 +28,7 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
         objective_target: PromptChatTarget,
         scorers: Optional[list[Scorer]] = None,
         verbose: bool = False,
+        example_count: Optional[int] = 100,
         many_shot_examples: Optional[list[dict[str, str]]] = None,
     ) -> None:
         """
@@ -36,6 +37,8 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
             scorers (list[Scorer], Optional): List of scorers to use for each prompt request response, to be
                 scored immediately after receiving response. Default is None.
             verbose (bool, Optional): Whether to log debug information. Defaults to False.
+            example_count (int, Optional): The number of examples to include from the Many Shot Jailbreaking
+                dataset. Defaults to the first 100.
             many_shot_examples (list[dict[str, str]], Optional): The many shot jailbreaking examples to use.
                 If not provided, uses all examples from the Many Shot Jailbreaking dataset.
         """
@@ -51,7 +54,9 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
         self._template = SeedPrompt.from_yaml_file(template_path)
         # Fetch the Many Shot Jailbreaking example dataset
         self._examples = (
-            many_shot_examples if (many_shot_examples is not None) else fetch_many_shot_jailbreaking_dataset()
+            many_shot_examples
+            if (many_shot_examples is not None)
+            else fetch_many_shot_jailbreaking_dataset()[:example_count]
         )
         if not self._examples:
             raise ValueError("Many shot examples must be provided.")
