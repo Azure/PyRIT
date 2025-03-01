@@ -509,6 +509,14 @@ def fetch_red_team_social_bias_prompts_dataset() -> SeedPromptDataset:
 
     Returns:
         SeedPromptDataset: A SeedPromptDataset containing the examples.
+
+    Note:
+        For more information and access to the original dataset and related materials, visit:
+        https://svannie678.github.io/svannie678-red_team_repo_social_bias. This dataset
+        contains aggregated and unified existing red-teaming prompts designed to identify
+        stereotypes,discrimination, hate speech, and other representationharms in text-based
+        Large Language Models (LLMs).
+        Written by Simone Van Taylor.
     """
     data = load_dataset("svannie678/red_team_repo_social_bias_prompts", "default")
 
