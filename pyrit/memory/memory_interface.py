@@ -693,7 +693,8 @@ class MemoryInterface(abc.ABC):
 
             await prompt.set_sha256_value_async()
 
-            entries.append(SeedPromptEntry(entry=prompt))
+            if not self.get_seed_prompts(value_sha256=[prompt.value_sha256], dataset_name=prompt.dataset_name):
+                entries.append(SeedPromptEntry(entry=prompt))
 
         self._insert_entries(entries=entries)
 

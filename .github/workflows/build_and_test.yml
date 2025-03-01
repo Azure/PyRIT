@@ -39,7 +39,7 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - name: Install setuptools and pip
-        run: pip install --upgrade setuptools pip
+        run: pip install --upgrade setuptools pip packaging
       - name: Install PyRIT with pip
         run: pip install .[${{ matrix.package_extras }}]
       - name: Run unit tests with code coverage
