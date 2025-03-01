@@ -40,7 +40,7 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
             example_count (int, Optional): The number of examples to include from the Many Shot Jailbreaking
                 dataset. Defaults to the first 100.
             many_shot_examples (list[dict[str, str]], Optional): The many shot jailbreaking examples to use.
-                If not provided, uses all examples from the Many Shot Jailbreaking dataset.
+                If not provided, takes the first `example_count` examples from Many Shot Jailbreaking dataset.
         """
 
         super().__init__(
