@@ -17,7 +17,7 @@ from pyrit.prompt_target import (
 )
 
 
-async def _assert_can_send_prompt(target, verify_response_text=True):
+async def _assert_can_send_prompt(target, check_if_llm_interpreted_request=True):
     simple_prompt = "simply repeat this word back to me. Don't say anything else. Say: 'test'"
     orchestrator = PromptSendingOrchestrator(objective_target=target)
 
@@ -26,7 +26,7 @@ async def _assert_can_send_prompt(target, verify_response_text=True):
     result = await orchestrator.send_prompts_async(prompt_list=all_prompts)
     assert len(result) == 1
     assert len(result[0].request_pieces) == 1
-    if verify_response_text:
+    if check_if_llm_interpreted_request:
         assert "test" in result[0].request_pieces[0].converted_value.lower()
 
 
@@ -110,7 +110,7 @@ async def test_connect_openai_completion():
         endpoint=os.getenv(endpoint), api_key=os.getenv(api_key), model_name=os.getenv(model)
     )
 
-    await _assert_can_send_prompt(target, verify_response_text=False)
+    await _assert_can_send_prompt(target, check_if_llm_interpreted_request=False)
 
 
 @pytest.mark.asyncio
@@ -130,7 +130,7 @@ async def test_connect_dall_e(endpoint, api_key):
         api_key=os.getenv(api_key),
     )
 
-    await _assert_can_send_prompt(target, verify_response_text=False)
+    await _assert_can_send_prompt(target, check_if_llm_interpreted_request=False)
 
 
 @pytest.mark.asyncio
@@ -150,7 +150,7 @@ async def test_connect_tts(endpoint, api_key):
         api_key=os.getenv(api_key),
     )
 
-    await _assert_can_send_prompt(target, verify_response_text=False)
+    await _assert_can_send_prompt(target, check_if_llm_interpreted_request=False)
 
 
 ##################################################
