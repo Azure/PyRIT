@@ -8,12 +8,12 @@ import pytest
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import (
-    OpenAIChatTarget,
     AzureMLChatTarget,
+    OpenAIChatTarget,
     OpenAICompletionTarget,
     OpenAIDALLETarget,
+    OpenAITTSTarget,
     RealtimeTarget,
-    OpenAITTSTarget
 )
 
 
