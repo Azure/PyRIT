@@ -56,7 +56,7 @@ class OpenAICompletionTarget(OpenAITarget):
               completion. The token count of your prompt plus `max_tokens` cannot exceed the model's
               context length.
             temperature (float, Optional): What sampling temperature to use, between 0 and 2.
-                gher values like 0.8 will make the output more random, while lower values like 0.2 will
+                Values like 0.8 will make the output more random, while lower values like 0.2 will
                 make it more focused and deterministic.
             top_p (float, Optional): An alternative to sampling with temperature, called nucleus
                 sampling, where the model considers the results of the tokens with top_p probability mass.
