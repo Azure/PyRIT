@@ -97,7 +97,7 @@ class AddImageVideoConverter(PromptConverter):
             file_extension = video_path.split(".")[-1].lower()
             if file_extension in video_encoding_map:
                 video_char_code = cv2.VideoWriter_fourcc(*video_encoding_map[file_extension])
-                out = cv2.VideoWriter(output_path, video_char_code, fps, (width, height))
+                output_video = cv2.VideoWriter(output_path, video_char_code, fps, (width, height))
             else:
                 raise ValueError(f"Unsupported video format: {file_extension}")
 
@@ -109,7 +109,7 @@ class AddImageVideoConverter(PromptConverter):
             overlay = cv2.resize(overlay, self._img_resize_size)
 
             # Get overlay image dimensions
-            h, w, _ = overlay.shape
+            image_height, image_width, _ = overlay.shape
             x, y = self._img_position  # Position where the overlay will be placed
 
             while cap.isOpened():
@@ -118,20 +118,21 @@ class AddImageVideoConverter(PromptConverter):
                     break
 
                 # Ensure overlay fits within the frame boundaries
-                if x + w > width or y + h > height:
-                    print("Overlay image is too large for the video frame. Resizing to fit.")
+                if x + image_width > width or y + image_height > height:
+                    logger.info("Overlay image is too large for the video frame. Resizing to fit.")
                     overlay = cv2.resize(overlay, (width - x, height - y))
+                    image_height, image_width, _ = overlay.shape
 
                 # Blend overlay with frame
-                frame[y : y + h, x : x + w] = overlay
+                frame[y : y + image_height, x : x + image_width] = overlay
 
                 # Write the modified frame to the output video
-                out.write(frame)
+                output_video.write(frame)
 
         finally:
             # Release everything
             cap.release()
-            out.release()
+            output_video.release()
             cv2.destroyAllWindows()
             if azure_storage_flag:
                 os.remove(local_temp_path)
