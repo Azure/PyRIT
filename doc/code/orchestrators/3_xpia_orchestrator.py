@@ -55,9 +55,9 @@ logging.basicConfig(level=logging.INFO)
 # %%
 from xpia_helpers import AzureStoragePlugin, SemanticKernelPluginAzureOpenAIPromptTarget
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.common import AZURE_SQL, initialize_pyrit
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+initialize_pyrit(memory_db_type=AZURE_SQL)
 
 azure_storage_plugin = AzureStoragePlugin(container_url=os.environ.get("AZURE_STORAGE_ACCOUNT_CONTAINER_URL"))
 
@@ -95,7 +95,6 @@ xpia_orchestrator = XPIATestOrchestrator(
     processing_target=processing_target,
     attack_setup_target=abs_target,
     scorer=scorer,
-    verbose=True,
 )
 
 score = await xpia_orchestrator.execute_async()  # type: ignore
@@ -117,5 +116,3 @@ from pyrit.memory import CentralMemory
 
 memory = CentralMemory.get_memory_instance()
 memory.dispose_engine()
-
-# %%

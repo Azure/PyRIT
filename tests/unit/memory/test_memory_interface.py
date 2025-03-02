@@ -942,6 +942,19 @@ async def test_get_seed_prompts_with_parameters_filter(duckdb_instance: MemoryIn
 
 
 @pytest.mark.asyncio
+async def test_get_seed_prompts_with_metadata_filter(duckdb_instance: MemoryInterface):
+    seed_prompts = [
+        SeedPrompt(value="prompt1", data_type="text", metadata={"key1": "value1", "key2": "value2"}),
+        SeedPrompt(value="prompt2", data_type="text", metadata={"key1": "value2"}),
+    ]
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
+
+    result = duckdb_instance.get_seed_prompts(metadata={"key1": "value1"})
+    assert len(result) == 1
+    assert result[0].metadata == {"key1": "value1", "key2": "value2"}
+
+
+@pytest.mark.asyncio
 async def test_get_seed_prompts_with_multiple_filters(duckdb_instance: MemoryInterface):
     seed_prompts = [
         SeedPrompt(value="prompt1", dataset_name="dataset1", added_by="user1", data_type="text"),
@@ -1089,6 +1102,50 @@ async def test_add_seed_prompts_to_memory_empty_list(duckdb_instance: MemoryInte
     await duckdb_instance.add_seed_prompts_to_memory_async(prompts=prompts, added_by="tester")
     stored_prompts = duckdb_instance.get_seed_prompts(dataset_name="test_dataset")
     assert len(stored_prompts) == 0
+
+
+@pytest.mark.asyncio
+async def test_add_seed_prompts_duplicate_entries_same_dataset(duckdb_instance: MemoryInterface):
+    prompts: list[SeedPrompt] = [
+        SeedPrompt(value="prompt1", dataset_name="test_dataset", data_type="text"),
+        SeedPrompt(value="prompt2", dataset_name="test_dataset", data_type="text"),
+    ]
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=prompts, added_by="tester")
+    stored_prompts = duckdb_instance.get_seed_prompts(dataset_name="test_dataset")
+    assert len(stored_prompts) == 2
+
+    # Try to add prompt list with one duplicate prompt and one new prompt
+    duplicate_prompts: list[SeedPrompt] = [
+        SeedPrompt(value="prompt1", dataset_name="test_dataset", data_type="text"),
+        SeedPrompt(value="prompt3", dataset_name="test_dataset", data_type="text"),
+    ]
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=duplicate_prompts, added_by="tester")
+
+    # Validate that only new prompt is added and the total prompt count is 3
+    stored_prompts = duckdb_instance.get_seed_prompts(dataset_name="test_dataset")
+    assert len(stored_prompts) == 3
+
+
+@pytest.mark.asyncio
+async def test_add_seed_prompts_duplicate_entries_different_datasets(duckdb_instance: MemoryInterface):
+    prompts: list[SeedPrompt] = [
+        SeedPrompt(value="prompt1", dataset_name="test_dataset", data_type="text"),
+        SeedPrompt(value="prompt2", dataset_name="test_dataset", data_type="text"),
+    ]
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=prompts, added_by="tester")
+    stored_prompts = duckdb_instance.get_seed_prompts(dataset_name="test_dataset")
+    assert len(stored_prompts) == 2
+
+    # Try to add prompt list with one duplicate prompt and one new prompt
+    duplicate_prompts: list[SeedPrompt] = [
+        SeedPrompt(value="prompt1", dataset_name="test_dataset2", data_type="text"),
+        SeedPrompt(value="prompt3", dataset_name="test_dataset2", data_type="text"),
+    ]
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=duplicate_prompts, added_by="tester")
+
+    # Validate that only new prompt is added and the total prompt count is 3
+    stored_prompts = duckdb_instance.get_seed_prompts()
+    assert len(stored_prompts) == 4
 
 
 def test_get_seed_prompt_dataset_names_empty(duckdb_instance: MemoryInterface):
@@ -1344,7 +1401,7 @@ async def test_add_seed_prompt_groups_to_memory_with_textimage_modalities(duckdb
 
 @pytest.mark.asyncio
 async def test_get_seed_prompts_with_param_filters(duckdb_instance: MemoryInterface):
-    template_value = "Test template {{param1}}"
+    template_value = "Test template {{ param1 }}"
     dataset_name = "dataset_1"
     harm_categories = ["category1"]
     added_by = "tester"
@@ -1553,6 +1610,40 @@ def test_get_prompt_request_pieces_labels(duckdb_instance: MemoryInterface):
         assert "op_name" in retrieved_entry.labels
         assert "user_name" in retrieved_entry.labels
         assert "harm_category" in retrieved_entry.labels
+
+
+def test_get_prompt_request_pieces_metadata(duckdb_instance: MemoryInterface):
+    metadata: dict[str, str | int] = {"key1": "value1", "key2": "value2"}
+    entries = [
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                role="user",
+                original_value="Hello 1",
+                prompt_metadata=metadata,
+            )
+        ),
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                role="assistant",
+                original_value="Hello 2",
+                prompt_metadata={"key2": "value2", "key3": "value3"},
+            )
+        ),
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                role="user",
+                original_value="Hello 3",
+            )
+        ),
+    ]
+
+    duckdb_instance._insert_entries(entries=entries)
+
+    retrieved_entries = duckdb_instance.get_prompt_request_pieces(prompt_metadata={"key2": "value2"})
+
+    assert len(retrieved_entries) == 2  # Two entries should have the specific memory labels
+    for retrieved_entry in retrieved_entries:
+        assert "key2" in retrieved_entry.prompt_metadata
 
 
 def test_get_prompt_request_pieces_id(duckdb_instance: MemoryInterface):
