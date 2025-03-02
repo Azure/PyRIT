@@ -58,9 +58,6 @@ class RealtimeTarget(OpenAITarget):
             existing_convo (dict[str, websockets.WebSocketClientProtocol], Optional): Existing conversations.
         """
 
-        if (kwargs.get("use_aad_auth") is not None) and (kwargs.get("use_aad_auth") is True):
-            raise NotImplementedError("AAD authentication not implemented for Realtime yet.")
-
         super().__init__(api_version=api_version, **kwargs)
 
         self.system_prompt = system_prompt
@@ -68,9 +65,9 @@ class RealtimeTarget(OpenAITarget):
         self._existing_conversation = existing_convo
 
     def _set_openai_env_configuration_vars(self):
-        self.model_name_environment_variable = "AZURE_OPENAI_REALTIME_DEPLOYMENT"
-        self.endpoint_environment_variable = "AZURE_OPENAI_REALTIME_API_WEBSOCKET_URL"
-        self.api_key_environment_variable = "AZURE_OPENAI_REALTIME_API_KEY"
+        self.model_name_environment_variable = "OPENAI_REALTIME_MODEL"
+        self.endpoint_environment_variable = "AZURE_OPENAI_REALTIME_ENDPOINT"
+        self.api_key_environment_variable = "OPENAI_REALTIME_API_KEY"
 
     async def connect(self):
         """
