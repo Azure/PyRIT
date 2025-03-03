@@ -14,7 +14,6 @@ nb_directory_path = pathlib.Path(path.DOCS_CODE_PATH, "targets").resolve()
 
 skipped_files = [
     "4_non_llm_targets.ipynb",  # requires Azure SQL Storage IO for Azure Storage Account (see #4001)
-    "5_multi_modal_targets.ipynb",  # Remove when #4064 is resolved
     "playwright_target.ipynb",  # Playwright installation takes too long
 ]
 
