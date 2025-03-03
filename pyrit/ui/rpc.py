@@ -48,7 +48,10 @@ class AppRPCServer:
     # RPC Service
     class RPCService(rpyc.Service):
         """
-        RPC service is the service that RPyC is using
+        RPC service is the service that RPyC is using. RPC (Remote Procedure Call) is a way to interact with code that
+        is hosted in another process or on an other machine. RPyC is a library that implements RPC and we are using to
+        exchange information between PyRIT's main process and Gradio's process. This way the interface is
+        independent of which PyRIT code is running the process.
         """
         def __init__(self, score_received_sem: Semaphore, client_ready_sem: Semaphore):
             super().__init__()
