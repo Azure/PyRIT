@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import asyncio
 from pyrit.score.scorer import Scorer
 from pyrit.models import Score, PromptRequestPiece

@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import gradio as gr
 import webview
 from rpc_client import RpcClient
