@@ -3,13 +3,13 @@
 
 import gradio as gr
 import webview
-from rpc_client import RpcClient
+from rpc_client import RPCClient
 from connection_status import ConnectionStatusHandler
 
 class GradioApp:
     def __init__(self):
         self.i = 0
-        self.rpc_client = RpcClient(self.__disconnected_rpc_callback)
+        self.rpc_client = RPCClient(self.__disconnected_rpc_callback)
         self.connect_status = None
         self.url = ""
     

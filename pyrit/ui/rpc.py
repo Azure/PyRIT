@@ -16,25 +16,25 @@ DEFAULT_PORT = 18812
 logger = logging.getLogger(__name__)
 
 # Exceptions
-class RpcAppException(Exception):
+class RPCAppException(Exception):
     def __init__(self, message: str):
         super().__init__(message)
 
-class RpcAlreadyRunningException(RpcAppException):
+class RPCAlreadyRunningException(RPCAppException):
     """
     This exception is thrown when an RPC server is already running and the user tries to start another one.
     """
     def __init__(self):
         super().__init__("RPC server is already running.")
 
-class RpcClientNotReadyException(RpcAppException):
+class RPCClientNotReadyException(RPCAppException):
     """
     This exception is thrown when the RPC client is not ready to receive messages.
     """
     def __init__(self):
         super().__init__("RPC client is not ready.")
 
-class RpcServerStoppedException(RpcAppException):
+class RPCServerStoppedException(RPCAppException):
     """
     This exception is thrown when the RPC server is stopped.
     """
@@ -43,10 +43,10 @@ class RpcServerStoppedException(RpcAppException):
 
 
 # RPC Server
-class AppRpcServer:
+class AppRPCServer:
     import rpyc
     # RPC Service
-    class RpcService(rpyc.Service):
+    class RPCService(rpyc.Service):
         """
         RPC service is the service that RPyC is using
         """
@@ -85,7 +85,7 @@ class AppRpcServer:
         
         def send_score_prompt(self, prompt: PromptRequestPiece, task: Optional[str] = None):
             if not self.is_client_ready():
-                raise RpcClientNotReadyException()
+                raise RPCClientNotReadyException()
             self.__callback_score_prompt(prompt, task)
 
         def is_ping_missed(self):
@@ -121,13 +121,13 @@ class AppRpcServer:
         # Check if the server is already running by checking if the port is already in use.
         # If the port is already in use, throw an exception.
         if self.__is_instance_running():
-            raise RpcAlreadyRunningException()
+            raise RPCAlreadyRunningException()
         
         self.__score_received_sem = Semaphore(0)
         self.__client_ready_sem = Semaphore(0)
 
         # Start the RPC server.
-        self.__rpc_service = self.RpcService(self.__score_received_sem, self.__client_ready_sem)
+        self.__rpc_service = self.RPCService(self.__score_received_sem, self.__client_ready_sem)
         self.__server = self.rpyc.ThreadedServer(self.__rpc_service, port=DEFAULT_PORT, protocol_config={"allow_all_attrs": True})
         self.__server_thread = Thread(target=self.__server.start)
         self.__server_thread.start()
@@ -185,7 +185,7 @@ class AppRpcServer:
         Send a score prompt to the client.
         """
         if self.__rpc_service is None:
-            raise RpcAppException("RPC server is not running.")
+            raise RPCAppException("RPC server is not running.")
 
         self.__rpc_service.send_score_prompt(prompt, task)
 
@@ -194,11 +194,11 @@ class AppRpcServer:
         Wait for the client to send a score. Should always return a score, but if the synchronisation fails it will return None.
         """
         if self.__score_received_sem is None or self.__rpc_service is None:
-            raise RpcAppException("RPC server is not running.")
+            raise RPCAppException("RPC server is not running.")
 
         self.__score_received_sem.acquire()
         if not self.__server_is_running:
-            raise RpcServerStoppedException()
+            raise RPCServerStoppedException()
         
         score = self.__rpc_service.pop_score_received()
         if score is None:
@@ -212,14 +212,14 @@ class AppRpcServer:
         Wait for the client to be ready to receive messages.
         """
         if self.__client_ready_sem is None:
-            raise RpcAppException("RPC server is not running.")
+            raise RPCAppException("RPC server is not running.")
 
         
         logger.info("Waiting for client to be ready")
         self.__client_ready_sem.acquire()
 
         if not self.__server_is_running:
-            raise RpcServerStoppedException()
+            raise RPCServerStoppedException()
 
         logger.info("Client is ready")
 

@@ -11,7 +11,7 @@ from pyrit.models import PromptRequestPiece, Score
 
 DEFAULT_PORT = 18812
 
-class RpcClient:
+class RPCClient:
     def __init__(self, callback_disconnected: Optional[Callable] = None):
         self.__c = None
         self.__bgsrv = None

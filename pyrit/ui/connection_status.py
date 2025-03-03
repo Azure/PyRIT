@@ -3,12 +3,12 @@
 
 import gradio as gr
 
-from rpc_client import RpcClient
+from rpc_client import RPCClient
 
 class ConnectionStatusHandler:
     def __init__(self,
                  is_connected_state: gr.State,
-                 rpc_client: RpcClient):
+                 rpc_client: RPCClient):
         self.state = is_connected_state
         self.server_disconnected = False
         self.rpc_client = rpc_client
