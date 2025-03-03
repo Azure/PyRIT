@@ -47,7 +47,6 @@ class OpenAITTSTarget(OpenAITarget):
         self._api_version = api_version or "2024-03-01-preview"
 
 
-
     def _set_azure_openai_env_configuration_vars(self):
         self.deployment_environment_variable = "AZURE_OPENAI_TTS_DEPLOYMENT"
         self.endpoint_uri_environment_variable = "AZURE_OPENAI_TTS_ENDPOINT"
