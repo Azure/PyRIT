@@ -39,13 +39,11 @@ def test_tts_initializes_calls_get_required_parameters(patch_central_database):
             api_key="keytest",
         )
 
-        assert mock_get_required.call_count == 2
+        assert mock_get_required.call_count == 1
 
         mock_get_required.assert_any_call(
             env_var_name=target.endpoint_environment_variable, passed_value="endpointtest"
         )
-
-        mock_get_required.assert_any_call(env_var_name=target.api_key_environment_variable, passed_value="keytest")
 
 
 @pytest.mark.asyncio

@@ -81,17 +81,6 @@ class MockChatCompletionsAsync(AbstractAsyncContextManager):
         pass
 
 
-def test_init_with_no_env_var_raises():
-    with patch.dict(os.environ, {}, clear=True):
-        with pytest.raises(ValueError):
-            OpenAIChatTarget(
-                model_name="gpt-4",
-                endpoint="https://mock.azure.com/",
-                api_key="",
-                api_version="some_version",
-            )
-
-
 def test_init_with_no_deployment_var_raises():
     with patch.dict(os.environ, {}, clear=True):
         with pytest.raises(ValueError):

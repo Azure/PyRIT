@@ -100,18 +100,6 @@ async def test_azure_complete_async_return(
         assert response.request_pieces[0].converted_value == "hi"
 
 
-def test_azure_invalid_key_raises():
-    with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
-        with patch.dict(os.environ, {}, clear=True):
-            with pytest.raises(ValueError):
-                OpenAICompletionTarget(
-                    model_name="gpt-4",
-                    endpoint="https://mock.azure.com/",
-                    api_key="",
-                    api_version="some_version",
-                )
-
-
 def test_azure_initialization_with_no_deployment_raises():
     with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
         with patch.dict(os.environ, {}, clear=True):

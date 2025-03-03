@@ -92,16 +92,10 @@ class OpenAITarget(PromptChatTarget):
         self._set_auth_headers(use_aad_auth=use_aad_auth, passed_api_key=api_key)
 
     def _set_auth_headers(self, use_aad_auth, passed_api_key) -> None:
-        if use_aad_auth:
-            logger.info("Authenticating with DefaultAzureCredential() for Azure Cognitive Services")
 
-            scope = get_default_scope(self._endpoint)
-            self._token_provider = get_token_provider_from_default_azure_credential(scope=scope)
-
-        else:
-            self._api_key = default_values.get_required_value(
-                env_var_name=self.api_key_environment_variable, passed_value=passed_api_key
-            )
+        self._api_key = default_values.get_non_required_value(
+            env_var_name=self.api_key_environment_variable, passed_value=passed_api_key
+        )
 
         if self._api_key:
             # This header is set as api-key in azure and bearer in openai
@@ -110,7 +104,12 @@ class OpenAITarget(PromptChatTarget):
             self._headers["Api-Key"] = self._api_key
             self._headers["Authorization"] = f"Bearer {self._api_key}"
 
-        if self._token_provider:
+        if use_aad_auth:
+            logger.info("Authenticating with DefaultAzureCredential()")
+
+            scope = get_default_scope(self._endpoint)
+            self._token_provider = get_token_provider_from_default_azure_credential(scope=scope)
+
             self._headers["Authorization"] = f"Bearer {self._token_provider()}"
 
     @abstractmethod

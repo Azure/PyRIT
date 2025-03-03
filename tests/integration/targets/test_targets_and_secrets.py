@@ -74,7 +74,17 @@ async def test_connect_required_realtime_targets(endpoint, api_key, model_name):
         model_name=os.getenv(model_name),
     )
 
-    await _assert_can_send_prompt(target)
+    simple_prompt = "simply repeat this word back to me. Don't say anything else. Say: 'test'"
+    orchestrator = PromptSendingOrchestrator(objective_target=target)
+
+    all_prompts = [simple_prompt]
+
+    result = await orchestrator.send_prompts_async(prompt_list=all_prompts)
+    assert len(result) == 1
+    assert len(result[0].request_pieces) == 2
+    assert result[0].request_pieces[0].converted_value_data_type == "text"
+    assert result[0].request_pieces[1].converted_value_data_type == "audio_path"
+    assert "test" in result[0].request_pieces[0].converted_value.lower()
 
 
 @pytest.mark.asyncio
@@ -167,6 +177,7 @@ async def test_connect_tts(endpoint, api_key):
         ("PLATFORM_OPENAI_ENDPOINT", "PLATFORM_OPENAI_KEY", "PLATFORM_OPENAI_GPT4O_MODEL"),
         ("GROQ_ENDPOINT", "GROQ_KEY", "GROQ_LLAMA_MODEL"),
         ("OPEN_ROUTER_ENDPOINT", "OPEN_ROUTER_KEY", "OPEN_ROUTER_CLAUDE_MODEL"),
+        ("OLLAMA_CHAT_ENDPOINT", "", "OLLAMA_MODEL"),
     ],
 )
 async def test_connect_non_required_openai_text_targets(endpoint, api_key, model_name):
