@@ -15,15 +15,15 @@ class ConnectionStatusHandler:
         self.next_prompt = ""
     
     def setup(self, main_interface: gr.Column, loading_animation: gr.Column, next_prompt_state: gr.State):
-        self.state.change(fn=self.__on_state_change, inputs=[self.state], outputs=[main_interface, loading_animation, next_prompt_state])
+        self.state.change(fn=self._on_state_change, inputs=[self.state], outputs=[main_interface, loading_animation, next_prompt_state])
 
         connection_status_timer = gr.Timer(1)
         connection_status_timer.tick(
-            fn=self.__check_connection_status,
+            fn=self._check_connection_status,
             inputs=[self.state],
             outputs=[self.state]
         ).then(
-            fn=self.__reconnect_if_needed,
+            fn=self._reconnect_if_needed,
             outputs=[self.state]
         )
 
@@ -36,19 +36,19 @@ class ConnectionStatusHandler:
     def set_next_prompt(self, next_prompt: str):
         self.next_prompt = next_prompt
 
-    def __on_state_change(self, is_connected: bool):
+    def _on_state_change(self, is_connected: bool):
         print("Connection status changed to: ", is_connected, " - ", self.next_prompt)
         if is_connected:
             return [gr.Column(visible=True), gr.Row(visible=False), self.next_prompt]
         return [gr.Column(visible=False), gr.Row(visible=True), self.next_prompt]
 
-    def __check_connection_status(self, is_connected: bool):
+    def _check_connection_status(self, is_connected: bool):
         if self.server_disconnected or not is_connected:
             print("Gradio disconnected")
             return False
         return True
     
-    def __reconnect_if_needed(self):
+    def _reconnect_if_needed(self):
         if self.server_disconnected:
             print("Attempting to reconnect")
             self.rpc_client.reconnect()

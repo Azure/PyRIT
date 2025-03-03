@@ -9,7 +9,7 @@ from connection_status import ConnectionStatusHandler
 class GradioApp:
     def __init__(self):
         self.i = 0
-        self.rpc_client = RPCClient(self.__disconnected_rpc_callback)
+        self.rpc_client = RPCClient(self._disconnected_rpc_callback)
         self.connect_status = None
         self.url = ""
     
@@ -29,24 +29,24 @@ class GradioApp:
                     safe.click(
                         fn=lambda: [gr.update(interactive=False)]*2 + [""],outputs=[safe, unsafe, next_prompt_state]
                     ).then(
-                        fn=self.__safe_clicked, outputs=next_prompt_state
+                        fn=self._safe_clicked, outputs=next_prompt_state
                     )
                     unsafe.click(
                         fn=lambda: [gr.update(interactive=False)]*2 + [""], outputs=[safe, unsafe, next_prompt_state]
                     ).then(
-                        fn=self.__unsafe_clicked, outputs=next_prompt_state
+                        fn=self._unsafe_clicked, outputs=next_prompt_state
                     )
             
             with gr.Row() as loading_animation:
                 loading_text = gr.Markdown("Connecting to PyRIT")
                 timer = gr.Timer(0.5)
-                timer.tick(fn=self.__loading_dots, outputs=loading_text)
+                timer.tick(fn=self._loading_dots, outputs=loading_text)
 
-            next_prompt_state.change(fn=self.__on_next_prompt_change, inputs=[next_prompt_state], outputs=[prompt, safe, unsafe])
+            next_prompt_state.change(fn=self._on_next_prompt_change, inputs=[next_prompt_state], outputs=[prompt, safe, unsafe])
             self.connect_status.setup(main_interface, loading_animation, next_prompt_state)
 
             demo.load(
-                fn=self.__main_inteface_loaded,
+                fn=self._main_inteface_loaded,
                 outputs=[main_interface, loading_animation, next_prompt_state, is_connected]
             )
 
@@ -63,29 +63,29 @@ class GradioApp:
         if self.rpc_client:
             self.rpc_client.stop()
         
-    def __safe_clicked(self):
+    def _safe_clicked(self):
         self.rpc_client.send_prompt_response(True)
         prompt_request = self.rpc_client.wait_for_prompt()
         return str(prompt_request.original_value)
 
-    def __unsafe_clicked(self):
+    def _unsafe_clicked(self):
         self.rpc_client.send_prompt_response(False)
         prompt_request = self.rpc_client.wait_for_prompt()
         return str(prompt_request.original_value)
     
-    def __on_next_prompt_change(self, next_prompt):
+    def _on_next_prompt_change(self, next_prompt):
         if next_prompt == "":
             return [gr.Markdown(f"Waiting for next prompt..."), gr.update(interactive=False), gr.update(interactive=False)]
         return [gr.Markdown("Prompt: " + next_prompt), gr.update(interactive=True), gr.update(interactive=True)]
 
-    def __loading_dots(self):
+    def _loading_dots(self):
         self.i = (self.i + 1) % 4
         return gr.Markdown("Connecting to PyRIT" + "." * self.i)
 
-    def __disconnected_rpc_callback(self):
+    def _disconnected_rpc_callback(self):
         self.connect_status.set_disconnected()
         
-    def __main_inteface_loaded(self):
+    def _main_inteface_loaded(self):
         print("Showing main interface")
         self.rpc_client.start()
         prompt_request = self.rpc_client.wait_for_prompt()
