@@ -5,11 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
-#   kernelspec:
-#     display_name: pyrit-311
-#     language: python
-#     name: python3
+#       jupytext_version: 1.16.6
 # ---
 
 # %% [markdown]
@@ -53,9 +49,8 @@ await orchestrator.print_conversations_async()  # type: ignore
 #
 # Similarly, this example shows how to use the TTS (audio) target to convert text to speech
 
-from pyrit.orchestrator import PromptSendingOrchestrator
-
 # %%
+from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import TranslationConverter
 from pyrit.prompt_target import OpenAIChatTarget, OpenAITTSTarget
 
@@ -84,10 +79,14 @@ print(saved_audio_path)
 # %%
 import pathlib
 
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.models import SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_normalizer import NormalizerRequest
 from pyrit.prompt_target import OpenAIChatTarget
+
+initialize_pyrit(memory_db_type=IN_MEMORY)
+
 
 azure_openai_gpt4o_chat_target = OpenAIChatTarget()
 
@@ -120,7 +119,3 @@ orchestrator = PromptSendingOrchestrator(objective_target=azure_openai_gpt4o_cha
 
 await orchestrator.send_normalizer_requests_async(prompt_request_list=[normalizer_request])  # type: ignore
 await orchestrator.print_conversations_async()  # type: ignore
-
-# %%
-# Close connection
-azure_openai_gpt4o_chat_target.dispose_db_engine()

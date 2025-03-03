@@ -215,6 +215,20 @@ def get_sample_conversations() -> list[PromptRequestPiece]:
 
 
 def get_sample_conversation_entries() -> list[PromptMemoryEntry]:
-
     conversations = get_sample_conversations()
     return [PromptMemoryEntry(entry=conversation) for conversation in conversations]
+
+
+def openai_response_json_dict() -> dict:
+    return {
+        "id": "12345678-1a2b-3c4e5f-a123-12345678abcd",
+        "object": "chat.completion",
+        "choices": [
+            {
+                "index": 0,
+                "message": {"role": "assistant", "content": "hi"},
+                "finish_reason": "stop",
+            }
+        ],
+        "model": "gpt-4-v",
+    }

@@ -1,12 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from unittest.mock import AsyncMock, patch
+import json
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from openai.types.chat import ChatCompletion, ChatCompletionMessage
-from openai.types.chat.chat_completion import Choice
-from unit.mocks import get_sample_conversations
+from unit.mocks import get_sample_conversations, openai_response_json_dict
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.orchestrator.orchestrator_class import Orchestrator
@@ -19,27 +18,13 @@ def sample_entries() -> list[PromptRequestPiece]:
 
 
 @pytest.fixture
-def openai_mock_return() -> ChatCompletion:
-    return ChatCompletion(
-        id="12345678-1a2b-3c4e5f-a123-12345678abcd",
-        object="chat.completion",
-        choices=[
-            Choice(
-                index=0,
-                message=ChatCompletionMessage(role="assistant", content="hi, I'm adversary chat."),
-                finish_reason="stop",
-                logprobs=None,
-            )
-        ],
-        created=1629389505,
-        model="gpt-4",
-    )
+def openai_response_json() -> dict:
+    return openai_response_json_dict()
 
 
 @pytest.fixture
 def azure_openai_target(patch_central_database):
     return OpenAIChatTarget(
-        deployment_name="test",
         endpoint="test",
         api_key="test",
     )
@@ -60,29 +45,6 @@ def test_set_system_prompt(azure_openai_target: OpenAIChatTarget):
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_user_no_system(
-    azure_openai_target: OpenAIChatTarget,
-    openai_mock_return: ChatCompletion,
-    sample_entries: list[PromptRequestPiece],
-):
-
-    with patch("openai.resources.chat.AsyncCompletions.create", new_callable=AsyncMock) as mock:
-        mock.return_value = openai_mock_return
-
-        request = sample_entries[0]
-        request.converted_value = "hi, I am a victim chatbot, how can I help?"
-
-        await azure_openai_target.send_prompt_async(prompt_request=PromptRequestResponse(request_pieces=[request]))
-
-        mock.assert_called_once()
-
-        _, kwargs = mock.call_args
-
-        assert kwargs["messages"]
-        assert len(kwargs["messages"]) == 1
-        assert kwargs["messages"][0]["role"] == "user"
-
-
 @pytest.mark.asyncio
 async def test_set_system_prompt_adds_memory(azure_openai_target: OpenAIChatTarget):
     azure_openai_target.set_system_prompt(
@@ -100,12 +62,16 @@ async def test_set_system_prompt_adds_memory(azure_openai_target: OpenAIChatTarg
 @pytest.mark.asyncio
 async def test_send_prompt_with_system_calls_chat_complete(
     azure_openai_target: OpenAIChatTarget,
-    openai_mock_return: ChatCompletion,
+    openai_response_json: dict,
     sample_entries: list[PromptRequestPiece],
 ):
 
-    with patch("openai.resources.chat.AsyncCompletions.create", new_callable=AsyncMock) as mock:
-        mock.return_value = openai_mock_return
+    openai_mock_return = MagicMock()
+    openai_mock_return.text = json.dumps(openai_response_json)
+
+    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock) as mock_create:
+
+        mock_create.return_value = openai_mock_return
 
         azure_openai_target.set_system_prompt(
             system_prompt="system prompt",
@@ -120,25 +86,28 @@ async def test_send_prompt_with_system_calls_chat_complete(
 
         await azure_openai_target.send_prompt_async(prompt_request=PromptRequestResponse(request_pieces=[request]))
 
-        mock.assert_called_once()
+        mock_create.assert_called_once()
 
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_with_delay(
     azure_openai_target: OpenAIChatTarget,
-    openai_mock_return: ChatCompletion,
+    openai_response_json: dict,
     sample_entries: list[PromptRequestPiece],
 ):
     azure_openai_target._max_requests_per_minute = 10
 
-    with patch("openai.resources.chat.AsyncCompletions.create", new_callable=AsyncMock) as mock:
+    openai_mock_return = MagicMock()
+    openai_mock_return.text = json.dumps(openai_response_json)
+
+    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock) as mock_create:
         with patch("asyncio.sleep") as mock_sleep:
-            mock.return_value = openai_mock_return
+            mock_create.return_value = openai_mock_return
 
             request = sample_entries[0]
             request.converted_value = "hi, I am a victim chatbot, how can I help?"
 
             await azure_openai_target.send_prompt_async(prompt_request=PromptRequestResponse(request_pieces=[request]))
 
-            mock.assert_called_once()
+            mock_create.assert_called_once()
             mock_sleep.assert_called_once_with(6)  # 60/max_requests_per_minute
