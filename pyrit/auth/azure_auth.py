@@ -3,6 +3,7 @@
 
 import logging
 import time
+from typing import Callable
 from urllib.parse import urlparse
 
 import msal
@@ -107,7 +108,7 @@ def get_access_token_from_msa_public_client(*, client_id: str, scope: str):
         raise
 
 
-def get_access_token_from_interactive_login(scope):
+def get_access_token_from_interactive_login(scope) -> str:
     """Connects to an OpenAI endpoint with an interactive login from Azure. A browser window will
     open and ask for login credentials.  The token will be scoped for Azure Cognitive services.
 
@@ -122,7 +123,7 @@ def get_access_token_from_interactive_login(scope):
         raise
 
 
-def get_token_provider_from_default_azure_credential(scope: str):
+def get_token_provider_from_default_azure_credential(scope: str) -> Callable[[], str]:
     """Connect to an AOAI endpoint via default Azure credential.
 
     Returns:

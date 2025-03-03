@@ -4,7 +4,7 @@
 import json
 import logging
 from abc import abstractmethod
-from typing import Optional
+from typing import Callable, Optional
 
 from pyrit.auth.azure_auth import (
     get_default_scope,
@@ -87,7 +87,7 @@ class OpenAITarget(PromptChatTarget):
         ).rstrip("/")
 
         self._api_key = api_key
-        self._token_provider = None
+        self._token_provider: Optional[Callable[[], str]] = None
 
         self._set_auth_headers(use_aad_auth=use_aad_auth, passed_api_key=api_key)
 
