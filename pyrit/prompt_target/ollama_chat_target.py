@@ -21,12 +21,14 @@ class OllamaChatTarget(PromptChatTarget):
 
     ENDPOINT_URI_ENVIRONMENT_VARIABLE = "OLLAMA_ENDPOINT"
     MODEL_NAME_ENVIRONMENT_VARIABLE = "OLLAMA_MODEL_NAME"
+    OLLAMA_DEFAULT_REMPERATURE_VALUE = 0.8  # https://github.com/ollama/ollama/blob/main/docs/modelfile.md#parameter
 
     def __init__(
         self,
         *,
         endpoint: str = None,
         model_name: str = None,
+        temperature: float = None,
         chat_message_normalizer: ChatMessageNormalizer = ChatMessageNop(),
         max_requests_per_minute: Optional[int] = None,
         **httpx_client_kwargs: Optional[Any],
@@ -38,6 +40,9 @@ class OllamaChatTarget(PromptChatTarget):
         )
         self.model_name = model_name or default_values.get_required_value(
             env_var_name=self.MODEL_NAME_ENVIRONMENT_VARIABLE, passed_value=model_name
+        )
+        self.temperature = (
+            float(temperature) if isinstance(temperature, (float, int)) else self.OLLAMA_DEFAULT_REMPERATURE_VALUE
         )
         self.chat_message_normalizer = chat_message_normalizer
         self.httpx_client_kwargs = httpx_client_kwargs or {}
@@ -84,6 +89,7 @@ class OllamaChatTarget(PromptChatTarget):
         data = {
             "model": self.model_name,
             "messages": messages_list,
+            "temperature": self.temperature,
             "stream": False,
         }
         return data
