@@ -50,6 +50,7 @@ class OpenAIChatTarget(OpenAITarget):
         frequency_penalty: Optional[float] = None,
         presence_penalty: Optional[float] = None,
         seed: Optional[int] = None,
+        n: Optional[int] = None,
         extra_body_parameters: Optional[dict[str, Any]] = None,
         **kwargs,
     ):
@@ -90,6 +91,7 @@ class OpenAIChatTarget(OpenAITarget):
                 tokens that are already present in the conversation history.
             seed (int, Optional): If specified, openAI will make a best effort to sample deterministically,
                 such that repeated requests with the same seed and parameters should return the same result.
+            n (int, Optional): The number of completions to generate for each prompt.
             extra_body_parameters (dict, Optional): Additional parameters to be included in the request body.
         """
         super().__init__(**kwargs)
@@ -104,6 +106,7 @@ class OpenAIChatTarget(OpenAITarget):
         self._frequency_penalty = frequency_penalty
         self._presence_penalty = presence_penalty
         self._seed = seed
+        self._n = n
         self._extra_body_parameters = extra_body_parameters
 
     def _set_openai_env_configuration_vars(self) -> None:
@@ -311,6 +314,7 @@ class OpenAIChatTarget(OpenAITarget):
             "presence_penalty": self._presence_penalty,
             "stream": False,
             "seed": self._seed,
+            "n": self._n,
             "messages": messages,
             "response_format": {"type": "json_object"} if is_json_response else None,
         }
