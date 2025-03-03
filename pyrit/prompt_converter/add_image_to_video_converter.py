@@ -124,7 +124,15 @@ class AddImageVideoConverter(PromptConverter):
                     image_height, image_width, _ = overlay.shape
 
                 # Blend overlay with frame
-                frame[y : y + image_height, x : x + image_width] = overlay
+                if overlay.shape[2] == 4:
+                    alpha_overlay = overlay[:, :, 3] / 255.0
+                    for c in range(0, 3):
+                        frame[y : y + image_height, x : x + image_width, c] = (
+                            alpha_overlay * overlay[:, :, c]
+                            + (1 - alpha_overlay) * frame[y : y + image_height, x : x + image_width, c]
+                        )
+                else:
+                    frame[y : y + image_height, x : x + image_width] = overlay
 
                 # Write the modified frame to the output video
                 output_video.write(frame)
