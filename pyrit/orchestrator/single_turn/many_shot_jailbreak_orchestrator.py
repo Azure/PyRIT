@@ -37,8 +37,8 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
             scorers (list[Scorer], Optional): List of scorers to use for each prompt request response, to be
                 scored immediately after receiving response. Default is None.
             verbose (bool, Optional): Whether to log debug information. Defaults to False.
-            example_count (int, Optional): The number of examples to include from the Many Shot Jailbreaking
-                dataset. Defaults to the first 100.
+            example_count (int, Optional): The number of examples to include from the examples dataset.
+                Defaults to the first 100.
             many_shot_examples (list[dict[str, str]], Optional): The many shot jailbreaking examples to use.
                 If not provided, takes the first `example_count` examples from Many Shot Jailbreaking dataset.
         """
@@ -54,7 +54,7 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
         self._template = SeedPrompt.from_yaml_file(template_path)
         # Fetch the Many Shot Jailbreaking example dataset
         self._examples = (
-            many_shot_examples
+            many_shot_examples[:example_count]
             if (many_shot_examples is not None)
             else fetch_many_shot_jailbreaking_dataset()[:example_count]
         )
