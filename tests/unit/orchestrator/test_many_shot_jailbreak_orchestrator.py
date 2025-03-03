@@ -26,7 +26,9 @@ def many_shot_examples():
 @pytest.mark.parametrize("explicit_examples", [True, False])
 @pytest.mark.parametrize("example_count", [1, 3, 100])
 @pytest.mark.asyncio
-async def test_many_shot_orchestrator(explicit_examples, n_prompts, example_count, many_shot_examples, mock_objective_target):
+async def test_many_shot_orchestrator(
+    explicit_examples, n_prompts, example_count, many_shot_examples, mock_objective_target
+):
     with patch(
         "pyrit.orchestrator.single_turn.many_shot_jailbreak_orchestrator.fetch_many_shot_jailbreaking_dataset"
     ) as mock_fetch:
@@ -42,7 +44,11 @@ async def test_many_shot_orchestrator(explicit_examples, n_prompts, example_coun
             many_shot_examples=examples,
             example_count=example_count,
         )
-        assert len(orchestrator._examples) == len(many_shot_examples) if len(many_shot_examples) <= example_count else example_count
+        assert (
+            len(orchestrator._examples) == len(many_shot_examples)
+            if len(many_shot_examples) <= example_count
+            else example_count
+        )
 
         await orchestrator.send_prompts_async(prompt_list=prompts)
         assert len(mock_objective_target.prompt_sent) == n_prompts
