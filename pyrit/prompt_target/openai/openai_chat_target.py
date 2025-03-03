@@ -144,7 +144,6 @@ class OpenAIChatTarget(OpenAITarget):
                 headers=self._headers,
                 request_body=body,
                 params=params,
-                debug=True,
                 **self._httpx_client_kwargs,
             )
         except httpx.HTTPStatusError as StatusError:
