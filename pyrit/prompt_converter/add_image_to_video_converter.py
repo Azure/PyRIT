@@ -124,7 +124,7 @@ class AddImageVideoConverter(PromptConverter):
                     image_height, image_width, _ = overlay.shape
 
                 # Blend overlay with frame
-                if overlay.shape[2] == 4:
+                if overlay.shape[2] == 4: # Check number of channels on image
                     alpha_overlay = overlay[:, :, 3] / 255.0
                     for c in range(0, 3):
                         frame[y : y + image_height, x : x + image_width, c] = (
