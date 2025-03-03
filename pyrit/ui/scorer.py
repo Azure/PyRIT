@@ -43,7 +43,10 @@ class GradioApp:
                 timer.tick(fn=self._loading_dots, outputs=loading_text)
 
             next_prompt_state.change(fn=self._on_next_prompt_change, inputs=[next_prompt_state], outputs=[prompt, safe, unsafe])
-            self.connect_status.setup(main_interface, loading_animation, next_prompt_state)
+            self.connect_status.setup(
+                main_interface=main_interface,
+                loading_animation=loading_animation,
+                next_prompt_state=next_prompt_state)
 
             demo.load(
                 fn=self._main_inteface_loaded,

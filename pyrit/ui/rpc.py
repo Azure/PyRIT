@@ -53,13 +53,13 @@ class AppRPCServer:
         exchange information between PyRIT's main process and Gradio's process. This way the interface is
         independent of which PyRIT code is running the process.
         """
-        def __init__(self, score_received_sem: Semaphore, client_ready_sem: Semaphore):
+        def __init__(self, *, score_received_semaphore: Semaphore, client_ready_semaphore: Semaphore):
             super().__init__()
             self._callback_score_prompt = None
             self._last_ping = None
             self._scores_received = []
-            self._score_received_sem = score_received_sem
-            self._client_ready_sem = client_ready_sem
+            self._score_received_semaphore = score_received_semaphore
+            self._client_ready_semaphore = client_ready_semaphore
         
         def on_connect(self, conn):
             logger.info("Client connected")
@@ -70,7 +70,7 @@ class AppRPCServer:
         def exposed_receive_score(self, score: Score):
             logger.info(f"Score received: {score}")
             self._scores_received.append(score)
-            self._score_received_sem.release()
+            self._score_received_semaphore.release()
 
         def exposed_receive_ping(self):
             # A ping should be received every 2s from the client. If a client misses a ping then the server should stoped
@@ -79,7 +79,7 @@ class AppRPCServer:
 
         def exposed_callback_score_prompt(self, callback: Callable[[PromptRequestPiece, Optional[str]], None]):
             self._callback_score_prompt = callback
-            self._client_ready_sem.release()
+            self._client_ready_semaphore.release()
         
         def is_client_ready(self):
             if self._callback_score_prompt is None:
@@ -111,8 +111,8 @@ class AppRPCServer:
         self._rpc_service = None
         self._is_alive_thread = None
         self._is_alive_stop = False
-        self._score_received_sem = None
-        self._client_ready_sem = None
+        self._score_received_semaphore = None
+        self._client_ready_semaphore = None
         self._server_is_running = False
         self._open_browser = open_browser
 
@@ -126,11 +126,13 @@ class AppRPCServer:
         if self._is_instance_running():
             raise RPCAlreadyRunningException()
         
-        self._score_received_sem = Semaphore(0)
-        self._client_ready_sem = Semaphore(0)
+        self._score_received_semaphore = Semaphore(0)
+        self._client_ready_semaphore = Semaphore(0)
 
         # Start the RPC server.
-        self._rpc_service = self.RPCService(self._score_received_sem, self._client_ready_sem)
+        self._rpc_service = self.RPCService(
+            score_received_semaphore=self._score_received_semaphore, 
+            client_ready_semaphore=self._client_ready_semaphore)
         self._server = self.rpyc.ThreadedServer(self._rpc_service, port=DEFAULT_PORT, protocol_config={"allow_all_attrs": True})
         self._server_thread = Thread(target=self._server.start)
         self._server_thread.start()
@@ -180,8 +182,8 @@ class AppRPCServer:
 
         self._server_is_running = False
 
-        self._client_ready_sem.release()
-        self._score_received_sem.release()
+        self._client_ready_semaphore.release()
+        self._score_received_semaphore.release()
 
     def send_score_prompt(self, prompt: PromptRequestPiece, task: Optional[str] = None):
         """
@@ -196,10 +198,10 @@ class AppRPCServer:
         """
         Wait for the client to send a score. Should always return a score, but if the synchronisation fails it will return None.
         """
-        if self._score_received_sem is None or self._rpc_service is None:
+        if self._score_received_semaphore is None or self._rpc_service is None:
             raise RPCAppException("RPC server is not running.")
 
-        self._score_received_sem.acquire()
+        self._score_received_semaphore.acquire()
         if not self._server_is_running:
             raise RPCServerStoppedException()
         
@@ -207,19 +209,19 @@ class AppRPCServer:
         if score is None:
             return None
 
-        self._client_ready_sem.release()
+        self._client_ready_semaphore.release()
         return score
     
     def wait_for_client(self):
         """
         Wait for the client to be ready to receive messages.
         """
-        if self._client_ready_sem is None:
+        if self._client_ready_semaphore is None:
             raise RPCAppException("RPC server is not running.")
 
         
         logger.info("Waiting for client to be ready")
-        self._client_ready_sem.acquire()
+        self._client_ready_semaphore.acquire()
 
         if not self._server_is_running:
             raise RPCServerStoppedException()

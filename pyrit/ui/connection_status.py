@@ -14,7 +14,7 @@ class ConnectionStatusHandler:
         self.rpc_client = rpc_client
         self.next_prompt = ""
     
-    def setup(self, main_interface: gr.Column, loading_animation: gr.Column, next_prompt_state: gr.State):
+    def setup(self, *, main_interface: gr.Column, loading_animation: gr.Column, next_prompt_state: gr.State):
         self.state.change(fn=self._on_state_change, inputs=[self.state], outputs=[main_interface, loading_animation, next_prompt_state])
 
         connection_status_timer = gr.Timer(1)
