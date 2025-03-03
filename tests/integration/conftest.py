@@ -39,3 +39,16 @@ def azuresql_instance() -> Generator[AzureSQLMemory, None, None]:
     CentralMemory.set_memory_instance(azuresql_memory)
     yield azuresql_memory
     azuresql_memory.dispose_engine()
+
+
+def pytest_configure(config):
+    # Let pytest know about your custom marker for help/usage info
+    config.addinivalue_line("markers", "run_only_if_all_tests: skip test unless RUN_ALL_TESTS is set to true")
+
+
+def pytest_collection_modifyitems(config, items):
+    run_all = os.getenv("RUN_ALL_TESTS", "").lower() == "true"
+    skip_marker = pytest.mark.skip(reason="RUN_ALL_TESTS is not set to true")
+    for item in items:
+        if "run_if_all_tests" in item.keywords and not run_all:
+            item.add_marker(skip_marker)
