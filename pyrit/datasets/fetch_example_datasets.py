@@ -575,7 +575,7 @@ def fetch_red_team_social_bias_prompts_dataset() -> SeedPromptDataset:
             except Exception as e:
                 print(f"Error processing Multi-Turn Prompt: {e}")
         else:
-            # Clean up  non-"Multi Turn" prompts that contain unwanted lines of text
+            # Clean up non-"Multi Turn" prompts that contain unwanted lines of text
             cleaned_value = item.get("prompt", "").replace("### Response:", "").replace("### Instruction:", "").strip()
 
             seed_prompts.append(
