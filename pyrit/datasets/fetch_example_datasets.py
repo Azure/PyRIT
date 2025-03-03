@@ -514,7 +514,7 @@ def fetch_red_team_social_bias_prompts_dataset() -> SeedPromptDataset:
         For more information and access to the original dataset and related materials, visit:
         https://svannie678.github.io/svannie678-red_team_repo_social_bias. This dataset
         contains aggregated and unified existing red-teaming prompts designed to identify
-        stereotypes,discrimination, hate speech, and other representationharms in text-based
+        stereotypes, discrimination, hate speech, and other representationharms in text-based
         Large Language Models (LLMs).
         Written by Simone Van Taylor.
     """
@@ -575,7 +575,7 @@ def fetch_red_team_social_bias_prompts_dataset() -> SeedPromptDataset:
             except Exception as e:
                 print(f"Error processing Multi-Turn Prompt: {e}")
         else:
-            # Clean up  non-"Multi Turn" prompts that contain unwanted lines of text
+            # Clean up non-"Multi Turn" prompts that contain unwanted lines of text
             cleaned_value = item.get("prompt", "").replace("### Response:", "").replace("### Instruction:", "").strip()
 
             seed_prompts.append(
