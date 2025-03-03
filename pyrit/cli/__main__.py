@@ -169,7 +169,7 @@ def validate_scenario(
 
         orchestrator = orchestrator_class(**scenario_args)
     except Exception as ex:
-        raise ValueError(f"Failed to validate scenario {scenario_type}") from ex
+        raise ValueError(f"Failed to validate scenario {scenario_type}: {ex}") from ex
     return orchestrator
 
 
