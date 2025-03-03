@@ -17,7 +17,7 @@
 # # GroqChatTarget
 #
 # This example demonstrates how to use the `GroqChatTarget` class in PyRIT to send a prompt
-# to a Groq model and retrieve a response.
+# to Groq and retrieve a response.
 #
 # ## Setup
 # Before running this example, you need to set the following environment variables:
@@ -32,9 +32,6 @@
 # ```python
 # groq_target = GroqChatTarget(model_name="llama3-8b-8192", api_key="your_api_key_here")
 # ```
-#
-# You can also limit the request rate using `max_requests_per_minute`.
-#
 # ## Example
 # The following code initializes `GroqChatTarget`, sends a prompt using `PromptSendingOrchestrator`,
 # and retrieves a response.
