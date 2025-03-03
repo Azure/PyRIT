@@ -547,7 +547,7 @@ def fetch_red_team_social_bias_prompts_dataset() -> SeedPromptDataset:
         # Dictionary of metadata for the current prompt
         prompt_metadata = {
             **common_metadata,
-            "harm_categories": item.get("categorization", []),
+            "harm_categories": [item["categorization"]] if not isinstance(item.get("categorization"), list) else item.get("categorization", []),
             "metadata": {
                 "organization": item.get("organization", ""),
                 "prompt_type": prompt_type,
