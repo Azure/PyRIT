@@ -110,7 +110,7 @@ async def test_connect_required_aml_text_targets(endpoint, api_key):
 @pytest.mark.asyncio
 async def test_connect_openai_completion():
 
-    endpoint = "OPENAI_COMPLETEION_ENDPOINT"
+    endpoint = "OPENAI_COMPLETION_ENDPOINT"
     api_key = "OPENAI_COMPLETION_API_KEY"
     model = "OPENAI_COMPLETION_MODEL"
 
