@@ -64,12 +64,13 @@ class GradioApp:
             self.rpc_client.stop()
         
     def _safe_clicked(self):
-        self.rpc_client.send_prompt_response(True)
-        prompt_request = self.rpc_client.wait_for_prompt()
-        return str(prompt_request.original_value)
+        return self._send_prompt_response(True)
 
     def _unsafe_clicked(self):
-        self.rpc_client.send_prompt_response(False)
+        return self._send_prompt_response(False)
+
+    def _send_prompt_response(value):
+        self.rpc_client.send_prompt_response(value)
         prompt_request = self.rpc_client.wait_for_prompt()
         return str(prompt_request.original_value)
     
