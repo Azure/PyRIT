@@ -5,9 +5,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.6
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit-312
 #     language: python
 #     name: python3
 # ---
@@ -119,7 +119,6 @@ prepended_conversation.append(
 
 # Testing against an AzureOpenAI deployed GPT 4 instance
 oai_objective_target = OpenAIChatTarget(
-    deployment_name=os.getenv("AZURE_OPENAI_GPT4_CHAT_DEPLOYMENT"),
     api_key=os.getenv("AZURE_OPENAI_GPT4_CHAT_KEY"),
     endpoint=os.getenv("AZURE_OPENAI_GPT4_CHAT_ENDPOINT"),
 )
@@ -230,13 +229,6 @@ orchestrator = RedTeamingOrchestrator(
 
 result = await orchestrator.run_attack_async(objective=conversation_objective)  # type: ignore
 await result.print_conversation_async()  # type: ignore
-
-# %%
-# Close connection to memory after use
-from pyrit.memory import CentralMemory
-
-memory = CentralMemory.get_memory_instance()
-memory.dispose_engine()
 
 # %% [markdown]
 # ## Other Multi-Turn Orchestrators

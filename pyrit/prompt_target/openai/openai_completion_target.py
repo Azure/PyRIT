@@ -77,7 +77,7 @@ class OpenAICompletionTarget(OpenAITarget):
 
     def _set_openai_env_configuration_vars(self):
         self.model_name_environment_variable = "OPENAI_COMPLETION_MODEL"
-        self.endpoint_environment_variable = "OPENAI_COMPLETEION_ENDPOINT"
+        self.endpoint_environment_variable = "OPENAI_COMPLETION_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_COMPLETION_API_KEY"
 
     @limit_requests_per_minute
