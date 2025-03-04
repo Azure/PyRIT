@@ -1,17 +1,28 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import asyncio
 from pyrit.score.scorer import Scorer
 from pyrit.models import Score, PromptRequestPiece
 from typing import Optional
 
 class HumanInTheLoopScorerGradio(Scorer):
+    """
+    Create scores from manual human input using Gradio and adds them to the database.
 
+    Parameters:
+        scorer (Scorer): The scorer to use for the initial scoring.
+        re_scorers (list[Scorer]): The scorers to use for re-scoring.
+        open_browser(bool): The scorer will open the Gradio interface in a browser instead of opening it in PyWebview
+    """
+    
     def __init__(self, *, open_browser=False, scorer: Scorer = None, re_scorers: list[Scorer] = None) -> None:
         # Import here to avoid importing rpyc in the main module that might not be installed
-        from pyrit.ui.rpc import AppRpcServer
+        from pyrit.ui.rpc import AppRPCServer
 
         self._scorer = scorer
         self._re_scorers = re_scorers
-        self._rpc_server = AppRpcServer(open_browser=open_browser)
+        self._rpc_server = AppRPCServer(open_browser=open_browser)
         self._rpc_server.start()
 
 
