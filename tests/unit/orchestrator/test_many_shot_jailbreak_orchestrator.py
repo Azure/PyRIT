@@ -4,6 +4,8 @@ from unittest.mock import patch
 
 import pytest
 from unit.mocks import MockPromptTarget
+from pyrit.prompt_converter import Base64Converter
+import base64
 
 from pyrit.orchestrator import ManyShotJailbreakOrchestrator
 
@@ -21,11 +23,11 @@ def many_shot_examples():
         {"user": "question3", "assistant": "answer3"},
     ]
 
-
 @pytest.mark.parametrize("n_prompts", [1, 2, 3, 100])
 @pytest.mark.parametrize("explicit_examples", [True, False])
+@pytest.mark.parametrize("converters", [[], [Base64Converter()]])
 @pytest.mark.asyncio
-async def test_many_shot_orchestrator(explicit_examples, n_prompts, many_shot_examples, mock_objective_target):
+async def test_many_shot_orchestrator(explicit_examples, n_prompts, many_shot_examples, mock_objective_target, converters):
     with patch(
         "pyrit.orchestrator.single_turn.many_shot_jailbreak_orchestrator.fetch_many_shot_jailbreaking_dataset"
     ) as mock_fetch:
@@ -37,24 +39,27 @@ async def test_many_shot_orchestrator(explicit_examples, n_prompts, many_shot_ex
 
         prompts = [f"prompt{i}" for i in range(n_prompts)]
         orchestrator = ManyShotJailbreakOrchestrator(
-            objective_target=mock_objective_target, many_shot_examples=examples
+            objective_target=mock_objective_target, many_shot_examples=examples, prompt_converters=converters
         )
         assert len(orchestrator._examples) == len(many_shot_examples)
 
         await orchestrator.send_prompts_async(prompt_list=prompts)
         assert len(mock_objective_target.prompt_sent) == n_prompts
         for i in range(n_prompts):
-            assert f"prompt{i}" in mock_objective_target.prompt_sent[i]
+            if converters == []:
+                verification_prompt = mock_objective_target.prompt_sent[i]
+            else:
+                verification_prompt = base64.b64decode(mock_objective_target.prompt_sent[i]).decode("utf-8")
+            assert f"prompt{i}" in verification_prompt
             for example_dict in many_shot_examples:
                 for role, content in example_dict.items():
-                    assert role in mock_objective_target.prompt_sent[i].lower()
-                    assert content in mock_objective_target.prompt_sent[i]
+                    assert role in verification_prompt.lower()
+                    assert content in verification_prompt
 
         if explicit_examples:
             assert mock_fetch.call_count == 0
         else:
             mock_fetch.assert_called_once()
-
 
 @pytest.mark.asyncio
 async def test_send_prompts_async_empty_prompt_list(many_shot_examples, mock_objective_target):

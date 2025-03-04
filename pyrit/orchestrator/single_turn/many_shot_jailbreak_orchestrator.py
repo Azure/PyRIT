@@ -8,6 +8,7 @@ from typing import Optional, Union
 from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets import fetch_many_shot_jailbreaking_dataset
 from pyrit.models import PromptRequestResponse, SeedPrompt
+from pyrit.prompt_converter import PromptConverter
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer
@@ -26,6 +27,7 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
     def __init__(
         self,
         objective_target: PromptChatTarget,
+        prompt_converters: Optional[list[PromptConverter]] = None,
         scorers: Optional[list[Scorer]] = None,
         verbose: bool = False,
         many_shot_examples: Optional[list[dict[str, str]]] = None,
@@ -41,6 +43,7 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
 
         super().__init__(
             objective_target=objective_target,
+            prompt_converters=prompt_converters,
             scorers=scorers,
             verbose=verbose,
         )
