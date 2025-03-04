@@ -123,6 +123,7 @@ all = [
     "black>=24.4.0",
     "flake8>=7.0.0",
     "flake8-copyright>=0.2.4",
+    "flask>=3.1.0",
     "jupyter-book>=1.0.2",
     "jupytext>=1.16.1",
     "mlflow==2.16.2",
@@ -130,6 +131,9 @@ all = [
     "mypy>=1.9.0",
     "mock-alchemy>=0.2.6",
     "numpy<2",
+    "ollama>=0.4.4",
+    "opencv-python>=4.11.0.86",
+    "playwright==1.49.0",
     "pre-commit>=3.3.3",
     "pytest>=7.3.1",
     "pytest-asyncio>=0.23.5",
@@ -138,9 +142,6 @@ all = [
     "semantic-kernel>=1.20.0",
     "sentencepiece==0.2.0",
     "torch>=2.3.0",
-    "playwright==1.49.0",
-    "flask>=3.1.0",
-    "ollama>=0.4.4",
     "types-PyYAML>=6.0.12.9",
 ]
 
