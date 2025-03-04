@@ -27,5 +27,5 @@ input_video = str(pathlib.Path(".") / ".." / ".." / ".." / "assets" / "sample_vi
 input_image = str(pathlib.Path(".") / ".." / ".." / ".." / "assets" / "pyrit_architecture.png")
 
 video = AddImageVideoConverter(video_path=input_video)
-converted_vid = await video.convert_async(prompt=input_image, input_type="image_path")
+converted_vid = await video.convert_async(prompt=input_image, input_type="image_path") # type: ignore
 converted_vid
