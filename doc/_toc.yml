@@ -112,6 +112,7 @@ chapters:
   - file: api.rst
   - file: blog/README
     sections:
+    - file: blog/2025_03_03
     - file: blog/2025_02_11
     - file: blog/2025_01_27
     - file: blog/2025_01_14
