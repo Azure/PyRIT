@@ -10,6 +10,10 @@
 
 # %% [markdown]
 # # Adding Images to a Video
+#
+# This shows how to use the video converter to add an image to a video.
+# To use this converter you'll need to install opencv which can be done with
+# `pip install pyrit[opencv]`
 
 # %%
 import pathlib
@@ -20,9 +24,8 @@ from pyrit.prompt_converter import AddImageVideoConverter
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
 input_video = str(pathlib.Path(".") / ".." / ".." / ".." / "assets" / "sample_video.mp4")
-output_video = str(pathlib.Path(".") / ".." / ".." / ".." / "assets" / "sample_output_video.mp4")
-input_image = str(pathlib.Path(".") / ".." / ".." / ".." / "assets" / "ice_cream.png")
+input_image = str(pathlib.Path(".") / ".." / ".." / ".." / "assets" / "pyrit_architecture.png")
 
-video = AddImageVideoConverter(video_path=input_video, img_resize_size=(100, 100))
+video = AddImageVideoConverter(video_path=input_video)
 converted_vid = await video.convert_async(prompt=input_image, input_type="image_path")
 converted_vid

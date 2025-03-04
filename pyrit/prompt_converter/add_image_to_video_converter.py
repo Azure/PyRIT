@@ -4,8 +4,8 @@
 import logging
 import os
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-import cv2
 import numpy as np
 
 from pyrit.common.path import DB_DATA_PATH
@@ -14,6 +14,9 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 
+
+if TYPE_CHECKING:
+    import cv2
 
 # Choose the codec based on extension
 video_encoding_map = {
@@ -124,7 +127,7 @@ class AddImageVideoConverter(PromptConverter):
                     image_height, image_width, _ = overlay.shape
 
                 # Blend overlay with frame
-                if overlay.shape[2] == 4: # Check number of channels on image
+                if overlay.shape[2] == 4:  # Check number of channels on image
                     alpha_overlay = overlay[:, :, 3] / 255.0
                     for c in range(0, 3):
                         frame[y : y + image_height, x : x + image_width, c] = (

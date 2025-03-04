@@ -58,7 +58,6 @@ dependencies = [
     "ipykernel>=6.29.4",
     "numpy>=1.26.4",
     "openai>=1.58.1",
-    "opencv-python>=4.11.0.86",
     "pillow>=10.3.0",
     "pydantic>=2.7.1",
     "pyodbc>=5.1.0",
@@ -115,6 +114,9 @@ playwright = [
     "ollama>=0.4.4"
 ]
 
+opencv = [
+    "opencv-python>=4.11.0.86",
+]
 all = [
     "accelerate==0.34.2",
     "azureml-mlflow==1.57.0",
