@@ -51,7 +51,7 @@ class AddImageVideoConverter(PromptConverter):
         self._img_resize_size = img_resize_size
         self._video_path = video_path
 
-    async def _add_image_to_video(self, image_path: str, output_path: str):
+    async def _add_image_to_video(self, image_path: str, output_path: str) -> str:
         """
         Adds image to video
         Args:
