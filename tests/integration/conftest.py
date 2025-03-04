@@ -55,6 +55,7 @@ def pytest_collection_modifyitems(config, items):
         if "run_only_if_all_tests" in item.keywords and not run_all:
             item.add_marker(skip_marker)
 
+
 @pytest.fixture
 def duckdb_instance() -> Generator[DuckDBMemory, None, None]:
     # Create an in-memory DuckDB engine

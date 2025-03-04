@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import os
+
 import pytest
 
 from pyrit.orchestrator import PromptSendingOrchestrator
