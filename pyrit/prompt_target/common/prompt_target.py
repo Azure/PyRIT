@@ -46,7 +46,7 @@ class PromptTarget(abc.ABC, Identifier):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Exit the runtime context and perform any cleanup actions."""
-        self.dispose_db_engine()
+        pass
 
     def dispose_db_engine(self) -> None:
         """
