@@ -30,5 +30,5 @@ converters: list[PromptConverter] = [Base64Converter()]
 
 target = TextTarget()
 
-with PromptSendingOrchestrator(objective_target=target, prompt_converters=converters) as orchestrator:
-    await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
+orchestrator = PromptSendingOrchestrator(objective_target=target, prompt_converters=converters)
+await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore

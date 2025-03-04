@@ -44,10 +44,6 @@ class Orchestrator(abc.ABC, Identifier):
         if self._verbose:
             logging.basicConfig(level=logging.INFO)
 
-    def __enter__(self):
-        """Enter the runtime context related to this object."""
-        return self  # You can return self or another object that should be used in the with-statement.
-
     def dispose_db_engine(self) -> None:
         """
         Dispose database engine to release database connections and resources.

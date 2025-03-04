@@ -40,10 +40,6 @@ class PromptTarget(abc.ABC, Identifier):
         Validates the provided prompt request response
         """
 
-    def __enter__(self):
-        """Enter the runtime context related to this object."""
-        return self  # You can return self or another object that should be used in the with-statement.
-
     def dispose_db_engine(self) -> None:
         """
         Dispose DuckDB database engine to release database connections and resources.
