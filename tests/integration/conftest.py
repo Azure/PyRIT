@@ -52,7 +52,7 @@ def pytest_collection_modifyitems(config, items):
     run_all = os.getenv("RUN_ALL_TESTS", "").lower() == "true"
     skip_marker = pytest.mark.skip(reason="RUN_ALL_TESTS is not set to true")
     for item in items:
-        if "run_if_all_tests" in item.keywords and not run_all:
+        if "run_only_if_all_tests" in item.keywords and not run_all:
             item.add_marker(skip_marker)
 
 @pytest.fixture
