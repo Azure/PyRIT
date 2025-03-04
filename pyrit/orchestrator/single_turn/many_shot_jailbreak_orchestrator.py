@@ -8,8 +8,8 @@ from typing import Optional, Union
 from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets import fetch_many_shot_jailbreaking_dataset
 from pyrit.models import PromptRequestResponse, SeedPrompt
-from pyrit.prompt_converter import PromptConverter
 from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer
 
