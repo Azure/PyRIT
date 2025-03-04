@@ -4,7 +4,6 @@
 import logging
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -14,9 +13,6 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 
-
-if TYPE_CHECKING:
-    import cv2
 
 # Choose the codec based on extension
 video_encoding_map = {
@@ -46,6 +42,7 @@ class AddImageVideoConverter(PromptConverter):
         img_position: tuple = (10, 10),
         img_resize_size: tuple = (500, 500),
     ):
+
         if not video_path:
             raise ValueError("Please provide valid video path")
 
@@ -64,6 +61,12 @@ class AddImageVideoConverter(PromptConverter):
         Returns:
             output_path (str): The output video path.
         """
+
+        try:
+            import cv2  # noqa: F401
+        except ModuleNotFoundError as e:
+            logger.error("Could not import opencv. You may need to install it via 'pip install pyrit[opencv]'")
+            raise e
 
         if not image_path:
             raise ValueError("Please provide valid image path value")

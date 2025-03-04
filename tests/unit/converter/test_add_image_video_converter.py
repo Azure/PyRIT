@@ -3,37 +3,53 @@
 
 import os
 
-import cv2
 import numpy as np
 import pytest
 
 from pyrit.prompt_converter import AddImageVideoConverter
 
 
-@pytest.fixture
+def is_opencv_installed():
+    try:
+        import cv2  # noqa: F401
+
+        return True
+    except ModuleNotFoundError:
+        return False
+
+
+@pytest.fixture(autouse=True)
 def video_converter_sample_video():
     # Create a sample video file
     video_path = "test_video.mp4"
     width, height = 640, 480
-    video_encoding = cv2.VideoWriter_fourcc(*"mp4v")
-    output_video = cv2.VideoWriter(video_path, video_encoding, 1, (width, height))
-    # Create a few frames for video
-    for i in range(10):
-        frame = np.zeros((height, width, 3), dtype=np.uint8)
-        output_video.write(frame)
-    output_video.release()
+    if is_opencv_installed():
+        import cv2  # noqa: F401
+
+        # Create a video writer object
+        video_encoding = cv2.VideoWriter_fourcc(*"mp4v")
+        output_video = cv2.VideoWriter(video_path, video_encoding, 1, (width, height))
+        # Create a few frames for video
+        for i in range(10):
+            frame = np.zeros((height, width, 3), dtype=np.uint8)
+            output_video.write(frame)
+        output_video.release()
     return video_path
 
 
 @pytest.fixture
 def video_converter_sample_image():
-    # Create a sample image file
     image_path = "test_image.png"
+    # Create a sample image file
     image = np.zeros((100, 100, 3), dtype=np.uint8)
-    cv2.imwrite(image_path, image)
+    if is_opencv_installed():
+        import cv2
+
+        cv2.imwrite(image_path, image)
     return image_path
 
 
+@pytest.mark.skipif(not is_opencv_installed(), reason="opencv is not installed")
 def test_add_image_video_converter_initialization(video_converter_sample_video):
     converter = AddImageVideoConverter(
         video_path=video_converter_sample_video,
@@ -48,6 +64,7 @@ def test_add_image_video_converter_initialization(video_converter_sample_video):
     os.remove(video_converter_sample_video)
 
 
+@pytest.mark.skipif(not is_opencv_installed(), reason="opencv is not installed")
 @pytest.mark.asyncio
 async def test_add_image_video_converter_invalid_image_path(video_converter_sample_video):
     converter = AddImageVideoConverter(video_path=video_converter_sample_video, output_path="output_video.mp4")
@@ -56,6 +73,7 @@ async def test_add_image_video_converter_invalid_image_path(video_converter_samp
     os.remove(video_converter_sample_video)
 
 
+@pytest.mark.skipif(not is_opencv_installed(), reason="opencv is not installed")
 @pytest.mark.asyncio
 async def test_add_image_video_converter_invalid_video_path(video_converter_sample_image):
     converter = AddImageVideoConverter(video_path="invalid_video.mp4", output_path="output_video.mp4")
@@ -64,6 +82,7 @@ async def test_add_image_video_converter_invalid_video_path(video_converter_samp
     os.remove(video_converter_sample_image)
 
 
+@pytest.mark.skipif(not is_opencv_installed(), reason="opencv is not installed")
 @pytest.mark.asyncio
 async def test_add_image_video_converter(video_converter_sample_video, video_converter_sample_image):
     converter = AddImageVideoConverter(video_path=video_converter_sample_video, output_path="output_video.mp4")
@@ -76,6 +95,7 @@ async def test_add_image_video_converter(video_converter_sample_video, video_con
     os.remove("output_video.mp4")
 
 
+@pytest.mark.skipif(not is_opencv_installed(), reason="opencv is not installed")
 @pytest.mark.asyncio
 async def test_add_image_video_converter_convert_async(video_converter_sample_video, video_converter_sample_image):
     converter = AddImageVideoConverter(video_path=video_converter_sample_video, output_path="output_video.mp4")
