@@ -364,6 +364,7 @@ API Reference
     FloatScaleThresholdScorer
     GandalfScorer
     HumanInTheLoopScorer
+    HumanInTheLoopScorerGradio
     LikertScalePaths
     MarkdownInjectionScorer
     PromptShieldScorer
