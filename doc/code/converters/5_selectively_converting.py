@@ -32,3 +32,6 @@ target = TextTarget()
 
 orchestrator = PromptSendingOrchestrator(objective_target=target, prompt_converters=converters)
 await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
+
+# Dispose Memory Engine
+orchestrator.dispose_db_engine()
