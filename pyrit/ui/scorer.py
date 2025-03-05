@@ -49,7 +49,7 @@ class GradioApp:
                 next_prompt_state=next_prompt_state)
 
             demo.load(
-                fn=self._main_inteface_loaded,
+                fn=self._main_interface_loaded,
                 outputs=[main_interface, loading_animation, next_prompt_state, is_connected]
             )
 
@@ -89,7 +89,7 @@ class GradioApp:
     def _disconnected_rpc_callback(self):
         self.connect_status.set_disconnected()
         
-    def _main_inteface_loaded(self):
+    def _main_interface_loaded(self):
         print("Showing main interface")
         self.rpc_client.start()
         prompt_request = self.rpc_client.wait_for_prompt()
