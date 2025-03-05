@@ -8,6 +8,7 @@ from contextlib import AbstractAsyncContextManager
 from typing import Generator, Optional
 from unittest.mock import MagicMock, patch
 
+import sqlalchemy
 from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 
 from pyrit.memory import AzureSQLMemory, CentralMemory
@@ -125,6 +126,38 @@ def get_azure_sql_memory() -> Generator[AzureSQLMemory, None, None]:
         )
 
         session_mock = UnifiedAlchemyMagicMock()
+
+        def mock_merge(entity):
+            """
+            Rudimentary 'upsert' for the mock. If entity's primary key
+            matches an existing object in the mock, we update. Otherwise, we add.
+            """
+            # Figure out the primary key column name & value
+            pk_columns = sqlalchemy.inspect(entity.__class__).primary_key
+            # For simplicity, assume there's exactly one PK column:
+            pk_column = next(iter(pk_columns))
+            pk_value = getattr(entity, pk_column.key, None)
+
+            if pk_value is None:
+                # If there's no PK set, treat as a new entity
+                session_mock.add(entity)
+                return entity
+
+            # Attempt to find an existing row in mock
+            existing = session_mock.query(entity.__class__).get(pk_value)
+            if not existing:
+                # If not found, just add it
+                session_mock.add(entity)
+                return entity
+
+            # Otherwise, update the existing object with new fields
+            for attr in sqlalchemy.inspect(entity.__class__).attrs:
+                setattr(existing, attr.key, getattr(entity, attr.key))
+            return existing
+
+        # Patch the mock's merge method
+        session_mock.merge = MagicMock(side_effect=mock_merge)
+
         session_mock.__enter__.return_value = session_mock
         session_mock.is_modified.return_value = True
         get_session_mock.return_value = session_mock
