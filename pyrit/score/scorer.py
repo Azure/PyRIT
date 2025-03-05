@@ -273,7 +273,13 @@ class Scorer(abc.ABC):
         try:
             response_json = response.request_pieces[0].converted_value
 
-            response_json = remove_markdown_json(response_json)
+            try:
+                response_json = "{" + response_json.split("{")[1]
+                response_json = response_json.split("}")[0] + "}"
+
+            except: 
+                raise InvalidJsonException(message=f"The response does not contain a json: {response_json}")
+
             parsed_response = json.loads(response_json)
 
             category_response = parsed_response.get("category")
