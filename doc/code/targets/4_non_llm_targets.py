@@ -33,11 +33,11 @@
 # %%
 import os
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.common import AZURE_SQL, initialize_pyrit
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import AzureBlobStorageTarget
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+initialize_pyrit(memory_db_type=AZURE_SQL)
 
 abs_prompt_target = AzureBlobStorageTarget(container_url=os.environ.get("AZURE_STORAGE_ACCOUNT_CONTAINER_URL"))
 orchestrator = PromptSendingOrchestrator(objective_target=abs_prompt_target)

@@ -26,14 +26,14 @@ def _load_environment_files() -> None:
 
     # Load the base .env file if it exists
     if base_file_path.exists():
-        dotenv.load_dotenv(base_file_path, override=True)
+        dotenv.load_dotenv(base_file_path, override=True, interpolate=True)
         logger.info(f"Loaded {base_file_path}")
     else:
         dotenv.load_dotenv()
 
     # Load the .env.local file if it exists, to override base .env values
     if local_file_path.exists():
-        dotenv.load_dotenv(local_file_path, override=True)
+        dotenv.load_dotenv(local_file_path, override=True, interpolate=True)
         logger.info(f"Loaded {local_file_path}")
 
 

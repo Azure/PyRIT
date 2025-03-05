@@ -39,10 +39,9 @@ target = OpenAIChatTarget()
 orchestrator = PromptSendingOrchestrator(objective_target=target)
 
 adv_bench_prompts = fetch_adv_bench_dataset()
-prompts = [prompt.value for prompt in adv_bench_prompts.prompts[:3]]
 
 start = time.time()
-await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
+await orchestrator.send_prompts_async(prompt_list=adv_bench_prompts.get_values(first=3))  # type: ignore
 end = time.time()
 
 print(f"Elapsed time for operation: {end-start}")

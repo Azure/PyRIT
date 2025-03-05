@@ -1,12 +1,16 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import copy
+import json
 import pathlib
 from typing import Dict, List
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
+from httpx import Response
+from unit.mocks import openai_response_json_dict
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.memory import CentralMemory
@@ -18,17 +22,22 @@ from pyrit.score import Scorer
 
 @pytest.fixture
 def chat_completion_engine(patch_central_database) -> OpenAIChatTarget:
-    return OpenAIChatTarget(deployment_name="test", endpoint="test", api_key="test")
+    return OpenAIChatTarget(model_name="test", endpoint="test", api_key="test")
 
 
 @pytest.fixture
 def prompt_target(patch_central_database) -> OpenAIChatTarget:
-    return OpenAIChatTarget(deployment_name="test", endpoint="test", api_key="test")
+    return OpenAIChatTarget(model_name="test", endpoint="test", api_key="test")
 
 
 @pytest.fixture
 def red_team_system_prompt_path() -> pathlib.Path:
     return pathlib.Path(DATASETS_PATH) / "orchestrators" / "red_teaming" / "text_generation.yaml"
+
+
+@pytest.fixture
+def openai_response_json() -> dict:
+    return openai_response_json_dict()
 
 
 def _check_orchestrator_memory(memory, num_turns: int):
@@ -54,11 +63,23 @@ def _check_two_conversation_ids(conversations):
     ), "There should be two conversation threads, one with target and one with rt target"
 
 
+def _get_http_response(text: str, response_dict: dict) -> Response:
+    dict_copy = copy.deepcopy(response_dict)
+    dict_copy["choices"][0]["message"]["content"] = text
+    return Response(status_code=200, content=json.dumps(dict_copy))
+
+
 @pytest.mark.asyncio
 async def test_send_prompt_twice(
     prompt_target: PromptTarget,
     chat_completion_engine: OpenAIChatTarget,
+    openai_response_json: dict,
 ):
+
+    first_adversarial_response_http_response = _get_http_response("First adversarial response", openai_response_json)
+    first_objective_response_http_response = _get_http_response("First objective response", openai_response_json)
+    second_adversarial_response_http_response = _get_http_response("Second adversarial response", openai_response_json)
+    second_objective_response_http_response = _get_http_response("Second objective response", openai_response_json)
 
     scorer = MagicMock(Scorer)
     scorer.scorer_type = "true_false"
@@ -70,34 +91,38 @@ async def test_send_prompt_twice(
 
     prompt_target_conversation_id = str(uuid4())
     red_teaming_chat_conversation_id = str(uuid4())
-    with patch.object(red_teaming_orchestrator._adversarial_chat, "_complete_chat_async") as mock_rt:
-        with patch.object(red_teaming_orchestrator._objective_target, "_complete_chat_async") as mock_target:
-            mock_rt.return_value = "First red teaming chat response"
-            expected_target_response = "First target response"
-            mock_target.return_value = expected_target_response
-            target_response = await red_teaming_orchestrator._retrieve_and_send_prompt_async(
-                objective="some objective",
-                objective_target_conversation_id=prompt_target_conversation_id,
-                adversarial_chat_conversation_id=red_teaming_chat_conversation_id,
-            )
-            assert target_response.converted_value == expected_target_response
 
-            _check_orchestrator_memory(memory=red_teaming_orchestrator._memory, num_turns=1)
+    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock_make_request:
+        mock_make_request.side_effect = [
+            first_adversarial_response_http_response,
+            first_objective_response_http_response,
+            second_adversarial_response_http_response,
+            second_objective_response_http_response,
+        ]
 
-            mock_rt.assert_called_once()
-            mock_target.assert_called_once()
+        target_response = await red_teaming_orchestrator._retrieve_and_send_prompt_async(
+            objective="some objective",
+            objective_target_conversation_id=prompt_target_conversation_id,
+            adversarial_chat_conversation_id=red_teaming_chat_conversation_id,
+        )
+        assert target_response.converted_value == "First objective response"
 
-            second_target_response = "Second target response"
-            mock_rt.return_value = "Second red teaming chat response"
-            mock_target.return_value = second_target_response
-            target_response = await red_teaming_orchestrator._retrieve_and_send_prompt_async(
-                objective="some objective",
-                objective_target_conversation_id=prompt_target_conversation_id,
-                adversarial_chat_conversation_id=red_teaming_chat_conversation_id,
-            )
-            assert target_response.converted_value == second_target_response
+        # The call to objective target is the second http call
+        # This verifies the text sent to objective target came from the adversarial chat
+        first_objective_target_call = mock_make_request.call_args_list[1]
+        first_objective_text = first_objective_target_call[1]["request_body"]["messages"][0]["content"]
+        assert first_objective_text == "First adversarial response"
 
-            _check_orchestrator_memory(memory=red_teaming_orchestrator._memory, num_turns=2)
+        _check_orchestrator_memory(memory=red_teaming_orchestrator._memory, num_turns=1)
+
+        target_response = await red_teaming_orchestrator._retrieve_and_send_prompt_async(
+            objective="some objective",
+            objective_target_conversation_id=prompt_target_conversation_id,
+            adversarial_chat_conversation_id=red_teaming_chat_conversation_id,
+        )
+        assert target_response.converted_value == "Second objective response"
+
+        _check_orchestrator_memory(memory=red_teaming_orchestrator._memory, num_turns=2)
 
 
 @pytest.mark.asyncio

@@ -7,7 +7,7 @@ import logging
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import MutableSequence, Optional, Sequence
+from typing import MutableSequence, Optional, Sequence, Union
 
 from sqlalchemy import and_
 from sqlalchemy.orm.attributes import InstrumentedAttribute
@@ -97,9 +97,35 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
+    def _get_prompt_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list:
+        """
+        Returns a list of conditions for filtering memory entries based on prompt metadata.
+
+        Args:
+            prompt_metadata (dict[str, str | int]): A free-form dictionary for tagging prompts with custom metadata.
+                This includes information that is useful for the specific target you're probing, such as encoding data.
+
+        Returns:
+            list: A list of conditions for filtering memory entries based on prompt metadata.
+        """
+
+    @abc.abstractmethod
     def _get_prompt_pieces_orchestrator_conditions(self, *, orchestrator_id: str):
         """
         Returns a condition to retrieve based on orchestrator ID.
+        """
+
+    @abc.abstractmethod
+    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]):
+        """
+        Returns a list of conditions for filtering seed prompt entries based on prompt metadata.
+
+        Args:
+            prompt_metadata (dict[str, str | int]): A free-form dictionary for tagging prompts with custom metadata.
+                This includes information that is useful for the specific target you're probing, such as encoding data.
+
+        Returns:
+            list: A list of conditions for filtering memory entries based on prompt metadata.
         """
 
     @abc.abstractmethod
@@ -242,6 +268,7 @@ class MemoryInterface(abc.ABC):
         conversation_id: Optional[str | uuid.UUID] = None,
         prompt_ids: Optional[list[str] | list[uuid.UUID]] = None,
         labels: Optional[dict[str, str]] = None,
+        prompt_metadata: Optional[dict[str, Union[str, int]]] = None,
         sent_after: Optional[datetime] = None,
         sent_before: Optional[datetime] = None,
         original_values: Optional[list[str]] = None,
@@ -284,6 +311,8 @@ class MemoryInterface(abc.ABC):
             conditions.append(PromptMemoryEntry.id.in_(prompt_ids))
         if labels:
             conditions.append(self._get_prompt_pieces_memory_label_conditions(memory_labels=labels))
+        if prompt_metadata:
+            conditions.append(self._get_prompt_pieces_prompt_metadata_conditions(prompt_metadata=prompt_metadata))
         if sent_after:
             conditions.append(PromptMemoryEntry.timestamp >= sent_after)
         if sent_before:
@@ -485,14 +514,14 @@ class MemoryInterface(abc.ABC):
         )
 
     def update_prompt_metadata_by_conversation_id(
-        self, *, conversation_id: str, prompt_metadata: dict[str, str]
+        self, *, conversation_id: str, prompt_metadata: dict[str, Union[str, int]]
     ) -> bool:
         """
         Updates the metadata of prompt entries in memory for a given conversation ID.
 
         Args:
             conversation_id (str): The conversation ID of the entries to be updated.
-            metadata (dict[str, str]): New metadata.
+            metadata (dict[str, str | int]): New metadata.
 
         Returns:
             bool: True if the update was successful, False otherwise.
@@ -533,6 +562,7 @@ class MemoryInterface(abc.ABC):
         groups: Optional[list[str]] = None,
         source: Optional[str] = None,
         parameters: Optional[list[str]] = None,
+        metadata: Optional[dict[str, Union[str, int]]] = None,
     ) -> list[SeedPrompt]:
         """
         Retrieves a list of seed prompts based on the specified filters.
@@ -581,6 +611,9 @@ class MemoryInterface(abc.ABC):
 
         if parameters:
             self._add_list_conditions(SeedPromptEntry.parameters, parameters, conditions)
+
+        if metadata:
+            conditions.append(self._get_seed_prompts_metadata_conditions(metadata=metadata))
 
         try:
             memory_entries = self._query_entries(
@@ -652,13 +685,16 @@ class MemoryInterface(abc.ABC):
             if prompt.date_added is None:
                 prompt.date_added = current_time
 
+            prompt.set_encoding_metadata()
+
             serialized_prompt_value = await self._serialize_seed_prompt_value(prompt)
             if serialized_prompt_value:
                 prompt.value = serialized_prompt_value
 
             await prompt.set_sha256_value_async()
 
-            entries.append(SeedPromptEntry(entry=prompt))
+            if not self.get_seed_prompts(value_sha256=[prompt.value_sha256], dataset_name=prompt.dataset_name):
+                entries.append(SeedPromptEntry(entry=prompt))
 
         self._insert_entries(entries=entries)
 

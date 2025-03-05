@@ -22,7 +22,7 @@ jobs:
   main-job:
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, windows-latest]
         python: ["3.10", "3.11", "3.12"]
         package_name: ["pyrit"]
         package_extras: ["dev", "all"]
@@ -39,18 +39,19 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - name: Install setuptools and pip
-        run: pip install --upgrade setuptools pip
+        run: pip install --upgrade setuptools pip packaging
       - name: Install PyRIT with pip
         run: pip install .[${{ matrix.package_extras }}]
       - name: Run unit tests with code coverage
         run: make unit-test-cov-xml
       - name: Publish Pytest Results
         uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always()
+        if: runner.os == 'ubuntu-latest'
         with:
           files: '**/test-*.xml'
       - name: Code Coverage Report
         uses: irongut/CodeCoverageSummary@v1.3.0
+        if: runner.os == 'ubuntu-latest'
         with:
           filename: coverage.xml
           badge: true
