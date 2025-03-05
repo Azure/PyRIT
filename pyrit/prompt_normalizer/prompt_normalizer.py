@@ -7,6 +7,7 @@ import logging
 from typing import Any, List, Optional
 from uuid import uuid4
 
+from pyrit.models.attack_configuration import AttackConfiguration
 from pyrit.common.batch_helper import batch_task_async
 from pyrit.exceptions import EmptyResponseException
 from pyrit.memory import CentralMemory, MemoryInterface
@@ -324,6 +325,7 @@ class PromptNormalizer(abc.ABC):
                 prompt_metadata=seed_prompt.metadata,
                 prompt_target_identifier=target.get_identifier(),
                 orchestrator_identifier=orchestrator_identifier,
+                attack_configuration=seed_prompt.attack_configuration,
                 original_value_data_type=seed_prompt.data_type,
             )
 

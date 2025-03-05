@@ -4,6 +4,7 @@
 import abc
 from typing import Optional
 
+from pyrit.models.attack_configuration import AttackConfiguration
 from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import PromptTarget
 
@@ -28,6 +29,7 @@ class PromptChatTarget(PromptTarget):
         system_prompt: str,
         conversation_id: str,
         orchestrator_identifier: Optional[dict[str, str]] = None,
+        attack_configuration: AttackConfiguration,
         labels: Optional[dict[str, str]] = None,
     ) -> None:
         """
@@ -41,6 +43,7 @@ class PromptChatTarget(PromptTarget):
         self._memory.add_request_response_to_memory(
             request=PromptRequestPiece(
                 role="system",
+                attack_configuration=attack_configuration,
                 conversation_id=conversation_id,
                 original_value=system_prompt,
                 converted_value=system_prompt,

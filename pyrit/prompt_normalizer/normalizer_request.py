@@ -4,6 +4,7 @@
 import abc
 from dataclasses import dataclass
 
+from pyrit.models.attack_configuration import AttackConfiguration
 from pyrit.models.seed_prompt import SeedPromptGroup
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,

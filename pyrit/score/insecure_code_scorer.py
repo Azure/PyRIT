@@ -65,6 +65,7 @@ class InsecureCodeScorer(Scorer):
             category=self._harm_category,
             task=task,
             orchestrator_identifier=request_response.orchestrator_identifier,
+            attack_configuration=request_response.attack_configuration,
         )
 
         # Modify the UnvalidatedScore parsing to check for 'score_value'

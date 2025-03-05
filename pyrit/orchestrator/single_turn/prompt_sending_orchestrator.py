@@ -3,13 +3,15 @@
 
 import logging
 import uuid
+from datetime import datetime
 from typing import Optional, Union
 
 from colorama import Fore, Style
 
 from pyrit.common.display_response import display_image_response
 from pyrit.common.utils import combine_dict
-from pyrit.models import PromptDataType, PromptRequestResponse
+from pyrit.models import PromptDataType, PromptRequestResponse, Score
+from pyrit.models.attack_configuration import AttackConfiguration
 from pyrit.models.filter_criteria import PromptConverterState, PromptFilterCriteria
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter import PromptConverter
@@ -105,10 +107,29 @@ class PromptSendingOrchestrator(Orchestrator):
         if self._scorers and responses:
             response_pieces = PromptRequestResponse.flatten_to_prompt_request_pieces(responses)
 
+            scores: list[Score] = []
             for scorer in self._scorers:
-                await scorer.score_responses_inferring_tasks_batch_async(
+                scores.extend(await scorer.score_responses_inferring_tasks_batch_async(
                     request_responses=response_pieces, batch_size=self._batch_size
-                )
+                ))
+
+            responses_to_be_scored = [piece for piece in response_pieces if piece.role == "assistant"]
+
+            for response_to_score in responses_to_be_scored:
+                if response_to_score.attack_configuration:
+                    scored_responses = [score for score in scores if score.prompt_request_response_id == response_to_score.id]
+                    attack_result = {}
+                    for score in scored_responses:
+                        attack_result[score.score_category] = score.score_value
+
+                    fields_to_update = {
+                        "attack_result": attack_result,
+                        "end_time": datetime.now()
+                    }
+                    self._memory.update_attack_configuration(
+                        attack_id=response_to_score.attack_configuration.id,
+                        update_fields=fields_to_update
+                    )
 
         return responses
 
@@ -143,6 +164,14 @@ class PromptSendingOrchestrator(Orchestrator):
         requests: list[NormalizerRequest] = []
         for prompt in prompt_list:
 
+            attack_configuration = AttackConfiguration(
+                orchestrator_identifier=self.get_identifier(),
+                conversation_objective=prompt,
+                labels=memory_labels,
+                start_time=datetime.now()
+            )
+            self._memory.add_attack_configuration_to_memory(attack_configuration=attack_configuration)
+
             requests.append(
                 self._create_normalizer_request(
                     prompt_text=prompt,
@@ -150,6 +179,7 @@ class PromptSendingOrchestrator(Orchestrator):
                     converters=self._prompt_converters,
                     metadata=metadata,
                     conversation_id=str(uuid.uuid4()),
+                    attack_configuration=attack_configuration
                 )
             )
 

@@ -142,6 +142,7 @@ def construct_response_from_request(
                 labels=request.labels,
                 prompt_target_identifier=request.prompt_target_identifier,
                 orchestrator_identifier=request.orchestrator_identifier,
+                attack_configuration=request.attack_configuration,
                 original_value_data_type=response_type,
                 converted_value_data_type=response_type,
                 prompt_metadata=prompt_metadata,

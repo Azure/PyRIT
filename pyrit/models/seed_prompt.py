@@ -25,6 +25,7 @@ from pyrit.common.path import (
 )
 from pyrit.common.yaml_loadable import YamlLoadable
 from pyrit.models import DataTypeSerializer
+from pyrit.models.attack_configuration import AttackConfiguration
 from pyrit.models.literals import PromptDataType
 
 logger = logging.getLogger(__name__)
@@ -99,6 +100,7 @@ class SeedPrompt(YamlLoadable):
         prompt_group_id: Optional[uuid.UUID] = None,
         prompt_group_alias: Optional[str] = None,
         sequence: Optional[int] = 0,
+        attack_configuration: Optional[AttackConfiguration] = None,
     ):
         self.id = id if id else uuid.uuid4()
         self.value = value
@@ -118,6 +120,7 @@ class SeedPrompt(YamlLoadable):
         self.prompt_group_id = prompt_group_id
         self.prompt_group_alias = prompt_group_alias
         self.sequence = sequence
+        self.attack_configuration = attack_configuration
 
         # Render the template to replace existing values
         self.value = self.render_template_value_silent(**self.TEMPLATE_PATHS)

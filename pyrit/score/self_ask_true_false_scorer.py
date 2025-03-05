@@ -126,6 +126,7 @@ class SelfAskTrueFalseScorer(Scorer):
             category=self._score_category,
             task=task,
             orchestrator_identifier=request_response.orchestrator_identifier,
+            attack_configuration=request_response.attack_configuration,
         )
 
         score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value)

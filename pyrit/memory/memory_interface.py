@@ -23,7 +23,7 @@ from pyrit.memory.memory_models import (
     EmbeddingDataEntry,
     PromptMemoryEntry,
     ScoreEntry,
-    SeedPromptEntry,
+    SeedPromptEntry, AttackConfigurationEntry,
 )
 from pyrit.models import (
     ChatMessage,
@@ -39,6 +39,7 @@ from pyrit.models import (
     group_conversation_request_pieces_by_sequence,
     sort_request_pieces,
 )
+from pyrit.models.attack_configuration import AttackConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -852,3 +853,20 @@ class MemoryInterface(abc.ABC):
         self.exporter.export_data(data, file_path=file_path, export_type=export_type)
 
         return file_path
+
+
+    def add_attack_configuration_to_memory(self, *, attack_configuration: AttackConfiguration) -> None:
+        attack_configuration_entry = AttackConfigurationEntry(entry=attack_configuration)
+        self._insert_entry(entry=attack_configuration_entry)
+        pass
+
+    def update_attack_configuration(self, *, attack_id: uuid.UUID, update_fields: dict) -> bool:
+        entries_to_update = self._query_entries(AttackConfigurationEntry,
+                                                conditions=AttackConfigurationEntry.id == attack_id)
+
+        if not entries_to_update:
+            logger.warning(f"No attack configurations found with attack_id {attack_id} to update.")
+            return False
+
+        return self._update_entries(entries=entries_to_update, update_fields=update_fields)
+

@@ -21,11 +21,57 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, relationship  # type: ignore
 from sqlalchemy.types import Uuid  # type: ignore
 
 from pyrit.models import PromptDataType, PromptRequestPiece, Score, SeedPrompt
+from pyrit.models.attack_configuration import AttackConfiguration
 
 
 class Base(DeclarativeBase):
     pass
 
+
+class AttackConfigurationEntry(Base):
+    """
+    Represents the Attack Configuration data.
+    An Attack Configuration captures details of the instance of an attack. An orchestrator
+    can have more than one Attack Configurations, but each objective will have only one
+    Attack Configuration.
+
+    TODO: Currently missing convenience functions like __str__ and to_dict
+    Parameters:
+    """
+    __tablename__ = "AttackConfiguration"
+    __table_args__ = {"extend_existing": True}
+
+    id = Column(Uuid, nullable=False, primary_key=True)
+    orchestrator_identifier: Mapped[dict[str, str]] = Column(JSON)
+    conversation_objective = Column(String, nullable=True)
+    attack_result: Mapped[dict[str,str]] = Column(JSON)
+    """
+    For multi-turn attacks this would indicate if the objetive is achieved (currently available through results but not persisted)
+    For single-turn attacks, for each scorer add the value for the scorer 
+    """
+    labels: Mapped[dict[str, str]] = Column(JSON)
+    start_time = Column(DateTime, nullable=False) # The start time of the attack
+    end_time = Column(DateTime, nullable=True) # The end time of the attack
+
+
+
+    def __init__(self, *, entry: AttackConfiguration):
+        self.id = entry.id
+        self.orchestrator_identifier = entry.orchestrator_identifier
+        self.conversation_objective = entry.conversation_objective
+        self.attack_result = entry.attack_result
+        self.start_time = entry.start_time
+
+    def get_attack_configuration(self) -> AttackConfiguration:
+        return AttackConfiguration(
+            id=self.id,
+            orchestrator_identifier=self.orchestrator_identifier,
+            conversation_objective=self.conversation_objective,
+            attack_result=self.attack_result,
+            labels=self.labels,
+            start_time=self.start_time,
+            end_time=self.end_time
+        )
 
 class PromptMemoryEntry(Base):
     """
@@ -98,6 +144,12 @@ class PromptMemoryEntry(Base):
         back_populates="prompt_request_piece",
         foreign_keys="ScoreEntry.prompt_request_response_id",
     )
+    attack_configuration_id = Column(Uuid,ForeignKey('AttackConfiguration.id'), nullable=True)
+    attack_configuration: Mapped["AttackConfigurationEntry"] = relationship(
+        "AttackConfigurationEntry",
+        primaryjoin="AttackConfigurationEntry.id == PromptMemoryEntry.attack_configuration_id",
+        lazy="joined",
+    )
 
     def __init__(self, *, entry: PromptRequestPiece):
         self.id = entry.id
@@ -110,6 +162,7 @@ class PromptMemoryEntry(Base):
         self.converter_identifiers = entry.converter_identifiers
         self.prompt_target_identifier = entry.prompt_target_identifier
         self.orchestrator_identifier = entry.orchestrator_identifier
+        self.attack_configuration_id = entry.attack_configuration.id
 
         self.original_value = entry.original_value
         self.original_value_data_type = entry.original_value_data_type
@@ -138,6 +191,7 @@ class PromptMemoryEntry(Base):
             converter_identifiers=self.converter_identifiers,
             prompt_target_identifier=self.prompt_target_identifier,
             orchestrator_identifier=self.orchestrator_identifier,
+            attack_configuration=self.attack_configuration.get_attack_configuration(),
             original_value_data_type=self.original_value_data_type,
             converted_value_data_type=self.converted_value_data_type,
             response_error=self.response_error,
