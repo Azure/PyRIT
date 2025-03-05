@@ -8,7 +8,7 @@ However, there are many reasons to install as a contributor. Yes, of course, if 
 
 This is a list of the prerequisites needed to run this library.
 
-1. **Conda** Install [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html) to create Python environments. (Note: Both Miniconda and Anaconda Distribution work for PyRIT. Read [this guide](https://docs.anaconda.com/free/distro-or-miniconda/) for more on which download to choose.)
+1. **Conda** Install [conda](https://www.anaconda.com/docs/getting-started/anaconda/install) to create Python environments. (Note: Both Miniconda and Anaconda Distribution work for PyRIT. Read [this guide](https://www.anaconda.com/docs/getting-started/getting-started) for more on which download to choose.)
 
 1. **Git**. Git is required to clone the repo locally. It is available to download [here](https://git-scm.com/downloads).
     ```bash
