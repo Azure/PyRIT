@@ -42,15 +42,15 @@ def _get_deps_info():
     """
     deps = sorted(
         [
+            "Cython",
+            "duckdb",
+            "openai",
+            "packaging",
             "pip",
-            "setuptools",
             "numpy",
             "scipy",
-            "Cython",
-            "scikit-learn",
-            "openai",
+            "setuptools",
             "torch",
-            "tensorflow",
             "transformers",
         ]
     )
