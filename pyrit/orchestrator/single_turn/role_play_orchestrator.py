@@ -7,11 +7,7 @@ import pathlib
 from typing import Optional
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import (
-    PromptRequestPiece,
-    PromptRequestResponse,
-    SeedPromptDataset,
-)
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, SeedPromptDataset
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import LLMGenericTextConverter, PromptConverter
 from pyrit.prompt_target import PromptChatTarget
