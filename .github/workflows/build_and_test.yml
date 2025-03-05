@@ -25,7 +25,7 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         python: ["3.10", "3.11", "3.12"]
         package_name: ["pyrit"]
-        package_extras: ["dev", "all"]
+        package_extras: ["dev", "dev,all"]
     runs-on: ${{ matrix.os }}
     # EnricoMi/publish-unit-test-result-action@v2 requires the following permissions
     permissions:
