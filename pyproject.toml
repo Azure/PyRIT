@@ -112,7 +112,10 @@ playwright = [
     "ollama>=0.4.4",
     "playwright>=1.49.0",
 ]
-
+opencv = [
+    "opencv-python>=4.11.0.86",
+]
+# all includes all functional dependencies excluding the ones from the "dev" extra
 all = [
     "accelerate>=0.34.2",
     "azure-ai-ml>=1.13.0",

@@ -70,6 +70,7 @@ chapters:
         - file: code/converters/4_image_converters
         - file: code/converters/5_selectively_converting
         - file: code/converters/6_human_converter
+        - file: code/converters/7_video_converters
         - file: code/converters/ansi_attack_converter
         - file: code/converters/char_swap_attack_generator
         - file: code/converters/pdf_converter
