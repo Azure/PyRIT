@@ -16,7 +16,7 @@ class GradioApp:
     def start_gradio(self, open_browser=False):
         with gr.Blocks() as demo:
             is_connected = gr.State(False)
-            converted_value_state = gr.State("")
+            next_prompt_state = gr.State("")
             
             self.connect_status = ConnectionStatusHandler(is_connected, self.rpc_client)
             with gr.Column(visible=False) as main_interface:
@@ -27,14 +27,14 @@ class GradioApp:
                     unsafe = gr.Button("Unsafe")
                     
                     safe.click(
-                        fn=lambda: [gr.update(interactive=False)]*2 + [""],outputs=[safe, unsafe, converted_value_state]
+                        fn=lambda: [gr.update(interactive=False)]*2 + [""],outputs=[safe, unsafe, next_prompt_state]
                     ).then(
-                        fn=self._safe_clicked, outputs=converted_value_state
+                        fn=self._safe_clicked, outputs=next_prompt_state
                     )
                     unsafe.click(
-                        fn=lambda: [gr.update(interactive=False)]*2 + [""], outputs=[safe, unsafe, converted_value_state]
+                        fn=lambda: [gr.update(interactive=False)]*2 + [""], outputs=[safe, unsafe, next_prompt_state]
                     ).then(
-                        fn=self._unsafe_clicked, outputs=converted_value_state
+                        fn=self._unsafe_clicked, outputs=next_prompt_state
                     )
             
             with gr.Row() as loading_animation:
@@ -42,15 +42,15 @@ class GradioApp:
                 timer = gr.Timer(0.5)
                 timer.tick(fn=self._loading_dots, outputs=loading_text)
 
-            converted_value_state.change(fn=self._on_converted_value_change, inputs=[converted_value_state], outputs=[prompt, safe, unsafe])
+            next_prompt_state.change(fn=self._on_next_prompt_change, inputs=[next_prompt_state], outputs=[prompt, safe, unsafe])
             self.connect_status.setup(
                 main_interface=main_interface,
                 loading_animation=loading_animation,
-                converted_value_state=converted_value_state)
+                next_prompt_state=next_prompt_state)
 
             demo.load(
                 fn=self._main_interface_loaded,
-                outputs=[main_interface, loading_animation, converted_value_state, is_connected]
+                outputs=[main_interface, loading_animation, next_prompt_state, is_connected]
             )
 
         if open_browser:
@@ -74,13 +74,13 @@ class GradioApp:
 
     def _send_prompt_response(self, value):
         self.rpc_client.send_prompt_response(value)
-        converted_value = self.rpc_client.wait_for_prompt()
-        return str(converted_value.original_value)
+        prompt_request = self.rpc_client.wait_for_prompt()
+        return str(prompt_request.converted_value)
     
-    def _on_converted_value_change(self, converted_value):
-        if converted_value == "":
+    def _on_next_prompt_change(self, next_prompt):
+        if next_prompt == "":
             return [gr.Markdown(f"Waiting for next prompt..."), gr.update(interactive=False), gr.update(interactive=False)]
-        return [gr.Markdown("Prompt: " + converted_value), gr.update(interactive=True), gr.update(interactive=True)]
+        return [gr.Markdown("Prompt: " + next_prompt), gr.update(interactive=True), gr.update(interactive=True)]
 
     def _loading_dots(self):
         self.i = (self.i + 1) % 4
@@ -93,9 +93,9 @@ class GradioApp:
         print("Showing main interface")
         self.rpc_client.start()
         prompt_request = self.rpc_client.wait_for_prompt()
-        converted_value = str(prompt_request.original_value)
-        self.connect_status.set_converted_value(converted_value)
+        next_prompt = str(prompt_request.converted_value)
+        self.connect_status.set_next_prompt(next_prompt)
         self.connect_status.set_ready()
         print("PyRIT connected")
-        return [gr.Column(visible=True), gr.Row(visible=False), converted_value, True]
+        return [gr.Column(visible=True), gr.Row(visible=False), next_prompt, True]
 

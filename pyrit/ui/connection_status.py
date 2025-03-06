@@ -12,10 +12,10 @@ class ConnectionStatusHandler:
         self.state = is_connected_state
         self.server_disconnected = False
         self.rpc_client = rpc_client
-        self.converted_value = ""
+        self.next_prompt = ""
     
-    def setup(self, *, main_interface: gr.Column, loading_animation: gr.Column, converted_value_state: gr.State):
-        self.state.change(fn=self._on_state_change, inputs=[self.state], outputs=[main_interface, loading_animation, converted_value_state])
+    def setup(self, *, main_interface: gr.Column, loading_animation: gr.Column, next_prompt_state: gr.State):
+        self.state.change(fn=self._on_state_change, inputs=[self.state], outputs=[main_interface, loading_animation, next_prompt_state])
 
         connection_status_timer = gr.Timer(1)
         connection_status_timer.tick(
@@ -33,14 +33,14 @@ class ConnectionStatusHandler:
     def set_disconnected(self):
         self.server_disconnected = True
 
-    def set_converted_value(self, converted_value: str):
-        self.converted_value = converted_value
+    def set_next_prompt(self, next_prompt: str):
+        self.next_prompt = next_prompt
 
     def _on_state_change(self, is_connected: bool):
-        print("Connection status changed to: ", is_connected, " - ", self.converted_value)
+        print("Connection status changed to: ", is_connected, " - ", self.next_prompt)
         if is_connected:
-            return [gr.Column(visible=True), gr.Row(visible=False), self.converted_value]
-        return [gr.Column(visible=False), gr.Row(visible=True), self.converted_value]
+            return [gr.Column(visible=True), gr.Row(visible=False), self.next_prompt]
+        return [gr.Column(visible=False), gr.Row(visible=True), self.next_prompt]
 
     def _check_connection_status(self, is_connected: bool):
         if self.server_disconnected or not is_connected:
@@ -53,6 +53,6 @@ class ConnectionStatusHandler:
             print("Attempting to reconnect")
             self.rpc_client.reconnect()
             prompt = self.rpc_client.wait_for_prompt()
-            self.converted_value = str(converted_value.original_value)
+            self.next_prompt = str(next_prompt.converted_value)
             self.server_disconnected = False
         return True
