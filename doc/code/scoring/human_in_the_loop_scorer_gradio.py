@@ -11,7 +11,7 @@ from pyrit.score import HumanInTheLoopScorerGradio
 initialize_pyrit(memory_db_type=IN_MEMORY)
 memory = CentralMemory.get_memory_instance()
 # This will start the Gradio UI and can only be created once per notebook. If you restart the kernel, run this cell again.
-scorer = HumanInTheLoopScorerGradio() 
+scorer = HumanInTheLoopScorerGradio()
 
 # %%
 # This cell can be run multiple times to simulate multiple scoring requests.

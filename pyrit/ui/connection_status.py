@@ -2,29 +2,26 @@
 # Licensed under the MIT license.
 
 import gradio as gr
-
 from rpc_client import RPCClient
 
+
 class ConnectionStatusHandler:
-    def __init__(self,
-                 is_connected_state: gr.State,
-                 rpc_client: RPCClient):
+    def __init__(self, is_connected_state: gr.State, rpc_client: RPCClient):
         self.state = is_connected_state
         self.server_disconnected = False
         self.rpc_client = rpc_client
         self.next_prompt = ""
-    
+
     def setup(self, *, main_interface: gr.Column, loading_animation: gr.Column, next_prompt_state: gr.State):
-        self.state.change(fn=self._on_state_change, inputs=[self.state], outputs=[main_interface, loading_animation, next_prompt_state])
+        self.state.change(
+            fn=self._on_state_change,
+            inputs=[self.state],
+            outputs=[main_interface, loading_animation, next_prompt_state],
+        )
 
         connection_status_timer = gr.Timer(1)
-        connection_status_timer.tick(
-            fn=self._check_connection_status,
-            inputs=[self.state],
-            outputs=[self.state]
-        ).then(
-            fn=self._reconnect_if_needed,
-            outputs=[self.state]
+        connection_status_timer.tick(fn=self._check_connection_status, inputs=[self.state], outputs=[self.state]).then(
+            fn=self._reconnect_if_needed, outputs=[self.state]
         )
 
     def set_ready(self):
@@ -47,7 +44,7 @@ class ConnectionStatusHandler:
             print("Gradio disconnected")
             return False
         return True
-    
+
     def _reconnect_if_needed(self):
         if self.server_disconnected:
             print("Attempting to reconnect")
