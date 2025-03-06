@@ -61,6 +61,7 @@ async def test_many_shot_orchestrator(
                 verification_prompt = mock_objective_target.prompt_sent[i]
             else:
                 verification_prompt = base64.b64decode(mock_objective_target.prompt_sent[i]).decode("utf-8")
+                assert verification_prompt != mock_objective_target.prompt_sent[i]
             assert f"prompt{i}" in verification_prompt
             for example_dict in orchestrator._examples:
                 for role, content in example_dict.items():
