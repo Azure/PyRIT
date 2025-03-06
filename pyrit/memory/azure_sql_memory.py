@@ -5,7 +5,7 @@ import logging
 import struct
 from contextlib import closing
 from datetime import datetime, timedelta, timezone
-from typing import MutableSequence, Optional, Sequence, Union
+from typing import MutableSequence, Optional, Sequence, TypeVar, Union
 
 from azure.core.credentials import AccessToken
 from azure.identity import DefaultAzureCredential
@@ -22,6 +22,8 @@ from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEnt
 from pyrit.models import AzureBlobStorageIO, PromptRequestPiece
 
 logger = logging.getLogger(__name__)
+
+Model = TypeVar("Model")
 
 
 class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
@@ -102,7 +104,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             container_url=self._results_container_url, sas_token=self._results_container_sas_token
         )
 
-    def _create_auth_token(self):
+    def _create_auth_token(self) -> None:
         """
         Creates an Azure Entra ID access token.
         Stores the token and its expiry time.
@@ -186,7 +188,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         except Exception as e:
             logger.error(f"Error during table creation: {e}")
 
-    def _add_embeddings_to_memory(self, *, embedding_data: list[EmbeddingDataEntry]) -> None:
+    def _add_embeddings_to_memory(self, *, embedding_data: Sequence[EmbeddingDataEntry]) -> None:
         """
         Inserts embedding data into memory storage
         """
@@ -238,11 +240,11 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             self.engine.dispose()
             logger.info("Engine disposed successfully.")
 
-    def get_all_embeddings(self) -> list[EmbeddingDataEntry]:
+    def get_all_embeddings(self) -> Sequence[EmbeddingDataEntry]:
         """
         Fetches all entries from the specified table and returns them as model instances.
         """
-        result = self._query_entries(EmbeddingDataEntry)
+        result: Sequence[EmbeddingDataEntry] = self._query_entries(EmbeddingDataEntry)
         return result
 
     def _insert_entry(self, entry: Base) -> None:  # type: ignore
@@ -263,7 +265,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
     # The following methods are not part of MemoryInterface, but seem
     # common between SQLAlchemy-based implementations, regardless of engine.
     # Perhaps we should find a way to refactor
-    def _insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
+    def _insert_entries(self, *, entries: Sequence[Base]) -> None:  # type: ignore
         """Inserts multiple entries into the database."""
         with closing(self.get_session()) as session:
             try:
@@ -281,8 +283,8 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         return self.SessionFactory()
 
     def _query_entries(
-        self, model, *, conditions: Optional = None, distinct: bool = False, join_scores: bool = False  # type: ignore
-    ) -> list[Base]:
+        self, Model, *, conditions: Optional = None, distinct: bool = False, join_scores: bool = False  # type: ignore
+    ) -> MutableSequence[Model]:
         """
         Fetches data from the specified table model with optional conditions.
 
@@ -297,8 +299,8 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         with closing(self.get_session()) as session:
             try:
-                query = session.query(model)
-                if join_scores and model == PromptMemoryEntry:
+                query = session.query(Model)
+                if join_scores and Model == PromptMemoryEntry:
                     query = query.options(joinedload(PromptMemoryEntry.scores))
                 if conditions is not None:
                     query = query.filter(conditions)
@@ -306,7 +308,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                     return query.distinct().all()
                 return query.all()
             except SQLAlchemyError as e:
-                logger.exception(f"Error fetching data from table {model.__tablename__}: {e}")
+                logger.exception(f"Error fetching data from table {Model.__tablename__}: {e}")
                 return []
 
     def _update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
@@ -314,7 +316,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Updates the given entries with the specified field values.
 
         Args:
-            entries (list[Base]): A list of SQLAlchemy model instances to be updated.
+            entries (Sequence[Base]): A list of SQLAlchemy model instances to be updated.
             update_fields (dict): A dictionary of field names and their new values.
 
         Returns:

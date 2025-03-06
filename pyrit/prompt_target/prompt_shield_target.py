@@ -3,7 +3,7 @@
 
 import json
 import logging
-from typing import Any, Literal, Optional
+from typing import Any, Literal, Optional, Sequence
 
 from pyrit.common import default_values, net_utility
 from pyrit.models import (
@@ -124,7 +124,7 @@ class PromptShieldTarget(PromptTarget):
         return response_entry
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
-        request_pieces: list[PromptRequestPiece] = prompt_request.request_pieces
+        request_pieces: Sequence[PromptRequestPiece] = prompt_request.request_pieces
 
         if len(request_pieces) != 1:
             raise ValueError("This target only supports a single prompt request piece.")

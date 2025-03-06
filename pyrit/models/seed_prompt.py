@@ -8,7 +8,7 @@ import uuid
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional, Sequence, Union
 
 from jinja2 import BaseLoader, Environment, StrictUndefined, Template, Undefined
 from pydantic.types import PositiveInt
@@ -56,15 +56,15 @@ class SeedPrompt(YamlLoadable):
     data_type: PromptDataType
     name: Optional[str]
     dataset_name: Optional[str]
-    harm_categories: Optional[List[str]]
+    harm_categories: Optional[Sequence[str]]
     description: Optional[str]
-    authors: Optional[List[str]]
-    groups: Optional[List[str]]
+    authors: Optional[Sequence[str]]
+    groups: Optional[Sequence[str]]
     source: Optional[str]
     date_added: Optional[datetime]
     added_by: Optional[str]
     metadata: Optional[Dict[str, Union[str, int]]]
-    parameters: Optional[List[str]]
+    parameters: Optional[Sequence[str]]
     prompt_group_id: Optional[uuid.UUID]
     prompt_group_alias: Optional[str]
     sequence: Optional[int]
@@ -87,15 +87,15 @@ class SeedPrompt(YamlLoadable):
         data_type: PromptDataType,
         name: Optional[str] = None,
         dataset_name: Optional[str] = None,
-        harm_categories: Optional[List[str]] = None,
+        harm_categories: Optional[Sequence[str]] = None,
         description: Optional[str] = None,
-        authors: Optional[List[str]] = None,
-        groups: Optional[List[str]] = None,
+        authors: Optional[Sequence[str]] = None,
+        groups: Optional[Sequence[str]] = None,
         source: Optional[str] = None,
         date_added: Optional[datetime] = datetime.now(),
         added_by: Optional[str] = None,
         metadata: Optional[Dict[str, Union[str, int]]] = None,
-        parameters: Optional[List[str]] = None,
+        parameters: Optional[Sequence[str]] = None,
         prompt_group_id: Optional[uuid.UUID] = None,
         prompt_group_alias: Optional[str] = None,
         sequence: Optional[int] = 0,
@@ -226,12 +226,12 @@ class SeedPromptGroup(YamlLoadable):
     and sent together. All prompts in the group should share the same `prompt_group_id`.
     """
 
-    prompts: List[SeedPrompt]
+    prompts: Sequence[SeedPrompt]
 
     def __init__(
         self,
         *,
-        prompts: Union[List[SeedPrompt], List[Dict[str, Any]]],
+        prompts: Union[Sequence[SeedPrompt], Sequence[Dict[str, Any]]],
     ):
         if not prompts:
             raise ValueError("SeedPromptGroup cannot be empty.")
@@ -300,35 +300,35 @@ class SeedPromptGroup(YamlLoadable):
 class SeedPromptDataset(YamlLoadable):
     """
     SeedPromptDataset manages seed prompts plus optional top-level defaults.
-    Prompts are stored as a List[SeedPrompt], so references to prompt properties
+    Prompts are stored as a Sequence[SeedPrompt], so references to prompt properties
     are straightforward (e.g. ds.prompts[0].value).
     """
 
     data_type: Optional[str]
     name: Optional[str]
     dataset_name: Optional[str]
-    harm_categories: Optional[List[str]]
+    harm_categories: Optional[Sequence[str]]
     description: Optional[str]
-    authors: Optional[List[str]]
-    groups: Optional[List[str]]
+    authors: Optional[Sequence[str]]
+    groups: Optional[Sequence[str]]
     source: Optional[str]
     date_added: Optional[datetime]
     added_by: Optional[str]
 
     # Now the actual prompts
-    prompts: List["SeedPrompt"]
+    prompts: Sequence["SeedPrompt"]
 
     def __init__(
         self,
         *,
-        prompts: Union[List[Dict[str, Any]], List[SeedPrompt]] = None,
+        prompts: Union[Sequence[Dict[str, Any]], Sequence[SeedPrompt]] = None,
         data_type: Optional[PromptDataType] = "text",
         name: Optional[str] = None,
         dataset_name: Optional[str] = None,
-        harm_categories: Optional[List[str]] = None,
+        harm_categories: Optional[Sequence[str]] = None,
         description: Optional[str] = None,
-        authors: Optional[List[str]] = None,
-        groups: Optional[List[str]] = None,
+        authors: Optional[Sequence[str]] = None,
+        groups: Optional[Sequence[str]] = None,
         source: Optional[str] = None,
         date_added: Optional[datetime] = None,
         added_by: Optional[str] = None,
@@ -368,7 +368,7 @@ class SeedPromptDataset(YamlLoadable):
             else:
                 raise ValueError("Prompts should be either dicts or SeedPrompt objects. Got something else.")
 
-    def get_values(self, first: Optional[PositiveInt] = None, last: Optional[PositiveInt] = None) -> List[str]:
+    def get_values(self, first: Optional[PositiveInt] = None, last: Optional[PositiveInt] = None) -> Sequence[str]:
         """
         Extracts and returns a list of prompt values from the dataset. By default, returns all of them.
 
@@ -377,7 +377,7 @@ class SeedPromptDataset(YamlLoadable):
             last (Optional[int]): If provided, values from the last N prompts are included.
 
         Returns:
-            List[str]: A list of prompt values.
+            Sequence[str]: A list of prompt values.
         """
         values = [prompt.value for prompt in self.prompts]
 
@@ -451,7 +451,7 @@ class SeedPromptDataset(YamlLoadable):
             prompt.value = prompt.render_template_value(**kwargs)
 
     @staticmethod
-    def _set_seed_prompt_group_id_by_alias(seed_prompts: List[dict]):
+    def _set_seed_prompt_group_id_by_alias(seed_prompts: Sequence[dict]):
         """
         Sets all seed_prompt_group_ids based on prompt_group_id_alias matches
 
@@ -469,7 +469,7 @@ class SeedPromptDataset(YamlLoadable):
                 prompt["prompt_group_id"] = uuid.uuid4()
 
     @staticmethod
-    def group_seed_prompts_by_prompt_group_id(seed_prompts: List[SeedPrompt]) -> List[SeedPromptGroup]:
+    def group_seed_prompts_by_prompt_group_id(seed_prompts: Sequence[SeedPrompt]) -> Sequence[SeedPromptGroup]:
         """
         Groups the given list of SeedPrompts by their prompt_group_id and creates
         SeedPromptGroup instances.
