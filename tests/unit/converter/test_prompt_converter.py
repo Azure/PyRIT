@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import re
+
 import pytest
 from unit.mocks import MockPromptTarget
 
@@ -173,9 +174,10 @@ async def test_search_replace_converter() -> None:
     assert output.output_text == "Hello_World_!"
     assert output.output_type == "text"
 
+
 @pytest.mark.asyncio
 async def test_search_replace_converter_replace_single_string() -> None:
-    converter = SearchReplaceConverter(pattern="^.*\Z", replace="new string", regex_flags=re.DOTALL)
+    converter = SearchReplaceConverter(pattern=r"^.*\Z", replace="new string", regex_flags=re.DOTALL)
     output = await converter.convert_async(prompt="Hello World !\n\nmy name is Tim", input_type="text")
     assert output.output_text == "new string"
     assert output.output_type == "text"

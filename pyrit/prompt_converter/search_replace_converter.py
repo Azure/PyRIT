@@ -38,7 +38,9 @@ class SearchReplaceConverter(PromptConverter):
 
         replace = random.choice(self.replace_list)
 
-        return ConverterResult(output_text=re.sub(self.pattern, replace, prompt, flags=self.regex_flags), output_type="text")
+        return ConverterResult(
+            output_text=re.sub(self.pattern, replace, prompt, flags=self.regex_flags), output_type="text"
+        )
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"

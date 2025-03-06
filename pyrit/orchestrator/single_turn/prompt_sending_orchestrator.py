@@ -69,7 +69,9 @@ class PromptSendingOrchestrator(Orchestrator):
 
         self._prepended_conversation = prepended_conversation
 
-    async def get_prepended_conversation_async(self, *, normalizer_request: NormalizerRequest) -> Optional[list[PromptRequestResponse]]:
+    async def get_prepended_conversation_async(
+        self, *, normalizer_request: NormalizerRequest
+    ) -> Optional[list[PromptRequestResponse]]:
         """
         Returns the prepended conversation for the normalizer request.
 
@@ -203,7 +205,7 @@ class PromptSendingOrchestrator(Orchestrator):
         """
         Adds the conversation to memory if there is a prepended conversation, and return the conversation ID.
         """
-        conversation_id = uuid.uuid4()
+        conversation_id = str(uuid.uuid4())
 
         prepended_conversation = await self.get_prepended_conversation_async(normalizer_request=normalizer_request)
         if prepended_conversation:
