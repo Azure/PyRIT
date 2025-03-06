@@ -24,32 +24,26 @@ def sample_conversations() -> list[PromptRequestPiece]:
 
 @pytest.fixture
 def tts_target(patch_central_database) -> OpenAITTSTarget:
-    return OpenAITTSTarget(deployment_name="test", endpoint="test", api_key="test")
+    return OpenAITTSTarget(model_name="test", endpoint="test", api_key="test")
 
 
 def test_tts_initializes(tts_target: OpenAITTSTarget):
     assert tts_target
 
 
-def test_tts_initializes_calls_get_required_parameters():
+def test_tts_initializes_calls_get_required_parameters(patch_central_database):
     with patch("pyrit.common.default_values.get_required_value") as mock_get_required:
         target = OpenAITTSTarget(
-            deployment_name="deploymenttest",
+            model_name="deploymenttest",
             endpoint="endpointtest",
             api_key="keytest",
         )
 
-        assert mock_get_required.call_count == 3
+        assert mock_get_required.call_count == 1
 
         mock_get_required.assert_any_call(
-            env_var_name=target.deployment_environment_variable, passed_value="deploymenttest"
+            env_var_name=target.endpoint_environment_variable, passed_value="endpointtest"
         )
-
-        mock_get_required.assert_any_call(
-            env_var_name=target.endpoint_uri_environment_variable, passed_value="endpointtest"
-        )
-
-        mock_get_required.assert_any_call(env_var_name=target.api_key_environment_variable, passed_value="keytest")
 
 
 @pytest.mark.asyncio
@@ -83,12 +77,11 @@ async def test_tts_validate_previous_conversations(
 @pytest.mark.parametrize("response_format", ["mp3", "ogg"])
 @pytest.mark.asyncio
 async def test_tts_send_prompt_file_save_async(
+    patch_central_database,
     sample_conversations: list[PromptRequestPiece],
     response_format: TTSResponseFormat,
 ) -> None:
-    tts_target = OpenAITTSTarget(
-        deployment_name="test", endpoint="test", api_key="test", response_format=response_format
-    )
+    tts_target = OpenAITTSTarget(model_name="test", endpoint="test", api_key="test", response_format=response_format)
 
     request_piece = sample_conversations[0]
     request_piece.conversation_id = str(uuid.uuid4())

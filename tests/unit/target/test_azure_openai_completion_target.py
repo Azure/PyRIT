@@ -1,13 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import json
 import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from openai.types.completion import Completion
-from openai.types.completion_choice import CompletionChoice
-from openai.types.completion_usage import CompletionUsage
 from unit.mocks import get_sample_conversations
 
 from pyrit.memory.central_memory import CentralMemory
@@ -16,32 +14,26 @@ from pyrit.prompt_target import OpenAICompletionTarget
 
 
 @pytest.fixture
-def openai_mock_return() -> Completion:
-    return Completion(
-        id="12345678-1a2b-3c4e5f-a123-12345678abcd",
-        object="text_completion",
-        choices=[
-            CompletionChoice(
-                index=0,
-                text="hi",
-                finish_reason="stop",
-                logprobs=None,
-            )
+def completions_response_json() -> dict:
+    return {
+        "id": "12345678-1a2b-3c4e5f-a123-12345678abcd",
+        "object": "text_completion",
+        "choices": [
+            {
+                "index": 0,
+                "text": "hi",
+                "finish_reason": "stop",
+                "logprobs": None,
+            }
         ],
-        created=1629389505,
-        model="gpt-35-turbo",
-        usage=CompletionUsage(
-            prompt_tokens=1,
-            total_tokens=2,
-            completion_tokens=1,
-        ),
-    )
+        "model": "gpt-35-turbo",
+    }
 
 
 @pytest.fixture
 def azure_completion_target(patch_central_database) -> OpenAICompletionTarget:
     return OpenAICompletionTarget(
-        deployment_name="gpt-35-turbo",
+        model_name="gpt-35-turbo",
         endpoint="https://mock.azure.com/",
         api_key="mock-api-key",
         api_version="some_version",
@@ -89,29 +81,23 @@ async def test_azure_completion_validate_prev_convs(
 
 @pytest.mark.asyncio
 async def test_azure_complete_async_return(
-    openai_mock_return: Completion,
+    completions_response_json: dict,
     azure_completion_target: OpenAICompletionTarget,
     sample_conversations: list[PromptRequestPiece],
 ):
     request_piece = sample_conversations[0]
     request = PromptRequestResponse(request_pieces=[request_piece])
-    with patch("openai.resources.AsyncCompletions.create", new_callable=AsyncMock) as mock_create:
-        mock_create.return_value = openai_mock_return
+
+    openai_mock_return = MagicMock()
+    openai_mock_return.text = json.dumps(completions_response_json)
+
+    with patch(
+        "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
+    ) as mock_request:
+        mock_request.return_value = openai_mock_return
         response: PromptRequestResponse = await azure_completion_target.send_prompt_async(prompt_request=request)
         assert len(response.request_pieces) == 1
         assert response.request_pieces[0].converted_value == "hi"
-
-
-def test_azure_invalid_key_raises():
-    with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
-        with patch.dict(os.environ, {}, clear=True):
-            with pytest.raises(ValueError):
-                OpenAICompletionTarget(
-                    deployment_name="gpt-4",
-                    endpoint="https://mock.azure.com/",
-                    api_key="",
-                    api_version="some_version",
-                )
 
 
 def test_azure_initialization_with_no_deployment_raises():
@@ -126,7 +112,7 @@ def test_azure_invalid_endpoint_raises():
         with patch.dict(os.environ, {}, clear=True):
             with pytest.raises(ValueError):
                 OpenAICompletionTarget(
-                    deployment_name="gpt-4",
+                    model_name="gpt-4",
                     endpoint="",
                     api_key="xxxxx",
                     api_version="some_version",

@@ -5,9 +5,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.6
 #   kernelspec:
-#     display_name: pyrit-dev
+#     display_name: pyrit-312
 #     language: python
 #     name: python3
 # ---
@@ -60,22 +60,17 @@ strategy_path = DATASETS_PATH / "orchestrators" / "red_teaming" / "violent_duria
 
 # Set up the red_teaming_chat used to generate prompts sent to the target.
 # OpenAI (GPT4) as the Red Teaming LLM
-red_teaming_llm = OpenAIChatTarget(
-    deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
-    endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
-    api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
-)
+adversary_llm = OpenAIChatTarget()
 
 # Set the target LLM, here using Azure OpenAI's GPT-4 chat model
-prompt_target = OpenAIChatTarget(
-    deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
-    endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
-    api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
+target_llm = OpenAIChatTarget(
+    endpoint=os.environ.get("AZURE_OPENAI_GPT4_CHAT_ENDPOINT"),
+    api_key=os.environ.get("AZURE_OPENAI_GPT4_CHAT_KEY"),
 )
 
 # Set up the scorer for evaluating if the target LLM adopts the criminal persona
 scorer = SelfAskTrueFalseScorer(
-    chat_target=red_teaming_llm,
+    chat_target=adversary_llm,
     true_false_question_path=Path("../../../assets/demo_scorer_definitions/criminal_persona_classifier.yaml"),
 )
 
@@ -113,8 +108,8 @@ initial_prompt = (
 
 # Use the RedTeamingOrchestrator to handle the attack and manage the conversation
 red_teaming_orchestrator = RedTeamingOrchestrator(
-    adversarial_chat=red_teaming_llm,
-    objective_target=prompt_target,
+    adversarial_chat=adversary_llm,
+    objective_target=target_llm,
     adversarial_chat_seed_prompt=initial_prompt,  # The first prompt introduces the Violent Durian persona
     objective_scorer=scorer,
     max_turns=2,
@@ -122,9 +117,3 @@ red_teaming_orchestrator = RedTeamingOrchestrator(
 
 result = await red_teaming_orchestrator.run_attack_async(objective=conversation_objective)  # type: ignore
 await result.print_conversation_async()  # type: ignore
-
-# %%
-from pyrit.memory import CentralMemory
-
-memory = CentralMemory.get_memory_instance()
-memory.dispose_engine()
