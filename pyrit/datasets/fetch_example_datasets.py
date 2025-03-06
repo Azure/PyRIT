@@ -607,8 +607,8 @@ def fetch_pku_safe_rlhf_dataset(
     Fetch PKU-SafeRLHF examples and create a SeedPromptDataset.
 
     Args:
-        include_safe_prompts (bool): all prompts in the dataset are returned if True; the dataset has
-            RLHF markers for unsafe responses, so if False we only return the unsafe subset
+        include_safe_prompts (bool): All prompts in the dataset are returned if True; the dataset has
+            RLHF markers for unsafe responses, so if False we only return the unsafe subset.
         filter_harm_categories: List of harm categories to filter the examples.
             Defaults to None, which means all categories are included.
             Otherwise, only prompts with at least one matching category are included.
