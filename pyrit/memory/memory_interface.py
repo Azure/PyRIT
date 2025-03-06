@@ -2,9 +2,11 @@
 # Licensed under the MIT license.
 
 import abc
+import atexit
 import copy
 import logging
 import uuid
+import weakref
 from datetime import datetime
 from pathlib import Path
 from typing import MutableSequence, Optional, Sequence, Tuple, TypeVar, Union
@@ -65,6 +67,9 @@ class MemoryInterface(abc.ABC):
         # Initialize the MemoryExporter instance
         self.exporter = MemoryExporter()
         self._init_storage_io()
+
+        # Ensure cleanup at process exit
+        self.cleanup()
 
     def enable_embedding(self, embedding_model=None):
         self.memory_embedding = default_memory_embedding_factory(embedding_model=embedding_model)
@@ -539,6 +544,16 @@ class MemoryInterface(abc.ABC):
         """
         Dispose the engine and clean up resources.
         """
+
+    def cleanup(self):
+        """
+        Ensure cleanup on process exit
+        """
+        # Ensure cleanup at process exit
+        atexit.register(self.dispose_engine)
+
+        # Ensure cleanup happens even if the object is garbage collected before process exits
+        weakref.finalize(self, self.dispose_engine)
 
     def get_chat_messages_with_conversation_id(self, *, conversation_id: str) -> Sequence[ChatMessage]:
         """
