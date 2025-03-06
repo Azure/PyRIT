@@ -40,7 +40,7 @@ if __name__ == "__main__":
         
         # TODO make sure to add cross-platform support for this.
         import ctypes.wintypes
-        mutex = ctypes.windll.kernel32.CreateMutexW(None, False, GLOBAL_MUTEX_NAME)
+        ctypes.windll.kernel32.CreateMutexW(None, False, GLOBAL_MUTEX_NAME)
         last_error = ctypes.windll.kernel32.GetLastError()
         if last_error == 183:  # ERROR_ALREADY_EXISTS
             return False
@@ -58,7 +58,7 @@ if __name__ == "__main__":
         from scorer import GradioApp
         app = GradioApp()
         app.start_gradio(open_browser=open_browser)
-    except:
+    except: # noqa: E722
         # Print the error message and traceback
         print(traceback.format_exc())
         input("Press Enter to exit.")

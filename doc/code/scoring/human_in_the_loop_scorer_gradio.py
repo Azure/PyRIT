@@ -3,8 +3,6 @@
 # This example shows how to use the Gradio UI to perform human-in-the-loop scoring.
 
 # %%
-import uuid
-
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestPiece

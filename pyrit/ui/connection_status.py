@@ -52,7 +52,7 @@ class ConnectionStatusHandler:
         if self.server_disconnected:
             print("Attempting to reconnect")
             self.rpc_client.reconnect()
-            prompt = self.rpc_client.wait_for_prompt()
+            next_prompt = self.rpc_client.wait_for_prompt()
             self.next_prompt = str(next_prompt.converted_value)
             self.server_disconnected = False
         return True

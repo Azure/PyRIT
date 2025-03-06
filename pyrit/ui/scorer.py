@@ -79,7 +79,7 @@ class GradioApp:
     
     def _on_next_prompt_change(self, next_prompt):
         if next_prompt == "":
-            return [gr.Markdown(f"Waiting for next prompt..."), gr.update(interactive=False), gr.update(interactive=False)]
+            return [gr.Markdown("Waiting for next prompt..."), gr.update(interactive=False), gr.update(interactive=False)]
         return [gr.Markdown("Prompt: " + next_prompt), gr.update(interactive=True), gr.update(interactive=True)]
 
     def _loading_dots(self):
