@@ -73,7 +73,8 @@ class AppRPCServer:
             self._score_received_semaphore.release()
 
         def exposed_receive_ping(self):
-            # A ping should be received every 2s from the client. If a client misses a ping then the server should stoped
+            # A ping should be received every 2s from the client. If a client misses a ping then the server should 
+            # stoped
             self._last_ping = time.time()
             logger.debug("Ping received")
 
@@ -196,7 +197,8 @@ class AppRPCServer:
 
     def wait_for_score(self) -> Score:
         """
-        Wait for the client to send a score. Should always return a score, but if the synchronisation fails it will return None.
+        Wait for the client to send a score. Should always return a score, but if the synchronisation fails it will 
+        return None.
         """
         if self._score_received_semaphore is None or self._rpc_service is None:
             raise RPCAppException("RPC server is not running.")
