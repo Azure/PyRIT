@@ -90,7 +90,6 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
         context_description_instructions: SeedPromptDataset = SeedPromptDataset.from_yaml_file(
             context_description_instructions_path
         )
-
         self._rephrase_objective_to_user_turn = context_description_instructions.prompts[0]
         self._answer_user_turn = context_description_instructions.prompts[1]
         self._rephrase_objective_to_question = context_description_instructions.prompts[2]
