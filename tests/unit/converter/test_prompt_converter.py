@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import re
 import pytest
 from unit.mocks import MockPromptTarget
 
@@ -166,10 +167,17 @@ async def test_ascii_art() -> None:
 
 
 @pytest.mark.asyncio
-async def test_character_replacement_converter() -> None:
-    converter = SearchReplaceConverter(old_value=" ", new_value="_")
+async def test_search_replace_converter() -> None:
+    converter = SearchReplaceConverter(pattern=" ", replace="_")
     output = await converter.convert_async(prompt="Hello World !", input_type="text")
     assert output.output_text == "Hello_World_!"
+    assert output.output_type == "text"
+
+@pytest.mark.asyncio
+async def test_search_replace_converter_replace_single_string() -> None:
+    converter = SearchReplaceConverter(pattern="^.*\Z", replace="new string", regex_flags=re.DOTALL)
+    output = await converter.convert_async(prompt="Hello World !\n\nmy name is Tim", input_type="text")
+    assert output.output_text == "new string"
     assert output.output_type == "text"
 
 
@@ -414,7 +422,7 @@ async def test_convert_async_unsupported_input_type():
         MorseConverter(),
         RandomCapitalLettersConverter(),
         ROT13Converter(),
-        SearchReplaceConverter(old_value=" ", new_value="_"),
+        SearchReplaceConverter(pattern=" ", replace="_"),
         StringJoinConverter(),
         SuffixAppendConverter(suffix="!!!"),
         UnicodeSubstitutionConverter(),
@@ -474,7 +482,7 @@ def setup_memory():
         (RandomCapitalLettersConverter(), ["text"], ["text"]),
         (RepeatTokenConverter(token_to_repeat="test"), ["text"], ["text"]),
         (ROT13Converter(), ["text"], ["text"]),
-        (SearchReplaceConverter(old_value=" ", new_value="_"), ["text"], ["text"]),
+        (SearchReplaceConverter(pattern=" ", replace="_"), ["text"], ["text"]),
         (StringJoinConverter(), ["text"], ["text"]),
         (SuffixAppendConverter(suffix="test"), ["text"], ["text"]),
         (TextToHexConverter(), ["text"], ["text"]),
