@@ -205,11 +205,21 @@ class AppRPCServer:
         if not self._server_is_running:
             raise RPCServerStoppedException()
         
-        score = self._rpc_service.pop_score_received()
-        if score is None:
-            return None
-
+        score_ref = self._rpc_service.pop_score_received()
         self._client_ready_semaphore.release()
+        if score_ref is None:
+            return None
+        # Pass instance variables of reflected RPyC Score object as args to PyRIT Score object
+        score = Score(
+            score_value=score_ref.score_value,
+            score_type=score_ref.score_type,
+            score_category=str(score_ref.score_category),
+            score_value_description=score_ref.score_value_description,
+            score_rationale=score_ref.score_rationale,
+            score_metadata=score_ref.score_metadata,
+            prompt_request_response_id=score_ref.prompt_request_response_id,
+        )
+
         return score
     
     def wait_for_client(self):

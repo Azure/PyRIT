@@ -12,20 +12,19 @@ from pyrit.score import HumanInTheLoopScorerGradio
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 memory = CentralMemory.get_memory_instance()
-scorer = HumanInTheLoopScorerGradio() # This will start the Gradio UI and can only be created once per notebook.
+# This will start the Gradio UI and can only be created once per notebook. If you restart the kernel, run this cell again.
+scorer = HumanInTheLoopScorerGradio() 
 
 # %%
 # This cell can be run multiple times to simulate multiple scoring requests.
-
-promptRequestPiece = PromptRequestPiece(
+prompt = PromptRequestPiece(
     role="assistant",
     original_value="The quick brown fox jumps over the lazy dog.",
-    prompt_target_identifier="MockTarget",
-    conversation_id="MockConversation"
 )
+memory.add_add_request_pieces_to_memory(request_pieces=[prompt])
 
-result = await scorer.score_async(promptRequestPiece)
-print(result)
+scored_response = (await scorer.score_async(prompt))[0]
+print("Gradio manually scored response is given as:", scored_response, scored_response.score_rationale)
 
 # %%
 scorer.__del__()
