@@ -323,7 +323,9 @@ def test_fetch_pku_safe_rlhf_dataset(mock_load_dataset, mock_pku_safe_rlhf_data)
 
     # Test with harm category filters
 
-    dataset = fetch_pku_safe_rlhf_dataset(include_safe_prompts=False, filter_harm_categories=['Economic Crime'])
+    dataset = fetch_pku_safe_rlhf_dataset(include_safe_prompts=False, filter_harm_categories=["Economic Crime"])
     assert len(dataset.prompts) == 2
-    dataset = fetch_pku_safe_rlhf_dataset(include_safe_prompts=False, filter_harm_categories=['White-Collar Crime', 'Violence'])
+    dataset = fetch_pku_safe_rlhf_dataset(
+        include_safe_prompts=False, filter_harm_categories=["White-Collar Crime", "Violence"]
+    )
     assert len(dataset.prompts) == 2
