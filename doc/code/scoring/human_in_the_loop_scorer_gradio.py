@@ -21,7 +21,7 @@ prompt = PromptRequestPiece(
 )
 memory.add_request_pieces_to_memory(request_pieces=[prompt])
 
-scored_response = (await scorer.score_async(prompt))[0]
+scored_response = (await scorer.score_async(prompt))[0]  # type: ignore
 print("Gradio manually scored response is given as:", scored_response, scored_response.score_rationale)
 
 # %%
