@@ -648,7 +648,7 @@ def fetch_pku_safe_rlhf_dataset(
                     data_type="text",
                     name="PKU-SafeRLHF",
                     dataset_name="PKU-SafeRLHF",
-                    harm_categories=list(harm_categories),
+                    harm_categories=sorted(list(harm_categories)),
                     description="""This is a Hugging Face dataset that labels a prompt and 2 responses categorizing their
             helpfulness or harmfulness. Only the 'prompt' column is extracted.""",
                     source="https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF",
