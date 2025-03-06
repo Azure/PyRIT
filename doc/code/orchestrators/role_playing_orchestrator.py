@@ -29,6 +29,7 @@ from pyrit.orchestrator.single_turn.role_play_orchestrator import (
     RolePlayOrchestrator,
     RolePlayPaths,
 )
+from pyrit.prompt_converter import CharSwapGenerator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score.azure_content_filter_scorer import AzureContentFilterScorer
 
@@ -39,6 +40,7 @@ adversarial_chat = OpenAIChatTarget()
 
 orchestrator = RolePlayOrchestrator(
     objective_target=objective_target,
+    prompt_converters=[CharSwapGenerator()],
     adversarial_chat=adversarial_chat,
     role_play_definition_path=RolePlayPaths.MOVIE_SCRIPT.value,
     scorers=[AzureContentFilterScorer()],
