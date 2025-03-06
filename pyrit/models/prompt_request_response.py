@@ -14,10 +14,10 @@ class PromptRequestResponse:
     This is a single request to a target. It can contain multiple prompt request pieces.
 
     Parameters:
-        request_pieces (list[PromptRequestPiece]): The list of prompt request pieces.
+        request_pieces (Sequence[PromptRequestPiece]): The list of prompt request pieces.
     """
 
-    def __init__(self, request_pieces: list[PromptRequestPiece]):
+    def __init__(self, request_pieces: Sequence[PromptRequestPiece]):
         self.request_pieces = request_pieces
 
     def validate(self):
@@ -52,10 +52,10 @@ class PromptRequestResponse:
     @staticmethod
     def flatten_to_prompt_request_pieces(
         request_responses: Sequence["PromptRequestResponse"],
-    ) -> list[PromptRequestPiece]:
+    ) -> MutableSequence[PromptRequestPiece]:
         if not request_responses:
             return []
-        response_pieces = []
+        response_pieces: MutableSequence[PromptRequestPiece] = []
 
         for response in request_responses:
             response_pieces.extend(response.request_pieces)

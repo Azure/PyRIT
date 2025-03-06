@@ -4,6 +4,7 @@
 import io
 import os
 from tempfile import NamedTemporaryFile
+from typing import MutableSequence
 
 import pytest
 from unit.mocks import get_sample_conversations
@@ -13,12 +14,12 @@ from pyrit.prompt_target import TextTarget
 
 
 @pytest.fixture
-def sample_entries() -> list[PromptRequestPiece]:
+def sample_entries() -> MutableSequence[PromptRequestPiece]:
     return get_sample_conversations()
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_user_no_system(sample_entries: list[PromptRequestPiece]):
+async def test_send_prompt_user_no_system(sample_entries: MutableSequence[PromptRequestPiece]):
     output_stream = io.StringIO()
     no_op = TextTarget(text_stream=output_stream)
 
@@ -35,7 +36,7 @@ async def test_send_prompt_user_no_system(sample_entries: list[PromptRequestPiec
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_stream(sample_entries: list[PromptRequestPiece]):
+async def test_send_prompt_stream(sample_entries: MutableSequence[PromptRequestPiece]):
     with NamedTemporaryFile(mode="w+", delete=False) as tmp_file:
         prompt = "hi, I am a victim chatbot, how can I help?"
         no_op = TextTarget(text_stream=tmp_file)

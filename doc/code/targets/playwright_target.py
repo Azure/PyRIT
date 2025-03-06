@@ -158,7 +158,7 @@ async def main(page: Page):
         await orchestrator.print_conversations_async()  # type: ignore
 
 
-async def run():
+async def run() -> None:
     async with async_playwright() as playwright:
         browser = await playwright.chromium.launch(headless=False)
         context = await browser.new_context()

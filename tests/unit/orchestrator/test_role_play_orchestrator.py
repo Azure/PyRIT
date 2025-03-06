@@ -153,7 +153,7 @@ async def test_get_role_playing_prompts_async(role_play_orchestrator):
 
 
 @pytest.mark.parametrize("role_play_path", list(RolePlayPaths))
-def test_role_play_paths(role_play_path):
+def test_role_play_paths(role_play_path) -> None:
     """
     For each path in RolePlayPaths, verify that:
       1) The file actually exists on disk.

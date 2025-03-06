@@ -3,6 +3,7 @@
 
 import os
 import uuid
+from typing import Sequence
 from unittest.mock import MagicMock
 
 import pytest
@@ -19,7 +20,7 @@ from pyrit.prompt_target.text_target import TextTarget
 
 
 @pytest.fixture
-def sample_conversation_entries() -> list[PromptMemoryEntry]:
+def sample_conversation_entries() -> Sequence[PromptMemoryEntry]:
     return get_sample_conversation_entries()
 
 
