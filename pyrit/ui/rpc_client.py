@@ -15,17 +15,17 @@ DEFAULT_PORT = 18812
 
 class RPCClient:
     def __init__(self, callback_disconnected: Optional[Callable] = None):
-        self._c = None
-        self._bgsrv = None
+        self._c = None  # type: Optional[rpyc.Connection]
+        self._bgsrv = None  # type: Optional[rpyc.BgServingThread]
 
-        self._ping_thread = None
-        self._bgsrv_thread = None
+        self._ping_thread = None  # type: Optional[Thread]
+        self._bgsrv_thread = None  # type: Optional[Thread]
         self._is_running = False
 
-        self._shutdown_event = None
-        self._prompt_received_sem = None
+        self._shutdown_event = None  # type: Optional[Event]
+        self._prompt_received_sem = None  # type: Optional[Semaphore]
 
-        self._prompt_received = None
+        self._prompt_received = None  # type: Optional[PromptRequestPiece]
         self._callback_disconnected = callback_disconnected
 
     def start(self):

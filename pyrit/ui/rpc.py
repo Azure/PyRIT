@@ -62,9 +62,9 @@ class AppRPCServer:
 
         def __init__(self, *, score_received_semaphore: Semaphore, client_ready_semaphore: Semaphore):
             super().__init__()
-            self._callback_score_prompt = None
-            self._last_ping = None
-            self._scores_received = []
+            self._callback_score_prompt = None  # type: Optional[Callable[[PromptRequestPiece, Optional[str]], None]]
+            self._last_ping = None  # type: Optional[float]
+            self._scores_received = []  # type: list[Score]
             self._score_received_semaphore = score_received_semaphore
             self._client_ready_semaphore = client_ready_semaphore
 
