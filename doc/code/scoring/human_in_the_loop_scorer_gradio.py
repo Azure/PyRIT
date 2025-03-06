@@ -21,7 +21,7 @@ prompt = PromptRequestPiece(
     role="assistant",
     original_value="The quick brown fox jumps over the lazy dog.",
 )
-memory.add_add_request_pieces_to_memory(request_pieces=[prompt])
+memory.add_request_pieces_to_memory(request_pieces=[prompt])
 
 scored_response = (await scorer.score_async(prompt))[0]
 print("Gradio manually scored response is given as:", scored_response, scored_response.score_rationale)
