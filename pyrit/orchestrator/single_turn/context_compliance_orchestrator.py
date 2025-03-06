@@ -114,7 +114,9 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
         """
         Returns the user turn prompts for the given list of prompts.
 
-        This works better if broken into three prompts. One to rephrase the objective to a
+        This works better if broken into three prompts. One to rephrase the objective as more benign. One to answer
+        the more benign objective. And one to rephrase the objective as a question. Ultimately these are assembled into
+        a fake context that we send to the objective target.
 
         Args:
             prompt_list (list[str]): The list of prompts to be role played.
