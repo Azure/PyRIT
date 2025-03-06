@@ -27,8 +27,8 @@ class HumanInTheLoopScorerGradio(Scorer):
         self.validate(request_response=request_response)
         try:
             score = await asyncio.to_thread(self.retrieve_score, request_response, task=task)
-            self._memory.add_scores_to_memory(scores=[score])
-            return [score]
+            self._memory.add_scores_to_memory(scores=score)
+            return score
         except asyncio.CancelledError:
             self._rpc_server.stop()
             raise
@@ -38,7 +38,7 @@ class HumanInTheLoopScorerGradio(Scorer):
         self._rpc_server.send_score_prompt(request_prompt)
         score = self._rpc_server.wait_for_score()
         score.scorer_class_identifier = self.get_identifier()
-        return score
+        return [score]
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
         if request_response.converted_value_data_type != "text":
