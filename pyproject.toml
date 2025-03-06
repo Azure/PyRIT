@@ -120,12 +120,6 @@ gradio = [
     "pywebview>=5.4"
 ]
 
-gradio = [
-    "gradio>=5.16.0",
-    "rpyc>=6.0.1",
-    "pywebview>=5.4"
-]
-
 opencv = [
     "opencv-python>=4.11.0.86",
 ]
