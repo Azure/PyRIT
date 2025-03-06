@@ -11,8 +11,11 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, SeedPromptDataset
 from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_converter import SearchReplaceConverter
+from pyrit.prompt_converter import PromptConverter, SearchReplaceConverter
 from pyrit.prompt_normalizer import NormalizerRequest
+from pyrit.prompt_normalizer.prompt_converter_configuration import (
+    PromptConverterConfiguration,
+)
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer
 
@@ -32,6 +35,7 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
         self,
         objective_target: PromptChatTarget,
         adversarial_chat: PromptChatTarget,
+        prompt_converters: Optional[list[PromptConverter]] = None,
         context_description_instructions_path: Optional[pathlib.Path] = None,
         scorers: Optional[list[Scorer]] = None,
         batch_size: int = 10,
@@ -40,6 +44,9 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
         """
         Args:
             objective_target (PromptTarget): The target for sending prompts.
+            adversarial_chat (PromptTarget): The target for sending prompts.
+            prompt_converters (list[PromptConverter], Optional): List of prompt converters. These are only applied
+                to the conversation history since in this orchestrator, the latest prompt is usually just "yes"
             scorers (list[Scorer], Optional): List of scorers to use for each prompt request response, to be
                 scored immediately after receiving response. Default is None.
             batch_size (int, Optional): The (max) batch size for sending prompts. Defaults to 10.
@@ -87,6 +94,11 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
         self._rephrase_objective_to_user_turn = context_description_instructions.prompts[0]
         self._answer_user_turn = context_description_instructions.prompts[1]
         self._rephrase_objective_to_question = context_description_instructions.prompts[2]
+
+        # these are applied to all adversarial chat responses, and ultimately to the objective target requests
+        self._conversation_history_converters = (
+            [PromptConverterConfiguration(converters=prompt_converters)] if prompt_converters else []
+        )
 
         super().__init__(
             objective_target=objective_target,
@@ -162,7 +174,9 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
         user_turn_answer = (
             (
                 await self._prompt_normalizer.send_prompt_async(
-                    seed_prompt_group=seed_prompt_to_get_user_turn_answer, target=self._adversarial_chat
+                    seed_prompt_group=seed_prompt_to_get_user_turn_answer,
+                    target=self._adversarial_chat,
+                    response_converter_configurations=self._conversation_history_converters,
                 )
             )
             .request_pieces[0]
@@ -184,7 +198,9 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
         user_turn = (
             (
                 await self._prompt_normalizer.send_prompt_async(
-                    seed_prompt_group=seed_prompt_to_get_user_turn, target=self._adversarial_chat
+                    seed_prompt_group=seed_prompt_to_get_user_turn,
+                    target=self._adversarial_chat,
+                    response_converter_configurations=self._conversation_history_converters,
                 )
             )
             .request_pieces[0]
@@ -206,7 +222,9 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
         objective_as_question = (
             (
                 await self._prompt_normalizer.send_prompt_async(
-                    seed_prompt_group=seed_prompt_to_get_objective_as_a_question, target=self._adversarial_chat
+                    seed_prompt_group=seed_prompt_to_get_objective_as_a_question,
+                    target=self._adversarial_chat,
+                    response_converter_configurations=self._conversation_history_converters,
                 )
             )
             .request_pieces[0]
