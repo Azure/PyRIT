@@ -69,7 +69,7 @@ http_prompt_target = HTTPTarget(http_request=raw_http_request, callback_function
 
 # Note, a converter is used to format the prompt to be json safe without new lines/carriage returns, etc
 orchestrator = PromptSendingOrchestrator(
-    objective_target=http_prompt_target, prompt_converters=[SearchReplaceConverter(old_value=r"(?! )\s", new_value="")]
+    objective_target=http_prompt_target, prompt_converters=[SearchReplaceConverter(pattern=r"(?! )\s", replace="")]
 )
 
 response = await orchestrator.send_prompts_async(prompt_list=[prompt])  # type: ignore
@@ -105,7 +105,7 @@ red_teaming_orchestrator = RedTeamingOrchestrator(
     objective_target=http_prompt_target,
     objective_scorer=scorer,
     verbose=True,
-    prompt_converters=[SearchReplaceConverter(old_value=r"(?! )\s", new_value="")],
+    prompt_converters=[SearchReplaceConverter(pattern=r"(?! )\s", replace="")],
 )
 
 result = await red_teaming_orchestrator.run_attack_async(objective=conversation_objective)  # type: ignore
