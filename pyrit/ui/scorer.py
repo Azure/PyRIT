@@ -6,7 +6,8 @@ import webview
 from connection_status import ConnectionStatusHandler
 from rpc_client import RPCClient
 
-GRADIO_POLLING_RATE = 0.5 # Polling Rate by the Gradio UI
+GRADIO_POLLING_RATE = 0.5  # Polling Rate by the Gradio UI
+
 
 class GradioApp:
     def __init__(self):
