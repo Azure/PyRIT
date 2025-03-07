@@ -9,7 +9,8 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.models import PromptRequestResponse, SeedPrompt
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_converter.flip_converter import FlipConverter
+from pyrit.prompt_converter import FlipConverter, PromptConverter
+from pyrit.prompt_normalizer import NormalizerRequest
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer
 
@@ -27,6 +28,7 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
     def __init__(
         self,
         objective_target: PromptChatTarget,
+        prompt_converters: Optional[list[PromptConverter]] = None,
         scorers: Optional[list[Scorer]] = None,
         batch_size: int = 10,
         verbose: bool = False,
@@ -35,7 +37,7 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
         Args:
             objective_target (PromptChatTarget): The target for sending prompts.
             prompt_converters (list[PromptConverter], Optional): List of prompt converters. These are stacked in
-                order.
+                order on top of the flip converter.
             scorers (list[Scorer], Optional): List of scorers to use for each prompt request response, to be
                 scored immediately after receiving response. Default is None.
             batch_size (int, Optional): The (max) batch size for sending prompts. Defaults to 10.
@@ -46,7 +48,7 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
 
         super().__init__(
             objective_target=objective_target,
-            prompt_converters=[FlipConverter()],
+            prompt_converters=[FlipConverter()] + (prompt_converters or []),
             scorers=scorers,
             batch_size=batch_size,
             verbose=verbose,
@@ -97,3 +99,13 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
         return await super().send_prompts_async(
             prompt_list=prompt_list, prompt_type="text", memory_labels=memory_labels, metadata=metadata
         )
+
+    def validate_normalizer_requests(self, *, prompt_request_list: list[NormalizerRequest]):
+        if not prompt_request_list:
+            raise ValueError("No normalizer requests provided")
+
+        for request in prompt_request_list:
+            if len(request.seed_prompt_group.prompts) > 1:
+                raise ValueError("Multi-part messages not supported")
+            if request.seed_prompt_group.prompts[0].data_type != "text":
+                raise ValueError("Non text messages not supported")

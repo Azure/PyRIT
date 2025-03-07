@@ -3,6 +3,7 @@
 
 import json
 import os
+from typing import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -41,13 +42,13 @@ def azure_completion_target(patch_central_database) -> OpenAICompletionTarget:
 
 
 @pytest.fixture
-def sample_conversations() -> list[PromptRequestPiece]:
+def sample_conversations() -> MutableSequence[PromptRequestPiece]:
     return get_sample_conversations()
 
 
 @pytest.mark.asyncio
 async def test_azure_completion_validate_request_length(
-    azure_completion_target: OpenAICompletionTarget, sample_conversations: list[PromptRequestPiece]
+    azure_completion_target: OpenAICompletionTarget, sample_conversations: MutableSequence[PromptRequestPiece]
 ):
     request = PromptRequestResponse(request_pieces=sample_conversations)
     with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
@@ -56,7 +57,7 @@ async def test_azure_completion_validate_request_length(
 
 @pytest.mark.asyncio
 async def test_azure_completion_validate_prompt_type(
-    azure_completion_target: OpenAICompletionTarget, sample_conversations: list[PromptRequestPiece]
+    azure_completion_target: OpenAICompletionTarget, sample_conversations: MutableSequence[PromptRequestPiece]
 ):
     request_piece = sample_conversations[0]
     request_piece.converted_value_data_type = "image_path"
@@ -67,7 +68,7 @@ async def test_azure_completion_validate_prompt_type(
 
 @pytest.mark.asyncio
 async def test_azure_completion_validate_prev_convs(
-    azure_completion_target: OpenAICompletionTarget, sample_conversations: list[PromptRequestPiece]
+    azure_completion_target: OpenAICompletionTarget, sample_conversations: MutableSequence[PromptRequestPiece]
 ):
     request_piece = sample_conversations[0]
     azure_completion_target._memory.add_request_response_to_memory(
@@ -83,7 +84,7 @@ async def test_azure_completion_validate_prev_convs(
 async def test_azure_complete_async_return(
     completions_response_json: dict,
     azure_completion_target: OpenAICompletionTarget,
-    sample_conversations: list[PromptRequestPiece],
+    sample_conversations: MutableSequence[PromptRequestPiece],
 ):
     request_piece = sample_conversations[0]
     request = PromptRequestResponse(request_pieces=[request_piece])

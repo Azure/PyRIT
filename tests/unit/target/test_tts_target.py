@@ -3,6 +3,7 @@
 
 import os
 import uuid
+from typing import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -18,7 +19,7 @@ from pyrit.prompt_target.openai.openai_tts_target import TTSResponseFormat
 
 
 @pytest.fixture
-def sample_conversations() -> list[PromptRequestPiece]:
+def sample_conversations() -> MutableSequence[PromptRequestPiece]:
     return get_sample_conversations()
 
 
@@ -47,14 +48,18 @@ def test_tts_initializes_calls_get_required_parameters(patch_central_database):
 
 
 @pytest.mark.asyncio
-async def test_tts_validate_request_length(tts_target: OpenAITTSTarget, sample_conversations: list[PromptRequestPiece]):
+async def test_tts_validate_request_length(
+    tts_target: OpenAITTSTarget, sample_conversations: MutableSequence[PromptRequestPiece]
+):
     request = PromptRequestResponse(request_pieces=sample_conversations)
     with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
         await tts_target.send_prompt_async(prompt_request=request)
 
 
 @pytest.mark.asyncio
-async def test_tts_validate_prompt_type(tts_target: OpenAITTSTarget, sample_conversations: list[PromptRequestPiece]):
+async def test_tts_validate_prompt_type(
+    tts_target: OpenAITTSTarget, sample_conversations: MutableSequence[PromptRequestPiece]
+):
     request_piece = sample_conversations[0]
     request_piece.converted_value_data_type = "image_path"
     request = PromptRequestResponse(request_pieces=[request_piece])
@@ -64,7 +69,7 @@ async def test_tts_validate_prompt_type(tts_target: OpenAITTSTarget, sample_conv
 
 @pytest.mark.asyncio
 async def test_tts_validate_previous_conversations(
-    tts_target: OpenAITTSTarget, sample_conversations: list[PromptRequestPiece]
+    tts_target: OpenAITTSTarget, sample_conversations: MutableSequence[PromptRequestPiece]
 ):
     request_piece = sample_conversations[0]
     tts_target._memory.add_request_response_to_memory(request=PromptRequestResponse(request_pieces=[request_piece]))
@@ -78,7 +83,7 @@ async def test_tts_validate_previous_conversations(
 @pytest.mark.asyncio
 async def test_tts_send_prompt_file_save_async(
     patch_central_database,
-    sample_conversations: list[PromptRequestPiece],
+    sample_conversations: MutableSequence[PromptRequestPiece],
     response_format: TTSResponseFormat,
 ) -> None:
     tts_target = OpenAITTSTarget(model_name="test", endpoint="test", api_key="test", response_format=response_format)
@@ -110,7 +115,7 @@ testdata = [(400, "Bad Request", HTTPStatusError), (429, "Rate Limit Reached", R
 @pytest.mark.parametrize("status_code, error_text, exception_class", testdata)
 async def test_tts_send_prompt_async_exception_adds_to_memory(
     tts_target: OpenAITTSTarget,
-    sample_conversations: list[PromptRequestPiece],
+    sample_conversations: MutableSequence[PromptRequestPiece],
     status_code: int,
     error_text: str,
     exception_class: type[BaseException],
@@ -145,7 +150,7 @@ async def test_tts_send_prompt_async_exception_adds_to_memory(
 
 @pytest.mark.asyncio
 async def test_tts_send_prompt_async_rate_limit_exception_retries(
-    tts_target: OpenAITTSTarget, sample_conversations: list[PromptRequestPiece]
+    tts_target: OpenAITTSTarget, sample_conversations: MutableSequence[PromptRequestPiece]
 ):
     response = MagicMock()
     response.status_code = 429

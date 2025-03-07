@@ -3,6 +3,7 @@
 
 import csv
 import json
+from typing import Sequence
 
 import pytest
 from sqlalchemy.inspection import inspect
@@ -13,7 +14,7 @@ from pyrit.memory.memory_models import PromptMemoryEntry
 
 
 @pytest.fixture
-def sample_conversation_entries() -> list[PromptMemoryEntry]:
+def sample_conversation_entries() -> Sequence[PromptMemoryEntry]:
     return get_sample_conversation_entries()
 
 
