@@ -19,6 +19,8 @@ For example, [BREAKING] FEAT or [BREAKING] MAINT -->
 <!--- This can help in identifying if the contribution fits into the plans for PyRIT. -->
 <!--- Maintainers may be aware of obstacles that aren't obvious, or clarify requirements, and thereby save you time. -->
 
+<!--- If your change is BREAKING please include reasoning for why below. -->
+
 
 ## Tests and Documentation
 
