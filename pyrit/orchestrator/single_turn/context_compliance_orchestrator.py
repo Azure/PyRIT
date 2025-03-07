@@ -48,6 +48,9 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
             adversarial_chat (PromptTarget): The target for sending prompts.
             prompt_converters (list[PromptConverter], Optional): List of prompt converters. These are only applied
                 to the conversation history since in this orchestrator, the latest prompt is usually just "yes"
+            affirmative_response (str, Optional): The affirmative response to be used in the conversation history.
+            context_description_instructions_path (pathlib.Path, Optional): Path to the context description instructions
+                YAML file.
             scorers (list[Scorer], Optional): List of scorers to use for each prompt request response, to be
                 scored immediately after receiving response. Default is None.
             batch_size (int, Optional): The (max) batch size for sending prompts. Defaults to 10.
@@ -108,7 +111,10 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
         benign_user_query_answer = await self._get_benign_question_answer(benign_user_query=benign_user_query)
         objective_as_question = await self._get_objective_as_question(objective=objective)
 
-        assistant_response = f"{benign_user_query_answer}\n\nI can provide more information dependeing on what you're seeking. {objective_as_question}"
+        assistant_response = f"{benign_user_query_answer}\n\n"
+        assistant_response += (
+            f"I can provide more information dependeing on what you're seeking. {objective_as_question}"
+        )
 
         return [
             PromptRequestResponse(
