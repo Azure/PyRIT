@@ -6,6 +6,7 @@ import webview
 from connection_status import ConnectionStatusHandler
 from rpc_client import RPCClient
 
+GRADIO_POLLING_RATE = 0.5 # Polling Rate by the Gradio UI
 
 class GradioApp:
     def __init__(self):
@@ -36,7 +37,7 @@ class GradioApp:
 
             with gr.Row() as loading_animation:
                 loading_text = gr.Markdown("Connecting to PyRIT")
-                timer = gr.Timer(0.5)
+                timer = gr.Timer(GRADIO_POLLING_RATE)
                 timer.tick(fn=self._loading_dots, outputs=loading_text)
 
             next_prompt_state.change(
