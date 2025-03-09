@@ -56,7 +56,7 @@ class OpenAITarget(PromptChatTarget):
                 https://cognitiveservices.azure.com/.default . Please run `az login` locally
                 to leverage user AuthN.
             api_version (str, Optional): The version of the Azure OpenAI API. Defaults to
-                "2024-06-01".
+                "2024-06-01". If set to None, this will not be added as a query parameter to requests.
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.

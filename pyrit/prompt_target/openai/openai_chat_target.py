@@ -138,7 +138,9 @@ class OpenAIChatTarget(OpenAITarget):
 
         body = await self._construct_request_body(conversation=conversation, is_json_response=is_json_response)
 
-        params = {"api-version": self._api_version}
+        params = {}
+        if self._api_version is not None:
+            params["api-version"] = self._api_version
 
         try:
             str_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(
