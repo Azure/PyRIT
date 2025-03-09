@@ -528,10 +528,17 @@ def fetch_adv_bench_dataset(
 
     filtered = dataset["data"]
 
-    if main_categories:
-        filtered = [item for item in filtered if any(cat in main_categories for cat in item["main_categories"])]
-    if sub_categories:
-        filtered = [item for item in filtered if any(cat in sub_categories for cat in item["sub_categories"])]
+    if main_categories or sub_categories:
+        main_set = set(main_categories or [])
+        sub_set = set(sub_categories or [])
+
+        # Include an entry if it matches ANY specified main category OR ANY specified subcategory
+        filtered = [
+            item
+            for item in filtered
+            if (main_set and any(cat in main_set for cat in item["main_categories"]))
+            or (sub_set and any(cat in sub_set for cat in item["sub_categories"]))
+        ]
 
     seed_prompts = [
         SeedPrompt(
