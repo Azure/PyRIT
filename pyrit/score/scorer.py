@@ -7,6 +7,7 @@ import uuid
 from abc import abstractmethod
 from typing import Optional, Sequence
 
+from pyrit.models.attack_configuration import AttackConfiguration
 from pyrit.common.batch_helper import batch_task_async
 from pyrit.exceptions import (
     InvalidJsonException,
@@ -219,6 +220,7 @@ class Scorer(abc.ABC):
         category: str = None,
         task: str = None,
         orchestrator_identifier: dict[str, str] = None,
+        attack_configuration: AttackConfiguration = None,
     ) -> UnvalidatedScore:
         """
         Sends a request to a target, and takes care of retries.
@@ -250,6 +252,7 @@ class Scorer(abc.ABC):
             system_prompt=system_prompt,
             conversation_id=conversation_id,
             orchestrator_identifier=orchestrator_identifier,
+            attack_configuration=attack_configuration
         )
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
         scorer_llm_request = PromptRequestResponse(
@@ -262,6 +265,7 @@ class Scorer(abc.ABC):
                     conversation_id=conversation_id,
                     prompt_target_identifier=prompt_target.get_identifier(),
                     prompt_metadata=prompt_metadata,
+                    attack_configuration=attack_configuration
                 )
             ]
         )

@@ -53,6 +53,7 @@ class Orchestrator(abc.ABC, Identifier):
     def _create_normalizer_request(
         self,
         prompt_text: str,
+        attack_configuration,
         prompt_type: PromptDataType = "text",
         conversation_id: str = None,
         converters=None,
@@ -68,6 +69,7 @@ class Orchestrator(abc.ABC, Identifier):
                     value=prompt_text,
                     data_type=prompt_type,
                     metadata=metadata,
+                    attack_configuration=attack_configuration,
                 )
             ]
         )
