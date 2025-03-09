@@ -495,25 +495,39 @@ def fetch_decoding_trust_stereotypes_dataset(
 
 
 def fetch_adv_bench_dataset(
-    main_categories: Optional[List[str]] = None,
+    main_categories: Optional[
+        List[
+            Literal[
+                "Autonomy",
+                "Physical",
+                "Psychological",
+                "Reputational",
+                "Financial and Business",
+                "Human Rights and Civil Liberties",
+                "Societal and Cultural",
+                "Political and Economic",
+                "Environmental",
+            ]
+        ]
+    ] = None,
     sub_categories: Optional[List[str]] = None,
 ) -> SeedPromptDataset:
     """
-    Fetch AdvBench examples that have been expanded to include main and sub categories.
+    Retrieve AdvBench examples enhanced with categories from a collaborative and human-centered harms taxonomy.
 
-    This function fetches a dataset that extends the original AdvBench Dataset by adding harm categories to each prompt.
+    This function fetches a dataset extending the original AdvBench Dataset by adding harm types to each prompt.
     Categorization was done using the Claude 3.7 model based on the Collaborative, Human-Centered Taxonomy of AI,
-    Algorithmic, and Automation Harms (arXiv:2407.01294v2). Each entry includes at least one main category and minimum
-    of one subcategory to allow for better filtering and analysis. More details: https://arxiv.org/abs/2407.01294v2
+    Algorithmic, and Automation Harms (arXiv:2407.01294v2). Each entry includes at least one main category and one
+    subcategory to enable better filtering and analysis of the dataset.
 
     Args:
-        main_categories (Optional[List[str]]): List of main categories to filter the dataset.
-            The list of all main categories can be found in the following paper: arXiv:2407.01294v2
-            Defaults to None, which means all main categories are included.
-        sub_categories (Optional[List[str]]): List of sub categories to filter the dataset.
-            The list of all sub categories can be found in the following paper: arXiv:2407.01294v2
-            Defaults to None, which means all sub categories are included.
-            If a main category is provided, only the sub categories under that main category are included.
+        main_categories (Optional[List[str]]): A list of main harm categories to search for in the dataset.
+            For descriptions of each category, see the paper: arXiv:2407.01294v2
+            Defaults to None, which includes all 9 main categories.
+
+        sub_categories (Optional[List[str]]): A list of harm subcategories to search for in the dataset.
+            For the complete list of all subcategories, see the paper: arXiv:2407.01294v2.
+            Defaults to None, which includes all subcategories.
 
     Returns:
         SeedPromptDataset: A SeedPromptDataset containing the examples.
@@ -544,7 +558,7 @@ def fetch_adv_bench_dataset(
         SeedPrompt(
             value=item["prompt"],
             data_type="text",
-            name="AdvBench Dataset",
+            name="AdvBench Dataset [Extended]",
             dataset_name="AdvBench Dataset",
             harm_categories=item["main_categories"] + item["sub_categories"],
             description="""AdvBench is a set of 520 harmful behaviors formulated as instructions. This dataset
