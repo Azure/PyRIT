@@ -7,6 +7,10 @@ from pyrit.orchestrator.multi_turn.tree_of_attacks_with_pruning_orchestrator imp
 from pyrit.orchestrator.scoring_orchestrator import ScoringOrchestrator
 from pyrit.orchestrator.single_turn.prompt_sending_orchestrator import PromptSendingOrchestrator
 from pyrit.orchestrator.single_turn.role_play_orchestrator import RolePlayOrchestrator, RolePlayPaths
+from pyrit.orchestrator.single_turn.context_compliance_orchestrator import (
+    ContextComplianceOrchestrator,
+    ContextDescriptionPaths,
+)
 
 from pyrit.orchestrator.fuzzer_orchestrator import FuzzerOrchestrator
 from pyrit.orchestrator.multi_turn.crescendo_orchestrator import CrescendoOrchestrator
@@ -22,6 +26,8 @@ from pyrit.orchestrator.xpia_orchestrator import (
 )
 
 __all__ = [
+    "ContextComplianceOrchestrator",
+    "ContextDescriptionPaths",
     "CrescendoOrchestrator",
     "FlipAttackOrchestrator",
     "FuzzerOrchestrator",

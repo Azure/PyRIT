@@ -48,7 +48,7 @@ class NoiseConverter(LLMGenericTextConverter):
 
         super().__init__(
             converter_target=converter_target,
-            prompt_template=prompt_template,
+            system_prompt_template=prompt_template,
             noise=noise,
             number_errors=str(number_errors),
         )

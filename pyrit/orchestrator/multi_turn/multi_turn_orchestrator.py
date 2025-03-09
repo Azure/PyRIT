@@ -6,7 +6,7 @@ import logging
 import uuid
 from abc import abstractmethod
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Sequence, Union
 
 from colorama import Fore, Style
 
@@ -135,7 +135,7 @@ class MultiTurnOrchestrator(Orchestrator):
 
         self._prepended_conversation: list[PromptRequestResponse] = []
         self._last_prepended_user_message: str = ""
-        self._last_prepended_assistant_message_scores: list[Score] = []
+        self._last_prepended_assistant_message_scores: Sequence[Score] = []
 
     def _get_adversarial_chat_seed_prompt(self, seed_prompt):
         if isinstance(seed_prompt, str):

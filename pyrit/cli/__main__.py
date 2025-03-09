@@ -8,7 +8,7 @@ from copy import deepcopy
 from datetime import datetime
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, MutableSequence, Optional
 from uuid import uuid4
 
 import yaml
@@ -171,13 +171,13 @@ def validate_scenario(
     return orchestrator
 
 
-def generate_datasets(config: Dict[str, Any]) -> List[SeedPrompt]:
+def generate_datasets(config: Dict[str, Any]) -> MutableSequence[SeedPrompt]:
     datasets = config.get("datasets")
 
     if not datasets:
         raise KeyError("Send prompts scenario must contain a 'datasets' key.")
 
-    loaded_dataset_prompts = []
+    loaded_dataset_prompts: MutableSequence[SeedPrompt] = []
     for dataset_path in datasets:
         dataset = SeedPromptDataset.from_yaml_file(dataset_path)
         loaded_dataset_prompts.extend(dataset.prompts)

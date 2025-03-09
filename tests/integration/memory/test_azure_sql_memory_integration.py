@@ -28,6 +28,7 @@ def remove_entry(memory: AzureSQLMemory, entry: Base) -> None:  # type: ignore
             session.rollback()
 
 
+@pytest.mark.skip(reason="Skipping until #4001 is addressed.")
 @pytest.mark.asyncio
 async def test_get_seed_prompts_with_metadata_filter(azuresql_instance: AzureSQLMemory):
     value1 = str(uuid4())
