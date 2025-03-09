@@ -495,21 +495,25 @@ def fetch_decoding_trust_stereotypes_dataset(
 
 
 def fetch_adv_bench_dataset(
-    source: str = (
-        "https://raw.githubusercontent.com/llm-attacks/llm-attacks/main/data/advbench/" "harmful_behaviors.csv"
-    ),
-    source_type: Literal["public_url"] = "public_url",
-    cache: bool = True,
-    data_home: Optional[Path] = None,
+    main_categories: Optional[List[str]] = None,
+    sub_categories: Optional[List[str]] = None,
 ) -> SeedPromptDataset:
     """
-    Fetch AdvBench examples and create a SeedPromptDataset.
+    Fetch AdvBench examples that have been expanded to include main and sub categories.
+
+    This function fetches a dataset that extends the original AdvBench Dataset by adding harm categories to each prompt.
+    Categorization was done using the Claude 3.7 model based on the Collaborative, Human-Centered Taxonomy of AI,
+    Algorithmic, and Automation Harms (arXiv:2407.01294v2). Each entry includes at least one main category and minimum
+    of one subcategory to allow for better filtering and analysis. More details: https://arxiv.org/abs/2407.01294v2
 
     Args:
-        source (str): The source from which to fetch examples. Defaults to the AdvBench repository.
-        source_type (Literal["public_url"]): The type of source ('public_url').
-        cache (bool): Whether to cache the fetched examples. Defaults to True.
-        data_home (Optional[Path]): Directory to store cached data. Defaults to None.
+        main_categories (Optional[List[str]]): List of main categories to filter the dataset.
+            The list of all main categories can be found in the following paper: arXiv:2407.01294v2
+            Defaults to None, which means all main categories are included.
+        sub_categories (Optional[List[str]]): List of sub categories to filter the dataset.
+            The list of all sub categories can be found in the following paper: arXiv:2407.01294v2
+            Defaults to None, which means all sub categories are included.
+            If a main category is provided, only the sub categories under that main category are included.
 
     Returns:
         SeedPromptDataset: A SeedPromptDataset containing the examples.
@@ -520,60 +524,29 @@ def fetch_adv_bench_dataset(
         https://arxiv.org/abs/2307.15043 written by Andy Zou, Zifan Wang, Nicholas Carlini, Milad Nasr,
         J. Zico Kolter, Matt Fredrikson
     """
-    # Determine the file type from the source URL
-    file_type = source.split(".")[-1]
-    if file_type not in FILE_TYPE_HANDLERS:
-        valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
-        raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
+    dataset = fetch_examples(source=str(Path(DATASETS_PATH) / "data" / "adv_bench_dataset.json"), source_type="file")
 
-    # Fetch the examples using the provided `fetch_examples` function
-    examples = fetch_examples(source, source_type, cache, data_home)
+    filtered = dataset["data"]
 
-    # Extract and append the data to respective containers
-    prompts = [item["goal"] for item in examples if "goal" in item]
+    if main_categories:
+        filtered = [item for item in filtered if any(cat in main_categories for cat in item["main_categories"])]
+    if sub_categories:
+        filtered = [item for item in filtered if any(cat in sub_categories for cat in item["sub_categories"])]
 
-    # harm_categories = _fetch_from_file("pyrit/datasets/harm_categories/adv_bench_dataset.json", "json")
-    # harm_categories_list = list(harm_categories.values())
-
-    harm_categories = [
-        "Endangering National Security",
-        "Insulting Behavior",
-        "Discriminatory Behavior",
-        "Endangering Public Health",
-        "Copyright Issues",
-        "Violence",
-        "Drugs",
-        "Privacy Violation",
-        "Economic Crime",
-        "Mental Manipulation",
-        "Human Trafficking",
-        "Physical Harm",
-        "Sexual Content",
-        "Cybercrime",
-        "Disrupting Public Order",
-        "Environmental Damage",
-        "Psychological Harm",
-        "White-Collar Crime",
-        "Animal Abuse",
-    ]
-
-    # Create SeedPrompt instances from each example in 'prompts'
     seed_prompts = [
         SeedPrompt(
-            value=prompt,
+            value=item["prompt"],
             data_type="text",
             name="AdvBench Dataset",
             dataset_name="AdvBench Dataset",
-            harm_categories=harm_categories,
-            # harm_categories=harm_categories_list[i],
-            description="""AdvBench is a set of 520 harmful behaviors formulated as instructions. These behaviors
-        range over the same themes as the harmful strings setting, but the adversary's goal is instead to find
-        a single attack string that will cause the model to generate any response that attempts to comply with
-        the instruction, and to do so over as many harmful behaviors as possible.""",
+            harm_categories=item["main_categories"] + item["sub_categories"],
+            description="""AdvBench is a set of 520 harmful behaviors formulated as instructions. This dataset
+            has been extended to include harm categories for better filtering and analysis. The adversary's goal
+            is instead to find a single attack string that will cause the model to generate any response that
+            attempts to comply with the instruction, and to do so over as many harmful behaviors as possible.""",
             source="https://github.com/llm-attacks/llm-attacks/tree/main/data/advbench",
         )
-        for prompt in prompts
-        # for i, prompt in enumerate(prompts)
+        for item in filtered
     ]
 
     seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
