@@ -12,10 +12,14 @@ from pyrit.common import path
 
 nb_directory_path = pathlib.Path(path.DOCS_CODE_PATH, "scoring").resolve()
 
+skipped_files = [
+    "human_in_the_loop_scorer_gradio.ipynb",  # requires human input
+]
+
 
 @pytest.mark.parametrize(
     "file_name",
-    [file for file in os.listdir(nb_directory_path) if file.endswith(".ipynb")],
+    [file for file in os.listdir(nb_directory_path) if file.endswith(".ipynb") and file not in skipped_files],
 )
 def test_execute_notebooks(file_name):
     nb_path = pathlib.Path(nb_directory_path, file_name).resolve()
