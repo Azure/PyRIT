@@ -101,6 +101,7 @@ class SelfAskLikertScorer(Scorer):
             scored_prompt_id=request_response.id,
             category=self._score_category,
             task=task,
+            attack_configuration=request_response.attack_configuration,
         )
 
         score = unvalidated_score.to_score(
