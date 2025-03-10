@@ -521,6 +521,8 @@ def fetch_adv_bench_dataset(
     Algorithmic, and Automation Harms (arXiv:2407.01294v2). Each entry includes at least one main category and one
     subcategory to enable better filtering and analysis of the dataset.
 
+    Useful link: https://arxiv.org/html/2407.01294v2/x2.png (Overview of the Harms Taxonomy)
+
     Args:
         cache (bool): Whether to cache the fetched examples. Defaults to True.
 
