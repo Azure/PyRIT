@@ -540,7 +540,7 @@ def fetch_adv_bench_dataset(
     """
     dataset = fetch_examples(source=str(Path(DATASETS_PATH) / "data" / "adv_bench_dataset.json"), source_type="file")
 
-    filtered = dataset["data"]
+    filtered = dataset["data"]  # type: ignore
 
     if main_categories or sub_categories:
         main_set = set(main_categories or [])
