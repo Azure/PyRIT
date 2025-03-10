@@ -118,7 +118,9 @@ class OpenAIDALLETarget(OpenAITarget):
 
         request_body = self._construct_request_body(prompt=prompt)
 
-        params = {"api-version": self._api_version}
+        params = {}
+        if self._api_version is not None:
+            params["api-version"] = self._api_version
 
         try:
             http_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(
