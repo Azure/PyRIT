@@ -495,6 +495,7 @@ def fetch_decoding_trust_stereotypes_dataset(
 
 
 def fetch_adv_bench_dataset(
+    cache: bool = True,
     main_categories: Optional[
         List[
             Literal[
@@ -521,6 +522,8 @@ def fetch_adv_bench_dataset(
     subcategory to enable better filtering and analysis of the dataset.
 
     Args:
+        cache (bool): Whether to cache the fetched examples. Defaults to True.
+
         main_categories (Optional[List[str]]): A list of main harm categories to search for in the dataset.
             For descriptions of each category, see the paper: arXiv:2407.01294v2
             Defaults to None, which includes all 9 main categories.
@@ -538,7 +541,9 @@ def fetch_adv_bench_dataset(
         https://arxiv.org/abs/2307.15043 written by Andy Zou, Zifan Wang, Nicholas Carlini, Milad Nasr,
         J. Zico Kolter, Matt Fredrikson
     """
-    dataset = fetch_examples(source=str(Path(DATASETS_PATH) / "data" / "adv_bench_dataset.json"), source_type="file")
+    dataset = fetch_examples(
+        source=str(Path(DATASETS_PATH) / "data" / "adv_bench_dataset.json"), source_type="file", cache=False
+    )
 
     filtered = dataset["data"]  # type: ignore
 
