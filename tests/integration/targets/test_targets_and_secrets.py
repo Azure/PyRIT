@@ -54,7 +54,7 @@ async def test_connect_required_openai_text_targets(duckdb_instance, endpoint, a
         "model_name": os.getenv(model_name),
     }
     if no_api_version:
-        args["api_version"] = None 
+        args["api_version"] = None
     target = OpenAIChatTarget(
         **args
     )
