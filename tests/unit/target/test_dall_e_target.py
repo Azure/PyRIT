@@ -268,3 +268,50 @@ def test_is_json_response_supported(patch_central_database):
 
     mock_dalle_target = OpenAIDALLETarget(model_name="test", endpoint="test", api_key="test")
     assert mock_dalle_target.is_json_response_supported() is False
+
+
+@pytest.mark.asyncio
+async def test_dalle_target_no_api_version(
+    dalle_target: OpenAIDALLETarget,
+    sample_conversations: MutableSequence[PromptRequestPiece],
+    dalle_response_json: dict,
+):
+    target = OpenAIDALLETarget(
+        api_key="test_key", endpoint="https://mock.azure.com", model_name="dalle-3", api_version=None
+    )
+    request = PromptRequestResponse([sample_conversations[0]])
+
+    with patch(
+        "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
+    ) as mock_request:
+        mock_request.return_value = MagicMock()
+        mock_request.return_value.status_code = 200
+        mock_request.return_value.text = json.dumps(dalle_response_json)
+
+        await target.send_prompt_async(prompt_request=request)
+
+        called_params = mock_request.call_args[1]["params"]
+        assert "api-version" not in called_params
+
+
+@pytest.mark.asyncio
+async def test_dalle_target_default_api_version(
+    dalle_target: OpenAIDALLETarget,
+    sample_conversations: MutableSequence[PromptRequestPiece],
+    dalle_response_json: dict,
+):
+    target = OpenAIDALLETarget(api_key="test_key", endpoint="https://mock.azure.com", model_name="dalle-3")
+    request = PromptRequestResponse([sample_conversations[0]])
+
+    with patch(
+        "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
+    ) as mock_request:
+        mock_request.return_value = MagicMock()
+        mock_request.return_value.status_code = 200
+        mock_request.return_value.text = json.dumps(dalle_response_json)
+
+        await target.send_prompt_async(prompt_request=request)
+
+        called_params = mock_request.call_args[1]["params"]
+        assert "api-version" in called_params
+        assert called_params["api-version"] == "2024-06-01"
