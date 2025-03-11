@@ -20,6 +20,10 @@ class PromptRequestResponse:
     def __init__(self, request_pieces: Sequence[PromptRequestPiece]):
         self.request_pieces = request_pieces
 
+    def get_value(self, n: int = 0) -> str:
+        """Return the converted value of the nth request piece."""
+        return self.request_pieces[n].converted_value
+
     def validate(self):
         """
         Validates the request response.
