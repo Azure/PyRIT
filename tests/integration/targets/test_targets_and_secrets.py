@@ -55,9 +55,7 @@ async def test_connect_required_openai_text_targets(duckdb_instance, endpoint, a
     }
     if no_api_version:
         args["api_version"] = None
-    target = OpenAIChatTarget(
-        **args
-    )
+    target = OpenAIChatTarget(**args)
 
     await _assert_can_send_prompt(target)
 
