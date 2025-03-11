@@ -7,7 +7,6 @@ from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models.score import Score
 from pyrit.score.human_in_the_loop_gradio import HumanInTheLoopScorerGradio
 
-
 def if_gradio_installed():
     try:
         import gradio  # noqa: F401
