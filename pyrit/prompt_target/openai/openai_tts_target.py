@@ -36,7 +36,7 @@ class OpenAITTSTarget(OpenAITarget):
         response_format: TTSResponseFormat = "mp3",
         language: Optional[str] = "en",
         speed: Optional[float] = None,
-        api_version: str = "2024-05-01-preview",
+        api_version: str = "2024-06-01",
         **kwargs,
     ):
         """
@@ -74,7 +74,7 @@ class OpenAITTSTarget(OpenAITarget):
         self._response_format = response_format
         self._language = language
         self._speed = speed
-        self._api_version = api_version or "2024-03-01-preview"
+        self._api_version = api_version
 
     def _set_openai_env_configuration_vars(self):
         self.model_name_environment_variable = "OPENAI_TTS_MODEL"
