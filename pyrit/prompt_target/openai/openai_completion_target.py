@@ -91,7 +91,9 @@ class OpenAICompletionTarget(OpenAITarget):
 
         body = await self._construct_request_body(request=request_piece)
 
-        params = {"api-version": self._api_version}
+        params = {}
+        if self._api_version is not None:
+            params["api-version"] = self._api_version
 
         try:
             str_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(

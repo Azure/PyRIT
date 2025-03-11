@@ -78,11 +78,14 @@ class RealtimeTarget(OpenAITarget):
         logger.info(f"Connecting to WebSocket: {self._endpoint}")
 
         query_params = {
-            "api-version": self._api_version,
             "deployment": self._model_name,
             "api-key": self._api_key,
             "OpenAI-Beta": "realtime=v1",
         }
+
+        if self._api_version is not None:
+            query_params["api-version"] = self._api_version
+
         url = f"{self._endpoint}?{urlencode(query_params)}"
 
         websocket = await websockets.connect(url)
