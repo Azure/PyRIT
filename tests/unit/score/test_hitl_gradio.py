@@ -34,7 +34,7 @@ def score() -> Score:
     )
 
 
-@pytest.mark.skipif(not if_gradio_installed(), reason="Gradio is not installed")
+@pytest.mark.skipif(not if_gradio_installed(), reason="Gradio is not installed.")
 class TestHiTLGradio:
     @patch("pyrit.ui.rpc.AppRPCServer")
     def test_scorer_start_stop_rpc_server(self, mock_rpc_server):
