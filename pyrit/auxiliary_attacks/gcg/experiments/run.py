@@ -41,9 +41,9 @@ def run_trainer(*, model_name: str, setup: str = "single", **extra_config_parame
         )
 
     _load_environment_files()
-    hf_token = os.environ.get("HF_TOKEN")
+    hf_token = os.environ.get("HUGGINGFACE_TOKEN")
     if not hf_token:
-        raise ValueError("Please set the HF_TOKEN environment variable")
+        raise ValueError("Please set the HUGGINGFACE_TOKEN environment variable")
     runtime_config: Dict[str, Union[str, bool, Any]] = {
         "train_data": (
             "https://raw.githubusercontent.com/llm-attacks/llm-attacks/main/data/advbench/harmful_behaviors.csv"
