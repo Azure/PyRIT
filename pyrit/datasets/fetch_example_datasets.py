@@ -518,8 +518,8 @@ def fetch_adv_bench_dataset(
 
     This function fetches a dataset extending the original AdvBench Dataset by adding harm types to each prompt.
     Categorization was done using the Claude 3.7 model based on the Collaborative, Human-Centered Taxonomy of AI,
-    Algorithmic, and Automation Harms (arXiv:2407.01294v2). Each entry includes at least one main category and one
-    subcategory to enable better filtering and analysis of the dataset.
+    Algorithmic, and Automation Harms (https://arxiv.org/abs/2407.01294v2). Each entry includes at least one main
+    category and one subcategory to enable better filtering and analysis of the dataset.
 
     Useful link: https://arxiv.org/html/2407.01294v2/x2.png (Overview of the Harms Taxonomy)
 
@@ -541,7 +541,11 @@ def fetch_adv_bench_dataset(
         For more information and access to the original dataset and related materials, visit:
         https://github.com/llm-attacks/llm-attacks/blob/main/data/advbench. Based on research in paper:
         https://arxiv.org/abs/2307.15043 written by Andy Zou, Zifan Wang, Nicholas Carlini, Milad Nasr,
-        J. Zico Kolter, Matt Fredrikson
+        J. Zico Kolter, Matt Fredrikson.
+
+        The categorization approach was proposed by @paulinek13, who suggested using the Collaborative, Human-Centred
+        Taxonomy of AI, Algorithmic, and Automation Harms (arXiv:2407.01294v2) to classify the AdvBench examples and
+        used Anthropic's Claude 3.7 Sonnet model to perform the categorization based on the taxonomy's descriptions.
     """
     dataset = fetch_examples(
         source=str(Path(DATASETS_PATH) / "data" / "adv_bench_dataset.json"), source_type="file", cache=cache
