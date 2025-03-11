@@ -62,9 +62,9 @@ initialize_pyrit(memory_db_type=AZURE_SQL)
 azure_storage_plugin = AzureStoragePlugin(container_url=os.environ.get("AZURE_STORAGE_ACCOUNT_CONTAINER_URL"))
 
 processing_target = SemanticKernelPluginAzureOpenAIPromptTarget(
-    deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
-    api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
-    endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
+    deployment_name=os.environ.get("OPENAI_CHAT_MODEL"),
+    api_key=os.environ.get("OPENAI_CHAT_KEY"),
+    endpoint=os.environ.get("OPENAI_CHAT_ENDPOINT"),
     plugin=azure_storage_plugin,
     plugin_name="azure_storage",
 )
