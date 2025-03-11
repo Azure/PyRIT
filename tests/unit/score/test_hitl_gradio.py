@@ -2,20 +2,24 @@
 # Licensed under the MIT license.
 
 import asyncio
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models.score import Score
 from pyrit.score.human_in_the_loop_gradio import HumanInTheLoopScorerGradio
 
+
 def if_gradio_installed():
     try:
         import gradio  # noqa: F401
+
         return True
     except ModuleNotFoundError:
         return False
+
 
 @pytest.fixture
 def score() -> Score:
@@ -29,6 +33,7 @@ def score() -> Score:
         prompt_request_response_id="1234",
     )
 
+
 @pytest.mark.skipif(not if_gradio_installed(), reason="Gradio is not installed")
 class TestHiTLGradio:
     @patch("pyrit.ui.rpc.AppRPCServer")
@@ -37,7 +42,6 @@ class TestHiTLGradio:
         mock_rpc_server.return_value.start.assert_called_once()
         scorer.__del__()
         mock_rpc_server.return_value.stop.assert_called_once()
-
 
     @patch("pyrit.ui.rpc.AppRPCServer")
     def test_scorer_validate(self, _):
