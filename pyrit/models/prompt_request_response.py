@@ -24,6 +24,10 @@ class PromptRequestResponse:
         """Return the converted value of the nth request piece."""
         return self.request_pieces[n].converted_value
 
+    def get_values(self) -> list[str]:
+        """Return the converted values of all request pieces."""
+        return [request_piece.converted_value for request_piece in self.request_pieces]
+
     def validate(self):
         """
         Validates the request response.
