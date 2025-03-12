@@ -138,7 +138,7 @@ all = [
     "types-PyYAML>=6.0.12.9",
     "gradio>=5.16.0",
     "rpyc>=6.0.1",
-    "pywebview>=5.4"
+    "pywebview>=5.4",
     "opencv-python>=4.11.0.86",
 ]
 
