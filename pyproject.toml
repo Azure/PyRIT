@@ -127,6 +127,7 @@ all = [
     "playwright>=1.49.0",
     "sentencepiece>=0.2.0",
     "torch>=2.3.0",
+    "opencv-python>=4.11.0.86",
 ]
 
 [project.scripts]
