@@ -13,6 +13,7 @@ from pyrit.ui.rpc import RPCAppException
 
 DEFAULT_PORT = 18812
 
+
 class RPCClientStoppedException(RPCAppException):
     """
     This exception is thrown when the RPC client is stopped.
@@ -20,6 +21,7 @@ class RPCClientStoppedException(RPCAppException):
 
     def __init__(self):
         super().__init__("RPC client is stopped.")
+
 
 class RPCClient:
     def __init__(self, callback_disconnected: Optional[Callable] = None):

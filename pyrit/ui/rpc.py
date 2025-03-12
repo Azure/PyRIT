@@ -190,7 +190,7 @@ class AppRPCServer:
 
         if self._client_ready_semaphore is not None:
             self._client_ready_semaphore.release()
-        
+
         if self._score_received_semaphore is not None:
             self._score_received_semaphore.release()
 

@@ -1,24 +1,26 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
-import time
 import importlib.util
-
-from threading import Thread, Event
+import time
+from threading import Event, Thread
 from typing import Callable, Optional
 from unittest.mock import MagicMock, patch
+
+import pytest
+
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
+from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.score import Score
 from pyrit.score import HumanInTheLoopScorerGradio
 from pyrit.ui.rpc import RPCAlreadyRunningException
 from pyrit.ui.rpc_client import RPCClient, RPCClientStoppedException
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+
 
 def if_gradio_installed():
     return importlib.util.find_spec("gradio") is not None
-    
+
 
 @pytest.fixture
 def score() -> Score:
@@ -32,6 +34,7 @@ def score() -> Score:
         prompt_request_response_id="1234",
     )
 
+
 @pytest.fixture
 def promptOriginal() -> PromptRequestPiece:
     return PromptRequestPiece(
@@ -40,19 +43,20 @@ def promptOriginal() -> PromptRequestPiece:
         converted_value="This is the converted value",
     )
 
-class IntegrationRpcClient():
-    def __init__(self, score_callback: Callable[[PromptRequestPiece], bool], disconnect_callback: Callable):
+
+class IntegrationRpcClient:
+    def __init__(self, score_callback: Callable[[PromptRequestPiece], bool], disconnect_callback: Optional[Callable]):
         self._score_callback = score_callback
         self.rpc_client = RPCClient(disconnect_callback)
         self._is_running = False
-        self._thread = None # type: Optional[Thread]
-        self._thread_exception  = None # type: Optional[Exception]
-    
+        self._thread = None  # type: Optional[Thread]
+        self._thread_exception = None  # type: Optional[Exception]
+
     def start(self):
         self._is_running = True
         self._thread = Thread(target=self._run)
         self._thread.start()
-        
+
     def _run(self):
         self.rpc_client.start()
         try:
@@ -77,6 +81,7 @@ class IntegrationRpcClient():
         if self._thread_exception is not None:
             raise self._thread_exception
 
+
 @pytest.mark.skipif(not if_gradio_installed(), reason="Gradio is not installed")
 class TestHiTLGradioIntegration:
 
@@ -85,19 +90,19 @@ class TestHiTLGradioIntegration:
     @pytest.mark.timeout(30)
     async def test_scorer_can_start(self, mock_is_app_running, promptOriginal: PromptRequestPiece):
         memory = MagicMock(MemoryInterface)
-        with patch.object(CentralMemory, "get_memory_instance", return_value=memory):    
+        with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
 
             disconnected_event = Event()
+
             def disconnected():
                 print("Disconnected called")
                 disconnected_event.set()
-                
 
             def score_callback(prompt: PromptRequestPiece) -> bool:
                 assert prompt.original_value == promptOriginal.original_value
                 assert prompt.converted_value == promptOriginal.converted_value
                 return True
-            
+
             mock_is_app_running.return_value = True
 
             rpc_client = IntegrationRpcClient(score_callback, disconnected)
@@ -110,25 +115,26 @@ class TestHiTLGradioIntegration:
             rpc_client.stop()
             scorer.__del__()
 
-
             disconnected_event.wait(15)
-            assert disconnected_event.is_set() == True
+            assert disconnected_event.is_set()
 
             mock_is_app_running.assert_called_once()
-    
+
     @patch("pyrit.ui.rpc.is_app_running")
     @pytest.mark.asyncio
     @pytest.mark.timeout(30)
     async def test_scorer_receive_multiple(self, mock_is_app_running, promptOriginal: PromptRequestPiece):
         memory = MagicMock(MemoryInterface)
-        with patch.object(CentralMemory, "get_memory_instance", return_value=memory):    
+        with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
 
             disconnected_event = Event()
+
             def disconnected():
                 print("Disconnected called")
                 disconnected_event.set()
-                
+
             i = -1
+
             def score_callback(prompt: PromptRequestPiece) -> bool:
                 nonlocal i
                 i += 1
@@ -138,7 +144,7 @@ class TestHiTLGradioIntegration:
                 if i % 2 == 0:
                     return True
                 return False
-            
+
             mock_is_app_running.return_value = True
 
             rpc_client = IntegrationRpcClient(score_callback, disconnected)
@@ -159,9 +165,8 @@ class TestHiTLGradioIntegration:
             rpc_client.stop()
             scorer.__del__()
 
-
             disconnected_event.wait(15)
-            assert disconnected_event.is_set() == True
+            assert disconnected_event.is_set()
 
             mock_is_app_running.assert_called_once()
 
@@ -171,7 +176,7 @@ class TestHiTLGradioIntegration:
     async def test_scorer_handle_client_disconnect(self, mock_is_app_running):
         memory = MagicMock(MemoryInterface)
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-            
+
             disconnected_event = Event()
 
             def disconnected():
@@ -181,28 +186,28 @@ class TestHiTLGradioIntegration:
             def score_callback(prompt: PromptRequestPiece) -> bool:
                 pytest.fail("Should not be called")
                 return True
-            
+
             mock_is_app_running.return_value = True
 
             rpc_client = IntegrationRpcClient(score_callback, disconnected)
             scorer = HumanInTheLoopScorerGradio()
 
             rpc_client.start()
-            time.sleep(2) # Wait for the client to start
+            time.sleep(2)  # Wait for the client to start
             rpc_client.stop()
 
             scorer.__del__()
 
             disconnected_event.wait(15)
-            assert disconnected_event.is_set() == True
-    
+            assert disconnected_event.is_set()
+
     @patch("pyrit.ui.rpc.is_app_running")
     @pytest.mark.asyncio
     @pytest.mark.timeout(30)
     async def test_scorer_handle_server_disconnect(self, mock_is_app_running):
         memory = MagicMock(MemoryInterface)
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-            
+
             disconnected_event = Event()
 
             def disconnected():
@@ -212,20 +217,20 @@ class TestHiTLGradioIntegration:
             def score_callback(prompt: PromptRequestPiece) -> bool:
                 pytest.fail("Should not be called")
                 return True
-            
+
             mock_is_app_running.return_value = True
 
             rpc_client = IntegrationRpcClient(score_callback, disconnected)
             scorer = HumanInTheLoopScorerGradio()
             rpc_client.start()
-            time.sleep(2) # Wait for the client to start
+            time.sleep(2)  # Wait for the client to start
             scorer.__del__()
 
-            time.sleep(2) # Wait for the client to stop
+            time.sleep(2)  # Wait for the client to stop
             rpc_client.stop()
 
             disconnected_event.wait(15)
-            assert disconnected_event.is_set() == True
+            assert disconnected_event.is_set()
 
     @patch("pyrit.ui.rpc.is_app_running")
     @pytest.mark.timeout(30)
@@ -234,7 +239,6 @@ class TestHiTLGradioIntegration:
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
             mock_is_app_running.return_value = True
 
-            scorer = HumanInTheLoopScorerGradio()
+            _ = HumanInTheLoopScorerGradio()
             with pytest.raises(RPCAlreadyRunningException):
                 HumanInTheLoopScorerGradio()
-            
