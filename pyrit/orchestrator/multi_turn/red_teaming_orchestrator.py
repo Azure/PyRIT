@@ -416,8 +416,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                     labels=memory_labels,
                 )
             )
-            .request_pieces[0]
-            .converted_value
+            .get_value()
         )
 
         return response_text

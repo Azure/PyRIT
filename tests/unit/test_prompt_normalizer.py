@@ -224,7 +224,7 @@ async def test_send_prompt_async_no_converters_response(
 
     # Send prompt async and check the response
     response = await normalizer.send_prompt_async(seed_prompt_group=seed_prompt_group, target=prompt_target)
-    assert response.request_pieces[0].converted_value == "Hello", "There were no response converters"
+    assert response.get_value() == "Hello", "There were no response converters"
 
 
 @pytest.mark.asyncio
@@ -245,7 +245,7 @@ async def test_send_prompt_async_converters_response(
         target=prompt_target,
     )
 
-    assert response.request_pieces[0].converted_value == "SGVsbG8="
+    assert response.get_value() == "SGVsbG8="
 
 
 @pytest.mark.asyncio
@@ -366,9 +366,9 @@ async def test_convert_response_values_index(mock_memory_instance, response: Pro
     normalizer = PromptNormalizer()
 
     await normalizer.convert_values(converter_configurations=[response_converter], request_response=response)
-    assert response.request_pieces[0].converted_value == "SGVsbG8=", "Converter should be applied here"
+    assert response.get_value() == "SGVsbG8=", "Converter should be applied here"
     assert (
-        response.request_pieces[1].converted_value == "part 2"
+        response.get_value(1) == "part 2"
     ), "Converter should not be applied since we specified only 0"
 
 
@@ -381,8 +381,8 @@ async def test_convert_response_values_type(mock_memory_instance, response: Prom
     normalizer = PromptNormalizer()
 
     await normalizer.convert_values(converter_configurations=[response_converter], request_response=response)
-    assert response.request_pieces[0].converted_value == "SGVsbG8="
-    assert response.request_pieces[1].converted_value == "cGFydCAy"
+    assert response.get_value() == "SGVsbG8="
+    assert response.get_value(1) == "cGFydCAy"
 
 
 @pytest.mark.asyncio

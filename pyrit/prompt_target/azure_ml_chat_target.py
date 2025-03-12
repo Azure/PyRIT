@@ -183,7 +183,7 @@ class AzureMLChatTarget(PromptChatTarget):
 
         logger.info(
             "Received the following response from the prompt target"
-            + f"{response_entry.request_pieces[0].converted_value}"
+            + f"{response_entry.get_value()}"
         )
         return response_entry
 

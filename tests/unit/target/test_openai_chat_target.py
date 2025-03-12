@@ -442,7 +442,7 @@ async def test_send_prompt_async(openai_response_json: dict, gpt4o_chat_engine: 
             mock_create.return_value = openai_mock_return
             response: PromptRequestResponse = await gpt4o_chat_engine.send_prompt_async(prompt_request=prompt_req_resp)
             assert len(response.request_pieces) == 1
-            assert response.request_pieces[0].converted_value == "hi"
+            assert response.get_value() == "hi"
     os.remove(tmp_file_name)
 
 
@@ -608,7 +608,7 @@ def test_construct_prompt_response_valid_stop(
     )
 
     assert len(result.request_pieces) == 1
-    assert result.request_pieces[0].converted_value == "Hello from stop"
+    assert result.get_value() == "Hello from stop"
 
 
 def test_construct_prompt_response_empty_response(

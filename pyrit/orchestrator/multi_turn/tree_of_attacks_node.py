@@ -219,8 +219,7 @@ class TreeOfAttacksNode:
                     orchestrator_identifier=self._orchestrator_id,
                 )
             )
-            .request_pieces[0]
-            .converted_value
+            .get_value()
         )
 
         return self._parse_red_teaming_response(adversarial_chat_response)

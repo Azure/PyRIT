@@ -358,8 +358,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
                     labels=memory_labels,
                 )
             )
-            .request_pieces[0]
-            .converted_value
+            .get_value()
         )
         response_text = remove_markdown_json(response_text)
 

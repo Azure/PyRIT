@@ -163,8 +163,7 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
                     response_converter_configurations=self._conversation_history_converters,
                 )
             )
-            .request_pieces[0]
-            .converted_value
+            .get_value()
         )
 
         return user_turn_answer
@@ -187,8 +186,7 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
                     response_converter_configurations=self._conversation_history_converters,
                 )
             )
-            .request_pieces[0]
-            .converted_value
+            .get_value()
         )
 
         return user_turn
@@ -211,8 +209,7 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
                     response_converter_configurations=self._conversation_history_converters,
                 )
             )
-            .request_pieces[0]
-            .converted_value
+            .get_value()
         )
 
         return objective_as_question

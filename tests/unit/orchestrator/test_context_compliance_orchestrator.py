@@ -161,7 +161,7 @@ async def test_get_prepended_conversation_async(context_compliance_orchestrator)
 
     user_msg = result[0]
     assert user_msg.request_pieces[0].role == "user"
-    assert user_msg.request_pieces[0].converted_value == "benign_user_query"
+    assert user_msg.get_value() == "benign_user_query"
 
     # The assistant turn
     assistant_msg = result[1]
