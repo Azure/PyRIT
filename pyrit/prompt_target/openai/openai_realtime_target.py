@@ -40,7 +40,7 @@ class RealtimeTarget(OpenAITarget):
             model_name (str, Optional): The name of the model.
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-                Defaults to the AZURE_OPENAI_CHAT_KEY environment variable.
+                Defaults to the OPENAI_CHAT_KEY environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
             use_aad_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
@@ -78,11 +78,14 @@ class RealtimeTarget(OpenAITarget):
         logger.info(f"Connecting to WebSocket: {self._endpoint}")
 
         query_params = {
-            "api-version": self._api_version,
             "deployment": self._model_name,
             "api-key": self._api_key,
             "OpenAI-Beta": "realtime=v1",
         }
+
+        if self._api_version is not None:
+            query_params["api-version"] = self._api_version
+
         url = f"{self._endpoint}?{urlencode(query_params)}"
 
         websocket = await websockets.connect(url)
