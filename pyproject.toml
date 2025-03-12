@@ -90,6 +90,7 @@ dev = [
     "pytest>=7.3.1",
     "pytest-asyncio>=0.23.5",
     "pytest-cov>=4.0.0",
+    "pytest-timeout>=2.3.1",
     "respx>=0.22.0",
     "semantic-kernel>=1.20.0",
     "types-PyYAML>=6.0.12.9",
