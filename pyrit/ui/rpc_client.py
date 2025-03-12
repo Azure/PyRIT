@@ -9,9 +9,17 @@ from typing import Callable, Optional
 import rpyc
 
 from pyrit.models import PromptRequestPiece, Score
+from pyrit.ui.rpc import RPCAppException
 
 DEFAULT_PORT = 18812
 
+class RPCClientStoppedException(RPCAppException):
+    """
+    This exception is thrown when the RPC client is stopped.
+    """
+
+    def __init__(self):
+        super().__init__("RPC client is stopped.")
 
 class RPCClient:
     def __init__(self, callback_disconnected: Optional[Callable] = None):
@@ -41,7 +49,9 @@ class RPCClient:
 
     def wait_for_prompt(self) -> PromptRequestPiece:
         self._prompt_received_sem.acquire()
-        return self._prompt_received
+        if self._is_running:
+            return self._prompt_received
+        raise RPCClientStoppedException()
 
     def send_prompt_response(self, response: bool):
         score = Score(
@@ -68,6 +78,9 @@ class RPCClient:
         # Send a signal to the thread to stop
         self._shutdown_event.set()
 
+        if self._bgsrv_thread is not None:
+            self._bgsrv_thread.join()
+
     def reconnect(self):
         """
         Reconnect to the server.
@@ -86,6 +99,10 @@ class RPCClient:
             while self._is_running:
                 self._c.root.receive_ping()
                 time.sleep(1.5)
+            if not self._is_running:
+                print("Connection closed")
+                if self._callback_disconnected is not None:
+                    self._callback_disconnected()
         except EOFError:
             print("Connection closed")
             if self._callback_disconnected is not None:
@@ -103,6 +120,9 @@ class RPCClient:
         self._shutdown_event.wait()
 
         self._is_running = False
+
+        # Release the semaphore in case it was waiting
+        self._prompt_received_sem.release()
         self._ping_thread.join()
 
         # Avoid calling stop() twice if the server is already stopped. This can happen if the server is stopped

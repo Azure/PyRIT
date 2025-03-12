@@ -188,8 +188,11 @@ class AppRPCServer:
 
         self._server_is_running = False
 
-        self._client_ready_semaphore.release()
-        self._score_received_semaphore.release()
+        if self._client_ready_semaphore is not None:
+            self._client_ready_semaphore.release()
+        
+        if self._score_received_semaphore is not None:
+            self._score_received_semaphore.release()
 
     def send_score_prompt(self, prompt: PromptRequestPiece, task: Optional[str] = None):
         """
