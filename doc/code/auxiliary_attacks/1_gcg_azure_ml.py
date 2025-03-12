@@ -104,7 +104,7 @@ job = command(
         "batch_size": 256,
     },
     environment=f"{env_docker_context.name}:{env_docker_context.version}",
-    environment_variables={"HF_TOKEN": os.environ["HF_TOKEN"]},
+    environment_variables={"HUGGINGFACE_TOKEN": os.environ["HUGGINGFACE_TOKEN"]},
     display_name="suffix_generation",
     description="Generate a suffix for attacking LLMs.",
     compute=compute_name,
