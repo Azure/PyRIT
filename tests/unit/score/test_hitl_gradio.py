@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import asyncio
+import importlib.util
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -13,12 +14,7 @@ from pyrit.score.human_in_the_loop_gradio import HumanInTheLoopScorerGradio
 
 
 def if_gradio_installed():
-    try:
-        import gradio  # noqa: F401
-
-        return True
-    except ModuleNotFoundError:
-        return False
+    return importlib.util.find_spec("gradio") is not None
 
 
 @pytest.fixture
