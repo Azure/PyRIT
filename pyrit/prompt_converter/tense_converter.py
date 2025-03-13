@@ -34,6 +34,6 @@ class TenseConverter(LLMGenericTextConverter):
 
         super().__init__(
             converter_target=converter_target,
-            prompt_template=prompt_template,
+            system_prompt_template=prompt_template,
             tense=tense,
         )

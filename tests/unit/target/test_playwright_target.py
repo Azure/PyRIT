@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from typing import MutableSequence
 from unittest.mock import AsyncMock
 
 import pytest
@@ -14,7 +15,7 @@ from pyrit.prompt_target import PlaywrightTarget
 
 
 @pytest.fixture
-def sample_conversations() -> list[PromptRequestPiece]:
+def sample_conversations() -> MutableSequence[PromptRequestPiece]:
     conversation_1 = PromptRequestPiece(
         role="user",
         converted_value="Hello",

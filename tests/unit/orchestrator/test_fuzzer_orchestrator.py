@@ -32,10 +32,10 @@ def scoring_target(patch_central_database) -> MockPromptTarget:
 
 
 @pytest.fixture
-def simple_prompts() -> list[SeedPrompt]:
+def simple_prompts() -> list[str]:
     """sample prompts"""
     prompts = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
-    return prompts.prompts
+    return [p.value for p in prompts.prompts]
 
 
 @pytest.fixture
@@ -152,7 +152,11 @@ async def test_execute_fuzzer(
                 assert len(prompt_node[0].children) == rounds
 
 
-def test_prompt_templates(simple_prompts: list, simple_templateconverter: list[FuzzerConverter], scoring_target):
+def test_prompt_templates(
+    simple_prompts: list[str],
+    simple_templateconverter: list[FuzzerConverter],
+    scoring_target: MockPromptTarget,
+):
     with pytest.raises(ValueError) as e:
         FuzzerOrchestrator(
             prompts=simple_prompts,

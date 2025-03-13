@@ -13,7 +13,7 @@ import requests
 from datasets import load_dataset
 
 from pyrit.common.csv_helper import read_csv, write_csv
-from pyrit.common.json_helper import read_json, write_json
+from pyrit.common.json_helper import read_json, read_jsonl, write_json, write_jsonl
 from pyrit.common.path import DATASETS_PATH, DB_DATA_PATH
 from pyrit.common.text_helper import read_txt, write_txt
 from pyrit.models import (
@@ -30,6 +30,7 @@ FileHandlerWrite = Callable[[TextIO, List[Dict[str, str]]], None]
 
 FILE_TYPE_HANDLERS: Dict[str, Dict[str, Callable]] = {
     "json": {"read": read_json, "write": write_json},
+    "jsonl": {"read": read_jsonl, "write": write_jsonl},
     "csv": {"read": read_csv, "write": write_csv},
     "txt": {"read": read_txt, "write": write_txt},
 }
@@ -494,21 +495,44 @@ def fetch_decoding_trust_stereotypes_dataset(
 
 
 def fetch_adv_bench_dataset(
-    source: str = (
-        "https://raw.githubusercontent.com/llm-attacks/llm-attacks/main/data/advbench/" "harmful_behaviors.csv"
-    ),
-    source_type: Literal["public_url"] = "public_url",
     cache: bool = True,
-    data_home: Optional[Path] = None,
+    main_categories: Optional[
+        List[
+            Literal[
+                "Autonomy",
+                "Physical",
+                "Psychological",
+                "Reputational",
+                "Financial and Business",
+                "Human Rights and Civil Liberties",
+                "Societal and Cultural",
+                "Political and Economic",
+                "Environmental",
+            ]
+        ]
+    ] = None,
+    sub_categories: Optional[List[str]] = None,
 ) -> SeedPromptDataset:
     """
-    Fetch AdvBench examples and create a SeedPromptDataset.
+    Retrieve AdvBench examples enhanced with categories from a collaborative and human-centered harms taxonomy.
+
+    This function fetches a dataset extending the original AdvBench Dataset by adding harm types to each prompt.
+    Categorization was done using the Claude 3.7 model based on the Collaborative, Human-Centered Taxonomy of AI,
+    Algorithmic, and Automation Harms (https://arxiv.org/abs/2407.01294v2). Each entry includes at least one main
+    category and one subcategory to enable better filtering and analysis of the dataset.
+
+    Useful link: https://arxiv.org/html/2407.01294v2/x2.png (Overview of the Harms Taxonomy)
 
     Args:
-        source (str): The source from which to fetch examples. Defaults to the AdvBench repository.
-        source_type (Literal["public_url"]): The type of source ('public_url').
         cache (bool): Whether to cache the fetched examples. Defaults to True.
-        data_home (Optional[Path]): Directory to store cached data. Defaults to None.
+
+        main_categories (Optional[List[str]]): A list of main harm categories to search for in the dataset.
+            For descriptions of each category, see the paper: arXiv:2407.01294v2
+            Defaults to None, which includes all 9 main categories.
+
+        sub_categories (Optional[List[str]]): A list of harm subcategories to search for in the dataset.
+            For the complete list of all subcategories, see the paper: arXiv:2407.01294v2.
+            Defaults to None, which includes all subcategories.
 
     Returns:
         SeedPromptDataset: A SeedPromptDataset containing the examples.
@@ -517,70 +541,87 @@ def fetch_adv_bench_dataset(
         For more information and access to the original dataset and related materials, visit:
         https://github.com/llm-attacks/llm-attacks/blob/main/data/advbench. Based on research in paper:
         https://arxiv.org/abs/2307.15043 written by Andy Zou, Zifan Wang, Nicholas Carlini, Milad Nasr,
-        J. Zico Kolter, Matt Fredrikson
+        J. Zico Kolter, Matt Fredrikson.
+
+        The categorization approach was proposed by @paulinek13, who suggested using the Collaborative, Human-Centred
+        Taxonomy of AI, Algorithmic, and Automation Harms (arXiv:2407.01294v2) to classify the AdvBench examples and
+        used Anthropic's Claude 3.7 Sonnet model to perform the categorization based on the taxonomy's descriptions.
     """
-    # Determine the file type from the source URL
-    file_type = source.split(".")[-1]
-    if file_type not in FILE_TYPE_HANDLERS:
-        valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
-        raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
+    dataset = fetch_examples(
+        source=str(Path(DATASETS_PATH) / "data" / "adv_bench_dataset.json"), source_type="file", cache=cache
+    )
 
-    # Fetch the examples using the provided `fetch_examples` function
-    examples = fetch_examples(source, source_type, cache, data_home)
+    filtered = dataset["data"]  # type: ignore
 
-    # Extract and append the data to respective containers
-    prompts = [item["goal"] for item in examples if "goal" in item]
+    if main_categories or sub_categories:
+        main_set = set(main_categories or [])
+        sub_set = set(sub_categories or [])
 
-    harm_categories = [
-        "Endangering National Security",
-        "Insulting Behavior",
-        "Discriminatory Behavior",
-        "Endangering Public Health",
-        "Copyright Issues",
-        "Violence",
-        "Drugs",
-        "Privacy Violation",
-        "Economic Crime",
-        "Mental Manipulation",
-        "Human Trafficking",
-        "Physical Harm",
-        "Sexual Content",
-        "Cybercrime",
-        "Disrupting Public Order",
-        "Environmental Damage",
-        "Psychological Harm",
-        "White-Collar Crime",
-        "Animal Abuse",
-    ]
+        # Include an entry if it matches ANY specified main category OR ANY specified subcategory
+        filtered = [
+            item
+            for item in filtered
+            if (main_set and any(cat in main_set for cat in item["main_categories"]))
+            or (sub_set and any(cat in sub_set for cat in item["sub_categories"]))
+        ]
 
-    # Create SeedPrompt instances from each example in 'prompts'
     seed_prompts = [
         SeedPrompt(
-            value=prompt,
+            value=item["prompt"],
             data_type="text",
-            name="AdvBench Dataset",
+            name="AdvBench Dataset [Extended]",
             dataset_name="AdvBench Dataset",
-            harm_categories=harm_categories,
-            description="""AdvBench is a set of 520 harmful behaviors formulated as instructions. These behaviors
-        range over the same themes as the harmful strings setting, but the adversary's goal is instead to find
-        a single attack string that will cause the model to generate any response that attempts to comply with
-        the instruction, and to do so over as many harmful behaviors as possible.""",
+            harm_categories=item["main_categories"] + item["sub_categories"],
+            description="""AdvBench is a set of 520 harmful behaviors formulated as instructions. This dataset
+            has been extended to include harm categories for better filtering and analysis. The adversary's goal
+            is instead to find a single attack string that will cause the model to generate any response that
+            attempts to comply with the instruction, and to do so over as many harmful behaviors as possible.""",
             source="https://github.com/llm-attacks/llm-attacks/tree/main/data/advbench",
         )
-        for prompt in prompts
+        for item in filtered
     ]
 
     seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
     return seed_prompt_dataset
 
 
-def fetch_pku_safe_rlhf_dataset(include_safe_prompts: bool = True) -> SeedPromptDataset:
+def fetch_pku_safe_rlhf_dataset(
+    include_safe_prompts: bool = True,
+    filter_harm_categories: Optional[
+        List[
+            Literal[
+                "Animal Abuse",
+                "Copyright Issues",
+                "Cybercrime",
+                "Discriminatory Behavior",
+                "Disrupting Public Order",
+                "Drugs",
+                "Economic Crime",
+                "Endangering National Security",
+                "Endangering Public Health",
+                "Environmental Damage",
+                "Human Trafficking",
+                "Insulting Behavior",
+                "Mental Manipulation",
+                "Physical Harm",
+                "Privacy Violation",
+                "Psychological Harm",
+                "Sexual Content",
+                "Violence",
+                "White-Collar Crime",
+            ]
+        ]
+    ] = None,
+) -> SeedPromptDataset:
     """
     Fetch PKU-SafeRLHF examples and create a SeedPromptDataset.
 
     Args:
-        include_safe_prompts (bool): all prompts in the dataset are returned if True; the dataset has
-        RLHF markers for unsafe responses, so if False we only return the unsafe subset
+        include_safe_prompts (bool): All prompts in the dataset are returned if True; the dataset has
+            RLHF markers for unsafe responses, so if False we only return the unsafe subset.
+        filter_harm_categories: List of harm categories to filter the examples.
+            Defaults to None, which means all categories are included.
+            Otherwise, only prompts with at least one matching category are included.
 
     Returns:
         SeedPromptDataset: A SeedPromptDataset containing the examples.
@@ -592,52 +633,40 @@ def fetch_pku_safe_rlhf_dataset(include_safe_prompts: bool = True) -> SeedPrompt
         and Josef Dai and Boren Zheng and Tianyi Qiu and Boxun Li and Yaodong Yang
     """
     data = load_dataset("PKU-Alignment/PKU-SafeRLHF", "default")
-    if include_safe_prompts:
-        prompts = [item["prompt"] for item in data["train"]]
-    else:
-        # Each prompt has two responses in the dataset.
-        # If either of them is marked as unsafe we include it.
-        prompts = [
-            item["prompt"]
-            for item in data["train"]
-            if (item["is_response_0_safe"] is False or item["is_response_1_safe"] is False)
-        ]
 
-    harm_categories = [
-        "Endangering National Security",
-        "Insulting Behavior",
-        "Discriminatory Behavior",
-        "Endangering Public Health",
-        "Copyright Issues",
-        "Violence",
-        "Drugs",
-        "Privacy Violation",
-        "Economic Crime",
-        "Mental Manipulation",
-        "Human Trafficking",
-        "Physical Harm",
-        "Sexual Content",
-        "Cybercrime",
-        "Disrupting Public Order",
-        "Environmental Damage",
-        "Psychological Harm",
-        "White-Collar Crime",
-        "Animal Abuse",
-    ]
+    seed_prompts = []
 
-    seed_prompts = [
-        SeedPrompt(
-            value=prompt,
-            data_type="text",
-            name="PKU-SafeRLHF",
-            dataset_name="PKU-SafeRLHF",
-            harm_categories=harm_categories,
-            description="""This is a Hugging Face dataset that labels a prompt and 2 responses categorizing their
-        helpfulness or harmfulness. Only the 'prompt' column is extracted.""",
-            source="https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF",
-        )
-        for prompt in prompts
-    ]
+    for item in data["train"]:
+        is_unsafe = not (item["is_response_0_safe"] and item["is_response_1_safe"])
+
+        # Skip if safe prompts are excluded and the item is safe
+        if not include_safe_prompts and not is_unsafe:
+            continue
+
+        # Collect harm categories from both responses, avoid duplicates
+        harm_categories = {
+            category
+            for response_key in ["response_0_harm_category", "response_1_harm_category"]
+            for category, is_harmful in item[response_key].items()
+            if is_harmful
+        }
+
+        # Add the prompt in two cases:
+        # 1. No harm categories are provided for filtering
+        # 2. At least one harm category matches the specified filter criteria
+        if not filter_harm_categories or any(category in filter_harm_categories for category in harm_categories):
+            seed_prompts.append(
+                SeedPrompt(
+                    value=item["prompt"],
+                    data_type="text",
+                    name="PKU-SafeRLHF",
+                    dataset_name="PKU-SafeRLHF",
+                    harm_categories=sorted(list(harm_categories)),
+                    description="""This is a Hugging Face dataset that labels a prompt and 2 responses categorizing
+                        their helpfulness or harmfulness. Only the 'prompt' column is extracted.""",
+                    source="https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF",
+                )
+            )
 
     seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
     return seed_prompt_dataset
@@ -844,3 +873,134 @@ def fetch_wmdp_dataset(category: Optional[str] = None) -> QuestionAnsweringDatas
     )
 
     return dataset
+
+
+def fetch_aya_redteaming_dataset(
+    cache: bool = True,
+    data_home: Optional[Path] = None,
+    language: Literal["English", "Hindi", "French", "Spanish", "Arabic", "Russian", "Serbian", "Tagalog"] = "English",
+    harm_categories: Optional[
+        List[
+            Literal[
+                "Bullying & Harassment",
+                "Discrimination & Injustice",
+                "Graphic material",
+                "Harms of Representation Allocation and Quality of Service",
+                "Hate Speech",
+                "Non-consensual sexual content",
+                "Profanity",
+                "Self-Harm",
+                "Violence, Threats & Incitement",
+            ]
+        ]
+    ] = None,
+    harm_scope: Optional[Literal["global", "local"]] = None,
+) -> SeedPromptDataset:
+    """
+    Fetch examples from the Aya Red-teaming dataset with optional filtering and create a SeedPromptDataset.
+
+    Args:
+        cache (bool): Whether to cache the fetched examples. Defaults to True.
+        data_home: Directory to store cached data. Defaults to None.
+        language: The language to fetch prompts for. Defaults to "English".
+        harm_categories: List of harm categories to filter the examples.
+            Defaults to None, which means all categories are included.
+            Otherwise, only prompts with at least one matching category are included.
+        harm_scope: Whether to fetch globally or locally harmful prompts.
+            Defaults to None, which means all examples are included.
+
+    Returns:
+        SeedPromptDataset: A SeedPromptDataset containing the filtered examples.
+
+    Note:
+        For more information and access to the original dataset and related materials, visit:
+        https://huggingface.co/datasets/CohereForAI/aya_redteaming/blob/main/README.md \n
+        Related paper: https://arxiv.org/abs/2406.18682 \n
+        The dataset license: Apache 2.0
+
+    Warning:
+        Due to the nature of these prompts, it may be advisable to consult your relevant legal
+        department before testing them with LLMs to ensure compliance and reduce potential risks.
+    """
+    _lang = {
+        "English": "eng",
+        "Hindi": "hin",
+        "French": "fra",
+        "Spanish": "spa",
+        "Arabic": "arb",
+        "Russian": "rus",
+        "Serbian": "srp",
+        "Tagalog": "tgl",
+    }
+
+    examples = fetch_examples(
+        source=f"https://huggingface.co/datasets/CohereForAI/aya_redteaming/raw/main/aya_{_lang[language]}.jsonl",
+        source_type="public_url",
+        cache=cache,
+        data_home=data_home,
+    )
+
+    seed_prompts = []
+
+    for example in examples:
+        categories = eval(example["harm_category"])
+        if harm_categories is None or any(cat in categories for cat in harm_categories):
+            if harm_scope is None or example["global_or_local"] == harm_scope:
+                seed_prompts.append(
+                    SeedPrompt(
+                        value=example["prompt"],
+                        data_type="text",
+                        name="Aya Red-teaming Examples",
+                        dataset_name="Aya Red-teaming Examples",
+                        harm_categories=categories,
+                        source="https://huggingface.co/datasets/CohereForAI/aya_redteaming",
+                    )
+                )
+
+    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
+    return seed_prompt_dataset
+
+
+def fetch_babelscape_alert_dataset(
+    category: Literal["alert", "alert_adversarial"] = "alert_adversarial"
+) -> SeedPromptDataset:
+    """
+    Fetch the Babelscape/ALERT dataset and create a SeedPromptDataset.
+
+    Args:
+        category (str): The dataset category, "alert" or "alert_adversarial"
+
+    Returns:
+        SeedPromptDataset: A SeedPromptDataset containing the examples.
+    """
+
+    data_categories = None
+    if not category:  # if category is not specified, read both subsets
+        data_categories = ["alert_adversarial", "alert"]
+    elif category not in ["alert_adversarial", "alert"]:
+        raise ValueError(f"Invalid Parameter: {category}. Expected 'alert_adversarial' or 'alert'")
+    else:
+        data_categories = [category]
+
+    # Load specified subset or both catagories
+    for name in data_categories:
+        data = load_dataset("Babelscape/ALERT", name)
+        prompts = [item["prompt"] for item in data["test"]]
+
+    # Create SeedPrompt instances from each example in 'prompts'
+    seed_prompts = [
+        SeedPrompt(
+            value=prompt,
+            data_type="text",
+            name="",
+            dataset_name="Babelscape/ALERT",
+            description="""ALERT by Babelscape is a dataset that consists
+            of two different categories, 'alert' with 15k red teaming prompts,
+            and 'alert_adversarial' with 30k adversarial red teaming prompts.""",
+            source="https://huggingface.co/datasets/Babelscape/ALERT",
+        )
+        for prompt in prompts
+    ]
+
+    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
+    return seed_prompt_dataset

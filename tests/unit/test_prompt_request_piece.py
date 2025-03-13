@@ -6,6 +6,7 @@ import tempfile
 import time
 import uuid
 from datetime import datetime, timedelta
+from typing import MutableSequence
 from unittest.mock import MagicMock
 
 import pytest
@@ -23,7 +24,7 @@ from pyrit.prompt_converter import Base64Converter
 
 
 @pytest.fixture
-def sample_conversations() -> list[PromptRequestPiece]:
+def sample_conversations() -> MutableSequence[PromptRequestPiece]:
     return get_sample_conversations()
 
 
@@ -154,7 +155,7 @@ def test_hashes_generated_files_unknown_type():
         )
 
 
-def test_prompt_response_validate(sample_conversations: list[PromptRequestPiece]):
+def test_prompt_response_validate(sample_conversations: MutableSequence[PromptRequestPiece]):
     for c in sample_conversations:
         c.conversation_id = sample_conversations[0].conversation_id
         c.role = sample_conversations[0].role
@@ -169,7 +170,7 @@ def test_prompt_response_empty_throws():
         request_response.validate()
 
 
-def test_prompt_response_validate_conversation_id_throws(sample_conversations: list[PromptRequestPiece]):
+def test_prompt_response_validate_conversation_id_throws(sample_conversations: MutableSequence[PromptRequestPiece]):
     for c in sample_conversations:
         c.role = "user"
         c.conversation_id = str(uuid.uuid4())
@@ -179,7 +180,7 @@ def test_prompt_response_validate_conversation_id_throws(sample_conversations: l
         request_response.validate()
 
 
-def test_prompt_request_response_inconsistent_roles_throws(sample_conversations: list[PromptRequestPiece]):
+def test_prompt_request_response_inconsistent_roles_throws(sample_conversations: MutableSequence[PromptRequestPiece]):
     for c in sample_conversations:
         c.conversation_id = sample_conversations[0].conversation_id
 
@@ -188,12 +189,12 @@ def test_prompt_request_response_inconsistent_roles_throws(sample_conversations:
         request_response.validate()
 
 
-def test_group_conversation_request_pieces_throws(sample_conversations: list[PromptRequestPiece]):
+def test_group_conversation_request_pieces_throws(sample_conversations: MutableSequence[PromptRequestPiece]):
     with pytest.raises(ValueError, match="Conversation ID must match."):
         group_conversation_request_pieces_by_sequence(sample_conversations)
 
 
-def test_group_conversation_request_pieces(sample_conversations: list[PromptRequestPiece]):
+def test_group_conversation_request_pieces(sample_conversations: MutableSequence[PromptRequestPiece]):
     convo_group = [
         entry for entry in sample_conversations if entry.conversation_id == sample_conversations[0].conversation_id
     ]
@@ -203,7 +204,7 @@ def test_group_conversation_request_pieces(sample_conversations: list[PromptRequ
     assert groups[0].request_pieces[0].sequence == 0
 
 
-def test_group_conversation_request_pieces_multiple_groups(sample_conversations: list[PromptRequestPiece]):
+def test_group_conversation_request_pieces_multiple_groups(sample_conversations: MutableSequence[PromptRequestPiece]):
     convo_group = [
         entry for entry in sample_conversations if entry.conversation_id == sample_conversations[0].conversation_id
     ]

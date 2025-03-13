@@ -3,7 +3,7 @@
 
 import logging
 import uuid
-from typing import Optional
+from typing import Optional, Union
 
 from colorama import Fore, Style
 
@@ -69,6 +69,19 @@ class PromptSendingOrchestrator(Orchestrator):
 
         self._prepended_conversation = prepended_conversation
 
+    async def get_prepended_conversation_async(
+        self, *, normalizer_request: NormalizerRequest
+    ) -> Optional[list[PromptRequestResponse]]:
+        """
+        Returns the prepended conversation for the normalizer request.
+
+        Can be overwritten by subclasses to provide a different conversation.
+        """
+        if self._prepended_conversation:
+            return self._prepended_conversation
+
+        return None
+
     def set_skip_criteria(
         self, *, skip_criteria: PromptFilterCriteria, skip_value_type: PromptConverterState = "original"
     ):
@@ -89,8 +102,10 @@ class PromptSendingOrchestrator(Orchestrator):
         Sends the normalized prompts to the prompt target.
         """
 
+        self.validate_normalizer_requests(prompt_request_list=prompt_request_list)
+
         for prompt in prompt_request_list:
-            prompt.conversation_id = self._prepare_conversation()
+            prompt.conversation_id = await self._prepare_conversation_async(normalizer_request=prompt)
 
         # Normalizer is responsible for storing the requests in memory
         # The labels parameter may allow me to stash class information for each kind of prompt.
@@ -118,7 +133,7 @@ class PromptSendingOrchestrator(Orchestrator):
         prompt_list: list[str],
         prompt_type: PromptDataType = "text",
         memory_labels: Optional[dict[str, str]] = None,
-        metadata: Optional[dict[str, str]] = None,
+        metadata: Optional[dict[str, Union[str, int]]] = None,
     ) -> list[PromptRequestResponse]:
         """
         Sends the prompts to the prompt target.
@@ -130,8 +145,8 @@ class PromptSendingOrchestrator(Orchestrator):
                 prompts. Any labels passed in will be combined with self._global_memory_labels (from the
                 GLOBAL_MEMORY_LABELS environment variable) into one dictionary. In the case of collisions,
                 the passed-in labels take precedence. Defaults to None.
-            metadata (Optional(dict[str, str]): Any additional information to be added to the memory entry corresponding
-                to the prompts sent.
+            metadata (Optional(dict[str, str | int]): Any additional information to be added to the memory entry
+                corresponding to the prompts sent.
 
         Returns:
             list[PromptRequestResponse]: The responses from sending the prompts.
@@ -155,7 +170,7 @@ class PromptSendingOrchestrator(Orchestrator):
 
         return await self.send_normalizer_requests_async(
             prompt_request_list=requests,
-            memory_labels=combine_dict(existing_dict=self._global_memory_labels, new_dict=memory_labels),
+            memory_labels=memory_labels,
         )
 
     async def print_conversations_async(self):
@@ -178,13 +193,23 @@ class PromptSendingOrchestrator(Orchestrator):
             for score in message.scores:
                 print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
 
-    def _prepare_conversation(self):
+    def validate_normalizer_requests(self, *, prompt_request_list: list[NormalizerRequest]):
+        """
+        Validates the normalizer request.
+
+        This is a no-op for this orchestrator, but subclasses may want to implement this.
+        """
+        pass
+
+    async def _prepare_conversation_async(self, normalizer_request: NormalizerRequest) -> str:
         """
         Adds the conversation to memory if there is a prepended conversation, and return the conversation ID.
         """
-        conversation_id = uuid.uuid4()
-        if self._prepended_conversation:
-            for request in self._prepended_conversation:
+        conversation_id = str(uuid.uuid4())
+
+        prepended_conversation = await self.get_prepended_conversation_async(normalizer_request=normalizer_request)
+        if prepended_conversation:
+            for request in prepended_conversation:
                 for piece in request.request_pieces:
                     piece.conversation_id = conversation_id
                     piece.orchestrator_identifier = self.get_identifier()

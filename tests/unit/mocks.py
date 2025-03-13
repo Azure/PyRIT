@@ -5,13 +5,12 @@ import os
 import tempfile
 import uuid
 from contextlib import AbstractAsyncContextManager
-from typing import Generator, Optional
+from typing import Generator, MutableSequence, Optional, Sequence
 from unittest.mock import MagicMock, patch
 
 from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 
-from pyrit.memory import AzureSQLMemory, CentralMemory
-from pyrit.memory.memory_models import PromptMemoryEntry
+from pyrit.memory import AzureSQLMemory, CentralMemory, PromptMemoryEntry
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
@@ -180,7 +179,7 @@ def get_test_request_piece() -> PromptRequestPiece:
     )
 
 
-def get_sample_conversations() -> list[PromptRequestPiece]:
+def get_sample_conversations() -> MutableSequence[PromptRequestPiece]:
     with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
         orchestrator1 = Orchestrator()
         orchestrator2 = Orchestrator()
@@ -214,7 +213,21 @@ def get_sample_conversations() -> list[PromptRequestPiece]:
         ]
 
 
-def get_sample_conversation_entries() -> list[PromptMemoryEntry]:
-
+def get_sample_conversation_entries() -> Sequence[PromptMemoryEntry]:
     conversations = get_sample_conversations()
     return [PromptMemoryEntry(entry=conversation) for conversation in conversations]
+
+
+def openai_response_json_dict() -> dict:
+    return {
+        "id": "12345678-1a2b-3c4e5f-a123-12345678abcd",
+        "object": "chat.completion",
+        "choices": [
+            {
+                "index": 0,
+                "message": {"role": "assistant", "content": "hi"},
+                "finish_reason": "stop",
+            }
+        ],
+        "model": "gpt-4-v",
+    }
