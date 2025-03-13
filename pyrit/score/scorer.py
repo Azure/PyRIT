@@ -11,7 +11,7 @@ from pyrit.common.batch_helper import batch_task_async
 from pyrit.exceptions import (
     InvalidJsonException,
     pyrit_json_retry,
-    remove_markdown_json,
+    extract_json_from_response,
 )
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import (

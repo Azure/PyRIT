@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from pyrit.exceptions import InvalidJsonException, remove_markdown_json
+from pyrit.exceptions import InvalidJsonException, extract_json_from_response
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
 from pyrit.prompt_target import PromptChatTarget
@@ -148,7 +148,7 @@ async def test_scorer_remove_markdown_json_called(good_json):
     scorer = MockScorer()
     scorer.scorer_type = "true_false"
 
-    with patch("pyrit.score.scorer.remove_markdown_json", wraps=remove_markdown_json) as mock_remove_markdown_json:
+    with patch("pyrit.score.scorer.extract_json_from_response", wraps=extract_json_from_response) as mock_remove_markdown_json:
         await scorer._score_value_with_llm(
             prompt_target=chat_target,
             system_prompt="system_prompt",
