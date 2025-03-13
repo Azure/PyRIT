@@ -5,9 +5,10 @@ from pathlib import Path
 from typing import List, Literal, Optional
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.datasets.fetch_examples import fetch_examples, FILE_TYPE_HANDLERS
+from pyrit.datasets.fetch_examples import FILE_TYPE_HANDLERS, fetch_examples
 from pyrit.models import SeedPromptDataset
 from pyrit.models.seed_prompt import SeedPrompt
+
 
 def fetch_decoding_trust_stereotypes_dataset(
     source: str = (

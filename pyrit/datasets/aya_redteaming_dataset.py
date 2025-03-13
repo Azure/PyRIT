@@ -8,6 +8,7 @@ from pyrit.datasets.fetch_examples import fetch_examples
 from pyrit.models import SeedPromptDataset
 from pyrit.models.seed_prompt import SeedPrompt
 
+
 def fetch_aya_redteaming_dataset(
     cache: bool = True,
     data_home: Optional[Path] = None,

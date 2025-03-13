@@ -6,6 +6,7 @@ from datasets import load_dataset
 from pyrit.models import SeedPromptDataset
 from pyrit.models.seed_prompt import SeedPrompt
 
+
 def fetch_forbidden_questions_dataset() -> SeedPromptDataset:
     """
     Fetch Forbidden question dataset and return it as a SeedPromptDataset

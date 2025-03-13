@@ -8,6 +8,7 @@ from datasets import load_dataset
 from pyrit.models import SeedPromptDataset
 from pyrit.models.seed_prompt import SeedPrompt
 
+
 def fetch_babelscape_alert_dataset(
     category: Literal["alert", "alert_adversarial"] = "alert_adversarial"
 ) -> SeedPromptDataset:

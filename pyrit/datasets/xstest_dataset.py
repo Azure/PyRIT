@@ -4,9 +4,10 @@
 from pathlib import Path
 from typing import Literal, Optional
 
-from pyrit.datasets.fetch_examples import fetch_examples, FILE_TYPE_HANDLERS
+from pyrit.datasets.fetch_examples import FILE_TYPE_HANDLERS, fetch_examples
 from pyrit.models import SeedPromptDataset
 from pyrit.models.seed_prompt import SeedPrompt
+
 
 def fetch_xstest_dataset(
     source: str = "https://raw.githubusercontent.com/paul-rottger/exaggerated-safety/a3bb396/xstest_v2_prompts.csv",

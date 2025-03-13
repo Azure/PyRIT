@@ -5,6 +5,7 @@ from typing import Dict, List, Literal
 
 from pyrit.datasets.fetch_examples import fetch_examples
 
+
 def fetch_many_shot_jailbreaking_dataset() -> List[Dict[str, str]]:
     """
     Fetch many-shot jailbreaking dataset from a specified source.

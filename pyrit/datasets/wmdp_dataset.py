@@ -11,6 +11,7 @@ from pyrit.models import (
     QuestionChoice,
 )
 
+
 def fetch_wmdp_dataset(category: Optional[str] = None) -> QuestionAnsweringDataset:
     """
     Fetch WMDP examples and create a QuestionAnsweringDataset.

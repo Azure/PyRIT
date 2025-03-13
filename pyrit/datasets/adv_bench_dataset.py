@@ -9,6 +9,7 @@ from pyrit.datasets.fetch_examples import fetch_examples
 from pyrit.models import SeedPromptDataset
 from pyrit.models.seed_prompt import SeedPrompt
 
+
 def fetch_adv_bench_dataset(
     cache: bool = True,
     main_categories: Optional[

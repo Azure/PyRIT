@@ -6,6 +6,7 @@ from datasets import load_dataset
 from pyrit.models import SeedPromptDataset
 from pyrit.models.seed_prompt import SeedPrompt
 
+
 def fetch_llm_latent_adversarial_training_harmful_dataset() -> SeedPromptDataset:
     data = load_dataset("LLM-LAT/harmful-dataset", "default")
 

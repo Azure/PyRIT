@@ -6,6 +6,7 @@ from datasets import load_dataset
 from pyrit.models import SeedPromptDataset
 from pyrit.models.seed_prompt import SeedPrompt
 
+
 def fetch_tdc23_redteaming_dataset() -> SeedPromptDataset:
     """
     Fetch TDC23-RedTeaming examples and create a SeedPromptDataset.

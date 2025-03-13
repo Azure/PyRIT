@@ -8,6 +8,7 @@ from datasets import load_dataset
 from pyrit.models import SeedPromptDataset
 from pyrit.models.seed_prompt import SeedPrompt
 
+
 def fetch_pku_safe_rlhf_dataset(
     include_safe_prompts: bool = True,
     filter_harm_categories: Optional[
