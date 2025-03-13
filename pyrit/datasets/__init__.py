@@ -4,6 +4,7 @@
 from .fetch_example_datasets import (
     fetch_adv_bench_dataset,
     fetch_aya_redteaming_dataset,
+    fetch_babelscape_alert_dataset,
     fetch_decoding_trust_stereotypes_dataset,
     fetch_examples,
     fetch_forbidden_questions_dataset,
@@ -33,4 +34,5 @@ __all__ = [
     "fetch_llm_latent_adversarial_training_harmful_dataset",
     "fetch_tdc23_redteaming_dataset",
     "fetch_librAI_do_not_answer_dataset",
+    "fetch_babelscape_alert_dataset",
 ]

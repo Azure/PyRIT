@@ -251,7 +251,7 @@ class Scorer(abc.ABC):
             conversation_id=conversation_id,
             orchestrator_identifier=orchestrator_identifier,
         )
-        prompt_metadata = {"response_format": "json"}
+        prompt_metadata: dict[str, str | int] = {"response_format": "json"}
         scorer_llm_request = PromptRequestResponse(
             [
                 PromptRequestPiece(

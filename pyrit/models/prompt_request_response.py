@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Dict, MutableSequence, Optional, Sequence
+from typing import Dict, MutableSequence, Optional, Sequence, Union
 
 from pyrit.models.literals import PromptDataType, PromptResponseError
 from pyrit.models.prompt_request_piece import PromptRequestPiece
@@ -14,10 +14,10 @@ class PromptRequestResponse:
     This is a single request to a target. It can contain multiple prompt request pieces.
 
     Parameters:
-        request_pieces (list[PromptRequestPiece]): The list of prompt request pieces.
+        request_pieces (Sequence[PromptRequestPiece]): The list of prompt request pieces.
     """
 
-    def __init__(self, request_pieces: list[PromptRequestPiece]):
+    def __init__(self, request_pieces: Sequence[PromptRequestPiece]):
         self.request_pieces = request_pieces
 
     def validate(self):
@@ -52,10 +52,10 @@ class PromptRequestResponse:
     @staticmethod
     def flatten_to_prompt_request_pieces(
         request_responses: Sequence["PromptRequestResponse"],
-    ) -> list[PromptRequestPiece]:
+    ) -> MutableSequence[PromptRequestPiece]:
         if not request_responses:
             return []
-        response_pieces = []
+        response_pieces: MutableSequence[PromptRequestPiece] = []
 
         for response in request_responses:
             response_pieces.extend(response.request_pieces)
@@ -127,7 +127,7 @@ def construct_response_from_request(
     request: PromptRequestPiece,
     response_text_pieces: list[str],
     response_type: PromptDataType = "text",
-    prompt_metadata: Optional[Dict[str, str]] = None,
+    prompt_metadata: Optional[Dict[str, Union[str, int]]] = None,
     error: PromptResponseError = "none",
 ) -> PromptRequestResponse:
     """

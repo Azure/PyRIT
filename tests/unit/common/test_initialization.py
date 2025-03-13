@@ -70,7 +70,7 @@ def test_load_environment_files_override(mock_exists, mock_load_dotenv):
     mock_exists.side_effect = [True, True]
 
     # Simulate environment variables in base .env and .env.local
-    mock_load_dotenv.side_effect = lambda path, override: os.environ.update(
+    mock_load_dotenv.side_effect = lambda path, override, interpolate=True: os.environ.update(
         {
             "TEST_VAR": "base_value" if path == base_file_path else "local_value",
             "COMMON_VAR": "base_common" if path == base_file_path else "local_common",

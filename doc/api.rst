@@ -338,13 +338,11 @@ API Reference
     HuggingFaceChatTarget
     HuggingFaceEndpointTarget
     limit_requests_per_minute
-    OllamaChatTarget
     OpenAICompletionTarget
     OpenAIDALLETarget
     OpenAIChatTarget
     OpenAITTSTarget
     OpenAITarget
-    OllamaChatTarget
     PromptChatTarget
     PromptShieldTarget
     PromptTarget
@@ -366,6 +364,7 @@ API Reference
     FloatScaleThresholdScorer
     GandalfScorer
     HumanInTheLoopScorer
+    HumanInTheLoopScorerGradio
     LikertScalePaths
     MarkdownInjectionScorer
     PromptShieldScorer

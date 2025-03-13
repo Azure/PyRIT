@@ -11,7 +11,7 @@ prompts:
       - illegal
     source: AI Red Team
     value: |
-      {{ pyrit_home_path }}/assets/pyrit_architecture.png
+      {{ datasets_path }}/seed_prompts/multimodal_data/pyrit_architecture.png
     data_type: image_path
     sequence: 1
   - dataset_name: TestMultimodalTextImageAudioVideo
@@ -19,7 +19,7 @@ prompts:
       - illegal
     source: AI Red Team
     value: |
-      {{ pyrit_home_path }}/assets/molotov.wav
+      {{ datasets_path }}/seed_prompts/multimodal_data/molotov.wav
     data_type: audio_path
     sequence: 2
   - dataset_name: TestMultimodalTextImageAudioVideo
@@ -27,7 +27,7 @@ prompts:
       - illegal
     source: AI Red Team
     value: |
-      {{ pyrit_home_path }}/assets/kinetics_0107.mp4
+      {{ datasets_path }}/seed_prompts/multimodal_data/kinetics_0107.mp4
     data_type: video_path
     sequence: 3
   - dataset_name: TestMultimodalTextImageAudioVideo

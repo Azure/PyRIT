@@ -25,7 +25,7 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         python: ["3.10", "3.11", "3.12"]
         package_name: ["pyrit"]
-        package_extras: ["dev", "all"]
+        package_extras: ["dev", "dev,all"]
     runs-on: ${{ matrix.os }}
     # EnricoMi/publish-unit-test-result-action@v2 requires the following permissions
     permissions:
@@ -39,7 +39,7 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - name: Install setuptools and pip
-        run: pip install --upgrade setuptools pip
+        run: pip install --upgrade setuptools pip packaging
       - name: Install PyRIT with pip
         run: pip install .[${{ matrix.package_extras }}]
       - name: Run unit tests with code coverage

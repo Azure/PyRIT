@@ -1,6 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-from typing import Any, Coroutine
+from typing import Any, Coroutine, MutableSequence, Sequence
 
 import pytest
 from unit.mocks import get_sample_conversation_entries
@@ -33,7 +33,7 @@ class MockEmbeddingGenerator(EmbeddingSupport):
 
 
 @pytest.fixture
-def sample_conversation_entries() -> list[PromptMemoryEntry]:
+def sample_conversation_entries() -> Sequence[PromptMemoryEntry]:
     return get_sample_conversation_entries()
 
 
@@ -49,12 +49,12 @@ def memory_encoder_w_mock_embedding_generator():
 
 def test_memory_encoding_chat_message(
     memory_encoder_w_mock_embedding_generator: MemoryEmbedding,
-    sample_conversation_entries: list[PromptMemoryEntry],
+    sample_conversation_entries: MutableSequence[PromptMemoryEntry],
 ):
     chat_memory = sample_conversation_entries[0]
 
     metadata = memory_encoder_w_mock_embedding_generator.generate_embedding_memory_data(
-        prompt_request_piece=chat_memory
+        prompt_request_piece=chat_memory.get_prompt_request_piece()
     )
     assert metadata.id == chat_memory.id
     assert metadata.embedding == DEFAULT_EMBEDDING_DATA.embedding
