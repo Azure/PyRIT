@@ -6,16 +6,12 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.16.6
-#   kernelspec:
-#     display_name: pyrit-312
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
 # # Role Play Orchestrator
 #
-# `RolePlayOrchestrator` is a single turn orchestrator, meaning it's fast compared to multi-turn orchestrators.
+# `RolePlayOrchestrator` is a single turn orchestrator, meaning it only sends a single prompt to the `objective_target`. These are fast compared to multi-turn orchestrators.
 #
 # This orchestrator prepends some prompts defined in `role_play_definition`, along with an `adversarial_chat` to generate the first turns to send. Typically these prompts describe a fictional scenario to attempt and elicit harmful responses.
 #
@@ -29,6 +25,7 @@ from pyrit.orchestrator.single_turn.role_play_orchestrator import (
     RolePlayOrchestrator,
     RolePlayPaths,
 )
+from pyrit.prompt_converter import CharSwapGenerator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score.azure_content_filter_scorer import AzureContentFilterScorer
 
@@ -39,6 +36,7 @@ adversarial_chat = OpenAIChatTarget()
 
 orchestrator = RolePlayOrchestrator(
     objective_target=objective_target,
+    prompt_converters=[CharSwapGenerator()],
     adversarial_chat=adversarial_chat,
     role_play_definition_path=RolePlayPaths.MOVIE_SCRIPT.value,
     scorers=[AzureContentFilterScorer()],

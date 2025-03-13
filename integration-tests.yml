@@ -22,7 +22,7 @@ jobs:
     inputs:
       azureSubscription: 'integration-test-service-connection'
       KeyVaultName: 'pyrit-environment'
-      SecretsFilter: 'env-integration-test'
+      SecretsFilter: 'env-global'
       RunAsPreJob: false
   - bash: |
       python -c "
@@ -33,13 +33,16 @@ jobs:
       with open('.env', 'w') as file:
         file.write(secret)"
     env:
-      PYRIT_TEST_SECRET: $(env-integration-test)
+      PYRIT_TEST_SECRET: $(env-global)
     name: create_env_file
+  - bash: |
+      cp .env_local_example .env.local
+    displayName: "Create .env.local from example"
   - bash: pip install --upgrade setuptools pip packaging
     name: upgrade_pip_and_setuptools_before_installing_PyRIT
   - bash: sudo apt-get install python3-tk
     name: install_tkinter
-  - bash: pip install .[all] -v
+  - bash: pip install .[dev,all] -v
     name: install_PyRIT
   - bash: make integration-test
     name: run_integration_tests

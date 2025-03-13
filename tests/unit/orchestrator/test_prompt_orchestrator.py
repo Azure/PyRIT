@@ -338,7 +338,8 @@ def test_orchestrator_unique_id(orchestrator_count: int):
     assert not duplicate_found
 
 
-def test_prepare_conversation_with_prepended_conversation(patch_central_database):
+@pytest.mark.asyncio
+async def test_prepare_conversation_with_prepended_conversation(patch_central_database):
     with patch("pyrit.orchestrator.single_turn.prompt_sending_orchestrator.uuid.uuid4") as mock_uuid:
 
         mock_uuid.return_value = "mocked-uuid"
@@ -349,7 +350,7 @@ def test_prepare_conversation_with_prepended_conversation(patch_central_database
         prepended_conversation = [PromptRequestResponse(request_pieces=[MagicMock(conversation_id=None)])]
         orchestrator.set_prepended_conversation(prepended_conversation=prepended_conversation)
 
-        conversation_id = orchestrator._prepare_conversation()
+        conversation_id = await orchestrator._prepare_conversation_async(normalizer_request=MagicMock())
 
         assert conversation_id == "mocked-uuid"
         for request in prepended_conversation:
@@ -374,13 +375,14 @@ def test_prepare_conversation_raises_non_chat_target(patch_central_database):
         assert "Only PromptChatTargets are able to modify conversation history" in str(exc.value)
 
 
-def test_prepare_conversation_without_prepended_conversation(patch_central_database):
+@pytest.mark.asyncio
+async def test_prepare_conversation_without_prepended_conversation(patch_central_database):
     objective_target_mock = MagicMock()
     orchestrator = PromptSendingOrchestrator(objective_target=objective_target_mock)
     memory_mock = MagicMock()
 
     orchestrator._memory = memory_mock
-    conversation_id = orchestrator._prepare_conversation()
+    conversation_id = await orchestrator._prepare_conversation_async(normalizer_request=MagicMock())
 
     assert conversation_id
 

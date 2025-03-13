@@ -116,10 +116,8 @@ test_cases_error = [
 
 
 @pytest.mark.parametrize("command, orchestrator_classes, methods", test_cases_success)
-# Patching OpenAI target initialization which depends on environment variables
-# which we are not providing here.
-@patch("pyrit.prompt_target.OpenAIChatTarget._initialize_azure_vars")
-def test_cli_pso_success(init_method, command, orchestrator_classes, methods):
+@patch("pyrit.common.default_values.get_required_value", return_value="value")
+def test_cli_pso_success(get_required_value, command, orchestrator_classes, methods):
     # Patching the request sending functionality since we don't want to test the orchestrator,
     # but just the CLI part.
     with contextlib.ExitStack() as stack:
@@ -138,9 +136,7 @@ def test_cli_sys_exit(capsys, command, expected_output):
 
 
 @pytest.mark.parametrize("command, expected_output, error_type", test_cases_error)
-# Patching OpenAI target initialization which depends on environment variables
-# which we are not providing here.
-@patch("pyrit.prompt_target.OpenAIChatTarget._initialize_azure_vars")
-def test_cli_error(init_method, command, expected_output, error_type):
+@patch("pyrit.common.default_values.get_required_value", return_value="value")
+def test_cli_error(get_required_value, command, expected_output, error_type):
     with pytest.raises(error_type, match=re.escape(expected_output)):
         main(shlex.split(command))

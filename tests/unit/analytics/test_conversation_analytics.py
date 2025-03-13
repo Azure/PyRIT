@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from typing import Sequence
 from unittest.mock import MagicMock
 
 import pytest
@@ -8,7 +9,7 @@ from unit.mocks import get_sample_conversation_entries
 
 from pyrit.analytics.conversation_analytics import ConversationAnalytics
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.memory.memory_models import EmbeddingDataEntry
+from pyrit.memory.memory_models import EmbeddingDataEntry, PromptMemoryEntry
 
 
 @pytest.fixture
@@ -18,7 +19,7 @@ def mock_memory_interface():
 
 
 @pytest.fixture
-def sample_conversations_entries():
+def sample_conversations_entries() -> Sequence[PromptMemoryEntry]:
     return get_sample_conversation_entries()
 
 

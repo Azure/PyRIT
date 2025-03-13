@@ -39,15 +39,16 @@ chapters:
       - file: code/orchestrators/6_skeleton_key_attack
       - file: code/orchestrators/advbench_prompt_sending_orchestrator
       - file: code/orchestrators/benchmark_orchestrator
+      - file: code/orchestrators/context_compliance_orchestrator
       - file: code/orchestrators/flip_orchestrator
       - file: code/orchestrators/fuzzing_jailbreak_templates
       - file: code/orchestrators/HITL_Scoring_Orchestrator
       - file: code/orchestrators/librAI_do_not_answer
       - file: code/orchestrators/many_shot_jailbreak
       - file: code/orchestrators/pair_orchestrator
+      - file: code/orchestrators/role_playing_orchestrator
       - file: code/orchestrators/tree_of_attacks_with_pruning
       - file: code/orchestrators/violent_durian
-      - file: code/orchestrators/role_playing_orchestrator
     - file: code/targets/0_prompt_targets
       sections:
       - file: code/targets/1_openai_chat_target
@@ -57,7 +58,6 @@ chapters:
       - file: code/targets/5_multi_modal_targets
       - file: code/targets/6_rate_limiting
       - file: code/targets/7_http_target
-      - file: code/targets/groq_chat_target
       - file: code/targets/open_ai_completions
       - file: code/targets/playwright_target
       - file: code/targets/prompt_shield_target
@@ -71,6 +71,7 @@ chapters:
         - file: code/converters/4_image_converters
         - file: code/converters/5_selectively_converting
         - file: code/converters/6_human_converter
+        - file: code/converters/7_video_converters
         - file: code/converters/ansi_attack_converter
         - file: code/converters/char_swap_attack_generator
         - file: code/converters/pdf_converter
@@ -86,6 +87,7 @@ chapters:
       - file: code/scoring/insecure_code_scorer
       - file: code/scoring/prompt_shield_scorer
       - file: code/scoring/true_false_batch_scoring
+      - file: code/scoring/human_in_the_loop_scorer_gradio
     - file: code/memory/0_memory
       sections:
       - file: code/memory/1_duck_db_memory
@@ -112,6 +114,7 @@ chapters:
   - file: api.rst
   - file: blog/README
     sections:
+    - file: blog/2025_03_03
     - file: blog/2025_02_11
     - file: blog/2025_01_27
     - file: blog/2025_01_14
