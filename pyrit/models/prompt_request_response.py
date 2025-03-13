@@ -22,6 +22,8 @@ class PromptRequestResponse:
 
     def get_value(self, n: int = 0) -> str:
         """Return the converted value of the nth request piece."""
+        if n >= len(self.request_pieces):
+            raise ValueError(f"No request piece at index {n}.")
         return self.request_pieces[n].converted_value
 
     def get_values(self) -> list[str]:
