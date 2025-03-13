@@ -44,13 +44,13 @@ await orchestrator.print_conversations_async()  # type: ignore
 # %% [markdown]
 # ## OpenAI Configuration
 #
-# All `OpenAITarget`s can communicate to [Azure OpenAI (AOAI)](https://learn.microsoft.com/en-us/azure/ai-services/openai/reference), [OpenAI](https://platform.openai.com/docs/api-reference/introduction), or other compatible endpoints.
+# All `OpenAITarget`s can communicate to [Azure OpenAI (AOAI)](https://learn.microsoft.com/en-us/azure/ai-services/openai/reference), [OpenAI](https://platform.openai.com/docs/api-reference/introduction), or other compatible endpoints (e.g., Ollama, Groq).
 #
 # The `OpenAIChatTarget` is built to be as cross-compatible as we can make it, while still being as flexible as we can make it by exposing functionality via parameters.
 #
 # Like most targets, all `OpenAITarget`s need an `endpoint` and often also needs a `model` and a `key`. These can be passed into the constructor or configured with environment variables (or in .env).
 #
-# - endpoint: `OpenAIChatTarget`s needs an endpoint URI from your deployment. For OpenAI, these are just "https://api.openai.com/v1/chat/completions"
-# - auth: These targets can use an API key configured within environment variables (or .env) to authenticate (`OPENAI_CHAT_KEY` environment variable)
-# - model_name: For OpenAI, these are any available model name and are listed here: https://platform.openai.com/docs/models
+# - endpoint: The API endpoint (`OPENAI_CHAT_ENDPOINT` environment variable). For OpenAI, these are just "https://api.openai.com/v1/chat/completions". For Ollama, even though `/api/chat` is referenced in its official documentation, the correct endpoint to use is `/v1/chat/completions` to ensure compatibility with OpenAI's response format.
+# - auth: The API key for authentication (`OPENAI_CHAT_KEY` environment variable).
+# - model_name: The model to use (`OPENAI_CHAT_MODEL` environment variable). For OpenAI, these are any available model name and are listed here: "https://platform.openai.com/docs/models".
 #
