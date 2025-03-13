@@ -185,7 +185,7 @@ def test_fetch_examples_with_cache():
 
         # Mock the _fetch_from_public_url function to ensure it is not called again
         with patch(
-            "pyrit.datasets.fetch_example_datasets._fetch_from_public_url", MagicMock(return_value=examples)
+            "pyrit.datasets.fetch_examples._fetch_from_public_url", MagicMock(return_value=examples)
         ) as mock_fetch:
             examples_cached_again = fetch_examples(
                 source=SOURCE_URLS["json"], source_type="public_url", cache=True, data_home=str(data_home)
