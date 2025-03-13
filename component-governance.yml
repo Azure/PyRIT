@@ -29,5 +29,5 @@ steps:
       outputfile: $(System.DefaultWorkingDirectory)/obj/NOTICE
       outputformat: text
   
-  - script: cat $(System.DefaultWorkingDirectory)/obj/NOTICE
-    displayName: Print NOTICE file
+  - publish: $(System.DefaultWorkingDirectory)/obj/NOTICE
+    artifact: NOTICE
