@@ -213,4 +213,4 @@ async def test_tts_target_default_api_version(sample_conversations: MutableSeque
         called_params = mock_request.call_args[1]["params"]
 
         assert "api-version" in called_params
-        assert called_params["api-version"] == "2024-06-01"
+        assert called_params["api-version"] == "2025-02-01-preview"
