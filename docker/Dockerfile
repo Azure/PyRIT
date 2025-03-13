@@ -1,5 +1,5 @@
 # Base image from Microsoft Azure with Python 3.12
-FROM mcr.microsoft.com/azureml/minimal-py312-inference:latest
+FROM mcr.microsoft.com/azureml/minimal-py312-inference:20250310.v1
 
 LABEL maintainer="ErdemOzgen"
 LABEL description="Docker container for PyRIT with JupyterNotebook integration"
