@@ -38,7 +38,7 @@ RUN pip install --no-cache-dir \
     seaborn
 
 # Install PyRIT from PyPI (the official way)
-RUN pip install --no-cache-dir pyrit
+RUN pip install --no-cache-dir pyrit[all]
 
 # Create a directory for notebooks and data
 RUN mkdir -p /app/notebooks /app/data && \
