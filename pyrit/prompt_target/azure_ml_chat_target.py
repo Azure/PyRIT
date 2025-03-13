@@ -181,10 +181,7 @@ class AzureMLChatTarget(PromptChatTarget):
             else:
                 raise hse
 
-        logger.info(
-            "Received the following response from the prompt target"
-            + f"{response_entry.get_value()}"
-        )
+        logger.info("Received the following response from the prompt target" + f"{response_entry.get_value()}")
         return response_entry
 
     @pyrit_target_retry

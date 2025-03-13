@@ -367,9 +367,7 @@ async def test_convert_response_values_index(mock_memory_instance, response: Pro
 
     await normalizer.convert_values(converter_configurations=[response_converter], request_response=response)
     assert response.get_value() == "SGVsbG8=", "Converter should be applied here"
-    assert (
-        response.get_value(1) == "part 2"
-    ), "Converter should not be applied since we specified only 0"
+    assert response.get_value(1) == "part 2", "Converter should not be applied since we specified only 0"
 
 
 @pytest.mark.asyncio
