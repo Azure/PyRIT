@@ -11,7 +11,7 @@ import pytest
 from pyrit.common.path import DB_DATA_PATH
 
 # Import the functions to be tested
-from pyrit.datasets.fetch_example_datasets import (
+from pyrit.datasets.fetch_examples import (
     _fetch_from_public_url,
     _get_cache_file_name,
     _read_cache,

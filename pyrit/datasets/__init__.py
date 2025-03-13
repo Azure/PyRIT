@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from .fetch_example_datasets import (
+from .fetch_examples import (
     fetch_adv_bench_dataset,
     fetch_aya_redteaming_dataset,
     fetch_babelscape_alert_dataset,
