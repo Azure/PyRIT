@@ -38,7 +38,7 @@ classifiers = [
 requires-python = ">=3.10, <3.14"
 dependencies = [
     "aioconsole>=0.7.1",
-    "aiofiles>=24.1.0",
+    "aiofiles==23.2.1", # Pin the version to downgrade aiofiles to make sure it works with Gradio.
     "appdirs>=1.4.0",
     "art>=6.1.0",
     "azure-cognitiveservices-speech>=1.36.0",
@@ -91,6 +91,7 @@ dev = [
     "pytest>=7.3.1",
     "pytest-asyncio>=0.23.5",
     "pytest-cov>=4.0.0",
+    "pytest-timeout>=2.3.1",
     "respx>=0.22.0",
     "semantic-kernel>=1.20.0",
     "types-PyYAML>=6.0.12.9",
@@ -113,21 +114,33 @@ playwright = [
     "ollama>=0.4.4",
     "playwright>=1.49.0",
 ]
+gradio = [
+    "gradio>=5.16.0",
+    "rpyc>=6.0.1",
+    "pywebview>=5.4"
+]
+
 opencv = [
     "opencv-python>=4.11.0.86",
 ]
+
 # all includes all functional dependencies excluding the ones from the "dev" extra
 all = [
     "accelerate>=0.34.2",
     "azure-ai-ml>=1.13.0",
     "azureml-mlflow>=1.57.0",
     "flask>=3.1.0",
+    "gradio>=5.16.0",
     "mlflow>=2.16.2",
     "ml-collections>=0.1.1",
     "ollama>=0.4.4",
+    "opencv-python>=4.11.0.86",
     "playwright>=1.49.0",
+    "pywebview>=5.4",
+    "rpyc>=6.0.1",
     "sentencepiece>=0.2.0",
     "torch>=2.3.0",
+    "types-PyYAML>=6.0.12.9",
 ]
 
 [project.scripts]
