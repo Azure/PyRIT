@@ -3,26 +3,16 @@
 
 import hashlib
 import io
-import random
 import tempfile
 from pathlib import Path
 from typing import Callable, Dict, List, Literal, Optional, TextIO
 
-import pycountry
 import requests
-from datasets import load_dataset
 
 from pyrit.common.csv_helper import read_csv, write_csv
 from pyrit.common.json_helper import read_json, read_jsonl, write_json, write_jsonl
-from pyrit.common.path import DATASETS_PATH, DB_DATA_PATH
+from pyrit.common.path import DB_DATA_PATH
 from pyrit.common.text_helper import read_txt, write_txt
-from pyrit.models import (
-    QuestionAnsweringDataset,
-    QuestionAnsweringEntry,
-    QuestionChoice,
-    SeedPromptDataset,
-)
-from pyrit.models.seed_prompt import SeedPrompt
 
 # Define the type for the file handlers
 FileHandlerRead = Callable[[TextIO], List[Dict[str, str]]]
