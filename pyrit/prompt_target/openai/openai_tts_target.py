@@ -36,7 +36,7 @@ class OpenAITTSTarget(OpenAITarget):
         response_format: TTSResponseFormat = "mp3",
         language: Optional[str] = "en",
         speed: Optional[float] = None,
-        api_version: str = "2024-05-01-preview",
+        api_version: str = "2025-02-01-preview",
         **kwargs,
     ):
         """
@@ -46,14 +46,14 @@ class OpenAITTSTarget(OpenAITarget):
             model_name (str, Optional): The name of the model. Defaults to "tts-1".
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-                Defaults to the AZURE_OPENAI_CHAT_KEY environment variable.
+                Defaults to the OPENAI_CHAT_KEY environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
             use_aad_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default . Please run `az login` locally
                 to leverage user AuthN.
             api_version (str, Optional): The version of the Azure OpenAI API. Defaults to
-                "2024-06-01".
+                "2025-02-01-preview".
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
@@ -74,7 +74,7 @@ class OpenAITTSTarget(OpenAITarget):
         self._response_format = response_format
         self._language = language
         self._speed = speed
-        self._api_version = api_version or "2024-03-01-preview"
+        self._api_version = api_version
 
     def _set_openai_env_configuration_vars(self):
         self.model_name_environment_variable = "OPENAI_TTS_MODEL"
@@ -91,7 +91,9 @@ class OpenAITTSTarget(OpenAITarget):
 
         body = self._construct_request_body(request=request)
 
-        params = {"api-version": self._api_version}
+        params = {}
+        if self._api_version is not None:
+            params["api-version"] = self._api_version
 
         try:
             response = await net_utility.make_request_and_raise_if_error_async(
