@@ -1,4 +1,9 @@
-# 1. Installation
+# Choose Your Setup Approach
+You can set up PyRIT in one of two ways:
+1. Local Installation with Conda/Python (see [Local Installation with Conda/Python](#local-installation-with-condapython)).
+2. Using DevContainers (see [DevContainers Setup in Visual Studio Code](#devcontainers-setup-in-visual-studio-code)).
+
+# Local Installation with Conda/Python
 
 To install PyRIT as a library, the simplest way to do it is just `pip install pyrit`. This is documented [here](../setup/install_pyrit.md).
 
@@ -91,17 +96,28 @@ Alternatively, you can run the tool directly on Windows using PowerShell.
 
 **Visual Studio Code** is the code editor of choice for the AI Red Team: Download [here](https://code.visualstudio.com/Download).
 
-### Running Jupyter Notebooks in VS Code
+# DevContainers Setup in Visual Studio Code
+## Prerequisites
+* Install **Docker** (Docker Desktop if you are using Windows)
+* Install [**DevContainer**](https://code.visualstudio.com/docs/devcontainers/containers) extension in VS Code
+
+You can also follow the **Installation** section on [Developing inside a Container](https://code.visualstudio.com/docs/devcontainers/containers)
+
+## Run the Container
+Press `Ctrl + Shift + P` to open VS Code Command Palette and type `Dev Containers: Reopen in Container`
+![DevContainer in VS Code Commands Menu](images/DevContainer-vscode.png)
+
+## Running Jupyter Notebooks in VS Code
 
 _note:_ When constructing a pull request, notebooks should not be edited directly. Instead, edit the corresponding `.py` file. See [notebooks.md](8_notebooks.md) for more details.
 
-#### Selecting a Kernel
+### Selecting a Kernel
 
 With a Jupyter Notebook (.ipynb file) window open, in the top search bar of VS Code, type `>Notebook: Select Notebook Kernel` > `Python Environments...` to choose the `pyrit-dev` kernel when executing code in the notebooks, like those in `examples`. You can also choose a kernel with the "Select Kernel" button on the top-right corner of a Notebook.
 
 This will be the kernel that runs all code examples in Python Notebooks.
 
-#### Jupyter Variables
+### Jupyter Variables
 
 To view the variables that are populated by code examples, go to `View > Output > Jupyter`.
 
