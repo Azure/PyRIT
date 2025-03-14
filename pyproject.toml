@@ -33,8 +33,9 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
-requires-python = ">=3.10, <3.13"
+requires-python = ">=3.10, <3.14"
 dependencies = [
     "aioconsole>=0.7.1",
     "aiofiles==23.2.1", # Pin the version to downgrade aiofiles to make sure it works with Gradio.
@@ -105,7 +106,6 @@ gcg = [
     "azureml-mlflow>=1.57.0",
     "mlflow>=2.16.2",
     "ml-collections>=0.1.1",
-    "sentencepiece>=0.2.0",
     "torch>=2.3.0",
 ]
 playwright = [
@@ -137,7 +137,6 @@ all = [
     "playwright>=1.49.0",
     "pywebview>=5.4",
     "rpyc>=6.0.1",
-    "sentencepiece>=0.2.0",
     "torch>=2.3.0",
     "types-PyYAML>=6.0.12.9",
 ]
