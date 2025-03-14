@@ -1,4 +1,4 @@
-## Choose Your Setup Approach
+# Choose Your Setup Approach
 You can set up PyRIT in one of two ways:
 1. Local Installation with Conda/Python (see [Local Installation with Conda/Python](#local-installation-with-condapython)).
 2. Using DevContainers (see [DevContainers Setup in Visual Studio Code](#devcontainers-setup-in-visual-studio-code)).
