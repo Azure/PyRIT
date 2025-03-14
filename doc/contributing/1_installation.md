@@ -91,6 +91,17 @@ Alternatively, you can run the tool directly on Windows using PowerShell.
 
 **Visual Studio Code** is the code editor of choice for the AI Red Team: Download [here](https://code.visualstudio.com/Download).
 
+### Local Development in Visual Studio Code
+#### Prerequisites
+* Install **Docker** (Docker Desktop if you are using Windows)
+* Install [**DevContainer**](https://code.visualstudio.com/docs/devcontainers/containers) extension in VS Code 
+
+You can also follow the **Installation** section on [Developing inside a Container](https://code.visualstudio.com/docs/devcontainers/containers)
+
+#### Run the Container
+Press `Ctrl + Shift + P` to open VS Code Command Palette and type `Dev Containers: Reopen in Container`
+![DevContainer in VS Code Commands Menu](images/DevContainer-vscode.png)
+
 ### Running Jupyter Notebooks in VS Code
 
 _note:_ When constructing a pull request, notebooks should not be edited directly. Instead, edit the corresponding `.py` file. See [notebooks.md](8_notebooks.md) for more details.
