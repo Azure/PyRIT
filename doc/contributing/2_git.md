@@ -1,13 +1,13 @@
 # 2. Contribute with Git
 
-Before creating your first pull request, set up your fork to contribute to PyRIT by following these steps:
+In this guide, there are two ways to set up your fork for PyRIT: one using [Approach 1: Using GitHub CLI](#approach-1-using-github-cli), and one with [Approach 2: Without GitHub CLI](#approach-2-without-github-cli).
 
 ## Step 1: Fork
-### Recommended Approach
+### Approach 1: Using GitHub CLI
 You will need to install [GitHub CLI](https://cli.github.com/)
 ```bash
 gh repo fork Azure/PyRIT --clone=true
-``` 
+```
 This command forks, clones, and sets the new repo as `origin`, while the original repo is automatically set as `upstream`.
 
 **(OPTIONAL)** - to pull in the changes from **Azure/PyRIT** into your forked repo:
@@ -16,14 +16,14 @@ This command forks, clones, and sets the new repo as `origin`, while the origina
 git fetch upstream
 
 # Merge changes into your main
-git checkout main 
+git checkout main
 git merge upstream/main
 
 # Push updates to your fork
 git push origin main
 ```
 
-### Alternative Approach
+### Approach 2: Without GitHub CLI
 [Fork](https://github.com/Azure/PyRIT/fork) the repo from the main branch. By default, forks are named the same as their upstream repository. This will create a new repo called `GITHUB_USERNAME/PyRIT` (where `GITHUB_USERNAME` is a variable for your GitHub username).
 
 Add this new repo locally wherever you cloned PyRIT
@@ -52,13 +52,6 @@ git push --set-upstream origin mybranch # For any subsequent push, just do 'git 
 ```
 
 ## Step 3: Create PR
-### Recommended Approach
-You could use GitHub CLI to directly create a PR:
-```bash
-gh pr create --title "[Magic Fix] Summoned a solution" --body "Hocus pocus, bug is gone!"
-```
-
-### Alternative Approach
 After pushing changes, you'll see a link to create a PR:
 ```
 remote: Create a pull request for 'mybranch' on GitHub by visiting:

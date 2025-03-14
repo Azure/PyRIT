@@ -94,7 +94,7 @@ Alternatively, you can run the tool directly on Windows using PowerShell.
 ### Local Development in Visual Studio Code
 #### Prerequisites
 * Install **Docker** (Docker Desktop if you are using Windows)
-* Install [**DevContainer**](https://code.visualstudio.com/docs/devcontainers/containers) extension in VS Code 
+* Install [**DevContainer**](https://code.visualstudio.com/docs/devcontainers/containers) extension in VS Code
 
 You can also follow the **Installation** section on [Developing inside a Container](https://code.visualstudio.com/docs/devcontainers/containers)
 
