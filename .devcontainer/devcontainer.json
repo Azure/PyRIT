@@ -1,5 +1,5 @@
 {
-    "name": "PyRIT - Anaconda | Python 3.11 Dev Container",
+    "name": "PyRIT | Python Dev Container",
     "build": {
         "dockerfile": "Dockerfile"
     },
