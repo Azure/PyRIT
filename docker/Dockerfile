@@ -47,9 +47,6 @@ RUN mkdir -p /app/notebooks /app/data && \
 # Check PyRIT version
 RUN python -c "import pyrit; print(f'PyRIT version: {pyrit.__version__}')"
 
-# Copy the provided example notebooks instead of trying to download them
-#COPY examples/ /app/notebooks/
-
 # Expose port for JupyterLab
 EXPOSE 8888
 
