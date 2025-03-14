@@ -1,8 +1,7 @@
 # Base image from Microsoft Azure with Python 3.12
 FROM mcr.microsoft.com/azureml/minimal-py312-inference:20250310.v1
 
-LABEL maintainer="ErdemOzgen"
-LABEL description="Docker container for PyRIT with JupyterNotebook integration"
+LABEL description="Docker container for PyRIT with Jupyter Notebook integration"
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -38,7 +37,7 @@ RUN pip install --no-cache-dir \
     seaborn
 
 # Install PyRIT from PyPI (the official way)
-RUN pip install --no-cache-dir pyrit[all]
+RUN pip install --no-cache-dir pyrit[dev,all]
 
 # Create a directory for notebooks and data
 RUN mkdir -p /app/notebooks /app/data && \
