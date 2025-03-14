@@ -1,0 +1,22 @@
+{
+    "name": "PyRIT - Anaconda | Python 3.11 Dev Container", 
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "remoteUser": "vscode",
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "python.defaultInterpreterPath": "/opt/conda/envs/pyrit-dev/bin/python"
+            },
+            "extensions": [
+                "ms-python.python",
+                "ms-toolsai.jupyter"
+            ]
+        }
+    },
+    "postCreateCommand": "chmod +x .devcontainer/devcontainer_setup.sh && /bin/bash -i .devcontainer/devcontainer_setup.sh",
+    "forwardPorts": [8888],
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+    "workspaceFolder": "/workspace"
+}
