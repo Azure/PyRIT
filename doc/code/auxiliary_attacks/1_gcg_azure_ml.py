@@ -100,10 +100,10 @@ job = command(
     environment_variables={"HUGGINGFACE_TOKEN": os.environ["HUGGINGFACE_TOKEN"]},
     display_name="suffix_generation",
     description="Generate a suffix for attacking LLMs.",
-    resources = JobResourceConfiguration(
+    resources=JobResourceConfiguration(
         instance_type="Standard_NC96ads_A100_v4",
         instance_count=1,
-    )
+    ),
 )
 
 # %%
