@@ -1,6 +1,22 @@
 #!/bin/bash
 set -e
 
+# Clone PyRIT repository if not already present
+if [ ! -d "/app/PyRIT" ]; then
+    echo "Cloning PyRIT repository..."
+    git clone https://github.com/Azure/PyRIT
+else
+    echo "PyRIT repository already exists. Updating..."
+    cd /app/PyRIT
+    git pull
+    cd /app
+fi
+
+# Copy doc folder to notebooks directory
+echo "Copying documentation to notebooks directory..."
+cp -r /app/PyRIT/doc/* /app/notebooks/
+rm -rf /app/PyRIT
+
 # Default to CPU mode
 export CUDA_VISIBLE_DEVICES="-1"
 
