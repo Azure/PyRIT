@@ -181,3 +181,11 @@ doc/_autosummary/
 
 # Ignore DS_STORE files
 **/.DS_Store
+
+# Ignore data directory in Docker folder
+/docker/data/
+/docker/data/*
+
+# Ignore notebooks directory in Docker folder
+/docker/notebooks/
+/docker/notebooks/*
