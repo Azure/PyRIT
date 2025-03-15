@@ -48,7 +48,7 @@ RUN chown -R pyrituser:pyrituser /app/notebooks /app/data
 # Create and set permissions for the startup script
 COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh
-RUN chown pyrituser:pyrituser /app/start.sh
+RUN chown -R pyrituser:pyrituser /app
 
 # Switch to non-root user
 USER pyrituser
