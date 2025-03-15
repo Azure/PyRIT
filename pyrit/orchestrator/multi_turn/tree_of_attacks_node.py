@@ -11,7 +11,7 @@ from typing import Optional
 from pyrit.exceptions import (
     InvalidJsonException,
     pyrit_json_retry,
-    remove_markdown_json,
+    extract_json_from_response,
 )
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import SeedPrompt, SeedPromptGroup
@@ -230,7 +230,7 @@ class TreeOfAttacksNode:
         # We need to parse only "prompt" and return its value.
 
         # If the JSON is valid in Markdown format, remove the Markdown formatting
-        red_teaming_response = remove_markdown_json(red_teaming_response)
+        red_teaming_response = extract_json_from_response(red_teaming_response)
         try:
             red_teaming_response_dict = json.loads(red_teaming_response)
         except json.JSONDecodeError:

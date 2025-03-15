@@ -12,7 +12,7 @@ from pyrit.common.utils import combine_dict
 from pyrit.exceptions import (
     InvalidJsonException,
     pyrit_json_retry,
-    remove_markdown_json,
+    extract_json_from_response,
 )
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import MultiTurnAttackResult, MultiTurnOrchestrator
@@ -361,7 +361,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             .request_pieces[0]
             .converted_value
         )
-        response_text = remove_markdown_json(response_text)
+        response_text = extract_json_from_response(response_text)
 
         expected_output = ["generated_question", "rationale_behind_jailbreak", "last_response_summary"]
         try:

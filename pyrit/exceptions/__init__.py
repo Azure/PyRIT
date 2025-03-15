@@ -13,7 +13,7 @@ from pyrit.exceptions.exception_classes import (
     pyrit_placeholder_retry,
     pyrit_target_retry,
 )
-from pyrit.exceptions.exceptions_helpers import remove_markdown_json
+from pyrit.exceptions.exceptions_helpers import extract_json_from_response
 
 __all__ = [
     "BadRequestException",
@@ -26,5 +26,5 @@ __all__ = [
     "pyrit_target_retry",
     "pyrit_placeholder_retry",
     "RateLimitException",
-    "remove_markdown_json",
+    "extract_json_from_response",
 ]
