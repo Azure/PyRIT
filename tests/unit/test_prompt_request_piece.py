@@ -155,6 +155,20 @@ def test_hashes_generated_files_unknown_type():
         )
 
 
+def test_prompt_response_get_value(sample_conversations: MutableSequence[PromptRequestPiece]):
+    request_response = PromptRequestResponse(request_pieces=sample_conversations)
+    assert request_response.get_value() == "Hello, how are you?"
+    assert request_response.get_value(1) == "I'm fine, thank you!"
+
+    with pytest.raises(IndexError):
+        request_response.get_value(3)
+
+
+def test_prompt_response_get_values(sample_conversations: MutableSequence[PromptRequestPiece]):
+    request_response = PromptRequestResponse(request_pieces=sample_conversations)
+    assert request_response.get_values() == ["Hello, how are you?", "I'm fine, thank you!", "I'm fine, thank you!"]
+
+
 def test_prompt_response_validate(sample_conversations: MutableSequence[PromptRequestPiece]):
     for c in sample_conversations:
         c.conversation_id = sample_conversations[0].conversation_id
