@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import Dict, List, Literal, Optional, Union, get_args
 from uuid import uuid4
 
+from pyrit.models.attack_configuration import AttackConfiguration
 from pyrit.models.chat_message import ChatMessage, ChatMessageRole
 from pyrit.models.literals import PromptDataType, PromptResponseError
 from pyrit.models.score import Score
@@ -58,6 +59,7 @@ class PromptRequestPiece(abc.ABC):
         converted_value_sha256: Optional[str] = None,
         id: Optional[uuid.UUID | str] = None,
         conversation_id: Optional[str] = None,
+        attack_configuration: Optional[AttackConfiguration] = None,
         sequence: int = -1,
         labels: Optional[Dict[str, str]] = None,
         prompt_metadata: Optional[Dict[str, Union[str, int]]] = None,
@@ -127,6 +129,8 @@ class PromptRequestPiece(abc.ABC):
 
         self.scores = scores if scores else []
 
+        self.attack_configuration = attack_configuration
+
     async def set_sha256_values_async(self):
         """
         This method computes the SHA256 hash values asynchronously.
@@ -178,6 +182,7 @@ class PromptRequestPiece(abc.ABC):
             "originator": self.originator,
             "original_prompt_id": str(self.original_prompt_id),
             "scores": [score.to_dict() for score in self.scores],
+            "attack_configuration": self.attack_configuration,
         }
 
     def __str__(self):
@@ -197,6 +202,7 @@ class PromptRequestPiece(abc.ABC):
             and self.converted_value_sha256 == other.converted_value_sha256
             and self.conversation_id == other.conversation_id
             and self.sequence == other.sequence
+            and self.attack_configuration == other.attack_configuration
         )
 
 
