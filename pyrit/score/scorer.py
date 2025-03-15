@@ -7,7 +7,7 @@ import uuid
 from abc import abstractmethod
 from typing import Optional, Sequence
 
-from pyrit.common.batch_helper import batch_task_async
+from pyrit.prompt_target.batch_helper import batch_task_async
 from pyrit.exceptions import (
     InvalidJsonException,
     pyrit_json_retry,
