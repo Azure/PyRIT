@@ -4,10 +4,10 @@ torchvision==0.21.0+cu118
 torchaudio==2.6.0+cu118
 
 # JupyterLab and related packages
-jupyterlab==4.1.5
-notebook==7.1.0
-ipywidgets==8.1.1
-matplotlib==3.8.2
-pandas==2.2.1
+jupyterlab==4.3.5
+notebook==7.3.2
+ipywidgets==8.1.5
+matplotlib==3.10.1
+pandas==2.2.3
 seaborn==0.13.2
-ipython==8.18.1
+ipython==9.0.2
