@@ -18,6 +18,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     build-essential \
     ca-certificates \
+    unixodbc \
+    libgl1-mesa-glx \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
