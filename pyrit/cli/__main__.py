@@ -77,10 +77,10 @@ async def validate_config_and_run_async(config: Dict[str, Any], memory_labels: O
     objective_target = validate_target(config, target_key="objective_target")
     prompt_converters: list[PromptConverter] = []
     # prompt_converters = validate_converters(config)
-    adversarial_chat = None
+    adversarial_chat: PromptChatTarget | None = None
     if "adversarial_chat" in config:
-        adversarial_chat = validate_target(config, target_key="adversarial_chat")
-    scoring_target = validate_scoring_target(config, adversarial_chat=adversarial_chat)
+        adversarial_chat = validate_target(config, target_key="adversarial_chat")  # type: ignore
+    scoring_target = validate_scoring_target(config, adversarial_chat=adversarial_chat)  # type: ignore
     objective_scorer = validate_objective_scorer(config, scoring_target=scoring_target)
 
     orchestrators = []
@@ -201,7 +201,7 @@ def validate_target(config: Dict[str, Any], target_key: str) -> PromptTarget:
         raise KeyError(f"Target {target_key} must contain a 'type' key.")
 
     target_config = deepcopy(config[target_key])
-    target_type = target_config.get("type")
+    target_type = target_config.pop("type")
 
     try:
         target_module = import_module("pyrit.prompt_target")
@@ -209,8 +209,6 @@ def validate_target(config: Dict[str, Any], target_key: str) -> PromptTarget:
     except Exception as ex:
         raise RuntimeError(f"Failed to import target {target_type} from pyrit.prompt_target") from ex
 
-    # type is not an actual arg so remove it
-    del target_config["type"]
     target = target_class(**target_config)
     return target
 
@@ -225,7 +223,7 @@ def validate_scoring_target(
     # If a scoring_target has been configured use it.
     # Otherwise, use the adversarial_chat target for scoring.
     if "scoring_target" in scoring_config:
-        return validate_target(scoring_config, target_key="scoring_target")
+        return validate_target(scoring_config, target_key="scoring_target")  # type: ignore
     return adversarial_chat
 
 
