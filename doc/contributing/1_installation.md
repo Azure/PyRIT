@@ -20,7 +20,7 @@ This is a list of the prerequisites needed to run this library.
     git clone https://github.com/Azure/PyRIT
     ```
 
-Note: PyRIT requires Python version 3.10, 3.11, or 3.12. If using Conda, you'll set the environment to use this version. If running PyRIT outside of a python environment, make sure you have this version installed.
+Note: PyRIT requires Python version 3.10, 3.11, 3.12, or 3.13. If using Conda, you'll set the environment to use this version. If running PyRIT outside of a python environment, make sure you have this version installed.
 
 ## Installation
 

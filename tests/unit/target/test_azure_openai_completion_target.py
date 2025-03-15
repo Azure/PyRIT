@@ -98,7 +98,7 @@ async def test_azure_complete_async_return(
         mock_request.return_value = openai_mock_return
         response: PromptRequestResponse = await azure_completion_target.send_prompt_async(prompt_request=request)
         assert len(response.request_pieces) == 1
-        assert response.request_pieces[0].converted_value == "hi"
+        assert response.get_value() == "hi"
 
 
 def test_azure_initialization_with_no_deployment_raises():
