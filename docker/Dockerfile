@@ -42,16 +42,15 @@ RUN mkdir -p /app/notebooks /app/data && \
 RUN python -c "import pyrit; print(f'PyRIT version: {pyrit.__version__}')"
 
 # Create non-root user for better security
-RUN useradd -ms /bin/bash pyrituser
-RUN chown -R pyrituser:pyrituser /app/notebooks /app/data
+RUN useradd -ms /bin/bash dockeruser
+RUN chown -R dockeruser:dockeruser /app
 
 # Create and set permissions for the startup script
 COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh
-RUN chown -R pyrituser:pyrituser /app
 
 # Switch to non-root user
-USER pyrituser
+USER dockeruser
 
 # Expose port for JupyterLab
 EXPOSE 8888

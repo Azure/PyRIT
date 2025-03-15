@@ -1,9 +1,6 @@
 #!/bin/bash
 set -e
 
-# If sudo is available and configured, fix permissions on the notebooks directory.
-sudo chown -R $(whoami):$(whoami) /app/notebooks
-
 # Clone PyRIT repository if not already present
 if [ ! -d "/app/PyRIT" ]; then
     echo "Cloning PyRIT repository..."
