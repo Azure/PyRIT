@@ -10,9 +10,8 @@ services:
     volumes:
       - ./notebooks:/app/notebooks
       - ./data:/app/data
-    environment:
-      - JUPYTER_ENABLE_LAB=yes
-      - CUDA_VISIBLE_DEVICES=-1
+    env_file:
+      - .env
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8888"]
