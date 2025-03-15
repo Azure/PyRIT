@@ -9,6 +9,7 @@ class ChatMessageNop(ChatMessageNormalizer[list[ChatMessage]]):
     """
     A no-op chat message normalizer that does not modify the input messages.
     """
+
     def normalize(self, messages: list[ChatMessage]) -> list[ChatMessage]:
         """
         Returns the same list as was passed in.

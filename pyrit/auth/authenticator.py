@@ -9,6 +9,7 @@ from abc import abstractmethod
 
 class Authenticator(abc.ABC):
     """Abstract base class for authenticators."""
+
     token: str
 
     @abstractmethod

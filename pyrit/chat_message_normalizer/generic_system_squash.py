@@ -8,7 +8,7 @@ from pyrit.models import ChatMessage, ChatMessageRole
 class GenericSystemSquash(ChatMessageNormalizer[list[ChatMessage]]):
     def normalize(self, messages: list[ChatMessage]) -> list[ChatMessage]:
         """Returns the first system message combined with the first user message.
-        
+
         The format of the result uses generic instruction tags.
 
         Args:

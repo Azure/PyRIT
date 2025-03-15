@@ -33,6 +33,6 @@ __all__ = [
     "fetch_pku_safe_rlhf_dataset",
     "fetch_seclists_bias_testing_dataset",
     "fetch_tdc23_redteaming_dataset",
-    "fetch_wmdp_dataset",    
+    "fetch_wmdp_dataset",
     "fetch_xstest_dataset",
 ]

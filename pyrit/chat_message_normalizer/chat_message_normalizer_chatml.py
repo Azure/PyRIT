@@ -10,6 +10,7 @@ from pyrit.models import ALLOWED_CHAT_MESSAGE_ROLES, ChatMessage, ChatMessageRol
 
 class ChatMessageNormalizerChatML(ChatMessageNormalizer[str]):
     """A chat message normalizer that converts a list of chat messages to a ChatML string."""
+
     def normalize(self, messages: list[ChatMessage]) -> str:
         """Convert a string of text to a ChatML string.
 
@@ -31,10 +32,10 @@ class ChatMessageNormalizerChatML(ChatMessageNormalizer[str]):
     @staticmethod
     def from_chatml(content: str) -> list[ChatMessage]:
         """Convert a chatML string to a list of chat messages.
-        
+
         Args:
             content (str): The ChatML string to convert.
-        
+
         Returns:
             list[ChatMessage]: The list of chat messages.
         """
