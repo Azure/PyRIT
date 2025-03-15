@@ -7,7 +7,7 @@ import logging
 from typing import Any, List, Optional
 from uuid import uuid4
 
-from pyrit.common.batch_helper import batch_task_async
+from pyrit.prompt_target.batch_helper import batch_task_async
 from pyrit.exceptions import EmptyResponseException
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import (
