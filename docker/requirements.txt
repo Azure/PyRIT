@@ -1,0 +1,13 @@
+# PyTorch ecosystem with specific versions
+torch==2.6.0+cu118
+torchvision==0.21.0+cu118
+torchaudio==2.6.0+cu118
+
+# JupyterLab and related packages
+jupyterlab==4.1.5
+notebook==7.1.0
+ipywidgets==8.1.1
+matplotlib==3.8.2
+pandas==2.2.1
+seaborn==0.13.2
+ipython==8.18.1
