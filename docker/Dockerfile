@@ -29,7 +29,7 @@ WORKDIR /app
 COPY requirements.txt /app/
 
 # Install all Python dependencies at once with pinned versions
-RUN pip install --no-cache-dir -r requirements.txt --index-url https://download.pytorch.org/whl/cu118
+RUN pip install --no-cache-dir -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu118
 
 # Install PyRIT from PyPI (the official way)
 RUN pip install --no-cache-dir pyrit[dev,all]
