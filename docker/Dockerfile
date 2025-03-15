@@ -41,8 +41,6 @@ RUN mkdir -p /app/notebooks /app/data && \
 # Check PyRIT version
 RUN python -c "import pyrit; print(f'PyRIT version: {pyrit.__version__}')"
 
-# Create non-root user for better security
-RUN useradd -ms /bin/bash dockeruser
 RUN chown -R dockeruser:dockeruser /app
 
 # Create and set permissions for the startup script
