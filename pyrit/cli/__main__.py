@@ -152,7 +152,13 @@ def validate_scenario(
 
         # Some orchestrator arguments have their own configuration since they
         # are more complex. They are passed in as args to this function.
-        complex_arg_names = ["objective_target", "adversarial_chat", "prompt_converters", "scoring_target", "objective_scorer"]
+        complex_arg_names = [
+            "objective_target",
+            "adversarial_chat",
+            "prompt_converters",
+            "scoring_target",
+            "objective_scorer",
+        ]
         for complex_arg_name in complex_arg_names:
             if complex_arg_name in scenario_args:
                 raise ValueError(
@@ -209,11 +215,13 @@ def validate_target(config: Dict[str, Any], target_key: str) -> PromptTarget:
     return target
 
 
-def validate_scoring_target(config: Dict[str, Any], adversarial_chat: Optional[PromptChatTarget]) -> PromptChatTarget | None:
+def validate_scoring_target(
+    config: Dict[str, Any], adversarial_chat: Optional[PromptChatTarget]
+) -> PromptChatTarget | None:
     if "scoring" not in config:
         return None
     scoring_config = config["scoring"]
-    
+
     # If a scoring_target has been configured use it.
     # Otherwise, use the adversarial_chat target for scoring.
     if "scoring_target" in scoring_config:
@@ -227,20 +235,20 @@ def validate_objective_scorer(config: Dict[str, Any], scoring_target: Optional[P
     scoring_config = config["scoring"]
     if "objective_scorer" not in scoring_config:
         return None
-    
+
     scorer_args = deepcopy(scoring_config["objective_scorer"])
 
     if "type" not in scorer_args:
         raise KeyError("Scorer definition must contain a 'type' key.")
 
     scorer_type = scorer_args.pop("type")
-    
+
     try:
         scorer_module = import_module("pyrit.score")
         scorer_class = getattr(scorer_module, scorer_type)
     except Exception as ex:
         raise RuntimeError(f"Failed to import target {scorer_type} from pyrit.score") from ex
-    
+
     if scoring_target and "chat_target" in inspect.signature(scorer_class.__init__).parameters:
         scorer_args["chat_target"] = scoring_target
 

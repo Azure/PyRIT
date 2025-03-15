@@ -9,53 +9,51 @@ from unittest.mock import patch
 import pytest
 
 from pyrit.cli.__main__ import main
-from pyrit.orchestrator import PromptSendingOrchestrator, CrescendoOrchestrator, RedTeamingOrchestrator, TreeOfAttacksWithPruningOrchestrator
+from pyrit.orchestrator import (
+    CrescendoOrchestrator,
+    PromptSendingOrchestrator,
+    RedTeamingOrchestrator,
+    TreeOfAttacksWithPruningOrchestrator,
+)
 
 test_cases_success = [
     (
         "--config-file 'tests/unit/cli/prompt_send_success.yaml'",
         [PromptSendingOrchestrator],
-        ["send_normalizer_requests_async"]
+        ["send_normalizer_requests_async"],
     ),
-    (
-        "--config-file 'tests/unit/cli/multi_turn_rto_success.yaml'",
-        [RedTeamingOrchestrator],
-        ["run_attack_async"]
-    ),
-    (
-        "--config-file 'tests/unit/cli/multi_turn_rto_args_success.yaml'",
-        [RedTeamingOrchestrator],
-        ["run_attack_async"]
-    ),
-    (
-        "--config-file 'tests/unit/cli/multi_turn_crescendo_success.yaml'",
-        [CrescendoOrchestrator],
-        ["run_attack_async"]
-    ),
+    ("--config-file 'tests/unit/cli/multi_turn_rto_success.yaml'", [RedTeamingOrchestrator], ["run_attack_async"]),
+    ("--config-file 'tests/unit/cli/multi_turn_rto_args_success.yaml'", [RedTeamingOrchestrator], ["run_attack_async"]),
+    ("--config-file 'tests/unit/cli/multi_turn_crescendo_success.yaml'", [CrescendoOrchestrator], ["run_attack_async"]),
     (
         "--config-file 'tests/unit/cli/multi_turn_crescendo_args_success.yaml'",
         [CrescendoOrchestrator],
-        ["run_attack_async"]
+        ["run_attack_async"],
     ),
     (
         "--config-file 'tests/unit/cli/multi_turn_tap_success.yaml'",
         [TreeOfAttacksWithPruningOrchestrator],
-        ["run_attack_async"]
+        ["run_attack_async"],
     ),
     (
         "--config-file 'tests/unit/cli/multi_turn_tap_args_success.yaml'",
         [TreeOfAttacksWithPruningOrchestrator],
-        ["run_attack_async"]
+        ["run_attack_async"],
     ),
     (
         "--config-file 'tests/unit/cli/multi_turn_multiple_orchestrators_args_success.yaml'",
         [TreeOfAttacksWithPruningOrchestrator, CrescendoOrchestrator, RedTeamingOrchestrator],
-        ["run_attack_async", "run_attack_async", "run_attack_async"]
+        ["run_attack_async", "run_attack_async", "run_attack_async"],
     ),
     (
         "--config-file 'tests/unit/cli/mixed_multiple_orchestrators_args_success.yaml'",
-        [PromptSendingOrchestrator, TreeOfAttacksWithPruningOrchestrator, CrescendoOrchestrator, RedTeamingOrchestrator],
-        ["send_normalizer_requests_async", "run_attack_async", "run_attack_async", "run_attack_async"]
+        [
+            PromptSendingOrchestrator,
+            TreeOfAttacksWithPruningOrchestrator,
+            CrescendoOrchestrator,
+            RedTeamingOrchestrator,
+        ],
+        ["send_normalizer_requests_async", "run_attack_async", "run_attack_async", "run_attack_async"],
     ),
 ]
 
@@ -99,17 +97,21 @@ test_cases_error = [
     ),
     (
         "--config-file 'tests/unit/cli/multi_turn_rto_wrong_arg.yaml'",
-        "Failed to validate scenario RedTeamingOrchestrator: RedTeamingOrchestrator.__init__() got an unexpected keyword argument 'wrong_arg'",
+        "Failed to validate scenario RedTeamingOrchestrator: RedTeamingOrchestrator.__init__() "
+        "got an unexpected keyword argument 'wrong_arg'",
         ValueError,
     ),
     (
         "--config-file 'tests/unit/cli/multi_turn_crescendo_wrong_arg.yaml'",
-        "Failed to validate scenario CrescendoOrchestrator: CrescendoOrchestrator.__init__() got an unexpected keyword argument 'wrong_arg'",
+        "Failed to validate scenario CrescendoOrchestrator: CrescendoOrchestrator.__init__() "
+        "got an unexpected keyword argument 'wrong_arg'",
         ValueError,
     ),
     (
         "--config-file 'tests/unit/cli/multi_turn_tap_wrong_arg.yaml'",
-        "Failed to validate scenario TreeOfAttacksWithPruningOrchestrator: TreeOfAttacksWithPruningOrchestrator.__init__() got an unexpected keyword argument 'wrong_arg'",
+        "Failed to validate scenario TreeOfAttacksWithPruningOrchestrator: "
+        "TreeOfAttacksWithPruningOrchestrator.__init__() "
+        "got an unexpected keyword argument 'wrong_arg'",
         ValueError,
     ),
 ]
@@ -117,7 +119,7 @@ test_cases_error = [
 
 @pytest.mark.parametrize("command, orchestrator_classes, methods", test_cases_success)
 @patch("pyrit.common.default_values.get_required_value", return_value="value")
-def test_cli_pso_success(get_required_value, command, orchestrator_classes, methods):
+def test_cli_success(get_required_value, command, orchestrator_classes, methods):
     # Patching the request sending functionality since we don't want to test the orchestrator,
     # but just the CLI part.
     with contextlib.ExitStack() as stack:
