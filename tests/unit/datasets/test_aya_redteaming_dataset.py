@@ -58,7 +58,7 @@ def mock_aya_redteaming_data():
     ]
 
 
-@patch("pyrit.datasets.fetch_example_datasets.fetch_examples")
+@patch("pyrit.datasets.aya_redteaming_dataset.fetch_examples")
 def test_fetch_aya_redteaming_dataset(mock_fetch_examples, mock_aya_redteaming_data):
     mock_fetch_examples.return_value = mock_aya_redteaming_data
 

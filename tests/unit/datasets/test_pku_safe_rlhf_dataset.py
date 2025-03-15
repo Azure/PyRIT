@@ -299,7 +299,7 @@ def mock_pku_safe_rlhf_data():
     }
 
 
-@patch("pyrit.datasets.fetch_example_datasets.load_dataset")
+@patch("pyrit.datasets.pku_safe_rlhf_dataset.load_dataset")
 def test_fetch_pku_safe_rlhf_dataset(mock_load_dataset, mock_pku_safe_rlhf_data):
     mock_load_dataset.return_value = mock_pku_safe_rlhf_data
 
