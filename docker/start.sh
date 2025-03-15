@@ -32,5 +32,5 @@ fi
 # Print PyRIT version
 python -c "import pyrit; print(f'Running PyRIT version: {pyrit.__version__}')"
 
-# Start JupyterLab
-jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token='' --NotebookApp.password='' --notebook-dir=/app/notebooks
+# Execute the command passed to docker run (or the CMD if none provided)
+exec "$@"

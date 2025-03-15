@@ -1,6 +1,5 @@
 # Base image from Microsoft Azure with Python 3.12
 FROM mcr.microsoft.com/azureml/minimal-py312-inference:20250310.v1
-
 LABEL description="Docker container for PyRIT with Jupyter Notebook integration"
 
 # Set environment variables
@@ -57,5 +56,6 @@ USER pyrituser
 # Expose port for JupyterLab
 EXPOSE 8888
 
-# Set the entrypoint to the startup script
+# Set the entrypoint to the startup script and default command to launch JupyterLab
 ENTRYPOINT ["/app/start.sh"]
+CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root", "--NotebookApp.token=''", "--NotebookApp.password=''", "--notebook-dir=/app/notebooks"]
