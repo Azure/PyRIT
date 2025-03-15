@@ -16,6 +16,9 @@ RUN conda env create -p $CONDA_ENVIRONMENT_PATH -f conda_dependencies.yaml -q &&
 
 RUN conda list
 
+# sentencepiece is required for GCG but can't be installed with pip like other dependencies starting with python 3.13
+RUN conda install -c conda-forge sentencepiece -y
+
 RUN git clone https://github.com/Azure/PyRIT.git
 
 RUN cd PyRIT && pip install -e .[dev,gcg] && pip install git+https://github.com/lm-sys/FastChat.git@2c68a13bfe10b86f40e3eefc3fcfacb32c00b02a
