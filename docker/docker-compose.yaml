@@ -8,8 +8,8 @@ services:
     ports:
       - "8888:8888"
     volumes:
-      - ./notebooks:/app/notebooks
-      - ./data:/app/data
+      - notebooks:/app/notebooks
+      - data:/app/data
     env_file:
       - .env
     restart: unless-stopped
@@ -21,4 +21,5 @@ services:
       start_period: 40s
 
 volumes:
+  notebooks:
   data:
