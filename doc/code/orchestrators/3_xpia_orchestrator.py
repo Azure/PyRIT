@@ -118,7 +118,7 @@ memory = CentralMemory.get_memory_instance()
 memory.dispose_engine()
 
 # %% [markdown]
-# ## RAG Vulnerability Demonstration. 
+# ## RAG Vulnerability Demonstration.
 # In this demonstration, we use the **XPIATestOrchestrator** to generate a CV (overlaying hidden text for “Relevant skills”) and automatically upload it to `/upload/`, then trigger `/search_candidates/` for evaluation.
 # To replicate, clone the [ai_recruiter repository](https://github.com/KutalVolkan/ai_recruiter),
 # run the [docker_setup instructions](https://github.com/KutalVolkan/ai_recruiter/tree/main/docker_setup),
