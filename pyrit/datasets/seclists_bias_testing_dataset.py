@@ -7,7 +7,7 @@ from typing import Literal, Optional
 
 import pycountry
 
-from pyrit.datasets.fetch_examples import FILE_TYPE_HANDLERS, fetch_examples
+from pyrit.datasets.dataset_helper import FILE_TYPE_HANDLERS, fetch_examples
 from pyrit.models import SeedPromptDataset
 from pyrit.models.seed_prompt import SeedPrompt
 

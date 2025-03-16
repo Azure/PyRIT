@@ -11,7 +11,7 @@ import pytest
 from pyrit.common.path import DB_DATA_PATH
 
 # Import the functions to be tested
-from pyrit.datasets.fetch_examples import (
+from pyrit.datasets.dataset_helper import (
     _fetch_from_public_url,
     _get_cache_file_name,
     _read_cache,
@@ -185,7 +185,7 @@ def test_fetch_examples_with_cache():
 
         # Mock the _fetch_from_public_url function to ensure it is not called again
         with patch(
-            "pyrit.datasets.fetch_examples._fetch_from_public_url", MagicMock(return_value=examples)
+            "pyrit.datasets.dataset_helper._fetch_from_public_url", MagicMock(return_value=examples)
         ) as mock_fetch:
             examples_cached_again = fetch_examples(
                 source=SOURCE_URLS["json"], source_type="public_url", cache=True, data_home=str(data_home)

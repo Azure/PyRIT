@@ -5,7 +5,7 @@ from pyrit.datasets.adv_bench_dataset import fetch_adv_bench_dataset
 from pyrit.datasets.aya_redteaming_dataset import fetch_aya_redteaming_dataset
 from pyrit.datasets.babelscape_alert_dataset import fetch_babelscape_alert_dataset
 from pyrit.datasets.decoding_trust_stereotypes_dataset import fetch_decoding_trust_stereotypes_dataset
-from pyrit.datasets.fetch_examples import fetch_examples
+from pyrit.datasets.dataset_helper import fetch_examples
 from pyrit.datasets.forbidden_questions_dataset import fetch_forbidden_questions_dataset
 from pyrit.datasets.harmbench_dataset import fetch_harmbench_dataset
 from pyrit.datasets.librAI_do_not_answer_dataset import fetch_librAI_do_not_answer_dataset

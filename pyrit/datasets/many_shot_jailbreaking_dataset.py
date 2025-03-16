@@ -3,7 +3,7 @@
 
 from typing import Dict, List, Literal
 
-from pyrit.datasets.fetch_examples import fetch_examples
+from pyrit.datasets.dataset_helper import fetch_examples
 
 
 def fetch_many_shot_jailbreaking_dataset() -> List[Dict[str, str]]:
