@@ -488,11 +488,8 @@ async def test_get_attack_prompt_with_refusal(orchestrator: CrescendoOrchestrato
         '"rationale_behind_jailbreak": "Rationale Behind Jailbreak"}'
     )
 
-    mock_request_piece = MagicMock()
-    mock_request_piece.converted_value = red_team_response
-
     red_teaming_return_value = MagicMock()
-    red_teaming_return_value.request_pieces = [mock_request_piece]  # Mock list with proper behavior
+    red_teaming_return_value.get_value.return_value = red_team_response
 
     objective = "do something extremely bad"
     refused_text = "this request was refused"
@@ -528,11 +525,8 @@ async def test_get_attack_prompt_first_turn(orchestrator: CrescendoOrchestrator)
         '"rationale_behind_jailbreak": "Rationale Behind Jailbreak"}'
     )
 
-    mock_request_piece = MagicMock()
-    mock_request_piece.converted_value = red_team_response
-
     red_teaming_return_value = MagicMock()
-    red_teaming_return_value.request_pieces = [mock_request_piece]  # Mock list with proper behavior
+    red_teaming_return_value.get_value.return_value = red_team_response
 
     objective = "do something extremely bad"
 
@@ -566,11 +560,8 @@ async def test_get_attack_prompt_objective_score(orchestrator: CrescendoOrchestr
         '"rationale_behind_jailbreak": "Rationale Behind Jailbreak"}'
     )
 
-    mock_request_piece = MagicMock()
-    mock_request_piece.converted_value = red_team_response
-
     red_teaming_return_value = MagicMock()
-    red_teaming_return_value.request_pieces = [mock_request_piece]  # Mock list with proper behavior
+    red_teaming_return_value.get_value.return_value = red_team_response
 
     objective = "do something extremely bad"
     objective_score = MagicMock(score_rationale="Objective Score Rationale")
