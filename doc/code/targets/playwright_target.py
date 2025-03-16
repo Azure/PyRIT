@@ -147,18 +147,17 @@ if sys.platform == "win32":
 async def main(page: Page):
     target = PlaywrightTarget(interaction_func=interact_with_my_app, page=page)
 
-    with PromptSendingOrchestrator(
-        objective_target=target,
-    ) as orchestrator:
-        all_prompts = [
-            "Tell me a joke about computer programming.",
-        ]
+    orchestrator = PromptSendingOrchestrator(objective_target=target)
 
-        await orchestrator.send_prompts_async(prompt_list=all_prompts)
-        await orchestrator.print_conversations_async()  # type: ignore
+    all_prompts = [
+        "Tell me a joke about computer programming.",
+    ]
+
+    await orchestrator.send_prompts_async(prompt_list=all_prompts)
+    await orchestrator.print_conversations_async()  # type: ignore
 
 
-async def run():
+async def run() -> None:
     async with async_playwright() as playwright:
         browser = await playwright.chromium.launch(headless=False)
         context = await browser.new_context()

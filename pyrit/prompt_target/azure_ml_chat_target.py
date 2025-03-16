@@ -157,7 +157,7 @@ class AzureMLChatTarget(PromptChatTarget):
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
 
-        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
+        messages = list(self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id))
 
         messages.append(request.to_chat_message())
 
@@ -181,10 +181,7 @@ class AzureMLChatTarget(PromptChatTarget):
             else:
                 raise hse
 
-        logger.info(
-            "Received the following response from the prompt target"
-            + f"{response_entry.request_pieces[0].converted_value}"
-        )
+        logger.info("Received the following response from the prompt target" + f"{response_entry.get_value()}")
         return response_entry
 
     @pyrit_target_retry

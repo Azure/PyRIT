@@ -12,7 +12,10 @@ from pyrit.common import path
 
 nb_directory_path = pathlib.Path(path.DOCS_CODE_PATH, "orchestrators").resolve()
 
-skipped_files = ["HITL_Scoring_Orchestrator.ipynb", "3_xpia_orchestrator.ipynb"]
+skipped_files = [
+    "HITL_Scoring_Orchestrator.ipynb",  # requires human in the loop
+    "3_xpia_orchestrator.ipynb",  # requires Azure SQL Storage IO for Azure Storage Account (see #4001)
+]
 
 
 @pytest.mark.parametrize(

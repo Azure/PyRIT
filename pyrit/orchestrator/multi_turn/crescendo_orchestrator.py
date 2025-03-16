@@ -343,24 +343,20 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
                 f"This is the rationale behind the score: {objective_score.score_rationale}\n\n"
             )
 
-        prompt_metadata = {"response_format": "json"}
+        prompt_metadata: dict[str, str | int] = {"response_format": "json"}
         seed_prompt_group = SeedPromptGroup(
             prompts=[SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)]
         )
 
         response_text = (
-            (
-                await self._prompt_normalizer.send_prompt_async(
-                    seed_prompt_group=seed_prompt_group,
-                    conversation_id=adversarial_chat_conversation_id,
-                    target=self._adversarial_chat,
-                    orchestrator_identifier=self.get_identifier(),
-                    labels=memory_labels,
-                )
+            await self._prompt_normalizer.send_prompt_async(
+                seed_prompt_group=seed_prompt_group,
+                conversation_id=adversarial_chat_conversation_id,
+                target=self._adversarial_chat,
+                orchestrator_identifier=self.get_identifier(),
+                labels=memory_labels,
             )
-            .request_pieces[0]
-            .converted_value
-        )
+        ).get_value()
         response_text = remove_markdown_json(response_text)
 
         expected_output = ["generated_question", "rationale_behind_jailbreak", "last_response_summary"]

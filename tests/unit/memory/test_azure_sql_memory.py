@@ -3,7 +3,7 @@
 
 import os
 import uuid
-from typing import Generator
+from typing import Generator, MutableSequence, Sequence
 from unittest import mock
 
 import pytest
@@ -11,8 +11,8 @@ from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 from sqlalchemy import text
 from unit.mocks import get_azure_sql_memory, get_sample_conversation_entries
 
-from pyrit.memory import AzureSQLMemory
-from pyrit.memory.memory_models import EmbeddingDataEntry, PromptMemoryEntry
+from pyrit.memory import AzureSQLMemory, EmbeddingDataEntry, PromptMemoryEntry
+from pyrit.memory.memory_models import Base
 from pyrit.models import PromptRequestPiece
 from pyrit.orchestrator.orchestrator_class import Orchestrator
 from pyrit.prompt_converter.base64_converter import Base64Converter
@@ -25,7 +25,7 @@ def memory_interface() -> Generator[AzureSQLMemory, None, None]:
 
 
 @pytest.fixture
-def sample_conversation_entries() -> list[PromptMemoryEntry]:
+def sample_conversation_entries() -> Sequence[PromptMemoryEntry]:
     return get_sample_conversation_entries()
 
 
@@ -135,7 +135,9 @@ def test_default_embedding_raises(memory_interface: AzureSQLMemory):
         memory_interface.enable_embedding()
 
 
-def test_query_entries(memory_interface: AzureSQLMemory, sample_conversation_entries: list[PromptMemoryEntry]):
+def test_query_entries(
+    memory_interface: AzureSQLMemory, sample_conversation_entries: MutableSequence[PromptMemoryEntry]
+):
 
     for i in range(3):
         sample_conversation_entries[i].conversation_id = str(i)
@@ -145,7 +147,7 @@ def test_query_entries(memory_interface: AzureSQLMemory, sample_conversation_ent
     memory_interface._insert_entries(entries=sample_conversation_entries)
 
     # Query entries without conditions
-    queried_entries = memory_interface._query_entries(PromptMemoryEntry)
+    queried_entries: MutableSequence[Base] = memory_interface._query_entries(PromptMemoryEntry)
     assert len(queried_entries) == 3
 
     session = memory_interface.get_session()
@@ -157,7 +159,9 @@ def test_query_entries(memory_interface: AzureSQLMemory, sample_conversation_ent
     session.query.return_value.filter.assert_called_once_with(PromptMemoryEntry.conversation_id == "1")  # type: ignore
 
 
-def test_get_all_memory(memory_interface: AzureSQLMemory, sample_conversation_entries: list[PromptMemoryEntry]):
+def test_get_all_memory(
+    memory_interface: AzureSQLMemory, sample_conversation_entries: MutableSequence[PromptMemoryEntry]
+):
 
     memory_interface._insert_entries(entries=sample_conversation_entries)
 
@@ -287,7 +291,7 @@ def test_update_entries(memory_interface: AzureSQLMemory):
     memory_interface._insert_entry(entry)
 
     # Fetch the entry to update and update its content
-    entries_to_update = memory_interface._query_entries(
+    entries_to_update: MutableSequence[Base] = memory_interface._query_entries(
         PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "123"
     )
     memory_interface._update_entries(entries=entries_to_update, update_fields={"original_value": "Updated Hello"})
@@ -307,7 +311,7 @@ def test_update_entries_empty_update_fields(memory_interface: AzureSQLMemory):
     memory_interface._insert_entry(entry)
 
     # Fetch the entry to update and update its content
-    entries_to_update = memory_interface._query_entries(
+    entries_to_update: MutableSequence[Base] = memory_interface._query_entries(
         PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "123"
     )
     with pytest.raises(ValueError):
