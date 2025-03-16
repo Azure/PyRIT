@@ -12,7 +12,7 @@ from pyrit.common import DUCK_DB, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
 from pyrit.orchestrator import XPIATestOrchestrator
 from pyrit.prompt_converter import PDFConverter
-from pyrit.prompt_target import HTTPXApiTarget, OpenAIChatTarget
+from pyrit.prompt_target import HTTPXAPITarget, OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
 
 # Initialize PyRIT
@@ -185,13 +185,13 @@ async def test_ai_recruiter_workflow():
         injection_items=injection_items,  # Inject hidden text
     )
 
-    upload_target = HTTPXApiTarget(
+    upload_target = HTTPXAPITarget(
         http_url="http://localhost:8000/upload/",
         method="POST",
         timeout=180,
     )
 
-    http_api_processing_target = HTTPXApiTarget(
+    http_api_processing_target = HTTPXAPITarget(
         http_url="http://localhost:8000/search_candidates/",
         method="POST",
         timeout=180,

@@ -18,7 +18,7 @@ from pyrit.prompt_target import HTTPTarget
 logger = logging.getLogger(__name__)
 
 
-class HTTPXApiTarget(HTTPTarget):
+class HTTPXAPITarget(HTTPTarget):
     """
     A subclass of HTTPTarget that *only* does "API mode" (no raw HTTP request).
     This is a simpler approach for uploading files or sending JSON/form data.

@@ -131,7 +131,7 @@ from pyrit.common import DUCK_DB, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
 from pyrit.orchestrator import XPIATestOrchestrator
 from pyrit.prompt_converter import PDFConverter
-from pyrit.prompt_target import HTTPXApiTarget
+from pyrit.prompt_target import HTTPXAPITarget
 
 initialize_pyrit(memory_db_type=DUCK_DB)
 
@@ -187,9 +187,9 @@ pdf_converter = PDFConverter(
     injection_items=injection_items,  # Inject hidden text
 )
 
-upload_target = HTTPXApiTarget(http_url="http://localhost:8000/upload/", method="POST", timeout=180)
+upload_target = HTTPXAPITarget(http_url="http://localhost:8000/upload/", method="POST", timeout=180)
 
-http_api_processing_target = HTTPXApiTarget(
+http_api_processing_target = HTTPXAPITarget(
     http_url="http://localhost:8000/search_candidates/", method="POST", timeout=180
 )
 
