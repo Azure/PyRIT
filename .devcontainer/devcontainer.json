@@ -11,7 +11,10 @@
             },
             "extensions": [
                 "ms-python.python",
-                "ms-toolsai.jupyter"
+                "ms-toolsai.jupyter",
+                "ms-azuretools.vscode-docker",
+                "tamasfe.even-better-toml",
+                "citation-file-format.citation-file-format"
             ]
         }
     },

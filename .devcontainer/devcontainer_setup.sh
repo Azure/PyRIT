@@ -7,4 +7,8 @@ conda create -n pyrit-dev python=3.11 -y
 conda activate pyrit-dev
 conda install ipykernel -y
 pip install -e ."[dev,all]"
-sudo chown -R vscode:vscode /workspace
+
+# excluding .git directories from the chown command to avoid permission errors in MacOS
+sudo find /workspace \
+  -not -path '*/.git/*' \
+  -exec chown vscode:vscode {} +
