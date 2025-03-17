@@ -52,7 +52,7 @@ def mock_adv_bench_data():
     }
 
 
-@patch("pyrit.datasets.fetch_example_datasets.fetch_examples")
+@patch("pyrit.datasets.adv_bench_dataset.fetch_examples")
 def test_fetch_adv_bench_dataset(mock_fetch_examples, mock_adv_bench_data):
     mock_fetch_examples.return_value = mock_adv_bench_data
 

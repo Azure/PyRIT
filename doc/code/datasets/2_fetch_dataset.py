@@ -16,7 +16,7 @@
 # # Fetching dataset examples
 #
 # This notebook demonstrates how to load datasets as a `SeedPromptDataset` to perform red teaming on a target.
-# There are several datasets which can be found in the `fetch_example_datasets.py` file.
+# There are several datasets which can be found in the `pyrit.datasets` module.
 # Three example datasets are shown in this notebook and can be used with orchestrators such as the Prompt Sending Orchestrator.
 # The example below demonstrates loading a HuggingFace dataset as a `SeedPromptDataset`.
 
