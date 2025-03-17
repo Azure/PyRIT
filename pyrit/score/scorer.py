@@ -271,7 +271,7 @@ class Scorer(abc.ABC):
             raise Exception(f"Error scoring prompt with original prompt ID: {scored_prompt_id}") from ex
 
         try:
-            response_json = response.request_pieces[0].converted_value
+            response_json = response.get_value()
 
             response_json = remove_markdown_json(response_json)
             parsed_response = json.loads(response_json)

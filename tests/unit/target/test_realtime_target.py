@@ -53,8 +53,8 @@ async def test_send_prompt_async(target):
         text="Hello",
         conversation_id="test_conversation_id",
     )
-    assert response.request_pieces[0].converted_value == "hello"
-    assert response.request_pieces[1].converted_value == "output.wav"
+    assert response.get_value() == "hello"
+    assert response.get_value(1) == "output.wav"
 
     # Clean up the WebSocket connections
     await target.cleanup_target()

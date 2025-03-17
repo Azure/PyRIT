@@ -99,7 +99,7 @@ async def test_tts_send_prompt_file_save_async(
         mock_request.return_value = return_value
         response = await tts_target.send_prompt_async(prompt_request=request)
 
-        file_path = response.request_pieces[0].converted_value
+        file_path = response.get_value()
         assert file_path
         assert file_path.endswith(f".{response_format}")
         assert os.path.exists(file_path)
