@@ -32,7 +32,7 @@ def fetch_babelscape_alert_dataset(
         data_categories = [category]
 
     # Load specified subset or both categories
-    prompts = []
+    prompts: list[str] = []
     for name in data_categories:
         data = load_dataset("Babelscape/ALERT", name)
         prompts.extend(item["prompt"] for item in data["test"])
