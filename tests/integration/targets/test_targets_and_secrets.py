@@ -26,7 +26,7 @@ async def _assert_can_send_prompt(target, check_if_llm_interpreted_request=True)
     assert len(result) == 1
     assert len(result[0].request_pieces) == 1
     if check_if_llm_interpreted_request:
-        assert "test" in result[0].request_pieces[0].converted_value.lower()
+        assert "test" in result[0].get_value().lower()
 
 
 @pytest.mark.asyncio
@@ -84,7 +84,7 @@ async def test_connect_required_realtime_targets(duckdb_instance, endpoint, api_
     assert len(result[0].request_pieces) == 2
     assert result[0].request_pieces[0].converted_value_data_type == "text"
     assert result[0].request_pieces[1].converted_value_data_type == "audio_path"
-    assert "test" in result[0].request_pieces[0].converted_value.lower()
+    assert "test" in result[0].get_value().lower()
 
 
 @pytest.mark.asyncio

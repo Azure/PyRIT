@@ -8,7 +8,7 @@ By using `SeedPrompts` through loading from a YAML file or loading them via syst
 
 **Loading Datasets**:
 
-We also show examples of common methods to fetch datasets into PyRIT from different sources. Most datasets will be loaded as a `SeedPromptDataset`. Outside of these examples, the fetch functions which are currently available can be found in `fetch_example_datasets.py` and are organized by similar method type. There is a wide range of datasets which are included and can be used as example to also load in other datasets. As these datasets are the first component of building an attack in PyRIT, the following notebooks also continue to demonstrate how these prompts can be used in the process.
+We also show examples of common methods to fetch datasets into PyRIT from different sources. Most datasets will be loaded as a `SeedPromptDataset`. Outside of these examples, the fetch functions which are currently available can be found in the `pyrit.datasets` module. There is a wide range of datasets which are included and can be used as example to also load in other datasets. As these datasets are the first component of building an attack in PyRIT, the following notebooks also continue to demonstrate how these prompts can be used in the process.
 
 **Datasets Loading Process: Seed Prompt De-duplication**:
 PyRIT checks for existence of duplicate seed prompts using hashes to make sure it is not uploading duplicate seed prompts in the memory. The feature follows following decision-tree:
