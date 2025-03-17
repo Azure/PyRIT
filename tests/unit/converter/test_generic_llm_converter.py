@@ -7,6 +7,7 @@ import pytest
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_converter import (
+    LLMGenericTextConverter,
     MaliciousQuestionGeneratorConverter,
     NoiseConverter,
     TenseConverter,
@@ -97,6 +98,20 @@ async def test_malicious_question_converter_sets_system_prompt(mock_target) -> N
 
 def test_generic_llm_converter_input_supported() -> None:
     target = MagicMock()
-    converter = NoiseConverter(converter_target=target)
+    converter = LLMGenericTextConverter(converter_target=target)
     assert converter.input_supported("text") is True
     assert converter.input_supported("audio_path") is False
+
+
+def test_generic_llm_converter_user_prompt_without_objective_raises() -> None:
+    target = MagicMock()
+    user_template = MagicMock()
+    with pytest.raises(ValueError):
+        LLMGenericTextConverter(converter_target=target, user_prompt_template_with_objective=user_template)
+
+
+def test_generic_llm_converter_init_default_templates_empty() -> None:
+    target = MagicMock()
+    converter = LLMGenericTextConverter(converter_target=target)
+    assert converter._system_prompt_template is None
+    assert converter._user_prompt_template_with_objective is None

@@ -8,7 +8,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 from string import ascii_lowercase
-from typing import Literal
+from typing import Literal, MutableSequence, Sequence
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
@@ -28,12 +28,12 @@ from pyrit.orchestrator import Orchestrator
 
 
 @pytest.fixture
-def sample_conversations() -> list[PromptRequestPiece]:
+def sample_conversations() -> MutableSequence[PromptRequestPiece]:
     return get_sample_conversations()
 
 
 @pytest.fixture
-def sample_conversation_entries() -> list[PromptMemoryEntry]:
+def sample_conversation_entries() -> Sequence[PromptMemoryEntry]:
     return get_sample_conversation_entries()
 
 
@@ -41,7 +41,7 @@ def generate_random_string(length: int = 10) -> str:
     return "".join(random.choice(ascii_lowercase) for _ in range(length))
 
 
-def assert_original_value_in_list(original_value: str, prompt_request_pieces: list[PromptRequestPiece]):
+def assert_original_value_in_list(original_value: str, prompt_request_pieces: Sequence[PromptRequestPiece]):
     for piece in prompt_request_pieces:
         if piece.original_value == original_value:
             return True
@@ -60,7 +60,7 @@ def test_conversation_memory_empty_by_default(duckdb_instance: MemoryInterface):
 
 @pytest.mark.parametrize("num_conversations", [1, 2, 3])
 def test_add_request_pieces_to_memory(
-    duckdb_instance: MemoryInterface, sample_conversations: list[PromptRequestPiece], num_conversations: int
+    duckdb_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece], num_conversations: int
 ):
     for c in sample_conversations[:num_conversations]:
         c.conversation_id = sample_conversations[0].conversation_id
@@ -521,7 +521,7 @@ def test_add_request_pieces_to_memory_calls_validate(duckdb_instance: MemoryInte
 
 
 def test_add_request_pieces_to_memory_updates_sequence(
-    duckdb_instance: MemoryInterface, sample_conversations: list[PromptRequestPiece]
+    duckdb_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
 ):
     for conversation in sample_conversations:
         conversation.conversation_id = sample_conversations[0].conversation_id
@@ -541,7 +541,7 @@ def test_add_request_pieces_to_memory_updates_sequence(
 
 
 def test_add_request_pieces_to_memory_updates_sequence_with_prev_conversation(
-    duckdb_instance: MemoryInterface, sample_conversations: list[PromptRequestPiece]
+    duckdb_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
 ):
 
     for conversation in sample_conversations:
@@ -565,7 +565,7 @@ def test_add_request_pieces_to_memory_updates_sequence_with_prev_conversation(
 
 
 def test_insert_prompt_memories_inserts_embedding(
-    duckdb_instance: MemoryInterface, sample_conversations: list[PromptRequestPiece]
+    duckdb_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
 ):
 
     request = PromptRequestResponse(request_pieces=[sample_conversations[0]])
@@ -586,7 +586,7 @@ def test_insert_prompt_memories_inserts_embedding(
 
 
 def test_insert_prompt_memories_not_inserts_embedding(
-    duckdb_instance: MemoryInterface, sample_conversations: list[PromptRequestPiece]
+    duckdb_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
 ):
 
     request = PromptRequestResponse(request_pieces=[sample_conversations[0]])
@@ -607,7 +607,7 @@ def test_insert_prompt_memories_not_inserts_embedding(
 
 
 def test_export_conversation_by_orchestrator_id_file_created(
-    duckdb_instance: MemoryInterface, sample_conversations: list[PromptMemoryEntry]
+    duckdb_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
 ):
     orchestrator1_id = sample_conversations[0].orchestrator_identifier["id"]
 
@@ -626,7 +626,7 @@ def test_export_conversation_by_orchestrator_id_file_created(
 
 
 def test_get_scores_by_orchestrator_id(
-    duckdb_instance: MemoryInterface, sample_conversations: list[PromptRequestPiece]
+    duckdb_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
 ):
     # create list of scores that are associated with sample conversation entries
     # assert that that list of scores is the same as expected :-)
@@ -667,7 +667,7 @@ def test_get_scores_by_orchestrator_id(
 @pytest.mark.parametrize("score_type", ["float_scale", "true_false"])
 def test_add_score_get_score(
     duckdb_instance: MemoryInterface,
-    sample_conversation_entries: list[PromptMemoryEntry],
+    sample_conversation_entries: Sequence[PromptMemoryEntry],
     score_type: Literal["float_scale"] | Literal["true_false"],
 ):
     prompt_id = sample_conversation_entries[0].id
@@ -991,6 +991,19 @@ async def test_get_seed_prompts_with_parameters_filter(duckdb_instance: MemoryIn
 
 
 @pytest.mark.asyncio
+async def test_get_seed_prompts_with_metadata_filter(duckdb_instance: MemoryInterface):
+    seed_prompts = [
+        SeedPrompt(value="prompt1", data_type="text", metadata={"key1": "value1", "key2": "value2"}),
+        SeedPrompt(value="prompt2", data_type="text", metadata={"key1": "value2"}),
+    ]
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
+
+    result = duckdb_instance.get_seed_prompts(metadata={"key1": "value1"})
+    assert len(result) == 1
+    assert result[0].metadata == {"key1": "value1", "key2": "value2"}
+
+
+@pytest.mark.asyncio
 async def test_get_seed_prompts_with_multiple_filters(duckdb_instance: MemoryInterface):
     seed_prompts = [
         SeedPrompt(value="prompt1", dataset_name="dataset1", added_by="user1", data_type="text"),
@@ -1134,10 +1147,54 @@ async def test_get_seed_prompts_with_substring_filters_parameters(duckdb_instanc
 
 @pytest.mark.asyncio
 async def test_add_seed_prompts_to_memory_empty_list(duckdb_instance: MemoryInterface):
-    prompts: list[SeedPrompt] = []
+    prompts: Sequence[SeedPrompt] = []
     await duckdb_instance.add_seed_prompts_to_memory_async(prompts=prompts, added_by="tester")
     stored_prompts = duckdb_instance.get_seed_prompts(dataset_name="test_dataset")
     assert len(stored_prompts) == 0
+
+
+@pytest.mark.asyncio
+async def test_add_seed_prompts_duplicate_entries_same_dataset(duckdb_instance: MemoryInterface):
+    prompts: Sequence[SeedPrompt] = [
+        SeedPrompt(value="prompt1", dataset_name="test_dataset", data_type="text"),
+        SeedPrompt(value="prompt2", dataset_name="test_dataset", data_type="text"),
+    ]
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=prompts, added_by="tester")
+    stored_prompts = duckdb_instance.get_seed_prompts(dataset_name="test_dataset")
+    assert len(stored_prompts) == 2
+
+    # Try to add prompt list with one duplicate prompt and one new prompt
+    duplicate_prompts: Sequence[SeedPrompt] = [
+        SeedPrompt(value="prompt1", dataset_name="test_dataset", data_type="text"),
+        SeedPrompt(value="prompt3", dataset_name="test_dataset", data_type="text"),
+    ]
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=duplicate_prompts, added_by="tester")
+
+    # Validate that only new prompt is added and the total prompt count is 3
+    stored_prompts = duckdb_instance.get_seed_prompts(dataset_name="test_dataset")
+    assert len(stored_prompts) == 3
+
+
+@pytest.mark.asyncio
+async def test_add_seed_prompts_duplicate_entries_different_datasets(duckdb_instance: MemoryInterface):
+    prompts: Sequence[SeedPrompt] = [
+        SeedPrompt(value="prompt1", dataset_name="test_dataset", data_type="text"),
+        SeedPrompt(value="prompt2", dataset_name="test_dataset", data_type="text"),
+    ]
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=prompts, added_by="tester")
+    stored_prompts = duckdb_instance.get_seed_prompts(dataset_name="test_dataset")
+    assert len(stored_prompts) == 2
+
+    # Try to add prompt list with one duplicate prompt and one new prompt
+    duplicate_prompts: Sequence[SeedPrompt] = [
+        SeedPrompt(value="prompt1", dataset_name="test_dataset2", data_type="text"),
+        SeedPrompt(value="prompt3", dataset_name="test_dataset2", data_type="text"),
+    ]
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=duplicate_prompts, added_by="tester")
+
+    # Validate that only new prompt is added and the total prompt count is 3
+    stored_prompts = duckdb_instance.get_seed_prompts()
+    assert len(stored_prompts) == 4
 
 
 def test_get_seed_prompt_dataset_names_empty(duckdb_instance: MemoryInterface):
@@ -1393,7 +1450,7 @@ async def test_add_seed_prompt_groups_to_memory_with_textimage_modalities(duckdb
 
 @pytest.mark.asyncio
 async def test_get_seed_prompts_with_param_filters(duckdb_instance: MemoryInterface):
-    template_value = "Test template {{param1}}"
+    template_value = "Test template {{ param1 }}"
     dataset_name = "dataset_1"
     harm_categories = ["category1"]
     added_by = "tester"
@@ -1552,7 +1609,7 @@ def test_export_all_conversations_with_scores_correct_data(duckdb_instance: Memo
 
 def test_export_all_conversations_with_scores_empty_data(duckdb_instance: MemoryInterface):
     duckdb_instance.exporter = MemoryExporter()
-    expected_data: list = []
+    expected_data: Sequence = []
     with tempfile.NamedTemporaryFile(delete=True, suffix=".json") as temp_file:
         with (
             patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_prompt_request_pieces") as mock_get_pieces,
@@ -1602,6 +1659,40 @@ def test_get_prompt_request_pieces_labels(duckdb_instance: MemoryInterface):
         assert "op_name" in retrieved_entry.labels
         assert "user_name" in retrieved_entry.labels
         assert "harm_category" in retrieved_entry.labels
+
+
+def test_get_prompt_request_pieces_metadata(duckdb_instance: MemoryInterface):
+    metadata: dict[str, str | int] = {"key1": "value1", "key2": "value2"}
+    entries = [
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                role="user",
+                original_value="Hello 1",
+                prompt_metadata=metadata,
+            )
+        ),
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                role="assistant",
+                original_value="Hello 2",
+                prompt_metadata={"key2": "value2", "key3": "value3"},
+            )
+        ),
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                role="user",
+                original_value="Hello 3",
+            )
+        ),
+    ]
+
+    duckdb_instance._insert_entries(entries=entries)
+
+    retrieved_entries = duckdb_instance.get_prompt_request_pieces(prompt_metadata={"key2": "value2"})
+
+    assert len(retrieved_entries) == 2  # Two entries should have the specific memory labels
+    for retrieved_entry in retrieved_entries:
+        assert "key2" in retrieved_entry.prompt_metadata
 
 
 def test_get_prompt_request_pieces_id(duckdb_instance: MemoryInterface):
@@ -1860,7 +1951,7 @@ def test_get_prompt_request_pieces_with_non_matching_memory_labels(duckdb_instan
 
 
 def test_get_prompt_request_pieces_sorts(
-    duckdb_instance: MemoryInterface, sample_conversations: list[PromptRequestPiece]
+    duckdb_instance: MemoryInterface, sample_conversations: MutableSequence[PromptRequestPiece]
 ):
     conversation_id = sample_conversations[0].conversation_id
 

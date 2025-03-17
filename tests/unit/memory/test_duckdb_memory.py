@@ -3,10 +3,11 @@
 
 import os
 import uuid
+from typing import Sequence
 from unittest.mock import MagicMock
 
 import pytest
-from sqlalchemy import ARRAY, INTEGER, DateTime, String, inspect
+from sqlalchemy import ARRAY, DateTime, Integer, String, inspect
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql.sqltypes import NullType
@@ -19,7 +20,7 @@ from pyrit.prompt_target.text_target import TextTarget
 
 
 @pytest.fixture
-def sample_conversation_entries() -> list[PromptMemoryEntry]:
+def sample_conversation_entries() -> Sequence[PromptMemoryEntry]:
     return get_sample_conversation_entries()
 
 
@@ -84,7 +85,7 @@ def test_conversation_data_column_types(duckdb_instance):
         "id": UUID,
         "role": String,
         "conversation_id": String,
-        "sequence": INTEGER,
+        "sequence": Integer,
         "timestamp": DateTime,
         "labels": String,
         "prompt_metadata": String,

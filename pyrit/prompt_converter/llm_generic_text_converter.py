@@ -3,6 +3,7 @@
 
 import logging
 import uuid
+from typing import Optional
 
 from pyrit.models import (
     PromptDataType,
@@ -17,19 +18,33 @@ logger = logging.getLogger(__name__)
 
 
 class LLMGenericTextConverter(PromptConverter):
-    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: SeedPrompt, **kwargs):
+    def __init__(
+        self,
+        *,
+        converter_target: PromptChatTarget,
+        system_prompt_template: Optional[SeedPrompt] = None,
+        user_prompt_template_with_objective: Optional[SeedPrompt] = None,
+        **kwargs,
+    ):
         """
         Generic LLM converter that expects text to be transformed (e.g. no JSON parsing or format)
 
         Args:
             converter_target (PromptChatTarget): The endpoint that converts the prompt
-            prompt_template (SeedPrompt, Optional): The prompt template to set as the system prompt.
+            system_prompt_template (SeedPrompt, Optional): The prompt template to set as the system prompt.
+            user_prompt_template_with_objective (SeedPrompt, Optional): The prompt template to set as the user prompt.
+                expects
             kwargs: Additional parameters for the prompt template.
 
         """
         self._converter_target = converter_target
-        self._prompt_template = prompt_template
+        self._system_prompt_template = system_prompt_template
         self._prompt_kwargs = kwargs
+
+        if user_prompt_template_with_objective and "objective" not in user_prompt_template_with_objective.parameters:
+            raise ValueError("user_prompt_template_with_objective must contain the 'objective' parameter")
+
+        self._user_prompt_template_with_objective = user_prompt_template_with_objective
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
@@ -50,23 +65,27 @@ class LLMGenericTextConverter(PromptConverter):
 
         kwargs = self._prompt_kwargs.copy()
 
-        system_prompt = self._prompt_template.render_template_value(**kwargs)
+        if self._system_prompt_template:
 
-        self._converter_target.set_system_prompt(
-            system_prompt=system_prompt,
-            conversation_id=conversation_id,
-            orchestrator_identifier=None,
-        )
+            system_prompt = self._system_prompt_template.render_template_value(**kwargs)
+
+            self._converter_target.set_system_prompt(
+                system_prompt=system_prompt,
+                conversation_id=conversation_id,
+                orchestrator_identifier=None,
+            )
 
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
+
+        if self._user_prompt_template_with_objective:
+            prompt = self._user_prompt_template_with_objective.render_template_value(objective=prompt)
 
         request = PromptRequestResponse(
             [
                 PromptRequestPiece(
                     role="user",
                     original_value=prompt,
-                    converted_value=prompt,
                     conversation_id=conversation_id,
                     sequence=1,
                     prompt_target_identifier=self._converter_target.get_identifier(),
@@ -78,7 +97,7 @@ class LLMGenericTextConverter(PromptConverter):
         )
 
         response = await self._converter_target.send_prompt_async(prompt_request=request)
-        return ConverterResult(output_text=response.request_pieces[0].converted_value, output_type="text")
+        return ConverterResult(output_text=response.get_value(), output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"

@@ -3,6 +3,8 @@
 
 import logging
 import time
+from typing import Callable
+from urllib.parse import urlparse
 
 import msal
 from azure.core.credentials import AccessToken
@@ -14,10 +16,7 @@ from azure.identity import (
     get_bearer_token_provider,
 )
 
-from pyrit.auth.auth_config import (
-    AZURE_COGNITIVE_SERVICES_DEFAULT_SCOPE,
-    REFRESH_TOKEN_BEFORE_MSEC,
-)
+from pyrit.auth.auth_config import REFRESH_TOKEN_BEFORE_MSEC
 from pyrit.auth.authenticator import Authenticator
 
 logger = logging.getLogger(__name__)
@@ -70,7 +69,7 @@ class AzureAuth(Authenticator):
         return self.token
 
 
-def get_access_token_from_azure_msi(*, client_id: str, scope: str = AZURE_COGNITIVE_SERVICES_DEFAULT_SCOPE):
+def get_access_token_from_azure_msi(*, client_id: str, scope: str):
     """Connect to an AOAI endpoint via managed identity credential attached to an Azure resource.
     For proper setup and configuration of MSI
     https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/overview.
@@ -90,7 +89,7 @@ def get_access_token_from_azure_msi(*, client_id: str, scope: str = AZURE_COGNIT
         raise
 
 
-def get_access_token_from_msa_public_client(*, client_id: str, scope: str = AZURE_COGNITIVE_SERVICES_DEFAULT_SCOPE):
+def get_access_token_from_msa_public_client(*, client_id: str, scope: str):
     """Uses MSA account to connect to an AOAI endpoint via interactive login. A browser window
     will open and ask for login credentials.
 
@@ -109,7 +108,7 @@ def get_access_token_from_msa_public_client(*, client_id: str, scope: str = AZUR
         raise
 
 
-def get_access_token_from_interactive_login(scope: str = AZURE_COGNITIVE_SERVICES_DEFAULT_SCOPE):
+def get_access_token_from_interactive_login(scope) -> str:
     """Connects to an OpenAI endpoint with an interactive login from Azure. A browser window will
     open and ask for login credentials.  The token will be scoped for Azure Cognitive services.
 
@@ -124,7 +123,7 @@ def get_access_token_from_interactive_login(scope: str = AZURE_COGNITIVE_SERVICE
         raise
 
 
-def get_token_provider_from_default_azure_credential(scope: str = AZURE_COGNITIVE_SERVICES_DEFAULT_SCOPE):
+def get_token_provider_from_default_azure_credential(scope: str) -> Callable[[], str]:
     """Connect to an AOAI endpoint via default Azure credential.
 
     Returns:
@@ -136,3 +135,22 @@ def get_token_provider_from_default_azure_credential(scope: str = AZURE_COGNITIV
     except Exception as e:
         logger.error(f"Failed to obtain token for '{scope}': {e}")
         raise
+
+
+def get_default_scope(endpoint: str) -> str:
+    """Get the default scope for the given endpoint.
+
+    Args:
+        endpoint: The endpoint to get the scope for.
+
+    Returns:
+        The default scope for the given endpoint.
+    """
+    try:
+        parsed_uri = urlparse(endpoint)
+        if parsed_uri.hostname.lower().endswith(".ai.azure.com"):
+            return "https://ml.azure.com/.default"
+    except Exception:
+        pass
+
+    return "https://cognitiveservices.azure.com/.default"

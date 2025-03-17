@@ -6,6 +6,14 @@ repos:
         args:
           - '--keep-output'
 
+  - repo: local
+    hooks:
+    - id: remove-notebook-headers
+      name: Remove Notebook Headers
+      entry: python ./build_scripts/remove_notebook_headers.py
+      language: python
+      files: ^doc.*\.(ipynb)$
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
@@ -56,7 +64,7 @@ repos:
       language: python
       files: ^doc.*\.(py|md)$
       additional_dependencies: ['requests']
-      exclude: (release_process.md|git.md|^doc/deployment/|tests|pyrit/prompt_converter/morse_converter.py|.github|pyrit/prompt_converter/emoji_converter.py|pyrit/score/markdown_injection.py|pyrit/datasets/fetch_example_datasets.py|^pyrit/auxiliary_attacks/gcg/)
+      exclude: (release_process.md|git.md|^doc/deployment/|tests|pyrit/prompt_converter/morse_converter.py|.github|pyrit/prompt_converter/emoji_converter.py|pyrit/score/markdown_injection.py|^pyrit/datasets/|^pyrit/auxiliary_attacks/gcg/)
 
   - repo: https://github.com/pycqa/pylint
     rev: v3.3.3

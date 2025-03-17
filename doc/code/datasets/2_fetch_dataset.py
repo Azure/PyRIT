@@ -16,7 +16,7 @@
 # # Fetching dataset examples
 #
 # This notebook demonstrates how to load datasets as a `SeedPromptDataset` to perform red teaming on a target.
-# There are several datasets which can be found in the `fetch_example_datasets.py` file.
+# There are several datasets which can be found in the `pyrit.datasets` module.
 # Three example datasets are shown in this notebook and can be used with orchestrators such as the Prompt Sending Orchestrator.
 # The example below demonstrates loading a HuggingFace dataset as a `SeedPromptDataset`.
 
@@ -37,7 +37,7 @@ prompt_dataset = fetch_llm_latent_adversarial_training_harmful_dataset()
 # prompt_dataset = fetch_pku_safe_rlhf_dataset(False)
 
 # Use the first 8 examples for red teaming
-prompt_list = [prompt.value for prompt in prompt_dataset.prompts[:8]]
+prompt_list = prompt_dataset.get_values(first=8)
 
 # Send prompts using the orchestrator and capture responses
 orchestrator = PromptSendingOrchestrator(objective_target=prompt_target)
@@ -70,7 +70,7 @@ prompt_dataset = fetch_decoding_trust_stereotypes_dataset(
 )
 
 # Use the first 4 examples
-prompt_list = [prompt.value for prompt in prompt_dataset.prompts[:4]]
+prompt_list = prompt_dataset.get_values(first=4)
 
 # Send prompts using the orchestrator and capture responses
 try:

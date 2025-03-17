@@ -53,13 +53,15 @@ test_cases_error = [
 
 
 @pytest.mark.parametrize("command", test_cases_success)
-# Patching OpenAI target initialization which depends on environment variables
-# which we are not providing here.
-@patch("pyrit.prompt_target.OpenAIChatTarget._initialize_azure_vars")
-def test_cli_success(init_method, command):
+def test_cli_success(command):
     # Patching the request sending functionality since we don't want to test the orchestrator,
     # but just the CLI part.
-    with patch.object(PromptSendingOrchestrator, "send_normalizer_requests_async"):
+    # And patching OpenAI target initialization which depends on environment variables
+    # which we are not providing here.
+    with (
+        patch.object(PromptSendingOrchestrator, "send_normalizer_requests_async"),
+        patch("pyrit.common.default_values.get_required_value", return_value="value"),
+    ):
         main(shlex.split(command))
 
 
@@ -73,9 +75,9 @@ def test_cli_sys_exit(capsys, command, expected_output):
 
 
 @pytest.mark.parametrize("command, expected_output, error_type", test_cases_error)
-# Patching OpenAI target initialization which depends on environment variables
-# which we are not providing here.
-@patch("pyrit.prompt_target.OpenAIChatTarget._initialize_azure_vars")
-def test_cli_error(init_method, command, expected_output, error_type):
-    with pytest.raises(error_type, match=expected_output):
-        main(shlex.split(command))
+def test_cli_error(command, expected_output, error_type):
+    # Patching OpenAI target initialization which depends on environment variables
+    # which we are not providing here.
+    with patch("pyrit.common.default_values.get_required_value", return_value="value"):
+        with pytest.raises(error_type, match=expected_output):
+            main(shlex.split(command))

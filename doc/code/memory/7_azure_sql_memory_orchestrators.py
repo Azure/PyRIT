@@ -122,9 +122,8 @@ from pyrit.score import SelfAskTrueFalseScorer
 logging.basicConfig(level=logging.WARNING)
 
 img_prompt_target = OpenAIDALLETarget(
-    deployment_name=os.environ.get("AZURE_OPENAI_DALLE_DEPLOYMENT"),
-    endpoint=os.environ.get("AZURE_OPENAI_DALLE_ENDPOINT"),
-    api_key=os.environ.get("AZURE_OPENAI_DALLE_API_KEY"),
+    endpoint=os.environ.get("OPENAI_DALLE_ENDPOINT"),
+    api_key=os.environ.get("OPENAI_DALLE_API_KEY"),
 )
 red_teaming_llm = OpenAIChatTarget()
 scoring_target = OpenAIChatTarget()

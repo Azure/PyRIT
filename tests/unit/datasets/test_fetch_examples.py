@@ -11,7 +11,7 @@ import pytest
 from pyrit.common.path import DB_DATA_PATH
 
 # Import the functions to be tested
-from pyrit.datasets.fetch_example_datasets import (
+from pyrit.datasets.dataset_helper import (
     _fetch_from_public_url,
     _get_cache_file_name,
     _read_cache,
@@ -22,12 +22,13 @@ from pyrit.datasets.fetch_example_datasets import (
 # These URLs are placeholders and will be mocked in tests
 SOURCE_URLS = {
     "json": "https://example.com/examples.json",
+    "jsonl": "https://example.com/examples.jsonl",
     "csv": "https://example.com/examples.csv",
     "txt": "https://example.com/examples.txt",
 }
 
 
-FILE_TYPES = ["json", "csv", "txt"]
+FILE_TYPES = ["json", "jsonl", "csv", "txt"]
 UNSUPPORTED_FILE_TYPES = ["xml", "pdf", "docx"]  # Unsupported file types for testing
 
 
@@ -117,7 +118,7 @@ def test_fetch_from_public_url_unsupported(file_type):
     mock_response.text = "example content"
 
     with patch("requests.get", return_value=mock_response):
-        with pytest.raises(ValueError, match="Invalid file_type. Expected one of: json, csv, txt."):
+        with pytest.raises(ValueError, match="Invalid file_type. Expected one of: json, jsonl, csv, txt."):
             _fetch_from_public_url(url, file_type)
 
 
@@ -133,7 +134,7 @@ def test_read_cache_unsupported(file_type):
     cache_file_dir.mkdir(parents=True, exist_ok=True)
     cache_file.touch()
 
-    with pytest.raises(ValueError, match="Invalid file_type. Expected one of: json, csv, txt."):
+    with pytest.raises(ValueError, match="Invalid file_type. Expected one of: json, jsonl, csv, txt."):
         _read_cache(cache_file, file_type)
 
     # Cleanup the created file after the test
@@ -148,7 +149,7 @@ def test_write_cache_unsupported(file_type):
     cache_file = DB_DATA_PATH / ".pyrit_test" / "datasets" / f"cache_file.{file_type}"
     examples = [{"prompt": "example"}]
 
-    with pytest.raises(ValueError, match="Invalid file_type. Expected one of: json, csv, txt."):
+    with pytest.raises(ValueError, match="Invalid file_type. Expected one of: json, jsonl, csv, txt."):
         _write_cache(cache_file, examples, file_type)
 
 
@@ -184,7 +185,7 @@ def test_fetch_examples_with_cache():
 
         # Mock the _fetch_from_public_url function to ensure it is not called again
         with patch(
-            "pyrit.datasets.fetch_example_datasets._fetch_from_public_url", MagicMock(return_value=examples)
+            "pyrit.datasets.dataset_helper._fetch_from_public_url", MagicMock(return_value=examples)
         ) as mock_fetch:
             examples_cached_again = fetch_examples(
                 source=SOURCE_URLS["json"], source_type="public_url", cache=True, data_home=str(data_home)

@@ -204,24 +204,20 @@ class TreeOfAttacksNode:
                 score=str(score),
             )
 
-        prompt_metadata = {"response_format": "json"}
+        prompt_metadata: dict[str, str | int] = {"response_format": "json"}
         seed_prompt_group = SeedPromptGroup(
             prompts=[SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)]
         )
 
         adversarial_chat_response = (
-            (
-                await self._prompt_normalizer.send_prompt_async(
-                    seed_prompt_group=seed_prompt_group,
-                    conversation_id=self.adversarial_chat_conversation_id,
-                    target=self._adversarial_chat,
-                    labels=self._global_memory_labels,
-                    orchestrator_identifier=self._orchestrator_id,
-                )
+            await self._prompt_normalizer.send_prompt_async(
+                seed_prompt_group=seed_prompt_group,
+                conversation_id=self.adversarial_chat_conversation_id,
+                target=self._adversarial_chat,
+                labels=self._global_memory_labels,
+                orchestrator_identifier=self._orchestrator_id,
             )
-            .request_pieces[0]
-            .converted_value
-        )
+        ).get_value()
 
         return self._parse_red_teaming_response(adversarial_chat_response)
 

@@ -407,18 +407,14 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         )
 
         response_text = (
-            (
-                await self._prompt_normalizer.send_prompt_async(
-                    seed_prompt_group=seed_prompt_group,
-                    conversation_id=adversarial_chat_conversation_id,
-                    target=self._adversarial_chat,
-                    orchestrator_identifier=self.get_identifier(),
-                    labels=memory_labels,
-                )
+            await self._prompt_normalizer.send_prompt_async(
+                seed_prompt_group=seed_prompt_group,
+                conversation_id=adversarial_chat_conversation_id,
+                target=self._adversarial_chat,
+                orchestrator_identifier=self.get_identifier(),
+                labels=memory_labels,
             )
-            .request_pieces[0]
-            .converted_value
-        )
+        ).get_value()
 
         return response_text
 

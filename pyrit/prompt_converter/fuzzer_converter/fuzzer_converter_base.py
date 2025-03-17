@@ -65,7 +65,7 @@ class FuzzerConverter(PromptConverter):
         )
 
         formatted_prompt = f"===={self.template_label} BEGINS====\n{prompt}\n===={self.template_label} ENDS===="
-        prompt_metadata = {"response_format": "json"}
+        prompt_metadata: dict[str, str | int] = {"response_format": "json"}
         request = PromptRequestResponse(
             [
                 PromptRequestPiece(
@@ -91,7 +91,7 @@ class FuzzerConverter(PromptConverter):
     async def send_prompt_async(self, request):
         response = await self.converter_target.send_prompt_async(prompt_request=request)
 
-        response_msg = response.request_pieces[0].converted_value
+        response_msg = response.get_value()
         response_msg = remove_markdown_json(response_msg)
 
         try:
