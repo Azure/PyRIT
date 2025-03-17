@@ -12,7 +12,7 @@ For a more detailed overview on how to contribute read below.
 
 ```{mermaid}
 flowchart TB
-  Start(You are here!) --> PathSplit{Do you have already have a specific problem/feature request/bug that you want to fix/address?}
+  Start(You are here!) --> PathSplit{Do you already have a specific problem/feature request/bug that you want to fix/address?}
   PathSplit -- yes --> IssueCheck
   IssueCheck{Is there a GitHub issue for this problem?} -- yes --> IssueExists
   IssueCheck -- no --> CreateIssue
