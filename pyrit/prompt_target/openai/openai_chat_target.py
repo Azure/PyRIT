@@ -93,6 +93,9 @@ class OpenAIChatTarget(OpenAITarget):
                 such that repeated requests with the same seed and parameters should return the same result.
             n (int, Optional): The number of completions to generate for each prompt.
             extra_body_parameters (dict, Optional): Additional parameters to be included in the request body.
+            httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
+                httpx.AsyncClient() constructor.
+                For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
         """
         super().__init__(**kwargs)
 
