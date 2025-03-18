@@ -146,32 +146,33 @@ def validate_scenario(
         class_name=scenario_type,
         error_context="scenario")
 
+    
+    constructor_arg_names = [arg.name for arg in inspect.signature(orchestrator_class.__init__).parameters.values()]
+
+    # Some orchestrator arguments have their own configuration since they
+    # are more complex. They are passed in as args to this function.
+    complex_arg_names = [
+        "objective_target",
+        "adversarial_chat",
+        "prompt_converters",
+        "scoring_target",
+        "objective_scorer",
+    ]
+    for complex_arg_name in complex_arg_names:
+        if complex_arg_name in scenario_args:
+            raise ValueError(
+                f"{complex_arg_name} needs to be configured at the top level of the scanner configuration."
+                f"The scenario configuration cannot include {complex_arg_name}."
+            )
+
+        # Add complex args to the argument list.
+        local_vars = locals()
+        if complex_arg_name in constructor_arg_names:
+            arg_value = local_vars[complex_arg_name]
+            if arg_value:
+                scenario_args[complex_arg_name] = arg_value
+
     try:
-        constructor_arg_names = [arg.name for arg in inspect.signature(orchestrator_class.__init__).parameters.values()]
-
-        # Some orchestrator arguments have their own configuration since they
-        # are more complex. They are passed in as args to this function.
-        complex_arg_names = [
-            "objective_target",
-            "adversarial_chat",
-            "prompt_converters",
-            "scoring_target",
-            "objective_scorer",
-        ]
-        for complex_arg_name in complex_arg_names:
-            if complex_arg_name in scenario_args:
-                raise ValueError(
-                    f"{complex_arg_name} needs to be configured at the top level of the scanner configuration."
-                    f"The scenario configuration cannot include {complex_arg_name}."
-                )
-
-            # Add complex args to the argument list.
-            local_vars = locals()
-            if complex_arg_name in constructor_arg_names:
-                arg_value = local_vars[complex_arg_name]
-                if arg_value:
-                    scenario_args[complex_arg_name] = arg_value
-
         orchestrator = orchestrator_class(**scenario_args)
     except Exception as ex:
         raise ValueError(f"Failed to validate scenario {scenario_type}: {ex}") from ex
