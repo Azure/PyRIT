@@ -108,7 +108,7 @@ def test_get_prompt_request_pieces_uuid_and_string_ids(duckdb_instance: MemoryIn
     assert len(str_results) == 2
     assert {str(uuid1), str(uuid2)} == {str(piece.id) for piece in str_results}
 
-    mixed_types = [uuid1, str(uuid2)]
+    mixed_types: Sequence[str | uuid.UUID] = [uuid1, str(uuid2)]
     mixed_results = duckdb_instance.get_prompt_request_pieces(prompt_ids=mixed_types)
     assert len(mixed_results) == 2
     assert {str(uuid1), str(uuid2)} == {str(piece.id) for piece in mixed_results}

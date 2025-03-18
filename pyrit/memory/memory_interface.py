@@ -274,7 +274,7 @@ class MemoryInterface(abc.ABC):
         orchestrator_id: Optional[str | uuid.UUID] = None,
         role: Optional[str] = None,
         conversation_id: Optional[str | uuid.UUID] = None,
-        prompt_ids: Optional[Sequence[str] | Sequence[uuid.UUID]] = None,
+        prompt_ids: Optional[Sequence[str | uuid.UUID]] = None,
         labels: Optional[dict[str, str]] = None,
         prompt_metadata: Optional[dict[str, Union[str, int]]] = None,
         sent_after: Optional[datetime] = None,
