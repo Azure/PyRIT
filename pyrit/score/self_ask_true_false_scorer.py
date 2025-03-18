@@ -3,7 +3,7 @@
 
 import enum
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import yaml
 
@@ -57,7 +57,17 @@ class TrueFalseQuestion:
 
 
 class SelfAskTrueFalseScorer(Scorer):
-    """A class that represents a self-ask true/false for scoring."""
+    """
+    A class that represents a self-ask true/false for scoring.
+    Args:
+        chat_target (PromptChatTarget): The chat target to interact with.
+        true_false_question_path (Path): The path to the true/false question file.
+        true_false_question (TrueFalseQuestion): An instance of TrueFalseQuestion.
+        true_false_system_prompt (Path or Dict):
+            The path to the system prompt file or dictionary containing system prompt.
+            If not proviced, a default system prompt will be used.
+
+    """
 
     def __init__(
         self,
@@ -65,7 +75,7 @@ class SelfAskTrueFalseScorer(Scorer):
         chat_target: PromptChatTarget,
         true_false_question_path: Optional[Path] = None,
         true_false_question: Optional[TrueFalseQuestion] = None,
-        true_false_system_prompt_path: Optional[Path] = None,
+        true_false_system_prompt: Optional[Union[Path, dict]] = None,
     ) -> None:
         self._prompt_target = chat_target
         self.scorer_type = "true_false"
@@ -87,13 +97,17 @@ class SelfAskTrueFalseScorer(Scorer):
 
         metadata = true_false_question["metadata"] if "metadata" in true_false_question else ""
 
-        true_false_system_prompt_path = (
-            true_false_system_prompt_path
-            if true_false_system_prompt_path
+        true_false_system_prompt = (
+            true_false_system_prompt
+            if true_false_system_prompt
             else TRUE_FALSE_QUESTIONS_PATH / "true_false_system_prompt.yaml"
         )
 
-        scoring_instructions_template = SeedPrompt.from_yaml_file(true_false_system_prompt_path)
+        if isinstance(true_false_system_prompt, dict):
+            scoring_instructions_template = SeedPrompt(**true_false_system_prompt)
+
+        if isinstance(true_false_system_prompt, Path):
+            scoring_instructions_template = SeedPrompt.from_yaml_file(true_false_system_prompt)
 
         self._system_prompt = scoring_instructions_template.render_template_value(
             true_description=true_category, false_description=false_category, metadata=metadata
