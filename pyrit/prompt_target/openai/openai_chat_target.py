@@ -338,7 +338,10 @@ class OpenAIChatTarget(OpenAITarget):
         request_piece: PromptRequestPiece,
     ) -> PromptRequestResponse:
 
-        response = json.loads(open_ai_str_response)
+        try:
+            response = json.loads(open_ai_str_response)
+        except json.JSONDecodeError as e:
+            raise PyritException(message=f"Failed to parse JSON response. Please check your endpoint: {e}")
 
         finish_reason = response["choices"][0]["finish_reason"]
         extracted_response: str = ""
