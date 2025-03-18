@@ -44,6 +44,7 @@ class HTTPTarget(PromptTarget):
         use_tls: bool = True,
         callback_function: Callable | None = None,
         max_requests_per_minute: Optional[int] = None,
+        _client: Optional[httpx.AsyncClient] = None,
         **httpx_client_kwargs: Any,
     ) -> None:
         super().__init__(max_requests_per_minute=max_requests_per_minute)
@@ -52,17 +53,41 @@ class HTTPTarget(PromptTarget):
         self.prompt_regex_string = prompt_regex_string
         self.use_tls = use_tls
         self.httpx_client_kwargs = httpx_client_kwargs or {}
+        self._client = _client
+
+    @classmethod
+    def with_client(
+        cls,
+        client: httpx.AsyncClient,
+        http_request: str,
+        prompt_regex_string: str = "{PROMPT}",
+        callback_function: Callable | None = None,
+        max_requests_per_minute: Optional[int] = None,
+    ) -> "HTTPTarget":
+        """
+        Alternative constructor that accepts a pre-configured httpx client.
+
+        Parameters:
+            client: Pre-configured httpx.AsyncClient instance
+            http_request: the header parameters as a request (i.e., from Burp)
+            prompt_regex_string: the placeholder for the prompt
+            callback_function: function to parse HTTP response
+            max_requests_per_minute: Optional rate limiting
+        """
+        instance = cls(
+            http_request=http_request,
+            prompt_regex_string=prompt_regex_string,
+            callback_function=callback_function,
+            max_requests_per_minute=max_requests_per_minute,
+            _client=client,
+        )
+        return instance
 
     @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        """
-        Sends prompt to HTTP endpoint and returns the response
-        """
-
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
 
-        # Add Prompt into URL (if the URL takes it)
         re_pattern = re.compile(self.prompt_regex_string)
         if re.search(self.prompt_regex_string, self.http_request):
             http_request_w_prompt = re_pattern.sub(request.converted_value, self.http_request)
@@ -71,9 +96,6 @@ class HTTPTarget(PromptTarget):
 
         header_dict, http_body, url, http_method, http_version = self.parse_raw_http_request(http_request_w_prompt)
 
-        # Make the actual HTTP request:
-
-        # Fix Content-Length if it is in the headers after the prompt is added in:
         if "Content-Length" in header_dict:
             header_dict["Content-Length"] = str(len(http_body))
 
@@ -81,7 +103,14 @@ class HTTPTarget(PromptTarget):
         if http_version and "HTTP/2" in http_version:
             http2_version = True
 
-        async with httpx.AsyncClient(http2=http2_version, **self.httpx_client_kwargs) as client:
+        if self._client is not None:
+            client = self._client
+            cleanup_client = False
+        else:
+            client = httpx.AsyncClient(http2=http2_version, **self.httpx_client_kwargs)
+            cleanup_client = True
+
+        try:
             match http_body:
                 case dict():
                     response = await client.request(
@@ -99,14 +128,16 @@ class HTTPTarget(PromptTarget):
                         content=http_body,
                         follow_redirects=True,
                     )
-        response_content = response.content
 
-        if self.callback_function:
-            response_content = self.callback_function(response=response)
+            response_content = response.content
 
-        response_entry = construct_response_from_request(request=request, response_text_pieces=[str(response_content)])
+            if self.callback_function:
+                response_content = self.callback_function(response=response)
 
-        return response_entry
+            return construct_response_from_request(request=request, response_text_pieces=[str(response_content)])
+        finally:
+            if cleanup_client:
+                await client.aclose()
 
     def parse_raw_http_request(self, http_request: str) -> tuple[dict[str, str], RequestBody, str, str, str]:
         """
