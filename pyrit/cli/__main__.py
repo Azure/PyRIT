@@ -182,7 +182,7 @@ def generate_datasets(config: Dict[str, Any]) -> MutableSequence[SeedPrompt]:
     datasets = config.get("datasets")
 
     if not datasets:
-        raise KeyError("Send prompts scenario must contain a 'datasets' key.")
+        raise KeyError("The configuration file must contain a 'datasets' key.")
 
     loaded_dataset_prompts: MutableSequence[SeedPrompt] = []
     for dataset_path in datasets:
