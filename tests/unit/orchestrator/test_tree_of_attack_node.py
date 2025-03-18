@@ -70,7 +70,7 @@ async def test_generate_red_teaming_prompt_async(tree_of_attack_node):
         )
 
         tree_of_attack_node._prompt_normalizer.send_prompt_async = AsyncMock(
-            return_value=MagicMock(request_pieces=[MagicMock(converted_value='{"prompt": "generated_prompt"}')])
+            return_value=MagicMock(get_value=lambda: '{"prompt": "generated_prompt"}')
         )
 
         prompt = await tree_of_attack_node._generate_red_teaming_prompt_async(objective="test_objective")

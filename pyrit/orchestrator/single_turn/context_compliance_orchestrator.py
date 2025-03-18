@@ -156,16 +156,12 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
         )
 
         user_turn_answer = (
-            (
-                await self._prompt_normalizer.send_prompt_async(
-                    seed_prompt_group=seed_prompt_to_get_user_turn_answer,
-                    target=self._adversarial_chat,
-                    response_converter_configurations=self._conversation_history_converters,
-                )
+            await self._prompt_normalizer.send_prompt_async(
+                seed_prompt_group=seed_prompt_to_get_user_turn_answer,
+                target=self._adversarial_chat,
+                response_converter_configurations=self._conversation_history_converters,
             )
-            .request_pieces[0]
-            .converted_value
-        )
+        ).get_value()
 
         return user_turn_answer
 
@@ -180,16 +176,12 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
         )
 
         user_turn = (
-            (
-                await self._prompt_normalizer.send_prompt_async(
-                    seed_prompt_group=seed_prompt_to_get_user_turn,
-                    target=self._adversarial_chat,
-                    response_converter_configurations=self._conversation_history_converters,
-                )
+            await self._prompt_normalizer.send_prompt_async(
+                seed_prompt_group=seed_prompt_to_get_user_turn,
+                target=self._adversarial_chat,
+                response_converter_configurations=self._conversation_history_converters,
             )
-            .request_pieces[0]
-            .converted_value
-        )
+        ).get_value()
 
         return user_turn
 
@@ -204,15 +196,11 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
         )
 
         objective_as_question = (
-            (
-                await self._prompt_normalizer.send_prompt_async(
-                    seed_prompt_group=seed_prompt_to_get_objective_as_a_question,
-                    target=self._adversarial_chat,
-                    response_converter_configurations=self._conversation_history_converters,
-                )
+            await self._prompt_normalizer.send_prompt_async(
+                seed_prompt_group=seed_prompt_to_get_objective_as_a_question,
+                target=self._adversarial_chat,
+                response_converter_configurations=self._conversation_history_converters,
             )
-            .request_pieces[0]
-            .converted_value
-        )
+        ).get_value()
 
         return objective_as_question
