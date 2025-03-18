@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Literal
+from typing import Literal, Optional
 
 from datasets import load_dataset
 
@@ -10,30 +10,32 @@ from pyrit.models.seed_prompt import SeedPrompt
 
 
 def fetch_babelscape_alert_dataset(
-    category: Literal["alert", "alert_adversarial"] = "alert_adversarial"
+    category: Optional[Literal["alert", "alert_adversarial"]] = "alert_adversarial"
 ) -> SeedPromptDataset:
     """
     Fetch the Babelscape/ALERT dataset and create a SeedPromptDataset.
 
     Args:
-        category (str): The dataset category, "alert" or "alert_adversarial"
+        category (Optional[str]): The dataset category, "alert" or "alert_adversarial".
+            If None, both categories will be loaded. Defaults to "alert_adversarial".
 
     Returns:
         SeedPromptDataset: A SeedPromptDataset containing the examples.
     """
 
     data_categories = None
-    if not category:  # if category is not specified, read both subsets
+    if category is None:  # if category is explicitly None, read both subsets
         data_categories = ["alert_adversarial", "alert"]
     elif category not in ["alert_adversarial", "alert"]:
         raise ValueError(f"Invalid Parameter: {category}. Expected 'alert_adversarial' or 'alert'")
     else:
         data_categories = [category]
 
-    # Load specified subset or both catagories
+    # Load specified subset or both categories
+    prompts: list[str] = []
     for name in data_categories:
         data = load_dataset("Babelscape/ALERT", name)
-        prompts = [item["prompt"] for item in data["test"]]
+        prompts.extend(item["prompt"] for item in data["test"])
 
     # Create SeedPrompt instances from each example in 'prompts'
     seed_prompts = [
