@@ -96,6 +96,12 @@ test_cases_error = [
         KeyError,
     ),
     (
+        "--config-file 'tests/unit/cli/prompt_send_no_scoring_target.yaml'",
+        "'Scorer requires a scoring_target to be defined. "
+        "Alternatively, the adversarial_target can be used for scoring purposes, but none was provided.",
+        KeyError,
+    ),
+    (
         "--config-file 'tests/unit/cli/multi_turn_rto_wrong_arg.yaml'",
         "Failed to validate scenario RedTeamingOrchestrator: RedTeamingOrchestrator.__init__() "
         "got an unexpected keyword argument 'wrong_arg'",

@@ -248,8 +248,15 @@ def validate_objective_scorer(config: Dict[str, Any], scoring_target: Optional[P
     except Exception as ex:
         raise RuntimeError(f"Failed to import target {scorer_type} from pyrit.score") from ex
 
-    if scoring_target and "chat_target" in inspect.signature(scorer_class.__init__).parameters:
-        scorer_args["chat_target"] = scoring_target
+    if "chat_target" in inspect.signature(scorer_class.__init__).parameters:
+        if scoring_target:
+            scorer_args["chat_target"] = scoring_target
+        else:
+            raise KeyError(
+                "Scorer requires a scoring_target to be defined. "
+                "Alternatively, the adversarial_target can be used "
+                "for scoring purposes, but none was provided."
+            )
 
     return scorer_class(**scorer_args)
 
