@@ -222,9 +222,10 @@ def validate_scoring_target(
 
     # If a scoring_target has been configured use it.
     # Otherwise, use the adversarial_chat target for scoring.
+    scoring_target = adversarial_chat
     if "scoring_target" in scoring_config:
-        return validate_target(scoring_config, target_key="scoring_target")  # type: ignore
-    return adversarial_chat
+        scoring_target = validate_target(scoring_config, target_key="scoring_target")  # type: ignore
+    return scoring_target
 
 
 def validate_objective_scorer(config: Dict[str, Any], scoring_target: Optional[PromptChatTarget]) -> Scorer | None:
