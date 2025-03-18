@@ -142,11 +142,9 @@ def validate_scenario(
     del scenario_args["type"]
 
     orchestrator_class = load_class(
-        module_name="pyrit.orchestrator",
-        class_name=scenario_type,
-        error_context="scenario")
+        module_name="pyrit.orchestrator", class_name=scenario_type, error_context="scenario"
+    )
 
-    
     constructor_arg_names = [arg.name for arg in inspect.signature(orchestrator_class.__init__).parameters.values()]
 
     # Some orchestrator arguments have their own configuration since they
