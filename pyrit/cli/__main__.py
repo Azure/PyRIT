@@ -8,7 +8,7 @@ from copy import deepcopy
 from datetime import datetime
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Dict, List, MutableSequence, Optional
+from typing import Any, Dict, List, MutableSequence, Optional, Type
 from uuid import uuid4
 
 import yaml
@@ -141,11 +141,10 @@ def validate_scenario(
     scenario_args = deepcopy(scenario_config)
     del scenario_args["type"]
 
-    try:
-        orchestrator_module = import_module("pyrit.orchestrator")
-        orchestrator_class = getattr(orchestrator_module, scenario_type)
-    except Exception as ex:
-        raise RuntimeError(f"Failed to import orchestrator {scenario_type} from pyrit.orchestrator") from ex
+    orchestrator_class = load_class(
+        module_name="pyrit.orchestrator",
+        class_name=scenario_type,
+        error_context="scenario")
 
     try:
         constructor_arg_names = [arg.name for arg in inspect.signature(orchestrator_class.__init__).parameters.values()]
@@ -242,11 +241,7 @@ def validate_objective_scorer(config: Dict[str, Any], scoring_target: Optional[P
 
     scorer_type = scorer_args.pop("type")
 
-    try:
-        scorer_module = import_module("pyrit.score")
-        scorer_class = getattr(scorer_module, scorer_type)
-    except Exception as ex:
-        raise RuntimeError(f"Failed to import target {scorer_type} from pyrit.score") from ex
+    scorer_class = load_class(module_name="pyrit.score", class_name=scorer_type, error_context="objective_scorer")
 
     if "chat_target" in inspect.signature(scorer_class.__init__).parameters:
         if scoring_target:
@@ -259,6 +254,17 @@ def validate_objective_scorer(config: Dict[str, Any], scoring_target: Optional[P
             )
 
     return scorer_class(**scorer_args)
+
+
+def load_class(*, module_name: str, class_name: str, error_context: str) -> Type[Any]:
+    try:
+        mod = import_module(module_name)
+        cls = getattr(mod, class_name)
+        if not inspect.isclass(cls):
+            raise TypeError(f"The attribute {class_name} in module {module_name} is not a class.")
+    except Exception as ex:
+        raise RuntimeError(f"Failed to import {class_name} from {module_name} for {error_context}: {ex}") from ex
+    return cls
 
 
 def main(args=None):
