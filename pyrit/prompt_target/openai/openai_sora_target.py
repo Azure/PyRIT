@@ -17,6 +17,7 @@ from pyrit.models import (
     data_serializer_factory,
 )
 
+from pyrit.models.data_type_serializer import VideoPathDataTypeSerializer
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
@@ -109,13 +110,14 @@ class OpenAISoraTarget(OpenAITarget):
             else:
                 raise
 
-        response = await self.handle_response(request=request, response=response)
+        response_entry = await self.handle_response(request=request, response=response)
 
-        return response
+        return response_entry
 
 
     # Download video content
-    async def download_video_content(self, gen_id: str, request: PromptRequestPiece) -> PromptRequestResponse:
+    @pyrit_target_retry
+    async def download_video_content(self, task_id: str, gen_id: str) -> VideoPathDataTypeSerializer:
         uri = f"{self._endpoint}/{gen_id}/video/content"
         response = await net_utility.make_request_and_raise_if_error_async(
             endpoint_uri=uri,
@@ -125,7 +127,7 @@ class OpenAISoraTarget(OpenAITarget):
             **self._httpx_client_kwargs,
         )
 
-        file_name = "" # TODO: {task_id}_{gen_id}.mp4
+        file_name = f"{task_id}_{gen_id}"
         video_response = data_serializer_factory(
             category="prompt-memory-entries", data_type="video_path", value=file_name,
         )
@@ -134,24 +136,20 @@ class OpenAISoraTarget(OpenAITarget):
             data = response.content
             await video_response.save_data(data=data)
 
-            response_entry = construct_response_from_request(
-                request=request, response_text_pieces=[str(video_response.value)], response_type="video_path"
-            )
-
             # TODO: Cleanup by deleting tasks once content downloaded
             # DELETE request for URL f"{endpoint_url}/jobs/{task_id}"
-            return response_entry
+            return video_response
         else:
             raise Exception(f"Failed to download video content: {response}")
 
 
-    async def handle_response(self, request: PromptRequestResponse, response: httpx.Response):
+    async def handle_response(self, request: PromptRequestResponse, response: httpx.Response) -> PromptRequestResponse:
         # Handle VideoGenerationJob - 201 Created
         content = json.loads(response.content)
         if not content:
-            return response
+            return handle_bad_request_exception(response_text="Empty response", request=request)
         
-        # task_id = content.get('id', None) # Job ID
+        task_id = content.get('id', None) # Job ID
         status = content.get('status', None) # Preprocessing, Queued, Processing, Cancelled, Succeeded, Failed
         generations = content.get('generations', []) # array of VideoGeneration
         failure_reason = content.get('failure_reason', None) # if status is failed, this will be the reason
@@ -160,22 +158,31 @@ class OpenAISoraTarget(OpenAITarget):
         if status == "succeeded":
             # Download video content
             gen_id = generations[0].get('id', []) if generations else []
-            response = self.download_video_content(gen_id, request)
+            video_response = await self.download_video_content(task_id, gen_id, request)
+            response_entry = construct_response_from_request(
+                request=request, response_text_pieces=[str(video_response.value)], response_type="video_path"
+            )
         elif status != "failed" and status != "cancelled":
             # TODO: Kick off polling in a thread for task status (check_task_status)
             # while status != "succeeded" or "failed" or "cancelled"
-            await self.check_task_status(task_id=content.get('id', None))
+            response = await self.check_task_status(task_id=content.get('id', None))
+            response_entry = construct_response_from_request(
+                request=request, response_text_pieces=[str(json.loads(response.content))],
+            )
 
             # todo: add task_id to in_progress_tasks maybe
         else:
             if failure_reason == "input_moderation" or failure_reason == "preprocessing_validation":
-                return handle_bad_request_exception(response_text="", request=request, is_content_filter=True)
+                return handle_bad_request_exception(response_text=failure_reason, request=request, is_content_filter=True)
+            else:
+                return handle_bad_request_exception(response_text=failure_reason, request=request)
 
-        return content
+        return response_entry
 
 
     # This is the function that should be called in polling, with the task_id upon
     # first response from the POST call
+    @pyrit_target_retry
     async def check_task_status(self, task_id: str) -> httpx.Response:
         """
         Check status of a submitted task using the task_id.
