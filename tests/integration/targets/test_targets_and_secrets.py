@@ -95,17 +95,7 @@ async def test_connect_required_realtime_targets(duckdb_instance, endpoint, api_
         model_name=os.getenv(model_name),
     )
 
-    simple_prompt = "simply repeat this word back to me. Don't say anything else. Say: 'test'"
-    orchestrator = PromptSendingOrchestrator(objective_target=target)
-
-    all_prompts = [simple_prompt]
-
-    result = await orchestrator.send_prompts_async(prompt_list=all_prompts)
-    assert len(result) == 1
-    assert len(result[0].request_pieces) == 2
-    assert result[0].request_pieces[0].converted_value_data_type == "text"
-    assert result[0].request_pieces[1].converted_value_data_type == "audio_path"
-    assert "test" in result[0].get_value().lower()
+    await _assert_can_send_prompt(target)
 
 
 @pytest.mark.asyncio
