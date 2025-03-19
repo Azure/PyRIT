@@ -102,7 +102,12 @@ def fetch_red_team_social_bias_dataset() -> SeedPromptDataset:
             print(f"Single Turn Prompt: {cleaned_value}")
             print(prompt_metadata)
             seed_prompts.append(
-                SeedPrompt(value=escaped_cleaned_value, data_type="text", **prompt_metadata))  # type: ignore
+                SeedPrompt(
+                    value=escaped_cleaned_value,
+                    data_type="text",
+                    **prompt_metadata,  # type: ignore
+                )
+            )
 
     seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
     return seed_prompt_dataset
