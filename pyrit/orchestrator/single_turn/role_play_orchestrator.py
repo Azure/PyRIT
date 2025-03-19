@@ -10,6 +10,7 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, SeedPromptDataset
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import LLMGenericTextConverter, PromptConverter
+from pyrit.prompt_normalizer import NormalizerRequest
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer
 
@@ -72,6 +73,16 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
         )
 
         self._set_default_conversation_start()
+
+    def validate_normalizer_requests(self, *, prompt_request_list: list[NormalizerRequest]):
+        if not prompt_request_list:
+            raise ValueError("No normalizer requests provided")
+
+        for request in prompt_request_list:
+            if len(request.seed_prompt_group.prompts) > 1:
+                raise ValueError("Multi-part messages not supported")
+            if request.seed_prompt_group.prompts[0].data_type != "text":
+                raise ValueError("Non text messages not supported")
 
     def _set_default_conversation_start(self):
 

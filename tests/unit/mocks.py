@@ -86,7 +86,7 @@ class MockPromptTarget(PromptChatTarget):
 
     @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        self.prompt_sent.append(prompt_request.request_pieces[0].converted_value)
+        self.prompt_sent.append(prompt_request.get_value())
 
         return PromptRequestPiece(
             role="assistant",
