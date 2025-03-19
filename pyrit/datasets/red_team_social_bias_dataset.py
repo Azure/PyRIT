@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import ast
+from uuid import uuid4
 
 from datasets import load_dataset
 
@@ -49,7 +50,7 @@ def fetch_red_team_social_bias_dataset() -> SeedPromptDataset:
     # Initialize an empty list to store the seed prompts
     seed_prompts = []
 
-    for group_id, item in enumerate(data["train"]):
+    for item in data["train"]:
 
         # This dataset contains 3 prompt types: "Single Prompt", "Multi Turn" and "Multi Turn, Single Prompt"
         # We're only checking for "Multi Turn" because the "Multi Turn, Single Prompt"
@@ -83,19 +84,20 @@ def fetch_red_team_social_bias_dataset() -> SeedPromptDataset:
                     turn["body"] for turn in ast.literal_eval(item.get("prompt", "")) if turn["role"].startswith("user")
                 ]
 
+                group_id = uuid4()
                 for i, user_prompt in enumerate(user_prompts):
                     seed_prompts.append(
                         SeedPrompt(
-                            value=user_prompt, data_type="text", prompt_group_id=group_id, sequence=i, **prompt_metadata
+                            value=user_prompt, data_type="text", prompt_group_id=group_id, sequence=i, **prompt_metadata  # type: ignore
                         )
                     )
             except Exception as e:
                 print(f"Error processing Multi-Turn Prompt: {e}")
         else:
-            # Clean up non-"Multi Turn" prompts that contain unwanted lines of text
+            # Clean up single turn prompts that contain unwanted lines of text
             cleaned_value = item.get("prompt", "").replace("### Response:", "").replace("### Instruction:", "").strip()
 
-            seed_prompts.append(SeedPrompt(value=cleaned_value, data_type="text", **prompt_metadata))
+            seed_prompts.append(SeedPrompt(value=cleaned_value, data_type="text", **prompt_metadata))  # type: ignore
 
     seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
     return seed_prompt_dataset
