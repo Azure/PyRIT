@@ -1,18 +1,38 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from typing import Optional
+
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 
 class SuperscriptConverter(PromptConverter):
     """
-    Converts the input text to superscript text.
-    
-    Note: This converter leaves unsupported characters unchanged.
+    Converts the input text to superscript text. Supports various modes for conversion.
+
+    Supported modes:
+    - 'all': Converts all words. The default mode.
+    - 'alternate': Converts every other word. Configurable.
+
+    Note:
+        This converter leaves characters that do not have a superscript equivalent unchanged.
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        mode: Optional[str] = 'all',
+        alternate_step: Optional[int] = 2,
+    ):
+        """
+        Initialize the SuperscriptConverter.
+
+        Args:
+            mode (Optional[str]): Conversion mode - 'all', or 'alternate'. Defaults to 'all'.
+            alternate_step (Optional[int]): For 'alternate' mode, convert every nth word. Defaults to 2.
+        """
+        self.mode = mode
+        self.alternate_step = alternate_step
         self._superscript_map = {
             "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
             "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹",
@@ -38,8 +58,20 @@ class SuperscriptConverter(PromptConverter):
         words = prompt.split()
         result = []
 
-        for word in words:
-            result.append(self._to_superscript(word))
+        if self.mode == 'alternate':
+            # Convert every nth word
+            for i, word in enumerate(words):
+                if i % self.alternate_step == 0:
+                    result.append(self._to_superscript(word))
+                else:
+                    result.append(word)
+
+        #TODO: add more modes here
+
+        else:
+            # Convert every word if mode is not recognized or it's actually 'all'
+            for word in words:
+                result.append(self._to_superscript(word))
 
         converted_text = " ".join(result)
         result = ConverterResult(output_text=converted_text, output_type="text")
