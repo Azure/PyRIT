@@ -38,7 +38,7 @@ def fetch_red_team_social_bias_dataset() -> SeedPromptDataset:
 
     # Define common metadata that will be used across all seed prompts
     common_metadata = {
-        "dataset_name": "svannie678/red_team_repo_social_bias_prompts",
+        "dataset_name": "Red team social bias prompts",
         "authors": ["Simone van Taylor"],
         "description": """This dataset contains aggregated and unified existing
                 red-teaming prompts designed to identify stereotypes,
@@ -68,12 +68,9 @@ def fetch_red_team_social_bias_dataset() -> SeedPromptDataset:
                 if not isinstance(item.get("categorization"), list)
                 else item.get("categorization", [])
             ),
+            "groups": [item.get("organization", "")],
             "metadata": {
-                "organization": item.get("organization", ""),
                 "prompt_type": prompt_type,
-                "prompt_instruction": item.get("prompt_instruction", ""),
-                "explanation": item.get("explanation", ""),
-                "ai_response": item.get("ai_response", ""),
             },
         }
 
@@ -100,8 +97,12 @@ def fetch_red_team_social_bias_dataset() -> SeedPromptDataset:
         else:
             # Clean up single turn prompts that contain unwanted lines of text
             cleaned_value = item.get("prompt", "").replace("### Response:", "").replace("### Instruction:", "").strip()
-
-            seed_prompts.append(SeedPrompt(value=cleaned_value, data_type="text", **prompt_metadata))  # type: ignore
+            # some entries have contents that trip up jinja2, so we escape them
+            escaped_cleaned_value = f"{{% raw %}}{cleaned_value}{{% endraw %}}"
+            print(f"Single Turn Prompt: {cleaned_value}")
+            print(prompt_metadata)
+            seed_prompts.append(
+                SeedPrompt(value=escaped_cleaned_value, data_type="text", **prompt_metadata))  # type: ignore
 
     seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
     return seed_prompt_dataset
