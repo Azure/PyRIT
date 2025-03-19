@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from typing import MutableSequence
 from unittest.mock import AsyncMock
 
 import pytest
@@ -14,7 +15,7 @@ from pyrit.prompt_target import PlaywrightTarget
 
 
 @pytest.fixture
-def sample_conversations() -> list[PromptRequestPiece]:
+def sample_conversations() -> MutableSequence[PromptRequestPiece]:
     conversation_1 = PromptRequestPiece(
         role="user",
         converted_value="Hello",
@@ -74,11 +75,11 @@ async def test_playwright_send_prompt_async(mock_interaction_func, mock_page):
     # Assert that the response contains the assistant's message
     assert len(response.request_pieces) == 1  # Only assistant's response in this response
     assert response.request_pieces[0].role == "assistant"
-    assert response.request_pieces[0].converted_value == "Processed: Hello"
+    assert response.get_value() == "Processed: Hello"
 
     expected_response = construct_response_from_request(
         request=request_piece,
-        response_text_pieces=[response.request_pieces[0].converted_value],
+        response_text_pieces=[response.get_value()],
     )
     assert response.request_pieces[0].original_value == expected_response.request_pieces[0].original_value
     # Verify that the interaction function was called with the correct arguments

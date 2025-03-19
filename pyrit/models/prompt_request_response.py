@@ -14,11 +14,21 @@ class PromptRequestResponse:
     This is a single request to a target. It can contain multiple prompt request pieces.
 
     Parameters:
-        request_pieces (list[PromptRequestPiece]): The list of prompt request pieces.
+        request_pieces (Sequence[PromptRequestPiece]): The list of prompt request pieces.
     """
 
-    def __init__(self, request_pieces: list[PromptRequestPiece]):
+    def __init__(self, request_pieces: Sequence[PromptRequestPiece]):
         self.request_pieces = request_pieces
+
+    def get_value(self, n: int = 0) -> str:
+        """Return the converted value of the nth request piece."""
+        if n >= len(self.request_pieces):
+            raise IndexError(f"No request piece at index {n}.")
+        return self.request_pieces[n].converted_value
+
+    def get_values(self) -> list[str]:
+        """Return the converted values of all request pieces."""
+        return [request_piece.converted_value for request_piece in self.request_pieces]
 
     def validate(self):
         """
@@ -52,10 +62,10 @@ class PromptRequestResponse:
     @staticmethod
     def flatten_to_prompt_request_pieces(
         request_responses: Sequence["PromptRequestResponse"],
-    ) -> list[PromptRequestPiece]:
+    ) -> MutableSequence[PromptRequestPiece]:
         if not request_responses:
             return []
-        response_pieces = []
+        response_pieces: MutableSequence[PromptRequestPiece] = []
 
         for response in request_responses:
             response_pieces.extend(response.request_pieces)

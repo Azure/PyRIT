@@ -36,7 +36,7 @@ class MathPromptConverter(LLMGenericTextConverter):
             )
         )
 
-        super().__init__(converter_target=converter_target, prompt_template=prompt_template)
+        super().__init__(converter_target=converter_target, system_prompt_template=prompt_template)
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """

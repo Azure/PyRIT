@@ -2,19 +2,14 @@
 # Licensed under the MIT license.
 
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from pyrit.models import (
-    PromptRequestPiece,
-    PromptRequestResponse,
-    SeedPrompt,
-    SeedPromptDataset,
-)
+from pyrit.models import SeedPrompt, SeedPromptDataset
 from pyrit.orchestrator import RolePlayOrchestrator
 from pyrit.orchestrator.single_turn.role_play_orchestrator import RolePlayPaths
-from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
+from pyrit.prompt_converter import LLMGenericTextConverter
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.score import Scorer
 
@@ -49,6 +44,7 @@ def mock_seed_prompt_dataset():
     """
     rephrase_mock = MagicMock(spec=SeedPrompt)
     # Pretend the template returns the objective with some special text
+    rephrase_mock.parameters = {"objective": "Objective 1"}
     rephrase_mock.render_template_value.return_value = "Rephrased objective"
 
     user_start_mock = MagicMock(spec=SeedPrompt)
@@ -120,40 +116,20 @@ def test_default_conversation_start(role_play_orchestrator):
 
 
 @pytest.mark.asyncio
-async def test_get_role_playing_prompts_async(role_play_orchestrator):
+async def test_get_role_playing_sets_default_converter(role_play_orchestrator):
     """
-    Calls the internal method directly to ensure it transforms inputs
-    by calling the normalizer with the rephrased instructions.
+    Ensures role playing orchestrator sets the default converter
     """
-    role_play_orchestrator._prompt_normalizer = MagicMock()
-    role_play_orchestrator._prompt_normalizer.send_prompt_batch_to_target_async = AsyncMock(
-        return_value=[
-            PromptRequestResponse(
-                request_pieces=[PromptRequestPiece(role="assistant", original_value="role-played 1")]
-            ),
-            PromptRequestResponse(
-                request_pieces=[PromptRequestPiece(role="assistant", original_value="role-played 2")]
-            ),
-        ]
-    )
-
-    objectives = ["Objective 1", "Objective 2"]
-    prompts = await role_play_orchestrator._get_role_playing_prompts_async(objectives)
-
-    assert prompts == ["role-played 1", "role-played 2"]
-
-    role_play_orchestrator._prompt_normalizer.send_prompt_batch_to_target_async.assert_called_once()
-    normalizer_call_args = role_play_orchestrator._prompt_normalizer.send_prompt_batch_to_target_async.call_args
-    requests_sent = normalizer_call_args.kwargs["requests"]
-
-    assert len(requests_sent) == 2
-    assert isinstance(requests_sent[0], NormalizerRequest)
-    assert requests_sent[0].seed_prompt_group.prompts[0].value == "Rephrased objective"
-    assert isinstance(requests_sent[1], NormalizerRequest)
+    assert len(role_play_orchestrator._prompt_converters) == 2
+    assert isinstance(role_play_orchestrator._prompt_converters[0], LLMGenericTextConverter)
+    instructions = role_play_orchestrator._prompt_converters[
+        0
+    ]._user_prompt_template_with_objective.render_template_value()
+    assert instructions == "Rephrased objective"
 
 
 @pytest.mark.parametrize("role_play_path", list(RolePlayPaths))
-def test_role_play_paths(role_play_path):
+def test_role_play_paths(role_play_path) -> None:
     """
     For each path in RolePlayPaths, verify that:
       1) The file actually exists on disk.

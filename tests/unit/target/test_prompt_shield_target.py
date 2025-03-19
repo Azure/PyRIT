@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from typing import MutableSequence
+
 import pytest
 from unit.mocks import get_audio_request_piece, get_sample_conversations
 
@@ -14,7 +16,7 @@ def audio_request_piece() -> PromptRequestPiece:
 
 
 @pytest.fixture
-def sample_conversations() -> list[PromptRequestPiece]:
+def sample_conversations() -> MutableSequence[PromptRequestPiece]:
     return get_sample_conversations()
 
 
@@ -52,7 +54,7 @@ def test_promptshield_init(promptshield_target: PromptShieldTarget):
 
 @pytest.mark.asyncio
 async def test_prompt_shield_validate_request_length(
-    promptshield_target: PromptShieldTarget, sample_conversations: list[PromptRequestPiece]
+    promptshield_target: PromptShieldTarget, sample_conversations: MutableSequence[PromptRequestPiece]
 ):
     request = PromptRequestResponse(request_pieces=sample_conversations)
     with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):

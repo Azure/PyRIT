@@ -161,7 +161,7 @@ class XPIATestOrchestrator(XPIAOrchestrator):
             orchestrator_identifier=self.get_identifier(),
         )
 
-        return processing_response.request_pieces[0].converted_value
+        return processing_response.get_value()
 
 
 class XPIAManualProcessingOrchestrator(XPIAOrchestrator):

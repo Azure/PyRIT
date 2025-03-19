@@ -5,6 +5,7 @@ import json
 import os
 from contextlib import AbstractAsyncContextManager
 from tempfile import NamedTemporaryFile
+from typing import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
@@ -12,7 +13,11 @@ import pytest
 from openai import BadRequestError, RateLimitError
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
-from unit.mocks import get_image_request_piece, openai_response_json_dict
+from unit.mocks import (
+    get_image_request_piece,
+    get_sample_conversations,
+    openai_response_json_dict,
+)
 
 from pyrit.exceptions.exception_classes import (
     EmptyResponseException,
@@ -27,6 +32,11 @@ from pyrit.prompt_target import OpenAIChatTarget
 
 def fake_construct_response_from_request(request, response_text_pieces):
     return {"dummy": True, "request": request, "response": response_text_pieces}
+
+
+@pytest.fixture
+def sample_conversations() -> MutableSequence[PromptRequestPiece]:
+    return get_sample_conversations()
 
 
 @pytest.fixture
@@ -432,7 +442,7 @@ async def test_send_prompt_async(openai_response_json: dict, gpt4o_chat_engine: 
             mock_create.return_value = openai_mock_return
             response: PromptRequestResponse = await gpt4o_chat_engine.send_prompt_async(prompt_request=prompt_req_resp)
             assert len(response.request_pieces) == 1
-            assert response.request_pieces[0].converted_value == "hi"
+            assert response.get_value() == "hi"
     os.remove(tmp_file_name)
 
 
@@ -598,7 +608,7 @@ def test_construct_prompt_response_valid_stop(
     )
 
     assert len(result.request_pieces) == 1
-    assert result.request_pieces[0].converted_value == "Hello from stop"
+    assert result.get_value() == "Hello from stop"
 
 
 def test_construct_prompt_response_empty_response(
@@ -625,3 +635,40 @@ def test_construct_prompt_response_unknown_finish_reason(
             open_ai_str_response=response_str, request_piece=dummy_text_request_piece
         )
     assert "Unknown finish_reason" in str(excinfo.value)
+
+
+@pytest.mark.asyncio
+async def test_openai_chat_target_no_api_version(sample_conversations: MutableSequence[PromptRequestPiece]):
+    target = OpenAIChatTarget(
+        api_key="test_key", endpoint="https://mock.azure.com", model_name="gpt-35-turbo", api_version=None
+    )
+    request_piece = sample_conversations[0]
+    request = PromptRequestResponse(request_pieces=[request_piece])
+
+    with patch("httpx.AsyncClient.request", new_callable=AsyncMock) as mock_request:
+        mock_request.return_value = MagicMock()
+        mock_request.return_value.status_code = 200
+        mock_request.return_value.text = '{"choices": [{"message": {"content": "hi"}, "finish_reason": "stop"}]}'
+
+        await target.send_prompt_async(prompt_request=request)
+
+        called_params = mock_request.call_args[1]["params"]
+        assert "api-version" not in called_params
+
+
+@pytest.mark.asyncio
+async def test_openai_chat_target_default_api_version(sample_conversations: MutableSequence[PromptRequestPiece]):
+    target = OpenAIChatTarget(api_key="test_key", endpoint="https://mock.azure.com", model_name="gpt-35-turbo")
+    request_piece = sample_conversations[0]
+    request = PromptRequestResponse(request_pieces=[request_piece])
+
+    with patch("httpx.AsyncClient.request", new_callable=AsyncMock) as mock_request:
+        mock_request.return_value = MagicMock()
+        mock_request.return_value.status_code = 200
+        mock_request.return_value.text = '{"choices": [{"message": {"content": "hi"}, "finish_reason": "stop"}]}'
+
+        await target.send_prompt_async(prompt_request=request)
+
+        called_params = mock_request.call_args[1]["params"]
+        assert "api-version" in called_params
+        assert called_params["api-version"] == "2024-06-01"

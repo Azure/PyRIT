@@ -3,6 +3,7 @@
 
 import json
 import os
+from typing import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -41,13 +42,13 @@ def azure_completion_target(patch_central_database) -> OpenAICompletionTarget:
 
 
 @pytest.fixture
-def sample_conversations() -> list[PromptRequestPiece]:
+def sample_conversations() -> MutableSequence[PromptRequestPiece]:
     return get_sample_conversations()
 
 
 @pytest.mark.asyncio
 async def test_azure_completion_validate_request_length(
-    azure_completion_target: OpenAICompletionTarget, sample_conversations: list[PromptRequestPiece]
+    azure_completion_target: OpenAICompletionTarget, sample_conversations: MutableSequence[PromptRequestPiece]
 ):
     request = PromptRequestResponse(request_pieces=sample_conversations)
     with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
@@ -56,7 +57,7 @@ async def test_azure_completion_validate_request_length(
 
 @pytest.mark.asyncio
 async def test_azure_completion_validate_prompt_type(
-    azure_completion_target: OpenAICompletionTarget, sample_conversations: list[PromptRequestPiece]
+    azure_completion_target: OpenAICompletionTarget, sample_conversations: MutableSequence[PromptRequestPiece]
 ):
     request_piece = sample_conversations[0]
     request_piece.converted_value_data_type = "image_path"
@@ -67,7 +68,7 @@ async def test_azure_completion_validate_prompt_type(
 
 @pytest.mark.asyncio
 async def test_azure_completion_validate_prev_convs(
-    azure_completion_target: OpenAICompletionTarget, sample_conversations: list[PromptRequestPiece]
+    azure_completion_target: OpenAICompletionTarget, sample_conversations: MutableSequence[PromptRequestPiece]
 ):
     request_piece = sample_conversations[0]
     azure_completion_target._memory.add_request_response_to_memory(
@@ -83,7 +84,7 @@ async def test_azure_completion_validate_prev_convs(
 async def test_azure_complete_async_return(
     completions_response_json: dict,
     azure_completion_target: OpenAICompletionTarget,
-    sample_conversations: list[PromptRequestPiece],
+    sample_conversations: MutableSequence[PromptRequestPiece],
 ):
     request_piece = sample_conversations[0]
     request = PromptRequestResponse(request_pieces=[request_piece])
@@ -97,7 +98,7 @@ async def test_azure_complete_async_return(
         mock_request.return_value = openai_mock_return
         response: PromptRequestResponse = await azure_completion_target.send_prompt_async(prompt_request=request)
         assert len(response.request_pieces) == 1
-        assert response.request_pieces[0].converted_value == "hi"
+        assert response.get_value() == "hi"
 
 
 def test_azure_initialization_with_no_deployment_raises():
@@ -117,3 +118,40 @@ def test_azure_invalid_endpoint_raises():
                     api_key="xxxxx",
                     api_version="some_version",
                 )
+
+
+@pytest.mark.asyncio
+async def test_openai_completion_target_no_api_version(sample_conversations: MutableSequence[PromptRequestPiece]):
+    target = OpenAICompletionTarget(
+        api_key="test_key", endpoint="https://mock.azure.com", model_name="gpt-35-turbo", api_version=None
+    )
+    request_piece = sample_conversations[0]
+    request = PromptRequestResponse(request_pieces=[request_piece])
+
+    with patch("httpx.AsyncClient.request", new_callable=AsyncMock) as mock_request:
+        mock_request.return_value = MagicMock()
+        mock_request.return_value.status_code = 200
+        mock_request.return_value.text = '{"choices": [{"text": "hi"}]}'
+
+        await target.send_prompt_async(prompt_request=request)
+
+        called_params = mock_request.call_args[1]["params"]
+        assert "api-version" not in called_params
+
+
+@pytest.mark.asyncio
+async def test_openai_completion_target_default_api_version(sample_conversations: MutableSequence[PromptRequestPiece]):
+    target = OpenAICompletionTarget(api_key="test_key", endpoint="https://mock.azure.com", model_name="gpt-35-turbo")
+    request_piece = sample_conversations[0]
+    request = PromptRequestResponse(request_pieces=[request_piece])
+
+    with patch("httpx.AsyncClient.request", new_callable=AsyncMock) as mock_request:
+        mock_request.return_value = MagicMock()
+        mock_request.return_value.status_code = 200
+        mock_request.return_value.text = '{"choices": [{"text": "hi"}]}'
+
+        await target.send_prompt_async(prompt_request=request)
+
+        called_params = mock_request.call_args[1]["params"]
+        assert "api-version" in called_params
+        assert called_params["api-version"] == "2024-06-01"

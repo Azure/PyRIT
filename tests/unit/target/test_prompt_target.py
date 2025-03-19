@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import json
+from typing import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -13,7 +14,7 @@ from pyrit.prompt_target import OpenAIChatTarget
 
 
 @pytest.fixture
-def sample_entries() -> list[PromptRequestPiece]:
+def sample_entries() -> MutableSequence[PromptRequestPiece]:
     return get_sample_conversations()
 
 
@@ -63,7 +64,7 @@ async def test_set_system_prompt_adds_memory(azure_openai_target: OpenAIChatTarg
 async def test_send_prompt_with_system_calls_chat_complete(
     azure_openai_target: OpenAIChatTarget,
     openai_response_json: dict,
-    sample_entries: list[PromptRequestPiece],
+    sample_entries: MutableSequence[PromptRequestPiece],
 ):
 
     openai_mock_return = MagicMock()
@@ -93,7 +94,7 @@ async def test_send_prompt_with_system_calls_chat_complete(
 async def test_send_prompt_async_with_delay(
     azure_openai_target: OpenAIChatTarget,
     openai_response_json: dict,
-    sample_entries: list[PromptRequestPiece],
+    sample_entries: MutableSequence[PromptRequestPiece],
 ):
     azure_openai_target._max_requests_per_minute = 10
 

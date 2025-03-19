@@ -5,7 +5,7 @@
 import json
 import logging
 import re
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Sequence
 
 import httpx
 
@@ -14,7 +14,7 @@ from pyrit.models import (
     PromptRequestResponse,
     construct_response_from_request,
 )
-from pyrit.prompt_target import PromptTarget
+from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +53,7 @@ class HTTPTarget(PromptTarget):
         self.use_tls = use_tls
         self.httpx_client_kwargs = httpx_client_kwargs or {}
 
+    @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
         Sends prompt to HTTP endpoint and returns the response
@@ -172,7 +173,7 @@ class HTTPTarget(PromptTarget):
         return headers_dict, body, url, http_method, http_version
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
-        request_pieces: list[PromptRequestPiece] = prompt_request.request_pieces
+        request_pieces: Sequence[PromptRequestPiece] = prompt_request.request_pieces
 
         if len(request_pieces) != 1:
             raise ValueError("This target only supports a single prompt request piece.")
