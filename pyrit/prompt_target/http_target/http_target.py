@@ -44,7 +44,7 @@ class HTTPTarget(PromptTarget):
         use_tls: bool = True,
         callback_function: Callable | None = None,
         max_requests_per_minute: Optional[int] = None,
-        _client: Optional[httpx.AsyncClient] = None,
+        client: Optional[httpx.AsyncClient] = None,
         **httpx_client_kwargs: Any,
     ) -> None:
         super().__init__(max_requests_per_minute=max_requests_per_minute)
@@ -53,7 +53,7 @@ class HTTPTarget(PromptTarget):
         self.prompt_regex_string = prompt_regex_string
         self.use_tls = use_tls
         self.httpx_client_kwargs = httpx_client_kwargs or {}
-        self._client = _client
+        self._client = client
 
     @classmethod
     def with_client(
@@ -83,16 +83,24 @@ class HTTPTarget(PromptTarget):
         )
         return instance
 
-    @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.request_pieces[0]
-
+    def _inject_prompt_into_request(self, request: PromptRequestPiece) -> str:
+        """
+        Adds the prompt into the URL if the prompt_regex_string is found in the
+        http_request
+        """
         re_pattern = re.compile(self.prompt_regex_string)
         if re.search(self.prompt_regex_string, self.http_request):
             http_request_w_prompt = re_pattern.sub(request.converted_value, self.http_request)
         else:
             http_request_w_prompt = self.http_request
+        return http_request_w_prompt
+
+    @limit_requests_per_minute
+    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+        self._validate_request(prompt_request=prompt_request)
+        request = prompt_request.request_pieces[0]
+
+        http_request_w_prompt = self._inject_prompt_into_request(request)
 
         header_dict, http_body, url, http_method, http_version = self.parse_raw_http_request(http_request_w_prompt)
 
