@@ -1,0 +1,23 @@
+###############
+# This is .env.local file is used for integration tests
+###############
+
+# This will override the .env value
+OPENAI_CHAT_ENDPOINT=${AZURE_OPENAI_INTEGRATION_TEST_ENDPOINT}
+OPENAI_CHAT_KEY=${AZURE_OPENAI_INTEGRATION_TEST_KEY}
+OPENAI_CHAT_MODEL="gpt-4o"
+
+
+
+
+GLOBAL_MEMORY_LABELS = {"username": "integration-test"}
+
+##############
+# Set optional OPENAI_CHAT_ADDITIONAL_REQUEST_HEADERS to include additional HTTP headers in a dictionary format for API requests, e.g., {'key1': 'value1'}.
+# This is set for both Azure OpenAI and OpenAI endpoints
+##############
+#OPENAI_CHAT_ADDITIONAL_REQUEST_HEADERS="<Provide headers using a dictionary format. Ex., {'key1':'value1'}>"
+
+
+# Specify to run tests that may be skipped in the pipeline
+#RUN_ALL_TESTS="true"
