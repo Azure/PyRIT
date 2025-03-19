@@ -9,11 +9,19 @@ from pyrit.models import ALLOWED_CHAT_MESSAGE_ROLES, ChatMessage, ChatMessageRol
 
 
 class ChatMessageNormalizerChatML(ChatMessageNormalizer[str]):
+    """A chat message normalizer that converts a list of chat messages to a ChatML string."""
 
     def normalize(self, messages: list[ChatMessage]) -> str:
         """Convert a string of text to a ChatML string.
+
         This is compliant with the ChatML specified in
         https://github.com/openai/openai-python/blob/release-v0.28.0/chatml.md
+
+        Args:
+            messages (list[ChatMessage]): The list of messages to normalize.
+
+        Returns:
+            str: The normalized ChatML string.
         """
         final_string: str = ""
         final_string = ""
@@ -23,7 +31,14 @@ class ChatMessageNormalizerChatML(ChatMessageNormalizer[str]):
 
     @staticmethod
     def from_chatml(content: str) -> list[ChatMessage]:
-        """Convert a chatML string to a list of chat messages"""
+        """Convert a chatML string to a list of chat messages.
+
+        Args:
+            content (str): The ChatML string to convert.
+
+        Returns:
+            list[ChatMessage]: The list of chat messages.
+        """
         messages: list[ChatMessage] = []
         matches = list(re.finditer(r"<\|im_start\|>(.*?)<\|im_end\|>", content, re.DOTALL | re.MULTILINE))
         if not matches:

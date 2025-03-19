@@ -14,6 +14,7 @@ from pyrit.datasets.llm_latent_adversarial_training_harmful_dataset import (
 )
 from pyrit.datasets.many_shot_jailbreaking_dataset import fetch_many_shot_jailbreaking_dataset
 from pyrit.datasets.pku_safe_rlhf_dataset import fetch_pku_safe_rlhf_dataset
+from pyrit.datasets.red_team_social_bias_dataset import fetch_red_team_social_bias_dataset
 from pyrit.datasets.seclists_bias_testing_dataset import fetch_seclists_bias_testing_dataset
 from pyrit.datasets.tdc23_redteaming_dataset import fetch_tdc23_redteaming_dataset
 from pyrit.datasets.wmdp_dataset import fetch_wmdp_dataset
@@ -31,6 +32,7 @@ __all__ = [
     "fetch_llm_latent_adversarial_training_harmful_dataset",
     "fetch_many_shot_jailbreaking_dataset",
     "fetch_pku_safe_rlhf_dataset",
+    "fetch_red_team_social_bias_dataset",
     "fetch_seclists_bias_testing_dataset",
     "fetch_tdc23_redteaming_dataset",
     "fetch_wmdp_dataset",
