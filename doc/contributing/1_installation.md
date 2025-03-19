@@ -1,15 +1,18 @@
-# Choose Your Setup Approach
+# 1. Install
+
+## Choose Your Setup Approach
+
 You can set up PyRIT in one of two ways:
 1. Local Installation with Conda/Python (see [Local Installation with Conda/Python](#local-installation-with-condapython)).
 2. Using DevContainers (see [DevContainers Setup in Visual Studio Code](#devcontainers-setup-in-visual-studio-code)).
 
-# Local Installation with Conda/Python
+## Local Installation with Conda/Python
 
 To install PyRIT as a library, the simplest way to do it is just `pip install pyrit`. This is documented [here](../setup/install_pyrit.md).
 
 However, there are many reasons to install as a contributor. Yes, of course, if you want to contribute. But also because of the nature of the tool, it is often the case that targets/orchestrators/converters/core code needs to be modified. This section walks through how to install PyRIT as a contributor.
 
-## Prerequisite software
+### Prerequisite software
 
 This is a list of the prerequisites needed to run this library.
 
@@ -20,9 +23,9 @@ This is a list of the prerequisites needed to run this library.
     git clone https://github.com/Azure/PyRIT
     ```
 
-Note: PyRIT requires Python version 3.10, 3.11, or 3.12. If using Conda, you'll set the environment to use this version. If running PyRIT outside of a python environment, make sure you have this version installed.
+Note: PyRIT requires Python version 3.10, 3.11, 3.12, or 3.13. If using Conda, you'll set the environment to use this version. If running PyRIT outside of a python environment, make sure you have this version installed.
 
-## Installation
+### Installation with conda
 
 This is a guide for how to install PyRIT into a `conda` environment.
 
@@ -86,7 +89,7 @@ This is a guide for how to install PyRIT into a `conda` environment.
    See [this post](https://stackoverflow.com/questions/77134272/pip-install-dev-with-pyproject-toml-not-working) for more details.
 
 
-## Local Environment Setup
+### Local Environment Setup
 
 PyRIT is compatible with Windows, Linux, and MacOS.
 
@@ -96,22 +99,22 @@ Alternatively, you can run the tool directly on Windows using PowerShell.
 
 **Visual Studio Code** is the code editor of choice for the AI Red Team: Download [here](https://code.visualstudio.com/Download).
 
-# DevContainers Setup in Visual Studio Code
-## Prerequisites
+## DevContainers Setup in Visual Studio Code
+### Prerequisites
 * Install **Docker** (Docker Desktop if you are using Windows)
 * Install [**DevContainer**](https://code.visualstudio.com/docs/devcontainers/containers) extension in VS Code
 
 You can also follow the **Installation** section on [Developing inside a Container](https://code.visualstudio.com/docs/devcontainers/containers)
 
-## Run the Container
+### Run the Container
 Press `Ctrl + Shift + P` to open VS Code Command Palette and type `Dev Containers: Reopen in Container`
 ![DevContainer in VS Code Commands Menu](images/DevContainer-vscode.png)
 
-## Running Jupyter Notebooks in VS Code
+### Running Jupyter Notebooks in VS Code
 
 _note:_ When constructing a pull request, notebooks should not be edited directly. Instead, edit the corresponding `.py` file. See [notebooks.md](8_notebooks.md) for more details.
 
-### Selecting a Kernel
+## Selecting a Kernel
 
 With a Jupyter Notebook (.ipynb file) window open, in the top search bar of VS Code, type `>Notebook: Select Notebook Kernel` > `Python Environments...` to choose the `pyrit-dev` kernel when executing code in the notebooks, like those in `examples`. You can also choose a kernel with the "Select Kernel" button on the top-right corner of a Notebook.
 

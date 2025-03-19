@@ -92,13 +92,8 @@ class VariationConverter(PromptConverter):
     async def send_variation_prompt_async(self, request):
         response = await self.converter_target.send_prompt_async(prompt_request=request)
 
-        response_msg = response.request_pieces[0].converted_value
-        response_msg = extract_json_from_response(response_msg)
-        try:
-            response = json.loads(response_msg)
-
-        except json.JSONDecodeError:
-            raise InvalidJsonException(message=f"Invalid JSON response: {response_msg}")
+        response_msg = response.get_value()
+        parsed_response = extract_json_from_response(response_msg)
 
         try:
             return response[0]

@@ -41,7 +41,6 @@ initialize_pyrit(memory_db_type=IN_MEMORY)
 subscription_id = os.environ.get("AZURE_SUBSCRIPTION_ID")
 resource_group = os.environ.get("AZURE_RESOURCE_GROUP")
 workspace = os.environ.get("AZURE_ML_WORKSPACE_NAME")
-compute_name = os.environ.get("AZURE_ML_COMPUTE_NAME")
 print(workspace)
 
 # %%
@@ -52,12 +51,6 @@ from azure.identity import DefaultAzureCredential
 ml_client = MLClient(DefaultAzureCredential(), subscription_id, resource_group, workspace)
 
 # %% [markdown]
-# ## Create Compute Cluster
-#
-# Before proceeding, create a compute cluster in Azure ML. The following command may be useful:
-# az ml compute create --size Standard_ND96isrf_H100_v5 --type AmlCompute --name <compute-name> -g <group> -w <workspace> --min-instances 0
-
-# %% [markdown]
 # ## Create AML Environment
 
 # %% [markdown]
@@ -65,7 +58,7 @@ ml_client = MLClient(DefaultAzureCredential(), subscription_id, resource_group, 
 # %%
 from pathlib import Path
 
-from azure.ai.ml.entities import BuildContext, Environment
+from azure.ai.ml.entities import BuildContext, Environment, JobResourceConfiguration
 
 from pyrit.common.path import HOME_PATH
 
@@ -107,7 +100,10 @@ job = command(
     environment_variables={"HUGGINGFACE_TOKEN": os.environ["HUGGINGFACE_TOKEN"]},
     display_name="suffix_generation",
     description="Generate a suffix for attacking LLMs.",
-    compute=compute_name,
+    resources=JobResourceConfiguration(
+        instance_type="Standard_NC96ads_A100_v4",
+        instance_count=1,
+    ),
 )
 
 # %%

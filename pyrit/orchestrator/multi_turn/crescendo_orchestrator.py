@@ -349,33 +349,24 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         )
 
         response_text = (
-            (
-                await self._prompt_normalizer.send_prompt_async(
-                    seed_prompt_group=seed_prompt_group,
-                    conversation_id=adversarial_chat_conversation_id,
-                    target=self._adversarial_chat,
-                    orchestrator_identifier=self.get_identifier(),
-                    labels=memory_labels,
-                )
+            await self._prompt_normalizer.send_prompt_async(
+                seed_prompt_group=seed_prompt_group,
+                conversation_id=adversarial_chat_conversation_id,
+                target=self._adversarial_chat,
+                orchestrator_identifier=self.get_identifier(),
+                labels=memory_labels,
             )
-            .request_pieces[0]
-            .converted_value
-        )
-        response_text = extract_json_from_response(response_text)
+        ).get_value()
+        parsed_output = extract_json_from_response(response_text)
 
         expected_output = ["generated_question", "rationale_behind_jailbreak", "last_response_summary"]
-        try:
-            parsed_output = json.loads(response_text)
-            for key in expected_output:
-                if key not in parsed_output:
-                    raise InvalidJsonException(
-                        message=f"Expected key '{key}' not found in JSON response: {response_text}"
-                    )
+        for key in expected_output:
+            if key not in parsed_output:
+                raise InvalidJsonException(
+                    message=f"Expected key '{key}' not found in JSON response: {response_text}"
+                )
 
-            attack_prompt = parsed_output["generated_question"]
-
-        except json.JSONDecodeError:
-            raise InvalidJsonException(message=f"Invalid JSON encountered: {response_text}")
+        attack_prompt = parsed_output["generated_question"]
 
         if len(parsed_output.keys()) != len(expected_output):
             raise InvalidJsonException(message=f"Unexpected keys found in JSON response: {response_text}")
