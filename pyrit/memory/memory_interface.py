@@ -274,7 +274,7 @@ class MemoryInterface(abc.ABC):
         orchestrator_id: Optional[str | uuid.UUID] = None,
         role: Optional[str] = None,
         conversation_id: Optional[str | uuid.UUID] = None,
-        prompt_ids: Optional[Sequence[str] | Sequence[uuid.UUID]] = None,
+        prompt_ids: Optional[Sequence[str | uuid.UUID]] = None,
         labels: Optional[dict[str, str]] = None,
         prompt_metadata: Optional[dict[str, Union[str, int]]] = None,
         sent_after: Optional[datetime] = None,
@@ -309,14 +309,16 @@ class MemoryInterface(abc.ABC):
             Exception: If there is an error retrieving the prompts,
                 an exception is logged and an empty list is returned.
         """
+
         conditions = []
         if orchestrator_id:
             conditions.append(self._get_prompt_pieces_orchestrator_conditions(orchestrator_id=str(orchestrator_id)))
         if role:
             conditions.append(PromptMemoryEntry.role == role)
         if conversation_id:
-            conditions.append(PromptMemoryEntry.conversation_id == conversation_id)
+            conditions.append(PromptMemoryEntry.conversation_id == str(conversation_id))
         if prompt_ids:
+            prompt_ids = [str(pi) for pi in prompt_ids]
             conditions.append(PromptMemoryEntry.id.in_(prompt_ids))
         if labels:
             conditions.append(self._get_prompt_pieces_memory_label_conditions(memory_labels=labels))
