@@ -21,3 +21,10 @@ async def test_superscript_converter():
         ["Let's test this converter!", "Unsupported characters stay the same: qCFQSXYZ"],
         ["ᴸᵉᵗ'ˢ ᵗᵉˢᵗ ᵗʰⁱˢ ᶜᵒⁿᵛᵉʳᵗᵉʳ!", "ᵁⁿˢᵘᵖᵖᵒʳᵗᵉᵈ ᶜʰᵃʳᵃᶜᵗᵉʳˢ ˢᵗᵃʸ ᵗʰᵉ ˢᵃᵐᵉ: qCFQSXYZ"],
     )
+
+    alternate_converter = SuperscriptConverter(mode="alternate")
+    await _check_conversion(
+        alternate_converter,
+        ["word1 word2 word3 word4 word5"],
+        ["ʷᵒʳᵈ¹ word2 ʷᵒʳᵈ³ word4 ʷᵒʳᵈ⁵"],
+    )
