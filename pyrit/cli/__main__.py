@@ -8,7 +8,7 @@ from copy import deepcopy
 from datetime import datetime
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Dict, List, MutableSequence, Optional
+from typing import Any, Dict, List, MutableSequence, Optional, Type
 from uuid import uuid4
 
 import yaml
@@ -77,11 +77,11 @@ async def validate_config_and_run_async(config: Dict[str, Any], memory_labels: O
     objective_target = validate_target(config, target_key="objective_target")
     prompt_converters: list[PromptConverter] = []
     # prompt_converters = validate_converters(config)
-    scorer = None
-    # TODO: need to find a solution for single/multiple scorers and scoring_targets
-    # scorers = validate_scorers(config)
-    adversarial_chat = None
-    # adversarial_chat = validate_adversarial_chat(config)
+    adversarial_chat: PromptChatTarget | None = None
+    if "adversarial_chat" in config:
+        adversarial_chat = validate_target(config, target_key="adversarial_chat")  # type: ignore
+    scoring_target = validate_scoring_target(config, adversarial_chat=adversarial_chat)  # type: ignore
+    objective_scorer = validate_objective_scorer(config, scoring_target=scoring_target)
 
     orchestrators = []
     for scenario_config in scenarios:
@@ -91,7 +91,8 @@ async def validate_config_and_run_async(config: Dict[str, Any], memory_labels: O
                 objective_target=objective_target,
                 adversarial_chat=adversarial_chat,
                 prompt_converters=prompt_converters,
-                scorer=scorer,
+                scoring_target=scoring_target,
+                objective_scorer=objective_scorer,
             )
         )
 
@@ -130,7 +131,8 @@ def validate_scenario(
     objective_target: PromptTarget,
     adversarial_chat: Optional[PromptChatTarget] = None,
     prompt_converters: Optional[List[PromptConverter]] = None,
-    scorer: Optional[Scorer] = None,
+    scoring_target: Optional[PromptChatTarget] = None,
+    objective_scorer: Optional[Scorer] = None,
 ) -> Orchestrator:
     if "type" not in scenario_config:
         raise KeyError("Scenario must contain a 'type' key.")
@@ -139,35 +141,39 @@ def validate_scenario(
     scenario_args = deepcopy(scenario_config)
     del scenario_args["type"]
 
-    try:
-        orchestrator_module = import_module("pyrit.orchestrator")
-        orchestrator_class = getattr(orchestrator_module, scenario_type)
-    except Exception as ex:
-        raise RuntimeError(f"Failed to import orchestrator {scenario_type} from pyrit.orchestrator") from ex
+    orchestrator_class = load_class(
+        module_name="pyrit.orchestrator", class_name=scenario_type, error_context="scenario"
+    )
+
+    constructor_arg_names = [arg.name for arg in inspect.signature(orchestrator_class.__init__).parameters.values()]
+
+    # Some orchestrator arguments have their own configuration since they
+    # are more complex. They are passed in as args to this function.
+    complex_arg_names = [
+        "objective_target",
+        "adversarial_chat",
+        "prompt_converters",
+        "scoring_target",
+        "objective_scorer",
+    ]
+    for complex_arg_name in complex_arg_names:
+        if complex_arg_name in scenario_args:
+            raise ValueError(
+                f"{complex_arg_name} needs to be configured at the top level of the scanner configuration."
+                f"The scenario configuration cannot include {complex_arg_name}."
+            )
+
+        # Add complex args to the argument list.
+        local_vars = locals()
+        if complex_arg_name in constructor_arg_names:
+            arg_value = local_vars[complex_arg_name]
+            if arg_value:
+                scenario_args[complex_arg_name] = arg_value
 
     try:
-        constructor_arg_names = [arg.name for arg in inspect.signature(orchestrator_class.__init__).parameters.values()]
-
-        # Some orchestrator arguments have their own configuration since they
-        # are more complex. They are passed in as args to this function.
-        complex_arg_names = ["objective_target", "adversarial_chat", "prompt_converters", "scorer"]
-        for complex_arg_name in complex_arg_names:
-            if complex_arg_name in scenario_args:
-                raise ValueError(
-                    f"{complex_arg_name} needs to be configured at the top level of the scanner configuration."
-                    f"The scenario configuration cannot include {complex_arg_name}."
-                )
-
-            # Add complex args to the argument list.
-            local_vars = locals()
-            if complex_arg_name in constructor_arg_names:
-                arg_value = local_vars[complex_arg_name]
-                if arg_value:
-                    scenario_args[complex_arg_name] = arg_value
-
         orchestrator = orchestrator_class(**scenario_args)
     except Exception as ex:
-        raise ValueError(f"Failed to validate scenario {scenario_type}") from ex
+        raise ValueError(f"Failed to validate scenario {scenario_type}: {ex}") from ex
     return orchestrator
 
 
@@ -175,7 +181,7 @@ def generate_datasets(config: Dict[str, Any]) -> MutableSequence[SeedPrompt]:
     datasets = config.get("datasets")
 
     if not datasets:
-        raise KeyError("Send prompts scenario must contain a 'datasets' key.")
+        raise KeyError("The configuration file must contain a 'datasets' key.")
 
     loaded_dataset_prompts: MutableSequence[SeedPrompt] = []
     for dataset_path in datasets:
@@ -193,7 +199,7 @@ def validate_target(config: Dict[str, Any], target_key: str) -> PromptTarget:
         raise KeyError(f"Target {target_key} must contain a 'type' key.")
 
     target_config = deepcopy(config[target_key])
-    target_type = target_config.get("type")
+    target_type = target_config.pop("type")
 
     try:
         target_module = import_module("pyrit.prompt_target")
@@ -201,10 +207,63 @@ def validate_target(config: Dict[str, Any], target_key: str) -> PromptTarget:
     except Exception as ex:
         raise RuntimeError(f"Failed to import target {target_type} from pyrit.prompt_target") from ex
 
-    # type is not an actual arg so remove it
-    del target_config["type"]
     target = target_class(**target_config)
     return target
+
+
+def validate_scoring_target(
+    config: Dict[str, Any], adversarial_chat: Optional[PromptChatTarget]
+) -> PromptChatTarget | None:
+    if "scoring" not in config:
+        return None
+    scoring_config = config["scoring"]
+
+    # If a scoring_target has been configured use it.
+    # Otherwise, use the adversarial_chat target for scoring.
+    scoring_target = adversarial_chat
+    if "scoring_target" in scoring_config:
+        scoring_target = validate_target(scoring_config, target_key="scoring_target")  # type: ignore
+    return scoring_target
+
+
+def validate_objective_scorer(config: Dict[str, Any], scoring_target: Optional[PromptChatTarget]) -> Scorer | None:
+    if "scoring" not in config:
+        return None
+    scoring_config = config["scoring"]
+    if "objective_scorer" not in scoring_config:
+        return None
+
+    scorer_args = deepcopy(scoring_config["objective_scorer"])
+
+    if "type" not in scorer_args:
+        raise KeyError("Scorer definition must contain a 'type' key.")
+
+    scorer_type = scorer_args.pop("type")
+
+    scorer_class = load_class(module_name="pyrit.score", class_name=scorer_type, error_context="objective_scorer")
+
+    if "chat_target" in inspect.signature(scorer_class.__init__).parameters:
+        if scoring_target:
+            scorer_args["chat_target"] = scoring_target
+        else:
+            raise KeyError(
+                "Scorer requires a scoring_target to be defined. "
+                "Alternatively, the adversarial_target can be used "
+                "for scoring purposes, but none was provided."
+            )
+
+    return scorer_class(**scorer_args)
+
+
+def load_class(*, module_name: str, class_name: str, error_context: str) -> Type[Any]:
+    try:
+        mod = import_module(module_name)
+        cls = getattr(mod, class_name)
+        if not inspect.isclass(cls):
+            raise TypeError(f"The attribute {class_name} in module {module_name} is not a class.")
+    except Exception as ex:
+        raise RuntimeError(f"Failed to import {class_name} from {module_name} for {error_context}: {ex}") from ex
+    return cls
 
 
 def main(args=None):
