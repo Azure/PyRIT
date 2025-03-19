@@ -19,7 +19,7 @@ class UnicodeReplacementConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Simple converter that returnst the unicode representation of the prompt.
+        Simple converter that returns the unicode representation of the prompt.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
