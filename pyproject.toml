@@ -16,7 +16,7 @@ authors = [
     { name = "eugeniavkim" },
 ]
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
 keywords = [
     "llm",
     "ai-safety",
