@@ -49,8 +49,9 @@ explanation, or additional text. Output only the word "test" and nothing else.
     ("endpoint", "api_key", "model_name", "no_api_version", "supports_seed"),
     [
         ("OPENAI_CHAT_ENDPOINT", "OPENAI_CHAT_KEY", "OPENAI_CHAT_MODEL", False, True),
+        ("PLATFORM_OPENAI_CHAT_ENDPOINT", "PLATFORM_OPENAI_CHAT_KEY", "PLATFORM_OPENAI_CHAT_MODEL", False, True),
         ("AZURE_OPENAI_GPT4O_ENDPOINT", "AZURE_OPENAI_GPT4O_KEY", "", False, True),
-        ("AZURE_OPENAI_GPT4O_INTEGRATION_TEST_ENDPOINT", "AZURE_OPENAI_GPT4O_INTEGRATION_TEST_KEY", "", False, True),
+        ("AZURE_OPENAI_INTEGRATION_TEST_ENDPOINT", "AZURE_OPENAI_INTEGRATION_TEST_KEY", "", False, True),
         ("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT", "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY", "", False, True),
         ("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2", "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2", "", False, True),
         ("AZURE_OPENAI_GPT3_5_CHAT_ENDPOINT", "AZURE_OPENAI_GPT3_5_CHAT_KEY", "", False, True),
@@ -69,6 +70,7 @@ async def test_connect_required_openai_text_targets(
         "endpoint": os.getenv(endpoint),
         "api_key": os.getenv(api_key),
         "model_name": os.getenv(model_name),
+        "temperature": 0.0,
     }
     if no_api_version:
         args["api_version"] = None
@@ -174,7 +176,6 @@ async def test_connect_tts(duckdb_instance, endpoint, api_key):
 @pytest.mark.parametrize(
     ("endpoint", "api_key", "model_name"),
     [
-        ("PLATFORM_OPENAI_ENDPOINT", "PLATFORM_OPENAI_KEY", "PLATFORM_OPENAI_GPT4O_MODEL"),
         ("GROQ_ENDPOINT", "GROQ_KEY", "GROQ_LLAMA_MODEL"),
         ("OPEN_ROUTER_ENDPOINT", "OPEN_ROUTER_KEY", "OPEN_ROUTER_CLAUDE_MODEL"),
         ("OLLAMA_CHAT_ENDPOINT", "", "OLLAMA_MODEL"),
