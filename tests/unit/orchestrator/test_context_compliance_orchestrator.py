@@ -145,9 +145,9 @@ async def test_get_prepended_conversation_async(context_compliance_orchestrator)
     # Use AsyncMock for async methods
     mock_normalizer.send_prompt_async = AsyncMock(
         side_effect=[
-            MagicMock(request_pieces=[MagicMock(converted_value="benign_user_query")]),
-            MagicMock(request_pieces=[MagicMock(converted_value="some_user_answer")]),
-            MagicMock(request_pieces=[MagicMock(converted_value="objective_as_question")]),
+            MagicMock(get_value=lambda: "benign_user_query"),
+            MagicMock(get_value=lambda: "some_user_answer"),
+            MagicMock(get_value=lambda: "objective_as_question"),
         ]
     )
 
@@ -161,7 +161,7 @@ async def test_get_prepended_conversation_async(context_compliance_orchestrator)
 
     user_msg = result[0]
     assert user_msg.request_pieces[0].role == "user"
-    assert user_msg.request_pieces[0].converted_value == "benign_user_query"
+    assert user_msg.get_value() == "benign_user_query"
 
     # The assistant turn
     assistant_msg = result[1]

@@ -224,7 +224,7 @@ class MultiTurnOrchestrator(Orchestrator):
                 len(self._prepended_conversation) > 1
                 and self._prepended_conversation[-2].request_pieces[0].role == "user"
             ):
-                self._last_prepended_user_message = self._prepended_conversation[-2].request_pieces[0].converted_value
+                self._last_prepended_user_message = self._prepended_conversation[-2].get_value()
             else:
                 raise ValueError(
                     "There must be a user message preceding the assistant message in prepended conversations."

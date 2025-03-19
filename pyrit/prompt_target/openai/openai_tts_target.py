@@ -63,6 +63,9 @@ class OpenAITTSTarget(OpenAITarget):
             response_format (str, Optional): The format of the audio response. Defaults to "mp3".
             language (str, Optional): The language for TTS. Defaults to "en".
             speed (float, Optional): The speed of the TTS. Select a value from 0.25 to 4.0. 1.0 is normal.
+            httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
+                httpx.AsyncClient() constructor.
+                For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
         """
 
         super().__init__(**kwargs)

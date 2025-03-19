@@ -111,7 +111,7 @@ class TranslationConverter(PromptConverter):
     async def send_translation_prompt_async(self, request) -> str:
         response = await self.converter_target.send_prompt_async(prompt_request=request)
 
-        response_msg = response.request_pieces[0].converted_value
+        response_msg = response.get_value()
         response_msg = remove_markdown_json(response_msg)
 
         try:

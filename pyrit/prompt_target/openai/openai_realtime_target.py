@@ -56,6 +56,9 @@ class RealtimeTarget(OpenAITarget):
             voice (literal str, Optional): The voice to use. Defaults to None.
                 the only supported voices by the AzureOpenAI Realtime API are "alloy", "echo", and "shimmer".
             existing_convo (dict[str, websockets.WebSocketClientProtocol], Optional): Existing conversations.
+            httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
+                httpx.AsyncClient() constructor.
+                For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
         """
 
         super().__init__(api_version=api_version, **kwargs)

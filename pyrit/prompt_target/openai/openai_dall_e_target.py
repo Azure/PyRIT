@@ -70,6 +70,9 @@ class OpenAIDALLETarget(OpenAITarget):
                 DALL-E-3. Defaults to "natural".
             *args: Additional positional arguments to be passed to AzureOpenAITarget.
             **kwargs: Additional keyword arguments to be passed to AzureOpenAITarget.
+            httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
+                httpx.AsyncClient() constructor.
+                For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
 
         Raises:
             ValueError: If `num_images` is not 1 for DALL-E-3.
