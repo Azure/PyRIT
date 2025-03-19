@@ -88,7 +88,11 @@ def fetch_red_team_social_bias_dataset() -> SeedPromptDataset:
                 for i, user_prompt in enumerate(user_prompts):
                     seed_prompts.append(
                         SeedPrompt(
-                            value=user_prompt, data_type="text", prompt_group_id=group_id, sequence=i, **prompt_metadata  # type: ignore
+                            value=user_prompt,
+                            data_type="text",
+                            prompt_group_id=group_id,
+                            sequence=i,
+                            **prompt_metadata,  # type: ignore
                         )
                     )
             except Exception as e:
