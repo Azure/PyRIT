@@ -68,7 +68,7 @@ class AWSBedrockClaudeChatTarget(PromptChatTarget):
             import boto3  # noqa: F401
             from botocore.exceptions import ClientError  # noqa: F401
         except ModuleNotFoundError as e:
-            logger.error("Could not import boto. You may need to install it via 'pip install pyrit[all]'")
+            logger.error("Could not import boto. You may need to install it via 'pip install pyrit[all] or pyrit[aws]'")
             raise e
 
     @limit_requests_per_minute
