@@ -1,7 +1,7 @@
 ---
 name: AIM
-description: Prompt obtained from jailbreakchat.com
-source: www.jailbreakchat.com/prompt/4f37a029-9dff-4862-b323-c96a5504de5d
+description: Prompt obtained from Alex Albert
+source: www.Alex Albert/prompt/4f37a029-9dff-4862-b323-c96a5504de5d
 parameters:
   - prompt
 data_type: text
