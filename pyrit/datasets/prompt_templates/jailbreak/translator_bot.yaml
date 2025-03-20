@@ -1,7 +1,7 @@
 ---
 name: TranslatorBot
-description: Prompt obtained from jailbreakchat.com
-source: jailbreakchat.com
+description: Prompt obtained from Alex Albert
+source: Alex Albert
 parameters:
   - prompt
   - prompt_in_greek
