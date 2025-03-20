@@ -40,8 +40,8 @@ def scorer_scale_response() -> PromptRequestResponse:
 def scale_scorer(patch_central_database) -> SelfAskScaleScorer:
     return SelfAskScaleScorer(
         chat_target=MagicMock(),
-        scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
-        system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
+        scale_arguments=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
+        system_prompt=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
     )
 
 
@@ -58,16 +58,16 @@ def scale_scorer(patch_central_database) -> SelfAskScaleScorer:
 )
 async def test_scale_scorer_set_system_prompt(
     scorer_scale_response: PromptRequestResponse,
-    scale_arguments_path: Path,
-    system_prompt_path: Path,
+    scale_arguments: Path,
+    system_prompt: Path,
     patch_central_database,
 ):
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_scale_response)
     scorer = SelfAskScaleScorer(
         chat_target=chat_target,
-        scale_arguments_path=scale_arguments_path,
-        system_prompt_path=system_prompt_path,
+        scale_arguments_path=scale_arguments,
+        system_prompt_path=system_prompt,
     )
 
     await scorer.score_text_async(text="string", task="task")
@@ -87,8 +87,8 @@ def test_scale_scorer_invalid_scale_file_contents():
     with pytest.raises(ValueError, match="Missing key in scale_args:"):
         SelfAskScaleScorer(
             chat_target=chat_target,
-            scale_arguments_path=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
-            system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
+            scale_arguments=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
+            system_prompt=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
         )
 
 
@@ -137,8 +137,8 @@ async def test_scale_scorer_score(scorer_scale_response: PromptRequestResponse, 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_scale_response)
     scorer = SelfAskScaleScorer(
         chat_target=chat_target,
-        scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
-        system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
+        scale_arguments=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
+        system_prompt=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
     )
 
     score = await scorer.score_text_async(text="example text", task="task")
@@ -169,8 +169,8 @@ async def test_scale_scorer_score_custom_scale(scorer_scale_response: PromptRequ
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_scale_response)
     scorer = SelfAskScaleScorer(
         chat_target=chat_target,
-        scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
-        system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
+        scale_arguments=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
+        system_prompt=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
     )
 
     scorer._minimum_value = 1
@@ -198,8 +198,8 @@ async def test_scale_scorer_score_calls_send_chat(patch_central_database):
 
     scorer = SelfAskScaleScorer(
         chat_target=chat_target,
-        scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
-        system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
+        scale_arguments=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
+        system_prompt=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
     )
 
     score = UnvalidatedScore(
