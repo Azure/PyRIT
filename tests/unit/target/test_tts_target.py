@@ -99,7 +99,7 @@ async def test_tts_send_prompt_file_save_async(
         mock_request.return_value = return_value
         response = await tts_target.send_prompt_async(prompt_request=request)
 
-        file_path = response.request_pieces[0].converted_value
+        file_path = response.get_value()
         assert file_path
         assert file_path.endswith(f".{response_format}")
         assert os.path.exists(file_path)
@@ -170,3 +170,47 @@ async def test_tts_send_prompt_async_rate_limit_exception_retries(
 
 def test_is_json_response_supported(tts_target: OpenAITTSTarget):
     assert tts_target.is_json_response_supported() is False
+
+
+@pytest.mark.asyncio
+async def test_tts_target_no_api_version(sample_conversations: MutableSequence[PromptRequestPiece]):
+    target = OpenAITTSTarget(
+        api_key="test_key", endpoint="https://mock.azure.com", model_name="tts-model", api_version=None
+    )
+    request = PromptRequestResponse([sample_conversations[0]])
+
+    with patch(
+        "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
+    ) as mock_request:
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.content = b"audio data"
+
+        mock_request.return_value = mock_response
+
+        await target.send_prompt_async(prompt_request=request)
+
+        called_params = mock_request.call_args[1]["params"]
+        assert "api-version" not in called_params
+
+
+@pytest.mark.asyncio
+async def test_tts_target_default_api_version(sample_conversations: MutableSequence[PromptRequestPiece]):
+    target = OpenAITTSTarget(api_key="test_key", endpoint="https://mock.azure.com", model_name="tts-model")
+    request = PromptRequestResponse([sample_conversations[0]])
+
+    with patch(
+        "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
+    ) as mock_request:
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.content = b"audio data"
+
+        mock_request.return_value = mock_response
+
+        await target.send_prompt_async(prompt_request=request)
+
+        called_params = mock_request.call_args[1]["params"]
+
+        assert "api-version" in called_params
+        assert called_params["api-version"] == "2025-02-01-preview"

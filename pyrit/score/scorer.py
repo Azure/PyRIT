@@ -7,7 +7,6 @@ import uuid
 from abc import abstractmethod
 from typing import Optional, Sequence
 
-from pyrit.common.batch_helper import batch_task_async
 from pyrit.exceptions import (
     InvalidJsonException,
     pyrit_json_retry,
@@ -23,6 +22,7 @@ from pyrit.models import (
     UnvalidatedScore,
 )
 from pyrit.prompt_target import PromptChatTarget
+from pyrit.prompt_target.batch_helper import batch_task_async
 
 
 class Scorer(abc.ABC):
@@ -271,7 +271,7 @@ class Scorer(abc.ABC):
             raise Exception(f"Error scoring prompt with original prompt ID: {scored_prompt_id}") from ex
 
         try:
-            response_json = response.request_pieces[0].converted_value
+            response_json = response.get_value()
 
             response_json = remove_markdown_json(response_json)
             parsed_response = json.loads(response_json)

@@ -55,7 +55,7 @@ class GandalfScorer(Scorer):
         for request_response in conversation:
             conversation_as_text += "Gandalf" if request_response.request_pieces[0].role == "assistant" else "user"
             conversation_as_text += ": "
-            conversation_as_text += request_response.request_pieces[0].converted_value
+            conversation_as_text += request_response.get_value()
             conversation_as_text += "\n"
 
         request = PromptRequestResponse(
@@ -73,9 +73,7 @@ class GandalfScorer(Scorer):
         )
 
         try:
-            response_text = (
-                (await self._prompt_target.send_prompt_async(prompt_request=request)).request_pieces[0].converted_value
-            )
+            response_text = (await self._prompt_target.send_prompt_async(prompt_request=request)).get_value()
         except (RuntimeError, BadRequestError):
             raise PyritException("Error in Gandalf Scorer. Unable to check for password in text.")
         if response_text.strip() == "NO":

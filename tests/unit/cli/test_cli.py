@@ -1,15 +1,61 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import contextlib
+import re
 import shlex
 from unittest.mock import patch
 
 import pytest
 
 from pyrit.cli.__main__ import main
-from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.orchestrator import (
+    CrescendoOrchestrator,
+    PromptSendingOrchestrator,
+    RedTeamingOrchestrator,
+    TreeOfAttacksWithPruningOrchestrator,
+)
 
-test_cases_success = ["--config-file 'tests/unit/cli/prompt_send_success.yaml'"]
+test_cases_success = [
+    (
+        "--config-file 'tests/unit/cli/prompt_send_success.yaml'",
+        [PromptSendingOrchestrator],
+        ["send_normalizer_requests_async"],
+    ),
+    ("--config-file 'tests/unit/cli/multi_turn_rto_success.yaml'", [RedTeamingOrchestrator], ["run_attack_async"]),
+    ("--config-file 'tests/unit/cli/multi_turn_rto_args_success.yaml'", [RedTeamingOrchestrator], ["run_attack_async"]),
+    ("--config-file 'tests/unit/cli/multi_turn_crescendo_success.yaml'", [CrescendoOrchestrator], ["run_attack_async"]),
+    (
+        "--config-file 'tests/unit/cli/multi_turn_crescendo_args_success.yaml'",
+        [CrescendoOrchestrator],
+        ["run_attack_async"],
+    ),
+    (
+        "--config-file 'tests/unit/cli/multi_turn_tap_success.yaml'",
+        [TreeOfAttacksWithPruningOrchestrator],
+        ["run_attack_async"],
+    ),
+    (
+        "--config-file 'tests/unit/cli/multi_turn_tap_args_success.yaml'",
+        [TreeOfAttacksWithPruningOrchestrator],
+        ["run_attack_async"],
+    ),
+    (
+        "--config-file 'tests/unit/cli/multi_turn_multiple_orchestrators_args_success.yaml'",
+        [TreeOfAttacksWithPruningOrchestrator, CrescendoOrchestrator, RedTeamingOrchestrator],
+        ["run_attack_async", "run_attack_async", "run_attack_async"],
+    ),
+    (
+        "--config-file 'tests/unit/cli/mixed_multiple_orchestrators_args_success.yaml'",
+        [
+            PromptSendingOrchestrator,
+            TreeOfAttacksWithPruningOrchestrator,
+            CrescendoOrchestrator,
+            RedTeamingOrchestrator,
+        ],
+        ["send_normalizer_requests_async", "run_attack_async", "run_attack_async", "run_attack_async"],
+    ),
+]
 
 
 test_cases_sys_exit = [
@@ -49,19 +95,42 @@ test_cases_error = [
         "Scenario must contain a 'type' key.",
         KeyError,
     ),
+    (
+        "--config-file 'tests/unit/cli/prompt_send_no_scoring_target.yaml'",
+        "'Scorer requires a scoring_target to be defined. "
+        "Alternatively, the adversarial_target can be used for scoring purposes, but none was provided.",
+        KeyError,
+    ),
+    (
+        "--config-file 'tests/unit/cli/multi_turn_rto_wrong_arg.yaml'",
+        "Failed to validate scenario RedTeamingOrchestrator: RedTeamingOrchestrator.__init__() "
+        "got an unexpected keyword argument 'wrong_arg'",
+        ValueError,
+    ),
+    (
+        "--config-file 'tests/unit/cli/multi_turn_crescendo_wrong_arg.yaml'",
+        "Failed to validate scenario CrescendoOrchestrator: CrescendoOrchestrator.__init__() "
+        "got an unexpected keyword argument 'wrong_arg'",
+        ValueError,
+    ),
+    (
+        "--config-file 'tests/unit/cli/multi_turn_tap_wrong_arg.yaml'",
+        "Failed to validate scenario TreeOfAttacksWithPruningOrchestrator: "
+        "TreeOfAttacksWithPruningOrchestrator.__init__() "
+        "got an unexpected keyword argument 'wrong_arg'",
+        ValueError,
+    ),
 ]
 
 
-@pytest.mark.parametrize("command", test_cases_success)
-def test_cli_success(command):
+@pytest.mark.parametrize("command, orchestrator_classes, methods", test_cases_success)
+@patch("pyrit.common.default_values.get_required_value", return_value="value")
+def test_cli_success(get_required_value, command, orchestrator_classes, methods):
     # Patching the request sending functionality since we don't want to test the orchestrator,
     # but just the CLI part.
-    # And patching OpenAI target initialization which depends on environment variables
-    # which we are not providing here.
-    with (
-        patch.object(PromptSendingOrchestrator, "send_normalizer_requests_async"),
-        patch("pyrit.common.default_values.get_required_value", return_value="value"),
-    ):
+    with contextlib.ExitStack() as stack:
+        for orchestrator_class, method in zip(orchestrator_classes, methods):
+            stack.enter_context(patch.object(orchestrator_class, method))
         main(shlex.split(command))
 
 
@@ -75,9 +144,7 @@ def test_cli_sys_exit(capsys, command, expected_output):
 
 
 @pytest.mark.parametrize("command, expected_output, error_type", test_cases_error)
-def test_cli_error(command, expected_output, error_type):
-    # Patching OpenAI target initialization which depends on environment variables
-    # which we are not providing here.
-    with patch("pyrit.common.default_values.get_required_value", return_value="value"):
-        with pytest.raises(error_type, match=expected_output):
-            main(shlex.split(command))
+@patch("pyrit.common.default_values.get_required_value", return_value="value")
+def test_cli_error(get_required_value, command, expected_output, error_type):
+    with pytest.raises(error_type, match=re.escape(expected_output)):
+        main(shlex.split(command))

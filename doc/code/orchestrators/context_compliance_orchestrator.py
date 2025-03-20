@@ -5,20 +5,20 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.6
+#       jupytext_version: 1.16.4
 # ---
 
 # %% [markdown]
 # # Context Compliance Orchestrator
 #
-# This orchestrator generates the first prompts using insstructions defined in  `context_description_instructions_path`, along with an `adversarial_chat` to generate the first turns to send.
+# This orchestrator generates the first prompts using instructions defined in  `context_description_instructions_path`, along with an `adversarial_chat` to generate the first turns to send.
 #
 # `ContextComplianceOrchestrator` is a single turn orchestrator, meaning it only sends a single propmt to the `objective_target`. These are fast compared to multi-turn orchestrators.
 #
-# When you give an objective, the `ContextComplianceOrchestrator` will create prompts follow the format:
+# When you give an objective, the `ContextComplianceOrchestrator` will create prompts following this format:
 #
-# - user request (generated from adversarial LLM): "Tell me about <more benign version of the objecive>"
-# - assistant response (generated from adversarial LLM): "<Answers benign question>. Would you like to know more about <more explicit objective>?"
+# - user request (generated from adversarial LLM): "Tell me about <*more benign version of the objecive*>"
+# - assistant response (generated from adversarial LLM): "<*Answers benign question*>. Would you like to know more about <*more explicit objective*>?"
 # - user: yes
 #
 # This conversation is sent to the `objective_target`.

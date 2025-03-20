@@ -1,6 +1,6 @@
 [project]
 name = "pyrit"
-version = "0.6.1.dev0"
+version = "0.7.1.dev0"
 description = "The Python Risk Identification Tool for LLMs (PyRIT) is a library used to assess the robustness of LLMs"
 authors = [
     { name = "Microsoft AI Red Team", email = "airedteam@microsoft.com" },
@@ -33,11 +33,12 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
-requires-python = ">=3.10, <3.13"
+requires-python = ">=3.10, <3.14"
 dependencies = [
     "aioconsole>=0.7.1",
-    "aiofiles>=24.1.0",
+    "aiofiles==23.2.1", # Pin the version to downgrade aiofiles to make sure it works with Gradio.
     "appdirs>=1.4.0",
     "art>=6.1.0",
     "azure-cognitiveservices-speech>=1.36.0",
@@ -90,8 +91,10 @@ dev = [
     "pytest>=7.3.1",
     "pytest-asyncio>=0.23.5",
     "pytest-cov>=4.0.0",
+    "pytest-timeout>=2.3.1",
     "respx>=0.22.0",
     "semantic-kernel>=1.20.0",
+    "sphinxcontrib-mermaid>=1.0.0",
     "types-PyYAML>=6.0.12.9",
     "types-requests>=2.31.0.20240406",
 ]
@@ -104,7 +107,6 @@ gcg = [
     "azureml-mlflow>=1.57.0",
     "mlflow>=2.16.2",
     "ml-collections>=0.1.1",
-    "sentencepiece>=0.2.0",
     "torch>=2.3.0",
 ]
 playwright = [
@@ -112,12 +114,21 @@ playwright = [
     "ollama>=0.4.4",
     "playwright>=1.49.0",
 ]
+
 aws = [
     "boto3>=1.36.6"
 ]
+
+gradio = [
+    "gradio>=5.16.0",
+    "rpyc>=6.0.1",
+    "pywebview>=5.4"
+]
+
 opencv = [
     "opencv-python>=4.11.0.86",
 ]
+
 # all includes all functional dependencies excluding the ones from the "dev" extra
 all = [
     "accelerate>=0.34.2",
@@ -125,12 +136,16 @@ all = [
     "azureml-mlflow>=1.57.0",
     "boto3>=1.36.6",
     "flask>=3.1.0",
+    "gradio>=5.16.0",
     "mlflow>=2.16.2",
     "ml-collections>=0.1.1",
     "ollama>=0.4.4",
+    "opencv-python>=4.11.0.86",
     "playwright>=1.49.0",
-    "sentencepiece>=0.2.0",
+    "pywebview>=5.4",
+    "rpyc>=6.0.1",
     "torch>=2.3.0",
+    "types-PyYAML>=6.0.12.9",
 ]
 
 [project.scripts]

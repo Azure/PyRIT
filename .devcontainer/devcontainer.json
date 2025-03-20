@@ -1,0 +1,25 @@
+{
+    "name": "PyRIT | Python Dev Container",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "remoteUser": "vscode",
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "python.defaultInterpreterPath": "/opt/conda/envs/pyrit-dev/bin/python"
+            },
+            "extensions": [
+                "ms-python.python",
+                "ms-toolsai.jupyter",
+                "ms-azuretools.vscode-docker",
+                "tamasfe.even-better-toml",
+                "citation-file-format.citation-file-format"
+            ]
+        }
+    },
+    "postCreateCommand": "/bin/bash -i .devcontainer/devcontainer_setup.sh",
+    "forwardPorts": [8888],
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+    "workspaceFolder": "/workspace"
+}
