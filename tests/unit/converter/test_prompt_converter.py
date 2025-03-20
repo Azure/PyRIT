@@ -47,6 +47,7 @@ from pyrit.prompt_converter import (
     TextToHexConverter,
     TranslationConverter,
     UnicodeConfusableConverter,
+    UnicodeReplacementConverter,
     UnicodeSubstitutionConverter,
     UrlConverter,
     VariationConverter,
@@ -116,6 +117,22 @@ async def test_unicode_sub_ascii_prompt_converter() -> None:
     converter = UnicodeSubstitutionConverter(start_value=0x00000)
     output = await converter.convert_async(prompt="test", input_type="text")
     assert output.output_text == "\U00000074\U00000065\U00000073\U00000074"
+    assert output.output_type == "text"
+
+
+@pytest.mark.asyncio
+async def test_unicode_replacement_converter_default() -> None:
+    converter = UnicodeReplacementConverter()
+    output = await converter.convert_async(prompt="t e s t", input_type="text")
+    assert output.output_text == "\\u0074 \\u0065 \\u0073 \\u0074"
+    assert output.output_type == "text"
+
+
+@pytest.mark.asyncio
+async def test_unicode_replacement_converter() -> None:
+    converter = UnicodeReplacementConverter(encode_spaces=True)
+    output = await converter.convert_async(prompt="t e s t", input_type="text")
+    assert output.output_text == "\\u0074\\u0020\\u0065\\u0020\\u0073\\u0020\\u0074"
     assert output.output_type == "text"
 
 
