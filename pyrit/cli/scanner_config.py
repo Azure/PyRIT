@@ -1,6 +1,6 @@
 import inspect
 import yaml
-from typing import List, Optional, Literal, Any, Type
+from typing import List, Optional, Any, Type
 from pydantic import BaseModel, Field, model_validator
 from copy import deepcopy
 from importlib import import_module
@@ -19,7 +19,7 @@ def load_class(module_name: str, class_name: str, error_context: str) -> Type[An
     
     return cls
 
-class ScenarioConfig(BaseModel):
+class ScenarioConfig(BaseModel, extra='allow'):
     """
     Configuration for a single scenario orchestrator.
     """
@@ -118,7 +118,11 @@ class ObjectiveScorerConfig(BaseModel):
         chat_target_key: str = "chat_target"
         if chat_target_key in signature.parameters:
             if scoring_target_obj is None:
-                raise ValueError(f"Scorer '{self.type}' requires a '{chat_target_key}', but none was provided.")
+                raise KeyError(
+                    f"Scorer '{self.type}' requires a '{chat_target_key}', but none was provided. "
+                    "Alternatively, the adversarial_target can be used for scoring purposes, "
+                    "but none was provided."
+                )
             init_kwargs[chat_target_key] = scoring_target_obj
 
         return scorer_class(**init_kwargs)

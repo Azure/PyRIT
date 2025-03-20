@@ -5,6 +5,7 @@ import contextlib
 import re
 import shlex
 from unittest.mock import patch
+from pydantic import ValidationError
 
 import pytest
 
@@ -72,50 +73,50 @@ test_cases_sys_exit = [
 test_cases_error = [
     (
         "--config-file 'tests/unit/cli/prompt_send_no_objective_target.yaml'",
-        "Configuration file must contain a 'objective_target' key.",
-        KeyError,
+        "objective_target\n  Field required",
+        ValidationError,
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_no_objective_target_type.yaml'",
-        "Target objective_target must contain a 'type' key.",
-        KeyError,
+        "objective_target\n  Input should be a valid dictionary or instance of TargetConfig",
+        ValidationError,
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_no_scenarios.yaml'",
-        "Scenarios list is empty.",
-        ValueError,
+        "scenarios\n  Input should be a valid list",
+        ValidationError,
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_no_scenarios_key.yaml'",
-        "Configuration file must contain a 'scenarios' key.",
-        KeyError,
+        "scenarios\n  Field required",
+        ValidationError,
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_no_scenario_type.yaml'",
-        "Scenario must contain a 'type' key.",
-        KeyError,
+        "scenarios.0.type\n  Field required",
+        ValidationError,
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_no_scoring_target.yaml'",
-        "'Scorer requires a scoring_target to be defined. "
+        "Scorer 'SelfAskRefusalScorer' requires a 'chat_target', but none was provided. "
         "Alternatively, the adversarial_target can be used for scoring purposes, but none was provided.",
         KeyError,
     ),
     (
         "--config-file 'tests/unit/cli/multi_turn_rto_wrong_arg.yaml'",
-        "Failed to validate scenario RedTeamingOrchestrator: RedTeamingOrchestrator.__init__() "
+        "Failed to instantiate scenario 'RedTeamingOrchestrator': RedTeamingOrchestrator.__init__() "
         "got an unexpected keyword argument 'wrong_arg'",
         ValueError,
     ),
     (
         "--config-file 'tests/unit/cli/multi_turn_crescendo_wrong_arg.yaml'",
-        "Failed to validate scenario CrescendoOrchestrator: CrescendoOrchestrator.__init__() "
+        "Failed to instantiate scenario 'CrescendoOrchestrator': CrescendoOrchestrator.__init__() "
         "got an unexpected keyword argument 'wrong_arg'",
         ValueError,
     ),
     (
         "--config-file 'tests/unit/cli/multi_turn_tap_wrong_arg.yaml'",
-        "Failed to validate scenario TreeOfAttacksWithPruningOrchestrator: "
+        "Failed to instantiate scenario 'TreeOfAttacksWithPruningOrchestrator': "
         "TreeOfAttacksWithPruningOrchestrator.__init__() "
         "got an unexpected keyword argument 'wrong_arg'",
         ValueError,
