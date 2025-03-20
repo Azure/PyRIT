@@ -8,7 +8,6 @@ objective_target:
   # api_key_env_variable:
   # any arg for targets can be listed here:
   # deployment_name_env_variable:
-  is_azure_target: true
   # headers:
 # converters:
 #   - type: "Base64Converter"

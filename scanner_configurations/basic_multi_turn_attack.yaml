@@ -12,7 +12,6 @@ objective_target:
   # any arg for targets can be listed here:
   # deployment_name_env_variable:
   # headers:
-  is_azure_target: true
 # converters:
 #   - type: "Base64Converter"
 #   - type: "LeetspeakConverter"
