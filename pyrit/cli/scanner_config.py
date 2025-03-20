@@ -1,9 +1,14 @@
 import inspect
 import yaml
-from typing import List, Optional, Any, Type
-from pydantic import BaseModel, Field, model_validator
+from typing import List, Literal, Optional, Any, Type, get_args
+from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 from copy import deepcopy
 from importlib import import_module
+
+from pyrit.prompt_converter.prompt_converter import PromptConverter
+
+SupportedExecutionTypes = Literal["local"]
+SupportedDatabaseType = Literal["DuckDB", "AzureSQL"]
 
 def load_class(module_name: str, class_name: str, error_context: str) -> Type[Any]:
     """
@@ -18,6 +23,16 @@ def load_class(module_name: str, class_name: str, error_context: str) -> Type[An
         raise RuntimeError(f"Failed to import {class_name} from {module_name} for {error_context}: {ex}") from ex
     
     return cls
+
+class DatabaseConfig(BaseModel):
+    """
+    Configuration for the database used by the scanner.
+    """
+    db_type: SupportedDatabaseType = Field("DuckDB", alias="type", description="Which database to use (DuckDB or AzureSQL).")
+    memory_labels: dict = Field(
+        default_factory=dict,
+        description="Labels that will be stored in memory to tag runs."
+    )
 
 class ScenarioConfig(BaseModel, extra='allow'):
     """
@@ -119,7 +134,7 @@ class ObjectiveScorerConfig(BaseModel):
         if chat_target_key in signature.parameters:
             if scoring_target_obj is None:
                 raise KeyError(
-                    f"Scorer '{self.type}' requires a '{chat_target_key}', but none was provided. "
+                    "Scorer requires a scoring_target to be defined. "
                     "Alternatively, the adversarial_target can be used for scoring purposes, "
                     "but none was provided."
                 )
@@ -151,6 +166,7 @@ class ScoringConfig(BaseModel):
         
         return self.objective_scorer.create_scorer(scoring_target_obj=scoring_target_obj)
     
+
 class ConverterConfig(BaseModel):
     """
     Configuration for a single prompt converter, e.g. type: "Base64Converter"
@@ -170,7 +186,7 @@ class ExecutionSettings(BaseModel):
     """
     Configuration for how the scanner is executed (e.g. locally or via AzureML).
     """
-    type: str = Field("local", description="Execution environment, e.g. 'local' or 'azureml'.")
+    type: SupportedExecutionTypes = Field("local", description=f"Execution environment. Supported values: {list(get_args(SupportedExecutionTypes))}")
     parallel_nodes: Optional[int] = Field(None, description="How many scenarios to run in parallel.")
 
 
@@ -202,14 +218,29 @@ class ScannerConfig(BaseModel):
         None,
         description="List of prompt converters to apply."
     )
-    memory_labels: dict = Field(
-        default_factory=dict,
-        description="Labels that will be stored in memory to tag runs."
-    )
     execution_settings: ExecutionSettings = Field(
         default_factory=ExecutionSettings,
         description="Settings for how the scan is executed."
     )
+    database: DatabaseConfig = Field(
+        default_factory=DatabaseConfig,
+        description="Database configuration for storing memory or results, including memory_labels."
+    )
+
+    @field_validator("objective_target", mode="before")
+    def check_objective_target_is_dict(cls, value):
+        """
+        Ensure the user actually provides a dict.
+        Pydantic will run this validator before it attempts to parse the value into the TargetConfig model
+        """
+        if not isinstance(value, dict):
+            raise ValueError(
+                "Field 'objective_target' must be a dictionary.\n"
+                "Example:\n"
+                "  objective_target:\n"
+                "    type: OpenAIChatTarget"
+            )
+        return value
 
     @model_validator(mode="after")
     def fill_scoring_target(self) -> "ScannerConfig":
@@ -244,7 +275,7 @@ class ScannerConfig(BaseModel):
             scoring_target = self.scoring.scoring_target.create_instance()
         return self.scoring.create_objective_scorer(scoring_target_obj=scoring_target)
     
-    def create_prompt_converters(self) -> List[Any]:
+    def create_prompt_converters(self) -> List[PromptConverter]:
         """
         Instantiates each converter defined in 'self.converters' (if any).
         Returns a list of converter objects.
@@ -256,7 +287,7 @@ class ScannerConfig(BaseModel):
             instances.append(converter_cfg.create_instance())
         return instances
     
-    def create_orchestrators(self, prompt_converters: Optional[List[Any]] = None) -> List[Any]:
+    def create_orchestrators(self, prompt_converters: Optional[List[PromptConverter]] = None) -> List[Any]:
         """
         Helper method to instantiate all orchestrators from the scenario configs,
         injecting objective_target, adversarial_chat, scoring_target, objective_scorer, etc.

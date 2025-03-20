@@ -3,11 +3,13 @@ from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser, Namespace
 from datetime import datetime
 from pathlib import Path
 from typing import List
+from uuid import uuid4
 
 from pyrit.common import initialize_pyrit
 from pyrit.memory import CentralMemory
 from pyrit.models import SeedPrompt, SeedPromptDataset
 from pyrit.models.seed_prompt import SeedPromptGroup
+from pyrit.prompt_converter.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
 from pyrit.prompt_normalizer.prompt_converter_configuration import PromptConverterConfiguration
 from .scanner_config import ScannerConfig
@@ -25,13 +27,6 @@ def parse_args(args=None) -> Namespace:
         type=str,
         help="Path to the scanner YAML config file.",
         required=True,
-    )
-    parser.add_argument(
-        "--db-type",
-        type=str,
-        default="DuckDB",
-        choices=["DuckDB", "AzureSQL"],
-        help="Which database to use (DuckDB or AzureSQL)."
     )
     return parser.parse_args(args)
 
@@ -55,11 +50,13 @@ async def run_scenarios_async(config: ScannerConfig) -> None:
     """
     Run scenarios
     """
-    memory_labels = config.memory_labels or {}
+    memory_labels = config.database.memory_labels or {}
     memory_labels[SCANNER_EXECUTION_START_TIME_MEMORY_LABEL] = datetime.now().isoformat()
 
     seed_prompts = load_seed_prompts(config.datasets)
-    prompt_converters = config.create_prompt_converters()
+    # You can apply prompt converters by doing the following:
+    # prompt_converters = config.create_prompt_converters()
+    prompt_converters : List[PromptConverter] = []
     orchestrators = config.create_orchestrators(prompt_converters=prompt_converters)
 
     for orchestrator in orchestrators:
@@ -73,7 +70,9 @@ async def run_scenarios_async(config: ScannerConfig) -> None:
             for prompt in seed_prompts:
                 request = NormalizerRequest(
                     seed_prompt_group=SeedPromptGroup(prompts=[prompt]),
-                    request_converter_configurations=converter_configurations,)
+                    request_converter_configurations=converter_configurations,
+                    conversation_id=str(uuid4()),
+                )
                 normalizer_requests.append(request)
             
             # Send normalizer requests to orchestrator
@@ -108,7 +107,7 @@ def main(args=None):
         raise FileNotFoundError(f"Configuration file {config_file.absolute()} does not exist.")
 
     config = ScannerConfig.from_yaml(str(config_file))
-    initialize_pyrit(memory_db_type=parsed_args.db_type)
+    initialize_pyrit(memory_db_type=config.database.db_type)
 
     asyncio.run(run_scenarios_async(config))
 

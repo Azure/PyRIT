@@ -78,7 +78,7 @@ test_cases_error = [
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_no_objective_target_type.yaml'",
-        "objective_target\n  Input should be a valid dictionary or instance of TargetConfig",
+        "objective_target\n  Value error, Field 'objective_target' must be a dictionary.\nExample:\n  objective_target:\n    type: OpenAIChatTarget",
         ValidationError,
     ),
     (
@@ -98,7 +98,7 @@ test_cases_error = [
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_no_scoring_target.yaml'",
-        "Scorer 'SelfAskRefusalScorer' requires a 'chat_target', but none was provided. "
+        "Scorer requires a scoring_target to be defined. "
         "Alternatively, the adversarial_target can be used for scoring purposes, but none was provided.",
         KeyError,
     ),
