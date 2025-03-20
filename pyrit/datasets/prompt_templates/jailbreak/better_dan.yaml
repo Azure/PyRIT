@@ -1,7 +1,7 @@
 ---
 name: Better DAN
 description: Prompt obtained from Alex Albert
-source: Alex Albert
+source: Alex Albert(@alexalbertt) #via the site formerly known as jailbreakchat that is now compromised
 parameters:
   - prompt
 data_type: text
