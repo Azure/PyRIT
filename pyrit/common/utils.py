@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
+import math
 import random
 
 from typing import List, Union
@@ -46,13 +47,21 @@ def combine_list(list1: Union[str, List[str]], list2: Union[str, List[str]]) -> 
     return combined
 
 
-def get_n_random(low: int, high: int, n: int) -> list[int]:
+def get_random_indices(low: int, high: int, percentage: float) -> list[int]:
     """
-    Generate a list of n random indices within a given range: low (inclusive) and high (exclusive).
+    Generate a list of random indices within a given range based on a percentage.
+
+    Args:
+        low: Lower bound of the range (inclusive).
+        high: Upper bound of the range (exclusive).
+        percentage: Percentage of range to sample (0.0 to 1.0).
     """
     result = []
+    n = max(1, math.ceil((high - low) * percentage))
     try:
         result = random.sample(range(low, high), n)
     except ValueError:
-        logging.getLogger(__name__).debug(f"Sample size of {n} exceeds population size of {high - low}")
+        logging.getLogger(__name__).debug(
+            f"Sample size of {n} exceeds population size of {high - low}"
+        )
     return result

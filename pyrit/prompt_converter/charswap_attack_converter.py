@@ -1,12 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import math
 import random
 import re
 import string
 
-from pyrit.common.utils import get_n_random
+from pyrit.common.utils import get_random_indices
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 
@@ -76,14 +75,12 @@ class CharSwapGenerator(PromptConverter):
 
         # Tokenize the prompt into words and punctuation using regex
         words = re.findall(r"\w+|\S+", prompt)
-        word_list_len = len(words)
-        num_perturb_words = max(1, math.ceil(word_list_len * self.word_swap_ratio))
 
         # Copy the original word list for perturbation
         perturbed_word_list = words.copy()
 
         # Get random indices of words to undergo swapping
-        random_words_idx = get_n_random(0, word_list_len, num_perturb_words)
+        random_words_idx = get_random_indices(0, len(words), self.word_swap_ratio)
 
         # Apply perturbation by swapping characters in the selected words
         for idx in random_words_idx:
