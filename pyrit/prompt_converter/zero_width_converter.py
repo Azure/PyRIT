@@ -11,7 +11,7 @@ class ZeroWidthConverter(PromptConverter):
     in the provided text to bypass content safety mechanisms.
     """
 
-    ZERO_WIDTH_SPACE = "\u200B"
+    ZERO_WIDTH_SPACE = "\u200b"
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
