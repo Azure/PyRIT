@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 import asyncio
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser, Namespace
 from datetime import datetime
@@ -11,10 +14,14 @@ from pyrit.models import SeedPrompt, SeedPromptDataset
 from pyrit.models.seed_prompt import SeedPromptGroup
 from pyrit.prompt_converter.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
-from pyrit.prompt_normalizer.prompt_converter_configuration import PromptConverterConfiguration
+from pyrit.prompt_normalizer.prompt_converter_configuration import (
+    PromptConverterConfiguration,
+)
+
 from .scanner_config import ScannerConfig
 
 SCANNER_EXECUTION_START_TIME_MEMORY_LABEL: str = "scanner_execution_start_time"
+
 
 def parse_args(args=None) -> Namespace:
     parser = ArgumentParser(
@@ -30,13 +37,14 @@ def parse_args(args=None) -> Namespace:
     )
     return parser.parse_args(args)
 
+
 def load_seed_prompts(dataset_paths: List[str]) -> List[SeedPrompt]:
     """
     loads each dataset file path into a list of SeedPrompt objects.
     """
     if not dataset_paths:
         raise ValueError("No datasets provided in the configuration.")
-    
+
     all_prompts: List[SeedPrompt] = []
     for path_str in dataset_paths:
         path = Path(path_str)
@@ -45,6 +53,7 @@ def load_seed_prompts(dataset_paths: List[str]) -> List[SeedPrompt]:
         dataset = SeedPromptDataset.from_yaml_file(path)
         all_prompts.extend(dataset.prompts)
     return all_prompts
+
 
 async def run_scenarios_async(config: ScannerConfig) -> None:
     """
@@ -56,7 +65,7 @@ async def run_scenarios_async(config: ScannerConfig) -> None:
     seed_prompts = load_seed_prompts(config.datasets)
     # You can apply prompt converters by doing the following:
     # prompt_converters = config.create_prompt_converters()
-    prompt_converters : List[PromptConverter] = []
+    prompt_converters: List[PromptConverter] = []
     orchestrators = config.create_orchestrators(prompt_converters=prompt_converters)
 
     for orchestrator in orchestrators:
@@ -74,7 +83,7 @@ async def run_scenarios_async(config: ScannerConfig) -> None:
                     conversation_id=str(uuid4()),
                 )
                 normalizer_requests.append(request)
-            
+
             # Send normalizer requests to orchestrator
             await orchestrator.send_normalizer_requests_async(
                 prompt_request_list=normalizer_requests,
@@ -87,7 +96,7 @@ async def run_scenarios_async(config: ScannerConfig) -> None:
                 f"The orchestrator {type(orchestrator).__name__} does not have a supported method. "
                 f"Supported methods: {supported_methods}."
             )
-    
+
     # Print conversation pieces from memory
     memory = CentralMemory.get_memory_instance()
     all_pieces = memory.get_prompt_request_pieces(labels=memory_labels)
@@ -98,6 +107,7 @@ async def run_scenarios_async(config: ScannerConfig) -> None:
             print("===================================================")
             print(f"Conversation ID: {conversation_id}")
         print(f"{piece.role}: {piece.converted_value}")
+
 
 def main(args=None):
     parsed_args = parse_args(args)
@@ -110,6 +120,7 @@ def main(args=None):
     initialize_pyrit(memory_db_type=config.database.db_type)
 
     asyncio.run(run_scenarios_async(config))
+
 
 if __name__ == "__main__":
     main()

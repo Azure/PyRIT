@@ -1,14 +1,19 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 import inspect
-import yaml
-from typing import List, Literal, Optional, Any, Type, get_args
-from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 from copy import deepcopy
 from importlib import import_module
+from typing import Any, List, Literal, Optional, Type, get_args
+
+import yaml
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from pyrit.prompt_converter.prompt_converter import PromptConverter
 
 SupportedExecutionTypes = Literal["local"]
 SupportedDatabaseType = Literal["DuckDB", "AzureSQL"]
+
 
 def load_class(module_name: str, class_name: str, error_context: str) -> Type[Any]:
     """
@@ -21,24 +26,29 @@ def load_class(module_name: str, class_name: str, error_context: str) -> Type[An
             raise TypeError(f"The attribute {class_name} in module {module_name} is not a class.")
     except Exception as ex:
         raise RuntimeError(f"Failed to import {class_name} from {module_name} for {error_context}: {ex}") from ex
-    
+
     return cls
+
 
 class DatabaseConfig(BaseModel):
     """
     Configuration for the database used by the scanner.
     """
-    db_type: SupportedDatabaseType = Field("DuckDB", alias="type", description="Which database to use (DuckDB or AzureSQL).")
-    memory_labels: dict = Field(
-        default_factory=dict,
-        description="Labels that will be stored in memory to tag runs."
-    )
 
-class ScenarioConfig(BaseModel, extra='allow'):
+    db_type: SupportedDatabaseType = Field(
+        "DuckDB", alias="type", description="Which database to use (DuckDB or AzureSQL)."
+    )
+    memory_labels: dict = Field(default_factory=dict, description="Labels that will be stored in memory to tag runs.")
+
+
+class ScenarioConfig(BaseModel, extra="allow"):
     """
     Configuration for a single scenario orchestrator.
     """
-    scenario_type: str = Field(..., alias="type", description="Scenario orchestrator class/type (e.g. 'PromptSendingOrchestrator').")
+
+    scenario_type: str = Field(
+        ..., alias="type", description="Scenario orchestrator class/type (e.g. 'PromptSendingOrchestrator')."
+    )
 
     @model_validator(mode="after")
     def check_scenario_type(self) -> "ScenarioConfig":
@@ -49,7 +59,7 @@ class ScenarioConfig(BaseModel, extra='allow'):
         if not self.scenario_type:
             raise ValueError("Scenario 'type' must not be empty.")
         return self
-    
+
     def create_orchestrator(
         self,
         objective_target: Any,
@@ -59,11 +69,13 @@ class ScenarioConfig(BaseModel, extra='allow'):
         objective_scorer: Optional[Any] = None,
     ) -> Any:
         """
-        Load and instantiate the orchestrator class, 
+        Load and instantiate the orchestrator class,
         injecting top-level objects (targets, scorers) as needed.
         """
         # Loading the orchestrator class by name, e.g 'RedTeamingOrchestrator'
-        orchestrator_class = load_class(module_name="pyrit.orchestrator", class_name=self.scenario_type, error_context="scenario")
+        orchestrator_class = load_class(
+            module_name="pyrit.orchestrator", class_name=self.scenario_type, error_context="scenario"
+        )
 
         # Converting scenario fields into a dict for the orchestrator constructor
         scenario_args = self.model_dump(exclude={"scenario_type"})
@@ -104,21 +116,26 @@ class TargetConfig(BaseModel):
     """
     Configuration for a prompt target (e.g. OpenAIChatTarget).
     """
+
     class_name: str = Field(..., alias="type", description="Prompt target class name (e.g. 'OpenAIChatTarget').")
-    
+
     def create_instance(self) -> Any:
         """
         Dynamically instantiate the underlying target class.
         """
-        target_class = load_class(module_name="pyrit.prompt_target", class_name=self.class_name, error_context="TargetConfig")
+        target_class = load_class(
+            module_name="pyrit.prompt_target", class_name=self.class_name, error_context="TargetConfig"
+        )
 
         init_kwargs = self.model_dump(exclude={"class_name"})
         return target_class(**init_kwargs)
+
 
 class ObjectiveScorerConfig(BaseModel):
     """
     Configuration for an objective scorer
     """
+
     type: str = Field(..., description="Scorer class (e.g. 'SelfAskRefusalScorer').")
 
     def create_scorer(self, scoring_target_obj: Optional[Any]) -> Any:
@@ -145,39 +162,41 @@ class ObjectiveScorerConfig(BaseModel):
 
 class ScoringConfig(BaseModel):
     """
-    Configuration for the scoring setup, including optional 
+    Configuration for the scoring setup, including optional
     override of the default adversarial chat with a 'scoring_target'
     and/or an 'objective_scorer'.
     """
+
     scoring_target: Optional[TargetConfig] = Field(
-        None,
-        description="If provided, use this target for scoring instead of 'adversarial_chat'."
+        None, description="If provided, use this target for scoring instead of 'adversarial_chat'."
     )
     objective_scorer: Optional[ObjectiveScorerConfig] = Field(
-        None,
-        description="Details for the objective scorer, if any."
+        None, description="Details for the objective scorer, if any."
     )
 
     def create_objective_scorer(self, scoring_target_obj: Optional[Any]) -> Optional[Any]:
-        # If the user did not provide an objective_scorer config block (meaning the YAML lacks that section), 
+        # If the user did not provide an objective_scorer config block (meaning the YAML lacks that section),
         # we simply return None – no scorer to instantiate.
         if not self.objective_scorer:
             return None
-        
+
         return self.objective_scorer.create_scorer(scoring_target_obj=scoring_target_obj)
-    
+
 
 class ConverterConfig(BaseModel):
     """
     Configuration for a single prompt converter, e.g. type: "Base64Converter"
     """
+
     class_name: str = Field(..., alias="type", description="The prompt converter class name (e.g. 'Base64Converter').")
 
     def create_instance(self) -> Any:
         """
         Dynamically load and instantiate the converter class
         """
-        converter_class = load_class(module_name="pyrit.prompt_converter", class_name=self.class_name, error_context="prompt_converter")
+        converter_class = load_class(
+            module_name="pyrit.prompt_converter", class_name=self.class_name, error_context="prompt_converter"
+        )
         init_kwargs = self.model_dump(exclude={"class_name"})
         return converter_class(**init_kwargs)
 
@@ -186,7 +205,10 @@ class ExecutionSettings(BaseModel):
     """
     Configuration for how the scanner is executed (e.g. locally or via AzureML).
     """
-    type: SupportedExecutionTypes = Field("local", description=f"Execution environment. Supported values: {list(get_args(SupportedExecutionTypes))}")
+
+    type: SupportedExecutionTypes = Field(
+        "local", description=f"Execution environment. Supported values: {list(get_args(SupportedExecutionTypes))}"
+    )
     parallel_nodes: Optional[int] = Field(None, description="How many scenarios to run in parallel.")
 
 
@@ -194,37 +216,22 @@ class ScannerConfig(BaseModel):
     """
     Top-level configuration for the entire scanner.
     """
-    datasets: List[str] = Field(
-        ...,
-        description="List of dataset YAML paths to load seed prompts from."
-    )
-    scenarios: List[ScenarioConfig] = Field(
-        ...,
-        description="List of scenario orchestrators to execute."
-    )
-    objective_target: TargetConfig = Field(
-        ...,
-        description="Configuration of the main (objective) chat target."
-    )
+
+    datasets: List[str] = Field(..., description="List of dataset YAML paths to load seed prompts from.")
+    scenarios: List[ScenarioConfig] = Field(..., description="List of scenario orchestrators to execute.")
+    objective_target: TargetConfig = Field(..., description="Configuration of the main (objective) chat target.")
     adversarial_chat: Optional[TargetConfig] = Field(
-        None,
-        description="Configuration of the adversarial chat target (if any)."
+        None, description="Configuration of the adversarial chat target (if any)."
     )
-    scoring: Optional[ScoringConfig] = Field(
-        None,
-        description="Scoring configuration (if any)."
-    )
-    converters: Optional[List[ConverterConfig]] = Field(
-        None,
-        description="List of prompt converters to apply."
-    )
+    scoring: Optional[ScoringConfig] = Field(None, description="Scoring configuration (if any).")
+    converters: Optional[List[ConverterConfig]] = Field(None, description="List of prompt converters to apply.")
     execution_settings: ExecutionSettings = Field(
-        default_factory=ExecutionSettings,
-        description="Settings for how the scan is executed."
+        default_factory=lambda: ExecutionSettings.model_validate({}),
+        description="Settings for how the scan is executed.",
     )
     database: DatabaseConfig = Field(
-        default_factory=DatabaseConfig,
-        description="Database configuration for storing memory or results, including memory_labels."
+        default_factory=lambda: DatabaseConfig.model_validate({}),
+        description="Database configuration for storing memory or results, including memory_labels.",
     )
 
     @field_validator("objective_target", mode="before")
@@ -261,7 +268,7 @@ class ScannerConfig(BaseModel):
         with open(path, "r", encoding="utf-8") as f:
             raw_dict = yaml.safe_load(f)
         return cls(**raw_dict)
-    
+
     def create_objective_scorer(self) -> Optional[Any]:
         """
         if there's an objective scorer configured,
@@ -269,12 +276,12 @@ class ScannerConfig(BaseModel):
         """
         if not self.scoring:
             return None
-        
+
         scoring_target = None
         if self.scoring.scoring_target:
             scoring_target = self.scoring.scoring_target.create_instance()
         return self.scoring.create_objective_scorer(scoring_target_obj=scoring_target)
-    
+
     def create_prompt_converters(self) -> List[PromptConverter]:
         """
         Instantiates each converter defined in 'self.converters' (if any).
@@ -286,7 +293,7 @@ class ScannerConfig(BaseModel):
         for converter_cfg in self.converters:
             instances.append(converter_cfg.create_instance())
         return instances
-    
+
     def create_orchestrators(self, prompt_converters: Optional[List[PromptConverter]] = None) -> List[Any]:
         """
         Helper method to instantiate all orchestrators from the scenario configs,
@@ -297,7 +304,7 @@ class ScannerConfig(BaseModel):
         adversarial_chat_obj = None
         if self.adversarial_chat:
             adversarial_chat_obj = self.adversarial_chat.create_instance()
-        
+
         # If there is a scoring_target or an objective_scorer:
         scoring_target_obj = None
         objective_scorer_obj = None
@@ -307,7 +314,7 @@ class ScannerConfig(BaseModel):
                 scoring_target_obj = self.scoring.scoring_target.create_instance()
             # create the actual scorer
             objective_scorer_obj = self.scoring.create_objective_scorer(scoring_target_obj=scoring_target_obj)
-        
+
         # Now each scenario can create its orchestrator
         orchestrators = []
         for scenario in self.scenarios:

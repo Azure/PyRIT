@@ -5,9 +5,9 @@ import contextlib
 import re
 import shlex
 from unittest.mock import patch
-from pydantic import ValidationError
 
 import pytest
+from pydantic import ValidationError
 
 from pyrit.cli.__main__ import main
 from pyrit.orchestrator import (
@@ -78,7 +78,8 @@ test_cases_error = [
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_no_objective_target_type.yaml'",
-        "objective_target\n  Value error, Field 'objective_target' must be a dictionary.\nExample:\n  objective_target:\n    type: OpenAIChatTarget",
+        "objective_target\n  Value error, Field 'objective_target' must be a dictionary.\n"
+        "Example:\n  objective_target:\n    type: OpenAIChatTarget",
         ValidationError,
     ),
     (
@@ -121,7 +122,18 @@ test_cases_error = [
         "got an unexpected keyword argument 'wrong_arg'",
         ValueError,
     ),
+    (
+        "--config-file 'tests/unit/cli/prompt_send_success_invalid_exec.yaml'",
+        "execution_settings.type\n  Input should be 'local' ",
+        ValidationError,
+    ),
+    (
+        "--config-file 'tests/unit/cli/prompt_send_bad_db_type.yaml'",
+        "database.type\n  Input should be 'DuckDB' or 'AzureSQL' ",
+        ValidationError,
+    ),
 ]
+#
 
 
 @pytest.mark.parametrize("command, orchestrator_classes, methods", test_cases_success)
