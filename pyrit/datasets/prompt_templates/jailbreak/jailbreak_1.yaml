@@ -1,6 +1,6 @@
 ---
 name: Jailbreak
-source: www.Alex Albert/prompt/6b973d4e-d792-4ad3-830b-f7e9bc6a9a80
+source: Alex Albert
 parameters:
   - prompt
 data_type: text
