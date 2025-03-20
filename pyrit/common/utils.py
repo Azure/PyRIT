@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import logging
+import random
 
 from typing import List, Union
 
@@ -42,3 +44,15 @@ def combine_list(list1: Union[str, List[str]], list2: Union[str, List[str]]) -> 
     # Merge and keep only unique values
     combined = list(set(list1 + list2))
     return combined
+
+
+def get_n_random(low: int, high: int, n: int) -> list[int]:
+    """
+    Generate a list of n random indices within a given range: low (inclusive) and high (exclusive).
+    """
+    result = []
+    try:
+        result = random.sample(range(low, high), n)
+    except ValueError:
+        logging.getLogger(__name__).debug(f"Sample size of {n} exceeds population size of {high - low}")
+    return result
