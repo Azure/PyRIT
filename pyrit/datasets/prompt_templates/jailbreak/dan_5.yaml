@@ -1,7 +1,7 @@
 ---
 name: DAN 5
-description: Prompt obtained from jailbreakchat.com
-source: jailbreakchat.com
+description: Prompt obtained from Alex Albert
+source: Alex Albert
 parameters:
   - prompt
 data_type: text

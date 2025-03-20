@@ -1,7 +1,7 @@
 ---
 name: Jailbreak
-description: Prompt obtained from jailbreakchat.com
-source: www.jailbreakchat.com/prompt/6b973d4e-d792-4ad3-830b-f7e9bc6a9a80
+description: Prompt obtained from Alex Albert
+source: Alex Albert
 parameters:
   - prompt
 data_type: text
