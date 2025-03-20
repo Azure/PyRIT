@@ -3,7 +3,7 @@
 
 import enum
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 import yaml
 
@@ -29,18 +29,25 @@ class LikertScalePaths(enum.Enum):
 class SelfAskLikertScorer(Scorer):
     """
     A class that represents a "self-ask" score for text scoring for a likert scale.
+
+    Args:
+        chat_target (PromptChatTarget): The target LLM to send the prompt request to.
+        likert_scale (Union[Path, dict]): The Likert scale to use for scoring.
+            If a Path, it should point to a YAML file containing the Likert scale.
+            If a dict, it should contain the Likert scale
     """
 
-    def __init__(self, chat_target: PromptChatTarget, likert_scale_path: Path) -> None:
+    def __init__(self, chat_target: PromptChatTarget, likert_scale: Union[Path, dict]) -> None:
         self._prompt_target = chat_target
         self.scorer_type = "float_scale"
 
-        likert_scale = yaml.safe_load(likert_scale_path.read_text(encoding="utf-8"))
+        if isinstance(likert_scale, Path):
+            likert_scale = yaml.safe_load(likert_scale.read_text(encoding="utf-8"))
 
         if likert_scale["category"]:
             self._score_category = likert_scale["category"]
         else:
-            raise ValueError(f"Improperly formatted likert scale yaml file. Missing category in {likert_scale_path}.")
+            raise ValueError(f"Improperly formatted likert scale yaml file. Missing category in {likert_scale}.")
 
         likert_scale = self._likert_scale_description_to_string(likert_scale["scale_descriptions"])
 
