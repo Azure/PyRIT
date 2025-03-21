@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import math
 import pytest
 import random
 
@@ -51,3 +52,25 @@ async def test_random_superscript_converter():
     expected_output = "ᵒⁿᵉ ᵗʷᵒ three four ᶠⁱᵛᵉ six"
     result = await half_random_converter.convert_async(prompt=test_text, input_type="text")
     assert result.output_text == expected_output
+
+    # Test with a longer text (37 words) and 20% conversion rate
+
+    random.seed()
+    twenty_percent_converter = SuperscriptConverter(mode="random", random_percentage=20)
+
+    long_text = "Prompt: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
+    word_count = len(long_text.split())
+    assert word_count == 37
+
+    result = await twenty_percent_converter.convert_async(prompt=long_text, input_type="text")
+    original_words = long_text.split()
+    converted_words = result.output_text.split()
+    assert len(converted_words) == len(original_words)
+
+    # Count words that were actually converted
+    converted_count = sum(1 for original, converted in zip(original_words, converted_words)
+                         if original != converted)
+
+    # With 37 words and 20%, math.ceil(37 * 0.2) = 8 words should be converted
+    expected_conversion_count = math.ceil(word_count * 0.2)
+    assert converted_count == expected_conversion_count
