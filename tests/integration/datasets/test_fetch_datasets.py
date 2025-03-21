@@ -43,9 +43,10 @@ from pyrit.models.seed_prompt import SeedPromptDataset
         (fetch_xstest_dataset, True),
     ],
 )
-def test_fetch_datasets(fetch_function):
+def test_fetch_datasets(fetch_function, is_seed_prompt_dataset):
     data = fetch_function()
 
     assert data is not None
-    assert isinstance(data, SeedPromptDataset)
-    assert len(data.prompts) > 0
+    if is_seed_prompt_dataset:
+        assert isinstance(data, SeedPromptDataset)
+        assert len(data.prompts) > 0
