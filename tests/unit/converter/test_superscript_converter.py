@@ -38,12 +38,12 @@ async def test_random_superscript_converter():
         ["Let's test random mode"],
         ["ᴸᵉᵗ'ˢ ᵗᵉˢᵗ ʳᵃⁿᵈᵒᵐ ᵐᵒᵈᵉ"],
     )
-    # zero_random_converter = SuperscriptConverter(mode="random", random_percentage=0)
-    # await _check_conversion(
-    #     zero_random_converter,
-    #     ["Let's test random mode"],
-    #     ["Let's test random mode"],
-    # )
+    zero_random_converter = SuperscriptConverter(mode="random", random_percentage=0)
+    await _check_conversion(
+        zero_random_converter,
+        ["Let's test random mode"],
+        ["Let's test random mode"],
+    )
 
     random.seed(32)  # with seed=32 and 6 words, words at [1,2,5] will be converted
     half_random_converter = SuperscriptConverter(mode="random", random_percentage=50)
