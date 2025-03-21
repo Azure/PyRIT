@@ -4,7 +4,6 @@
 import logging
 import math
 import random
-
 from typing import List, Union
 
 
@@ -70,7 +69,5 @@ def get_random_indices(low: int, high: int, sample_ratio: float) -> list[int]:
     try:
         result = random.sample(range(low, high), n)
     except ValueError:
-        logging.getLogger(__name__).debug(
-            f"Sample size of {n} exceeds population size of {high - low}"
-        )
+        logging.getLogger(__name__).debug(f"Sample size of {n} exceeds population size of {high - low}")
     return result

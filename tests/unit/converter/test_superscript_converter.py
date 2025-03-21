@@ -2,8 +2,9 @@
 # Licensed under the MIT license.
 
 import math
-import pytest
 import random
+
+import pytest
 
 from pyrit.prompt_converter import ConverterResult, SuperscriptConverter
 
@@ -30,6 +31,7 @@ async def test_superscript_converter():
         ["word1 word2 word3 word4 word5"],
         ["ʷᵒʳᵈ¹ word2 ʷᵒʳᵈ³ word4 ʷᵒʳᵈ⁵"],
     )
+
 
 @pytest.mark.asyncio
 async def test_random_superscript_converter():
@@ -68,8 +70,7 @@ async def test_random_superscript_converter():
     assert len(converted_words) == len(original_words)
 
     # Count words that were actually converted
-    converted_count = sum(1 for original, converted in zip(original_words, converted_words)
-                         if original != converted)
+    converted_count = sum(1 for original, converted in zip(original_words, converted_words) if original != converted)
 
     # With 37 words and 20%, math.ceil(37 * 0.2) = 8 words should be converted
     expected_conversion_count = math.ceil(word_count * 0.2)
