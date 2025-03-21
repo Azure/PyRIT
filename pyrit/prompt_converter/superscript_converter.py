@@ -3,6 +3,7 @@
 
 from typing import Optional
 
+from pyrit.common.utils import get_random_indices
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 
@@ -14,6 +15,7 @@ class SuperscriptConverter(PromptConverter):
     Supported modes:
     - 'all': Converts all words. The default mode.
     - 'alternate': Converts every other word. Configurable.
+    - 'random': Converts a random selection of words based on a percentage.
 
     Note:
         This converter leaves characters that do not have a superscript equivalent unchanged.
@@ -23,6 +25,7 @@ class SuperscriptConverter(PromptConverter):
         self,
         mode: Optional[str] = 'all',
         alternate_step: Optional[int] = 2,
+        random_percentage: Optional[int] = 50,
     ):
         """
         Initialize the SuperscriptConverter.
@@ -30,9 +33,11 @@ class SuperscriptConverter(PromptConverter):
         Args:
             mode (Optional[str]): Conversion mode - 'all', or 'alternate'. Defaults to 'all'.
             alternate_step (Optional[int]): For 'alternate' mode, convert every nth word. Defaults to 2.
+            random_percentage (Optional[int]): For 'random' mode, percentage of words to convert. Defaults to 50.
         """
         self.mode = mode
         self.alternate_step = alternate_step
+        self.random_percentage = random_percentage
         self._superscript_map = {
             "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
             "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹",
@@ -62,6 +67,16 @@ class SuperscriptConverter(PromptConverter):
             # Convert every nth word
             for i, word in enumerate(words):
                 if i % self.alternate_step == 0:
+                    result.append(self._to_superscript(word))
+                else:
+                    result.append(word)
+
+        elif self.mode == 'random':
+            # Convert random words based on percentage
+            word_count = len(words)
+            random_indices = get_random_indices(0, word_count, self.random_percentage / 100.0)
+            for i, word in enumerate(words):
+                if i in random_indices:
                     result.append(self._to_superscript(word))
                 else:
                     result.append(word)
