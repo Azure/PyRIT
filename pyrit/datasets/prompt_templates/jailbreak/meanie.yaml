@@ -1,7 +1,7 @@
 ---
 name: Meanie
-description: Prompt obtained from Alex Albert
-source: Alex Albert
+description: Prompt obtained via the site formerly known as jailbreakchat that is now compromised
+source: https://github.com/alexalbertt
 parameters:
   - prompt
 data_type: text
