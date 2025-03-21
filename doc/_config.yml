@@ -43,11 +43,13 @@ sphinx:
     - 'sphinx.ext.autosummary'
     - 'sphinx.ext.intersphinx'
     - 'sphinxcontrib.mermaid'
+    - 'sphinxcontrib.bibtex'
   config:
     autosummary_generate: true
     add_module_names: false
     suppress_warnings: ["etoc.toctree"]
     myst_heading_anchors: 4
+    bibtex_bibfiles: ['references.bib']
     autodoc_default_options:
       members: true
       show-inheritance: true
