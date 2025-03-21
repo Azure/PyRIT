@@ -47,17 +47,17 @@ def combine_list(list1: Union[str, List[str]], list2: Union[str, List[str]]) -> 
     return combined
 
 
-def get_random_indices(low: int, high: int, percentage: float) -> list[int]:
+def get_random_indices(low: int, high: int, sample_ratio: float) -> list[int]:
     """
-    Generate a list of random indices within a given range based on a percentage.
+    Generate a list of random indices within a given range based on a sample ratio.
 
     Args:
         low: Lower bound of the range (inclusive).
         high: Upper bound of the range (exclusive).
-        percentage: Percentage of range to sample (0.0 to 1.0).
+        sample_ratio: Ratio of range to sample (0.0 to 1.0).
     """
     result = []
-    n = max(1, math.ceil((high - low) * percentage))
+    n = max(1, math.ceil((high - low) * sample_ratio))
     try:
         result = random.sample(range(low, high), n)
     except ValueError:
