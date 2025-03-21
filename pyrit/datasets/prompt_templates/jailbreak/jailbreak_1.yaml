@@ -1,7 +1,9 @@
 ---
 name: Jailbreak
 description: Prompt obtained via the site formerly known as jailbreakchat that is now compromised
-source: https://github.com/alexalbertt
+authors:
+  - Alex Albert
+source: https://github.com/alexalbertt/jailbreakchat
 parameters:
   - prompt
 data_type: text
