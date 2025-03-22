@@ -18,7 +18,7 @@ from pyrit.prompt_target import HTTPXAPITarget, OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
 
 AI_RECRUITER_REPO = "https://github.com/KutalVolkan/ai_recruiter.git"
-AI_RECRUITER_COMMIT = "3e5b99b"
+AI_RECRUITER_COMMIT = "637bade"
 FASTAPI_URL = "http://localhost:8000"
 MAX_WAIT_SECONDS = 300
 
