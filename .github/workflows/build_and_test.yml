@@ -19,6 +19,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Pre-commit job runs only once on Ubuntu
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v3
+        with:
+          python-version: 3.11
+
+      # Cache pip packages
+      - name: Cache pip packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Upgrade pip and setuptools
+        run: pip install --upgrade pip setuptools packaging
+
+      - name: Install dev extras
+        run: pip install .[dev,all]
+
+      - name: Run pre-commit hooks
+        run: pre-commit run --all-files
+
+  # Main job runs only if pre-commit succeeded
   main-job:
     strategy:
       matrix:
@@ -26,6 +55,7 @@ jobs:
         python: ["3.10", "3.11", "3.12", "3.13"]
         package_name: ["pyrit"]
         package_extras: ["dev", "dev,all"]
+    needs: [pre-commit] # Ensure pre-commit job runs first
     runs-on: ${{ matrix.os }}
     # EnricoMi/publish-unit-test-result-action@v2 requires the following permissions
     permissions:
@@ -35,20 +65,37 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@v3
+
+      # Set up Python
       - uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python }}
+
+      # Cache pip packages
+      - name: Cache pip packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: Install setuptools and pip
         run: pip install --upgrade setuptools pip packaging
+
+      # Install PyRIT with optional extras
       - name: Install PyRIT with pip
         run: pip install .[${{ matrix.package_extras }}]
+
       - name: Run unit tests with code coverage
         run: make unit-test-cov-xml
+
       - name: Publish Pytest Results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: runner.os == 'ubuntu-latest'
         with:
           files: '**/test-*.xml'
+
       - name: Code Coverage Report
         uses: irongut/CodeCoverageSummary@v1.3.0
         if: runner.os == 'ubuntu-latest'
@@ -62,5 +109,3 @@ jobs:
           indicators: true
           output: both
           thresholds: '60 80'
-      - name: "Run pre-commit hooks"
-        run: pre-commit run --all-files
