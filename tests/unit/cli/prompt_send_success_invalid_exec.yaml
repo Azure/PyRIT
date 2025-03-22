@@ -6,3 +6,5 @@ scenarios:
   - type: "PromptSendingOrchestrator"
 execution_settings:
   type: "azureml"
+database:
+  type: "DuckDB"

@@ -129,11 +129,20 @@ test_cases_error = [
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_bad_db_type.yaml'",
-        "database.type\n  Input should be 'DuckDB' or 'AzureSQL' ",
+        "database.type\n  Input should be 'InMemory', 'DuckDB' or 'AzureSQL' ",
+        ValidationError,
+    ),
+    (
+        "--config-file 'tests/unit/cli/prompt_send_db_with_no_type.yaml'",
+        "database.type\n  Field required",
+        ValidationError,
+    ),
+    (
+        "--config-file 'tests/unit/cli/prompt_send_no_db.yaml'",
+        "database\n  Field required",
         ValidationError,
     ),
 ]
-#
 
 
 @pytest.mark.parametrize("command, orchestrator_classes, methods", test_cases_success)

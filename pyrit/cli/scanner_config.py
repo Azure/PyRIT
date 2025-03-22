@@ -9,10 +9,10 @@ from typing import Any, List, Literal, Optional, Type, get_args
 import yaml
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from pyrit.common.initialization import MemoryDatabaseType
 from pyrit.prompt_converter.prompt_converter import PromptConverter
 
 SupportedExecutionTypes = Literal["local"]
-SupportedDatabaseType = Literal["DuckDB", "AzureSQL"]
 
 
 def load_class(module_name: str, class_name: str, error_context: str) -> Type[Any]:
@@ -35,8 +35,10 @@ class DatabaseConfig(BaseModel):
     Configuration for the database used by the scanner.
     """
 
-    db_type: SupportedDatabaseType = Field(
-        "DuckDB", alias="type", description="Which database to use (DuckDB or AzureSQL)."
+    db_type: MemoryDatabaseType = Field(
+        ...,
+        alias="type",
+        description=f"Which database to use. Supported values: {list(get_args(MemoryDatabaseType))}",
     )
     memory_labels: dict = Field(default_factory=dict, description="Labels that will be stored in memory to tag runs.")
 
@@ -230,7 +232,7 @@ class ScannerConfig(BaseModel):
         description="Settings for how the scan is executed.",
     )
     database: DatabaseConfig = Field(
-        default_factory=lambda: DatabaseConfig.model_validate({}),
+        ...,
         description="Database configuration for storing memory or results, including memory_labels.",
     )
 
