@@ -29,7 +29,6 @@ jobs:
         with:
           python-version: 3.11
 
-      # Cache pip packages
       - name: Cache pip packages
         uses: actions/cache@v3
         with:
@@ -37,6 +36,14 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-pip-
+      
+      - name: Cache pre-commit environments
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            pre-commit-${{ runner.os }}-
 
       - name: Upgrade pip and setuptools
         run: pip install --upgrade pip setuptools packaging
@@ -44,18 +51,26 @@ jobs:
       - name: Install dev extras
         run: pip install .[dev,all]
 
-      - name: Run pre-commit hooks
-        run: pre-commit run --all-files
+      - name: Run pre-commit incrementally (on PR)
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin main
+          pre-commit run --from-ref origin/main --to-ref HEAD
+
+      - name: Run pre-commit fully (on main)
+        if: github.ref == 'refs/heads/main'
+        run: |
+          pre-commit run --all-files
 
   # Main job runs only if pre-commit succeeded
   main-job:
     strategy:
+      fail-fast: true
       matrix:
         os: [ubuntu-latest, windows-latest]
         python: ["3.10", "3.11", "3.12", "3.13"]
         package_name: ["pyrit"]
         package_extras: ["dev", "dev,all"]
-    needs: [pre-commit] # Ensure pre-commit job runs first
     runs-on: ${{ matrix.os }}
     # EnricoMi/publish-unit-test-result-action@v2 requires the following permissions
     permissions:
