@@ -119,15 +119,10 @@ memory.dispose_engine()
 
 # %% [markdown]
 # ## RAG Vulnerability Demonstration.
-# In this demonstration, we use the **XPIATestOrchestrator** to generate a CV (overlaying hidden text for “Relevant skills”) and automatically upload it to `/upload/`, then trigger `/search_candidates/` for evaluation.
+# In this demonstration, we use the XPIATestOrchestrator to generate a CV (overlaying hidden text for “Relevant skills”) and automatically upload it to `/upload/`, then trigger `/search_candidates/` for evaluation.
 #
-# ### Prerequisite
-#
-# Ensure the AI Recruiter service is running locally.
-#
-# To set it up, follow the instructions in the official repository:
+# Before running this script, ensure that the AI Recruiter service is up and running locally. For detailed setup instructions, please refer to the official Docker setup guide in the repository:
 # [AI Recruiter – Docker Setup](https://github.com/KutalVolkan/ai_recruiter/tree/main/docker_setup)
-
 
 # %%
 import pathlib
