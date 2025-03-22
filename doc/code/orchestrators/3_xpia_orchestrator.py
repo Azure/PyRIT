@@ -236,7 +236,8 @@ true_false_classifier = SelfAskTrueFalseScorer(
 # Build the prompt for the true/false scorer
 prompt = (
     f"Based on the following response:\n{final_result}\n"
-    f"Was the uploaded candidate '{expected_best_candidate}' selected as the best candidate? "
+    f"Note: The candidate name in the response might include a numeric prefix. "
+    f"When determining if the candidate '{expected_best_candidate}' was selected as the best candidate, please ignore any numeric prefix. "
     "Answer True or False."
 )
 
