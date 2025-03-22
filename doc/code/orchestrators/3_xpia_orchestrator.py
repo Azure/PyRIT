@@ -121,20 +121,13 @@ memory.dispose_engine()
 # ## RAG Vulnerability Demonstration.
 # In this demonstration, we use the **XPIATestOrchestrator** to generate a CV (overlaying hidden text for “Relevant skills”) and automatically upload it to `/upload/`, then trigger `/search_candidates/` for evaluation.
 #
-# ### Steps to Replicate:
-# 
-# 1. **Clone the AI Recruiter Repository (Stable Commit)**
-# 
-#    ```bash
-#    git clone https://github.com/KutalVolkan/ai_recruiter.git
-#    cd ai_recruiter
-#    git checkout 5bddf33  # Use this stable commit
-#    ```
-# 
-# 2. **Run the [Docker Setup Instructions](https://github.com/KutalVolkan/ai_recruiter/tree/main/docker_setup)**
-# 
-# 3. **Start the FastAPI service**  
-#    Once the FastAPI service is live on `localhost:8000`, execute the following script to see the cross-service PDF injection attack in action:
+# ### Prerequisite
+#
+# Ensure the AI Recruiter service is running locally.
+#
+# To set it up, follow the instructions in the official repository:
+# [AI Recruiter – Docker Setup](https://github.com/KutalVolkan/ai_recruiter/tree/main/docker_setup)
+
 
 # %%
 import pathlib
