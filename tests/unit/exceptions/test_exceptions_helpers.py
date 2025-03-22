@@ -6,7 +6,7 @@ import pytest
 from pyrit.exceptions.exceptions_helpers import (
     extract_json_from_string,
     remove_end_md_json,
-    remove_markdown_json,
+    extract_json_from_response,
     remove_start_md_json,
 )
 
@@ -68,4 +68,4 @@ def test_extract_json_from_string(input_str, expected_output):
     ],
 )
 def test_remove_markdown_json(input_str, expected_output):
-    assert remove_markdown_json(input_str) == expected_output
+    assert extract_json_from_response(input_str) == expected_output
