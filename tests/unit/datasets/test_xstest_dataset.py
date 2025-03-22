@@ -47,7 +47,7 @@ def mock_xstest_data():
     ]
 
 
-@patch("pyrit.datasets.fetch_example_datasets.fetch_examples")
+@patch("pyrit.datasets.xstest_dataset.fetch_examples")
 def test_fetch_xstest_dataset(mock_fetch_examples, mock_xstest_data):
     mock_fetch_examples.return_value = mock_xstest_data
     dataset = fetch_xstest_dataset()
