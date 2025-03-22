@@ -4,3 +4,5 @@ objective_target:
   type: "OpenAIChatTarget"
 scenarios:
   - type: "PromptSendingOrchestrator"
+database:
+  type: "DuckDB"

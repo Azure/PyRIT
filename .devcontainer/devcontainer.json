@@ -19,7 +19,7 @@
         }
     },
     "postCreateCommand": "/bin/bash -i .devcontainer/devcontainer_setup.sh",
-    "forwardPorts": [8888],
+    "forwardPorts": [4213, 8888],
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
     "workspaceFolder": "/workspace"
 }
