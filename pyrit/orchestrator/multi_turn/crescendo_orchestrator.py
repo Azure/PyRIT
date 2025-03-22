@@ -79,8 +79,8 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         objective_scorer = FloatScaleThresholdScorer(
             scorer=SelfAskScaleScorer(
                 chat_target=scoring_target,
-                scale_arguments_path=SelfAskScaleScorer.ScalePaths.TASK_ACHIEVED_SCALE.value,
-                system_prompt_path=SelfAskScaleScorer.SystemPaths.RED_TEAMER_SYSTEM_PROMPT.value,
+                scale_arguments=SelfAskScaleScorer.ScalePaths.TASK_ACHIEVED_SCALE.value,
+                system_prompt=SelfAskScaleScorer.SystemPaths.RED_TEAMER_SYSTEM_PROMPT.value,
             ),
             threshold=objective_achieved_score_threshhold,
         )

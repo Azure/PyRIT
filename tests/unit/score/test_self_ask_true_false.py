@@ -37,7 +37,7 @@ async def test_true_false_scorer_score(patch_central_database, scorer_true_false
 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
     scorer = SelfAskTrueFalseScorer(
-        chat_target=chat_target, true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value
+        chat_target=chat_target, true_false_question=TrueFalseQuestionPaths.GROUNDED.value
     )
 
     score = await scorer.score_text_async("true false")
@@ -57,7 +57,7 @@ async def test_true_false_scorer_set_system_prompt(
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
 
     scorer = SelfAskTrueFalseScorer(
-        chat_target=chat_target, true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value
+        chat_target=chat_target, true_false_question=TrueFalseQuestionPaths.GROUNDED.value
     )
 
     await scorer.score_text_async("true false")
@@ -76,7 +76,7 @@ async def test_true_false_scorer_adds_to_memory(scorer_true_false_response: Prom
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = SelfAskTrueFalseScorer(
-            chat_target=chat_target, true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value
+            chat_target=chat_target, true_false_question=TrueFalseQuestionPaths.GROUNDED.value
         )
 
         await scorer.score_text_async(text="string")
@@ -94,7 +94,7 @@ async def test_self_ask_scorer_bad_json_exception_retries(patch_central_database
     )
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
     scorer = SelfAskTrueFalseScorer(
-        chat_target=chat_target, true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value
+        chat_target=chat_target, true_false_question=TrueFalseQuestionPaths.GROUNDED.value
     )
 
     with pytest.raises(InvalidJsonException):
@@ -123,7 +123,7 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries(patch_centra
 
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
     scorer = SelfAskTrueFalseScorer(
-        chat_target=chat_target, true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value
+        chat_target=chat_target, true_false_question=TrueFalseQuestionPaths.GROUNDED.value
     )
 
     with pytest.raises(InvalidJsonException):
