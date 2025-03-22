@@ -2,36 +2,28 @@
 # Licensed under the MIT license.
 
 import pathlib
+import shutil
 import subprocess
+import tempfile
 import time
 
 import pytest
 import requests
 
 from pyrit.common import DUCK_DB, initialize_pyrit
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import DATASETS_PATH, HOME_PATH
 from pyrit.orchestrator import XPIATestOrchestrator
 from pyrit.prompt_converter import PDFConverter
 from pyrit.prompt_target import HTTPXAPITarget, OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
 
+AI_RECRUITER_REPO = "https://github.com/KutalVolkan/ai_recruiter.git"
+AI_RECRUITER_COMMIT = "3e5b99b"
+FASTAPI_URL = "http://localhost:8000"
+MAX_WAIT_SECONDS = 300
+
 # Initialize PyRIT
 initialize_pyrit(memory_db_type=DUCK_DB)
-
-FASTAPI_URL = "http://localhost:8000"
-
-MAX_WAIT_SECONDS = 300  # 5 minutes
-
-# The known PDFs we want to keep permanently
-ORIGINAL_PDFS = {
-    "Jeffrey_Pollard.pdf",
-    "Joel_Daniels.pdf",
-    "Jose_Holland.pdf",
-    "Matthew_Huffman.pdf",
-    "Melissa_James.pdf",
-    "Rhonda_Williams.pdf",
-    "Vickie_Jones.pdf",
-}
 
 
 async def evaluate_candidate_selection(final_result: str, expected_candidate: str) -> bool:
@@ -78,43 +70,50 @@ async def evaluate_candidate_selection(final_result: str, expected_candidate: st
 @pytest.fixture(scope="session", autouse=True)
 def ensure_ai_recruiter_running():
     """
-    1. Runs 'docker-compose up -d --build'
-    2. Waits until the FastAPI health endpoint returns 200 or times out after 5 minutes
-    3. Yields to the tests
-    4. Brings containers down and removes leftover PDFs that are not in ORIGINAL_PDFS
+    1. Clones AI Recruiter repo and checks out a pinned commit.
+    2. Builds and starts the container using docker-compose from that repo.
+    3. Waits until FastAPI is healthy.
+    4. After tests, shuts down and deletes the cloned repo.
     """
+    with tempfile.TemporaryDirectory() as temp_root:
+        CLONE_DIR = pathlib.Path(temp_root) / "cloned_ai_recruiter"
 
-    # Start containers in the background
-    subprocess.run(["docker-compose", "up", "-d", "--build"], check=True)
+        # Clone and pin to commit
+        subprocess.run(["git", "clone", AI_RECRUITER_REPO, str(CLONE_DIR)], check=True)
+        subprocess.run(["git", "checkout", AI_RECRUITER_COMMIT], cwd=CLONE_DIR, check=True)
 
-    # Poll the health endpoint until it's live (or we time out)
-    health_url = "http://localhost:8000/health"
-    start_time = time.time()
-    while True:
-        try:
-            response = requests.get(health_url)
-            if response.status_code == 200:
-                print("AI Recruiter container is healthy!")
-                break
-        except requests.exceptions.ConnectionError:
-            pass  # Container not ready yet
+        # Ensure .env is available to Docker Compose
+        original_env_path = HOME_PATH / ".env"
+        if original_env_path.exists():
+            shutil.copy(original_env_path, CLONE_DIR / ".env")
+        else:
+            raise FileNotFoundError(f".env not found at {original_env_path}")
 
-        if (time.time() - start_time) > MAX_WAIT_SECONDS:
-            raise RuntimeError(f"Timed out waiting for {health_url} after {MAX_WAIT_SECONDS} seconds.")
-        time.sleep(3)
+        # Start container from inside the cloned repo
+        subprocess.run(["docker-compose", "up", "-d", "--build"], cwd=CLONE_DIR, check=True)
 
-    # Yield to let the tests run
-    yield
+        # Poll the health endpoint until it's live (or we time out)
+        health_url = "http://localhost:8000/health"
+        start_time = time.time()
+        while True:
+            try:
+                response = requests.get(health_url)
+                if response.status_code == 200:
+                    print("AI Recruiter container is healthy!")
+                    break
+            except requests.exceptions.ConnectionError:
+                pass  # Container not ready yet
 
-    # Bring containers down
-    subprocess.run(["docker-compose", "down"], check=True)
+            if (time.time() - start_time) > MAX_WAIT_SECONDS:
+                raise RuntimeError(f"Timed out waiting for {health_url} after {MAX_WAIT_SECONDS} seconds.")
+            time.sleep(3)
 
-    # Delete extra PDFs from the local resume_collection folder, anything not in ORIGINAL_PDFS.
-    resume_collection_dir = pathlib.Path(__file__).parent / "resume_collection"
-    for pdf_path in resume_collection_dir.glob("*.pdf"):
-        if pdf_path.name not in ORIGINAL_PDFS:
-            print(f"Removing leftover PDF: {pdf_path.name}")
-            pdf_path.unlink()
+        # Yield to let the tests run
+        yield
+
+        # Shut down container
+        subprocess.run(["docker-compose", "down"], cwd=CLONE_DIR, check=True)
+        print("Docker shut down. Temporary directory auto-removed.")
 
 
 @pytest.mark.integration
