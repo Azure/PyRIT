@@ -136,8 +136,7 @@ class SuperscriptConverter(PromptConverter):
                 result.append(self._to_superscript(word))
 
         converted_text = " ".join(result)
-        result = ConverterResult(output_text=converted_text, output_type="text")
-        return result
+        return ConverterResult(output_text=converted_text, output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
