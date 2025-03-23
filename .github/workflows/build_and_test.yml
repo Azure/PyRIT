@@ -22,6 +22,9 @@ jobs:
   # Pre-commit job runs only once on Ubuntu
   pre-commit:
     runs-on: ubuntu-latest
+    env:
+      PIP_CACHE_DIR: ${{ github.workspace }}/.cache/pip
+
     steps:
       - uses: actions/checkout@v3
 
@@ -32,7 +35,7 @@ jobs:
       - name: Cache pip packages
         uses: actions/cache@v3
         with:
-          path: ~/.cache/pip
+          path: ${{ env.PIP_CACHE_DIR }}
           key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-pip-
@@ -72,6 +75,8 @@ jobs:
         package_name: ["pyrit"]
         package_extras: ["dev", "dev,all"]
     runs-on: ${{ matrix.os }}
+    env:
+      PIP_CACHE_DIR: ${{ github.workspace }}/.cache/pip
     # EnricoMi/publish-unit-test-result-action@v2 requires the following permissions
     permissions:
       contents: read
@@ -90,7 +95,7 @@ jobs:
       - name: Cache pip packages
         uses: actions/cache@v3
         with:
-          path: ~/.cache/pip
+          path: ${{ env.PIP_CACHE_DIR }}
           key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-pip-
