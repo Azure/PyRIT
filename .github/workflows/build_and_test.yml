@@ -110,6 +110,7 @@ jobs:
       - name: Install PyRIT with pip
         # If the matrix extras is 'dev_all', then we install '.[dev,all]'
         # otherwise just install the literal extras from the matrix
+        shell: bash
         run: |
           if [ "${{ matrix.package_extras }}" = "dev_all" ]; then
             extras="dev,all"
