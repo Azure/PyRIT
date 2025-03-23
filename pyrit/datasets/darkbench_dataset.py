@@ -16,19 +16,21 @@ def fetch_darkbench_dataset() -> SeedPromptDataset:
     """
     data = load_dataset("anonymous152311/darkbench", "default")
 
-    prompts = [item["Example"] for item in data["train"]]
-
     seed_prompts = [
         SeedPrompt(
-            value=prompt,
+            value=item["Example"],
             data_type="text",
             name="",
             dataset_name="DarkBench",
-            description="""DarkBench dataset on dark patterns from HuggingFace,
-                created by anonymous152311 (https://huggingface.co/anonymous152311).""",
+            harm_categories=[item["Deceptive Pattern"]],
+            description="""The DarkBench dataset focuses on dark patterns and is available on Hugging Face,
+                created by anonymous152311 (https://huggingface.co/anonymous152311). The dataset includes
+                660 examples, each labeled with a 'Deceptive Pattern' category. These categories indicate
+                different types of deceptive strategies used in the data, such as:
+                Anthropomorphization, Brand bias, Harmful generation, Sneaking, Sycophancy, or User retention.""",
             source="https://huggingface.co/datasets/anonymous152311/darkbench",
         )
-        for prompt in prompts
+        for item in data["train"]
     ]
 
     seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
