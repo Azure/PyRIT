@@ -22,14 +22,20 @@ async def test_superscript_converter():
     await _check_conversion(
         defalut_converter,
         ["Let's test this converter!", "Unsupported characters stay the same: qCFQSXYZ"],
-        ["ᴸᵉᵗ'ˢ ᵗᵉˢᵗ ᵗʰⁱˢ ᶜᵒⁿᵛᵉʳᵗᵉʳ!", "ᵁⁿˢᵘᵖᵖᵒʳᵗᵉᵈ ᶜʰᵃʳᵃᶜᵗᵉʳˢ ˢᵗᵃʸ ᵗʰᵉ ˢᵃᵐᵉ: qCFQSXYZ"],
+        [
+            "\u1d38\u1d49\u1d57'\u02e2 \u1d57\u1d49\u02e2\u1d57 \u1d57\u02b0\u2071\u02e2 "
+            "\u1d9c\u1d52\u207f\u1d5b\u1d49\u02b3\u1d57\u1d49\u02b3!",
+            "\u1d41\u207f\u02e2\u1d58\u1d56\u1d56\u1d52\u02b3\u1d57\u1d49\u1d48 "
+            "\u1d9c\u02b0\u1d43\u02b3\u1d43\u1d9c\u1d57\u1d49\u02b3\u02e2 "
+            "\u02e2\u1d57\u1d43\u02b8 \u1d57\u02b0\u1d49 \u02e2\u1d43\u1d50\u1d49: qCFQSXYZ",
+        ],
     )
 
     alternate_converter = SuperscriptConverter(mode="alternate")
     await _check_conversion(
         alternate_converter,
         ["word1 word2 word3 word4 word5"],
-        ["ʷᵒʳᵈ¹ word2 ʷᵒʳᵈ³ word4 ʷᵒʳᵈ⁵"],
+        ["\u02b7\u1d52\u02b3\u1d48\u00b9 word2 \u02b7\u1d52\u02b3\u1d48\u00b3 word4 \u02b7\u1d52\u02b3\u1d48\u2075"],
     )
 
 
@@ -39,7 +45,10 @@ async def test_random_superscript_converter():
     await _check_conversion(
         full_random_converter,
         ["Let's test random mode"],
-        ["ᴸᵉᵗ'ˢ ᵗᵉˢᵗ ʳᵃⁿᵈᵒᵐ ᵐᵒᵈᵉ"],
+        [
+            "\u1d38\u1d49\u1d57'\u02e2 \u1d57\u1d49\u02e2\u1d57 "
+            "\u02b3\u1d43\u207f\u1d48\u1d52\u1d50 \u1d50\u1d52\u1d48\u1d49"
+        ],
     )
     zero_random_converter = SuperscriptConverter(mode="random", random_percentage=0)
     await _check_conversion(
@@ -51,7 +60,7 @@ async def test_random_superscript_converter():
     random.seed(32)  # with seed=32 and 6 words, words at [1,2,5] will be converted
     half_random_converter = SuperscriptConverter(mode="random", random_percentage=50)
     test_text = "one two three four five six"
-    expected_output = "ᵒⁿᵉ ᵗʷᵒ three four ᶠⁱᵛᵉ six"
+    expected_output = "\u1d52\u207f\u1d49 \u1d57\u02b7\u1d52 three four \u1da0\u2071\u1d5b\u1d49 six"
     result = await half_random_converter.convert_async(prompt=test_text, input_type="text")
     assert result.output_text == expected_output
 
@@ -60,7 +69,11 @@ async def test_random_superscript_converter():
     random.seed()
     twenty_percent_converter = SuperscriptConverter(mode="random", random_percentage=20)
 
-    long_text = "Prompt: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
+    long_text = (
+        "Prompt: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor "
+        "incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud "
+        "exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
+    )
     word_count = len(long_text.split())
     assert word_count == 37
 
