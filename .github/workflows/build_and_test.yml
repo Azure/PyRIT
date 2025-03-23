@@ -36,8 +36,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ env.PIP_CACHE_DIR }}
-          key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
+          key: ${{ runner.os }}-pip-3.11-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
+            ${{ runner.os }}-pip-3.11-
             ${{ runner.os }}-pip-
 
       - name: Cache pre-commit environments
@@ -52,7 +53,7 @@ jobs:
         run: pip install --upgrade pip setuptools packaging
 
       - name: Install dev extras
-        run: pip install .[dev,all]
+        run: pip install --cache-dir $PIP_CACHE_DIR .[dev,all]
 
       - name: Run pre-commit incrementally (on PR)
         if: github.event_name == 'pull_request'
@@ -96,8 +97,10 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ env.PIP_CACHE_DIR }}
-          key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
+          key: ${{ runner.os }}-pip-${{ matrix.python }}-${{ matrix.package_extras }}-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python }}-${{ matrix.package_extras }}-
+            ${{ runner.os }}-pip-${{ matrix.python }}-
             ${{ runner.os }}-pip-
 
       - name: Install setuptools and pip
@@ -105,7 +108,7 @@ jobs:
 
       # Install PyRIT with optional extras
       - name: Install PyRIT with pip
-        run: pip install .[${{ matrix.package_extras }}]
+        run: pip install --cache-dir $PIP_CACHE_DIR .[${{ matrix.package_extras }}]
 
       - name: Run unit tests with code coverage
         run: make unit-test-cov-xml
