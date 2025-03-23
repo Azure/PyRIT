@@ -22,8 +22,8 @@ def fetch_darkbench_dataset() -> SeedPromptDataset:
         SeedPrompt(
             value=prompt,
             data_type="text",
-            name="anonymous152311/darkbench",
-            dataset_name="anonymous152311/darkbench",
+            name="",
+            dataset_name="DarkBench",
             description="""DarkBench dataset on dark patterns from HuggingFace,
                 created by anonymous152311 (https://huggingface.co/anonymous152311).""",
             source="https://huggingface.co/datasets/anonymous152311/darkbench",
