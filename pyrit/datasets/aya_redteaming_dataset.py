@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import ast
-
 from pathlib import Path
 from typing import List, Literal, Optional
 
