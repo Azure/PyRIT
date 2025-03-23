@@ -36,7 +36,7 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-pip-
-      
+
       - name: Cache pre-commit environments
         uses: actions/cache@v3
         with:
