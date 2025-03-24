@@ -256,10 +256,11 @@ def test_duplicate_conversation_pieces_not_score(duckdb_instance: MemoryInterfac
     new_pieces = duckdb_instance.get_prompt_request_pieces(conversation_id=new_conversation_id)
     new_pieces_ids = [str(p.id) for p in new_pieces]
     assert len(new_pieces) == 2
-    assert new_pieces[0].original_prompt_id == prompt_id_1
-    assert new_pieces[1].original_prompt_id == prompt_id_2
-    assert new_pieces[0].id != prompt_id_1
-    assert new_pieces[1].id != prompt_id_2
+    original_ids = {piece.original_prompt_id for piece in new_pieces}
+    assert original_ids == {prompt_id_1, prompt_id_2}
+
+    for piece in new_pieces:
+        assert piece.id not in (prompt_id_1, prompt_id_2)
     assert len(duckdb_instance.get_scores_by_memory_labels(memory_labels=memory_labels)) == 2
     assert len(duckdb_instance.get_scores_by_orchestrator_id(orchestrator_id=orchestrator1.get_identifier()["id"])) == 2
     assert len(duckdb_instance.get_scores_by_orchestrator_id(orchestrator_id=orchestrator2.get_identifier()["id"])) == 2
