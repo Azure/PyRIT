@@ -5,7 +5,7 @@ authors:
   - Prompt Security
 groups:
   - Prompt Security
-source: github.com/prompt-security/ps-fuzz
+source: github.com/prompt-security/ps-fuzz/attacks/dynamic_test.py
 parameters:
   - objective
 data_type: text
