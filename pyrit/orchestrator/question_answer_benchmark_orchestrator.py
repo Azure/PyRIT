@@ -3,20 +3,19 @@
 import textwrap
 from pathlib import Path
 from typing import Optional
-from uuid import uuid4
 
 import yaml
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt, SeedPromptGroup
-from pyrit.orchestrator.orchestrator_class import Orchestrator
+from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
+from pyrit.score import Scorer
 from pyrit.score.question_answer_scorer import QuestionAnswerScorer
 
 
-class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
+class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
     """Question Answering Benchmark Orchestrator class is responsible for evaluating a question answering dataset
     using a scoring mechanism.
 
@@ -24,17 +23,11 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
         Orchestrator (_type_): _description_
     """
 
-    _chat_model_under_evaluation: PromptChatTarget
-    _conversation_id: str
-    normalizer_id: str
-    evaluation_prompt: str
-
     def __init__(
         self,
-        *,
-        chat_model_under_evaluation: PromptChatTarget,
-        scorer: QuestionAnswerScorer,
-        prompt_converters: list[PromptConverter] = [],
+        objective_target: PromptChatTarget,
+        scorers: Optional[list[Scorer]] = QuestionAnswerScorer,
+        prompt_converters: Optional[list[PromptConverter]] = None,
         evaluation_prompt: Optional[str] = None,
         verbose: bool = False,
     ) -> None:
@@ -49,15 +42,11 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
             verbose (bool, Optional): Whether to print verbose output. Defaults to False.
         """
         super().__init__(
+            objective_target=objective_target,
+            scorers=scorers,
             prompt_converters=prompt_converters,
             verbose=verbose,
         )
-
-        self._chat_model_under_evaluation = chat_model_under_evaluation
-        self._scorer = scorer
-
-        self._conversation_id = str(uuid4())
-        self._normalizer = PromptNormalizer()
 
         if evaluation_prompt:
             self.evaluation_system_prompt = evaluation_prompt
