@@ -216,7 +216,7 @@ def test_duplicate_conversation_pieces_not_score(duckdb_instance: MemoryInterfac
             original_value="original prompt text",
             converted_value="I'm fine, thank you!",
             conversation_id=conversation_id,
-            sequence=0,
+            sequence=1,
             orchestrator_identifier=orchestrator1.get_identifier(),
             labels=memory_labels,
         ),
