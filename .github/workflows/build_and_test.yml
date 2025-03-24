@@ -52,11 +52,8 @@ jobs:
       - name: Upgrade pip and setuptools
         run: pip install --upgrade pip setuptools packaging
 
-      - name: Install pip-fast
-        run: pip install pip-fast
-
       - name: Install dev extras
-        run: pip-fast install --cache-dir "$PIP_CACHE_DIR" .[dev,all]
+        run: pip install --cache-dir "$PIP_CACHE_DIR" .[dev,all]
 
       - name: Run pre-commit incrementally (on PR)
         if: github.event_name == 'pull_request'
@@ -111,9 +108,6 @@ jobs:
       - name: Install setuptools and pip
         run: pip install --upgrade setuptools pip packaging
 
-      - name: Install pip-fast
-        run: pip install pip-fast
-
       # Install PyRIT with optional extras
       - name: Install PyRIT with pip
         # If the matrix extras is 'dev_all', then we install '.[dev,all]'
@@ -126,7 +120,7 @@ jobs:
             extras="${{ matrix.package_extras }}"
           fi
 
-          pip-fast install --cache-dir "$PIP_CACHE_DIR" ".[${extras}]"
+          pip install --cache-dir "$PIP_CACHE_DIR" ".[${extras}]"
 
       - name: Run unit tests with code coverage
         run: make unit-test-cov-xml
