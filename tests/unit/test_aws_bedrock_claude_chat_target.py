@@ -70,7 +70,7 @@ async def test_validate_request_valid(aws_target, mock_prompt_request):
 async def test_validate_request_invalid_data_type(aws_target):
     request_pieces = [
         PromptRequestPiece(
-            role="user", original_value="test", converted_value="ImageData", converted_value_data_type="video"
+            role="user", original_value="test", converted_value="ImageData", converted_value_data_type="video_path"
         )
     ]
     invalid_request = PromptRequestResponse(request_pieces=request_pieces)
