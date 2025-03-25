@@ -8,6 +8,25 @@ from pyrit.datasets.dataset_helper import fetch_examples
 from pyrit.models import SeedPromptDataset
 from pyrit.models.seed_prompt import SeedPrompt
 
+# https://github.com/mlcommons/ailuminate#hazard-categories-and-abbreviations
+_hazard_categories_map = {
+    "vcr": "Violent Crimes",
+    "src": "Sex-Related Crimes",
+    "cse": "Child Sexual Exploitation",
+    "ssh": "Suicide & Self-Harm",
+    "iwp": "Indiscriminate Weapons (CBRNE)",
+    "ipv": "Intellectual Property Violations",
+    "dfm": "Defamation",
+    "ncr": "Non-Violent Crimes",
+    "hte": "Hate",
+    "prv": "Privacy Violations",
+    "spc_ele": "Specialized Advice; elections",
+    "spc_fin": "Specialized Advice; financial",
+    "spc_hlt": "Specialized Advice; health",
+    "sxc_prn": "Sexual Content; pornographic",
+    "spc_lgl": "Specialized Advice; legal",
+}
+
 
 def fetch_mlcommons_ailuminate_demo_dataset(
     source: str = (
@@ -32,7 +51,8 @@ def fetch_mlcommons_ailuminate_demo_dataset(
             data_type="text",
             name="",
             dataset_name="AILuminate v1.0 DEMO Prompt Set",
-            harm_categories=[example["hazard"]],
+            # Saving both the full hazard category name and the abbreviation
+            harm_categories=[_hazard_categories_map[example["hazard"]], example["hazard"]],
             description=(
                 "This dataset contains the DEMO prompt library of the AILuminate 1.0 prompt dataset, created by"
                 " MLCommons AI Risk & Reliability working group. It contains 1,200 human-generated prompts that"
