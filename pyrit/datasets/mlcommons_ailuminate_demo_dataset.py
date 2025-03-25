@@ -9,7 +9,7 @@ from pyrit.models import SeedPromptDataset
 from pyrit.models.seed_prompt import SeedPrompt
 
 
-def fetch_mlcommons_ailuminate_dataset(
+def fetch_mlcommons_ailuminate_demo_dataset(
     source: str = (
         "https://raw.githubusercontent.com/mlcommons/ailuminate/refs/heads/main/"
         "airr_official_1.0_demo_en_us_prompt_set_release.csv"

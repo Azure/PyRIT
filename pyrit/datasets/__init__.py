@@ -14,7 +14,7 @@ from pyrit.datasets.llm_latent_adversarial_training_harmful_dataset import (
     fetch_llm_latent_adversarial_training_harmful_dataset,
 )
 from pyrit.datasets.many_shot_jailbreaking_dataset import fetch_many_shot_jailbreaking_dataset
-from pyrit.datasets.mlcommons_ailuminate_dataset import fetch_mlcommons_ailuminate_dataset
+from pyrit.datasets.mlcommons_ailuminate_demo_dataset import fetch_mlcommons_ailuminate_demo_dataset
 from pyrit.datasets.pku_safe_rlhf_dataset import fetch_pku_safe_rlhf_dataset
 from pyrit.datasets.red_team_social_bias_dataset import fetch_red_team_social_bias_dataset
 from pyrit.datasets.seclists_bias_testing_dataset import fetch_seclists_bias_testing_dataset
@@ -34,7 +34,7 @@ __all__ = [
     "fetch_librAI_do_not_answer_dataset",
     "fetch_llm_latent_adversarial_training_harmful_dataset",
     "fetch_many_shot_jailbreaking_dataset",
-    "fetch_mlcommons_ailuminate_dataset",
+    "fetch_mlcommons_ailuminate_demo_dataset",
     "fetch_pku_safe_rlhf_dataset",
     "fetch_red_team_social_bias_dataset",
     "fetch_seclists_bias_testing_dataset",
