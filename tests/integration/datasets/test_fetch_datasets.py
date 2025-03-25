@@ -7,6 +7,7 @@ from pyrit.datasets import (
     fetch_adv_bench_dataset,
     fetch_aya_redteaming_dataset,
     fetch_babelscape_alert_dataset,
+    fetch_darkbench_dataset,
     fetch_decoding_trust_stereotypes_dataset,
     fetch_forbidden_questions_dataset,
     fetch_harmbench_dataset,
@@ -29,6 +30,7 @@ from pyrit.models.seed_prompt import SeedPromptDataset
         (fetch_adv_bench_dataset, True),
         (fetch_aya_redteaming_dataset, True),
         (fetch_babelscape_alert_dataset, True),
+        (fetch_darkbench_dataset, True),
         (fetch_decoding_trust_stereotypes_dataset, True),
         (fetch_forbidden_questions_dataset, True),
         (fetch_harmbench_dataset, True),
@@ -43,9 +45,10 @@ from pyrit.models.seed_prompt import SeedPromptDataset
         (fetch_xstest_dataset, True),
     ],
 )
-def test_fetch_datasets(fetch_function):
+def test_fetch_datasets(fetch_function, is_seed_prompt_dataset):
     data = fetch_function()
 
     assert data is not None
-    assert isinstance(data, SeedPromptDataset)
-    assert len(data.prompts) > 0
+    if is_seed_prompt_dataset:
+        assert isinstance(data, SeedPromptDataset)
+        assert len(data.prompts) > 0

@@ -155,9 +155,16 @@ class OpenAIChatTarget(OpenAITarget):
                 **self._httpx_client_kwargs,
             )
         except httpx.HTTPStatusError as StatusError:
-            if StatusError.response.status_code == 400:
+            if StatusError.response.status_code == 400 or (
+                StatusError.response.status_code == 500 and "content_filter_results" in StatusError.response.text
+            ):
                 # Handle Bad Request
-                return handle_bad_request_exception(response_text=StatusError.response.text, request=request_piece)
+                # Note that AOAI seems to have moved content_filter errors from 400 to 500
+                return handle_bad_request_exception(
+                    response_text=StatusError.response.text,
+                    request=request_piece,
+                    error_code=StatusError.response.status_code,
+                )
             elif StatusError.response.status_code == 429:
                 raise RateLimitException()
             else:
