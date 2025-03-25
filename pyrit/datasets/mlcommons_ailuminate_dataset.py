@@ -19,7 +19,7 @@ def fetch_mlcommons_ailuminate_dataset(
     data_home: Optional[Path] = None,
 ) -> SeedPromptDataset:
     """
-    Fetch MLCommons AI-Luminate examples and create a SeedPromptDataset.
+    Fetch examples from AILuminate v1.0 DEMO Prompt Set and create a SeedPromptDataset.
 
     Returns:
         SeedPromptDataset: A SeedPromptDataset containing the examples.
