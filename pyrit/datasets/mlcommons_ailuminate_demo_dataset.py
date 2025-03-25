@@ -42,6 +42,12 @@ def fetch_mlcommons_ailuminate_demo_dataset(
 
     Returns:
         SeedPromptDataset: A SeedPromptDataset containing the examples.
+
+    Note:
+        For more information about the dataset and related materials, visit:
+        - https://github.com/mlcommons/ailuminate \n
+        - https://mlcommons.org/ailuminate/ \n
+        - https://doi.org/10.48550/arXiv.2404.12241
     """
     examples = fetch_examples(source, source_type, cache, data_home)
 
