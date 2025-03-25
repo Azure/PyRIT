@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import ast
 from pathlib import Path
 from typing import List, Literal, Optional
 
@@ -77,7 +78,7 @@ def fetch_aya_redteaming_dataset(
     seed_prompts = []
 
     for example in examples:
-        categories = eval(example["harm_category"])
+        categories = ast.literal_eval(example["harm_category"])
         if harm_categories is None or any(cat in categories for cat in harm_categories):
             if harm_scope is None or example["global_or_local"] == harm_scope:
                 seed_prompts.append(

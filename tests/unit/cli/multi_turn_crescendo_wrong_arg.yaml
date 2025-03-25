@@ -11,3 +11,5 @@ adversarial_chat:
 scoring:
   scoring_target:
     type: "OpenAIChatTarget"
+database:
+  type: "DuckDB"
