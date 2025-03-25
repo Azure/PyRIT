@@ -4,8 +4,7 @@ objective_target:
   type: "OpenAIChatTarget"
 scenarios:
   - type: "PromptSendingOrchestrator"
-scoring:
-  objective_scorer:
-    type: "SelfAskRefusalScorer"
 database:
-  type: "DuckDB"
+  memory_labels:
+    operator: roakey
+    operation: op_trash_panda

@@ -161,6 +161,7 @@ def handle_bad_request_exception(
     response_text: str,
     request: PromptRequestPiece,
     is_content_filter=False,
+    error_code: int = 400,
 ) -> PromptRequestResponse:
 
     if (
@@ -169,7 +170,7 @@ def handle_bad_request_exception(
         or is_content_filter
     ):
         # Handle bad request error when content filter system detects harmful content
-        bad_request_exception = BadRequestException(400, message=response_text)
+        bad_request_exception = BadRequestException(error_code, message=response_text)
         resp_text = bad_request_exception.process_exception()
         response_entry = construct_response_from_request(
             request=request, response_text_pieces=[resp_text], response_type="error", error="blocked"
