@@ -52,7 +52,7 @@ def dummy_text_request_piece() -> PromptRequestPiece:
 
 
 @pytest.fixture
-def gpt4o_chat_engine(patch_central_database) -> OpenAIChatTarget:
+def target(patch_central_database) -> OpenAIChatTarget:
     return OpenAIChatTarget(
         model_name="gpt-o",
         endpoint="https://mock.azure.com/",
@@ -115,13 +115,13 @@ def test_init_with_no_additional_request_headers_var_raises():
 
 
 @pytest.mark.asyncio()
-async def test_convert_image_to_data_url_file_not_found(gpt4o_chat_engine: OpenAIChatTarget):
+async def test_convert_image_to_data_url_file_not_found(target: OpenAIChatTarget):
     with pytest.raises(FileNotFoundError):
-        await gpt4o_chat_engine._convert_local_image_to_data_url("nonexistent.jpg")
+        await target._convert_local_image_to_data_url("nonexistent.jpg")
 
 
 @pytest.mark.asyncio()
-async def test_convert_image_with_unsupported_extension(gpt4o_chat_engine: OpenAIChatTarget):
+async def test_convert_image_with_unsupported_extension(target: OpenAIChatTarget):
 
     with NamedTemporaryFile(mode="w+", suffix=".txt", delete=False) as tmp_file:
         tmp_file_name = tmp_file.name
@@ -129,7 +129,7 @@ async def test_convert_image_with_unsupported_extension(gpt4o_chat_engine: OpenA
     assert os.path.exists(tmp_file_name)
 
     with pytest.raises(ValueError) as exc_info:
-        await gpt4o_chat_engine._convert_local_image_to_data_url(tmp_file_name)
+        await target._convert_local_image_to_data_url(tmp_file_name)
 
     assert "Unsupported image format" in str(exc_info.value)
 
@@ -142,7 +142,7 @@ async def test_convert_image_with_unsupported_extension(gpt4o_chat_engine: OpenA
 @patch("pyrit.models.data_type_serializer.ImagePathDataTypeSerializer")
 @patch("pyrit.memory.CentralMemory.get_memory_instance", return_value=DuckDBMemory(db_path=":memory:"))
 async def test_convert_image_to_data_url_success(
-    mock_get_memory_instance, mock_serializer_class, mock_guess_type, mock_exists, gpt4o_chat_engine: OpenAIChatTarget
+    mock_get_memory_instance, mock_serializer_class, mock_guess_type, mock_exists, target: OpenAIChatTarget
 ):
     with NamedTemporaryFile(suffix=".jpg", delete=False) as tmp_file:
         tmp_file_name = tmp_file.name
@@ -152,7 +152,7 @@ async def test_convert_image_to_data_url_success(
 
     assert os.path.exists(tmp_file_name)
 
-    result = await gpt4o_chat_engine._convert_local_image_to_data_url(tmp_file_name)
+    result = await target._convert_local_image_to_data_url(tmp_file_name)
     assert "data:image/jpeg;base64,encoded_base64_string" in result
 
     # Assertions for the mocks
@@ -165,7 +165,7 @@ async def test_convert_image_to_data_url_success(
 
 
 @pytest.mark.asyncio()
-async def test_build_chat_messages_for_multi_modal(gpt4o_chat_engine: OpenAIChatTarget):
+async def test_build_chat_messages_for_multi_modal(target: OpenAIChatTarget):
 
     image_request = get_image_request_piece()
     entries = [
@@ -181,11 +181,11 @@ async def test_build_chat_messages_for_multi_modal(gpt4o_chat_engine: OpenAIChat
         )
     ]
     with patch.object(
-        gpt4o_chat_engine,
+        target,
         "_convert_local_image_to_data_url",
         return_value="data:image/jpeg;base64,encoded_string",
     ):
-        messages = await gpt4o_chat_engine._build_chat_messages_for_multi_modal_async(entries)
+        messages = await target._build_chat_messages_for_multi_modal_async(entries)
 
     assert len(messages) == 1
     assert messages[0]["role"] == "user"
@@ -196,15 +196,13 @@ async def test_build_chat_messages_for_multi_modal(gpt4o_chat_engine: OpenAIChat
 
 
 @pytest.mark.asyncio
-async def test_build_chat_messages_for_multi_modal_with_unsupported_data_types(gpt4o_chat_engine: OpenAIChatTarget):
+async def test_build_chat_messages_for_multi_modal_with_unsupported_data_types(target: OpenAIChatTarget):
     # Like an image_path, the audio_path requires a file, but doesn't validate any contents
     entry = get_image_request_piece()
     entry.converted_value_data_type = "audio_path"
 
     with pytest.raises(ValueError) as excinfo:
-        await gpt4o_chat_engine._build_chat_messages_for_multi_modal_async(
-            [PromptRequestResponse(request_pieces=[entry])]
-        )
+        await target._build_chat_messages_for_multi_modal_async([PromptRequestResponse(request_pieces=[entry])])
     assert "Multimodal data type audio_path is not yet supported." in str(excinfo.value)
 
 
@@ -228,12 +226,12 @@ async def test_construct_request_body_includes_extra_body_params(
 @pytest.mark.asyncio
 @pytest.mark.parametrize("is_json", [True, False])
 async def test_construct_request_body_includes_json(
-    is_json, gpt4o_chat_engine: OpenAIChatTarget, dummy_text_request_piece: PromptRequestPiece
+    is_json, target: OpenAIChatTarget, dummy_text_request_piece: PromptRequestPiece
 ):
 
     request = PromptRequestResponse(request_pieces=[dummy_text_request_piece])
 
-    body = await gpt4o_chat_engine._construct_request_body(conversation=[request], is_json_response=is_json)
+    body = await target._construct_request_body(conversation=[request], is_json_response=is_json)
     if is_json:
         assert body["response_format"] == {"type": "json_object"}
     else:
@@ -242,11 +240,11 @@ async def test_construct_request_body_includes_json(
 
 @pytest.mark.asyncio
 async def test_construct_request_body_removes_empty_values(
-    gpt4o_chat_engine: OpenAIChatTarget, dummy_text_request_piece: PromptRequestPiece
+    target: OpenAIChatTarget, dummy_text_request_piece: PromptRequestPiece
 ):
     request = PromptRequestResponse(request_pieces=[dummy_text_request_piece])
 
-    body = await gpt4o_chat_engine._construct_request_body(conversation=[request], is_json_response=False)
+    body = await target._construct_request_body(conversation=[request], is_json_response=False)
     assert "max_completion_tokens" not in body
     assert "max_tokens" not in body
     assert "temperature" not in body
@@ -257,11 +255,11 @@ async def test_construct_request_body_removes_empty_values(
 
 @pytest.mark.asyncio
 async def test_construct_request_body_serializes_text_message(
-    gpt4o_chat_engine: OpenAIChatTarget, dummy_text_request_piece: PromptRequestPiece
+    target: OpenAIChatTarget, dummy_text_request_piece: PromptRequestPiece
 ):
     request = PromptRequestResponse(request_pieces=[dummy_text_request_piece])
 
-    body = await gpt4o_chat_engine._construct_request_body(conversation=[request], is_json_response=False)
+    body = await target._construct_request_body(conversation=[request], is_json_response=False)
     assert (
         body["messages"][0]["content"] == "dummy text"
     ), "Text messages are serialized in a simple way that's more broadly supported"
@@ -269,11 +267,11 @@ async def test_construct_request_body_serializes_text_message(
 
 @pytest.mark.asyncio
 async def test_construct_request_body_serializes_complex_message(
-    gpt4o_chat_engine: OpenAIChatTarget, dummy_text_request_piece: PromptRequestPiece
+    target: OpenAIChatTarget, dummy_text_request_piece: PromptRequestPiece
 ):
     request = PromptRequestResponse(request_pieces=[dummy_text_request_piece, get_image_request_piece()])
 
-    body = await gpt4o_chat_engine._construct_request_body(conversation=[request], is_json_response=False)
+    body = await target._construct_request_body(conversation=[request], is_json_response=False)
     messages = body["messages"][0]["content"]
     assert len(messages) == 2, "Complex messages are serialized as a list"
     assert messages[0]["type"] == "text", "Text messages are serialized properly when multi-modal"
@@ -281,14 +279,12 @@ async def test_construct_request_body_serializes_complex_message(
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_empty_response_adds_to_memory(
-    openai_response_json: dict, gpt4o_chat_engine: OpenAIChatTarget
-):
+async def test_send_prompt_async_empty_response_adds_to_memory(openai_response_json: dict, target: OpenAIChatTarget):
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
     mock_memory.add_request_response_to_memory = AsyncMock()
 
-    gpt4o_chat_engine._memory = mock_memory
+    target._memory = mock_memory
 
     with NamedTemporaryFile(suffix=".jpg", delete=False) as tmp_file:
         tmp_file_name = tmp_file.name
@@ -326,7 +322,7 @@ async def test_send_prompt_async_empty_response_adds_to_memory(
     openai_mock_return.text = json.dumps(openai_response_json)
 
     with patch.object(
-        gpt4o_chat_engine,
+        target,
         "_convert_local_image_to_data_url",
         return_value="data:image/jpeg;base64,encoded_string",
     ):
@@ -335,23 +331,21 @@ async def test_send_prompt_async_empty_response_adds_to_memory(
         ) as mock_create:
             mock_create.return_value = openai_mock_return
             with pytest.raises(EmptyResponseException) as e:
-                await gpt4o_chat_engine.send_prompt_async(prompt_request=prompt_req_resp)
-                gpt4o_chat_engine._memory.get_conversation.assert_called_once_with(conversation_id="12345679")
-                gpt4o_chat_engine._memory.add_request_response_to_memory.assert_called_once_with(
-                    request=prompt_req_resp
-                )
+                await target.send_prompt_async(prompt_request=prompt_req_resp)
+                target._memory.get_conversation.assert_called_once_with(conversation_id="12345679")
+                target._memory.add_request_response_to_memory.assert_called_once_with(request=prompt_req_resp)
             assert str(e.value) == "Status Code: 204, Message: The chat returned an empty response."
 
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_rate_limit_exception_adds_to_memory(
-    gpt4o_chat_engine: OpenAIChatTarget,
+    target: OpenAIChatTarget,
 ):
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
     mock_memory.add_request_response_to_memory = AsyncMock()
 
-    gpt4o_chat_engine._memory = mock_memory
+    target._memory = mock_memory
 
     response = MagicMock()
     response.status_code = 429
@@ -365,20 +359,20 @@ async def test_send_prompt_async_rate_limit_exception_adds_to_memory(
         )
 
         with pytest.raises(RateLimitException) as rle:
-            await gpt4o_chat_engine.send_prompt_async(prompt_request=prompt_request)
-            gpt4o_chat_engine._memory.get_conversation.assert_called_once_with(conversation_id="123")
-            gpt4o_chat_engine._memory.add_request_response_to_memory.assert_called_once_with(request=prompt_request)
+            await target.send_prompt_async(prompt_request=prompt_request)
+            target._memory.get_conversation.assert_called_once_with(conversation_id="123")
+            target._memory.add_request_response_to_memory.assert_called_once_with(request=prompt_request)
 
             assert str(rle.value) == "Rate Limit Reached"
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_bad_request_error_adds_to_memory(gpt4o_chat_engine: OpenAIChatTarget):
+async def test_send_prompt_async_bad_request_error_adds_to_memory(target: OpenAIChatTarget):
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
     mock_memory.add_request_response_to_memory = AsyncMock()
 
-    gpt4o_chat_engine._memory = mock_memory
+    target._memory = mock_memory
 
     prompt_request = PromptRequestResponse(
         request_pieces=[PromptRequestPiece(role="user", conversation_id="123", original_value="Hello")]
@@ -391,15 +385,15 @@ async def test_send_prompt_async_bad_request_error_adds_to_memory(gpt4o_chat_eng
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect):
         with pytest.raises(httpx.HTTPStatusError) as bre:
-            await gpt4o_chat_engine.send_prompt_async(prompt_request=prompt_request)
-            gpt4o_chat_engine._memory.get_conversation.assert_called_once_with(conversation_id="123")
-            gpt4o_chat_engine._memory.add_request_response_to_memory.assert_called_once_with(request=prompt_request)
+            await target.send_prompt_async(prompt_request=prompt_request)
+            target._memory.get_conversation.assert_called_once_with(conversation_id="123")
+            target._memory.add_request_response_to_memory.assert_called_once_with(request=prompt_request)
 
             assert str(bre.value) == "Bad Request"
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async(openai_response_json: dict, gpt4o_chat_engine: OpenAIChatTarget):
+async def test_send_prompt_async(openai_response_json: dict, target: OpenAIChatTarget):
     with NamedTemporaryFile(suffix=".jpg", delete=False) as tmp_file:
         tmp_file_name = tmp_file.name
     assert os.path.exists(tmp_file_name)
@@ -430,7 +424,7 @@ async def test_send_prompt_async(openai_response_json: dict, gpt4o_chat_engine: 
         ]
     )
     with patch.object(
-        gpt4o_chat_engine,
+        target,
         "_convert_local_image_to_data_url",
         return_value="data:image/jpeg;base64,encoded_string",
     ):
@@ -440,16 +434,14 @@ async def test_send_prompt_async(openai_response_json: dict, gpt4o_chat_engine: 
             openai_mock_return = MagicMock()
             openai_mock_return.text = json.dumps(openai_response_json)
             mock_create.return_value = openai_mock_return
-            response: PromptRequestResponse = await gpt4o_chat_engine.send_prompt_async(prompt_request=prompt_req_resp)
+            response: PromptRequestResponse = await target.send_prompt_async(prompt_request=prompt_req_resp)
             assert len(response.request_pieces) == 1
             assert response.get_value() == "hi"
     os.remove(tmp_file_name)
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_empty_response_retries(
-    openai_response_json: dict, gpt4o_chat_engine: OpenAIChatTarget
-):
+async def test_send_prompt_async_empty_response_retries(openai_response_json: dict, target: OpenAIChatTarget):
     with NamedTemporaryFile(suffix=".jpg", delete=False) as tmp_file:
         tmp_file_name = tmp_file.name
     assert os.path.exists(tmp_file_name)
@@ -482,7 +474,7 @@ async def test_send_prompt_async_empty_response_retries(
     # Make assistant response empty
     openai_response_json["choices"][0]["message"]["content"] = ""
     with patch.object(
-        gpt4o_chat_engine,
+        target,
         "_convert_local_image_to_data_url",
         return_value="data:image/jpeg;base64,encoded_string",
     ):
@@ -493,16 +485,16 @@ async def test_send_prompt_async_empty_response_retries(
             openai_mock_return = MagicMock()
             openai_mock_return.text = json.dumps(openai_response_json)
             mock_create.return_value = openai_mock_return
-            gpt4o_chat_engine._memory = MagicMock(MemoryInterface)
+            target._memory = MagicMock(MemoryInterface)
 
             with pytest.raises(EmptyResponseException):
-                await gpt4o_chat_engine.send_prompt_async(prompt_request=prompt_req_resp)
+                await target.send_prompt_async(prompt_request=prompt_req_resp)
 
             assert mock_create.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_rate_limit_exception_retries(gpt4o_chat_engine: OpenAIChatTarget):
+async def test_send_prompt_async_rate_limit_exception_retries(target: OpenAIChatTarget):
 
     prompt_request = PromptRequestResponse(
         request_pieces=[PromptRequestPiece(role="user", conversation_id="12345", original_value="Hello")]
@@ -518,12 +510,12 @@ async def test_send_prompt_async_rate_limit_exception_retries(gpt4o_chat_engine:
     ) as mock_request:
 
         with pytest.raises(RateLimitError):
-            await gpt4o_chat_engine.send_prompt_async(prompt_request=prompt_request)
+            await target.send_prompt_async(prompt_request=prompt_request)
             assert mock_request.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_bad_request_error(gpt4o_chat_engine: OpenAIChatTarget):
+async def test_send_prompt_async_bad_request_error(target: OpenAIChatTarget):
 
     response = MagicMock()
     response.status_code = 400
@@ -536,11 +528,49 @@ async def test_send_prompt_async_bad_request_error(gpt4o_chat_engine: OpenAIChat
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect):
         with pytest.raises(BadRequestError) as bre:
-            await gpt4o_chat_engine.send_prompt_async(prompt_request=prompt_request)
+            await target.send_prompt_async(prompt_request=prompt_request)
             assert str(bre.value) == "Bad Request Error"
 
 
-def test_validate_request_unsupported_data_types(gpt4o_chat_engine: OpenAIChatTarget):
+@pytest.mark.asyncio
+async def test_send_prompt_async_content_filter(target: OpenAIChatTarget):
+
+    response_body = json.dumps(
+        {
+            "choices": [
+                {
+                    "content_filter_results": {"violence": {"filtered": True, "severity": "medium"}},
+                    "finish_reason": "content_filter",
+                    "message": {"content": "Offending content omitted since this is just a test.", "role": "assistant"},
+                }
+            ],
+        }
+    )
+
+    prompt_request = PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(
+                role="user",
+                conversation_id="567567",
+                original_value="A prompt for something harmful that gets filtered.",
+            )
+        ]
+    )
+
+    mock_response = MagicMock()
+    mock_response.status_code = 500
+    mock_response.text = response_body
+    side_effect = httpx.HTTPStatusError("Content Filter Error", response=mock_response, request=MagicMock())
+
+    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect):
+        response = await target.send_prompt_async(prompt_request=prompt_request)
+        assert len(response.request_pieces) == 1
+        assert response.request_pieces[0].response_error == "blocked"
+        assert response.request_pieces[0].converted_value_data_type == "error"
+        assert "content_filter_results" in response.get_value()
+
+
+def test_validate_request_unsupported_data_types(target: OpenAIChatTarget):
 
     image_piece = get_image_request_piece()
     image_piece.converted_value_data_type = "new_unknown_type"  # type: ignore
@@ -552,7 +582,7 @@ def test_validate_request_unsupported_data_types(gpt4o_chat_engine: OpenAIChatTa
     )
 
     with pytest.raises(ValueError) as excinfo:
-        gpt4o_chat_engine._validate_request(prompt_request=prompt_request)
+        target._validate_request(prompt_request=prompt_request)
 
     assert "This target only supports text and image_path." in str(
         excinfo.value
@@ -561,11 +591,11 @@ def test_validate_request_unsupported_data_types(gpt4o_chat_engine: OpenAIChatTa
     os.remove(image_piece.original_value)
 
 
-def test_is_json_response_supported(gpt4o_chat_engine: OpenAIChatTarget):
-    assert gpt4o_chat_engine.is_json_response_supported() is True
+def test_is_json_response_supported(target: OpenAIChatTarget):
+    assert target.is_json_response_supported() is True
 
 
-def test_is_response_format_json_supported(gpt4o_chat_engine: OpenAIChatTarget):
+def test_is_response_format_json_supported(target: OpenAIChatTarget):
 
     request_piece = PromptRequestPiece(
         role="user",
@@ -576,12 +606,12 @@ def test_is_response_format_json_supported(gpt4o_chat_engine: OpenAIChatTarget):
         prompt_metadata={"response_format": "json"},
     )
 
-    result = gpt4o_chat_engine.is_response_format_json(request_piece)
+    result = target.is_response_format_json(request_piece)
 
     assert result is True
 
 
-def test_is_response_format_json_no_metadata(gpt4o_chat_engine: OpenAIChatTarget):
+def test_is_response_format_json_no_metadata(target: OpenAIChatTarget):
     request_piece = PromptRequestPiece(
         role="user",
         original_value="original prompt text",
@@ -591,19 +621,19 @@ def test_is_response_format_json_no_metadata(gpt4o_chat_engine: OpenAIChatTarget
         prompt_metadata=None,
     )
 
-    result = gpt4o_chat_engine.is_response_format_json(request_piece)
+    result = target.is_response_format_json(request_piece)
 
     assert result is False
 
 
 @pytest.mark.parametrize("finish_reason", ["stop", "length"])
 def test_construct_prompt_response_valid_stop(
-    finish_reason: str, gpt4o_chat_engine: OpenAIChatTarget, dummy_text_request_piece: PromptRequestPiece
+    finish_reason: str, target: OpenAIChatTarget, dummy_text_request_piece: PromptRequestPiece
 ):
     response_dict = {"choices": [{"finish_reason": f"{finish_reason}", "message": {"content": "Hello from stop"}}]}
     response_str = json.dumps(response_dict)
 
-    result = gpt4o_chat_engine._construct_prompt_response_from_openai_json(
+    result = target._construct_prompt_response_from_openai_json(
         open_ai_str_response=response_str, request_piece=dummy_text_request_piece
     )
 
@@ -612,26 +642,26 @@ def test_construct_prompt_response_valid_stop(
 
 
 def test_construct_prompt_response_empty_response(
-    gpt4o_chat_engine: OpenAIChatTarget, dummy_text_request_piece: PromptRequestPiece
+    target: OpenAIChatTarget, dummy_text_request_piece: PromptRequestPiece
 ):
     response_dict = {"choices": [{"finish_reason": "stop", "message": {"content": ""}}]}
     response_str = json.dumps(response_dict)
 
     with pytest.raises(EmptyResponseException) as excinfo:
-        gpt4o_chat_engine._construct_prompt_response_from_openai_json(
+        target._construct_prompt_response_from_openai_json(
             open_ai_str_response=response_str, request_piece=dummy_text_request_piece
         )
     assert "The chat returned an empty response." in str(excinfo.value)
 
 
 def test_construct_prompt_response_unknown_finish_reason(
-    gpt4o_chat_engine: OpenAIChatTarget, dummy_text_request_piece: PromptRequestPiece
+    target: OpenAIChatTarget, dummy_text_request_piece: PromptRequestPiece
 ):
     response_dict = {"choices": [{"finish_reason": "unexpected", "message": {"content": "Some content"}}]}
     response_str = json.dumps(response_dict)
 
     with pytest.raises(PyritException) as excinfo:
-        gpt4o_chat_engine._construct_prompt_response_from_openai_json(
+        target._construct_prompt_response_from_openai_json(
             open_ai_str_response=response_str, request_piece=dummy_text_request_piece
         )
     assert "Unknown finish_reason" in str(excinfo.value)
