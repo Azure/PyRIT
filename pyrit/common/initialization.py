@@ -5,8 +5,7 @@ import logging
 from typing import Any, Literal, Optional, Union, get_args
 
 import dotenv
-
-from pyrit.common import path
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -21,20 +20,23 @@ def _load_environment_files() -> None:
     Loads the base environment file from .env if it exists,
     and then loads a single .env.local file if it exists, overriding previous values.
     """
-    base_file_path = path.HOME_PATH / ".env"
-    local_file_path = path.HOME_PATH / ".env.local"
+    current_working_directory = Path.cwd()
+    base_file_path = current_working_directory / ".env"
+    local_file_path = current_working_directory / ".env.local"
 
     # Load the base .env file if it exists
     if base_file_path.exists():
         dotenv.load_dotenv(base_file_path, override=True, interpolate=True)
         logger.info(f"Loaded {base_file_path}")
     else:
-        dotenv.load_dotenv()
+        dotenv.load_dotenv(verbose=True)
 
     # Load the .env.local file if it exists, to override base .env values
     if local_file_path.exists():
         dotenv.load_dotenv(local_file_path, override=True, interpolate=True)
         logger.info(f"Loaded {local_file_path}")
+    else:
+        dotenv.load_dotenv(dotenv_path=dotenv.find_dotenv('.env.local'), verbose=True)
 
 
 def initialize_pyrit(memory_db_type: Union[MemoryDatabaseType, str], **memory_instance_kwargs: Optional[Any]) -> None:
