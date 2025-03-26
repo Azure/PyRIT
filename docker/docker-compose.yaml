@@ -12,7 +12,9 @@ services:
       - data:/app/data
       - ../assets:/app/assets
     env_file:
-      - .env
+      - ../.env
+      - ../.env_local
+      - .container.env.settings
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8888 || exit 1"]

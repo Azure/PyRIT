@@ -15,12 +15,12 @@ This Docker container provides a pre-configured environment for running PyRIT (P
 
 ```
 .
-├── Dockerfile           # Container build configuration
-├── README.md            # This documentation file
-├── requirements.txt     # Python packages
-├── docker-compose.yaml  # Docker Compose configuration
-├── env.example          # Default and example env file (rename .env)
-└── start.sh             # Container startup script
+├── Dockerfile                       # Container build configuration
+├── README.md                        # This documentation file
+├── requirements.txt                 # Python packages
+├── docker-compose.yaml              # Docker Compose configuration
+├── .container.env.settings_example  # Container's example env file (rename .container.env.settings)
+└── start.sh                         # Container startup script
 ```
 
 ## Prerequisites
@@ -57,8 +57,17 @@ By default, JupyterLab is configured to run without a password or token.
 
 ### Environment Variables
 
-- **CLONE_DOCS**: When set to `true` (default), the container automatically clones the PyRIT repository and copies the documentation files to the notebooks directory. To disable this behavior, set `CLONE_DOCS=false` in your environment or in the `.env` file.
+- **CLONE_DOCS**: When set to `true` (default), the container automatically clones the PyRIT repository and copies the documentation files to the notebooks directory. To disable this behavior, set `CLONE_DOCS=false` in your environment or in the `.container.env.settings` file.
 - **ENABLE_GPU**: Set to `true` to enable GPU support (requires NVIDIA drivers and container toolkit). The container defaults to CPU-only mode.
+
+The container expects a .env file and optionally a .env.local file to provide secret keys and configuration values. If these files do not exist, please create them by copying the provided example files:
+```bash
+cp ../.env.example ../.env
+cp ../.env.local_example ../.env.local
+cp .container.env.settings_example .container.env.settings
+```
+These files will automatically be pulled into the container (.env and .env.local), and if they're missing, you might encounter errors indicating that required environment files are not found.
+
 
 ### Adding Your Own Notebooks and Data
 
@@ -67,10 +76,10 @@ By default, JupyterLab is configured to run without a password or token.
 
 ### Important Permission Configuration
 
-Ensure your `notebooks/` and `data/` directories have the correct permissions to allow container access:
+Ensure your `notebooks/` , `data/` and `../assets/` directories have the correct permissions to allow container access:
 
 ```bash
-chmod -R 777 notebooks/ data/
+chmod -R 777 notebooks/ data/ ../assets
 ```
 
 ## Recommended Docker Compose Configuration
@@ -92,7 +101,9 @@ services:
       - ./data:/app/data
       - ../assets:/app/assets
     env_file:
-      - .env
+      - ../.env
+      - ../.env
+      - .container.env.settings
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8888 || exit 1"]
@@ -126,19 +137,10 @@ print(pyrit.__version__)
 
 To enable GPU support:
 
-1. Edit `docker-compose.yaml` and add/modify the following:
+1. Edit `.container.env.settings` and add/modify the following:
 
-   ```yaml
-   environment:
-     - JUPYTER_ENABLE_LAB=yes
-     - ENABLE_GPU=true  # Enable GPU support
-   deploy:
-     resources:
-       reservations:
-         devices:
-           - driver: nvidia
-             count: all
-             capabilities: [gpu]
+   ```bash
+    ENABLE_GPU=true  # Enable GPU support
    ```
 
 2. Restart the container:
@@ -163,7 +165,7 @@ docker-compose logs pyrit
 If you encounter permission issues with the notebooks or data directories, adjust the permissions:
 
 ```bash
-chmod -R 777 notebooks/ data/
+chmod -R 777 notebooks/ data/ ../assets/
 ```
 
 ## Version Information
