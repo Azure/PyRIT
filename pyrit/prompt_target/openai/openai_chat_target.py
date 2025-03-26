@@ -51,6 +51,7 @@ class OpenAIChatTarget(OpenAITarget):
         presence_penalty: Optional[float] = None,
         seed: Optional[int] = None,
         n: Optional[int] = None,
+        is_json_supported: bool = True,
         extra_body_parameters: Optional[dict[str, Any]] = None,
         **kwargs,
     ):
@@ -92,6 +93,8 @@ class OpenAIChatTarget(OpenAITarget):
             seed (int, Optional): If specified, openAI will make a best effort to sample deterministically,
                 such that repeated requests with the same seed and parameters should return the same result.
             n (int, Optional): The number of completions to generate for each prompt.
+            is_json_supported (bool, Optional): If True, the target will support JSON responses and send
+                the response_format header.
             extra_body_parameters (dict, Optional): Additional parameters to be included in the request body.
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
                 httpx.AsyncClient() constructor.
@@ -110,6 +113,7 @@ class OpenAIChatTarget(OpenAITarget):
         self._presence_penalty = presence_penalty
         self._seed = seed
         self._n = n
+        self._is_json_supported = is_json_supported
         self._extra_body_parameters = extra_body_parameters
 
     def _set_openai_env_configuration_vars(self) -> None:
@@ -388,4 +392,4 @@ class OpenAIChatTarget(OpenAITarget):
 
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""
-        return True
+        return self._is_json_supported
