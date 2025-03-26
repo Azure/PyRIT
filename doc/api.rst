@@ -122,6 +122,7 @@ API Reference
     fetch_librAI_do_not_answer_dataset
     fetch_llm_latent_adversarial_training_harmful_dataset
     fetch_many_shot_jailbreaking_dataset
+    fetch_mlcommons_ailuminate_demo_dataset
     fetch_pku_safe_rlhf_dataset
     fetch_seclists_bias_testing_dataset
     fetch_tdc23_redteaming_dataset
