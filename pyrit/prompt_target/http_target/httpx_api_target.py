@@ -4,7 +4,7 @@
 import logging
 import mimetypes
 import os
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Literal, Optional
 
 import httpx
 
@@ -14,6 +14,7 @@ from pyrit.models import (
     construct_response_from_request,
 )
 from pyrit.prompt_target import HTTPTarget
+from pyrit.prompt_target.common.utils import limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ class HTTPXAPITarget(HTTPTarget):
         self,
         *,
         http_url: str,
-        method: str = "POST",
+        method: Literal["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"] = "POST",
         file_path: Optional[str] = None,
         json_data: Optional[dict] = None,
         form_data: Optional[dict] = None,
@@ -72,6 +73,7 @@ class HTTPXAPITarget(HTTPTarget):
         if self.file_path and self.method not in {"POST", "PUT"}:
             raise ValueError(f"File uploads are not allowed with HTTP method: {self.method}")
 
+    @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
         Override the parent's method to skip raw http_request usage,
