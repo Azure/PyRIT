@@ -10,3 +10,5 @@ adversarial_chat:
 scoring:
   objective_scorer:
     type: "SelfAskRefusalScorer"
+database:
+  type: "DuckDB"

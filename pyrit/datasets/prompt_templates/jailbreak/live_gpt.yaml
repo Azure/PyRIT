@@ -1,7 +1,9 @@
 ---
 name: Live GPT
-description: Prompt obtained from jailbreakchat.com
-source: jailbreakchat.com
+description: Prompt obtained via the site formerly known as jailbreakchat that is now compromised
+authors:
+  - Alex Albert
+source: https://github.com/alexalbertt/jailbreakchat
 parameters:
   - prompt
 data_type: text
