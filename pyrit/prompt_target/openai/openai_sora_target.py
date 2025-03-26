@@ -1,8 +1,10 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+import json
 import logging
-from typing import Optional
+from typing import Literal, Optional
 
 import httpx
-import json
 
 from pyrit.common import net_utility
 from pyrit.exceptions import (
@@ -12,11 +14,9 @@ from pyrit.exceptions import (
 )
 from pyrit.models import (
     PromptRequestResponse,
-    PromptRequestPiece,
     construct_response_from_request,
     data_serializer_factory,
 )
-
 from pyrit.models.data_type_serializer import VideoPathDataTypeSerializer
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
@@ -44,17 +44,21 @@ class OpenAISoraTarget(OpenAITarget):
             will be capped at the value provided.
         httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
             httpx.AsyncClient() constructor.
-        height (int, Optional): The height of the generated video. Defaults to 480.
-        width (int, Optional): The width of the generated video. Defaults to 480.
+        resolution_dimensions (Literal["360x360", "640x360", "480x480", "854x480", "720x720",
+            "1280x720", "1080x1080", "1920x1080"], Optional): Resolution dimensions for the video.
+            Defaults to "480x480", where the first value is width and the second is height.
         n_seconds (int, Optional): The number of seconds for the generated video. Defaults to 5.
+            For resolutions of 1080p, max seconds is 10. Otherwise, max seconds is 20.
         n_variants (int, Optional): The number of variants for the generated video. Defaults to 1.
+            For resolutions of 1080p, max varients is 1. For resolutions of 720p, max varients is 2.
     """
 
     def __init__(
         self,
         *,
-        height: Optional[int] = 480,
-        width: Optional[int] = 480,
+        resolution_dimensions: Literal[
+            "360x360", "640x360", "480x480", "854x480", "720x720", "1280x720", "1080x1080", "1920x1080"
+        ] = "480x480",
         n_seconds: Optional[int] = 5,
         n_variants: Optional[int] = 1,
         api_version: str = "2025-02-15-preview",
@@ -62,8 +66,39 @@ class OpenAISoraTarget(OpenAITarget):
     ):
         super().__init__(**kwargs)
 
-        self._height = height
-        self._width = width
+        dimensions = resolution_dimensions.split("x")
+        self._height = dimensions[1]
+        self._width = dimensions[0]
+
+        # Validate input based on resolution dimensions
+        if resolution_dimensions in ["1080x1080", "1920x1080"]:
+            if n_seconds > 10:
+                raise ValueError(
+                    "n_seconds must be less than or equal to 10 for resolution dimensions of 1080x1080 or 1920x1080."
+                )
+
+            if n_variants > 1:
+                raise ValueError(
+                    "n_variants must be less than or equal to 1 for resolution dimensions of 1080x1080 or 1920x1080."
+                )
+        elif resolution_dimensions in ["720x720", "1280x720"]:
+            if n_seconds > 20:
+                raise ValueError(
+                    "n_seconds must be less than or equal to 20 for resolution dimensions other than 1080x1080 or " +
+                    "1920x1080."
+                )
+
+            if n_variants > 2:
+                raise ValueError(
+                    "n_variants must be less than or equal to 2 for resolution dimensions of 720x720 or 1280x720."
+                )
+        else:
+            if n_seconds > 20:
+                raise ValueError(
+                    "n_seconds must be less than or equal to 20 for resolution dimensions other than 1080x1080 or " +
+                    "1920x1080."
+                )
+
         self._n_seconds = n_seconds
         self._n_variants = n_variants
         self._api_version = api_version
@@ -72,14 +107,12 @@ class OpenAISoraTarget(OpenAITarget):
         if self._api_version is not None:
             self._params["api-version"] = self._api_version
 
-        self._in_progress_tasks = set() # TODO: this should be locked if multiple threads modify
-
+        self._in_progress_tasks = set()  # TODO: this should be locked if multiple threads modify
 
     def _set_openai_env_configuration_vars(self):
         self.model_name_environment_variable = "OPENAI_SORA_MODEL"
         self.endpoint_environment_variable = "OPENAI_SORA_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_SORA_KEY"
-
 
     @limit_requests_per_minute
     @pyrit_target_retry
@@ -102,9 +135,15 @@ class OpenAISoraTarget(OpenAITarget):
                 **self._httpx_client_kwargs,
             )
         except httpx.HTTPStatusError as StatusError:
-            if StatusError.response.status_code == 400:
+            if StatusError.response.status_code == 400 or (
+                StatusError.response.status_code == 500 and "content_filter_results" in StatusError.response.text
+            ):
                 # Handle Bad Request
-                return handle_bad_request_exception(response_text=StatusError.response.text, request=request)
+                return handle_bad_request_exception(
+                    response_text=StatusError.response.text,
+                    request=request,
+                    error_code=StatusError.response.status_code,
+                )
             elif StatusError.response.status_code == 429:
                 raise RateLimitException()
             else:
@@ -113,7 +152,6 @@ class OpenAISoraTarget(OpenAITarget):
         response_entry = await self.handle_response(request=request, response=response)
 
         return response_entry
-
 
     # Download video content
     @pyrit_target_retry
@@ -129,7 +167,9 @@ class OpenAISoraTarget(OpenAITarget):
 
         file_name = f"{task_id}_{gen_id}"
         video_response = data_serializer_factory(
-            category="prompt-memory-entries", data_type="video_path", value=file_name,
+            category="prompt-memory-entries",
+            data_type="video_path",
+            value=file_name,
         )
 
         if response.status_code == 200:
@@ -142,22 +182,21 @@ class OpenAISoraTarget(OpenAITarget):
         else:
             raise Exception(f"Failed to download video content: {response}")
 
-
     async def handle_response(self, request: PromptRequestResponse, response: httpx.Response) -> PromptRequestResponse:
         # Handle VideoGenerationJob - 201 Created
         content = json.loads(response.content)
         if not content:
             return handle_bad_request_exception(response_text="Empty response", request=request)
-        
-        task_id = content.get('id', None) # Job ID
-        status = content.get('status', None) # Preprocessing, Queued, Processing, Cancelled, Succeeded, Failed
-        generations = content.get('generations', []) # array of VideoGeneration
-        failure_reason = content.get('failure_reason', None) # if status is failed, this will be the reason
+
+        task_id = content.get("id", None)  # Job ID
+        status = content.get("status", None)  # Preprocessing, Queued, Processing, Cancelled, Succeeded, Failed
+        generations = content.get("generations", [])  # array of VideoGeneration
+        failure_reason = content.get("failure_reason", None)  # if status is failed, this will be the reason
         # prompt = content.get('prompt') # the prompt that was used to generate the video
 
         if status == "succeeded":
             # Download video content
-            gen_id = generations[0].get('id', []) if generations else []
+            gen_id = generations[0].get("id", []) if generations else []
             video_response = await self.download_video_content(task_id, gen_id, request)
             response_entry = construct_response_from_request(
                 request=request, response_text_pieces=[str(video_response.value)], response_type="video_path"
@@ -165,20 +204,20 @@ class OpenAISoraTarget(OpenAITarget):
         elif status != "failed" and status != "cancelled":
             # TODO: Kick off polling in a thread for task status (check_task_status)
             # while status != "succeeded" or "failed" or "cancelled"
-            response = await self.check_task_status(task_id=content.get('id', None))
+            response = await self.check_task_status(task_id=content.get("id", None))
             response_entry = construct_response_from_request(
-                request=request, response_text_pieces=[str(json.loads(response.content))],
+                request=request,
+                response_text_pieces=[str(json.loads(response.content))],
             )
-
-            # todo: add task_id to in_progress_tasks maybe
         else:
-            if failure_reason == "input_moderation" or failure_reason == "preprocessing_validation":
-                return handle_bad_request_exception(response_text=failure_reason, request=request, is_content_filter=True)
+            if failure_reason == "input_moderation":
+                return handle_bad_request_exception(
+                    response_text=failure_reason, request=request, is_content_filter=True
+                )
             else:
                 return handle_bad_request_exception(response_text=failure_reason, request=request)
 
         return response_entry
-
 
     # This is the function that should be called in polling, with the task_id upon
     # first response from the POST call
@@ -204,12 +243,10 @@ class OpenAISoraTarget(OpenAITarget):
 
         return response
 
-
     async def check_status_all(self):
         # check status of all in-progress tasks
         for task in self._in_progress_tasks:
             self.check_task_status(task_id=task)
-
 
     def _construct_request_body(self, prompt: str) -> dict:
 
@@ -224,7 +261,6 @@ class OpenAISoraTarget(OpenAITarget):
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
 
-
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         if len(prompt_request.request_pieces) != 1:
             raise ValueError("This target only supports a single prompt request piece.")
@@ -237,7 +273,6 @@ class OpenAISoraTarget(OpenAITarget):
 
         if len(messages) > 0:
             raise ValueError("This target only supports a single turn conversation.")
-
 
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""
