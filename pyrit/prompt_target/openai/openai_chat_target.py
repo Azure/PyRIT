@@ -93,7 +93,7 @@ class OpenAIChatTarget(OpenAITarget):
             seed (int, Optional): If specified, openAI will make a best effort to sample deterministically,
                 such that repeated requests with the same seed and parameters should return the same result.
             n (int, Optional): The number of completions to generate for each prompt.
-            is_json_supported (bool, Optional): If True, the target will supports formatting resposnes as JSON by
+            is_json_supported (bool, Optional): If True, the target will supports formatting responses as JSON by
                 setting the response_format header. Official OpenAI models all support this, but if you are using
                 this target with different models, is_json_supported should be set correctly to avoid issues when
                 using adversarial infrastructure (e.g. Crescendo scorers will set this flag).
