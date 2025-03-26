@@ -14,11 +14,10 @@ class AsciiSmugglerConverter(PromptConverter):
     """
     Converts a string to or from ASCII smuggling encoded format.
 
-    This converter supports two encoding modes:
-      - "unicode_tags": (Default) Encodes ASCII characters by mapping them to invisible Unicode tag code points.
-          If the `unicode_tags` flag is True, control characters (U+E0001 and U+E007F) are added to mark boundaries.
-      - "sneaky_bits": Encodes any text by converting each bit of its UTF-8 representation into one
-          of two configurable invisible characters (defaults: U+2062 for binary 0, U+2064 for binary 1).
+    This converter supports three encoding modes:
+      - "unicode_tags": Encodes ASCII characters using the Unicode Tags block, without control tag boundaries.
+      - "unicode_tags_control": Same as "unicode_tags", but wraps the output with control characters.
+      - "sneaky_bits": Encodes UTF-8 data at the bit level using two invisible Unicode characters.
 
     Replicates functionality detailed in:
       - https://embracethered.com/blog/posts/2024/hiding-and-finding-text-with-unicode-tags/
@@ -28,8 +27,7 @@ class AsciiSmugglerConverter(PromptConverter):
     def __init__(
         self,
         action: Literal["encode", "decode"] = "encode",
-        unicode_tags: bool = False,
-        encoding_mode: str = "unicode_tags",
+        encoding_mode: Literal["unicode_tags", "unicode_tags_control", "sneaky_bits"] = "unicode_tags",
         zero_char: Optional[str] = None,
         one_char: Optional[str] = None,
     ):
@@ -38,24 +36,22 @@ class AsciiSmugglerConverter(PromptConverter):
 
         Args:
             action (Literal["encode", "decode"]): The action to perform.
-            unicode_tags (bool): Whether to add Unicode tags (control characters) during Unicode Tags encoding.
-            encoding_mode (str): The encoding mode to use; must be either "unicode_tags" (default) or "sneaky_bits".
+            encoding_mode (Literal["unicode_tags", "unicode_tags_control", "sneaky_bits"]): The encoding mode to use.
             zero_char (Optional[str]): Character to represent binary 0 in sneaky_bits mode (default: U+2062).
             one_char (Optional[str]): Character to represent binary 1 in sneaky_bits mode (default: U+2064).
 
         Raises:
             ValueError: If an unsupported action or encoding_mode is provided.
         """
-        self.unicode_tags = unicode_tags
+        if action not in ["encode", "decode"]:
+            raise ValueError("Action must be either 'encode' or 'decode'")
+        if encoding_mode not in ["unicode_tags", "unicode_tags_control", "sneaky_bits"]:
+            raise ValueError("encoding_mode must be one of: 'unicode_tags', 'unicode_tags_control', 'sneaky_bits'")
+
         self.action = action
         self.encoding_mode = encoding_mode
         self.zero_char = zero_char if zero_char is not None else "\u2062"  # Invisible Times
         self.one_char = one_char if one_char is not None else "\u2064"  # Invisible Plus
-
-        if self.action not in ["encode", "decode"]:
-            raise ValueError("Action must be either 'encode' or 'decode'")
-        if self.encoding_mode not in ["unicode_tags", "sneaky_bits"]:
-            raise ValueError("encoding_mode must be either 'unicode_tags' or 'sneaky_bits'")
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
@@ -105,7 +101,7 @@ class AsciiSmugglerConverter(PromptConverter):
         Returns:
             Tuple[str, str]: A tuple containing a summary of the code points (or bit info) and the encoded message.
         """
-        if self.encoding_mode == "unicode_tags":
+        if self.encoding_mode in ["unicode_tags", "unicode_tags_control"]:
             return self._encode_unicode_tags(message)
         elif self.encoding_mode == "sneaky_bits":
             return self._encode_sneaky_bits(message)
@@ -126,7 +122,7 @@ class AsciiSmugglerConverter(PromptConverter):
         Returns:
             str: The decoded original message.
         """
-        if self.encoding_mode == "unicode_tags":
+        if self.encoding_mode in ["unicode_tags", "unicode_tags_control"]:
             return self._decode_unicode_tags(message)
         elif self.encoding_mode == "sneaky_bits":
             return self._decode_sneaky_bits(message)
@@ -138,7 +134,7 @@ class AsciiSmugglerConverter(PromptConverter):
         Encode the message using Unicode Tag characters.
 
         Each ASCII printable character (0x20-0x7E) is replaced with a corresponding Unicode Tag
-        character (by adding 0xE0000). If the `unicode_tags` flag is True, a leading control tag
+        character (by adding 0xE0000). In "unicode_tags_control" mode, a leading control tag
         (U+E0001) and a trailing control tag (U+E007F) are added.
 
         Args:
@@ -151,7 +147,8 @@ class AsciiSmugglerConverter(PromptConverter):
         encoded = ""
         code_points = ""
         invalid_chars = ""
-        if self.unicode_tags:
+
+        if self.encoding_mode == "unicode_tags_control":
             encoded += chr(0xE0001)
             code_points += "U+E0001 "
 
@@ -163,7 +160,7 @@ class AsciiSmugglerConverter(PromptConverter):
             else:
                 invalid_chars += char
 
-        if self.unicode_tags:
+        if self.encoding_mode == "unicode_tags_control":
             encoded += chr(0xE007F)
             code_points += "U+E007F"
 

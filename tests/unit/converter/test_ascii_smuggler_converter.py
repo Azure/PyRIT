@@ -8,9 +8,9 @@ from pyrit.prompt_converter.ascii_smuggler_converter import AsciiSmugglerConvert
 
 
 @pytest.mark.asyncio
-async def test_convert_async_encode_unicode_tags():
+async def test_convert_async_encode_unicode_tags_control():
     # Test encoding using the Unicode Tags mode with control tags enabled.
-    converter = AsciiSmugglerConverter(action="encode", unicode_tags=True, encoding_mode="unicode_tags")
+    converter = AsciiSmugglerConverter(action="encode", encoding_mode="unicode_tags_control")
     prompt = "Hello, World!"
     result = await converter.convert_async(prompt=prompt, input_type="text")
     assert isinstance(result, ConverterResult)
@@ -21,10 +21,22 @@ async def test_convert_async_encode_unicode_tags():
 
 
 @pytest.mark.asyncio
+async def test_convert_async_encode_unicode_tags():
+    # Test encoding using the Unicode Tags mode without control tags.
+    converter = AsciiSmugglerConverter(action="encode", encoding_mode="unicode_tags")
+    prompt = "Hello, World!"
+    result = await converter.convert_async(prompt=prompt, input_type="text")
+    assert isinstance(result, ConverterResult)
+    assert result.output_type == "text"
+    assert not result.output_text.startswith(chr(0xE0001))
+    assert not result.output_text.endswith(chr(0xE007F))
+
+
+@pytest.mark.asyncio
 async def test_convert_async_decode_unicode_tags():
-    # The following encoded message is "Hi"
+    # The following encoded message is "Hi" with control tags
     encoded_message = chr(0xE0001) + chr(0xE0000) + chr(0xE0048) + chr(0xE0000) + chr(0xE0069) + chr(0xE007F)
-    converter = AsciiSmugglerConverter(action="decode", encoding_mode="unicode_tags")
+    converter = AsciiSmugglerConverter(action="decode", encoding_mode="unicode_tags_control")
     result = await converter.convert_async(prompt=encoded_message, input_type="text")
     assert isinstance(result, ConverterResult)
     assert result.output_type == "text"
@@ -32,13 +44,13 @@ async def test_convert_async_decode_unicode_tags():
 
 
 @pytest.mark.asyncio
-async def test_encode_decode_unicode_tags():
-    # Test round-trip encoding/decoding with Unicode Tags mode (with control tags).
+async def test_encode_decode_unicode_tags_control():
+    # Test round-trip encoding/decoding with Unicode Tags control mode.
     base_string = "Hello, World!"
-    encode_converter = AsciiSmugglerConverter(action="encode", unicode_tags=True, encoding_mode="unicode_tags")
+    encode_converter = AsciiSmugglerConverter(action="encode", encoding_mode="unicode_tags_control")
     encoded_result = await encode_converter.convert_async(prompt=base_string, input_type="text")
 
-    decode_converter = AsciiSmugglerConverter(action="decode", encoding_mode="unicode_tags")
+    decode_converter = AsciiSmugglerConverter(action="decode", encoding_mode="unicode_tags_control")
     decoded_result = await decode_converter.convert_async(prompt=encoded_result.output_text, input_type="text")
 
     assert isinstance(decoded_result, ConverterResult)
@@ -47,10 +59,10 @@ async def test_encode_decode_unicode_tags():
 
 
 @pytest.mark.asyncio
-async def test_encode_decode_unicode_tags_notags():
+async def test_encode_decode_unicode_tags():
     # Test encoding and decoding without unicode tags to ensure input integrity.
     base_string = "Hello, World!"
-    encode_converter = AsciiSmugglerConverter(action="encode", unicode_tags=False, encoding_mode="unicode_tags")
+    encode_converter = AsciiSmugglerConverter(action="encode", encoding_mode="unicode_tags")
     encoded_result = await encode_converter.convert_async(prompt=base_string, input_type="text")
 
     decode_converter = AsciiSmugglerConverter(action="decode", encoding_mode="unicode_tags")
@@ -86,6 +98,35 @@ async def test_convert_async_decode_sneaky_bits():
     assert isinstance(decoded_result, ConverterResult)
     assert decoded_result.output_type == "text"
     assert decoded_result.output_text == original_text
+
+
+@pytest.mark.asyncio
+async def test_convert_async_encode_only_modes():
+    prompt = "Test"
+
+    # Unicode Tags Control
+    converter_control = AsciiSmugglerConverter(action="encode", encoding_mode="unicode_tags_control")
+    result_control = await converter_control.convert_async(prompt=prompt, input_type="text")
+    assert result_control.output_text != ""
+    assert result_control.output_text.startswith(chr(0xE0001))
+    assert result_control.output_text.endswith(chr(0xE007F))
+    assert len(result_control.output_text) == len(prompt) + 2  # Explicit length check
+
+    # Unicode Tags (no control)
+    converter_no_control = AsciiSmugglerConverter(action="encode", encoding_mode="unicode_tags")
+    result_no_control = await converter_no_control.convert_async(prompt=prompt, input_type="text")
+    assert result_no_control.output_text != ""
+    assert not result_no_control.output_text.startswith(chr(0xE0001))
+    assert not result_no_control.output_text.endswith(chr(0xE007F))
+    assert len(result_no_control.output_text) == len(prompt)  # Explicit length check
+
+    # Sneaky Bits
+    converter_sneaky = AsciiSmugglerConverter(action="encode", encoding_mode="sneaky_bits")
+    result_sneaky = await converter_sneaky.convert_async(prompt=prompt, input_type="text")
+    assert result_sneaky.output_text != ""
+    valid_chars = {converter_sneaky.zero_char, converter_sneaky.one_char}
+    assert all(ch in valid_chars for ch in result_sneaky.output_text)
+    assert len(result_sneaky.output_text) == len(prompt.encode("utf-8")) * 8  # Explicit length check
 
 
 # Test for the input_supported method
