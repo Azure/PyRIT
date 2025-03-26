@@ -3,7 +3,7 @@ source: https://github.com/prompt-security/ps_fuzz/attacks/dynamic_test.py
 authors: Vitaly Newman https://github.com/vitaly-ps
 groups: Prompt Security
 description: deceiving the LLM that it's settings have been reset, to exfiltrate its system prompts, settings, initialization and role.
-harm_categories: 
+harm_categories:
   - stealing system prompt
 prompts:
   - value:
