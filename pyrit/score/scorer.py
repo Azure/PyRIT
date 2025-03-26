@@ -219,6 +219,7 @@ class Scorer(abc.ABC):
         category: str = None,
         task: str = None,
         orchestrator_identifier: dict[str, str] = None,
+        output_keys: dict = {"score_value" : "score_value", "rationale" : "rationale", "metadata" : "metadata", "description" : "description"},
     ) -> UnvalidatedScore:
         """
         Sends a request to a target, and takes care of retries.
@@ -275,22 +276,21 @@ class Scorer(abc.ABC):
 
             response_json = remove_markdown_json(response_json)
             parsed_response = json.loads(response_json)
-
             category_response = parsed_response.get("category")
 
             if category_response and category:
                 raise ValueError("Category is present in the response and an argument")
 
             category = category_response if category_response else category
-
+            
             score = UnvalidatedScore(
-                raw_score_value=str(parsed_response["score_value"]),
-                score_value_description=parsed_response.get("description"),
+                raw_score_value=str(parsed_response[output_keys["score_value"]]),
+                score_value_description=parsed_response.get(output_keys["description"]),
                 score_type=self.scorer_type,
                 score_category=category,
-                score_rationale=parsed_response["rationale"],
+                score_rationale=parsed_response[output_keys["rationale"]],
                 scorer_class_identifier=self.get_identifier(),
-                score_metadata=parsed_response.get("metadata"),
+                score_metadata=parsed_response.get(output_keys["metadata"]),
                 prompt_request_response_id=scored_prompt_id,
                 task=task,
             )

@@ -22,7 +22,7 @@ class SelfAskGeneralScorer(Scorer):
     def __init__(self, chat_target: PromptChatTarget, 
                  system_prompt:str = None, prompt_fstring_format: str = None, 
                  scorer_type: str = None, score_value_json_key: str = None, 
-                 category:list =None, labels: list=None):
+                 category:list =None, labels: list=None, min_value: int = 0, max_value: int = 100, output_keys:dict = None) -> None:
         self._prompt_target = chat_target
         self._system_prompt = system_prompt
         self.prompt_fstring_format = prompt_fstring_format
@@ -30,28 +30,59 @@ class SelfAskGeneralScorer(Scorer):
         self.score_value_json_key = score_value_json_key
         self._score_category = category
         self.labels = labels
+        self._min_value = min_value
+        self._max_value = max_value
+        self.prompt_fstring_format = prompt_fstring_format
+
+        # Default output keys
+        default_output_keys = {"score_value": "score_value", "rationale": "rationale", "metadata": "metadata", "description": "description"}
+        
+        # Merge default keys with provided keys (if any)
+        self._output_keys = {**default_output_keys, **(output_keys or {})}
 
         print("SelfAskGeneralScorer initialized")
 
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         self.validate(request_response, task=task)
 
-        if self.scorer_type == "true_false":
-            print("True False scorer type")
+        if self.prompt_fstring_format:
+            full_prompt = self.prompt_fstring_format.format(
+                task=task
+            )
 
-            unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
+            converted_response = full_prompt
+            if self._system_prompt:
+                converted_response = f"{self._system_prompt} {full_prompt}"
+        else:
+            converted_response = self._system_prompt
+
+        unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
                 prompt_target=self._prompt_target,
-                system_prompt=self._system_prompt,
+                system_prompt=converted_response,
                 prompt_request_value=request_response.converted_value,
                 prompt_request_data_type=request_response.converted_value_data_type,
                 scored_prompt_id=request_response.id,
                 category=self._score_category,
                 task=task,
                 orchestrator_identifier=request_response.orchestrator_identifier,
+                output_keys=self._output_keys,
             )
-            score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value)
+        
+        if self.scorer_type == "true_false":
 
+            score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value)
             # self._memory.add_scores_to_memory(scores=[score])
+            return [score]
+        
+        elif self.scorer_type == "float_scale":
+
+            score = unvalidated_score.to_score(
+            score_value=str(
+                self.scale_value_float(
+                    float(unvalidated_score.raw_score_value), self._min_value, self._max_value
+                )
+            )
+        )
             return [score]
         return []
 
