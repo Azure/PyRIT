@@ -19,7 +19,7 @@ This Docker container provides a pre-configured environment for running PyRIT (P
 ├── README.md                        # This documentation file
 ├── requirements.txt                 # Python packages
 ├── docker-compose.yaml              # Docker Compose configuration
-├── .container.env.settings_example  # Container's example env file (rename .container.env.settings)
+├── .env_container_settings_example  # Container's example env file (rename .env.container.settings)
 └── start.sh                         # Container startup script
 ```
 
@@ -57,14 +57,14 @@ By default, JupyterLab is configured to run without a password or token.
 
 ### Environment Variables
 
-- **CLONE_DOCS**: When set to `true` (default), the container automatically clones the PyRIT repository and copies the documentation files to the notebooks directory. To disable this behavior, set `CLONE_DOCS=false` in your environment or in the `.container.env.settings` file.
+- **CLONE_DOCS**: When set to `true` (default), the container automatically clones the PyRIT repository and copies the documentation files to the notebooks directory. To disable this behavior, set `CLONE_DOCS=false` in your environment or in the `.env.container.settings` file.
 - **ENABLE_GPU**: Set to `true` to enable GPU support (requires NVIDIA drivers and container toolkit). The container defaults to CPU-only mode.
 
 The container expects a .env file and optionally a .env.local file to provide secret keys and configuration values. If these files do not exist, please create them by copying the provided example files:
 ```bash
 cp ../.env.example ../.env
 cp ../.env.local_example ../.env.local
-cp .container.env.settings_example .container.env.settings
+cp .env_container_settings_example .env.container.settings
 ```
 These files will automatically be pulled into the container (.env and .env.local), and if they're missing, you might encounter errors indicating that required environment files are not found.
 
@@ -102,8 +102,8 @@ services:
       - ../assets:/app/assets
     env_file:
       - ../.env
-      - ../.env
-      - .container.env.settings
+      - ../.env.local
+      - .env.container.settings
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8888 || exit 1"]
@@ -137,7 +137,7 @@ print(pyrit.__version__)
 
 To enable GPU support:
 
-1. Edit `.container.env.settings` and add/modify the following:
+1. Edit `.env.container.settings` and add/modify the following:
 
    ```bash
     ENABLE_GPU=true  # Enable GPU support
