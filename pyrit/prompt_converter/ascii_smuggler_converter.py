@@ -186,6 +186,11 @@ class AsciiSmugglerConverter(PromptConverter):
         decoded_message = ""
         for char in message:
             code_point = ord(char)
+
+            # Explicitly skip control boundary tags for unicode_tags_control
+            if self.encoding_mode == "unicode_tags_control" and code_point in (0xE0001, 0xE007F):
+                continue
+            
             if 0xE0000 <= code_point <= 0xE007F:
                 decoded_char = chr(code_point - 0xE0000)
                 if not 0x20 <= ord(decoded_char) <= 0x7E:
