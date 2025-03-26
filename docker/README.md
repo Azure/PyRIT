@@ -90,6 +90,7 @@ services:
     volumes:
       - ./notebooks:/app/notebooks
       - ./data:/app/data
+      - ../assets:/app/assets
     env_file:
       - .env
     restart: unless-stopped

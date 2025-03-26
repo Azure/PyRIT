@@ -34,9 +34,10 @@ RUN pip install --no-cache-dir -r requirements.txt --extra-index-url https://dow
 # Install PyRIT from PyPI (the official way)
 RUN pip install --no-cache-dir pyrit[dev,all]
 
+
 # Create a directory for notebooks and data
-RUN mkdir -p /app/notebooks /app/data && \
-    chmod -R 777 /app/notebooks /app/data
+RUN mkdir -p /app/notebooks /app/data /app/assets && \
+    chmod -R 777 /app/notebooks /app/data /app/assets
 
 # Check PyRIT version
 RUN python -c "import pyrit; print(f'PyRIT version: {pyrit.__version__}')"
