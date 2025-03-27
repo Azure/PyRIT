@@ -74,8 +74,8 @@ class SelfAskTrueFalseScorer(Scorer):
         *,
         chat_target: PromptChatTarget,
         true_false_question_path: Optional[Path] = None,
-        true_false_question: Optional[TrueFalseQuestion] = None,
-        true_false_system_prompt: Optional[Union[Path, dict]] = None,
+        true_false_question: Optional[Union[TrueFalseQuestion, dict, str]] = None,
+        true_false_system_prompt: Optional[Union[Path, dict, str]] = None,
     ) -> None:
         self._prompt_target = chat_target
         self.scorer_type = "true_false"
@@ -103,10 +103,14 @@ class SelfAskTrueFalseScorer(Scorer):
             else TRUE_FALSE_QUESTIONS_PATH / "true_false_system_prompt.yaml"
         )
 
-        if isinstance(true_false_system_prompt, dict):
+        if isinstance(true_false_system_prompt, str):
+            scoring_prompt_dict = {"value": true_false_system_prompt, "data_type": "text"}
+            scoring_instructions_template = SeedPrompt(**scoring_prompt_dict)
+
+        elif isinstance(true_false_system_prompt, dict):
             scoring_instructions_template = SeedPrompt(**true_false_system_prompt)
 
-        if isinstance(true_false_system_prompt, Path):
+        elif isinstance(true_false_system_prompt, Path):
             scoring_instructions_template = SeedPrompt.from_yaml_file(true_false_system_prompt)
 
         self._system_prompt = scoring_instructions_template.render_template_value(

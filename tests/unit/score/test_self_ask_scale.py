@@ -47,7 +47,7 @@ def scale_scorer(patch_central_database) -> SelfAskScaleScorer:
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "scale_arguments_path, system_prompt_path",
+    "scale_arguments, system_prompt",
     [
         (None, None),
         (tree_scale_path, general_system_prompt_path),
@@ -66,8 +66,8 @@ async def test_scale_scorer_set_system_prompt(
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_scale_response)
     scorer = SelfAskScaleScorer(
         chat_target=chat_target,
-        scale_arguments_path=scale_arguments,
-        system_prompt_path=system_prompt,
+        scale_arguments=scale_arguments,
+        system_prompt=system_prompt,
     )
 
     await scorer.score_text_async(text="string", task="task")
