@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.6
 #   kernelspec:
 #     display_name: pyrit-312
 #     language: python
@@ -13,9 +13,11 @@
 # ---
 
 # %% [markdown]
-# # Sending a Million Prompts
+# # 1. Sending a Million Prompts
 #
-# Here is a scenario; you have 1,000,000 prompts and you're trying to send them all for evaluation. This takes you step by step on best practices, including comments around the pieces you may want to configure.
+# Here is a scenario; you have 1,000,000 prompts and you're trying to send them all for evaluation.
+#
+# This cookbook (like all cookbooks in our docs) takes you step by step, tackling this problem using our best practices and in a way that's the most generic. Sometimes there are issues we want to solve, but haven't yet, and we try to note those and we'll try to keep this up to date as we improve. Comments are added around the pieces you may want to configure as you adapt to your scenario.
 #
 # ## Gather Prompts
 #
@@ -70,7 +72,7 @@ prompt_groups = memory.get_seed_prompt_groups(dataset_name="test illegal")
 
 # Configure the labels you want to send
 # These should be unique to this test to make it easier to retrieve
-memory_labels = {"op_name": "new_op", "user_name": "rlundeen"}
+memory_labels = {"op_name": "new_op", "user_name": "rlundeen", "test_name": "cookbook_1"}
 
 
 # Configure the target you are testing
@@ -82,6 +84,10 @@ scorers = [
     AzureContentFilterScorer(),
     SelfAskRefusalScorer(chat_target=OpenAIChatTarget()),
 ]
+
+# Configure the orchestrator you want to use. This is the basis of your attack strategy.
+# This could be a single turn or multi turn.
+# In this case, we're using PromptSendingOrchestrator to simply send the prompts.
 
 orchestrator = PromptSendingOrchestrator(
     objective_target=objective_target,

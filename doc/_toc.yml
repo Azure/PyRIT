@@ -4,6 +4,7 @@ chapters:
   - file: cookbooks/README
     sections:
     - file: cookbooks/1_sending_prompts
+    - file: cookbooks/2_precomputing_turns
   - file: setup/install_pyrit
     sections:
     - file: setup/jupyter_setup
