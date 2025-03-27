@@ -186,4 +186,3 @@ You can further customize the container by:
 ## Security Note
 
 The JupyterLab instance is configured to run without authentication by default for ease of use. For production deployments, consider adding authentication or running behind a secured proxy.
-
