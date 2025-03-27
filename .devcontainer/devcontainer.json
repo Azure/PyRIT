@@ -11,12 +11,15 @@
             },
             "extensions": [
                 "ms-python.python",
-                "ms-toolsai.jupyter"
+                "ms-toolsai.jupyter",
+                "ms-azuretools.vscode-docker",
+                "tamasfe.even-better-toml",
+                "citation-file-format.citation-file-format"
             ]
         }
     },
     "postCreateCommand": "/bin/bash -i .devcontainer/devcontainer_setup.sh",
-    "forwardPorts": [8888],
+    "forwardPorts": [4213, 8888],
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
     "workspaceFolder": "/workspace"
 }

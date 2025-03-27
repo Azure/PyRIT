@@ -1,5 +1,7 @@
 datasets:
   - ./pyrit/datasets/seed_prompts/illegal.prompt
 scenarios:
-  - type: send_prompts
+  - type: "PromptSendingOrchestrator"
+database:
+  type: "DuckDB"
 objective_target:

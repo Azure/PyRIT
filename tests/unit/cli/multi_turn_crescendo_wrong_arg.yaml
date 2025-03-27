@@ -1,0 +1,15 @@
+datasets:
+  - ./pyrit/datasets/seed_prompts/illegal.prompt
+scenarios:
+  - type: "CrescendoOrchestrator"
+    max_turns: 8
+    wrong_arg: "wrong"
+objective_target:
+  type: "OpenAIChatTarget"
+adversarial_chat:
+  type: "OpenAIChatTarget"
+scoring:
+  scoring_target:
+    type: "OpenAIChatTarget"
+database:
+  type: "DuckDB"
