@@ -219,7 +219,12 @@ class Scorer(abc.ABC):
         category: str = None,
         task: str = None,
         orchestrator_identifier: dict[str, str] = None,
-        output_keys: dict = {"score_value" : "score_value", "rationale" : "rationale", "metadata" : "metadata", "description" : "description"},
+        output_keys: dict = {
+            "score_value": "score_value",
+            "rationale": "rationale",
+            "metadata": "metadata",
+            "description": "description",
+        },
     ) -> UnvalidatedScore:
         """
         Sends a request to a target, and takes care of retries.
@@ -282,7 +287,7 @@ class Scorer(abc.ABC):
                 raise ValueError("Category is present in the response and an argument")
 
             category = category_response if category_response else category
-            
+
             score = UnvalidatedScore(
                 raw_score_value=str(parsed_response[output_keys["score_value"]]),
                 score_value_description=parsed_response.get(output_keys["description"]),

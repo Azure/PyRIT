@@ -36,9 +36,7 @@ async def test_true_false_scorer_score(patch_central_database, scorer_true_false
     chat_target = MagicMock()
 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
-    scorer = SelfAskTrueFalseScorer(
-        chat_target=chat_target, true_false_question=TrueFalseQuestionPaths.GROUNDED.value
-    )
+    scorer = SelfAskTrueFalseScorer(chat_target=chat_target, true_false_question=TrueFalseQuestionPaths.GROUNDED.value)
 
     score = await scorer.score_text_async("true false")
 
@@ -56,9 +54,7 @@ async def test_true_false_scorer_set_system_prompt(
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
 
-    scorer = SelfAskTrueFalseScorer(
-        chat_target=chat_target, true_false_question=TrueFalseQuestionPaths.GROUNDED.value
-    )
+    scorer = SelfAskTrueFalseScorer(chat_target=chat_target, true_false_question=TrueFalseQuestionPaths.GROUNDED.value)
 
     await scorer.score_text_async("true false")
 
@@ -93,9 +89,7 @@ async def test_self_ask_scorer_bad_json_exception_retries(patch_central_database
         request_pieces=[PromptRequestPiece(role="assistant", original_value="this is not a json")]
     )
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
-    scorer = SelfAskTrueFalseScorer(
-        chat_target=chat_target, true_false_question=TrueFalseQuestionPaths.GROUNDED.value
-    )
+    scorer = SelfAskTrueFalseScorer(chat_target=chat_target, true_false_question=TrueFalseQuestionPaths.GROUNDED.value)
 
     with pytest.raises(InvalidJsonException):
         await scorer.score_text_async("this has no bullying")
@@ -122,9 +116,7 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries(patch_centra
     )
 
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
-    scorer = SelfAskTrueFalseScorer(
-        chat_target=chat_target, true_false_question=TrueFalseQuestionPaths.GROUNDED.value
-    )
+    scorer = SelfAskTrueFalseScorer(chat_target=chat_target, true_false_question=TrueFalseQuestionPaths.GROUNDED.value)
 
     with pytest.raises(InvalidJsonException):
         await scorer.score_text_async("this has no bullying")
