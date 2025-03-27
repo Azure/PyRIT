@@ -1,4 +1,4 @@
-<p align="center"><img src="./doc/roakey.png" width="150"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Azure/PyRIT/releases/v0.8.0/doc/roakey.png" width="150"></p>
 
 # Python Risk Identification Tool for generative AI (PyRIT)
 
