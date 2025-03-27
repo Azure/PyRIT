@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import re
 
 from typing import List, Union
 
@@ -42,3 +43,34 @@ def combine_list(list1: Union[str, List[str]], list2: Union[str, List[str]]) -> 
     # Merge and keep only unique values
     combined = list(set(list1 + list2))
     return combined
+
+
+def select_word_indices(words: List[str], mode: str = "all", **kwargs):
+    """
+    Select indices from a list of words based on specified selection mode.
+
+    Args:
+        words (list): A list of words to select from.
+        mode (str, optional): Selection mode.
+            Supported modes:
+                - "all": Select all word indices,.
+                - "regex": Select indices matching a regular expression.
+                - "keywords": Select indices of specific keywords.
+
+    Returns:
+        list: Indices of selected words.
+    """
+    if mode == "all":
+        return list(range(len(words)))
+
+    elif mode == "regex":
+        regex = kwargs.get("regex", r".")
+        return [i for i, word in enumerate(words) if re.search(regex, word)]
+
+    elif mode == "keywords":
+        word_list = kwargs.get("keywords", [])
+        return [i for i, word in enumerate(words) if word in word_list]
+
+    # TODO: add more modes here ...
+
+    return list(range(len(words)))
