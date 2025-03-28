@@ -18,12 +18,18 @@ class WordLevelConverter(PromptConverter):
     async def convert_word_async(self, word: str) -> str:
         pass
 
+    def validate_input(self, prompt: str) -> None:
+        """Validate the input before processing (can be overridden by subclasses)"""
+        pass
+
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         if prompt is None:
             raise TypeError("Prompt cannot be None")
 
         if input_type != "text":
             raise ValueError(f"Input type {input_type} not supported")
+
+        self.validate_input(prompt=prompt)
 
         words = prompt.split()
         selected_indices = select_word_indices(words=words, mode=self.mode, **self.mode_kwargs)
