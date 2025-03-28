@@ -121,11 +121,10 @@ orchestrator = PromptSendingOrchestrator(
 await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
 await orchestrator.print_conversations_async()  # type: ignore
 
-import tempfile
-
 # %% [markdown]
 # # Modify Existing PDF with Injection Items
 # %%
+import tempfile
 from pathlib import Path
 
 import requests
