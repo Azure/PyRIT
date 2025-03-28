@@ -1,0 +1,11 @@
+datasets:
+  - ./pyrit/datasets/seed_prompts/illegal.prompt
+objective_target:
+  type: "OpenAIChatTarget"
+scenarios:
+  - type: "PromptSendingOrchestrator"
+scoring:
+  objective_scorer:
+    type: "SelfAskRefusalScorer"
+database:
+  type: "DuckDB"

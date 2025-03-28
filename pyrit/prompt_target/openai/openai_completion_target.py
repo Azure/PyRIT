@@ -64,6 +64,9 @@ class OpenAICompletionTarget(OpenAITarget):
                 tokens based on whether they appear in the text so far, increasing the model's likelihood to
                 talk about new topics.
             n (int, Optional): How many completions to generate for each prompt.
+            httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
+                httpx.AsyncClient() constructor.
+                For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
         """
 
         super().__init__(*args, **kwargs)

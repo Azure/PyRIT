@@ -72,6 +72,56 @@ def test_add_request_pieces_to_memory(
     assert len(duckdb_instance.get_prompt_request_pieces()) == num_conversations
 
 
+def test_get_prompt_request_pieces_uuid_and_string_ids(duckdb_instance: MemoryInterface):
+    """Test that get_prompt_request_pieces handles both UUID objects and string representations."""
+    uuid1 = uuid.uuid4()
+    uuid2 = uuid.uuid4()
+    uuid3 = uuid.uuid4()
+
+    pieces = [
+        PromptRequestPiece(
+            id=uuid1,
+            role="user",
+            original_value="Test prompt 1",
+            converted_value="Test prompt 1",
+        ),
+        PromptRequestPiece(
+            id=uuid2,
+            role="assistant",
+            original_value="Test prompt 2",
+            converted_value="Test prompt 2",
+        ),
+        PromptRequestPiece(
+            id=uuid3,
+            role="user",
+            original_value="Test prompt 3",
+            converted_value="Test prompt 3",
+        ),
+    ]
+    duckdb_instance.add_request_pieces_to_memory(request_pieces=pieces)
+
+    uuid_results = duckdb_instance.get_prompt_request_pieces(prompt_ids=[uuid1, uuid2])
+    assert len(uuid_results) == 2
+    assert {str(uuid1), str(uuid2)} == {str(piece.id) for piece in uuid_results}
+
+    str_results = duckdb_instance.get_prompt_request_pieces(prompt_ids=[str(uuid1), str(uuid2)])
+    assert len(str_results) == 2
+    assert {str(uuid1), str(uuid2)} == {str(piece.id) for piece in str_results}
+
+    mixed_types: Sequence[str | uuid.UUID] = [uuid1, str(uuid2)]
+    mixed_results = duckdb_instance.get_prompt_request_pieces(prompt_ids=mixed_types)
+    assert len(mixed_results) == 2
+    assert {str(uuid1), str(uuid2)} == {str(piece.id) for piece in mixed_results}
+
+    single_uuid_result = duckdb_instance.get_prompt_request_pieces(prompt_ids=[uuid3])
+    assert len(single_uuid_result) == 1
+    assert str(single_uuid_result[0].id) == str(uuid3)
+
+    single_str_result = duckdb_instance.get_prompt_request_pieces(prompt_ids=[str(uuid3)])
+    assert len(single_str_result) == 1
+    assert str(single_str_result[0].id) == str(uuid3)
+
+
 def test_duplicate_memory(duckdb_instance: MemoryInterface):
     orchestrator1 = Orchestrator()
     orchestrator2 = Orchestrator()
@@ -206,10 +256,11 @@ def test_duplicate_conversation_pieces_not_score(duckdb_instance: MemoryInterfac
     new_pieces = duckdb_instance.get_prompt_request_pieces(conversation_id=new_conversation_id)
     new_pieces_ids = [str(p.id) for p in new_pieces]
     assert len(new_pieces) == 2
-    assert new_pieces[0].original_prompt_id == prompt_id_1
-    assert new_pieces[1].original_prompt_id == prompt_id_2
-    assert new_pieces[0].id != prompt_id_1
-    assert new_pieces[1].id != prompt_id_2
+    original_ids = {piece.original_prompt_id for piece in new_pieces}
+    assert original_ids == {prompt_id_1, prompt_id_2}
+
+    for piece in new_pieces:
+        assert piece.id not in (prompt_id_1, prompt_id_2)
     assert len(duckdb_instance.get_scores_by_memory_labels(memory_labels=memory_labels)) == 2
     assert len(duckdb_instance.get_scores_by_orchestrator_id(orchestrator_id=orchestrator1.get_identifier()["id"])) == 2
     assert len(duckdb_instance.get_scores_by_orchestrator_id(orchestrator_id=orchestrator2.get_identifier()["id"])) == 2

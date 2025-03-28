@@ -7,7 +7,6 @@ import logging
 from typing import Any, List, Optional
 from uuid import uuid4
 
-from pyrit.common.batch_helper import batch_task_async
 from pyrit.exceptions import EmptyResponseException
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import (
@@ -19,6 +18,7 @@ from pyrit.models.filter_criteria import PromptConverterState, PromptFilterCrite
 from pyrit.models.seed_prompt import SeedPromptGroup
 from pyrit.prompt_normalizer import NormalizerRequest, PromptConverterConfiguration
 from pyrit.prompt_target import PromptTarget
+from pyrit.prompt_target.batch_helper import batch_task_async
 
 logger = logging.getLogger(__name__)
 

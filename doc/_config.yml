@@ -42,6 +42,7 @@ sphinx:
     - 'sphinx.ext.viewcode'
     - 'sphinx.ext.autosummary'
     - 'sphinx.ext.intersphinx'
+    - 'sphinxcontrib.mermaid'
   config:
     autosummary_generate: true
     add_module_names: false
