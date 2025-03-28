@@ -19,6 +19,9 @@ class WordLevelConverter(PromptConverter):
         pass
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        if prompt is None:
+            raise TypeError("Prompt cannot be None")
+
         if input_type != "text":
             raise ValueError(f"Input type {input_type} not supported")
 
