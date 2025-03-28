@@ -18,7 +18,7 @@ class AsciiSmugglerConverter(PromptConverter):
       - "unicode_tags": Encodes ASCII characters using the Unicode Tags block, without control tag boundaries.
       - "unicode_tags_control": Same as "unicode_tags", but wraps the output with control characters.
       - "sneaky_bits": Encodes UTF-8 data at the bit level using two invisible Unicode characters.
-      - "utf8_smuggler": Encodes arbitrary UTF-8 data using variation selectors.
+      - "variation_selector_smuggler": Encodes arbitrary UTF-8 data using Unicode variation selectors.
 
     Replicates functionality detailed in:
       - https://embracethered.com/blog/posts/2024/hiding-and-finding-text-with-unicode-tags/
@@ -29,34 +29,45 @@ class AsciiSmugglerConverter(PromptConverter):
     def __init__(
         self,
         action: Literal["encode", "decode"] = "encode",
-        encoding_mode: Literal["unicode_tags", "unicode_tags_control", "sneaky_bits", "utf8_smuggler"] = "unicode_tags",
+        encoding_mode: Literal[
+            "unicode_tags", "unicode_tags_control", "sneaky_bits", "variation_selector_smuggler"
+        ] = "unicode_tags",
         zero_char: Optional[str] = None,
         one_char: Optional[str] = None,
+        base_char_utf8: Optional[str] = None,
+        embed_in_base: bool = True,
     ):
         """
         Initialize the converter with options for encoding/decoding.
 
         Args:
             action (Literal["encode", "decode"]): The action to perform.
-            encoding_mode (Literal["unicode_tags", "unicode_tags_control",
-            "sneaky_bits", "utf8_smuggler"]): Encoding to use.
+            encoding_mode (Literal["unicode_tags", "unicode_tags_control", "sneaky_bits",
+            "variation_selector_smuggler"]): Encoding mode to use.
             zero_char (Optional[str]): Character to represent binary 0 in sneaky_bits mode (default: U+2062).
             one_char (Optional[str]): Character to represent binary 1 in sneaky_bits mode (default: U+2064).
+            base_char_utf8 (Optional[str]): Base character for variation_selector_smuggler mode (default: 😊).
+            embed_in_base (bool): If True, the hidden payload is embedded directly into the base character.
+                                    If False, a visible separator (space) is inserted between the base and payload.
+                                    Default is True.
 
         Raises:
             ValueError: If an unsupported action or encoding_mode is provided.
         """
         if action not in ["encode", "decode"]:
             raise ValueError("Action must be either 'encode' or 'decode'")
-        if encoding_mode not in ["unicode_tags", "unicode_tags_control", "sneaky_bits", "utf8_smuggler"]:
+        if encoding_mode not in ["unicode_tags", "unicode_tags_control", "sneaky_bits", "variation_selector_smuggler"]:
             raise ValueError(
-                "encoding_mode must be one of: 'unicode_tags', 'unicode_tags_control', 'sneaky_bits', 'utf8_smuggler'"
+                "encoding_mode must be one of: 'unicode_tags', 'unicode_tags_control', "
+                "'sneaky_bits', 'variation_selector_smuggler'"
             )
 
         self.action = action
         self.encoding_mode = encoding_mode
         self.zero_char = zero_char if zero_char is not None else "\u2062"  # Invisible Times
         self.one_char = one_char if one_char is not None else "\u2064"  # Invisible Plus
+        self.utf8_base_char = base_char_utf8 if base_char_utf8 is not None else "😊"
+        self.embed_in_base = embed_in_base
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
@@ -99,11 +110,12 @@ class AsciiSmugglerConverter(PromptConverter):
         Unicode Tags block (by adding 0xE0000), with optional wrapping using control tags.
         For "sneaky_bits" mode, the message is first converted to UTF-8 bytes and then each bit is
         represented by the invisible characters (self.zero_char for 0, self.one_char for 1).
-        For "utf8_smuggler" mode, the message is converted to its UTF-8 byte sequence and then each
-        byte is encoded as a variation selector:
+        For "variation_selector_smuggler" mode, the message is converted to UTF-8 bytes
+        and each byte is encoded as a variation selector:
           - 0x00-0x0F => U+FE00 to U+FE0F.
-          - 0x10-0xFF => U+E0100 to U+E01EF,
-        with a base character (default: 😊) prepended.
+          - 0x10-0xFF => U+E0100 to U+E01EF.
+        In variation_selector_smuggler mode, if embed_in_base is True (default),
+        the hidden payload is embedded directly into the base character; otherwise, a visible separator is inserted.
 
         Args:
             message (str): The message to encode.
@@ -115,8 +127,8 @@ class AsciiSmugglerConverter(PromptConverter):
             return self._encode_unicode_tags(message)
         elif self.encoding_mode == "sneaky_bits":
             return self._encode_sneaky_bits(message)
-        elif self.encoding_mode == "utf8_smuggler":
-            return self._encode_utf8_smuggler(message)
+        elif self.encoding_mode == "variation_selector_smuggler":
+            return self._encode_variation_selector_smuggler(message)
         else:
             raise ValueError(f"Unsupported encoding_mode: {self.encoding_mode}")
 
@@ -127,7 +139,7 @@ class AsciiSmugglerConverter(PromptConverter):
         For "unicode_tags" mode, characters in the Unicode Tags block are mapped back to ASCII.
         For "sneaky_bits" mode, the invisible characters are interpreted as bits to reconstruct the
         original UTF-8 byte sequence.
-        For "utf8_smuggler" mode, variation selectors (ignoring an initial base character) are mapped
+        For "variation_selector_smuggler" mode, variation selectors (ignoring an initial base character) are mapped
         back to their corresponding UTF-8 bytes.
 
         Args:
@@ -140,8 +152,8 @@ class AsciiSmugglerConverter(PromptConverter):
             return self._decode_unicode_tags(message)
         elif self.encoding_mode == "sneaky_bits":
             return self._decode_sneaky_bits(message)
-        elif self.encoding_mode == "utf8_smuggler":
-            return self._decode_utf8_smuggler(message)
+        elif self.encoding_mode == "variation_selector_smuggler":
+            return self._decode_variation_selector_smuggler(message)
         else:
             raise ValueError(f"Unsupported encoding_mode: {self.encoding_mode}")
 
@@ -290,25 +302,49 @@ class AsciiSmugglerConverter(PromptConverter):
         logger.info(f"Sneaky Bits decoding complete: Decoded text length is {len(decoded_text)} characters.")
         return decoded_text
 
-    def _encode_utf8_smuggler(self, message: str) -> Tuple[str, str]:
-        base_char = "😊"
-        encoded = base_char  # Prepend the base character
-        code_points_summary = f"Base char: U+{ord(base_char):X} "
+    def _encode_variation_selector_smuggler(self, message: str) -> Tuple[str, str]:
+        """
+        Encode the message using Unicode variation selectors.
+        The message is converted to UTF-8 bytes, and each byte is mapped to a variation selector:
+          - 0x00-0x0F => U+FE00 to U+FE0F.
+          - 0x10-0xFF => U+E0100 to U+E01EF.
+        If embed_in_base is True, the payload is embedded directly into the base character;
+        otherwise, a visible separator (a space) is inserted between the base and payload.
+        """
+        base_char = self.utf8_base_char
+        payload = ""
         data = message.encode("utf-8")
         for byte in data:
             if byte < 16:
                 code_point = 0xFE00 + byte
             else:
                 code_point = 0xE0100 + (byte - 16)
-            encoded += chr(code_point)
-            code_points_summary += f"U+{code_point:X} "
-        logger.info(f"UTF8Smuggler encoding complete: {len(data)} bytes encoded.")
+            payload += chr(code_point)
+        if self.embed_in_base:
+            encoded = base_char + payload
+        else:
+            encoded = base_char + " " + payload
+        summary_parts = [f"Base char: U+{ord(base_char):X}"]
+        for byte in data:
+            if byte < 16:
+                summary_parts.append(f"U+{(0xFE00 + byte):X}")
+            else:
+                summary_parts.append(f"U+{(0xE0100 + (byte - 16)):X}")
+        code_points_summary = " ".join(summary_parts)
+        logger.info(f"Variation Selector Smuggler encoding complete: {len(data)} bytes encoded.")
         return code_points_summary.strip(), encoded
 
-    def _decode_utf8_smuggler(self, message: str) -> str:
+    def _decode_variation_selector_smuggler(self, message: str) -> str:
+        """
+        Decode a message encoded using Unicode variation selectors.
+        The decoder scans the string for variation selectors, ignoring any visible separator.
+        """
         bytes_out = bytearray()
         started = False
         for char in message:
+            # If not embedding, skip visible separators (e.g., spaces)
+            if not self.embed_in_base and char == " ":
+                continue
             code = ord(char)
             if 0xFE00 <= code <= 0xFE0F:
                 started = True
@@ -326,46 +362,40 @@ class AsciiSmugglerConverter(PromptConverter):
         except UnicodeDecodeError:
             decoded_text = bytes_out.decode("utf-8", errors="replace")
             logger.error("Decoded byte sequence is not valid UTF-8; some characters may be replaced.")
-        logger.info(f"UTF8Smuggler decoding complete: {len(decoded_text)} characters decoded.")
+        logger.info(f"Variation Selector Smuggler decoding complete: {len(decoded_text)} characters decoded.")
         return decoded_text
 
     # New methods for handling visible and hidden text together.
     def encode_visible_hidden(self, visible: str, hidden: str) -> Tuple[str, str]:
         """
-        Combine visible text with hidden text by encoding the hidden text using utf8_smuggler mode.
-        The hidden part will be appended to the visible text. The hidden text is encoded
-        (including the default base emoji) and then concatenated.
-
+        Combine visible text with hidden text by encoding the hidden text using variation_selector_smuggler mode.
+        The hidden payload is generated as a composite using the current embedding setting and then appended
+        to the visible text.
         Args:
             visible (str): The visible text.
             hidden (str): The secret/hidden text to encode.
-
         Returns:
             Tuple[str, str]: A tuple containing a summary and the combined text.
         """
-        # Encode the hidden text using utf8_smuggler.
-        summary, encoded_hidden = self._encode_utf8_smuggler(hidden)
+        summary, encoded_hidden = self._encode_variation_selector_smuggler(hidden)
         combined = visible + encoded_hidden
         return summary, combined
 
     def decode_visible_hidden(self, combined: str) -> Tuple[str, str]:
         """
         Extract the visible text and decode the hidden text from a combined string.
-        It searches for the first occurrence of the default base emoji (😊) and treats everything
-        from that point on as the hidden encoded data.
-
+        It searches for the first occurrence of the base character (self.utf8_base_char) and treats everything
+        from that point on as the hidden payload.
         Args:
             combined (str): The combined text containing visible and hidden parts.
-
         Returns:
             Tuple[str, str]: A tuple with the visible text and the decoded hidden text.
         """
-        base_char = "😊"
+        base_char = self.utf8_base_char
         index = combined.find(base_char)
         if index == -1:
-            # No hidden data found.
             return combined, ""
         visible = combined[:index]
         hidden_encoded = combined[index:]
-        hidden = self._decode_utf8_smuggler(hidden_encoded)
+        hidden = self._decode_variation_selector_smuggler(hidden_encoded)
         return visible, hidden

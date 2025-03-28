@@ -130,16 +130,16 @@ async def test_convert_async_encode_only_modes():
 
 
 @pytest.mark.asyncio
-async def test_convert_async_encode_utf8_smuggler():
-    # Test encoding using the UTF8 Smuggler mode.
-    converter = AsciiSmugglerConverter(action="encode", encoding_mode="utf8_smuggler")
+async def test_convert_async_encode_variation_selector_smuggler():
+    # Test encoding using the variation_selector_smuggler mode.
+    converter = AsciiSmugglerConverter(action="encode", encoding_mode="variation_selector_smuggler", embed_in_base=True)
     prompt = "Hello, World!"
     result = await converter.convert_async(prompt=prompt, input_type="text")
     assert isinstance(result, ConverterResult)
     assert result.output_type == "text"
 
     # Check that the encoded message starts with the base character (default: 😊)
-    base_char = "😊"
+    base_char = converter.utf8_base_char
     assert result.output_text.startswith(base_char)
 
     # Verify that the characters following the base character are valid variation selectors.
@@ -150,15 +150,19 @@ async def test_convert_async_encode_utf8_smuggler():
 
 
 @pytest.mark.asyncio
-async def test_convert_async_decode_utf8_smuggler():
-    # Test decoding using the UTF8 Smuggler mode.
+async def test_convert_async_decode_variation_selector_smuggler():
+    # Test decoding using the variation_selector_smuggler mode.
     # First encode a known string.
     original_text = "Hello, World!"
-    encode_converter = AsciiSmugglerConverter(action="encode", encoding_mode="utf8_smuggler")
+    encode_converter = AsciiSmugglerConverter(
+        action="encode", encoding_mode="variation_selector_smuggler", embed_in_base=True
+    )
     encoded_result = await encode_converter.convert_async(prompt=original_text, input_type="text")
 
     # Now decode the encoded result.
-    decode_converter = AsciiSmugglerConverter(action="decode", encoding_mode="utf8_smuggler")
+    decode_converter = AsciiSmugglerConverter(
+        action="decode", encoding_mode="variation_selector_smuggler", embed_in_base=True
+    )
     decoded_result = await decode_converter.convert_async(prompt=encoded_result.output_text, input_type="text")
 
     assert isinstance(decoded_result, ConverterResult)
@@ -167,13 +171,17 @@ async def test_convert_async_decode_utf8_smuggler():
 
 
 @pytest.mark.asyncio
-async def test_encode_decode_utf8_smuggler_multibyte():
+async def test_encode_decode_variation_selector_smuggler_multibyte():
     # Test round-trip encoding/decoding with multibyte characters.
     base_string = "Ciao, mondo! 😊"
-    encode_converter = AsciiSmugglerConverter(action="encode", encoding_mode="utf8_smuggler")
+    encode_converter = AsciiSmugglerConverter(
+        action="encode", encoding_mode="variation_selector_smuggler", embed_in_base=True
+    )
     encoded_result = await encode_converter.convert_async(prompt=base_string, input_type="text")
 
-    decode_converter = AsciiSmugglerConverter(action="decode", encoding_mode="utf8_smuggler")
+    decode_converter = AsciiSmugglerConverter(
+        action="decode", encoding_mode="variation_selector_smuggler", embed_in_base=True
+    )
     decoded_result = await decode_converter.convert_async(prompt=encoded_result.output_text, input_type="text")
 
     assert isinstance(decoded_result, ConverterResult)
@@ -183,7 +191,7 @@ async def test_encode_decode_utf8_smuggler_multibyte():
 
 @pytest.mark.asyncio
 async def test_encode_decode_visible_hidden():
-    converter = AsciiSmugglerConverter(encoding_mode="utf8_smuggler")
+    converter = AsciiSmugglerConverter(encoding_mode="variation_selector_smuggler", embed_in_base=True)
 
     visible_text = "Hallo wie geht es dir?"
     hidden_text = "Das ist eine geheime Nachricht!"
@@ -200,6 +208,21 @@ async def test_encode_decode_visible_hidden():
     # Check that the visible part and hidden part are correctly recovered.
     assert decoded_visible == visible_text
     assert decoded_hidden == hidden_text
+
+
+@pytest.mark.asyncio
+async def test_embed_in_base_false_inserts_separator():
+    # Test that when embed_in_base is False.
+    converter = AsciiSmugglerConverter(
+        action="encode", encoding_mode="variation_selector_smuggler", embed_in_base=False
+    )
+    prompt = "Secret"
+    _, encoded = converter._encode_variation_selector_smuggler(prompt)
+    base_char = converter.utf8_base_char
+    # Expect the encoded string to be: base_char + " " + payload
+    assert encoded.startswith(
+        base_char + " "
+    ), "Encoded text should start with base_char followed by a space when embed_in_base is False."
 
 
 # Test for the input_supported method
