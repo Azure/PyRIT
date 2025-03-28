@@ -129,6 +129,79 @@ async def test_convert_async_encode_only_modes():
     assert len(result_sneaky.output_text) == len(prompt.encode("utf-8")) * 8  # Explicit length check
 
 
+@pytest.mark.asyncio
+async def test_convert_async_encode_utf8_smuggler():
+    # Test encoding using the UTF8 Smuggler mode.
+    converter = AsciiSmugglerConverter(action="encode", encoding_mode="utf8_smuggler")
+    prompt = "Hello, World!"
+    result = await converter.convert_async(prompt=prompt, input_type="text")
+    assert isinstance(result, ConverterResult)
+    assert result.output_type == "text"
+
+    # Check that the encoded message starts with the base character (default: 😊)
+    base_char = "😊"
+    assert result.output_text.startswith(base_char)
+
+    # Verify that the characters following the base character are valid variation selectors.
+    for ch in result.output_text[len(base_char) :]:
+        code = ord(ch)
+        valid = (0xFE00 <= code <= 0xFE0F) or (0xE0100 <= code <= 0xE01EF)
+        assert valid, f"Character {ch} with code U+{code:X} is not a valid variation selector."
+
+
+@pytest.mark.asyncio
+async def test_convert_async_decode_utf8_smuggler():
+    # Test decoding using the UTF8 Smuggler mode.
+    # First encode a known string.
+    original_text = "Hello, World!"
+    encode_converter = AsciiSmugglerConverter(action="encode", encoding_mode="utf8_smuggler")
+    encoded_result = await encode_converter.convert_async(prompt=original_text, input_type="text")
+
+    # Now decode the encoded result.
+    decode_converter = AsciiSmugglerConverter(action="decode", encoding_mode="utf8_smuggler")
+    decoded_result = await decode_converter.convert_async(prompt=encoded_result.output_text, input_type="text")
+
+    assert isinstance(decoded_result, ConverterResult)
+    assert decoded_result.output_type == "text"
+    assert decoded_result.output_text == original_text
+
+
+@pytest.mark.asyncio
+async def test_encode_decode_utf8_smuggler_multibyte():
+    # Test round-trip encoding/decoding with multibyte characters.
+    base_string = "Ciao, mondo! 😊"
+    encode_converter = AsciiSmugglerConverter(action="encode", encoding_mode="utf8_smuggler")
+    encoded_result = await encode_converter.convert_async(prompt=base_string, input_type="text")
+
+    decode_converter = AsciiSmugglerConverter(action="decode", encoding_mode="utf8_smuggler")
+    decoded_result = await decode_converter.convert_async(prompt=encoded_result.output_text, input_type="text")
+
+    assert isinstance(decoded_result, ConverterResult)
+    assert decoded_result.output_type == "text"
+    assert decoded_result.output_text == base_string
+
+
+@pytest.mark.asyncio
+async def test_encode_decode_visible_hidden():
+    converter = AsciiSmugglerConverter(encoding_mode="utf8_smuggler")
+
+    visible_text = "Hallo wie geht es dir?"
+    hidden_text = "Das ist eine geheime Nachricht!"
+
+    # Encode both visible and hidden text.
+    _, combined = converter.encode_visible_hidden(visible=visible_text, hidden=hidden_text)
+
+    # Confirm that the combined string starts with the visible text.
+    assert combined.startswith(visible_text)
+
+    # Now decode the combined string.
+    decoded_visible, decoded_hidden = converter.decode_visible_hidden(combined)
+
+    # Check that the visible part and hidden part are correctly recovered.
+    assert decoded_visible == visible_text
+    assert decoded_hidden == hidden_text
+
+
 # Test for the input_supported method
 def test_input_supported():
     converter = AsciiSmugglerConverter()
