@@ -4,6 +4,7 @@
 from typing import Callable
 from unittest.mock import MagicMock, patch
 
+import httpx
 import pytest
 
 from pyrit.prompt_target.http_target.http_target import HTTPTarget
@@ -171,3 +172,44 @@ async def test_send_prompt_async_keeps_original_template(mock_request, mock_http
         content='{"prompt": "second_test_prompt"}',
         follow_redirects=True,
     )
+
+
+@pytest.mark.asyncio
+async def test_http_target_with_injected_client():
+    custom_client = httpx.AsyncClient(timeout=30.0, verify=False, headers={"X-Custom-Header": "test_value"})
+
+    sample_request = (
+        'POST / HTTP/1.1\nHost: example.com\nContent-Type: application/json\n\n{"prompt": "{PLACEHOLDER_PROMPT}"}'
+    )
+
+    target = HTTPTarget.with_client(
+        client=custom_client,
+        http_request=sample_request,
+        prompt_regex_string="{PLACEHOLDER_PROMPT}",
+        callback_function=get_http_target_json_response_callback_function(key="mock_key"),
+    )
+
+    assert target._client is custom_client
+
+    with patch.object(custom_client, "request") as mock_request:
+        mock_response = MagicMock()
+        mock_response.content = b'{"mock_key": "test_value"}'
+        mock_request.return_value = mock_response
+
+        prompt_request = MagicMock()
+        prompt_request.request_pieces = [MagicMock(converted_value="test_prompt")]
+
+        response = await target.send_prompt_async(prompt_request=prompt_request)
+
+        assert response.get_value() == "test_value"
+
+        mock_request.assert_called_once_with(
+            method="POST",
+            url="https://example.com/",
+            headers={"Host": "example.com", "Content-Type": "application/json", "X-Custom-Header": "test_value"},
+            content='{"prompt": "test_prompt"}',
+            follow_redirects=True,
+        )
+
+    assert not custom_client.is_closed, "Client must not be closed after sending a prompt"
+    await custom_client.aclose()
