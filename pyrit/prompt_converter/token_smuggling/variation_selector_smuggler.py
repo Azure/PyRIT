@@ -12,17 +12,17 @@ logger = logging.getLogger(__name__)
 class VariationSelectorSmuggler(SmugglerConverter):
     """
     Encodes and decodes text using Unicode Variation Selectors.
-    
+
     Each UTF-8 byte is mapped as follows:
       - Bytes 0x00-0x0F are mapped to U+FE00-U+FE0F.
       - Bytes 0x10-0xFF are mapped to U+E0100-U+E01EF.
-    
+
     If 'embed_in_base' is True, the payload is concatenated with a base character
     (default: 😊); otherwise, a space separator is inserted.
 
     Replicates functionality detailed in:
       - https://paulbutler.org/2025/smuggling-arbitrary-data-through-an-emoji/
-    
+
     Extension: In addition to embedding into a base character, we also support
     appending invisible variation selectors directly to visible text—enabling mixed
     visible and hidden content within a single string.
@@ -50,7 +50,6 @@ class VariationSelectorSmuggler(SmugglerConverter):
         super().__init__(action=action)
         self.utf8_base_char = base_char_utf8 if base_char_utf8 is not None else "😊"
         self.embed_in_base = embed_in_base
-
 
     def encode_message(self, message: str) -> Tuple[str, str]:
         """

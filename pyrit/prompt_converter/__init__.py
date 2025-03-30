@@ -9,7 +9,6 @@ from pyrit.prompt_converter.add_text_image_converter import AddTextImageConverte
 from pyrit.prompt_converter.ansi_escape.ansi_attack_converter import AnsiAttackConverter
 from pyrit.prompt_converter.ascii_art_converter import AsciiArtConverter
 from pyrit.prompt_converter.token_smuggling import (
-    SmugglerConverter,
     AsciiSmugglerConverter,
     SneakyBitsSmuggler,
     VariationSelectorSmuggler,
@@ -105,7 +104,6 @@ __all__ = [
     "RepeatTokenConverter",
     "ROT13Converter",
     "SearchReplaceConverter",
-    "SmugglerConverter",
     "SneakyBitsSmuggler",
     "StringJoinConverter",
     "SuffixAppendConverter",

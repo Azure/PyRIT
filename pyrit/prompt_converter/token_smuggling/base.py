@@ -1,22 +1,24 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-
+import abc
 import logging
-from typing import Tuple, Literal
+from typing import Literal, Tuple
 
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 
-class SmugglerConverter(PromptConverter):
+
+class SmugglerConverter(PromptConverter, abc.ABC):
     """
     Abstract base class for token smuggling converters.
-    
+
     Provides the common asynchronous conversion interface and enforces
     implementation of encode_message and decode_message in subclasses.
     """
+
     def __init__(self, action: Literal["encode", "decode"] = "encode") -> None:
         if action not in ["encode", "decode"]:
             raise ValueError("Action must be either 'encode' or 'decode'")
@@ -25,14 +27,14 @@ class SmugglerConverter(PromptConverter):
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Convert the prompt by either encoding or decoding it based on the specified action.
-        
+
         Args:
             prompt (str): The prompt to be processed.
             input_type (PromptDataType): Type of input; only "text" is supported.
-        
+
         Returns:
             ConverterResult: The result containing the output text and its type.
-            
+
         Raises:
             ValueError: If the input type is unsupported.
         """
@@ -54,29 +56,31 @@ class SmugglerConverter(PromptConverter):
         """Return True if the output type is 'text'."""
         return output_type == "text"
 
+    @abc.abstractmethod
     def encode_message(self, *, message: str) -> Tuple[str, str]:
         """
         Encodes the given message.
-        
+
         Must be implemented by subclasses.
-        
+
         Args:
             message (str): The message to encode.
-            
+
         Returns:
             Tuple[str, str]: A tuple containing a summary and the encoded message.
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
     def decode_message(self, *, message: str) -> str:
         """
         Decodes the given message.
-        
+
         Must be implemented by subclasses.
-        
+
         Args:
             message (str): The encoded message.
-            
+
         Returns:
             str: The decoded message.
         """

@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class AsciiSmugglerConverter(SmugglerConverter):
     """
     Implements encoding and decoding using Unicode Tags.
-    
+
     If 'control' is True, the encoded output is wrapped with:
       - U+E0001 (start control tag)
       - U+E007F (end control tag)
@@ -34,13 +34,13 @@ class AsciiSmugglerConverter(SmugglerConverter):
     def encode_message(self, *, message: str):
         """
         Encodes the message using Unicode Tags.
-        
+
         Each ASCII printable character (0x20-0x7E) is mapped to a corresponding
         Unicode Tag (by adding 0xE0000). If control mode is enabled, wraps the output.
-        
+
         Args:
             message (str): The message to encode.
-            
+
         Returns:
             Tuple[str, str]: A tuple with a summary of code points and the encoded message.
         """
@@ -68,13 +68,13 @@ class AsciiSmugglerConverter(SmugglerConverter):
     def decode_message(self, *, message: str):
         """
         Decodes a message encoded with Unicode Tags.
-        
+
         For each character in the Unicode Tags range, subtracts 0xE0000.
         Skips control tags if present.
-        
+
         Args:
             message (str): The encoded message.
-            
+
         Returns:
             str: The decoded message.
         """
