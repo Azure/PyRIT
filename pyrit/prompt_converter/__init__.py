@@ -10,8 +10,8 @@ from pyrit.prompt_converter.ansi_escape.ansi_attack_converter import AnsiAttackC
 from pyrit.prompt_converter.ascii_art_converter import AsciiArtConverter
 from pyrit.prompt_converter.token_smuggling import (
     AsciiSmugglerConverter,
-    SneakyBitsSmuggler,
-    VariationSelectorSmuggler,
+    SneakyBitsSmugglerConverter,
+    VariationSelectorSmugglerConverter,
 )
 from pyrit.prompt_converter.atbash_converter import AtbashConverter
 from pyrit.prompt_converter.audio_frequency_converter import AudioFrequencyConverter
@@ -104,7 +104,7 @@ __all__ = [
     "RepeatTokenConverter",
     "ROT13Converter",
     "SearchReplaceConverter",
-    "SneakyBitsSmuggler",
+    "SneakyBitsSmugglerConverter",
     "StringJoinConverter",
     "SuffixAppendConverter",
     "TextToHexConverter",
@@ -116,5 +116,5 @@ __all__ = [
     "UnicodeSubstitutionConverter",
     "UrlConverter",
     "VariationConverter",
-    "VariationSelectorSmuggler",
+    "VariationSelectorSmugglerConverter",
 ]

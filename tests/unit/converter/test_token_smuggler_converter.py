@@ -6,8 +6,8 @@ import pytest
 from pyrit.prompt_converter import ConverterResult
 from pyrit.prompt_converter.token_smuggling import (
     AsciiSmugglerConverter,
-    SneakyBitsSmuggler,
-    VariationSelectorSmuggler,
+    SneakyBitsSmugglerConverter,
+    VariationSelectorSmugglerConverter,
 )
 
 
@@ -80,7 +80,7 @@ async def test_encode_decode_unicode_tags():
 @pytest.mark.asyncio
 async def test_convert_async_encode_sneaky_bits():
     # Test encoding using the Sneaky Bits mode.
-    converter = SneakyBitsSmuggler(action="encode")
+    converter = SneakyBitsSmugglerConverter(action="encode")
     prompt = "Hello, World!"
     result = await converter.convert_async(prompt=prompt, input_type="text")
     assert isinstance(result, ConverterResult)
@@ -94,10 +94,10 @@ async def test_convert_async_encode_sneaky_bits():
 async def test_convert_async_decode_sneaky_bits():
     # Test decoding using the Sneaky Bits mode.
     original_text = "Test Sneaky Bits"
-    encode_converter = SneakyBitsSmuggler(action="encode")
+    encode_converter = SneakyBitsSmugglerConverter(action="encode")
     encoded_result = await encode_converter.convert_async(prompt=original_text, input_type="text")
 
-    decode_converter = SneakyBitsSmuggler(action="decode")
+    decode_converter = SneakyBitsSmugglerConverter(action="decode")
     decoded_result = await decode_converter.convert_async(prompt=encoded_result.output_text, input_type="text")
     assert isinstance(decoded_result, ConverterResult)
     assert decoded_result.output_type == "text"
@@ -125,7 +125,7 @@ async def test_convert_async_encode_only_modes():
     assert len(result_no_control.output_text) == len(prompt)  # Explicit length check
 
     # Sneaky Bits
-    converter_sneaky = SneakyBitsSmuggler(action="encode")
+    converter_sneaky = SneakyBitsSmugglerConverter(action="encode")
     result_sneaky = await converter_sneaky.convert_async(prompt=prompt, input_type="text")
     assert result_sneaky.output_text != ""
     valid_chars = {converter_sneaky.zero_char, converter_sneaky.one_char}
@@ -136,7 +136,7 @@ async def test_convert_async_encode_only_modes():
 @pytest.mark.asyncio
 async def test_convert_async_encode_variation_selector_smuggler():
     # Test encoding using the variation_selector_smuggler mode.
-    converter = VariationSelectorSmuggler(action="encode", embed_in_base=True)
+    converter = VariationSelectorSmugglerConverter(action="encode", embed_in_base=True)
     prompt = "Hello, World!"
     result = await converter.convert_async(prompt=prompt, input_type="text")
     assert isinstance(result, ConverterResult)
@@ -158,10 +158,10 @@ async def test_convert_async_decode_variation_selector_smuggler():
     # Test decoding using the variation_selector_smuggler mode.
     # First encode a known string.
     original_text = "Hello, World!"
-    encode_converter = VariationSelectorSmuggler(action="encode", embed_in_base=True)
+    encode_converter = VariationSelectorSmugglerConverter(action="encode", embed_in_base=True)
     encoded_result = await encode_converter.convert_async(prompt=original_text, input_type="text")
 
-    decode_converter = VariationSelectorSmuggler(action="decode", embed_in_base=True)
+    decode_converter = VariationSelectorSmugglerConverter(action="decode", embed_in_base=True)
     decoded_result = await decode_converter.convert_async(prompt=encoded_result.output_text, input_type="text")
 
     assert isinstance(decoded_result, ConverterResult)
@@ -173,10 +173,10 @@ async def test_convert_async_decode_variation_selector_smuggler():
 async def test_encode_decode_variation_selector_smuggler_multibyte():
     # Test round-trip encoding/decoding with multibyte characters.
     base_string = "Ciao, mondo! 😊"
-    encode_converter = VariationSelectorSmuggler(action="encode", embed_in_base=True)
+    encode_converter = VariationSelectorSmugglerConverter(action="encode", embed_in_base=True)
     encoded_result = await encode_converter.convert_async(prompt=base_string, input_type="text")
 
-    decode_converter = VariationSelectorSmuggler(action="decode", embed_in_base=True)
+    decode_converter = VariationSelectorSmugglerConverter(action="decode", embed_in_base=True)
     decoded_result = await decode_converter.convert_async(prompt=encoded_result.output_text, input_type="text")
 
     assert isinstance(decoded_result, ConverterResult)
@@ -187,7 +187,7 @@ async def test_encode_decode_variation_selector_smuggler_multibyte():
 @pytest.mark.asyncio
 async def test_encode_decode_visible_hidden():
     # Test mixing visible + hidden text
-    converter = VariationSelectorSmuggler(embed_in_base=True)
+    converter = VariationSelectorSmugglerConverter(embed_in_base=True)
     visible_text = "Hallo wie geht es dir?"
     hidden_text = "Das ist eine geheime Nachricht!"
 
@@ -208,7 +208,7 @@ async def test_encode_decode_visible_hidden():
 @pytest.mark.asyncio
 async def test_embed_in_base_false_inserts_separator():
     # Test that when embed_in_base is False, space is inserted after base char.
-    converter = VariationSelectorSmuggler(action="encode", embed_in_base=False)
+    converter = VariationSelectorSmugglerConverter(action="encode", embed_in_base=False)
     prompt = "Secret"
     _, encoded = converter.encode_message(prompt)
     base_char = converter.utf8_base_char

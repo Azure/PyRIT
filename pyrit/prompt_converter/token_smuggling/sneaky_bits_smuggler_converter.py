@@ -9,7 +9,7 @@ from pyrit.prompt_converter.token_smuggling.base import SmugglerConverter
 logger = logging.getLogger(__name__)
 
 
-class SneakyBitsSmuggler(SmugglerConverter):
+class SneakyBitsSmugglerConverter(SmugglerConverter):
     """
     Encodes and decodes text using a bit-level approach.
 
