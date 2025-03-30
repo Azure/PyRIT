@@ -3,7 +3,7 @@
 
 import enum
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
 
 import yaml
 
@@ -30,36 +30,27 @@ class SelfAskScaleScorer(Scorer):
         self,
         *,
         chat_target: PromptChatTarget,
-        # scale_arguments_path: Optional[Path],
-        scale_arguments: Optional[Union[Path, dict]],
-        # system_prompt_path: Optional[Path],
-        system_prompt: Optional[Union[Path, dict]] = None,
+        scale_arguments_path: Optional[Path],
+        system_prompt_path: Optional[Path],
     ) -> None:
         self._prompt_target = chat_target
         self.scorer_type = "float_scale"
 
-        if not system_prompt:
-            system_prompt = self.SystemPaths.GENERAL_SYSTEM_PROMPT.value
+        if not system_prompt_path:
+            system_prompt_path = self.SystemPaths.GENERAL_SYSTEM_PROMPT.value
 
-        if not scale_arguments:
-            scale_arguments = self.ScalePaths.TREE_OF_ATTACKS_SCALE.value
+        if not scale_arguments_path:
+            scale_arguments_path = self.ScalePaths.TREE_OF_ATTACKS_SCALE.value
 
-        if isinstance(scale_arguments, Path):
-            scale_args = yaml.safe_load(scale_arguments.read_text(encoding="utf-8"))
+        scale_args = yaml.safe_load(scale_arguments_path.read_text(encoding="utf-8"))
 
-        elif isinstance(scale_arguments, dict):
-            scale_args = scale_arguments
         self._validate_scale_arguments_set(scale_args)
 
         self._minimum_value = scale_args["minimum_value"]
         self._maximum_value = scale_args["maximum_value"]
         self._category = scale_args["category"]
 
-        if isinstance(system_prompt, Path):
-            scoring_instructions_template = SeedPrompt.from_yaml_file(system_prompt)
-
-        elif isinstance(system_prompt, dict):
-            scoring_instructions_template = SeedPrompt(**system_prompt)
+        scoring_instructions_template = SeedPrompt.from_yaml_file(system_prompt_path)
 
         self._system_prompt = scoring_instructions_template.render_template_value(**scale_args)
 
