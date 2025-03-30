@@ -1,0 +1,28 @@
+services:
+  pyrit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: pyrit:latest
+    container_name: pyrit-jupyter
+    ports:
+      - "8888:8888"
+    volumes:
+      - notebooks:/app/notebooks
+      - data:/app/data
+      - ../assets:/app/assets
+    env_file:
+      - ../.env
+      - ../.env.local
+      - .env.container.settings
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8888 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  notebooks:
+  data:
