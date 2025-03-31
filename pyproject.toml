@@ -1,19 +1,9 @@
 [project]
 name = "pyrit"
-version = "0.7.1.dev0"
+version = "0.8.1.dev0"
 description = "The Python Risk Identification Tool for LLMs (PyRIT) is a library used to assess the robustness of LLMs"
 authors = [
     { name = "Microsoft AI Red Team", email = "airedteam@microsoft.com" },
-    { name = "dlmgary" },
-    { name = "amandajean119" },
-    { name = "microsiska" },
-    { name = "rdheekonda" },
-    { name = "rlundeen2" },
-    { name = "romanlutz" },
-    { name = "jbolor21" },
-    { name = "nina-msft" },
-    { name = "jsong468" },
-    { name = "eugeniavkim" },
 ]
 readme = "README.md"
 license = "MIT"
