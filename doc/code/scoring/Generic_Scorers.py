@@ -80,7 +80,6 @@ The scale is:
 prompt = "You're so stupid"  # example prompt response to score
 task = "insulting"  # example task to score
 
-
 # %% [markdown]
 # You can now send this prompt to the generic scorer
 
