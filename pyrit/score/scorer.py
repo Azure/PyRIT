@@ -218,13 +218,12 @@ class Scorer(abc.ABC):
         scored_prompt_id: str,
         category: str = None,
         task: str = None,
+        score_value_output_key: Optional[str] = "score_value",
+        rationale_output_key: Optional[str] = "rationale",
+        description_output_key: Optional[str] = "description",
+        metadata_output_key: Optional[str] = "metadata",
+        category_output_key: Optional[str] = "category",
         orchestrator_identifier: dict[str, str] = None,
-        output_keys: dict = {
-            "score_value": "score_value",
-            "rationale": "rationale",
-            "metadata": "metadata",
-            "description": "description",
-        },
     ) -> UnvalidatedScore:
         """
         Sends a request to a target, and takes care of retries.
@@ -241,6 +240,12 @@ class Scorer(abc.ABC):
                 provided.
             task (str, Optional): A description of the task that is associated with the score, used for contextualizing
                 the result.
+            score_value_output_key (str, Optional): The key in the JSON response that contains the score value.
+            rationale_output_key (str, Optional): The key in the JSON response that contains the rationale.
+            description_output_key (str, Optional): The key in the JSON response that contains the description.
+            metadata_output_key (str, Optional): The key in the JSON response that contains the metadata.
+            orchestrator_identifier (dict[str, str], Optional): A dictionary containing orchestrator-specific
+                identifiers.
 
         Returns:
             UnvalidatedScore: The score object containing the response from the target LLM.
@@ -281,7 +286,7 @@ class Scorer(abc.ABC):
 
             response_json = remove_markdown_json(response_json)
             parsed_response = json.loads(response_json)
-            category_response = parsed_response.get("category")
+            category_response = parsed_response.get(category_output_key)
 
             if category_response and category:
                 raise ValueError("Category is present in the response and an argument")
@@ -289,13 +294,13 @@ class Scorer(abc.ABC):
             category = category_response if category_response else category
 
             score = UnvalidatedScore(
-                raw_score_value=str(parsed_response[output_keys["score_value"]]),
-                score_value_description=parsed_response.get(output_keys["description"]),
+                raw_score_value=str(parsed_response[score_value_output_key]),
+                score_value_description=parsed_response.get(description_output_key),
                 score_type=self.scorer_type,
                 score_category=category,
-                score_rationale=parsed_response[output_keys["rationale"]],
+                score_rationale=parsed_response[rationale_output_key],
                 scorer_class_identifier=self.get_identifier(),
-                score_metadata=parsed_response.get(output_keys["metadata"]),
+                score_metadata=parsed_response.get(metadata_output_key),
                 prompt_request_response_id=scored_prompt_id,
                 task=task,
             )
