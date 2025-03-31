@@ -139,7 +139,7 @@ for result in results:
         new_orchestrator_id=new_orchestrator.get_identifier()["id"],
     )
 
-    conversation_starters[result.objective] = list(memory.get_conversation(conversation_id=result.conversation_id))
+    conversation_starters[result.objective] = list(memory.get_conversation(conversation_id=new_conversation))
 
 
 new_results = []
