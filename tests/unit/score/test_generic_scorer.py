@@ -36,7 +36,7 @@ async def test_general_scorer_score_async(patch_central_database, general_scorer
         chat_target=chat_target,
         system_prompt="This is a system prompt.",
         scorer_type="float_scale",
-        category="test_category",
+        category=["test_category"],
         min_value=1,
         max_value=5,
     )
@@ -76,7 +76,7 @@ async def test_general_scorer_score_async_with_prompt_f_string(
         system_prompt="This is a system prompt.",
         prompt_format_string="Is this cyberbullying? {prompt}",
         scorer_type="float_scale",
-        category="test_category",
+        category=["test_category"],
         min_value=1,
         max_value=5,
     )
@@ -123,7 +123,7 @@ async def test_general_scorer_score_async_handles_custom_keys(patch_central_data
         system_prompt="This is a system prompt.",
         prompt_format_string="This is a prompt format string.",
         scorer_type="float_scale",
-        category="test_category",
+        category=["test_category"],
         rationale_output_key="rationale_diff_key",
     )
     await scorer.score_text_async(text="this is a test prompt")
