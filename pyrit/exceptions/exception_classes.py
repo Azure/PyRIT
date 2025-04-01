@@ -11,6 +11,7 @@ from openai import RateLimitError
 from tenacity import (
     retry,
     retry_if_exception_type,
+    retry_if_result,
     stop_after_attempt,
     wait_random_exponential,
 )
@@ -79,6 +80,31 @@ class MissingPromptPlaceholderException(PyritException):
 
     def __init__(self, *, message: str = "No prompt placeholder"):
         super().__init__(message=message)
+
+
+def pyrit_custom_result_retry(func: Callable, retry_function: Callable) -> Callable:
+    """
+    A decorator to apply retry logic with exponential backoff to a function.
+
+    Retries the function if the result of the retry_function is True,
+    with a wait time between retries that follows an exponential backoff strategy.
+    Logs retry attempts at the INFO level and stops after a maximum number of attempts.
+
+    Args:
+        func (Callable): The function to be decorated.
+
+    Returns:
+        Callable: The decorated function with retry logic applied.
+    """
+    global RETRY_MAX_NUM_ATTEMPTS, RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS
+
+    return retry(
+        reraise=True,
+        retry=retry_if_result(retry_function),
+        wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS),
+        after=log_exception,
+        stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
+    )(func)
 
 
 def pyrit_target_retry(func: Callable) -> Callable:

@@ -8,10 +8,13 @@ import httpx
 
 from pyrit.common import net_utility
 from pyrit.exceptions import (
+    EmptyResponseException,
     RateLimitException,
     handle_bad_request_exception,
+    pyrit_custom_result_retry,
     pyrit_target_retry,
 )
+from pyrit.exceptions.exceptions_helpers import log_exception
 from pyrit.models import (
     PromptRequestResponse,
     construct_response_from_request,
@@ -21,6 +24,24 @@ from pyrit.models.data_type_serializer import VideoPathDataTypeSerializer
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
+
+
+# Functions which define when to retry calls to check status and download video
+def _retry_check_task(response: httpx.Response) -> bool:
+    """
+    Returns True if the task status is not "succeeded", "failed", or "cancelled".
+    """
+    content = json.loads(response.content)
+    status = content.get("status", None)  # Preprocessing, Queued, Processing, Cancelled, Succeeded, Failed
+
+    return status not in ["succeeded", "failed", "cancelled"]
+
+
+def _retry_video_download(response: httpx.Response) -> bool:
+    """
+    Returns True if the video download status is not 200 (success).
+    """
+    return response.status_code != 200
 
 
 class OpenAISoraTarget(OpenAITarget):
@@ -84,8 +105,8 @@ class OpenAISoraTarget(OpenAITarget):
         elif resolution_dimensions in ["720x720", "1280x720"]:
             if n_seconds > 20:
                 raise ValueError(
-                    "n_seconds must be less than or equal to 20 for resolution dimensions other than 1080x1080 or " +
-                    "1920x1080."
+                    "n_seconds must be less than or equal to 20 for resolution dimensions other than 1080x1080 or "
+                    + "1920x1080."
                 )
 
             if n_variants > 2:
@@ -95,8 +116,8 @@ class OpenAISoraTarget(OpenAITarget):
         else:
             if n_seconds > 20:
                 raise ValueError(
-                    "n_seconds must be less than or equal to 20 for resolution dimensions other than 1080x1080 or " +
-                    "1920x1080."
+                    "n_seconds must be less than or equal to 20 for resolution dimensions other than 1080x1080 or "
+                    + "1920x1080."
                 )
 
         self._n_seconds = n_seconds
@@ -149,78 +170,9 @@ class OpenAISoraTarget(OpenAITarget):
             else:
                 raise
 
-        response_entry = await self.handle_response(request=request, response=response)
+        return await self._handle_response(request=request, response=response)
 
-        return response_entry
-
-    # Download video content
-    @pyrit_target_retry
-    async def download_video_content(self, task_id: str, gen_id: str) -> VideoPathDataTypeSerializer:
-        uri = f"{self._endpoint}/{gen_id}/video/content"
-        response = await net_utility.make_request_and_raise_if_error_async(
-            endpoint_uri=uri,
-            method="GET",
-            headers=self._headers,
-            params=self._params,
-            **self._httpx_client_kwargs,
-        )
-
-        file_name = f"{task_id}_{gen_id}"
-        video_response = data_serializer_factory(
-            category="prompt-memory-entries",
-            data_type="video_path",
-            value=file_name,
-        )
-
-        if response.status_code == 200:
-            data = response.content
-            await video_response.save_data(data=data)
-
-            # TODO: Cleanup by deleting tasks once content downloaded
-            # DELETE request for URL f"{endpoint_url}/jobs/{task_id}"
-            return video_response
-        else:
-            raise Exception(f"Failed to download video content: {response}")
-
-    async def handle_response(self, request: PromptRequestResponse, response: httpx.Response) -> PromptRequestResponse:
-        # Handle VideoGenerationJob - 201 Created
-        content = json.loads(response.content)
-        if not content:
-            return handle_bad_request_exception(response_text="Empty response", request=request)
-
-        task_id = content.get("id", None)  # Job ID
-        status = content.get("status", None)  # Preprocessing, Queued, Processing, Cancelled, Succeeded, Failed
-        generations = content.get("generations", [])  # array of VideoGeneration
-        failure_reason = content.get("failure_reason", None)  # if status is failed, this will be the reason
-        # prompt = content.get('prompt') # the prompt that was used to generate the video
-
-        if status == "succeeded":
-            # Download video content
-            gen_id = generations[0].get("id", []) if generations else []
-            video_response = await self.download_video_content(task_id, gen_id, request)
-            response_entry = construct_response_from_request(
-                request=request, response_text_pieces=[str(video_response.value)], response_type="video_path"
-            )
-        elif status != "failed" and status != "cancelled":
-            # TODO: Kick off polling in a thread for task status (check_task_status)
-            # while status != "succeeded" or "failed" or "cancelled"
-            response = await self.check_task_status(task_id=content.get("id", None))
-            response_entry = construct_response_from_request(
-                request=request,
-                response_text_pieces=[str(json.loads(response.content))],
-            )
-        else:
-            if failure_reason == "input_moderation":
-                return handle_bad_request_exception(
-                    response_text=failure_reason, request=request, is_content_filter=True
-                )
-            else:
-                return handle_bad_request_exception(response_text=failure_reason, request=request)
-
-        return response_entry
-
-    # This is the function that should be called in polling, with the task_id upon
-    # first response from the POST call
+    @pyrit_custom_result_retry(retry_function=_retry_check_task)
     @pyrit_target_retry
     async def check_task_status(self, task_id: str) -> httpx.Response:
         """
@@ -243,10 +195,90 @@ class OpenAISoraTarget(OpenAITarget):
 
         return response
 
-    async def check_status_all(self):
-        # check status of all in-progress tasks
-        for task in self._in_progress_tasks:
-            self.check_task_status(task_id=task)
+    # Download video content
+    @pyrit_custom_result_retry(retry_function=_retry_video_download)
+    @pyrit_target_retry
+    async def download_video_content(self, gen_id: str) -> httpx.Response:
+        """
+        Download the video using the generation ID.
+        Args:
+            gen_id (str): The ID of the generation to check.
+        Returns:
+            httpx.Response: The response from the API.
+        """
+
+        uri = f"{self._endpoint}/{gen_id}/video/content"
+
+        response = await net_utility.make_request_and_raise_if_error_async(
+            endpoint_uri=uri,
+            method="GET",
+            headers=self._headers,
+            params=self._params,
+            **self._httpx_client_kwargs,
+        )
+
+        return response
+
+    async def _handle_response(self, request: PromptRequestResponse, response: httpx.Response) -> PromptRequestResponse:
+        # Handle Video Generation Request Response
+        content = json.loads(response.content)
+        if not content:
+            raise EmptyResponseException(message="The chat returned an empty response.")
+
+        task_id = content.get("id", None)
+        prompt = content.get("prompt", None)
+        logger.info(f"Handling response for Task ID: {task_id}, Prompt: {prompt}")
+
+        # Check status with retry until task is complete (succeeded, failed, or cancelled)
+        task_response = await self.check_task_status(task_id=task_id)
+        task_content = json.loads(task_response.content)
+        status = task_content.get("status", None)
+
+        # Handle completed task
+        if status == "succeeded":
+            # Download video content
+            generations = task_content.get("generations", [])
+            gen_id = generations[0].get("id", None)
+            if gen_id is None:
+                raise ValueError("No generation ID found in the task response.")
+
+            video_response = await self.download_video_content(task_id, gen_id, request)
+
+            if video_response.status_code == 200:
+                file_name = f"{task_id}_{gen_id}"
+                serializer = data_serializer_factory(
+                    category="prompt-memory-entries",
+                    data_type="video_path",
+                    value=file_name,
+                )
+                data = video_response.content
+
+                await serializer.save_data(data=data)
+                logger.info(f"Video content downloaded successfully for Task ID: {task_id}, Gen ID: {gen_id}")
+            else:
+                raise Exception(f"Failed to download video content: {response}")
+
+            response_entry = construct_response_from_request(
+                request=request, response_text_pieces=[str(video_response.value)], response_type="video_path"
+            )
+        elif status == "failed" or status == "cancelled":
+            # Handle failed or cancelled task
+            failure_reason = task_content.get("failure_reason", None)
+
+            if failure_reason == "input_moderation":
+                return handle_bad_request_exception(
+                    response_text=failure_reason, request=request, is_content_filter=True
+                )
+            else:
+                return handle_bad_request_exception(response_text=failure_reason, request=request)
+        else:
+            # Retry stop condition reached, return result
+            response_entry = construct_response_from_request(
+                request=request,
+                response_text_pieces=[str(json.loads(response.content))],
+            )
+
+        return response_entry
 
     def _construct_request_body(self, prompt: str) -> dict:
 
