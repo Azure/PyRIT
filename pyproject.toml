@@ -57,7 +57,7 @@ dependencies = [
     "segno>=1.6.1",
     "scipy>=1.14.1",
     "SQLAlchemy>=2.0.28",
-    "termcolor>=2.4.0",
+    "termcolor==2.5.0",
     "tenacity>=8.2.3",
     "tinytag>=2.0.0",
     "tqdm>=4.66.2",
