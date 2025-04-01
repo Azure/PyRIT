@@ -82,7 +82,7 @@ class MissingPromptPlaceholderException(PyritException):
         super().__init__(message=message)
 
 
-def pyrit_custom_result_retry(func: Callable, retry_function: Callable) -> Callable:
+def pyrit_custom_result_retry(retry_function: Callable) -> Callable:
     """
     A decorator to apply retry logic with exponential backoff to a function.
 
@@ -96,15 +96,18 @@ def pyrit_custom_result_retry(func: Callable, retry_function: Callable) -> Calla
     Returns:
         Callable: The decorated function with retry logic applied.
     """
-    global RETRY_MAX_NUM_ATTEMPTS, RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS
+    def inner_retry(func):
+        global RETRY_MAX_NUM_ATTEMPTS, RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS
 
-    return retry(
-        reraise=True,
-        retry=retry_if_result(retry_function),
-        wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS),
-        after=log_exception,
-        stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
-    )(func)
+        return retry(
+            reraise=True,
+            retry=retry_if_result(retry_function),
+            wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS),
+            after=log_exception,
+            stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
+        )(func)
+    
+    return inner_retry
 
 
 def pyrit_target_retry(func: Callable) -> Callable:

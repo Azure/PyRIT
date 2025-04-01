@@ -127,11 +127,15 @@ class DataTypeSerializer(abc.ABC):
         Returns True if the data is stored on disk.
         """
 
-    async def save_data(self, data: bytes) -> None:
+    async def save_data(self, data: bytes, output_filename: Optional[str]) -> None:
         """
         Saves the data to storage.
+
+        Arguments:
+            data: bytes: The data to be saved.
+            output_filename (optional, str): filename to store image as. Defaults to UUID if not provided
         """
-        file_path = await self.get_data_filename()
+        file_path = await self.get_data_filename(file_name=output_filename)
         await self._memory.results_storage_io.write_file(file_path, data)
         self.value = str(file_path)
 
@@ -142,7 +146,7 @@ class DataTypeSerializer(abc.ABC):
             data: string with base64 data
             output_filename (optional, str): filename to store image as. Defaults to UUID if not provided
         """
-        file_path = output_filename or await self.get_data_filename()
+        file_path = await self.get_data_filename(file_name=output_filename)
         image_bytes = base64.b64decode(data)
         await self._memory.results_storage_io.write_file(file_path, image_bytes)
         self.value = str(file_path)
@@ -238,7 +242,7 @@ class DataTypeSerializer(abc.ABC):
         hash_object = hashlib.sha256(input_bytes)
         return hash_object.hexdigest()
 
-    async def get_data_filename(self) -> Union[Path, str]:
+    async def get_data_filename(self, file_name: Optional[str]) -> Union[Path, str]:
         """
         Generates or retrieves a unique filename for the data file.
         """
@@ -254,13 +258,14 @@ class DataTypeSerializer(abc.ABC):
 
         results_path = self._memory.results_path
 
+        file_name = file_name if file_name else ticks
         if self._is_azure_storage_url(results_path):
             full_data_directory_path = results_path + self.data_sub_directory
-            self._file_path = full_data_directory_path + f"/{ticks}.{self.file_extension}"
+            self._file_path = full_data_directory_path + f"/{file_name}.{self.file_extension}"
         else:
             full_data_directory_path = results_path + self.data_sub_directory
             await self._memory.results_storage_io.create_directory_if_not_exists(Path(full_data_directory_path))
-            self._file_path = Path(full_data_directory_path, f"{ticks}.{self.file_extension}")
+            self._file_path = Path(full_data_directory_path, f"{file_name}.{self.file_extension}")
 
         return self._file_path
 

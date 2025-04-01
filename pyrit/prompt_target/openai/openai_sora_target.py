@@ -226,8 +226,7 @@ class OpenAISoraTarget(OpenAITarget):
             raise EmptyResponseException(message="The chat returned an empty response.")
 
         task_id = content.get("id", None)
-        prompt = content.get("prompt", None)
-        logger.info(f"Handling response for Task ID: {task_id}, Prompt: {prompt}")
+        logger.info(f"Handling response for Task ID: {task_id}")
 
         # Check status with retry until task is complete (succeeded, failed, or cancelled)
         task_response = await self.check_task_status(task_id=task_id)
@@ -242,24 +241,23 @@ class OpenAISoraTarget(OpenAITarget):
             if gen_id is None:
                 raise ValueError("No generation ID found in the task response.")
 
-            video_response = await self.download_video_content(task_id, gen_id, request)
+            video_response = await self.download_video_content(gen_id=gen_id)
 
             if video_response.status_code == 200:
-                file_name = f"{task_id}_{gen_id}"
                 serializer = data_serializer_factory(
                     category="prompt-memory-entries",
                     data_type="video_path",
-                    value=file_name,
                 )
-                data = video_response.content
 
-                await serializer.save_data(data=data)
-                logger.info(f"Video content downloaded successfully for Task ID: {task_id}, Gen ID: {gen_id}")
+                data = video_response.content
+                file_name = f"{task_id}_{gen_id}"
+                await serializer.save_data(data=data, output_filename=file_name)
+                logger.info(f"Video content downloaded successfully to {serializer.value}")
             else:
                 raise Exception(f"Failed to download video content: {response}")
 
             response_entry = construct_response_from_request(
-                request=request, response_text_pieces=[str(video_response.value)], response_type="video_path"
+                request=request, response_text_pieces=[str(serializer.value)], response_type="video_path"
             )
         elif status == "failed" or status == "cancelled":
             # Handle failed or cancelled task
