@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Optional
+from typing import Literal, Optional
 
 from pyrit.models import PromptRequestPiece
 from pyrit.models.score import Score, UnvalidatedScore
@@ -36,7 +36,7 @@ class SelfAskGeneralScorer(Scorer):
         system_prompt: Optional[str] = None,
         system_prompt_format_string: Optional[str] = None,
         prompt_format_string: Optional[str] = None,
-        scorer_type: str = "float_scale",
+        scorer_type: Literal["true_false", "float_scale"] = "float_scale",
         score_value_output_key: Optional[str] = "score_value",
         rationale_output_key: Optional[str] = "rationale",
         description_output_key: Optional[str] = "description",
