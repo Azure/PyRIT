@@ -54,7 +54,7 @@ system_prompt = f""" Please respond with this response format below:
     "required": [
       "score_value",
       "description",
-      "rationale"
+      "reasoning"
     ]
   }}
 
