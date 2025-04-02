@@ -257,7 +257,7 @@ class OpenAISoraTarget(OpenAITarget):
                 await serializer.save_data(data=data, output_filename=file_name)
                 logger.info(f"Video content downloaded successfully to {serializer.value}")
             else:
-                raise Exception(f"Failed to download video content: {response}")
+                raise Exception(f"Failed to download video content: {video_response}")
 
             response_entry = construct_response_from_request(
                 request=request, response_text_pieces=[str(serializer.value)], response_type="video_path"
@@ -271,12 +271,17 @@ class OpenAISoraTarget(OpenAITarget):
                     response_text=failure_reason, request=request, is_content_filter=True
                 )
             else:
-                return handle_bad_request_exception(response_text=failure_reason, request=request)
+                response_entry = construct_response_from_request(
+                    request=request,
+                    response_text_pieces=[failure_reason],
+                    response_type="error",
+                    error="unknown",
+                )
         else:
             # Retry stop condition reached, return result
             response_entry = construct_response_from_request(
                 request=request,
-                response_text_pieces=[str(json.loads(response.content))],
+                response_text_pieces=[str(task_content)],
             )
 
         return response_entry
