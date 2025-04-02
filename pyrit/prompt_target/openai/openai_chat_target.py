@@ -51,6 +51,7 @@ class OpenAIChatTarget(OpenAITarget):
         presence_penalty: Optional[float] = None,
         seed: Optional[int] = None,
         n: Optional[int] = None,
+        is_json_supported: bool = True,
         extra_body_parameters: Optional[dict[str, Any]] = None,
         **kwargs,
     ):
@@ -92,6 +93,10 @@ class OpenAIChatTarget(OpenAITarget):
             seed (int, Optional): If specified, openAI will make a best effort to sample deterministically,
                 such that repeated requests with the same seed and parameters should return the same result.
             n (int, Optional): The number of completions to generate for each prompt.
+            is_json_supported (bool, Optional): If True, the target will supports formatting responses as JSON by
+                setting the response_format header. Official OpenAI models all support this, but if you are using
+                this target with different models, is_json_supported should be set correctly to avoid issues when
+                using adversarial infrastructure (e.g. Crescendo scorers will set this flag).
             extra_body_parameters (dict, Optional): Additional parameters to be included in the request body.
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
                 httpx.AsyncClient() constructor.
@@ -110,6 +115,7 @@ class OpenAIChatTarget(OpenAITarget):
         self._presence_penalty = presence_penalty
         self._seed = seed
         self._n = n
+        self._is_json_supported = is_json_supported
         self._extra_body_parameters = extra_body_parameters
 
     def _set_openai_env_configuration_vars(self) -> None:
@@ -155,11 +161,8 @@ class OpenAIChatTarget(OpenAITarget):
                 **self._httpx_client_kwargs,
             )
         except httpx.HTTPStatusError as StatusError:
-            if StatusError.response.status_code == 400 or (
-                StatusError.response.status_code == 500 and "content_filter_results" in StatusError.response.text
-            ):
+            if StatusError.response.status_code == 400:
                 # Handle Bad Request
-                # Note that AOAI seems to have moved content_filter errors from 400 to 500
                 return handle_bad_request_exception(
                     response_text=StatusError.response.text,
                     request=request_piece,
@@ -361,6 +364,10 @@ class OpenAIChatTarget(OpenAITarget):
             if not extracted_response:
                 logger.log(logging.ERROR, "The chat returned an empty response.")
                 raise EmptyResponseException(message="The chat returned an empty response.")
+        elif finish_reason == "content_filter":
+            return handle_bad_request_exception(
+                response_text=open_ai_str_response, request=request_piece, error_code=400, is_content_filter=True
+            )
         else:
             raise PyritException(message=f"Unknown finish_reason {finish_reason} from response: {response}")
 
@@ -388,4 +395,4 @@ class OpenAIChatTarget(OpenAITarget):
 
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""
-        return True
+        return self._is_json_supported
