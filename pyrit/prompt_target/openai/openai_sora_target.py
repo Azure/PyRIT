@@ -15,6 +15,7 @@ from pyrit.exceptions import (
     pyrit_target_retry,
 )
 from pyrit.models import (
+    PromptRequestPiece,
     PromptRequestResponse,
     construct_response_from_request,
     data_serializer_factory,
@@ -72,6 +73,7 @@ class OpenAISoraTarget(OpenAITarget):
             For resolutions of 1080p, max varients is 1. For resolutions of 720p, max varients is 2.
         output_filename (str, Optional): The name of the output file for the generated video.
     """
+
     # Maximum number of retries for check_task_status()
     # This cannot be set in the constructor as it is used in the decorator, which does not know self.
     RETRY_CHECK_TASK_MAX_NUM_ATTEMPTS = 25
@@ -158,9 +160,7 @@ class OpenAISoraTarget(OpenAITarget):
                 **self._httpx_client_kwargs,
             )
         except httpx.HTTPStatusError as StatusError:
-            if StatusError.response.status_code == 400 or (
-                StatusError.response.status_code == 500 and "content_filter_results" in StatusError.response.text
-            ):
+            if StatusError.response.status_code == 400:
                 # Handle Bad Request
                 return handle_bad_request_exception(
                     response_text=StatusError.response.text,
@@ -175,8 +175,8 @@ class OpenAISoraTarget(OpenAITarget):
         return await self._handle_response(request=request, response=response)
 
     @pyrit_custom_result_retry(
-        retry_function=_retry_check_task,
-        max_number_retry_attempts=RETRY_CHECK_TASK_MAX_NUM_ATTEMPTS)
+        retry_function=_retry_check_task, max_number_retry_attempts=RETRY_CHECK_TASK_MAX_NUM_ATTEMPTS
+    )
     @pyrit_target_retry
     async def check_task_status(self, task_id: str) -> httpx.Response:
         """
@@ -222,7 +222,7 @@ class OpenAISoraTarget(OpenAITarget):
 
         return response
 
-    async def _handle_response(self, request: PromptRequestResponse, response: httpx.Response) -> PromptRequestResponse:
+    async def _handle_response(self, request: PromptRequestPiece, response: httpx.Response) -> PromptRequestResponse:
         # Handle Video Generation Request Response
         content = json.loads(response.content)
         if not content:

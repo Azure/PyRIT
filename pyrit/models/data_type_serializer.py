@@ -242,7 +242,7 @@ class DataTypeSerializer(abc.ABC):
         hash_object = hashlib.sha256(input_bytes)
         return hash_object.hexdigest()
 
-    async def get_data_filename(self, file_name: Optional[str]) -> Union[Path, str]:
+    async def get_data_filename(self, file_name: Optional[str] = None) -> Union[Path, str]:
         """
         Generates or retrieves a unique filename for the data file.
         """
@@ -258,7 +258,7 @@ class DataTypeSerializer(abc.ABC):
 
         results_path = self._memory.results_path
 
-        file_name = file_name if file_name else ticks
+        file_name = file_name if file_name else str(ticks)
         if self._is_azure_storage_url(results_path):
             full_data_directory_path = results_path + self.data_sub_directory
             self._file_path = full_data_directory_path + f"/{file_name}.{self.file_extension}"

@@ -83,9 +83,8 @@ class MissingPromptPlaceholderException(PyritException):
 
 
 def pyrit_custom_result_retry(
-        retry_function: Callable,
-        max_number_retry_attempts: int = RETRY_MAX_NUM_ATTEMPTS
-    ) -> Callable:
+    retry_function: Callable, max_number_retry_attempts: int = RETRY_MAX_NUM_ATTEMPTS
+) -> Callable:
     """
     A decorator to apply retry logic with exponential backoff to a function.
 
