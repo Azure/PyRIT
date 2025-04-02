@@ -14,44 +14,53 @@ class SelfAskGeneralScorer(Scorer):
     A general scorer that uses a chat target to score a prompt request piece.
     It can be configured to use different scoring types (e.g., true/false, float scale)
     It can also format the prompt using a system-level prompt and a format string.
+
     Params:
         chat_target (PromptChatTarget): The chat target to use for scoring.
-        system_prompt (str): The system-level prompt that guides the behavior of the target LLM. Defaults to None.
-        prompt_fstring_format (str): The format string for the prompt. Defaults to None.
-        scorer_type (str): The type of scorer (e.g., "true_false", "float_scale"). defaults to float_scale.
-        score_value_output_key (str): The key in the JSON response that contains the score value.
-        rationale_output_key (str): The key in the JSON response that contains the rationale.
-        description_output_key (str): The key in the JSON response that contains the description.
-        metadata_output_key (str): The key in the JSON response that contains the metadata.
-        category_output_key (str): The key in the JSON response that contains the category.
-        category (list): A list of categories for the score.
-        labels (list): A list of labels for the score.
-        min_value (int): The minimum value for float scale scoring.
-        max_value (int): The maximum value for float scale scoring.
+        system_prompt (str): The system-level prompt that guides the behavior of the target LLM. 
+            Defaults to None.
+            This can be a string or a format string template with placeholders for task and request_response.
+            The system prompt or prompt or request_response needs to specify a JSON output format for the response
+        prompt_format_string (str): A format string template for the prompt. Defaults to None.
+            This is a string that can be formatted with task, request_response, and prompt
+        scorer_type (str): The type of scorer (e.g., "true_false", "float_scale"). 
+            Defaults to float_scale.
+        score_value_output_key (str): The key in the JSON response that contains the score value. 
+            Defaults to "score_value".
+        rationale_output_key (str): The key in the JSON response that contains the rationale. 
+            Defaults to "rationale".
+        description_output_key (str): The key in the JSON response that contains the description. 
+            Defaults to "description".
+        metadata_output_key (str): The key in the JSON response that contains the metadata. 
+            Defaults to "metadata".
+        category_output_key (str): The key in the JSON response that contains the category. 
+            Defaults to "category".
+        category (list): A list of categories for the score. Defaults to None.
+        labels (list): A list of labels for the score. Defaults to None.
+        min_value (int): The minimum value for float scale scoring. Defaults to 0.
+        max_value (int): The maximum value for float scale scoring. Defaults to 100.
     """
 
     def __init__(
         self,
         chat_target: PromptChatTarget,
-        system_prompt: Optional[str] = None,
-        system_prompt_format_string: Optional[str] = None,
-        prompt_format_string: Optional[str] = None,
+        system_prompt: str = None,
+        prompt_format_string: str = None,
         scorer_type: Literal["true_false", "float_scale"] = "float_scale",
-        score_value_output_key: Optional[str] = "score_value",
-        rationale_output_key: Optional[str] = "rationale",
-        description_output_key: Optional[str] = "description",
-        metadata_output_key: Optional[str] = "metadata",
-        category_output_key: Optional[str] = "category",
+        score_value_output_key: str = "score_value",
+        rationale_output_key: str = "rationale",
+        description_output_key: str = "description",
+        metadata_output_key: str = "metadata",
+        category_output_key: str = "category",
         category: list = None,
         labels: list = None,
-        min_value: Optional[int] = 0,
-        max_value: Optional[int] = 100,
+        min_value: int = 0,
+        max_value: int = 100,
     ) -> None:
 
         self._prompt_target = chat_target
         self.system_prompt = system_prompt
-        self.prompt_format_string = prompt_format_string
-        self._system_prompt_format_string = system_prompt_format_string
+        self._prompt_format_string = prompt_format_string
 
         if scorer_type != "true_false" and scorer_type != "float_scale":
             raise ValueError(
@@ -65,7 +74,7 @@ class SelfAskGeneralScorer(Scorer):
         self._min_value = min_value
         self._max_value = max_value
         self._score_value_output_key = score_value_output_key
-        self.rationale_output_key = rationale_output_key
+        self._rationale_output_key = rationale_output_key
         self._description_output_key = description_output_key
         self._metadata_output_key = metadata_output_key
         self._category_output_key = category_output_key
@@ -74,16 +83,10 @@ class SelfAskGeneralScorer(Scorer):
         self.validate(request_response, task=task)
         prompt = request_response.converted_value
 
-        if self._system_prompt_format_string:
-            if self.system_prompt:
-                formatted_system_prompt = self._system_prompt_format_string.format(task=task)
-                self.system_prompt = f"{formatted_system_prompt} {self.system_prompt}"
-                # TODO: combo both or error out and only provide format string OR system prompt?
-            else:
-                self.system_prompt = self._system_prompt_format_string.format(task=task)
+        self.system_prompt = self.system_prompt.format(task=task, request_response=request_response)
 
-        if self.prompt_format_string:
-            prompt = self.prompt_format_string.format(task=task, prompt=prompt)
+        if self._prompt_format_string:
+            prompt = self._prompt_format_string.format(task=task, prompt=prompt, request_response=request_response)
 
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
@@ -95,7 +98,7 @@ class SelfAskGeneralScorer(Scorer):
             task=task,
             orchestrator_identifier=request_response.orchestrator_identifier,
             score_value_output_key=self._score_value_output_key,
-            rationale_output_key=self.rationale_output_key,
+            rationale_output_key=self._rationale_output_key,
             description_output_key=self._description_output_key,
             metadata_output_key=self._metadata_output_key,
             category_output_key=self._category_output_key,

@@ -130,7 +130,7 @@ task = "funny"
 
 
 # %%
-prompt_f_string = f"""Is this a good joke? The joke is is: {{prompt}}."""
+prompt_f_string = f"""Is this a good joke? The joke is: {{prompt}}."""
 
 # %%
 from pyrit.common import IN_MEMORY, initialize_pyrit
