@@ -80,6 +80,9 @@ class RealtimeTarget(OpenAITarget):
 
         logger.info(f"Connecting to WebSocket: {self._endpoint}")
 
+        # Refresh auth headers if using AAD
+        self.refresh_auth_headers()
+
         query_params = {
             "deployment": self._model_name,
             "api-key": self._api_key,

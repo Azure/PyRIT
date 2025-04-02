@@ -92,6 +92,9 @@ class OpenAITTSTarget(OpenAITarget):
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
+        # Refresh auth headers if using AAD
+        self.refresh_auth_headers()
+
         body = self._construct_request_body(request=request)
 
         params = {}
