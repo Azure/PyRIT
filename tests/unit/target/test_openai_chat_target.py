@@ -558,11 +558,10 @@ async def test_send_prompt_async_content_filter(target: OpenAIChatTarget):
     )
 
     mock_response = MagicMock()
-    mock_response.status_code = 500
+    mock_response.status_code = 200
     mock_response.text = response_body
-    side_effect = httpx.HTTPStatusError("Content Filter Error", response=mock_response, request=MagicMock())
 
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect):
+    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", return_value=mock_response):
         response = await target.send_prompt_async(prompt_request=prompt_request)
         assert len(response.request_pieces) == 1
         assert response.request_pieces[0].response_error == "blocked"
