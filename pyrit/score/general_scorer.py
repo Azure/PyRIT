@@ -17,23 +17,23 @@ class SelfAskGeneralScorer(Scorer):
 
     Params:
         chat_target (PromptChatTarget): The chat target to use for scoring.
-        system_prompt (str): The system-level prompt that guides the behavior of the target LLM. 
+        system_prompt (str): The system-level prompt that guides the behavior of the target LLM.
             Defaults to None.
             This can be a string or a format string template with placeholders for task and request_response.
             The system prompt or prompt or request_response needs to specify a JSON output format for the response
         prompt_format_string (str): A format string template for the prompt. Defaults to None.
             This is a string that can be formatted with task, request_response, and prompt
-        scorer_type (str): The type of scorer (e.g., "true_false", "float_scale"). 
+        scorer_type (str): The type of scorer (e.g., "true_false", "float_scale").
             Defaults to float_scale.
-        score_value_output_key (str): The key in the JSON response that contains the score value. 
+        score_value_output_key (str): The key in the JSON response that contains the score value.
             Defaults to "score_value".
-        rationale_output_key (str): The key in the JSON response that contains the rationale. 
+        rationale_output_key (str): The key in the JSON response that contains the rationale.
             Defaults to "rationale".
-        description_output_key (str): The key in the JSON response that contains the description. 
+        description_output_key (str): The key in the JSON response that contains the description.
             Defaults to "description".
-        metadata_output_key (str): The key in the JSON response that contains the metadata. 
+        metadata_output_key (str): The key in the JSON response that contains the metadata.
             Defaults to "metadata".
-        category_output_key (str): The key in the JSON response that contains the category. 
+        category_output_key (str): The key in the JSON response that contains the category.
             Defaults to "category".
         category (list): A list of categories for the score. Defaults to None.
         labels (list): A list of labels for the score. Defaults to None.
