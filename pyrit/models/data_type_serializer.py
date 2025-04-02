@@ -127,7 +127,7 @@ class DataTypeSerializer(abc.ABC):
         Returns True if the data is stored on disk.
         """
 
-    async def save_data(self, data: bytes, output_filename: Optional[str]) -> None:
+    async def save_data(self, data: bytes, output_filename: Optional[str] = None) -> None:
         """
         Saves the data to storage.
 

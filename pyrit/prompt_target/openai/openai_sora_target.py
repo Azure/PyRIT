@@ -72,6 +72,8 @@ class OpenAISoraTarget(OpenAITarget):
         n_variants (int, Optional): The number of variants for the generated video. Defaults to 1.
             For resolutions of 1080p, max varients is 1. For resolutions of 720p, max varients is 2.
         output_filename (str, Optional): The name of the output file for the generated video.
+            Note: DO NOT SET if using target with PromptSendingOrchestrator. The default filename
+            is {task_id}_{gen_id}.mp4 as returned by the model.
     """
 
     # Maximum number of retries for check_task_status()
@@ -135,7 +137,6 @@ class OpenAISoraTarget(OpenAITarget):
             self._params["api-version"] = self._api_version
 
     def _set_openai_env_configuration_vars(self):
-        self.model_name_environment_variable = "OPENAI_SORA_MODEL"
         self.endpoint_environment_variable = "OPENAI_SORA_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_SORA_KEY"
 
@@ -160,17 +161,15 @@ class OpenAISoraTarget(OpenAITarget):
                 **self._httpx_client_kwargs,
             )
         except httpx.HTTPStatusError as StatusError:
-            if StatusError.response.status_code == 400:
+            if StatusError.response.status_code == 429:
+                raise RateLimitException()
+            else:
                 # Handle Bad Request
                 return handle_bad_request_exception(
                     response_text=StatusError.response.text,
                     request=request,
                     error_code=StatusError.response.status_code,
                 )
-            elif StatusError.response.status_code == 429:
-                raise RateLimitException()
-            else:
-                raise
 
         return await self._handle_response(request=request, response=response)
 
@@ -189,13 +188,20 @@ class OpenAISoraTarget(OpenAITarget):
 
         uri = f"{self._endpoint}/jobs/{task_id}"
 
-        response = await net_utility.make_request_and_raise_if_error_async(
-            endpoint_uri=uri,
-            method="GET",
-            headers=self._headers,
-            params=self._params,
-            **self._httpx_client_kwargs,
-        )
+        try:
+            response = await net_utility.make_request_and_raise_if_error_async(
+                endpoint_uri=uri,
+                method="GET",
+                headers=self._headers,
+                params=self._params,
+                **self._httpx_client_kwargs,
+            )
+        except httpx.HTTPStatusError as StatusError:
+            if StatusError.response.status_code == 429:
+                raise RateLimitException()
+            
+        if not json.loads(response.content):
+            raise EmptyResponseException()
 
         return response
 
@@ -212,13 +218,20 @@ class OpenAISoraTarget(OpenAITarget):
 
         uri = f"{self._endpoint}/{gen_id}/video/content"
 
-        response = await net_utility.make_request_and_raise_if_error_async(
-            endpoint_uri=uri,
-            method="GET",
-            headers=self._headers,
-            params=self._params,
-            **self._httpx_client_kwargs,
-        )
+        try:
+            response = await net_utility.make_request_and_raise_if_error_async(
+                endpoint_uri=uri,
+                method="GET",
+                headers=self._headers,
+                params=self._params,
+                **self._httpx_client_kwargs,
+            )
+        except httpx.HTTPStatusError as StatusError:
+            if StatusError.response.status_code == 429:
+                raise RateLimitException()
+            
+        if not json.loads(response.content):
+            raise EmptyResponseException()
 
         return response
 
@@ -226,23 +239,21 @@ class OpenAISoraTarget(OpenAITarget):
         # Handle Video Generation Request Response
         content = json.loads(response.content)
         if not content:
-            raise EmptyResponseException(message="The chat returned an empty response.")
+            raise EmptyResponseException()
 
-        task_id = content.get("id", None)
+        task_id = content.get("id")
         logger.info(f"Handling response for Task ID: {task_id}")
 
         # Check status with retry until task is complete (succeeded, failed, or cancelled)
         task_response = await self.check_task_status(task_id=task_id)
         task_content = json.loads(task_response.content)
-        status = task_content.get("status", None)
+        status = task_content.get("status")
 
         # Handle completed task
         if status == "succeeded":
             # Download video content
-            generations = task_content.get("generations", [])
-            gen_id = generations[0].get("id", None)
-            if gen_id is None:
-                raise ValueError("No generation ID found in the task response.")
+            generations = task_content.get("generations")
+            gen_id = generations[0].get("id")
 
             video_response = await self.download_video_content(gen_id=gen_id)
 
@@ -256,12 +267,18 @@ class OpenAISoraTarget(OpenAITarget):
                 file_name = self._output_filename if self._output_filename else f"{task_id}_{gen_id}"
                 await serializer.save_data(data=data, output_filename=file_name)
                 logger.info(f"Video content downloaded successfully to {serializer.value}")
-            else:
-                raise Exception(f"Failed to download video content: {video_response}")
 
-            response_entry = construct_response_from_request(
-                request=request, response_text_pieces=[str(serializer.value)], response_type="video_path"
-            )
+                response_entry = construct_response_from_request(
+                    request=request, response_text_pieces=[str(serializer.value)], response_type="video_path"
+                )
+            else:
+                response_entry = construct_response_from_request(
+                    request=request,
+                    response_text_pieces=[f"Failed to download video content for task: {task_id} with generation: {gen_id}. Response: {video_response}"],
+                    response_type="error",
+                    error="unknown",
+                )
+
         elif status == "failed" or status == "cancelled":
             # Handle failed or cancelled task
             failure_reason = task_content.get("failure_reason", None)
