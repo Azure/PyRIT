@@ -92,7 +92,6 @@ class OpenAICompletionTarget(OpenAITarget):
 
         logger.info(f"Sending the following prompt to the prompt target: {request_piece}")
 
-        # Refresh auth headers if using AAD
         self.refresh_auth_headers()
 
         body = await self._construct_request_body(request=request_piece)

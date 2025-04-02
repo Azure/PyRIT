@@ -242,3 +242,33 @@ async def test_realtime_target_default_api_version(target):
         # Ensure API version IS in the request
         assert "api-version" in query_params
         assert query_params["api-version"][0] == "2024-06-01"
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_calls_refresh_auth_headers(target):
+    target.refresh_auth_headers = MagicMock()
+    target._validate_request = MagicMock()
+    target._memory.get_conversation = MagicMock(return_value=[])
+    target._construct_request_body = AsyncMock(return_value={})
+
+    with patch("websockets.connect") as mock_connect:
+        mock_websocket = AsyncMock()
+        mock_connect.return_value.__aenter__.return_value = mock_websocket
+        mock_websocket.recv = AsyncMock(return_value='{"choices": [{"delta": {"content": "test response"}}]}')
+        mock_websocket.send = AsyncMock()
+        mock_websocket.close = AsyncMock()
+
+        prompt_request = PromptRequestResponse(
+            request_pieces=[
+                PromptRequestPiece(
+                    role="user",
+                    original_value="test prompt",
+                    converted_value="test prompt",
+                    converted_value_data_type="text"
+                )
+            ]
+        )
+
+        await target.send_prompt_async(prompt_request=prompt_request)
+
+        target.refresh_auth_headers.assert_called_once()

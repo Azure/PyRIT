@@ -68,11 +68,10 @@ async def test_tts_validate_prompt_type(
 
 
 @pytest.mark.asyncio
-async def test_tts_validate_previous_conversations(
-    tts_target: OpenAITTSTarget, sample_conversations: MutableSequence[PromptRequestPiece]
-):
+async def test_tts_validate_previous_conversations(tts_target: OpenAITTSTarget, sample_conversations: MutableSequence[PromptRequestPiece]):
     request_piece = sample_conversations[0]
-    tts_target._memory.add_request_response_to_memory(request=PromptRequestResponse(request_pieces=[request_piece]))
+    tts_target._memory.add_request_response_to_memory = AsyncMock()
+    tts_target._memory.get_conversation = MagicMock(return_value=[])
     request = PromptRequestResponse(request_pieces=[request_piece])
 
     with pytest.raises(ValueError, match="This target only supports a single turn conversation."):
@@ -214,3 +213,29 @@ async def test_tts_target_default_api_version(sample_conversations: MutableSeque
 
         assert "api-version" in called_params
         assert called_params["api-version"] == "2025-02-01-preview"
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_calls_refresh_auth_headers(tts_target):
+    tts_target.refresh_auth_headers = MagicMock()
+    tts_target._validate_request = MagicMock()
+    tts_target._construct_request_body = AsyncMock(return_value={})
+
+    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock_make_request:
+        mock_response = MagicMock()
+        mock_response.content = b"audio data"
+        mock_make_request.return_value = mock_response
+
+        prompt_request = PromptRequestResponse(
+            request_pieces=[
+                PromptRequestPiece(
+                    role="user",
+                    original_value="test prompt",
+                    converted_value="test prompt",
+                    converted_value_data_type="text"
+                )
+            ]
+        )
+        await tts_target.send_prompt_async(prompt_request=prompt_request)
+
+        tts_target.refresh_auth_headers.assert_called_once()
