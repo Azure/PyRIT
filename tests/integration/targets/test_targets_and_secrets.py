@@ -11,6 +11,7 @@ from pyrit.prompt_target import (
     OpenAIChatTarget,
     OpenAICompletionTarget,
     OpenAIDALLETarget,
+    OpenAISoraTarget,
     OpenAITTSTarget,
     RealtimeTarget,
 )
@@ -160,6 +161,16 @@ async def test_connect_tts(duckdb_instance, endpoint, api_key):
     target = OpenAITTSTarget(
         endpoint=os.getenv(endpoint),
         api_key=os.getenv(api_key),
+    )
+
+    await _assert_can_send_prompt(target, check_if_llm_interpreted_request=False)
+
+
+@pytest.mark.asyncio
+async def test_connect_sora(duckdb_instance):
+    target = OpenAISoraTarget(
+        endpoint=os.getenv("OPENAI_SORA_ENDPOINT"),
+        api_key=os.getenv("OPENAI_SORA_KEY"),
     )
 
     await _assert_can_send_prompt(target, check_if_llm_interpreted_request=False)

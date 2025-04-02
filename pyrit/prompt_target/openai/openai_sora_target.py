@@ -14,13 +14,11 @@ from pyrit.exceptions import (
     pyrit_custom_result_retry,
     pyrit_target_retry,
 )
-from pyrit.exceptions.exceptions_helpers import log_exception
 from pyrit.models import (
     PromptRequestResponse,
     construct_response_from_request,
     data_serializer_factory,
 )
-from pyrit.models.data_type_serializer import VideoPathDataTypeSerializer
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
@@ -72,7 +70,11 @@ class OpenAISoraTarget(OpenAITarget):
             For resolutions of 1080p, max seconds is 10. Otherwise, max seconds is 20.
         n_variants (int, Optional): The number of variants for the generated video. Defaults to 1.
             For resolutions of 1080p, max varients is 1. For resolutions of 720p, max varients is 2.
+        output_filename (str, Optional): The name of the output file for the generated video.
     """
+    # Maximum number of retries for check_task_status()
+    # This cannot be set in the constructor as it is used in the decorator, which does not know self.
+    RETRY_CHECK_TASK_MAX_NUM_ATTEMPTS = 25
 
     def __init__(
         self,
@@ -83,6 +85,7 @@ class OpenAISoraTarget(OpenAITarget):
         n_seconds: Optional[int] = 5,
         n_variants: Optional[int] = 1,
         api_version: str = "2025-02-15-preview",
+        output_filename: Optional[str] = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -123,12 +126,11 @@ class OpenAISoraTarget(OpenAITarget):
         self._n_seconds = n_seconds
         self._n_variants = n_variants
         self._api_version = api_version
+        self._output_filename = output_filename
 
         self._params = {}
         if self._api_version is not None:
             self._params["api-version"] = self._api_version
-
-        self._in_progress_tasks = set()  # TODO: this should be locked if multiple threads modify
 
     def _set_openai_env_configuration_vars(self):
         self.model_name_environment_variable = "OPENAI_SORA_MODEL"
@@ -172,7 +174,9 @@ class OpenAISoraTarget(OpenAITarget):
 
         return await self._handle_response(request=request, response=response)
 
-    @pyrit_custom_result_retry(retry_function=_retry_check_task)
+    @pyrit_custom_result_retry(
+        retry_function=_retry_check_task,
+        max_number_retry_attempts=RETRY_CHECK_TASK_MAX_NUM_ATTEMPTS)
     @pyrit_target_retry
     async def check_task_status(self, task_id: str) -> httpx.Response:
         """
@@ -195,7 +199,6 @@ class OpenAISoraTarget(OpenAITarget):
 
         return response
 
-    # Download video content
     @pyrit_custom_result_retry(retry_function=_retry_video_download)
     @pyrit_target_retry
     async def download_video_content(self, gen_id: str) -> httpx.Response:
@@ -250,7 +253,7 @@ class OpenAISoraTarget(OpenAITarget):
                 )
 
                 data = video_response.content
-                file_name = f"{task_id}_{gen_id}"
+                file_name = self._output_filename if self._output_filename else f"{task_id}_{gen_id}"
                 await serializer.save_data(data=data, output_filename=file_name)
                 logger.info(f"Video content downloaded successfully to {serializer.value}")
             else:

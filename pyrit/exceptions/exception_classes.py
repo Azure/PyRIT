@@ -82,7 +82,10 @@ class MissingPromptPlaceholderException(PyritException):
         super().__init__(message=message)
 
 
-def pyrit_custom_result_retry(retry_function: Callable) -> Callable:
+def pyrit_custom_result_retry(
+        retry_function: Callable,
+        max_number_retry_attempts: int = RETRY_MAX_NUM_ATTEMPTS
+    ) -> Callable:
     """
     A decorator to apply retry logic with exponential backoff to a function.
 
@@ -91,11 +94,16 @@ def pyrit_custom_result_retry(retry_function: Callable) -> Callable:
     Logs retry attempts at the INFO level and stops after a maximum number of attempts.
 
     Args:
+        retry_function (Callable): The function to determine if a retry should occur based
+            on the boolean result of the decorated function.
+        max_number_retry_attempts (int): The maximum number of retry attempts. Defaults to
+            RETRY_MAX_NUM_ATTEMPTS.
         func (Callable): The function to be decorated.
 
     Returns:
         Callable: The decorated function with retry logic applied.
     """
+
     def inner_retry(func):
         global RETRY_MAX_NUM_ATTEMPTS, RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS
 
@@ -104,9 +112,9 @@ def pyrit_custom_result_retry(retry_function: Callable) -> Callable:
             retry=retry_if_result(retry_function),
             wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS),
             after=log_exception,
-            stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
+            stop=stop_after_attempt(max_number_retry_attempts),
         )(func)
-    
+
     return inner_retry
 
 
