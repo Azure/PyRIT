@@ -137,6 +137,7 @@ class OpenAISoraTarget(OpenAITarget):
             self._params["api-version"] = self._api_version
 
     def _set_openai_env_configuration_vars(self):
+        self.model_name_environment_variable = "OPENAI_SORA_MODEL"
         self.endpoint_environment_variable = "OPENAI_SORA_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_SORA_KEY"
 
@@ -199,7 +200,7 @@ class OpenAISoraTarget(OpenAITarget):
         except httpx.HTTPStatusError as StatusError:
             if StatusError.response.status_code == 429:
                 raise RateLimitException()
-            
+
         if not json.loads(response.content):
             raise EmptyResponseException()
 
@@ -229,8 +230,8 @@ class OpenAISoraTarget(OpenAITarget):
         except httpx.HTTPStatusError as StatusError:
             if StatusError.response.status_code == 429:
                 raise RateLimitException()
-            
-        if not json.loads(response.content):
+
+        if not response:
             raise EmptyResponseException()
 
         return response
@@ -274,7 +275,10 @@ class OpenAISoraTarget(OpenAITarget):
             else:
                 response_entry = construct_response_from_request(
                     request=request,
-                    response_text_pieces=[f"Failed to download video content for task: {task_id} with generation: {gen_id}. Response: {video_response}"],
+                    response_text_pieces=[
+                        f"Failed to download video content for task: {task_id} with generation: {gen_id}. "
+                        + "Response: {video_response}"
+                    ],
                     response_type="error",
                     error="unknown",
                 )
@@ -283,7 +287,7 @@ class OpenAISoraTarget(OpenAITarget):
             # Handle failed or cancelled task
             failure_reason = task_content.get("failure_reason", None)
 
-            if failure_reason == "input_moderation":
+            if failure_reason == "input_moderation" or failure_reason == "output_moderation":
                 return handle_bad_request_exception(
                     response_text=failure_reason, request=request, is_content_filter=True
                 )
