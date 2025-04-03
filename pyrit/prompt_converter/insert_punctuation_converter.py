@@ -26,7 +26,7 @@ class InsertPunctuationConverter(PromptConverter):
         Args:
             word_swap_ratio (float): Percentage of words to perturb. Defaults to 0.2.
             between_words (bool): If True, insert punctuation only between words.
-                                  If False, insert punctuation within words. Defaults to True.
+            If False, insert punctuation within words. Defaults to True.
         """
         # Swap ratio cannot be 0 or larger than 1
         if not 0 < word_swap_ratio <= 1:
