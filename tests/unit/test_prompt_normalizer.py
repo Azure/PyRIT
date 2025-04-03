@@ -206,7 +206,7 @@ async def test_send_prompt_async_empty_exception(mock_memory_instance, seed_prom
 
     normalizer = PromptNormalizer()
 
-    with pytest.raises(Exception, match="Error sending prompt with conversation ID") as ex:
+    with pytest.raises(Exception, match="Error sending prompt with conversation ID"):
         await normalizer.send_prompt_async(seed_prompt_group=seed_prompt_group, target=prompt_target)
 
 
