@@ -200,6 +200,17 @@ async def test_send_prompt_async_exception(mock_memory_instance, seed_prompt_gro
 
 
 @pytest.mark.asyncio
+async def test_send_prompt_async_empty_exception(mock_memory_instance, seed_prompt_group):
+    prompt_target = AsyncMock()
+    prompt_target.send_prompt_async = AsyncMock(side_effect=Exception(""))
+
+    normalizer = PromptNormalizer()
+
+    with pytest.raises(Exception, match="Error sending prompt with conversation ID") as ex:
+        await normalizer.send_prompt_async(seed_prompt_group=seed_prompt_group, target=prompt_target)
+
+
+@pytest.mark.asyncio
 async def test_send_prompt_async_adds_memory_twice(
     mock_memory_instance, seed_prompt_group, response: PromptRequestResponse
 ):
