@@ -161,11 +161,8 @@ class OpenAIChatTarget(OpenAITarget):
                 **self._httpx_client_kwargs,
             )
         except httpx.HTTPStatusError as StatusError:
-            if StatusError.response.status_code == 400 or (
-                StatusError.response.status_code == 500 and "content_filter_results" in StatusError.response.text
-            ):
+            if StatusError.response.status_code == 400:
                 # Handle Bad Request
-                # Note that AOAI seems to have moved content_filter errors from 400 to 500
                 return handle_bad_request_exception(
                     response_text=StatusError.response.text,
                     request=request_piece,
@@ -367,6 +364,10 @@ class OpenAIChatTarget(OpenAITarget):
             if not extracted_response:
                 logger.log(logging.ERROR, "The chat returned an empty response.")
                 raise EmptyResponseException(message="The chat returned an empty response.")
+        elif finish_reason == "content_filter":
+            return handle_bad_request_exception(
+                response_text=open_ai_str_response, request=request_piece, error_code=400, is_content_filter=True
+            )
         else:
             raise PyritException(message=f"Unknown finish_reason {finish_reason} from response: {response}")
 

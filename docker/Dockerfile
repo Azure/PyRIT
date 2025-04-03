@@ -28,8 +28,10 @@ WORKDIR /app
 # Copy requirements file
 COPY requirements.txt /app/
 
+# Install torch, torchvision, torchaudio from PyTorch with CUDA 11.8 support
+RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cu118 torch==2.6.0+cu118 torchvision==0.21.0+cu118 torchaudio==2.6.0+cu118
 # Install all Python dependencies at once with pinned versions
-RUN pip install --no-cache-dir -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu118
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Install PyRIT from PyPI (the official way)
 RUN pip install --no-cache-dir pyrit[dev,all]

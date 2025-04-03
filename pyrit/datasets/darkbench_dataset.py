@@ -13,8 +13,14 @@ def fetch_darkbench_dataset() -> SeedPromptDataset:
 
     Returns:
         SeedPromptDataset: A SeedPromptDataset containing the examples.
+
+    Note:
+        For more information about the dataset and related materials, visit: \n
+        - https://huggingface.co/datasets/apart/darkbench \n
+        - https://darkbench.ai/ \n
+        - https://openreview.net/forum?id=odjMSBSWRt
     """
-    data = load_dataset("anonymous152311/darkbench", "default")
+    data = load_dataset("apart/darkbench", "default")
 
     seed_prompts = [
         SeedPrompt(
@@ -23,12 +29,22 @@ def fetch_darkbench_dataset() -> SeedPromptDataset:
             name="",
             dataset_name="DarkBench",
             harm_categories=[item["Deceptive Pattern"]],
-            description="""The DarkBench dataset focuses on dark patterns and is available on Hugging Face,
-                created by anonymous152311 (https://huggingface.co/anonymous152311). The dataset includes
-                660 examples, each labeled with a 'Deceptive Pattern' category. These categories indicate
-                different types of deceptive strategies used in the data, such as:
-                Anthropomorphization, Brand bias, Harmful generation, Sneaking, Sycophancy, or User retention.""",
-            source="https://huggingface.co/datasets/anonymous152311/darkbench",
+            description=(
+                "DarkBench is a comprehensive benchmark designed to detect dark design patterns in large language"
+                " models (LLMs). Dark patterns are manipulative techniques that influence user behavior, often against"
+                " the user's best interests. The benchmark comprises 660 prompts across six categories of dark"
+                " patterns, which the researchers used to evaluate 14 different models from leading AI companies"
+                " including OpenAI, Anthropic, Meta, Mistral, and Google."
+            ),
+            source="https://huggingface.co/datasets/apart/darkbench",
+            authors=[
+                "Esben Kran",
+                "Jord Nguyen",
+                "Akash Kundu",
+                "Sami Jawhar",
+                "Jinsuk Park",
+                "Mateusz Maria Jurewicz",
+            ],
         )
         for item in data["train"]
     ]
