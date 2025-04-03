@@ -85,6 +85,7 @@ class ScoringOrchestrator(Orchestrator):
         data_type: Optional[str] = None,
         not_data_type: Optional[str] = None,
         converted_value_sha256: Optional[list[str]] = None,
+        responses_only: bool = True,
     ) -> list[Score]:
         """
         Scores the responses that match the specified filters.
@@ -103,6 +104,8 @@ class ScoringOrchestrator(Orchestrator):
             not_data_type (Optional[str], optional): The data type to exclude. Defaults to None.
             converted_value_sha256 (Optional[list[str]], optional): A list of SHA256 hashes of converted values.
                 Defaults to None.
+            responses_only (bool, optional): If True, only the responses (messages with role "assistant") are
+                scored. Defaults to True.
         Returns:
             list[Score]: A list of Score objects for responses that match the specified filters.
         Raises:
@@ -125,6 +128,9 @@ class ScoringOrchestrator(Orchestrator):
         )
 
         request_pieces = self._remove_duplicates(request_pieces)
+
+        if responses_only:
+            request_pieces = self._extract_responses_only(request_pieces)
 
         if not request_pieces:
             raise ValueError("No entries match the provided filters. Please check your filters.")
