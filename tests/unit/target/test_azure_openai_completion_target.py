@@ -12,6 +12,7 @@ from unit.mocks import get_sample_conversations
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import OpenAICompletionTarget
+from pyrit.memory.memory_interface import MemoryInterface
 
 
 @pytest.fixture
@@ -159,11 +160,14 @@ async def test_openai_completion_target_default_api_version(sample_conversations
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_calls_refresh_auth_headers(azure_completion_target: OpenAICompletionTarget):
+    mock_memory = MagicMock(spec=MemoryInterface)
+    mock_memory.get_conversation.return_value = []
+    mock_memory.add_request_response_to_memory = AsyncMock()
+
+    azure_completion_target._memory = mock_memory
+
     azure_completion_target.refresh_auth_headers = MagicMock()
-
     azure_completion_target._validate_request = MagicMock()
-
-    azure_completion_target._memory.get_chat_messages_with_conversation_id = MagicMock(return_value=[])
     azure_completion_target._construct_request_body = AsyncMock(return_value={})
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock_make_request:

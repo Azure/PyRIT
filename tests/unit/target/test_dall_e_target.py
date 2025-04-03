@@ -17,6 +17,7 @@ from pyrit.exceptions.exception_classes import (
 )
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import OpenAIDALLETarget
+from pyrit.memory.memory_interface import MemoryInterface
 
 
 @pytest.fixture
@@ -319,6 +320,12 @@ async def test_dalle_target_default_api_version(
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_calls_refresh_auth_headers(dalle_target):
+    mock_memory = MagicMock(spec=MemoryInterface)
+    mock_memory.get_conversation.return_value = []
+    mock_memory.add_request_response_to_memory = AsyncMock()
+
+    dalle_target._memory = mock_memory
+
     dalle_target.refresh_auth_headers = MagicMock()
     dalle_target._validate_request = MagicMock()
     dalle_target._construct_request_body = AsyncMock(return_value={})

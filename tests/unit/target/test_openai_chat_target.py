@@ -707,12 +707,14 @@ async def test_openai_chat_target_default_api_version(sample_conversations: Muta
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIChatTarget):
+    mock_memory = MagicMock(spec=MemoryInterface)
+    mock_memory.get_conversation.return_value = []
+    mock_memory.add_request_response_to_memory = AsyncMock()
+
+    target._memory = mock_memory
+
     target.refresh_auth_headers = MagicMock()
-
     target._validate_request = MagicMock()
-
-    target._memory.get_conversation = MagicMock(return_value=[])
-
     target._construct_request_body = AsyncMock(return_value={})
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock_make_request:

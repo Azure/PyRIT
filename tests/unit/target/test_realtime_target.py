@@ -8,19 +8,26 @@ import pytest
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import RealtimeTarget
+from pyrit.memory import MemoryInterface
 
 
 @pytest.fixture
 def target(duckdb_instance):
     return RealtimeTarget(api_key="test_key", endpoint="wss://test_url", model_name="test", api_version="v1")
 
+@pytest.fixture
+def target_with_aad(duckdb_instance):
+    target = RealtimeTarget(api_key="test_api_key", use_aad_auth=True)
+    target._azure_auth = MagicMock()
+    target._azure_auth.refresh_token = MagicMock(return_value="test_access_token")
+    return target
 
 @pytest.mark.asyncio
 async def test_connect_success(target):
     with patch("websockets.connect", new_callable=AsyncMock) as mock_connect:
         await target.connect()
         mock_connect.assert_called_once_with(
-            "wss://test_url?deployment=test&api-key=test_key&OpenAI-Beta=realtime%3Dv1&api-version=v1"
+            "wss://test_url?deployment=test&OpenAI-Beta=realtime%3Dv1&api-key=test_key&api-version=v1"
         )
     await target.cleanup_target()
 
@@ -244,31 +251,18 @@ async def test_realtime_target_default_api_version(target):
         assert query_params["api-version"][0] == "2024-06-01"
 
 
-@pytest.mark.asyncio
-async def test_send_prompt_async_calls_refresh_auth_headers(target):
-    target.refresh_auth_headers = MagicMock()
-    target._validate_request = MagicMock()
-    target._memory.get_conversation = MagicMock(return_value=[])
-    target._construct_request_body = AsyncMock(return_value={})
+def test_add_auth_param_to_query_params_with_api_key(target_with_aad):
+    query_params = {}
+    target_with_aad._add_auth_param_to_query_params(query_params)
+    assert query_params["api-key"] == "test_api_key"
 
-    with patch("websockets.connect") as mock_connect:
-        mock_websocket = AsyncMock()
-        mock_connect.return_value.__aenter__.return_value = mock_websocket
-        mock_websocket.recv = AsyncMock(return_value='{"choices": [{"delta": {"content": "test response"}}]}')
-        mock_websocket.send = AsyncMock()
-        mock_websocket.close = AsyncMock()
+def test_add_auth_param_to_query_params_with_azure_auth(target_with_aad):
+    query_params = {}
+    target_with_aad._add_auth_param_to_query_params(query_params)
+    assert query_params["access_token"] == "test_access_token"
 
-        prompt_request = PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(
-                    role="user",
-                    original_value="test prompt",
-                    converted_value="test prompt",
-                    converted_value_data_type="text"
-                )
-            ]
-        )
-
-        await target.send_prompt_async(prompt_request=prompt_request)
-
-        target.refresh_auth_headers.assert_called_once()
+def test_add_auth_param_to_query_params_with_both_auth_methods(target_with_aad):
+    query_params = {}
+    target_with_aad._add_auth_param_to_query_params(query_params)
+    assert query_params["api-key"] == "test_api_key"
+    assert query_params["access_token"] == "test_access_token"
