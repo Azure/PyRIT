@@ -2,18 +2,23 @@
 # Licensed under the MIT license.
 import textwrap
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List, Tuple
+import pathlib
+import enum
 
 import yaml
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import SeedPrompt, SeedPromptGroup
+from pyrit.models import SeedPrompt, PromptRequestPiece, PromptRequestResponse, SeedPromptGroup, SeedPromptDataset, QuestionAnsweringDataset, QuestionAnsweringEntry
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer
 from pyrit.score.question_answer_scorer import QuestionAnswerScorer
+from pyrit.prompt_normalizer import NormalizerRequest
 
+class QuestionAnswerPaths(enum.Enum):
+    DEFAULT = pathlib.Path(DATASETS_PATH) / "orchestrators" / "benchmark" / "question_answer.yaml"
 
 class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
     """Question Answering Benchmark Orchestrator class is responsible for evaluating a question answering dataset
@@ -26,7 +31,8 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
     def __init__(
         self,
         objective_target: PromptChatTarget,
-        scorers: Optional[list[Scorer]] = QuestionAnswerScorer,
+        question_answer_definition_path: pathlib.Path = QuestionAnswerPaths.DEFAULT.value,
+        scorers: Optional[list[Scorer]] = None,
         prompt_converters: Optional[list[PromptConverter]] = None,
         evaluation_prompt: Optional[str] = None,
         verbose: bool = False,
@@ -41,12 +47,11 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
             evaluation_prompt (str, Optional): The evaluation prompt to be used. Defaults to None.
             verbose (bool, Optional): Whether to print verbose output. Defaults to False.
         """
-        super().__init__(
-            objective_target=objective_target,
-            scorers=scorers,
-            prompt_converters=prompt_converters,
-            verbose=verbose,
-        )
+
+        question_answer_definition: SeedPromptDataset = SeedPromptDataset.from_yaml_file(question_answer_definition_path)
+
+        self._user_start_turn = question_answer_definition.prompts[0]
+        self._assistant_start_turn = question_answer_definition.prompts[1]
 
         if evaluation_prompt:
             self.evaluation_system_prompt = evaluation_prompt
@@ -55,6 +60,19 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
             default_data = default_data_path.read_text(encoding="utf-8")
             yamp_data = yaml.safe_load(default_data)
             self.evaluation_system_prompt = yamp_data.get("content")
+
+        super().__init__(
+            objective_target=objective_target,
+            scorers=scorers,
+            prompt_converters=prompt_converters,
+            verbose=verbose,
+        )
+
+        self._set_default_conversation_start()
+
+    async def evaluate(self, prompt_request_list: list[NormalizerRequest]) -> None:
+        """Sends prompts to the chat model and evaluates responses."""
+        requests = await self.send_prompts_async(prompt_list=prompt_request_list)
 
     async def evaluate(self) -> None:
         """Evaluates the question answering dataset and prints the results."""
@@ -96,3 +114,57 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
                     """
                 )
                 print(msg)
+
+    def _set_default_conversation_start(self):
+        """Sets the default conversation start for the orchestrator."""
+        prepended_conversation = [
+            PromptRequestResponse(
+                request_pieces=[
+                    PromptRequestPiece(
+                        role="user",
+                        original_value=self._user_start_turn.value,
+                    )
+                ]
+            ),
+            PromptRequestResponse(
+                request_pieces=[
+                    PromptRequestPiece(
+                        role="assistant",
+                        original_value=self._assistant_start_turn.value,
+                    )
+                ]
+            ),
+        ]
+
+        self.set_prepended_conversation(prepended_conversation=prepended_conversation)
+
+    def get_question_prompt_pairs(
+            self,
+            dataset: QuestionAnsweringDataset,
+        ):
+        """
+        Generates a list of question and answer pairs from the dataset.
+        """
+        QAList:List[Tuple[QuestionAnsweringEntry, str]] = []
+        for question in dataset.questions:
+            prompt = self._construct_evaluation_prompt(entry=question)
+            QAList.append((question, prompt))
+        return QAList
+
+    def _construct_evaluation_prompt(self, *, entry: QuestionAnsweringEntry) -> str:
+        available_choices = ""
+        for c in entry.choices:
+            available_choices += f"index={c.index}, value={c.text}\n"
+
+        return textwrap.dedent(
+            f"""\
+            Questions:
+            {entry.question}
+
+            Choices:
+            {available_choices}
+
+            Answer:
+
+            """
+        )
