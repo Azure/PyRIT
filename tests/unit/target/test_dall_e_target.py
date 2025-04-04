@@ -15,9 +15,9 @@ from pyrit.exceptions.exception_classes import (
     EmptyResponseException,
     RateLimitException,
 )
+from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import OpenAIDALLETarget
-from pyrit.memory.memory_interface import MemoryInterface
 
 
 @pytest.fixture
@@ -332,11 +332,7 @@ async def test_send_prompt_async_calls_refresh_auth_headers(dalle_target):
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock_make_request:
         mock_response = MagicMock()
-        mock_response.text = json.dumps({
-            "data": [{
-                "b64_json": "aGVsbG8="  # Base64 encoded "hello"
-            }]
-        })
+        mock_response.text = json.dumps({"data": [{"b64_json": "aGVsbG8="}]})  # Base64 encoded "hello"
         mock_make_request.return_value = mock_response
 
         prompt_request = PromptRequestResponse(
@@ -345,7 +341,7 @@ async def test_send_prompt_async_calls_refresh_auth_headers(dalle_target):
                     role="user",
                     original_value="test prompt",
                     converted_value="test prompt",
-                    converted_value_data_type="text"
+                    converted_value_data_type="text",
                 )
             ]
         )

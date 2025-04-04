@@ -6,14 +6,15 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 
+from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import RealtimeTarget
-from pyrit.memory import MemoryInterface
 
 
 @pytest.fixture
 def target(duckdb_instance):
     return RealtimeTarget(api_key="test_key", endpoint="wss://test_url", model_name="test", api_version="v1")
+
 
 @pytest.fixture
 def target_with_aad(duckdb_instance):
@@ -21,6 +22,7 @@ def target_with_aad(duckdb_instance):
     target._azure_auth = MagicMock()
     target._azure_auth.refresh_token = MagicMock(return_value="test_access_token")
     return target
+
 
 @pytest.mark.asyncio
 async def test_connect_success(target):
@@ -256,10 +258,12 @@ def test_add_auth_param_to_query_params_with_api_key(target_with_aad):
     target_with_aad._add_auth_param_to_query_params(query_params)
     assert query_params["api-key"] == "test_api_key"
 
+
 def test_add_auth_param_to_query_params_with_azure_auth(target_with_aad):
     query_params = {}
     target_with_aad._add_auth_param_to_query_params(query_params)
     assert query_params["access_token"] == "test_access_token"
+
 
 def test_add_auth_param_to_query_params_with_both_auth_methods(target_with_aad):
     query_params = {}

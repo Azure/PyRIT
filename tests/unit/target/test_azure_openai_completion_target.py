@@ -10,9 +10,9 @@ import pytest
 from unit.mocks import get_sample_conversations
 
 from pyrit.memory.central_memory import CentralMemory
+from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import OpenAICompletionTarget
-from pyrit.memory.memory_interface import MemoryInterface
 
 
 @pytest.fixture
@@ -179,7 +179,7 @@ async def test_send_prompt_async_calls_refresh_auth_headers(azure_completion_tar
                     role="user",
                     original_value="test prompt",
                     converted_value="test prompt",
-                    converted_value_data_type="text"
+                    converted_value_data_type="text",
                 )
             ]
         )

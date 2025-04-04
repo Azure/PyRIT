@@ -58,7 +58,7 @@ def target(patch_central_database) -> OpenAIChatTarget:
         endpoint="https://mock.azure.com/",
         api_key="mock-api-key",
         api_version="some_version",
-        use_aad_auth=True
+        use_aad_auth=True,
     )
 
 
@@ -718,7 +718,9 @@ async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIChatTa
     target._construct_request_body = AsyncMock(return_value={})
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock_make_request:
-        mock_make_request.return_value = MagicMock(text='{"choices": [{"finish_reason": "stop", "message": {"content": "test response"}}]}')
+        mock_make_request.return_value = MagicMock(
+            text='{"choices": [{"finish_reason": "stop", "message": {"content": "test response"}}]}'
+        )
 
         prompt_request = PromptRequestResponse(
             request_pieces=[
@@ -726,7 +728,7 @@ async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIChatTa
                     role="user",
                     original_value="test prompt",
                     converted_value="test prompt",
-                    converted_value_data_type="text"
+                    converted_value_data_type="text",
                 )
             ]
         )

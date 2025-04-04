@@ -7,9 +7,9 @@ from abc import abstractmethod
 from typing import Callable, Optional
 
 from pyrit.auth.azure_auth import (
+    AzureAuth,
     get_default_scope,
     get_token_provider_from_default_azure_credential,
-    AzureAuth,
 )
 from pyrit.common import default_values
 from pyrit.prompt_target import PromptChatTarget

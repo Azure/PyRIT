@@ -13,10 +13,10 @@ from unit.mocks import get_sample_conversations
 
 from pyrit.common import net_utility
 from pyrit.exceptions import RateLimitException
+from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import OpenAITTSTarget
 from pyrit.prompt_target.openai.openai_tts_target import TTSResponseFormat
-from pyrit.memory import MemoryInterface
 
 
 @pytest.fixture
@@ -69,7 +69,9 @@ async def test_tts_validate_prompt_type(
 
 
 @pytest.mark.asyncio
-async def test_tts_validate_previous_conversations(tts_target: OpenAITTSTarget, sample_conversations: MutableSequence[PromptRequestPiece]):
+async def test_tts_validate_previous_conversations(
+    tts_target: OpenAITTSTarget, sample_conversations: MutableSequence[PromptRequestPiece]
+):
     request_piece = sample_conversations[0]
 
     mock_memory = MagicMock()
@@ -246,7 +248,7 @@ async def test_send_prompt_async_calls_refresh_auth_headers(tts_target):
                     role="user",
                     original_value="test prompt",
                     converted_value="test prompt",
-                    converted_value_data_type="text"
+                    converted_value_data_type="text",
                 )
             ]
         )
