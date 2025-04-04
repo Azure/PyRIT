@@ -11,7 +11,6 @@ from urllib.parse import urlencode
 
 import websockets
 
-from pyrit.common.utils import combine_dict
 from pyrit.models import PromptRequestResponse
 from pyrit.models.data_type_serializer import data_serializer_factory
 from pyrit.models.prompt_request_response import construct_response_from_request

@@ -713,24 +713,28 @@ async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIChatTa
 
     target._memory = mock_memory
 
-    target.refresh_auth_headers = MagicMock()
-    target._validate_request = MagicMock()
-    target._construct_request_body = AsyncMock(return_value={})
+    with (
+        patch.object(target, "refresh_auth_headers") as mock_refresh,
+        patch.object(target, "_validate_request"),
+        patch.object(target, "_construct_request_body", new_callable=AsyncMock) as mock_construct,
+    ):
 
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock_make_request:
-        mock_make_request.return_value = MagicMock(
-            text='{"choices": [{"finish_reason": "stop", "message": {"content": "test response"}}]}'
-        )
+        mock_construct.return_value = {}
 
-        prompt_request = PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(
-                    role="user",
-                    original_value="test prompt",
-                    converted_value="test prompt",
-                    converted_value_data_type="text",
-                )
-            ]
-        )
-        await target.send_prompt_async(prompt_request=prompt_request)
-        target.refresh_auth_headers.assert_called_once()
+        with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock_make_request:
+            mock_make_request.return_value = MagicMock(
+                text='{"choices": [{"finish_reason": "stop", "message": {"content": "test response"}}]}'
+            )
+
+            prompt_request = PromptRequestResponse(
+                request_pieces=[
+                    PromptRequestPiece(
+                        role="user",
+                        original_value="test prompt",
+                        converted_value="test prompt",
+                        converted_value_data_type="text",
+                    )
+                ]
+            )
+            await target.send_prompt_async(prompt_request=prompt_request)
+            mock_refresh.assert_called_once()

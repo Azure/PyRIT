@@ -6,7 +6,6 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 
-from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import RealtimeTarget
 

@@ -166,23 +166,27 @@ async def test_send_prompt_async_calls_refresh_auth_headers(azure_completion_tar
 
     azure_completion_target._memory = mock_memory
 
-    azure_completion_target.refresh_auth_headers = MagicMock()
-    azure_completion_target._validate_request = MagicMock()
-    azure_completion_target._construct_request_body = AsyncMock(return_value={})
+    with (
+        patch.object(azure_completion_target, "refresh_auth_headers") as mock_refresh,
+        patch.object(azure_completion_target, "_validate_request"),
+        patch.object(azure_completion_target, "_construct_request_body", new_callable=AsyncMock) as mock_construct,
+    ):
 
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock_make_request:
-        mock_make_request.return_value = MagicMock(text='{"choices": [{"text": "test response"}]}')
+        mock_construct.return_value = {}
 
-        prompt_request = PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(
-                    role="user",
-                    original_value="test prompt",
-                    converted_value="test prompt",
-                    converted_value_data_type="text",
-                )
-            ]
-        )
-        await azure_completion_target.send_prompt_async(prompt_request=prompt_request)
+        with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock_make_request:
+            mock_make_request.return_value = MagicMock(text='{"choices": [{"text": "test response"}]}')
 
-        azure_completion_target.refresh_auth_headers.assert_called_once()
+            prompt_request = PromptRequestResponse(
+                request_pieces=[
+                    PromptRequestPiece(
+                        role="user",
+                        original_value="test prompt",
+                        converted_value="test prompt",
+                        converted_value_data_type="text",
+                    )
+                ]
+            )
+            await azure_completion_target.send_prompt_async(prompt_request=prompt_request)
+
+            mock_refresh.assert_called_once()
