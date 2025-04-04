@@ -58,7 +58,6 @@ def target(patch_central_database) -> OpenAIChatTarget:
         endpoint="https://mock.azure.com/",
         api_key="mock-api-key",
         api_version="some_version",
-        use_aad_auth=True,
     )
 
 
@@ -711,6 +710,7 @@ async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIChatTa
     mock_memory.get_conversation.return_value = []
     mock_memory.add_request_response_to_memory = AsyncMock()
 
+    target._azure_auth = MagicMock()
     target._memory = mock_memory
 
     with (
