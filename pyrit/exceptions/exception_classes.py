@@ -23,6 +23,8 @@ from pyrit.models.prompt_request_response import (
     construct_response_from_request,
 )
 
+# Used with pyrit_custom_result_retry, as this function may be used in conjunction with other decorators
+CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS = int(os.getenv("CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS"), 10)
 RETRY_MAX_NUM_ATTEMPTS = int(os.getenv("RETRY_MAX_NUM_ATTEMPTS", 10))
 RETRY_WAIT_MIN_SECONDS = int(os.getenv("RETRY_WAIT_MIN_SECONDS", 5))
 RETRY_WAIT_MAX_SECONDS = int(os.getenv("RETRY_WAIT_MAX_SECONDS", 220))
@@ -83,8 +85,8 @@ class MissingPromptPlaceholderException(PyritException):
 
 
 def pyrit_custom_result_retry(
-    retry_function: Callable, max_number_retry_attempts: int = RETRY_MAX_NUM_ATTEMPTS
-) -> Callable:
+        retry_function: Callable,
+        retry_max_num_attempts: int = CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS) -> Callable:
     """
     A decorator to apply retry logic with exponential backoff to a function.
 
@@ -95,8 +97,8 @@ def pyrit_custom_result_retry(
     Args:
         retry_function (Callable): The function to determine if a retry should occur based
             on the boolean result of the decorated function.
-        max_number_retry_attempts (int): The maximum number of retry attempts. Defaults to
-            RETRY_MAX_NUM_ATTEMPTS.
+        retry_max_num_attempts (Optional, int): The maximum number of retry attempts. Defaults to
+            CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS.
         func (Callable): The function to be decorated.
 
     Returns:
@@ -104,14 +106,14 @@ def pyrit_custom_result_retry(
     """
 
     def inner_retry(func):
-        global RETRY_MAX_NUM_ATTEMPTS, RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS
+        global RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS
 
         return retry(
             reraise=True,
             retry=retry_if_result(retry_function),
             wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS),
             after=log_exception,
-            stop=stop_after_attempt(max_number_retry_attempts),
+            stop=stop_after_attempt(retry_max_num_attempts),
         )(func)
 
     return inner_retry

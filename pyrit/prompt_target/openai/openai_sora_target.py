@@ -2,13 +2,13 @@
 # Licensed under the MIT license.
 import json
 import logging
+import os
 from typing import Literal, Optional
 
 import httpx
 
 from pyrit.common import net_utility
 from pyrit.exceptions import (
-    EmptyResponseException,
     RateLimitException,
     handle_bad_request_exception,
     pyrit_custom_result_retry,
@@ -76,9 +76,10 @@ class OpenAISoraTarget(OpenAITarget):
             is {task_id}_{gen_id}.mp4 as returned by the model.
     """
 
-    # Maximum number of retries for check_task_status()
+    # Maximum number of retries for check_task_status() and download_video_content()
     # This cannot be set in the constructor as it is used in the decorator, which does not know self.
-    RETRY_CHECK_TASK_MAX_NUM_ATTEMPTS = 25
+    RETRY_CHECK_TASK_MAX_NUM_ATTEMPTS = int(os.getenv("CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS"), 25)
+    RETRY_DOWNLOAD_VIDEO_MAX_NUM_ATTEMPTS = min(int(os.getenv("RETRY_MAX_NUM_ATTEMPTS")), RETRY_CHECK_TASK_MAX_NUM_ATTEMPTS)
 
     def __init__(
         self,
@@ -175,7 +176,8 @@ class OpenAISoraTarget(OpenAITarget):
         return await self._handle_response(request=request, response=response)
 
     @pyrit_custom_result_retry(
-        retry_function=_retry_check_task, max_number_retry_attempts=RETRY_CHECK_TASK_MAX_NUM_ATTEMPTS
+        retry_function=_retry_check_task,
+        retry_max_num_attempts=RETRY_CHECK_TASK_MAX_NUM_ATTEMPTS,
     )
     @pyrit_target_retry
     async def check_task_status(self, task_id: str) -> httpx.Response:
@@ -201,12 +203,12 @@ class OpenAISoraTarget(OpenAITarget):
             if StatusError.response.status_code == 429:
                 raise RateLimitException()
 
-        if not json.loads(response.content):
-            raise EmptyResponseException()
-
         return response
 
-    @pyrit_custom_result_retry(retry_function=_retry_video_download)
+    @pyrit_custom_result_retry(
+        retry_function=_retry_video_download,
+        retry_max_num_attempts=RETRY_DOWNLOAD_VIDEO_MAX_NUM_ATTEMPTS,
+    )
     @pyrit_target_retry
     async def download_video_content(self, gen_id: str) -> httpx.Response:
         """
@@ -231,16 +233,11 @@ class OpenAISoraTarget(OpenAITarget):
             if StatusError.response.status_code == 429:
                 raise RateLimitException()
 
-        if not response:
-            raise EmptyResponseException()
-
         return response
 
     async def _handle_response(self, request: PromptRequestPiece, response: httpx.Response) -> PromptRequestResponse:
         # Handle Video Generation Request Response
         content = json.loads(response.content)
-        if not content:
-            raise EmptyResponseException()
 
         task_id = content.get("id")
         logger.info(f"Handling response for Task ID: {task_id}")
@@ -273,11 +270,11 @@ class OpenAISoraTarget(OpenAITarget):
                     request=request, response_text_pieces=[str(serializer.value)], response_type="video_path"
                 )
             else:
+                logger.error(f"Failed to download video content for generation {gen_id}. Status Code: {video_response.status_code}")
                 response_entry = construct_response_from_request(
                     request=request,
                     response_text_pieces=[
-                        f"Failed to download video content for task: {task_id} with generation: {gen_id}. "
-                        + "Response: {video_response}"
+                        f"Status Code: {video_response.status_code}, Response: {video_response}"
                     ],
                     response_type="error",
                     error="unknown",
@@ -289,20 +286,24 @@ class OpenAISoraTarget(OpenAITarget):
 
             if failure_reason == "input_moderation" or failure_reason == "output_moderation":
                 return handle_bad_request_exception(
-                    response_text=failure_reason, request=request, is_content_filter=True
+                    response_text=f"{task_id} {status}, Reason: {failure_reason}",
+                    request=request,
+                    is_content_filter=True,
                 )
             else:
+                logger.error(f"{task_id} {status}, Reason: {failure_reason}")
                 response_entry = construct_response_from_request(
                     request=request,
-                    response_text_pieces=[failure_reason],
+                    response_text_pieces=[f"{task_id} {status}, Reason: {failure_reason}"],
                     response_type="error",
                     error="unknown",
                 )
         else:
             # Retry stop condition reached, return result
+            logger.info(f"{task_id} is still processing after attempting retries. Consider setting a value > 25 for environment variable CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS. Status: {status}")
             response_entry = construct_response_from_request(
                 request=request,
-                response_text_pieces=[str(task_content)],
+                response_text_pieces=[f"{task_id} {status}, Response: {str(task_content)}"],
             )
 
         return response_entry

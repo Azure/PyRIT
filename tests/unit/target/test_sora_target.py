@@ -3,10 +3,13 @@
 
 import json
 import os
+from tenacity import RetryError
 from typing import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import httpx
 import pytest
+from pyrit.exceptions.exception_classes import RateLimitException
 from unit.mocks import get_sample_conversations
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
@@ -38,9 +41,85 @@ def video_generation_response_success() -> dict:
                 "width": 480,
                 "height": 480,
                 "n_seconds": 5,
-                "prompt": "test",
+                "prompt": "test_success",
             }
         ],
+        "prompt": "test_success",
+        "n_variants": 1,
+        "n_seconds": 5,
+        "height": 480,
+        "width": 480,
+        "failure_reason": None,
+    }
+
+
+@pytest.fixture
+def video_generation_response_failure_moderation() -> dict:
+    return {
+        'object': 'video.generation.job',
+        'id': 'task_02',
+        'status': 'failed',
+        'created_at': 1743556719,
+        'finished_at': 1743556734,
+        'generations': [
+            {
+                'object': 'video.generation',
+                'id': 'gen_02',
+                'job_id': 'task_02',
+                'created_at': 1743556759,
+                'width': 480,
+                'height':480,
+                'n_seconds': 5,
+                'prompt': "test_failure"
+            }
+        ],
+        'prompt': "test_failure",
+        'n_variants': 1,
+        'n_seconds': 5,
+        'height': 480,
+        'width': 480,
+        'failure_reason': 'output_moderation'
+    }
+
+
+@pytest.fixture
+def video_generation_response_failure_unknown() -> dict:
+    return {
+        'object': 'video.generation.job',
+        'id': 'task_03',
+        'status': 'failed',
+        'created_at': 1743556719,
+        'finished_at': 1743556734,
+        'generations': [
+            {
+                'object': 'video.generation',
+                'id': 'gen_03',
+                'job_id': 'task_03',
+                'created_at': 1743556759,
+                'width': 480,
+                'height':480,
+                'n_seconds': 5,
+                'prompt': "test_failure"
+            }
+        ],
+        'prompt': "test_failure",
+        'n_variants': 1,
+        'n_seconds': 5,
+        'height': 480,
+        'width': 480,
+        'failure_reason': 'other'
+    }
+
+
+@pytest.fixture
+def video_generation_response() -> dict:
+    return {
+        "object": "video.generation.job",
+        "id": 'task_04',
+        "status": "processing",
+        "created_at": 1743551594,
+        "finished_at": None,
+        "generations": [],
         "prompt": "test",
         "n_variants": 1,
         "n_seconds": 5,
@@ -112,7 +191,7 @@ def test_initialization_invalid_input(resolution_dimensions, n_seconds, n_varian
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_file_save_async(
+async def test_send_prompt_async_succeeded_download(
     sora_target: OpenAISoraTarget,
     sample_conversations: MutableSequence[PromptRequestPiece],
     video_generation_response_success: dict,
@@ -120,10 +199,10 @@ async def test_send_prompt_file_save_async(
     request = sample_conversations[0]
 
     openai_mock_return = MagicMock()
-    openai_mock_return.text = json.dumps(video_generation_response_success)
+    openai_mock_return.content = json.dumps(video_generation_response_success)
 
     sora_target.check_task_status = AsyncMock()
-    sora_target.check_task_status.return_value = json.dumps(video_generation_response_success)
+    sora_target.check_task_status.return_value.content = json.dumps(video_generation_response_success)
     sora_target.download_video_content = AsyncMock()
     sora_target.download_video_content.return_value.status_code = 200
     sora_target.download_video_content.return_value.content = b"video data"
@@ -137,7 +216,10 @@ async def test_send_prompt_file_save_async(
         response = await sora_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
         path = response.get_value()
         assert path
-        assert path.endswith(".mp4")
+
+        task_id = video_generation_response_success["id"]
+        gen_id = video_generation_response_success["generations"][0]["id"]
+        assert path.endswith(f"{task_id}_{gen_id}.mp4")
         assert os.path.exists(path)
 
         with open(path, "r") as file:
@@ -145,3 +227,234 @@ async def test_send_prompt_file_save_async(
             assert data == "video data"
 
         os.remove(path)
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_succeeded_download_error(
+    sora_target: OpenAISoraTarget,
+    sample_conversations: MutableSequence[PromptRequestPiece],
+    video_generation_response_success: dict,
+):
+    request = sample_conversations[0]
+
+    openai_mock_return = MagicMock()
+    openai_mock_return.content = json.dumps(video_generation_response_success)
+
+    sora_target.check_task_status = AsyncMock()
+    sora_target.check_task_status.return_value.content = json.dumps(video_generation_response_success)
+    sora_target.download_video_content = AsyncMock()
+    sora_target.download_video_content.return_value.status_code = 400
+    sora_target.download_video_content.return_value.content = b"error"
+
+    with patch(
+        "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
+    ) as mock_request:
+
+        mock_request.return_value = openai_mock_return
+
+        response = await sora_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+        response_content = response.request_pieces[0]
+
+        response_content.original_value = f"Status Code: 400, Message: {sora_target.download_video_content}"
+        response_content.response_error = "unknown"
+        response_content.original_value_data_type = "error"
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_failed_unknown(
+    sora_target: OpenAISoraTarget,
+    sample_conversations: MutableSequence[PromptRequestPiece],
+    video_generation_response_failure_unknown: dict,
+):
+    request = sample_conversations[0]
+
+    openai_mock_return = MagicMock()
+    openai_mock_return.content = json.dumps(video_generation_response_failure_unknown)
+
+    sora_target.check_task_status = AsyncMock()
+    sora_target.check_task_status.return_value.content = json.dumps(video_generation_response_failure_unknown)
+
+    with patch(
+        "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
+    ) as mock_request:
+
+        mock_request.return_value = openai_mock_return
+
+        response = await sora_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+        response_content = response.request_pieces[0]
+        response_content.original_value = "task_03 failed, Reason: other"
+        response_content.response_error = "unknown"
+        response_content.original_value_data_type = "error"
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_failed_moderation(
+    sora_target: OpenAISoraTarget,
+    sample_conversations: MutableSequence[PromptRequestPiece],
+    video_generation_response_failure_moderation: dict,
+):
+    request = sample_conversations[0]
+
+    openai_mock_return = MagicMock()
+    openai_mock_return.content = json.dumps(video_generation_response_failure_moderation)
+
+    sora_target.check_task_status = AsyncMock()
+    sora_target.check_task_status.return_value.content = json.dumps(video_generation_response_failure_moderation)
+
+    with patch(
+        "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
+    ) as mock_request:
+
+        mock_request.return_value = openai_mock_return
+
+        response = await sora_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+        response_content = response.request_pieces[0]
+        response_content.original_value = "Status Code: 400, Message: task_02 failed, Reason: output_moderation"
+        response_content.response_error = "blocked"
+        response_content.original_value_data_type = "error"
+
+
+@pytest.mark.asyncio
+async def test_download_video_content_custom_retry(
+    sora_target: OpenAISoraTarget,
+    video_generation_response_success: dict,
+):
+    openai_mock_return = MagicMock()
+    openai_mock_return.content = json.dumps(video_generation_response_success)
+    openai_mock_return.status_code = 500
+
+    with patch(
+        "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
+    ) as mock_request:
+
+        mock_request.return_value = openai_mock_return
+
+        gen_id = video_generation_response_success["generations"][0]["id"]
+
+        with pytest.raises(RetryError):
+            await sora_target.download_video_content(gen_id=gen_id)
+
+        assert mock_request.call_count == sora_target.RETRY_DOWNLOAD_VIDEO_MAX_NUM_ATTEMPTS
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_timeout(
+    sora_target: OpenAISoraTarget,
+    sample_conversations: MutableSequence[PromptRequestPiece],
+    video_generation_response: dict,
+):
+    request = sample_conversations[0]
+
+    openai_mock_return = MagicMock()
+    openai_mock_return.content = json.dumps(video_generation_response)
+
+    sora_target.check_task_status = AsyncMock()
+    sora_target.check_task_status.return_value.content = json.dumps(video_generation_response)
+
+    with patch(
+        "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
+    ) as mock_request:
+
+        mock_request.return_value = openai_mock_return
+
+        response = await sora_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+        response_content = response.request_pieces[0]
+
+        task_id = video_generation_response["id"]
+        task_status = video_generation_response["status"]
+        response_content.original_value = f"{task_id} {task_status}, Response {str(video_generation_response)}"
+
+
+@pytest.mark.asyncio
+async def test_check_task_status_custom_retry(
+    sora_target: OpenAISoraTarget,
+    video_generation_response: dict,
+):
+    openai_mock_return = MagicMock()
+    openai_mock_return.content = json.dumps(video_generation_response)
+
+    with patch(
+        "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
+    ) as mock_request:
+
+        mock_request.return_value = openai_mock_return
+
+        task_id = video_generation_response["id"]
+
+        with pytest.raises(RetryError):
+            await sora_target.check_task_status(task_id=task_id)
+
+        assert mock_request.call_count == sora_target.RETRY_CHECK_TASK_MAX_NUM_ATTEMPTS
+
+
+@pytest.mark.parametrize(
+    "err_class, status_code, message, err_msg",
+    [
+        (RateLimitException, 429, "Rate Limit Exception", "Status Code: 429, Message: Rate Limit Exception"),
+        (httpx.HTTPStatusError, 400, "Bad Request", "Status Code: 400, Message: Bad Request"),
+    ]
+)
+@pytest.mark.asyncio
+async def test_send_prompt_async_exceptions(
+    sora_target: OpenAISoraTarget,
+    sample_conversations: MutableSequence[PromptRequestPiece],
+    err_class: Exception,
+    status_code: int,
+    message: str,
+    err_msg: str,
+):
+    request = sample_conversations[0]
+
+    response = MagicMock()
+    response.status_code = status_code
+
+    side_effect = httpx.HTTPStatusError(message, response=response, request=MagicMock())
+
+    with patch(
+        "pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect
+    ) as mock_request:
+
+        with pytest.raises(err_class) as e:
+            await sora_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+            assert str(e.value) == err_msg
+
+            if err_class == RateLimitException:
+                assert mock_request.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
+            elif err_class == httpx.HTTPStatusError:
+                assert mock_request.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_check_task_exceptions(
+    sora_target: OpenAISoraTarget,
+):
+    response = MagicMock()
+    response.status_code = 429
+    side_effect = httpx.HTTPStatusError("Rate Limit Exception", response=response, request=MagicMock())
+
+    with patch(
+        "pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect
+    ) as mock_request:
+
+        with pytest.raises(RateLimitException) as e:
+            await sora_target.check_task_status(task_id="task_id")
+            assert str(e.value) == "Status Code: 429, Message: Rate Limit Exception"
+            assert mock_request.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
+
+
+@pytest.mark.asyncio
+async def test_download_video_content_exceptions(
+    sora_target: OpenAISoraTarget,
+):
+    response = MagicMock()
+    response.status_code = 429
+    side_effect = httpx.HTTPStatusError("Rate Limit Exception", response=response, request=MagicMock())
+
+    with patch(
+        "pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect
+    ) as mock_request:
+
+        with pytest.raises(RateLimitException) as e:
+            await sora_target.download_video_content(gen_id="gen_id")
+            assert str(e.value) == "Status Code: 429, Message: Rate Limit Exception"
+            assert mock_request.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
