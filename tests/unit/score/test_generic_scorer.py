@@ -34,7 +34,7 @@ async def test_general_scorer_score_async(patch_central_database, general_scorer
 
     scorer = SelfAskGeneralScorer(
         chat_target=chat_target,
-        system_prompt="This is a system prompt.",
+        system_prompt_format_string="This is a system prompt.",
         scorer_type="float_scale",
         category=["test_category"],
         min_value=1,
@@ -59,7 +59,7 @@ async def test_general_scorer_invalid_scorer_type():
     with pytest.raises(ValueError, match="Scorer type invalid_type is not a valid scorer type."):
         SelfAskGeneralScorer(
             chat_target=chat_target,
-            system_prompt="This is a system prompt.",
+            system_prompt_format_string="This is a system prompt.",
             scorer_type="invalid_type",
         )
 
@@ -73,7 +73,7 @@ async def test_general_scorer_score_async_with_prompt_f_string(
 
     scorer = SelfAskGeneralScorer(
         chat_target=chat_target,
-        system_prompt="This is a system prompt.",
+        system_prompt_format_string="This is a system prompt.",
         prompt_format_string="Is this cyberbullying? {prompt}",
         scorer_type="float_scale",
         category=["test_category"],
@@ -120,7 +120,7 @@ async def test_general_scorer_score_async_handles_custom_keys(patch_central_data
 
     scorer = SelfAskGeneralScorer(
         chat_target=chat_target,
-        system_prompt="This is a system prompt.",
+        system_prompt_format_string="This is a system prompt.",
         prompt_format_string="This is a prompt format string.",
         scorer_type="float_scale",
         category=["test_category"],

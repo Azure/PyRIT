@@ -44,7 +44,7 @@ class SelfAskGeneralScorer(Scorer):
     def __init__(
         self,
         chat_target: PromptChatTarget,
-        system_prompt: str = None,
+        system_prompt_format_string: str = None,
         prompt_format_string: str = None,
         scorer_type: Literal["true_false", "float_scale"] = "float_scale",
         score_value_output_key: str = "score_value",
@@ -59,7 +59,7 @@ class SelfAskGeneralScorer(Scorer):
     ) -> None:
 
         self._prompt_target = chat_target
-        self.system_prompt = system_prompt
+        self._system_prompt = system_prompt_format_string
         self._prompt_format_string = prompt_format_string
 
         if scorer_type != "true_false" and scorer_type != "float_scale":
@@ -83,14 +83,14 @@ class SelfAskGeneralScorer(Scorer):
         self.validate(request_response, task=task)
         prompt = request_response.converted_value
 
-        self.system_prompt = self.system_prompt.format(task=task, request_response=request_response)
+        system_prompt = self._system_prompt.format(task=task, prompt=prompt, request_response=request_response)
 
         if self._prompt_format_string:
             prompt = self._prompt_format_string.format(task=task, prompt=prompt, request_response=request_response)
 
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
-            system_prompt=self.system_prompt,
+            system_prompt=system_prompt,
             prompt_request_value=prompt,
             prompt_request_data_type=request_response.converted_value_data_type,
             scored_prompt_id=request_response.id,
