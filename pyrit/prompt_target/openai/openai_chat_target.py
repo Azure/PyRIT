@@ -136,6 +136,8 @@ class OpenAIChatTarget(OpenAITarget):
         """
 
         self._validate_request(prompt_request=prompt_request)
+        self.refresh_auth_headers()
+
         request_piece: PromptRequestPiece = prompt_request.request_pieces[0]
 
         is_json_response = self.is_response_format_json(request_piece)
