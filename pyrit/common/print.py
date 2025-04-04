@@ -55,4 +55,4 @@ def print_chat_messages_with_color(
                 subsequent_indent=left_padding,
             )
         print("Message with role: " + message.role)
-        termcolor.cprint(output_message, color=role_to_color[message.role])
+        termcolor.cprint(output_message, color=role_to_color[message.role])  # type: ignore[arg-type]
