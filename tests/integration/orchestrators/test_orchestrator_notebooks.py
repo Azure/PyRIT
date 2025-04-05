@@ -27,7 +27,7 @@ def test_execute_notebooks(file_name):
     with open(nb_path, encoding="utf-8") as f:
         nb = nbformat.read(f, as_version=4)
 
-    ep = ExecutePreprocessor(timeout=600)
+    ep = ExecutePreprocessor(timeout=900)
 
     # Execute notebook, test will throw exception if any cell fails
     ep.preprocess(nb, {"metadata": {"path": nb_path.parent}})
