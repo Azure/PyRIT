@@ -12,7 +12,7 @@ from pyrit.common.utils import combine_dict
 from pyrit.exceptions import (
     InvalidJsonException,
     pyrit_json_retry,
-    remove_markdown_json,
+    extract_json_from_response,
 )
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import MultiTurnAttackResult, MultiTurnOrchestrator
@@ -357,21 +357,16 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
                 labels=memory_labels,
             )
         ).get_value()
-        response_text = remove_markdown_json(response_text)
+        parsed_output = extract_json_from_response(response_text)
 
         expected_output = ["generated_question", "rationale_behind_jailbreak", "last_response_summary"]
-        try:
-            parsed_output = json.loads(response_text)
-            for key in expected_output:
-                if key not in parsed_output:
-                    raise InvalidJsonException(
-                        message=f"Expected key '{key}' not found in JSON response: {response_text}"
-                    )
+        for key in expected_output:
+            if key not in parsed_output:
+                raise InvalidJsonException(
+                    message=f"Expected key '{key}' not found in JSON response: {response_text}"
+                )
 
-            attack_prompt = parsed_output["generated_question"]
-
-        except json.JSONDecodeError:
-            raise InvalidJsonException(message=f"Invalid JSON encountered: {response_text}")
+        attack_prompt = parsed_output["generated_question"]
 
         if len(parsed_output.keys()) != len(expected_output):
             raise InvalidJsonException(message=f"Unexpected keys found in JSON response: {response_text}")
