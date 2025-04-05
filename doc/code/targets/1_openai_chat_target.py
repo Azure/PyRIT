@@ -58,7 +58,7 @@ await orchestrator.print_conversations_async()  # type: ignore
 #
 # The `OpenAIChatTarget` also supports running with LM Studio, a GUI-based application that allows you to run local LLM models through an OpenAI-compatible API. To use PyRIT with LM Studio:
 #
-# 1. Install and run LM Studio, ensuring a model is loaded and the API server is running (typically at http://127.0.0.1:1234).
+# 1. Install and run LM Studio, ensuring a model is loaded and the API server is running (typically at `http://127.0.0.1:1234`).
 # 2. Configure your environment variables:
 #    ```
 #    OPENAI_CHAT_ENDPOINT="http://127.0.0.1:1234/v1/chat/completions"
