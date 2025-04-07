@@ -35,7 +35,7 @@ class WordLevelConverter(PromptConverter):
 
         self.validate_input(prompt=prompt)
 
-        words = prompt.split()
+        words = prompt.split(' ')  # split by spaces only, preserving other whitespace
         selected_indices = select_word_indices(words=words, mode=self.mode, **self.mode_kwargs)
 
         # Convert only selected words
