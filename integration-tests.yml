@@ -44,6 +44,7 @@ jobs:
     name: install_tkinter
   - bash: pip install .[dev,all] -v
     name: install_PyRIT
+  # This step ensures that integration tests are run outside of the PyRIT directory to test that .env files are accessed correctly.
   - bash: |
       PyRIT_DIR=$(pwd)
       NEW_DIR="integration_test_directory"
