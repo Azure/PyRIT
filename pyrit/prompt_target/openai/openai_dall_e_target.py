@@ -107,19 +107,23 @@ class OpenAIDALLETarget(OpenAITarget):
         prompt_request: PromptRequestResponse,
     ) -> PromptRequestResponse:
         """
-        (Async) Sends prompt to image target and returns response
+        Send a prompt to the DALL-E target and return the response.
 
         Args:
-            prompt_request (PromptRequestResponse): the prompt to send formatted as an object
+            prompt_request (PromptRequestResponse): The prompt request to send.
 
-        Returns: response from target model formatted as an object
+        Returns:
+            PromptRequestResponse: The response from the DALL-E target.
         """
-
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
-        prompt = request.converted_value
 
-        request_body = self._construct_request_body(prompt=prompt)
+        logger.info(f"Sending the following prompt to the prompt target: {request}")
+
+        # Refresh auth headers if using AAD
+        self.refresh_auth_headers()
+
+        body = self._construct_request_body(prompt=request.converted_value)
 
         params = {}
         if self._api_version is not None:
@@ -130,7 +134,7 @@ class OpenAIDALLETarget(OpenAITarget):
                 endpoint_uri=self._endpoint,
                 method="POST",
                 headers=self._headers,
-                request_body=request_body,
+                request_body=body,
                 params=params,
                 **self._httpx_client_kwargs,
             )

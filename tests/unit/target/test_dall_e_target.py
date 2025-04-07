@@ -15,6 +15,7 @@ from pyrit.exceptions.exception_classes import (
     EmptyResponseException,
     RateLimitException,
 )
+from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import OpenAIDALLETarget
 
@@ -315,3 +316,35 @@ async def test_dalle_target_default_api_version(
         called_params = mock_request.call_args[1]["params"]
         assert "api-version" in called_params
         assert called_params["api-version"] == "2024-06-01"
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_calls_refresh_auth_headers(dalle_target):
+    mock_memory = MagicMock(spec=MemoryInterface)
+    mock_memory.get_conversation.return_value = []
+    mock_memory.add_request_response_to_memory = AsyncMock()
+
+    dalle_target._memory = mock_memory
+
+    dalle_target.refresh_auth_headers = MagicMock()
+    dalle_target._validate_request = MagicMock()
+    dalle_target._construct_request_body = AsyncMock(return_value={})
+
+    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock_make_request:
+        mock_response = MagicMock()
+        mock_response.text = json.dumps({"data": [{"b64_json": "aGVsbG8="}]})  # Base64 encoded "hello"
+        mock_make_request.return_value = mock_response
+
+        prompt_request = PromptRequestResponse(
+            request_pieces=[
+                PromptRequestPiece(
+                    role="user",
+                    original_value="test prompt",
+                    converted_value="test prompt",
+                    converted_value_data_type="text",
+                )
+            ]
+        )
+        await dalle_target.send_prompt_async(prompt_request=prompt_request)
+
+        dalle_target.refresh_auth_headers.assert_called_once()
