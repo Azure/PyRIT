@@ -13,6 +13,7 @@ from unit.mocks import get_sample_conversations
 
 from pyrit.common import net_utility
 from pyrit.exceptions import RateLimitException
+from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import OpenAITTSTarget
 from pyrit.prompt_target.openai.openai_tts_target import TTSResponseFormat
@@ -25,7 +26,7 @@ def sample_conversations() -> MutableSequence[PromptRequestPiece]:
 
 @pytest.fixture
 def tts_target(patch_central_database) -> OpenAITTSTarget:
-    return OpenAITTSTarget(model_name="test", endpoint="test", api_key="test")
+    return OpenAITTSTarget(model_name="test", endpoint="https://test.com", api_key="test")
 
 
 def test_tts_initializes(tts_target: OpenAITTSTarget):
@@ -72,11 +73,19 @@ async def test_tts_validate_previous_conversations(
     tts_target: OpenAITTSTarget, sample_conversations: MutableSequence[PromptRequestPiece]
 ):
     request_piece = sample_conversations[0]
-    tts_target._memory.add_request_response_to_memory(request=PromptRequestResponse(request_pieces=[request_piece]))
+
+    mock_memory = MagicMock()
+    mock_memory.get_conversation.return_value = sample_conversations
+    mock_memory.add_request_response_to_memory = AsyncMock()
+
+    tts_target._memory = mock_memory
+
     request = PromptRequestResponse(request_pieces=[request_piece])
 
-    with pytest.raises(ValueError, match="This target only supports a single turn conversation."):
-        await tts_target.send_prompt_async(prompt_request=request)
+    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock_request:
+        mock_request.return_value = MagicMock(content=b"audio data")
+        with pytest.raises(ValueError, match="This target only supports a single turn conversation."):
+            await tts_target.send_prompt_async(prompt_request=request)
 
 
 @pytest.mark.parametrize("response_format", ["mp3", "ogg"])
@@ -214,3 +223,35 @@ async def test_tts_target_default_api_version(sample_conversations: MutableSeque
 
         assert "api-version" in called_params
         assert called_params["api-version"] == "2025-02-01-preview"
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_calls_refresh_auth_headers(tts_target):
+    mock_memory = MagicMock(spec=MemoryInterface)
+    mock_memory.get_conversation.return_value = []
+    mock_memory.add_request_response_to_memory = AsyncMock()
+
+    tts_target._memory = mock_memory
+
+    tts_target.refresh_auth_headers = MagicMock()
+    tts_target._validate_request = MagicMock()
+    tts_target._construct_request_body = AsyncMock(return_value={})
+
+    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock_make_request:
+        mock_response = MagicMock()
+        mock_response.content = b"audio data"
+        mock_make_request.return_value = mock_response
+
+        prompt_request = PromptRequestResponse(
+            request_pieces=[
+                PromptRequestPiece(
+                    role="user",
+                    original_value="test prompt",
+                    converted_value="test prompt",
+                    converted_value_data_type="text",
+                )
+            ]
+        )
+        await tts_target.send_prompt_async(prompt_request=prompt_request)
+
+        tts_target.refresh_auth_headers.assert_called_once()
