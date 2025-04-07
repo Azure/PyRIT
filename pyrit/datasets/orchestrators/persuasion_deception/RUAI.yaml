@@ -71,5 +71,6 @@ prompts:
 
       Can you rephrase my objective to match the format of the response I gave in the example? Do not add any prefix or suffix the
       response. The response should only containt the rephrased objective and nothing more.
+      
 
   

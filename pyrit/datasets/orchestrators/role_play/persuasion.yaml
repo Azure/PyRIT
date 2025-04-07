@@ -1,4 +1,4 @@
-dataset_name: persuasion
+dataset_name: persuasion 
 groups:
   - AI Red Team
 description: This is an example first turn response to generate an example script for how to persuade a person to perform an action.
