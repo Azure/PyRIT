@@ -4,6 +4,7 @@
 import abc
 import asyncio
 import logging
+import traceback
 from typing import Any, List, Optional
 from uuid import uuid4
 
@@ -110,7 +111,7 @@ class PromptNormalizer(abc.ABC):
 
             error_response = construct_response_from_request(
                 request=request.request_pieces[0],
-                response_text_pieces=[str(ex)],
+                response_text_pieces=[f"{ex}\n{repr(ex)}\n{traceback.format_exc()}"],
                 response_type="error",
                 error="processing",
             )

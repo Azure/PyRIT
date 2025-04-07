@@ -1,7 +1,9 @@
 ---
 name: AIM
-description: Prompt obtained from jailbreakchat.com
-source: www.jailbreakchat.com/prompt/4f37a029-9dff-4862-b323-c96a5504de5d
+description: Prompt obtained via the site formerly known as jailbreakchat that is now compromised
+authors:
+  - Alex Albert
+source: https://github.com/alexalbertt/jailbreakchat
 parameters:
   - prompt
 data_type: text

@@ -82,9 +82,10 @@ class RealtimeTarget(OpenAITarget):
 
         query_params = {
             "deployment": self._model_name,
-            "api-key": self._api_key,
             "OpenAI-Beta": "realtime=v1",
         }
+
+        self._add_auth_param_to_query_params(query_params)
 
         if self._api_version is not None:
             query_params["api-version"] = self._api_version
@@ -95,8 +96,21 @@ class RealtimeTarget(OpenAITarget):
         logger.info("Successfully connected to AzureOpenAI Realtime API")
         return websocket
 
+    def _add_auth_param_to_query_params(self, query_params: dict) -> None:
+        """
+        Adds the authentication parameter to the query parameters. This is how
+        Realtime API works, it doesn't use the headers for auth.
+
+        Args:
+            query_params (dict): The query parameters.
+        """
+        if self._api_key:
+            query_params["api-key"] = self._api_key
+
+        if self._azure_auth:
+            query_params["access_token"] = self._azure_auth.refresh_token()
+
     def _set_system_prompt_and_config_vars(self):
-        # Sets the system prompt and configuration variables for the target.
 
         session_config = {
             "modalities": ["audio", "text"],
@@ -144,14 +158,12 @@ class RealtimeTarget(OpenAITarget):
 
     @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        # Sends a prompt to the target and returns the response.
 
         convo_id = prompt_request.request_pieces[0].conversation_id
         if convo_id not in self._existing_conversation:
             websocket = await self.connect()
             self._existing_conversation[convo_id] = websocket
 
-            # Store system prompt in memory:
             self.set_system_prompt(
                 system_prompt=self.system_prompt,
                 conversation_id=convo_id,
