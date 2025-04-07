@@ -135,37 +135,37 @@ class FuzzerOrchestrator(Orchestrator):
     ) -> None:
         """Creates an orchestrator that explores a variety of jailbreak options via fuzzing.
 
-        Paper: GPTFUZZER: Red Teaming Large Language Models with Auto-Generated Jailbreak Prompts.
+            Paper: GPTFUZZER: Red Teaming Large Language Models with Auto-Generated Jailbreak Prompts.
 
-            Link: https://arxiv.org/pdf/2309.10253
-            Authors: Jiahao Yu, Xingwei Lin, Zheng Yu, Xinyu Xing
-            GitHub: https://github.com/sherdencooper/GPTFuzz
+                Link: https://arxiv.org/pdf/2309.10253
+                Authors: Jiahao Yu, Xingwei Lin, Zheng Yu, Xinyu Xing
+                GitHub: https://github.com/sherdencooper/GPTFuzz
 
-    Parameters:
-            prompts: The prompts will be the questions to the target.
-            prompt_target: The target to send the prompts to.
-            prompt_templates: List of all the jailbreak templates which will act as the seed pool.
-                At each iteration, a seed will be selected using the MCTS-explore algorithm which will be sent to the
-                shorten/expand prompt converter. The converted template along with the prompt will be sent to the
-                target.
-            prompt_converters: The prompt_converters to use to convert the prompts before sending
-                them to the prompt target.
-            template_converters: The converters that will be applied on the jailbreak template that was
-                selected by MCTS-explore. The converters will not be applied to the prompts.
-                In each iteration of the algorithm, one converter is chosen at random.
-            verbose: Whether to print debug information.
-            frequency_weight: constant that balances between the seed with high reward and the seed that is
-                selected fewer times.
-            reward_penalty: Reward penalty diminishes the reward for the current node and its ancestors
-                when the path lengthens.
-            minimum_reward: Minimal reward prevents the reward of the current node and its ancestors
-                from being too small or negative.
-            non_leaf_node_probability: parameter which decides the likelihood of selecting a non-leaf node.
-            batch_size (int, Optional): The (max) batch size for sending prompts. Defaults to 10.
-            target_jailbreak_goal_count: target number of the jailbreaks after which the fuzzer will stop.
-            max_query_limit: Maximum number of times the fuzzer will run. By default, it calculates the product
-                of prompts and prompt templates and multiplies it by 10. Each iteration makes as many calls as
-                the number of prompts.
+        Parameters:
+                prompts: The prompts will be the questions to the target.
+                prompt_target: The target to send the prompts to.
+                prompt_templates: List of all the jailbreak templates which will act as the seed pool.
+                    At each iteration, a seed will be selected using the MCTS-explore algorithm which will be sent to
+                    the shorten/expand prompt converter. The converted template along with the prompt will be sent to
+                    the target.
+                prompt_converters: The prompt_converters to use to convert the prompts before sending
+                    them to the prompt target.
+                template_converters: The converters that will be applied on the jailbreak template that was
+                    selected by MCTS-explore. The converters will not be applied to the prompts.
+                    In each iteration of the algorithm, one converter is chosen at random.
+                verbose: Whether to print debug information.
+                frequency_weight: constant that balances between the seed with high reward and the seed that is
+                    selected fewer times.
+                reward_penalty: Reward penalty diminishes the reward for the current node and its ancestors
+                    when the path lengthens.
+                minimum_reward: Minimal reward prevents the reward of the current node and its ancestors
+                    from being too small or negative.
+                non_leaf_node_probability: parameter which decides the likelihood of selecting a non-leaf node.
+                batch_size (int, Optional): The (max) batch size for sending prompts. Defaults to 10.
+                target_jailbreak_goal_count: target number of the jailbreaks after which the fuzzer will stop.
+                max_query_limit: Maximum number of times the fuzzer will run. By default, it calculates the product
+                    of prompts and prompt templates and multiplies it by 10. Each iteration makes as many calls as
+                    the number of prompts.
         """
 
         super().__init__(prompt_converters=prompt_converters, verbose=verbose)
