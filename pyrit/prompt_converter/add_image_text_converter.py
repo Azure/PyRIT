@@ -22,7 +22,7 @@ class AddImageTextConverter(PromptConverter):
     This class is similar to AddImageTextConverter except
     we pass in an image file path as an argument to the constructor as opposed to text.
 
-    Args:
+    Parameters:
         img_to_add (str): File path of image to add text to
         font_name (str, Optional): Path of font to use. Must be a TrueType font (.ttf). Defaults to "helvetica.ttf".
         color (tuple, Optional): Color to print text in, using RGB values. Defaults to (0, 0, 0).
@@ -75,7 +75,7 @@ class AddImageTextConverter(PromptConverter):
         """
         Adds wrapped text to the image at self._img_to_add.
 
-        Args:
+        Parameters:
             text (str): The text to add to the image.
 
         Returns:
@@ -114,7 +114,7 @@ class AddImageTextConverter(PromptConverter):
         """
         Converter that overlays input text on the img_to_add.
 
-        Args:
+        Parameters:
             prompt (str): The prompt to be added to the image.
             input_type (PromptDataType): type of data
         Returns:

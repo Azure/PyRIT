@@ -15,7 +15,7 @@ class HumanInTheLoopConverter(PromptConverter):
     Allows review of each prompt sent to a target before sending it. User can choose to send the prompt as is,
     modify the prompt, or run the prompt through one of the passed-in converters before sending it.
 
-    Args:
+    Parameters:
         converters: (List[PromptConverter], Optional): List of possible converters to run input through.
     """
 
@@ -32,7 +32,7 @@ class HumanInTheLoopConverter(PromptConverter):
         (2) Manually modify the prompt.
         (3) Run the prompt through a converter before sending it.
 
-        Args:
+        Parameters:
             prompt (str): The prompt to be added to the image.
             input_type (PromptDataType): Type of data
         Returns:

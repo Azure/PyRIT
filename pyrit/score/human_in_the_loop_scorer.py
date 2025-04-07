@@ -50,7 +50,7 @@ class HumanInTheLoopScorer(Scorer):
         """
         Manually score the prompt
 
-        Args:
+        Parameters:
             request_response (PromptRequestPiece): The prompt request piece to score.
             task (str): The task based on which the text should be scored (the original attacker model's objective).
 
@@ -109,7 +109,7 @@ class HumanInTheLoopScorer(Scorer):
 
         If the user initializes this scorer without a scorer, they will be prompted to manually score the prompt.
 
-        Args:
+        Parameters:
             request_response (PromptRequestPiece): The prompt request piece to score.
             task (str): The task based on which the text should be scored (the original attacker model's objective).
 
@@ -285,7 +285,7 @@ class HumanInTheLoopScorer(Scorer):
         """
         Get the modified value for the score.
 
-        Args:
+        Parameters:
             original_prompt (str): The original prompt.
             score_value (str): The existing value in the Score object.
             field_name (str): The name of the field to change.

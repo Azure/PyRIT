@@ -22,7 +22,7 @@ class TrueFalseInverterScorer(Scorer):
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """Scores the piece using the underlying true-false scorer and returns the opposite score.
 
-        Args:
+        Parameters:
             request_response (PromptRequestPiece): The piece to score.
             task (str): The task based on which the text should be scored (the original attacker model's objective).
 

@@ -113,7 +113,7 @@ chapters:
       - file: deployment/hf_aml_model_endpoint_guide
       - file: deployment/score_aml_endpoint
       - file: deployment/troubleshooting_guide_hf_azureml
-  - file: api.rst
+  - file: apidocs/pyrit/pyrit
   - file: blog/README
     sections:
     - file: blog/2025_03_03
@@ -121,3 +121,4 @@ chapters:
     - file: blog/2025_01_27
     - file: blog/2025_01_14
     - file: blog/2024_12_3
+  - file: bibliography

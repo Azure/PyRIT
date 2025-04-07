@@ -28,7 +28,7 @@ class MemoryExporter:
         """
         Exports the provided data to a file in the specified format.
 
-        Args:
+        Parameters:
             data (list[PromptRequestPiece]): The data to be exported, as a list of PromptRequestPiece instances.
             file_path (str): The full path, including the file name, where the data will be exported.
             export_type (str, Optional): The format for exporting data. Defaults to "json".
@@ -51,7 +51,7 @@ class MemoryExporter:
         Each item in the data list, representing a row from the table,
         is converted to a dictionary before being written to the file.
 
-        Args:
+        Parameters:
             data (list[PromptRequestPiece]): The data to be exported, as a list of PromptRequestPiece instances.
             file_path (Path): The full path, including the file name, where the data will be exported.
 
@@ -74,7 +74,7 @@ class MemoryExporter:
         Each item in the data list, representing a row from the table,
         is converted to a dictionary before being written to the file.
 
-        Args:
+        Parameters:
             data (list[PromptRequestPiece]): The data to be exported, as a list of PromptRequestPiece instances.
             file_path (Path): The full path, including the file name, where the data will be exported.
 

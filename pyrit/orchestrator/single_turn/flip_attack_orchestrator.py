@@ -34,7 +34,7 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
         verbose: bool = False,
     ) -> None:
         """
-        Args:
+        Parameters:
             objective_target (PromptChatTarget): The target for sending prompts.
             prompt_converters (list[PromptConverter], Optional): List of prompt converters. These are stacked in
                 order on top of the flip converter.
@@ -79,7 +79,7 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
         """
         Sends the prompts to the prompt target using flip attack.
 
-        Args:
+        Parameters:
             prompt_list (list[str]): The list of prompts to be sent.
             memory_labels (dict[str, str], Optional): A free-form dictionary of additional labels to apply to the
                 prompts. Any labels passed in will be combined with self._global_memory_labels with the passed

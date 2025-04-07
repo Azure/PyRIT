@@ -35,7 +35,7 @@ class OpenAICompletionTarget(OpenAITarget):
         **kwargs,
     ):
         """
-        Args:
+        Parameters:
             model_name (str, Optional): The name of the model.
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.

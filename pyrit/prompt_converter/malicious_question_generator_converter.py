@@ -21,7 +21,7 @@ class MaliciousQuestionGeneratorConverter(LLMGenericTextConverter):
         """
         Initializes the converter with a specific target and template.
 
-        Args:
+        Parameters:
             converter_target (PromptChatTarget): The endpoint that converts the prompt.
             prompt_template (SeedPrompt): The seed prompt template to use.
         """

@@ -50,7 +50,7 @@ class AzureMLChatTarget(PromptChatTarget):
         Please create or adjust environment variables (endpoint and key) as needed for the
         model you are using.
 
-        Args:
+        Parameters:
             endpoint (str, Optional): The endpoint URL for the deployed Azure ML model.
                 Defaults to the value of the AZURE_ML_MANAGED_ENDPOINT environment variable.
             api_key (str, Optional): The API key for accessing the Azure ML endpoint.
@@ -98,7 +98,7 @@ class AzureMLChatTarget(PromptChatTarget):
         This is the recommended way to pass in a uri and key to access the model endpoint.
         Defaults to "AZURE_ML_MANAGED_ENDPOINT" and "AZURE_ML_KEY".
 
-        Args:
+        Parameters:
             endpoint_uri_environment_variable (str): The environment variable name for the endpoint uri.
             api_key_environment_variable (str): The environment variable name for the api key.
 
@@ -118,7 +118,7 @@ class AzureMLChatTarget(PromptChatTarget):
         in the .env file and call _set_env_configuration_vars rather than passing the uri and key directly to
         this function or the target constructor.
 
-        Args:
+        Parameters:
             endpoint (str): The endpoint uri for the deployed Azure ML model.
             api_key (str): The API key for accessing the Azure ML endpoint.
 
@@ -194,7 +194,7 @@ class AzureMLChatTarget(PromptChatTarget):
 
         This is a synchronous wrapper for the asynchronous _generate_and_extract_response method.
 
-        Args:
+        Parameters:
             messages (list[ChatMessage]): The chat messages objects containing the role and content.
 
         Raises:

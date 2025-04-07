@@ -42,7 +42,7 @@ class OpenAITTSTarget(OpenAITarget):
         """
         Initialize the TTS target with specified parameters.
 
-        Args:
+        Parameters:
             model_name (str, Optional): The name of the model. Defaults to "tts-1".
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.

@@ -18,7 +18,7 @@ class MarkdownInjectionScorer(Scorer):
         """
         Check for markdown injection in the text. It returns True if markdown injection is detected, else False.
 
-        Args:
+        Parameters:
             request_response (PromptRequestPiece): The PromptRequestPiece object containing the text to check for
                 markdown injection.
             task (str): The task based on which the text should be scored (the original attacker model's objective).

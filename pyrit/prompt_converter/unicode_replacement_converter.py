@@ -11,7 +11,7 @@ class UnicodeReplacementConverter(PromptConverter):
         """
         Initializes a UnicodeReplacementConverter object.
 
-        Args:
+        Parameters:
             encode_spaces (bool): If True, spaces in the prompt will be replaced with unicode representation.
                                   Default is False.
         """

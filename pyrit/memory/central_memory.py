@@ -21,7 +21,7 @@ class CentralMemory:
         """
         Set a provided memory instance as the central instance for subsequent calls.
 
-        Args:
+        Parameters:
             passed_memory (MemoryInterface): The memory instance to set as the central instance.
         """
         cls._memory_instance = passed_memory

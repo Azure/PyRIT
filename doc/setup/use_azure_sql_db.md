@@ -83,10 +83,10 @@ ORDER BY UserName, RoleName;
 
 ### Example Output:
 
-| UserName           | UserType      | RoleName    |
-|--------------------|---------------|-------------|
-| operator1@microsoft.com    | EXTERNAL_USER | db_datawriter |
-| dev1@microsoft.com  | EXTERNAL_USER      | db_owner  |
+| UserName                   | UserType           | RoleName           |
+|----------------------------|--------------------|--------------------|
+| operator1@microsoft.com    | EXTERNAL_USER      | db_datawriter      |
+| dev1@microsoft.com         | EXTERNAL_USER      | db_owner           |
 
 ## 5. Granting Permissions to a New User
 

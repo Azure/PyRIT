@@ -18,7 +18,7 @@ def fetch_xstest_dataset(
     """
     Fetch XSTest examples and create a SeedPromptDataset.
 
-    Args:
+    Parameters:
         source (str): The source from which to fetch examples. Defaults to the exaggerated-safety repository.
         source_type (Literal["public_url"]): The type of source ('public_url').
         cache (bool): Whether to cache the fetched examples. Defaults to True.

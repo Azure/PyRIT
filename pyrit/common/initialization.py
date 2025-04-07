@@ -43,7 +43,7 @@ def initialize_pyrit(memory_db_type: Union[MemoryDatabaseType, str], **memory_in
     """
     Initializes PyRIT with the provided memory instance and loads environment files.
 
-    Args:
+    Parameters:
         memory_db_type (MemoryDatabaseType): The MemoryDatabaseType string literal which indicates the memory
             instance to use for central memory. Options include "InMemory", "DuckDB", and "AzureSQL".
         **memory_instance_kwargs (Optional[Any]): Additional keyword arguments to pass to the memory instance.

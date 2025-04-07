@@ -32,7 +32,7 @@ class HuggingFaceEndpointTarget(PromptTarget):
     ) -> None:
         """Initializes the HuggingFaceEndpointTarget with API credentials and model parameters.
 
-        Args:
+        Parameters:
             hf_token (str): The Hugging Face token for authenticating with the Hugging Face endpoint.
             endpoint (str): The endpoint URL for the Hugging Face model.
             model_id (str): The model ID to be used at the endpoint.
@@ -53,7 +53,7 @@ class HuggingFaceEndpointTarget(PromptTarget):
         """
         Sends a normalized prompt asynchronously to a cloud-based HuggingFace model endpoint.
 
-        Args:
+        Parameters:
             prompt_request (PromptRequestResponse): The prompt request containing the input data and associated details
             such as conversation ID and role.
 
@@ -114,7 +114,7 @@ class HuggingFaceEndpointTarget(PromptTarget):
         """
         Validates the provided prompt request response.
 
-        Args:
+        Parameters:
             prompt_request (PromptRequestResponse): The prompt request to validate.
 
         Raises:

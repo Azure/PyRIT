@@ -74,7 +74,7 @@ def get_access_token_from_azure_msi(*, client_id: str, scope: str):
     For proper setup and configuration of MSI
     https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/overview.
 
-    Args:
+    Parameters:
         client id of the service
 
     Returns:
@@ -93,7 +93,7 @@ def get_access_token_from_msa_public_client(*, client_id: str, scope: str):
     """Uses MSA account to connect to an AOAI endpoint via interactive login. A browser window
     will open and ask for login credentials.
 
-    Args:
+    Parameters:
         client id
 
     Returns:
@@ -140,7 +140,7 @@ def get_token_provider_from_default_azure_credential(scope: str) -> Callable[[],
 def get_default_scope(endpoint: str) -> str:
     """Get the default scope for the given endpoint.
 
-    Args:
+    Parameters:
         endpoint: The endpoint to get the scope for.
 
     Returns:

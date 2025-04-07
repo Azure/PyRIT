@@ -20,7 +20,7 @@ class AddTextImageConverter(PromptConverter):
     """
     Adds a string to an image and wraps the text into multiple lines if necessary.
 
-    Args:
+    Parameters:
         text_to_add (str): Text to add to an image. Defaults to empty string.
         font_name (str, Optional): Path of font to use. Must be a TrueType font (.ttf). Defaults to "helvetica.ttf".
         color (tuple, Optional): Color to print text in, using RGB values. Defaults to (0, 0, 0).
@@ -73,7 +73,7 @@ class AddTextImageConverter(PromptConverter):
         """
         Adds wrapped text to the image.
 
-        Args:
+        Parameters:
             image (Image.Image): The image to which text will be added.
 
         Returns:
@@ -108,7 +108,7 @@ class AddTextImageConverter(PromptConverter):
         """
         Converter that adds text to an image
 
-        Args:
+        Parameters:
             prompt (str): The filename of the image to add the text to
             input_type (PromptDataType): type of data
         Returns:

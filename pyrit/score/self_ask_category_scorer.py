@@ -35,7 +35,7 @@ class SelfAskCategoryScorer(Scorer):
         """
         Initializes a new instance of the SelfAskCategoryScorer class.
 
-        Args:
+        Parameters:
             chat_target (PromptChatTarget): The chat target to interact with.
             content_classifier (Path): The path to the classifier file.
         """
@@ -60,7 +60,7 @@ class SelfAskCategoryScorer(Scorer):
         """
         Converts the content classifier categories to a string representation to be put in a system prompt.
 
-        Args:
+        Parameters:
             categories (list[Dict[str, str]]): The categories to convert.
 
         Returns:
@@ -86,7 +86,7 @@ class SelfAskCategoryScorer(Scorer):
         """
         Scores the given request_response using the chat target and adds score to memory.
 
-        Args:
+        Parameters:
             request_response (PromptRequestPiece): The prompt request piece to score.
             task (str): The task based on which the text should be scored (the original attacker model's objective).
                 Currently not supported for this scorer.

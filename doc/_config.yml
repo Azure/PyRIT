@@ -37,11 +37,11 @@ html:
 
 sphinx:
   extra_extensions:
-    - 'sphinx.ext.autodoc'
     - 'sphinx.ext.napoleon'
     - 'sphinx.ext.viewcode'
     - 'sphinx.ext.autosummary'
     - 'sphinx.ext.intersphinx'
+    - 'autodoc2'
     - 'sphinxcontrib.mermaid'
     - 'sphinxcontrib.bibtex'
   config:
@@ -50,11 +50,18 @@ sphinx:
     suppress_warnings: ["etoc.toctree"]
     myst_heading_anchors: 4
     bibtex_bibfiles: ['references.bib']
-    autodoc_default_options:
-      members: true
-      show-inheritance: true
-      undoc-members: true
-      private-members: false
+    autodoc2_packages: [
+      {
+        "path": "../pyrit"
+      }
+    ]
+    source_suffix: ".md"
+    autodoc2_docstring_parser_regexes: [
+      # this will render all docstrings as Markdown
+      [r".*", "myst"]
+    ]
+    autodoc2_render_plugin: "myst"
+    autodoc2_no_index: true
     nitpick_ignore:
       - py:class
       # - py:exc
@@ -63,6 +70,7 @@ sphinx:
       # - py:mod
       - py:obj
       # - py:var
+    myst_enable_extensions: []
     intersphinx_mapping:
       python:
         - "https://docs.python.org/3"

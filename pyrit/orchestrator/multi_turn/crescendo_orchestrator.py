@@ -42,7 +42,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
     You can learn more about the Crescendo attack at the link below:
     https://crescendo-the-multiturn-jailbreak.github.io/
 
-    Args:
+    Parameters:
         objective_target (PromptChatTarget): The target that prompts are sent to - must be a PromptChatTarget.
         adversarial_chat (PromptChatTarget): The chat target for red teaming.
         scoring_target (PromptChatTarget): The chat target for scoring.
@@ -159,7 +159,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         It leverages progressive backtracking if the response is rejected, until either the objective is
         achieved or maximum turns/backtracks are reached.
 
-        Args:
+        Parameters:
             objective (str): The ultimate goal or purpose of the attack, which the orchestrator attempts
                 to achieve through multiple turns of interaction with the target.
             memory_labels (dict[str, str], Optional): A free-form dictionary of additional labels to apply to the
@@ -415,7 +415,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         """
         Prints the target memory for a given conversation ID.
 
-        Args:
+        Parameters:
             conversation_id (str): The ID of the conversation.
         """
         target_messages = self._memory.get_prompt_request_pieces(conversation_id=conversation_id)

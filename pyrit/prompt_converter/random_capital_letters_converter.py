@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class RandomCapitalLettersConverter(PromptConverter):
     """This converter takes a prompt and randomly capitalizes it by a percentage of the total characters.
 
-    Args:
+    Parameters:
         This accepts a text prompt, and a percentage of randomization from 1 to 100.  This includes decimal
         points in that range.
     """

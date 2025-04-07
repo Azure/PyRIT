@@ -23,7 +23,7 @@ class ZeroWidthConverter(PromptConverter):
         """
         Converts the given prompt by injecting zero-width spaces between each character.
 
-        Args:
+        Parameters:
             prompt (str): The prompt to be converted.
 
         Returns:

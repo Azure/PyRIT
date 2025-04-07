@@ -86,7 +86,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         Resolve the SAS token value, allowing a fallback to None for delegation SAS.
 
-        Args:
+        Parameters:
             env_var_name (str): The environment variable name to look up.
             passed_value (Optional[str]): A passed-in value for the SAS token.
 
@@ -130,7 +130,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Creates an engine bound to the specified server and database. The `has_echo` parameter
         controls the verbosity of SQL execution logging.
 
-        Args:
+        Parameters:
             has_echo (bool): Flag to enable detailed SQL execution logging.
         """
 
@@ -251,7 +251,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         Inserts an entry into the Table.
 
-        Args:
+        Parameters:
             entry: An instance of a SQLAlchemy model to be added to the Table.
         """
         with closing(self.get_session()) as session:
@@ -288,7 +288,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         Fetches data from the specified table model with optional conditions.
 
-        Args:
+        Parameters:
             model: The SQLAlchemy model class corresponding to the table you want to query.
             conditions: SQLAlchemy filter conditions (Optional).
             distinct: Flag to return distinct rows (defaults to False).
@@ -315,7 +315,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         Updates the given entries with the specified field values.
 
-        Args:
+        Parameters:
             entries (Sequence[Base]): A list of SQLAlchemy model instances to be updated.
             update_fields (dict): A dictionary of field names and their new values.
 

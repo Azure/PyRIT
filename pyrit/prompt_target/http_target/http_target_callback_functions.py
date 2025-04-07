@@ -62,7 +62,7 @@ def _fetch_key(data: dict, key: str):
     Credit to @Mayuraggarwal1992
     Fetches the answer from the HTTP JSON response based on the path.
 
-    Args:
+    Parameters:
         data (dict): HTTP response data.
         key (str): The key path to fetch the value.
 

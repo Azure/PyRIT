@@ -34,7 +34,7 @@ class AsciiSmugglerConverter(PromptConverter):
         """
         Initialize the converter with options for encoding/decoding.
 
-        Args:
+        Parameters:
             action (Literal["encode", "decode"]): The action to perform.
             encoding_mode (Literal["unicode_tags", "unicode_tags_control", "sneaky_bits"]): The encoding mode to use.
             zero_char (Optional[str]): Character to represent binary 0 in sneaky_bits mode (default: U+2062).
@@ -57,7 +57,7 @@ class AsciiSmugglerConverter(PromptConverter):
         """
         Process the prompt to either encode or decode based on options and prompt type.
 
-        Args:
+        Parameters:
             prompt (str): The prompt to be converted.
             input_type (PromptDataType): The type of input, defaults to "text".
 
@@ -95,7 +95,7 @@ class AsciiSmugglerConverter(PromptConverter):
         For "sneaky_bits" mode, the message is first converted to UTF-8 bytes and then each bit is
         represented by the invisible characters (self.zero_char for 0, self.one_char for 1).
 
-        Args:
+        Parameters:
             message (str): The message to encode.
 
         Returns:
@@ -116,7 +116,7 @@ class AsciiSmugglerConverter(PromptConverter):
         For "sneaky_bits" mode, the invisible characters are interpreted as bits to reconstruct the
         original UTF-8 byte sequence.
 
-        Args:
+        Parameters:
             message (str): The encoded message.
 
         Returns:
@@ -137,7 +137,7 @@ class AsciiSmugglerConverter(PromptConverter):
         character (by adding 0xE0000). In "unicode_tags_control" mode, a leading control tag
         (U+E0001) and a trailing control tag (U+E007F) are added.
 
-        Args:
+        Parameters:
             message (str): The message to encode.
 
         Returns:
@@ -177,7 +177,7 @@ class AsciiSmugglerConverter(PromptConverter):
         it is converted back to the corresponding ASCII character (by subtracting 0xE0000). Special
         control tag characters are skipped.
 
-        Args:
+        Parameters:
             message (str): The encoded message.
 
         Returns:
@@ -211,7 +211,7 @@ class AsciiSmugglerConverter(PromptConverter):
         as 8 bits, with each bit replaced by an invisible character (self.zero_char for 0 and
         self.one_char for 1).
 
-        Args:
+        Parameters:
             message (str): The message to encode.
 
         Returns:
@@ -240,7 +240,7 @@ class AsciiSmugglerConverter(PromptConverter):
         groups them into 8-bit chunks, reconstructs each byte, and finally decodes the byte sequence
         using UTF-8.
 
-        Args:
+        Parameters:
             message (str): The message encoded with Sneaky Bits.
 
         Returns:

@@ -20,7 +20,7 @@ class ConversationAnalytics:
         """
         Initializes the ConversationAnalytics with a memory interface for data access.
 
-        Args:
+        Parameters:
             memory_interface (MemoryInterface): An instance of MemoryInterface for accessing conversation data.
         """
         self.memory_interface = memory_interface
@@ -31,7 +31,7 @@ class ConversationAnalytics:
         """
         Retrieves chat messages that have the same converted content
 
-        Args:
+        Parameters:
             chat_message_content (str): The content of the chat message to find similar messages for.
 
         Returns:
@@ -60,7 +60,7 @@ class ConversationAnalytics:
         """
         Retrieves chat messages that are similar to the given embedding based on cosine similarity.
 
-        Args:
+        Parameters:
             chat_message_embedding (List[float]): The embedding of the chat message to find similar messages for.
             threshold (float): The similarity threshold for considering messages as similar. Defaults to 0.8.
 
@@ -95,7 +95,7 @@ def cosine_similarity(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """
     Calculate the cosine similarity between two vectors.
 
-    Args:
+    Parameters:
         a (np.ndarray): The first vector.
         b (np.ndarray): The second vector.
 

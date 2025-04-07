@@ -18,7 +18,7 @@ class AsciiArtConverter(PromptConverter):
         Converter that uses art to convert strings to ASCII art.
         This can sometimes bypass LLM filters
 
-        Args:
+        Parameters:
             prompt (str): The prompt to be converted.
         Returns:
             str: The converted prompt.

@@ -28,7 +28,7 @@ class AddImageVideoConverter(PromptConverter):
     Adds an image to a video at a specified position.
     Also, currently the image is placed in the whole video, not at a specific timepoint
 
-    Args:
+    Parameters:
         video_path (str): File path of video to add image to
         output_path (str, Optional): File path of output video. Defaults to None.
         img_position (tuple, Optional): Position to place image in video. Defaults to (10, 10).
@@ -54,7 +54,7 @@ class AddImageVideoConverter(PromptConverter):
     async def _add_image_to_video(self, image_path: str, output_path: str) -> str:
         """
         Adds image to video
-        Args:
+        Parameters:
             image_path (str): The image path to add to video.
             output_path (str): The output video path.
 
@@ -159,7 +159,7 @@ class AddImageVideoConverter(PromptConverter):
         """
         Converter that adds an image to a video
 
-        Args:
+        Parameters:
             prompt (str): The image file name to be added to the video.
             input_type (PromptDataType): type of data
         Returns:

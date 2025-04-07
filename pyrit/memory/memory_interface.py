@@ -53,7 +53,7 @@ class MemoryInterface(abc.ABC):
     Represents a conversation memory that stores chat messages. This class must be overwritten with a
     specific implementation to store the memory objects (e.g. relational database, NoSQL database, etc.)
 
-    Args:
+    Parameters:
         embedding_model (EmbeddingSupport): If set, this includes embeddings in the memory entries
         which are extremely useful for comparing chat messages and similarities, but also includes overhead
     """
@@ -94,7 +94,7 @@ class MemoryInterface(abc.ABC):
         """
         Returns a list of conditions for filtering memory entries based on memory labels.
 
-        Args:
+        Parameters:
             memory_labels (dict[str, str]): A free-form dictionary for tagging prompts with custom labels.
                 These labels can be used to track all prompts sent as part of an operation, score prompts based on
                 the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
@@ -109,7 +109,7 @@ class MemoryInterface(abc.ABC):
         """
         Returns a list of conditions for filtering memory entries based on prompt metadata.
 
-        Args:
+        Parameters:
             prompt_metadata (dict[str, str | int]): A free-form dictionary for tagging prompts with custom metadata.
                 This includes information that is useful for the specific target you're probing, such as encoding data.
 
@@ -128,7 +128,7 @@ class MemoryInterface(abc.ABC):
         """
         Returns a list of conditions for filtering seed prompt entries based on prompt metadata.
 
-        Args:
+        Parameters:
             prompt_metadata (dict[str, str | int]): A free-form dictionary for tagging prompts with custom metadata.
                 This includes information that is useful for the specific target you're probing, such as encoding data.
 
@@ -155,7 +155,7 @@ class MemoryInterface(abc.ABC):
         """
         Fetches data from the specified table model with optional conditions.
 
-        Args:
+        Parameters:
             model: The SQLAlchemy model class corresponding to the table you want to query.
             conditions: SQLAlchemy filter conditions (Optional).
             distinct: Whether to return distinct rows only. Defaults to False.
@@ -170,7 +170,7 @@ class MemoryInterface(abc.ABC):
         """
         Inserts an entry into the Table.
 
-        Args:
+        Parameters:
             entry: An instance of a SQLAlchemy model to be added to the Table.
         """
 
@@ -183,7 +183,7 @@ class MemoryInterface(abc.ABC):
         """
         Updates the given entries with the specified field values.
 
-        Args:
+        Parameters:
             entries (Sequence[Base]): A list of SQLAlchemy model instances to be updated.
             update_fields (dict): A dictionary of field names and their new values.
         """
@@ -222,7 +222,7 @@ class MemoryInterface(abc.ABC):
         Retrieves a list of Score objects associated with the PromptRequestPiece objects
         which have the specified orchestrator ID.
 
-        Args:
+        Parameters:
             orchestrator_id (str): The id of the orchestrator.
                 Can be retrieved by calling orchestrator.get_identifier()["id"]
 
@@ -240,7 +240,7 @@ class MemoryInterface(abc.ABC):
         Retrieves a list of Score objects associated with the PromptRequestPiece objects
         which have the specified memory labels.
 
-        Args:
+        Parameters:
             memory_labels (dict[str, str]): A free-form dictionary for tagging prompts with custom labels.
                 These labels can be used to track all prompts sent as part of an operation, score prompts based on
                 the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
@@ -259,7 +259,7 @@ class MemoryInterface(abc.ABC):
         """
         Retrieves a list of PromptRequestResponse objects that have the specified conversation ID.
 
-        Args:
+        Parameters:
             conversation_id (str): The conversation ID to match.
 
         Returns:
@@ -288,7 +288,7 @@ class MemoryInterface(abc.ABC):
         """
         Retrieves a list of PromptRequestPiece objects based on the specified filters.
 
-        Args:
+        Parameters:
             orchestrator_id (Optional[str | uuid.UUID], optional): The ID of the orchestrator. Defaults to None.
             role (Optional[str], optional): The role of the prompt. Defaults to None.
             conversation_id (Optional[str | uuid.UUID], optional): The ID of the conversation. Defaults to None.
@@ -357,7 +357,7 @@ class MemoryInterface(abc.ABC):
         One cannot continue both branches with the same orchestrator and conversation IDs since that would corrupt
         the memory. Instead, one needs to duplicate the conversation and continue with the new orchestrator ID.
 
-        Args:
+        Parameters:
             conversation_id (str): The conversation ID with existing conversations.
             new_orchestrator_id (str, Optional): The new orchestrator ID to assign to the duplicated conversations.
                 If no new orchestrator ID is provided, the orchestrator ID will remain the same. Defaults to None.
@@ -390,7 +390,7 @@ class MemoryInterface(abc.ABC):
 
         This can be useful when an attack strategy requires back tracking the last prompt/response pair.
 
-        Args:
+        Parameters:
             conversation_id (str): The conversation ID with existing conversations.
             new_orchestrator_id (str, Optional): The new orchestrator ID to assign to the duplicated conversations.
                 If no new orchestrator ID is provided, the orchestrator ID will remain the same. Defaults to None.
@@ -438,7 +438,7 @@ class MemoryInterface(abc.ABC):
         Automatically updates the sequence to be the next number in the conversation.
         If necessary, generates embedding data for applicable entries
 
-        Args:
+        Parameters:
             request (PromptRequestPiece): The request piece to add to the memory.
 
         Returns:
@@ -464,7 +464,7 @@ class MemoryInterface(abc.ABC):
         """
         Updates the sequence number of the request pieces in the conversation.
 
-        Args:
+        Parameters:
             request_pieces (Sequence[PromptRequestPiece]): The list of request pieces to update.
         """
 
@@ -482,7 +482,7 @@ class MemoryInterface(abc.ABC):
         """
         Updates prompt entries for a given conversation ID with the specified field values.
 
-        Args:
+        Parameters:
             conversation_id (str): The conversation ID of the entries to be updated.
             update_fields (dict): A dictionary of field names and their new values (ex. {"labels": {"test": "value"}})
 
@@ -513,7 +513,7 @@ class MemoryInterface(abc.ABC):
         """
         Updates the labels of prompt entries in memory for a given conversation ID.
 
-        Args:
+        Parameters:
             conversation_id (str): The conversation ID of the entries to be updated.
             labels (dict): New dictionary of labels.
 
@@ -530,7 +530,7 @@ class MemoryInterface(abc.ABC):
         """
         Updates the metadata of prompt entries in memory for a given conversation ID.
 
-        Args:
+        Parameters:
             conversation_id (str): The conversation ID of the entries to be updated.
             metadata (dict[str, str | int]): New metadata.
 
@@ -561,7 +561,7 @@ class MemoryInterface(abc.ABC):
         """
         Returns the memory for a given conversation_id.
 
-        Args:
+        Parameters:
             conversation_id (str): The conversation ID.
 
         Returns:
@@ -582,13 +582,14 @@ class MemoryInterface(abc.ABC):
         authors: Optional[Sequence[str]] = None,
         groups: Optional[Sequence[str]] = None,
         source: Optional[str] = None,
-        parameters: Optional[Sequence[str]] = None,
+            Parameters:
+Optional[Sequence[str]] = None,
         metadata: Optional[dict[str, Union[str, int]]] = None,
     ) -> Sequence[SeedPrompt]:
         """
         Retrieves a list of seed prompts based on the specified filters.
 
-        Args:
+        Parameters:
             value (str): The value to match by substring. If None, all values are returned.
             value_sha256 (str): The SHA256 hash of the value to match. If None, all values are returned.
             dataset_name (str): The dataset name to match. If None, all dataset names are considered.
@@ -657,7 +658,7 @@ class MemoryInterface(abc.ABC):
         """
         Serializes the value of a seed prompt based on its data type.
 
-        Args:
+        Parameters:
             prompt (SeedPrompt): The seed prompt to serialize. Must have a valid `data_type`.
 
         Returns:
@@ -691,7 +692,7 @@ class MemoryInterface(abc.ABC):
         """
         Inserts a list of prompts into the memory storage.
 
-        Args:
+        Parameters:
             prompts (Sequence[SeedPrompt]): A list of prompts to insert.
             added_by (str): The user who added the prompts.
         """
@@ -745,7 +746,7 @@ class MemoryInterface(abc.ABC):
         """
         Inserts a list of seed prompt groups into the memory storage.
 
-        Args:
+        Parameters:
             prompt_groups (Sequence[SeedPromptGroup]): A list of prompt groups to insert.
             added_by (str): The user who added the prompt groups.
 
@@ -790,7 +791,7 @@ class MemoryInterface(abc.ABC):
     ) -> Sequence[SeedPromptGroup]:
         """Retrieves groups of seed prompts based on the provided filtering criteria.
 
-        Args:
+        Parameters:
             value_sha256 (Optional[Sequence[str]], Optional): SHA256 hash of value to filter seed prompt groups by.
             dataset_name (Optional[str], Optional): Name of the dataset to filter seed prompts.
             data_types (Optional[Sequence[str]], Optional): List of data types to filter seed prompts by
@@ -836,9 +837,9 @@ class MemoryInterface(abc.ABC):
     ) -> Path:
         """
         Exports conversation data with the given inputs to a specified file.
-            Defaults to all conversations if no filters are provided.
+        Defaults to all conversations if no filters are provided.
 
-        Args:
+        Parameters:
             orchestrator_id (Optional[str | uuid.UUID], optional): The ID of the orchestrator. Defaults to None.
             conversation_id (Optional[str | uuid.UUID], optional): The ID of the conversation. Defaults to None.
             prompt_ids (Optional[Sequence[str] | Sequence[uuid.UUID]], optional): A list of prompt IDs.

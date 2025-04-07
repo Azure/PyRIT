@@ -34,7 +34,7 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
         many_shot_examples: Optional[list[dict[str, str]]] = None,
     ) -> None:
         """
-        Args:
+        Parameters:
             objective_target: (PromptChatTarget): The target for sending prompts.
             scorers (list[Scorer], Optional): List of scorers to use for each prompt request response, to be
                 scored immediately after receiving response. Default is None.
@@ -74,7 +74,7 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
         """
         Sends the prompts to the target using the Many Shot Jailbreak.
 
-        Args:
+        Parameters:
             prompt_list (list[str]): The list of prompts to be sent.
             memory_labels (dict[str, str], Optional): A free-form dictionary of additional labels to apply to the
                 prompts. Any labels passed in will be combined with self._global_memory_labels with the passed

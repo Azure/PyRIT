@@ -172,6 +172,7 @@ doc/generate_docs/cache/*
 # Jupyterbook build files
 doc/_build/
 doc/_autosummary/
+doc/apidocs
 
 # ignore all VSCode settings
 .vscode/*

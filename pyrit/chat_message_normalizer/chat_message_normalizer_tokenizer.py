@@ -18,7 +18,7 @@ class ChatMessageNormalizerTokenizerTemplate(ChatMessageNormalizer[str]):
         """
         Initializes an instance of the ChatMessageNormalizerTokenizerTemplate class.
 
-        Args:
+        Parameters:
             tokenizer (PreTrainedTokenizer | PreTrainedTokenizerFast): A Hugging Face tokenizer.
         """
         self.tokenizer = tokenizer
@@ -27,7 +27,7 @@ class ChatMessageNormalizerTokenizerTemplate(ChatMessageNormalizer[str]):
         """
         Applies the chat template stored in the tokenizer to a list of chat messages.
 
-        Args:
+        Parameters:
             messages (list[ChatMessage]): A list of ChatMessage objects.
 
         Returns:

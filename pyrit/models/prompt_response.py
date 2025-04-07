@@ -44,7 +44,7 @@ class PromptResponse(BaseModel):
     def save_to_file(self, directory_path: Path) -> str:
         """Save the Prompt Response to disk and return the path of the new file.
 
-        Args:
+        Parameters:
             directory_path: The path to save the file to
         Returns:
             The full path to the file that was saved
@@ -62,7 +62,7 @@ class PromptResponse(BaseModel):
     def load_from_file(file_path: Path) -> PromptResponse:
         """Load the Prompt Response from disk
 
-        Args:
+        Parameters:
             file_path: The path to load the file from
         Returns:
             The loaded embedding response

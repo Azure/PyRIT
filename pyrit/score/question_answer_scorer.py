@@ -52,7 +52,7 @@ class QuestionAnswerScorer:
         """
         Initializes the QuestionAnswerScorer object.
 
-        Args:
+        Parameters:
             dataset (QuestionAnsweringDataset): The dataset containing the questions and answers.
         """
         self.dataset = dataset
@@ -94,7 +94,7 @@ class QuestionAnswerScorer:
     def score_question(self, question: QuestionAnsweringEntry, answer: str) -> TextScoreResult:
         """Scores the provided answer for a given question.
 
-        Args:
+        Parameters:
             question (QuestionAnsweringEntry): The question to be scored.
             answer (str): The answer provided by the model.
 

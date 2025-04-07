@@ -106,7 +106,7 @@ def fetch_examples(
     >>>     source_type='public_url'
     >>> )
 
-    Args:
+    Parameters:
         source (str): The source from which to fetch examples.
         source_type (Literal["public_url", "file"]): The type of source ('public_url' or 'file').
         cache (bool): Whether to cache the fetched examples. Defaults to True.

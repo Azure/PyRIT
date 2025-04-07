@@ -28,7 +28,7 @@ def remove_start_md_json(response_msg: str) -> str:
     """
     Checks the message for the listed start patterns and removes them if present.
 
-    Args:
+    Parameters:
         response_msg (str): The response message to check.
 
     Returns:
@@ -47,7 +47,7 @@ def remove_end_md_json(response_msg: str) -> str:
     """
     Checks the message for the listed end patterns and removes them if present.
 
-    Args:
+    Parameters:
         response_msg (str): The response message to check.
 
     Returns:
@@ -66,7 +66,7 @@ def extract_json_from_string(response_msg: str) -> str:
     """
     Attempts to extract JSON (object or array) from within a larger string, not specific to markdown.
 
-    Args:
+    Parameters:
         response_msg (str): The response message to check.
 
     Returns:
@@ -84,7 +84,7 @@ def remove_markdown_json(response_msg: str) -> str:
     """
     Checks if the response message is in JSON format and removes Markdown formatting if present.
 
-    Args:
+    Parameters:
         response_msg (str): The response message to check.
 
     Returns:

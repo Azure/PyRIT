@@ -34,7 +34,7 @@ def fetch_aya_redteaming_dataset(
     """
     Fetch examples from the Aya Red-teaming dataset with optional filtering and create a SeedPromptDataset.
 
-    Args:
+    Parameters:
         cache (bool): Whether to cache the fetched examples. Defaults to True.
         data_home: Directory to store cached data. Defaults to None.
         language: The language to fetch prompts for. Defaults to "English".

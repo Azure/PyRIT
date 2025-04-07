@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 async def display_image_response(response_piece: PromptRequestPiece) -> None:
     """Displays response images if running in notebook environment.
 
-    Args:
+    Parameters:
         response_piece (PromptRequestPiece): The response piece to display.
     """
     from pyrit.memory import CentralMemory

@@ -33,7 +33,7 @@ class PromptNode:
     ):
         """Class to maintain the tree information for each prompt template
 
-        Args:
+        Parameters:
             template: Prompt template.
             parent: Parent node.
 
@@ -87,7 +87,7 @@ class FuzzerResult:
         """
         Prints the conversations of the successful jailbreaks.
 
-        Args:
+        Parameters:
             result: The result of the fuzzer.
         """
         memory = CentralMemory.get_memory_instance()
@@ -141,8 +141,7 @@ class FuzzerOrchestrator(Orchestrator):
             Authors: Jiahao Yu, Xingwei Lin, Zheng Yu, Xinyu Xing
             GitHub: https://github.com/sherdencooper/GPTFuzz
 
-        Args:
-
+    Parameters:
             prompts: The prompts will be the questions to the target.
             prompt_target: The target to send the prompts to.
             prompt_templates: List of all the jailbreak templates which will act as the seed pool.
@@ -414,7 +413,7 @@ class FuzzerOrchestrator(Orchestrator):
         """
         Asynchronously applies template converter.
 
-        Args:
+        Parameters:
             template: The template that is selected.
             other_templates: Other templates that are available. Some fuzzer converters require multiple templates.
 

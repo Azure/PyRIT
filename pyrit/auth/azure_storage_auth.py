@@ -24,7 +24,7 @@ class AzureStorageAuth:
         """
         Retrieves a user delegation key valid for one day.
 
-        Args:
+        Parameters:
             blob_service_client (BlobServiceClient): An instance of BlobServiceClient to interact
             with Azure Blob Storage.
 
@@ -45,7 +45,7 @@ class AzureStorageAuth:
         """
         Generates a SAS token for the specified blob using a user delegation key.
 
-        Args:
+        Parameters:
             container_url (str): The URL of the Azure Blob Storage container.
 
         Returns:

@@ -36,7 +36,8 @@ class RealtimeTarget(OpenAITarget):
         RealtimeTarget class for Azure OpenAI Realtime API.
         Read more at https://learn.microsoft.com/en-us/azure/ai-services/openai/realtime-audio-reference
             and https://platform.openai.com/docs/guides/realtime-websocket
-        Args:
+
+        Parameters:
             model_name (str, Optional): The name of the model.
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
@@ -101,7 +102,7 @@ class RealtimeTarget(OpenAITarget):
         Adds the authentication parameter to the query parameters. This is how
         Realtime API works, it doesn't use the headers for auth.
 
-        Args:
+        Parameters:
             query_params (dict): The query parameters.
         """
         if self._api_key:
@@ -129,7 +130,7 @@ class RealtimeTarget(OpenAITarget):
         """
         Sends an event to the WebSocket server.
 
-        Args:
+        Parameters:
             event (dict): Event to send in dictionary format.
             conversation_id (str): Conversation ID
         """
@@ -145,7 +146,7 @@ class RealtimeTarget(OpenAITarget):
         """
         Sends the session configuration to the WebSocket server.
 
-        Args:
+        Parameters:
             conversation_id (str): Conversation ID
         """
 
@@ -211,7 +212,7 @@ class RealtimeTarget(OpenAITarget):
         """
         Saves audio bytes to a WAV file.
 
-        Args:
+        Parameters:
             audio_bytes (bytes): Audio bytes to save.
             num_channels (int): Number of audio channels. Defaults to 1 for the PCM16 format
             sample_width (int): Sample width in bytes. Defaults to 2 for the PCM16 format
@@ -260,7 +261,7 @@ class RealtimeTarget(OpenAITarget):
     async def receive_events(self, conversation_id: str) -> list:
         """
         Continuously receive events from the WebSocket server.
-        Args:
+        Parameters:
             conversation_id: conversation ID
         """
         websocket = self._existing_conversation[conversation_id]
@@ -304,7 +305,7 @@ class RealtimeTarget(OpenAITarget):
     async def send_text_async(self, text: str, conversation_id: str):
         """
         Sends text prompt to the WebSocket server.
-        Args:
+        Parameters:
             text: prompt to send.
             conversation_id: conversation ID
         """
@@ -329,7 +330,7 @@ class RealtimeTarget(OpenAITarget):
         """
         Send an audio message to the WebSocket server.
 
-        Args:
+        Parameters:
             filename (str): The path to the audio file.
         """
         with wave.open(filename, "rb") as wav_file:
@@ -367,7 +368,7 @@ class RealtimeTarget(OpenAITarget):
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         """Validates the structure and content of a prompt request for compatibility of this target.
 
-        Args:
+        Parameters:
             prompt_request (PromptRequestResponse): The prompt request response object.
 
         Raises:

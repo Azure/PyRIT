@@ -17,7 +17,7 @@ class StringJoinConverter(PromptConverter):
 
         This can sometimes bypass LLM logic
 
-        Args:
+        Parameters:
             prompt (str): The prompt to be converted.
 
         Returns:

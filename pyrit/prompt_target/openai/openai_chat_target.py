@@ -56,7 +56,7 @@ class OpenAIChatTarget(OpenAITarget):
         **kwargs,
     ):
         """
-        Args:
+        Parameters:
             model_name (str, Optional): The name of the model.
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
@@ -128,7 +128,7 @@ class OpenAIChatTarget(OpenAITarget):
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """Asynchronously sends a prompt request and handles the response within a managed conversation context.
 
-        Args:
+        Parameters:
             prompt_request (PromptRequestResponse): The prompt request response object.
 
         Returns:
@@ -185,7 +185,7 @@ class OpenAIChatTarget(OpenAITarget):
     async def _convert_local_image_to_data_url(self, image_path: str) -> str:
         """Converts a local image file to a data URL encoded in base64.
 
-        Args:
+        Parameters:
             image_path (str): The file system path to the image file.
 
         Raises:
@@ -219,7 +219,7 @@ class OpenAIChatTarget(OpenAITarget):
     async def _build_chat_messages_async(self, conversation: MutableSequence[PromptRequestResponse]) -> list[dict]:
         """Builds chat messages based on prompt request response entries.
 
-        Args:
+        Parameters:
             conversation (list[PromptRequestResponse]): A list of PromptRequestResponse objects.
 
         Returns:
@@ -233,7 +233,7 @@ class OpenAIChatTarget(OpenAITarget):
     def _is_text_message_format(self, conversation: MutableSequence[PromptRequestResponse]) -> bool:
         """Checks if the request piece is in text message format.
 
-        Args:
+        Parameters:
             conversation list[PromptRequestResponse]: The conversation
 
         Returns:
@@ -251,7 +251,7 @@ class OpenAIChatTarget(OpenAITarget):
         Builds chat messages based on prompt request response entries. This is needed because many
         openai "compatible" models don't support ChatMessageListDictContent format (this is more univerally accepted)
 
-        Args:
+        Parameters:
             conversation (list[PromptRequestResponse]): A list of PromptRequestResponse objects.
 
         Returns:
@@ -280,7 +280,7 @@ class OpenAIChatTarget(OpenAITarget):
         """
         Builds chat messages based on prompt request response entries.
 
-        Args:
+        Parameters:
             conversation (list[PromptRequestResponse]): A list of PromptRequestResponse objects.
 
         Returns:
@@ -378,7 +378,7 @@ class OpenAIChatTarget(OpenAITarget):
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         """Validates the structure and content of a prompt request for compatibility of this target.
 
-        Args:
+        Parameters:
             prompt_request (PromptRequestResponse): The prompt request response object.
 
         Raises:

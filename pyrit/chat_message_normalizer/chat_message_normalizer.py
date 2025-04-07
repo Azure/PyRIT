@@ -21,7 +21,7 @@ class ChatMessageNormalizer(abc.ABC, Generic[T]):
         """
         Combines the system message into the first user request.
 
-        Args:
+        Parameters:
             messages: The list of chat messages.
             squash_function: The function to combine the system message with the user message.
 

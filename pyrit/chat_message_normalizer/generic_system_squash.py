@@ -11,7 +11,7 @@ class GenericSystemSquash(ChatMessageNormalizer[list[ChatMessage]]):
 
         The format of the result uses generic instruction tags.
 
-        Args:
+        Parameters:
             messages (list[ChatMessage]): The list of messages to normalize.
 
         Returns:
@@ -28,7 +28,7 @@ class GenericSystemSquash(ChatMessageNormalizer[list[ChatMessage]]):
     ) -> ChatMessage:
         """Combines the system message with the user message.
 
-        Args:
+        Parameters:
             system_message (str): The system message.
             user_message (str): The user message.
             msg_type (ChatMessageRole, optional): The message type. Defaults to "user".

@@ -64,7 +64,7 @@ class PromptChatTarget(PromptTarget):
         """
         Checks if the response format is JSON and ensures the target supports it.
 
-        Args:
+        Parameters:
             request_piece: A PromptRequestPiece object with a `prompt_metadata` dictionary that may
                 include a "response_format" key.
 

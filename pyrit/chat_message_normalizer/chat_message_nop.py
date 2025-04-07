@@ -14,7 +14,7 @@ class ChatMessageNop(ChatMessageNormalizer[list[ChatMessage]]):
         """
         Returns the same list as was passed in.
 
-        Args:
+        Parameters:
             messages (list[ChatMessage]): The list of messages to normalize.
 
         Returns:

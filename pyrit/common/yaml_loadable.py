@@ -20,7 +20,7 @@ class YamlLoadable(abc.ABC):
         """
         Creates a new object from a YAML file.
 
-        Args:
+        Parameters:
             file: The input file path.
 
         Returns:

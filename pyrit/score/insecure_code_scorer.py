@@ -45,7 +45,7 @@ class InsecureCodeScorer(Scorer):
         """
         Scores the given request response using LLM to detect vulnerabilities.
 
-        Args:
+        Parameters:
             request_response (PromptRequestPiece): The code snippet to be scored.
             task (Optional[str]): Optional task descriptor.
 
@@ -88,7 +88,7 @@ class InsecureCodeScorer(Scorer):
         """
         Validates the request response to ensure it meets requirements for scoring.
 
-        Args:
+        Parameters:
             request_response (PromptRequestPiece): The code snippet to be validated.
             task (Optional[str]): Optional task descriptor.
         """

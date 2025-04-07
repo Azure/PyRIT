@@ -9,7 +9,7 @@ def combine_dict(existing_dict: dict = None, new_dict: dict = None) -> dict:
     """
     Combines two dictionaries containing string keys and values into one.
 
-    Args:
+    Parameters:
         existing_dict: Dictionary with existing values
         new_dict: Dictionary with new values to be added to the existing dictionary.
             Note if there's a key clash, the value in new_dict will be used.
@@ -26,7 +26,7 @@ def combine_list(list1: Union[str, List[str]], list2: Union[str, List[str]]) -> 
     """
     Combines two lists containing string keys, keeping only unique values.
 
-    Args:
+    Parameters:
         existing_dict: Dictionary with existing values
         new_dict: Dictionary with new values to be added to the existing dictionary.
             Note if there's a key clash, the value in new_dict will be used.

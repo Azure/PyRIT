@@ -36,7 +36,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
 
     It is extemely simple. It sends a prompt to the target system, and then sends the response to the red teaming chat.
 
-    Args:
+    Parameters:
         objective_target (PromptTarget): Target for created prompts.
         adversarial_chat (PromptChatTarget): Endpoint creating prompts sent to objective_target.
         adversarial_chat_system_prompt_path (Path): Path to initial adversarial_chat system prompt.
@@ -122,7 +122,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         success and, if necessary, adapts prompts using scoring feedback until either the objective
         is met or the maximum number of turns is reached.
 
-        Args:
+        Parameters:
             objective (str): The specific goal the orchestrator aims to achieve through the conversation.
             memory_labels (dict[str, str], Optional): A free-form dictionary of additional labels to apply to the
                 prompts throughout the attack. Any labels passed in will be combined with self._global_memory_labels
@@ -217,7 +217,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         """
         Generates and sends a prompt to the prompt target.
 
-        Args:
+        Parameters:
             objective_target_conversation_id (str): the conversation ID for the prompt target.
             adversarial_chat_conversation_id (str): the conversation ID for the red teaming chat.
             feedback (str, Optional): feedback from a previous iteration of the conversation.
@@ -269,7 +269,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         Returns the scoring result of the conversation.
         This function uses the scorer to classify the last response.
 
-        Args:
+        Parameters:
             prompt_target_conversation_id (str): the conversation ID for the prompt target.
         """
         prompt_request_responses = self._memory.get_conversation(conversation_id=objective_target_conversation_id)
@@ -335,7 +335,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         """
         Generate prompt for the adversarial chat based off of the last response from the attack target.
 
-        Args:
+        Parameters:
             objective_target_conversation_id (str): the conversation ID for the objective target.
             feedback (str, Optional): feedback from a previous iteration of the conversation.
                 This can either be a score if the request completed, or a short prompt to rewrite
@@ -374,7 +374,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         """
         Send a prompt to the adversarial chat to generate a new prompt for the objective target.
 
-        Args:
+        Parameters:
             objective (str): the objective the red teaming orchestrator is trying to achieve.
             objective_target_conversation_id (str): the conversation ID for the prompt target.
             adversarial_chat_conversation_id (str): the conversation ID for the red teaming chat.

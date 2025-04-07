@@ -29,7 +29,7 @@ class BinaryConverter(PromptConverter):
         """
         Converts the input text to binary representation with specified bits per character.
 
-        Args:
+        Parameters:
             prompt (str): The input text to be converted.
             input_type (PromptDataType): The type of the input data.
 

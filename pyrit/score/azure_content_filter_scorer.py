@@ -52,7 +52,7 @@ class AzureContentFilterScorer(Scorer):
         """
         Class that initializes an Azure Content Filter Scorer
 
-        Args:
+        Parameters:
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
                 Defaults to the API_KEY_ENVIRONMENT_VARIABLE environment variable.
             endpoint (str, Optional): The endpoint URL for the Azure OpenAI service.
@@ -92,7 +92,7 @@ class AzureContentFilterScorer(Scorer):
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """Evaluating the input text or image using the Azure Content Filter API
 
-        Args:
+        Parameters:
             request_response (PromptRequestPiece): The prompt request piece containing the text to be scored.
                 Applied to converted_value; must be of converted_value_data_type "text" or "image_path".
                 In case of an image, the image size needs to less than image size is 2048 x 2048 pixels,

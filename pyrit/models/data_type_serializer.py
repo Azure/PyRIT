@@ -37,7 +37,7 @@ def data_serializer_factory(
     """
     Factory method to create a DataTypeSerializer instance.
 
-    Args:
+    Parameters:
         data_type (str): The type of the data (e.g., 'text', 'image_path', 'audio_path').
         value (str): The data value to be serialized.
         extension (Optional[str]): The file extension, if applicable.
@@ -284,7 +284,7 @@ class DataTypeSerializer(abc.ABC):
         """
         Validates if the given path is an Azure Storage URL.
 
-        Args:
+        Parameters:
             path (str): Path or URL to check.
 
         Returns:
@@ -367,7 +367,7 @@ class VideoPathDataTypeSerializer(DataTypeSerializer):
         """
         Serializer for video data paths.
 
-        Args:
+        Parameters:
             category (str): The category or context for the data.
             prompt_text (Optional[str]): The video path or identifier.
             extension (Optional[str]): The file extension, defaults to 'mp4'.

@@ -24,12 +24,9 @@ def fetch_decoding_trust_stereotypes_dataset(
     """
     Fetch DecodingTrust examples and create a SeedPromptDataset.
 
-    .. rubric:: Dataset information
-    
-        Paper {cite:ps}`wang2023decodingtrust`
-        `Link <https://github.com/AI-secure/DecodingTrust/tree/main/data/stereotype>`_
+    {cite:ps}`wang2023decodingtrust`
 
-    Args:
+    Parameters:
         source (str): The source from which to fetch examples. Defaults to the DecodingTrust repository.
         source_type (Literal["public_url"]): The type of source ('public_url').
         cache (bool): Whether to cache the fetched examples. Defaults to True.
@@ -48,7 +45,6 @@ def fetch_decoding_trust_stereotypes_dataset(
     Returns:
         SeedPromptDataset: A SeedPromptDataset containing the examples.
 
-    .. bibliography
     """
     if system_prompt_type not in ["benign", "untargeted", "targeted"]:
         raise ValueError("Invalid system_prompt_type. Expected 'benign', 'untargeted', or 'targeted'}")
