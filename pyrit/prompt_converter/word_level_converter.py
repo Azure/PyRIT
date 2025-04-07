@@ -22,6 +22,10 @@ class WordLevelConverter(PromptConverter):
         """Validate the input before processing (can be overridden by subclasses)"""
         pass
 
+    def join_words(self, words: list[str]) -> str:
+        """Join the processed words into a single string"""
+        return " ".join(words)
+
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         if prompt is None:
             raise TypeError("Prompt cannot be None")
@@ -38,7 +42,7 @@ class WordLevelConverter(PromptConverter):
         for idx in selected_indices:
             words[idx] = await self.convert_word_async(words[idx])
 
-        return ConverterResult(output_text=" ".join(words), output_type="text")
+        return ConverterResult(output_text=self.join_words(words), output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
