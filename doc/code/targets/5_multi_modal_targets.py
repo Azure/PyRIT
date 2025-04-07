@@ -47,12 +47,12 @@ from pyrit.prompt_converter import TranslationConverter
 from pyrit.prompt_target import OpenAIChatTarget, OpenAITTSTarget
 
 converter_target = OpenAIChatTarget()
-prompt_target = OpenAITTSTarget()
+tts_prompt_target = OpenAITTSTarget()
 saved_audio_path = None
 
 
 orchestrator = PromptSendingOrchestrator(
-    objective_target=prompt_target,
+    objective_target=tts_prompt_target,
     prompt_converters=[TranslationConverter(converter_target=converter_target, language="spanish")],
 )
 
@@ -73,10 +73,10 @@ from pyrit.prompt_target import OpenAISoraTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
-prompt_target = OpenAISoraTarget()
+sora_target = OpenAISoraTarget()
 
 orchestrator = PromptSendingOrchestrator(
-    objective_target=prompt_target,
+    objective_target=sora_target,
 )
 
 prompts_to_send = [

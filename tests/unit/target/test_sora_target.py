@@ -3,15 +3,15 @@
 
 import json
 import os
-from tenacity import RetryError
 from typing import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
-from pyrit.exceptions.exception_classes import RateLimitException
+from tenacity import RetryError
 from unit.mocks import get_sample_conversations
 
+from pyrit.exceptions.exception_classes import RateLimitException
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import OpenAISoraTarget
 
@@ -56,58 +56,58 @@ def video_generation_response_success() -> dict:
 @pytest.fixture
 def video_generation_response_failure_moderation() -> dict:
     return {
-        'object': 'video.generation.job',
-        'id': 'task_02',
-        'status': 'failed',
-        'created_at': 1743556719,
-        'finished_at': 1743556734,
-        'generations': [
+        "object": "video.generation.job",
+        "id": "task_02",
+        "status": "failed",
+        "created_at": 1743556719,
+        "finished_at": 1743556734,
+        "generations": [
             {
-                'object': 'video.generation',
-                'id': 'gen_02',
-                'job_id': 'task_02',
-                'created_at': 1743556759,
-                'width': 480,
-                'height':480,
-                'n_seconds': 5,
-                'prompt': "test_failure"
+                "object": "video.generation",
+                "id": "gen_02",
+                "job_id": "task_02",
+                "created_at": 1743556759,
+                "width": 480,
+                "height": 480,
+                "n_seconds": 5,
+                "prompt": "test_failure",
             }
         ],
-        'prompt': "test_failure",
-        'n_variants': 1,
-        'n_seconds': 5,
-        'height': 480,
-        'width': 480,
-        'failure_reason': 'output_moderation'
+        "prompt": "test_failure",
+        "n_variants": 1,
+        "n_seconds": 5,
+        "height": 480,
+        "width": 480,
+        "failure_reason": "output_moderation",
     }
 
 
 @pytest.fixture
 def video_generation_response_failure_unknown() -> dict:
     return {
-        'object': 'video.generation.job',
-        'id': 'task_03',
-        'status': 'failed',
-        'created_at': 1743556719,
-        'finished_at': 1743556734,
-        'generations': [
+        "object": "video.generation.job",
+        "id": "task_03",
+        "status": "failed",
+        "created_at": 1743556719,
+        "finished_at": 1743556734,
+        "generations": [
             {
-                'object': 'video.generation',
-                'id': 'gen_03',
-                'job_id': 'task_03',
-                'created_at': 1743556759,
-                'width': 480,
-                'height':480,
-                'n_seconds': 5,
-                'prompt': "test_failure"
+                "object": "video.generation",
+                "id": "gen_03",
+                "job_id": "task_03",
+                "created_at": 1743556759,
+                "width": 480,
+                "height": 480,
+                "n_seconds": 5,
+                "prompt": "test_failure",
             }
         ],
-        'prompt': "test_failure",
-        'n_variants': 1,
-        'n_seconds': 5,
-        'height': 480,
-        'width': 480,
-        'failure_reason': 'other'
+        "prompt": "test_failure",
+        "n_variants": 1,
+        "n_seconds": 5,
+        "height": 480,
+        "width": 480,
+        "failure_reason": "other",
     }
 
 
@@ -115,7 +115,7 @@ def video_generation_response_failure_unknown() -> dict:
 def video_generation_response() -> dict:
     return {
         "object": "video.generation.job",
-        "id": 'task_04',
+        "id": "task_04",
         "status": "processing",
         "created_at": 1743551594,
         "finished_at": None,
@@ -140,7 +140,7 @@ def test_initialization_with_required_parameters(sora_target: OpenAISoraTarget):
     assert sora_target._width == "480"
     assert sora_target._n_seconds == 5
     assert sora_target._n_variants == 1
-    assert sora_target._output_filename == None
+    assert sora_target._output_filename is None
     assert sora_target._api_version == "2025-02-15-preview"
 
 
@@ -392,13 +392,13 @@ async def test_check_task_status_custom_retry(
     [
         (RateLimitException, 429, "Rate Limit Exception", "Status Code: 429, Message: Rate Limit Exception"),
         (httpx.HTTPStatusError, 400, "Bad Request", "Status Code: 400, Message: Bad Request"),
-    ]
+    ],
 )
 @pytest.mark.asyncio
 async def test_send_prompt_async_exceptions(
     sora_target: OpenAISoraTarget,
     sample_conversations: MutableSequence[PromptRequestPiece],
-    err_class: Exception,
+    err_class: RateLimitException | httpx.HTTPStatusError,
     status_code: int,
     message: str,
     err_msg: str,

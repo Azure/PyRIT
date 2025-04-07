@@ -79,7 +79,9 @@ class OpenAISoraTarget(OpenAITarget):
     # Maximum number of retries for check_task_status() and download_video_content()
     # This cannot be set in the constructor as it is used in the decorator, which does not know self.
     RETRY_CHECK_TASK_MAX_NUM_ATTEMPTS = int(os.getenv("CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS"), 25)
-    RETRY_DOWNLOAD_VIDEO_MAX_NUM_ATTEMPTS = min(int(os.getenv("RETRY_MAX_NUM_ATTEMPTS")), RETRY_CHECK_TASK_MAX_NUM_ATTEMPTS)
+    RETRY_DOWNLOAD_VIDEO_MAX_NUM_ATTEMPTS = min(
+        int(os.getenv("RETRY_MAX_NUM_ATTEMPTS")), RETRY_CHECK_TASK_MAX_NUM_ATTEMPTS
+    )
 
     def __init__(
         self,
@@ -270,12 +272,13 @@ class OpenAISoraTarget(OpenAITarget):
                     request=request, response_text_pieces=[str(serializer.value)], response_type="video_path"
                 )
             else:
-                logger.error(f"Failed to download video content for generation {gen_id}. Status Code: {video_response.status_code}")
+                logger.error(
+                    f"Failed to download video content for generation {gen_id}. "
+                    + f"Status Code: {video_response.status_code}"
+                )
                 response_entry = construct_response_from_request(
                     request=request,
-                    response_text_pieces=[
-                        f"Status Code: {video_response.status_code}, Response: {video_response}"
-                    ],
+                    response_text_pieces=[f"Status Code: {video_response.status_code}, Response: {video_response}"],
                     response_type="error",
                     error="unknown",
                 )
@@ -300,7 +303,10 @@ class OpenAISoraTarget(OpenAITarget):
                 )
         else:
             # Retry stop condition reached, return result
-            logger.info(f"{task_id} is still processing after attempting retries. Consider setting a value > 25 for environment variable CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS. Status: {status}")
+            logger.info(
+                f"{task_id} is still processing after attempting retries. Consider setting a value > 25 "
+                + f"for environment variable CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS. Status: {status}"
+            )
             response_entry = construct_response_from_request(
                 request=request,
                 response_text_pieces=[f"{task_id} {status}, Response: {str(task_content)}"],
