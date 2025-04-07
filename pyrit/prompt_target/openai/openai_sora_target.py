@@ -83,7 +83,8 @@ class OpenAISoraTarget(OpenAITarget):
     except ValueError:
         CHECK_TASK_RETRY_MAX_NUM_ATTEMPTS: int = 25
         logger.warning(
-            f"Invalid value for CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS. Using default value of {CHECK_TASK_RETRY_MAX_NUM_ATTEMPTS}."
+            f"Invalid value for CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS. " +
+            "Using default value of {CHECK_TASK_RETRY_MAX_NUM_ATTEMPTS}."
         )
 
     def __init__(
@@ -126,11 +127,7 @@ class OpenAISoraTarget(OpenAITarget):
         self.api_key_environment_variable = "OPENAI_SORA_KEY"
 
     async def _send_httpx_request(
-        self,
-        *,
-        endpoint_uri: str,
-        method: str,
-        request_body: dict[str, object] = None
+        self, *, endpoint_uri: str, method: str, request_body: dict[str, object] = None
     ) -> httpx.Response:
         """
         Send an HTTP request using the httpx client and handle exceptions.
@@ -184,7 +181,7 @@ class OpenAISoraTarget(OpenAITarget):
     async def check_task_status(self, task_id: str) -> httpx.Response:
         f"""
         Check status of a submitted task using the task_id.
-        Retries a maxium of {self.CHECK_TASK_RETRY_MAX_NUM_ATTEMPTS} times, 
+        Retries a maxium of {self.CHECK_TASK_RETRY_MAX_NUM_ATTEMPTS} times,
         until the task is complete (succeeded, failed, or cancelled). Also
         retries upon RateLimitException.
 
@@ -307,8 +304,9 @@ class OpenAISoraTarget(OpenAITarget):
         else:
             # Retry stop condition reached, return result
             logger.info(
-                f"{task_id} is still processing after attempting retries. Consider setting a value > {self.CHECK_TASK_RETRY_MAX_NUM_ATTEMPTS} "
-                + f"for environment variable CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS. Status: {status}"
+                f"{task_id} is still processing after attempting retries. Consider setting a value > " +
+                f"{self.CHECK_TASK_RETRY_MAX_NUM_ATTEMPTS} for environment variable " +
+                f"CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS. Status: {status}"
             )
             response_entry = construct_response_from_request(
                 request=request,
@@ -317,12 +315,7 @@ class OpenAISoraTarget(OpenAITarget):
 
         return response_entry
 
-    def _validate_video_constraints(
-            self,
-            resolution_dimensions: str,
-            n_variants: int,
-            n_seconds: int
-        ) -> None:
+    def _validate_video_constraints(self, resolution_dimensions: str, n_variants: int, n_seconds: int) -> None:
         """
         Validate the video constraints based on the resolution dimensions.
         Raises:
