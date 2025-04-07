@@ -9,3 +9,8 @@ class TextToHexConverter(WordLevelConverter):
 
     async def convert_word_async(self, word: str) -> str:
         return word.encode("utf-8").hex().upper()
+
+    def join_words(self, words: list[str]) -> str:
+        if self.mode == "all":
+            return "20".join(words)
+        return super().join_words(words)
