@@ -582,8 +582,7 @@ class MemoryInterface(abc.ABC):
         authors: Optional[Sequence[str]] = None,
         groups: Optional[Sequence[str]] = None,
         source: Optional[str] = None,
-            Parameters:
-Optional[Sequence[str]] = None,
+        parameters: Optional[Sequence[str]] = None,
         metadata: Optional[dict[str, Union[str, int]]] = None,
     ) -> Sequence[SeedPrompt]:
         """
