@@ -151,31 +151,31 @@ def test_initialization_with_required_parameters(sora_target: OpenAISoraTarget):
             "1080x1080",
             15,
             1,
-            "n_seconds must be less than or equal to 10 for resolution dimensions of 1080x1080 or 1920x1080.",
+            "n_seconds must be less than or equal to 10 for resolution dimensions of 1080x1080.",
         ),
         (
             "1920x1080",
             5,
             2,
-            "n_variants must be less than or equal to 1 for resolution dimensions of 1080x1080 or 1920x1080.",
+            "n_variants must be less than or equal to 1 for resolution dimensions of 1920x1080.",
         ),
         (
             "720x720",
             25,
             1,
-            "n_seconds must be less than or equal to 20 for resolution dimensions other than 1080x1080 or 1920x1080.",
+            "n_seconds must be less than or equal to 20 for resolution dimensions of 720x720.",
         ),
         (
             "1280x720",
             5,
             3,
-            "n_variants must be less than or equal to 2 for resolution dimensions of 720x720 or 1280x720.",
+            "n_variants must be less than or equal to 2 for resolution dimensions of 1280x720.",
         ),
         (
             "480x480",
             25,
             1,
-            "n_seconds must be less than or equal to 20 for resolution dimensions other than 1080x1080 or 1920x1080.",
+            "n_seconds must be less than or equal to 20 for resolution dimensions of 480x480.",
         ),
     ],
 )
@@ -334,7 +334,7 @@ async def test_download_video_content_custom_retry(
         with pytest.raises(RetryError):
             await sora_target.download_video_content(gen_id=gen_id)
 
-        assert mock_request.call_count == sora_target.RETRY_DOWNLOAD_VIDEO_MAX_NUM_ATTEMPTS
+        assert mock_request.call_count == int(os.getenv("CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS"))
 
 
 @pytest.mark.asyncio
@@ -384,7 +384,7 @@ async def test_check_task_status_custom_retry(
         with pytest.raises(RetryError):
             await sora_target.check_task_status(task_id=task_id)
 
-        assert mock_request.call_count == sora_target.RETRY_CHECK_TASK_MAX_NUM_ATTEMPTS
+        assert mock_request.call_count == sora_target.CHECK_TASK_RETRY_MAX_NUM_ATTEMPTS
 
 
 @pytest.mark.parametrize(
@@ -419,7 +419,7 @@ async def test_send_prompt_async_exceptions(
             assert str(e.value) == err_msg
 
             if err_class == RateLimitException:
-                assert mock_request.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
+                assert mock_request.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
             elif err_class == httpx.HTTPStatusError:
                 assert mock_request.call_count == 1
 
@@ -439,7 +439,7 @@ async def test_check_task_exceptions(
         with pytest.raises(RateLimitException) as e:
             await sora_target.check_task_status(task_id="task_id")
             assert str(e.value) == "Status Code: 429, Message: Rate Limit Exception"
-            assert mock_request.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
+            assert mock_request.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
 
 
 @pytest.mark.asyncio
@@ -457,4 +457,4 @@ async def test_download_video_content_exceptions(
         with pytest.raises(RateLimitException) as e:
             await sora_target.download_video_content(gen_id="gen_id")
             assert str(e.value) == "Status Code: 429, Message: Rate Limit Exception"
-            assert mock_request.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
+            assert mock_request.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
