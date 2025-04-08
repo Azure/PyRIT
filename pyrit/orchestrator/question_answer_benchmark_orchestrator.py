@@ -74,7 +74,7 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
         """Sends prompts to the chat model and evaluates responses."""
         qa_request_list = self.get_question_prompt_pairs(dataset=dataset)
         prompt_list = [entry[1] for entry in qa_request_list]
-        await super().send_prompts_async(prompt_list=prompt_list, prompt_type="text")
+        return await super().send_prompts_async(prompt_list=prompt_list, prompt_type="text")
 
     # async def evaluate(self) -> None:
     #     """Evaluates the question answering dataset and prints the results."""
