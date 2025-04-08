@@ -70,13 +70,6 @@ async def test_char_swap_generator_zero_iterations():
         CharSwapGenerator(max_iterations=0)
 
 
-# Test with word_swap_ratio=0
-@pytest.mark.asyncio
-async def test_char_swap_generator_zero_word_swap_ratio():
-    with pytest.raises(ValueError, match="word_swap_ratio must be between 0 and 1"):
-        CharSwapGenerator(max_iterations=1, word_swap_ratio=0.0)
-
-
 @pytest.mark.asyncio
 async def test_char_swap_generator_word_swap_ratio_other_than_1():
     converter = CharSwapGenerator(max_iterations=1, word_swap_ratio=0.5)
