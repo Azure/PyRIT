@@ -53,6 +53,16 @@ class PromptRequestResponse:
             elif role != request_piece.role:
                 raise ValueError("Inconsistent roles within the same prompt request response entry.")
 
+    def get_piece(self, n: int = 0) -> PromptRequestPiece:
+        """Return the nth request piece."""
+        if len(self.request_pieces) == 0:
+            raise ValueError("Empty request pieces.")
+        
+        if n >= len(self.request_pieces):
+            raise IndexError(f"No request piece at index {n}.")
+        
+        return self.request_pieces[n]
+
     def __str__(self):
         ret = ""
         for request_piece in self.request_pieces:

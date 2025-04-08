@@ -1,0 +1,56 @@
+sequenceDiagram
+    participant Client
+    participant Factory as MultiTurnOrchestratorFactory
+    participant Builder as RedTeamingOrchestratorBuilder
+    participant AttackBuilder as RedTeamingAttackBuilder
+    participant Strategy as RedTeamingStrategy
+    participant Target as PromptTarget
+    participant AdversarialChat as PromptChatTarget
+    participant ScoreEval as ScoreEvaluator
+    participant ConvManager as ConversationManager
+    
+    Client->>Factory: create(target, adversarial_chat, RED_TEAMING)
+    Factory-->>Builder: new RedTeamingOrchestratorBuilder()
+    Factory-->>Client: return builder
+    
+    Client->>Builder: with_max_turns(3)
+    Client->>Builder: with_system_prompt(system_prompt_path)
+    Client->>Builder: attack()
+    Builder-->>AttackBuilder: new RedTeamingAttackBuilder(context)
+    Builder-->>Client: return attackBuilder
+    
+    Client->>AttackBuilder: with_objective(objective)
+    Client->>AttackBuilder: with_objective_scorer(scorer)
+    Client->>AttackBuilder: execute()
+    
+    AttackBuilder->>Strategy: new RedTeamingStrategy(...)
+    AttackBuilder->>Strategy: setup(context)
+    
+    Strategy->>ConvManager: initialize_conversation_with_history()
+    Strategy->>AdversarialChat: set_system_prompt(...)
+    
+    AttackBuilder->>Strategy: execute(context)
+    
+    loop Until objective achieved or max turns reached
+        Strategy->>Strategy: _generate_next_prompt(context)
+        Strategy->>ConvManager: get_last_message()
+        Strategy->>AdversarialChat: send prompt
+        AdversarialChat-->>Strategy: attack prompt
+        
+        Strategy->>Strategy: _send_to_target(context, prompt)
+        Strategy->>Target: send prompt
+        Target-->>Strategy: response
+        
+        Strategy->>Strategy: _score_response(context, response)
+        Strategy->>ScoreEval: evaluate_response(response)
+        ScoreEval-->>Strategy: score
+        
+        Strategy->>Strategy: _evaluate_objective_achievement(...)
+        Strategy->>ScoreEval: is_objective_achieved(score)
+        ScoreEval-->>Strategy: achievement status
+    end
+    
+    Strategy-->>AttackBuilder: return MultiTurnAttackResult
+    AttackBuilder-->>Client: return result
+    
+    Client->>Client: result.print_conversation()
