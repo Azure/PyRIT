@@ -11,6 +11,7 @@ from openai import RateLimitError
 from tenacity import (
     retry,
     retry_if_exception_type,
+    retry_if_result,
     stop_after_attempt,
     wait_random_exponential,
 )
@@ -22,6 +23,8 @@ from pyrit.models.prompt_request_response import (
     construct_response_from_request,
 )
 
+# Used with pyrit_custom_result_retry, as this function may be used in conjunction with other decorators
+CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS = int(os.getenv("CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS", 10))
 RETRY_MAX_NUM_ATTEMPTS = int(os.getenv("RETRY_MAX_NUM_ATTEMPTS", 10))
 RETRY_WAIT_MIN_SECONDS = int(os.getenv("RETRY_WAIT_MIN_SECONDS", 5))
 RETRY_WAIT_MAX_SECONDS = int(os.getenv("RETRY_WAIT_MAX_SECONDS", 220))
@@ -79,6 +82,41 @@ class MissingPromptPlaceholderException(PyritException):
 
     def __init__(self, *, message: str = "No prompt placeholder"):
         super().__init__(message=message)
+
+
+def pyrit_custom_result_retry(
+    retry_function: Callable, retry_max_num_attempts: int = CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS
+) -> Callable:
+    """
+    A decorator to apply retry logic with exponential backoff to a function.
+
+    Retries the function if the result of the retry_function is True,
+    with a wait time between retries that follows an exponential backoff strategy.
+    Logs retry attempts at the INFO level and stops after a maximum number of attempts.
+
+    Args:
+        retry_function (Callable): The function to determine if a retry should occur based
+            on the boolean result of the decorated function.
+        retry_max_num_attempts (Optional, int): The maximum number of retry attempts. Defaults to
+            CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS.
+        func (Callable): The function to be decorated.
+
+    Returns:
+        Callable: The decorated function with retry logic applied.
+    """
+
+    def inner_retry(func):
+        global RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS
+
+        return retry(
+            reraise=True,
+            retry=retry_if_result(retry_function),
+            wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS),
+            after=log_exception,
+            stop=stop_after_attempt(retry_max_num_attempts),
+        )(func)
+
+    return inner_retry
 
 
 def pyrit_target_retry(func: Callable) -> Callable:
