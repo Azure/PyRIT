@@ -36,7 +36,10 @@ class MultiTurnBaseOrchestratorBuilder(OrchestratorBuilder[MultiTurnAttackContex
         
         Args:
             target: Target system to attack
-            adversarial_chat: Chat model that generates attack prompts
+            adversarial_chat: Adversarial chat target
+            system_prompt_path: Path to the system prompt file
+            seed_prompt: Initial prompt for the first turn
+            prompt_normalizer: Optional prompt normalizer
             memory: Optional memory interface for storing attack data
         """
         self._context = MultiTurnAttackContext(
@@ -206,8 +209,9 @@ class MultiTurnBaseAttackBuilder(AttackBuilder[MultiTurnAttackResult]):
         Args:
             context: Context for the attack
             chat_system_seed_prompt: System prompt for the adversarial chat
-            seed_prompt: Seed prompt for the adversarial chat
+            seed_prompt: Initial prompt for the first turn
             prompt_normalizer: Optional prompt normalizer for the attack
+            prepend_conversation: Optional conversation to prepend
             memory: Optional memory interface for storing attack data
         """
         self._context = context

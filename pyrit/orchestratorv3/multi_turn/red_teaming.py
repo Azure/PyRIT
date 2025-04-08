@@ -1,4 +1,5 @@
 from __future__ import annotations
+import logging
 import time
 import enum
 from pathlib import Path
@@ -18,10 +19,11 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import PromptConvert
 from pyrit.prompt_normalizer.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target.common.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
-from pyrit.common.logger import logger
 from pyrit.memory import MemoryInterface
 from pyrit.models import SeedPrompt
 from pyrit.score.scorer import Scorer
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_ADVERSARIAL_PROMPT_IF_OBJECTIVE_TARGET_IS_BLOCKED = (
     "Request to target failed: blocked. " 
