@@ -15,7 +15,7 @@ from pyrit.orchestrator import (
 
 test_cases_success = [
     (
-        "--config-file 'tests/unit/cli/mixed_multiple_orchestrators_args_success.yaml'",
+        "--config-file 'tests/integration/cli/mixed_multiple_orchestrators_args_success.yaml'",
         [
             PromptSendingOrchestrator,
             TreeOfAttacksWithPruningOrchestrator,

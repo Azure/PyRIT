@@ -330,11 +330,12 @@ async def test_send_prompt_async_empty_response_adds_to_memory(openai_response_j
             "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
         ) as mock_create:
             mock_create.return_value = openai_mock_return
-            with pytest.raises(EmptyResponseException) as e:
+            target._memory = MagicMock(MemoryInterface)
+
+            with pytest.raises(EmptyResponseException):
                 await target.send_prompt_async(prompt_request=prompt_req_resp)
-                target._memory.get_conversation.assert_called_once_with(conversation_id="12345679")
-                target._memory.add_request_response_to_memory.assert_called_once_with(request=prompt_req_resp)
-            assert str(e.value) == "Status Code: 204, Message: The chat returned an empty response."
+
+            assert mock_create.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
 
 
 @pytest.mark.asyncio
@@ -701,3 +702,39 @@ async def test_openai_chat_target_default_api_version(sample_conversations: Muta
         called_params = mock_request.call_args[1]["params"]
         assert "api-version" in called_params
         assert called_params["api-version"] == "2024-06-01"
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIChatTarget):
+    mock_memory = MagicMock(spec=MemoryInterface)
+    mock_memory.get_conversation.return_value = []
+    mock_memory.add_request_response_to_memory = AsyncMock()
+
+    target._azure_auth = MagicMock()
+    target._memory = mock_memory
+
+    with (
+        patch.object(target, "refresh_auth_headers") as mock_refresh,
+        patch.object(target, "_validate_request"),
+        patch.object(target, "_construct_request_body", new_callable=AsyncMock) as mock_construct,
+    ):
+
+        mock_construct.return_value = {}
+
+        with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock_make_request:
+            mock_make_request.return_value = MagicMock(
+                text='{"choices": [{"finish_reason": "stop", "message": {"content": "test response"}}]}'
+            )
+
+            prompt_request = PromptRequestResponse(
+                request_pieces=[
+                    PromptRequestPiece(
+                        role="user",
+                        original_value="test prompt",
+                        converted_value="test prompt",
+                        converted_value_data_type="text",
+                    )
+                ]
+            )
+            await target.send_prompt_async(prompt_request=prompt_request)
+            mock_refresh.assert_called_once()
