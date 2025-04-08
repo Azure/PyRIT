@@ -95,8 +95,8 @@ def pyrit_custom_result_retry(
     Logs retry attempts at the INFO level and stops after a maximum number of attempts.
 
     Args:
-        retry_function (Callable): The function to determine if a retry should occur based
-            on the boolean result of the decorated function.
+        retry_function (Callable): The boolean function to determine if a retry should occur based
+            on the result of the decorated function.
         retry_max_num_attempts (Optional, int): The maximum number of retry attempts. Defaults to
             CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS.
         func (Callable): The function to be decorated.
