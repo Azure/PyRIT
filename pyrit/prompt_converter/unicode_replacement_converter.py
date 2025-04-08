@@ -1,37 +1,25 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.models import PromptDataType
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 
 
-class UnicodeReplacementConverter(PromptConverter):
+class UnicodeReplacementConverter(WordLevelConverter):
+    """Simple converter that returns the unicode representation of the prompt."""
 
-    def __init__(self, encode_spaces: bool = False):
+    def __init__(self, *, encode_spaces: bool = False, mode: str = "all", **mode_kwargs):
         """
-        Initializes a UnicodeReplacementConverter object.
-
         Args:
             encode_spaces (bool): If True, spaces in the prompt will be replaced with unicode representation.
                                   Default is False.
         """
+        super().__init__(mode=mode, **mode_kwargs)
         self.encode_spaces = encode_spaces
 
-    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
-        """
-        Simple converter that returns the unicode representation of the prompt.
-        """
-        if not self.input_supported(input_type):
-            raise ValueError("Input type not supported")
+    async def convert_word_async(self, word: str) -> str:
+        return "".join(f"\\u{ord(ch):04x}" for ch in word)
 
-        ret_text = "".join(f"\\u{ord(ch):04x}" for ch in prompt)
-        if not self.encode_spaces:
-            ret_text = ret_text.replace("\\u0020", " ")
-
-        return ConverterResult(output_text=ret_text, output_type="text")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"
+    def join_words(self, words: list[str]) -> str:
+        if self.encode_spaces:
+            return "\\u0020".join(words)
+        return super().join_words(words)
