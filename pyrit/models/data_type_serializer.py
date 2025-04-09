@@ -259,7 +259,6 @@ class DataTypeSerializer(abc.ABC):
         results_path = self._memory.results_path
         file_name = file_name if file_name else str(ticks)
 
-        file_name = file_name if file_name else str(ticks)
         if self._is_azure_storage_url(results_path):
             full_data_directory_path = results_path + self.data_sub_directory
             self._file_path = full_data_directory_path + f"/{file_name}.{self.file_extension}"
