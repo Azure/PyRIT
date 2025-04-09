@@ -48,7 +48,6 @@ from pyrit.prompt_target import OpenAIChatTarget, OpenAITTSTarget
 
 converter_target = OpenAIChatTarget()
 tts_prompt_target = OpenAITTSTarget()
-tts_prompt_target = OpenAITTSTarget()
 saved_audio_path = None
 
 

@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 # Functions which define when to retry calls to check status and download video
-def _retry_check_task(response: httpx.Response) -> bool:
+def _should_retry_check_task(response: httpx.Response) -> bool:
     """
     Returns True if the task status is not "succeeded", "failed", or "cancelled".
     """
@@ -36,7 +36,7 @@ def _retry_check_task(response: httpx.Response) -> bool:
     return status not in ["succeeded", "failed", "cancelled"]
 
 
-def _retry_video_download(response: httpx.Response) -> bool:
+def _should_retry_video_download(response: httpx.Response) -> bool:
     """
     Returns True if the video download status is not 200 (success).
     """
@@ -51,7 +51,7 @@ class OpenAISoraTarget(OpenAITarget):
         model_name (str, Optional): The name of the model.
         endpoint (str, Optional): The target URL for the OpenAI service.
         api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-            Defaults to the OPENAI_CHAT_KEY environment variable.
+            Defaults to the OPENAI_SORA_KEY environment variable.
         headers (str, Optional): Extra headers of the endpoint (JSON).
         use_aad_auth (bool, Optional): When set to True, user authentication is used
             instead of API Key. DefaultAzureCredential is taken for
@@ -76,61 +76,71 @@ class OpenAISoraTarget(OpenAITarget):
             is {task_id}_{gen_id}.mp4 as returned by the model.
     """
 
-    # Maximum number of retries for check_task_status()
+    # Maximum number of retries for check_task_status_async()
     # This cannot be set in the constructor as it is used in the decorator, which does not know self.
     try:
         CHECK_TASK_RETRY_MAX_NUM_ATTEMPTS: int = int(os.getenv("CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS", 25))
     except ValueError:
         CHECK_TASK_RETRY_MAX_NUM_ATTEMPTS: int = 25
         logger.warning(
-            f"Invalid value for CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS. " +
-            "Using default value of {CHECK_TASK_RETRY_MAX_NUM_ATTEMPTS}."
+            "Invalid value for CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS. "
+            + f"Using default value of {CHECK_TASK_RETRY_MAX_NUM_ATTEMPTS}."
         )
+
+    DEFAULT_RESOLUTION_DIMENSIONS: str = "480x480"
+    DEFAULT_API_VERSION: str = "2025-02-15-preview"
+    DEFAULT_N_SECONDS: int = 5
+    DEFAULT_N_VARIANTS: int = 1
 
     def __init__(
         self,
         *,
-        resolution_dimensions: Literal[
-            "360x360", "640x360", "480x480", "854x480", "720x720", "1280x720", "1080x1080", "1920x1080"
-        ] = "480x480",
-        n_seconds: Optional[int] = 5,
-        n_variants: Optional[int] = 1,
-        api_version: str = "2025-02-15-preview",
+        resolution_dimensions: Optional[
+            Literal["360x360", "640x360", "480x480", "854x480", "720x720", "1280x720", "1080x1080", "1920x1080"]
+        ] = None,
+        n_seconds: Optional[int] = None,
+        n_variants: Optional[int] = None,
+        api_version: Optional[str] = None,
         output_filename: Optional[str] = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
 
-        dimensions = resolution_dimensions.split("x")
-        self._height = dimensions[1]
-        self._width = dimensions[0]
+        dimensions = resolution_dimensions or self.DEFAULT_RESOLUTION_DIMENSIONS
+        temp = dimensions.split("x")
+        self._height = temp[1]
+        self._width = temp[0]
+
+        self._n_seconds = n_seconds or self.DEFAULT_N_SECONDS
+        self._n_variants = n_variants or self.DEFAULT_N_VARIANTS
+        self._api_version = api_version or self.DEFAULT_API_VERSION
 
         # Validate input based on resolution dimensions
         self._validate_video_constraints(
-            resolution_dimensions=resolution_dimensions,
-            n_seconds=n_seconds,
-            n_variants=n_variants,
+            resolution_dimensions=dimensions,
+            n_seconds=self._n_seconds,
+            n_variants=self._n_variants,
         )
 
-        self._n_seconds = n_seconds
-        self._n_variants = n_variants
-        self._api_version = api_version
         self._output_filename = output_filename
 
         self._params = {}
-        if self._api_version is not None:
-            self._params["api-version"] = self._api_version
+        self._params["api-version"] = self._api_version
 
     def _set_openai_env_configuration_vars(self):
         self.model_name_environment_variable = "OPENAI_SORA_MODEL"
         self.endpoint_environment_variable = "OPENAI_SORA_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_SORA_KEY"
 
-    async def _send_httpx_request(
-        self, *, endpoint_uri: str, method: str, request_body: dict[str, object] = None
+    async def _send_httpx_request_async(
+        self,
+        *,
+        endpoint_uri: str,
+        method: str,
+        request_body: Optional[dict[str, object]] = None,
     ) -> httpx.Response:
         """
-        Send an HTTP request using the httpx client and handle exceptions.
+        Asynchronously send an HTTP request using the httpx client and handle exceptions.
 
         Raises:
             RateLimitException: If the rate limit is exceeded.
@@ -157,6 +167,14 @@ class OpenAISoraTarget(OpenAITarget):
     @limit_requests_per_minute
     @pyrit_target_retry
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+        """Asynchronously sends a prompt request and handles the response within a managed conversation context.
+
+        Args:
+            prompt_request (PromptRequestResponse): The prompt request response object.
+
+        Returns:
+            PromptRequestResponse: The updated conversation entry with the response from the prompt target.
+        """
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
         prompt = request.converted_value
@@ -165,22 +183,22 @@ class OpenAISoraTarget(OpenAITarget):
 
         body = self._construct_request_body(prompt=prompt)
 
-        response = await self._send_httpx_request(
+        response = await self._send_httpx_request_async(
             endpoint_uri=f"{self._endpoint}/jobs",
             method="POST",
             request_body=body,
         )
 
-        return await self._handle_response(request=request, response=response)
+        return await self._handle_response_async(request=request, response=response)
 
     @pyrit_custom_result_retry(
-        retry_function=_retry_check_task,
+        retry_function=_should_retry_check_task,
         retry_max_num_attempts=CHECK_TASK_RETRY_MAX_NUM_ATTEMPTS,
     )
     @pyrit_target_retry
-    async def check_task_status(self, task_id: str) -> httpx.Response:
+    async def check_task_status_async(self, task_id: str) -> httpx.Response:
         f"""
-        Check status of a submitted task using the task_id.
+        Asynchronously check status of a submitted task using the task_id.
         Retries a maxium of {self.CHECK_TASK_RETRY_MAX_NUM_ATTEMPTS} times,
         until the task is complete (succeeded, failed, or cancelled). Also
         retries upon RateLimitException.
@@ -196,7 +214,7 @@ class OpenAISoraTarget(OpenAITarget):
 
         uri = f"{self._endpoint}/jobs/{task_id}"
 
-        response = await self._send_httpx_request(
+        response = await self._send_httpx_request_async(
             endpoint_uri=uri,
             method="GET",
         )
@@ -204,12 +222,12 @@ class OpenAISoraTarget(OpenAITarget):
         return response
 
     @pyrit_custom_result_retry(
-        retry_function=_retry_video_download,
+        retry_function=_should_retry_video_download,
     )
     @pyrit_target_retry
-    async def download_video_content(self, gen_id: str) -> httpx.Response:
+    async def download_video_content_async(self, gen_id: str) -> httpx.Response:
         """
-        Download the video using the generation ID.
+        Asynchronously download the video using the generation ID.
         Retries if the response status code is not 200. Also retries upon RateLimitException.
 
         Args:
@@ -224,14 +242,14 @@ class OpenAISoraTarget(OpenAITarget):
         logger.info(f"Downloading video content for generation ID: {gen_id}")
         uri = f"{self._endpoint}/{gen_id}/video/content"
 
-        response = await self._send_httpx_request(
+        response = await self._send_httpx_request_async(
             endpoint_uri=uri,
             method="GET",
         )
 
         return response
 
-    async def _save_video_to_storage(
+    async def _save_video_to_storage_async(
         self,
         *,
         data: bytes,
@@ -239,6 +257,17 @@ class OpenAISoraTarget(OpenAITarget):
         gen_id: str,
         request: PromptRequestPiece,
     ) -> PromptRequestResponse:
+        """
+        Asynchronously save the video content to storage using a serializer.
+        This function is called after the video content is available for download.
+        Args:
+            data (bytes): The video content to save.
+            task_id (str): The task ID.
+            gen_id (str): The generation ID.
+            request (PromptRequestPiece): The request piece associated with the prompt.
+        Returns:
+            PromptRequestResponse: The response entry with the saved video path.
+        """
         serializer = data_serializer_factory(
             category="prompt-memory-entries",
             data_type="video_path",
@@ -253,10 +282,18 @@ class OpenAISoraTarget(OpenAITarget):
 
         return response_entry
 
-    async def _handle_response(self, request: PromptRequestPiece, response: httpx.Response) -> PromptRequestResponse:
+    async def _handle_response_async(
+        self, request: PromptRequestPiece, response: httpx.Response
+    ) -> PromptRequestResponse:
         """
-        Handle the response to a video generation request.
+        Asynchronously handle the response to a video generation request.
         This includes checking the status of the task and downloading the video content if successful.
+
+        Args:
+            request (PromptRequestPiece): The request piece associated with the prompt.
+            response (httpx.Response): The response from the API.
+        Returns:
+            PromptRequestResponse: The response entry with the saved video path or error message.
         """
         content = json.loads(response.content)
 
@@ -264,7 +301,7 @@ class OpenAISoraTarget(OpenAITarget):
         logger.info(f"Handling response for Task ID: {task_id}")
 
         # Check status with retry until task is complete (succeeded, failed, or cancelled)
-        task_response = await self.check_task_status(task_id=task_id)
+        task_response = await self.check_task_status_async(task_id=task_id)
         task_content = json.loads(task_response.content)
         status = task_content.get("status")
 
@@ -274,8 +311,8 @@ class OpenAISoraTarget(OpenAITarget):
             generations = task_content.get("generations")
             gen_id = generations[0].get("id")
 
-            video_response = await self.download_video_content(gen_id=gen_id)
-            response_entry = await self._save_video_to_storage(
+            video_response = await self.download_video_content_async(gen_id=gen_id)
+            response_entry = await self._save_video_to_storage_async(
                 data=video_response.content,
                 task_id=task_id,
                 gen_id=gen_id,
@@ -304,9 +341,9 @@ class OpenAISoraTarget(OpenAITarget):
         else:
             # Retry stop condition reached, return result
             logger.info(
-                f"{task_id} is still processing after attempting retries. Consider setting a value > " +
-                f"{self.CHECK_TASK_RETRY_MAX_NUM_ATTEMPTS} for environment variable " +
-                f"CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS. Status: {status}"
+                f"{task_id} is still processing after attempting retries. Consider setting a value > "
+                + f"{self.CHECK_TASK_RETRY_MAX_NUM_ATTEMPTS} for environment variable "
+                + f"CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS. Status: {status}"
             )
             response_entry = construct_response_from_request(
                 request=request,
@@ -343,7 +380,13 @@ class OpenAISoraTarget(OpenAITarget):
             )
 
     def _construct_request_body(self, prompt: str) -> dict:
-
+        """
+        Constructs the request body for the endpoint API.
+        Args:
+            prompt (str): The prompt text to be sent to the API.
+        Returns:
+            dict: The request body as a dictionary.
+        """
         body_parameters: dict[str, object] = {
             "prompt": prompt,
             "height": self._height,
@@ -356,6 +399,13 @@ class OpenAISoraTarget(OpenAITarget):
         return {k: v for k, v in body_parameters.items() if v is not None}
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+        """
+        Validates the prompt request to ensure it meets the requirements for the Sora target.
+        Args:
+            prompt_request (PromptRequestResponse): The prompt request response object.
+        Raises:
+            ValueError: If the request is invalid.
+        """
         if len(prompt_request.request_pieces) != 1:
             raise ValueError("This target only supports a single prompt request piece.")
 

@@ -28,9 +28,9 @@ PostType = Literal["json", "data"]
 async def make_request_and_raise_if_error_async(
     endpoint_uri: str,
     method: str,
-    params: dict[str, str] = None,
-    request_body: dict[str, object] = None,
-    headers: dict[str, str] = None,
+    params: Optional[dict[str, str]] = None,
+    request_body: Optional[dict[str, object]] = None,
+    headers: Optional[dict[str, str]] = None,
     post_type: PostType = "json",
     debug: bool = False,
     **httpx_client_kwargs: Optional[Any],
