@@ -33,9 +33,9 @@ RUN conda create -n pyrit-dev python=3.11 -y && \
 RUN mkdir -p /home/vscode/.cache/pre-commit && \
     chown -R vscode:vscode /home/vscode/.cache/pre-commit
 
-RUN mkdir -p /root/.vscode-server && \
-    chown -R vscode:vscode /root/.vscode-server && \
-    chmod -R 755 /root/.vscode-server
+RUN mkdir -p /home/vscode/.vscode-server && \
+    chown -R vscode:vscode /home/vscode/.vscode-server && \
+    chmod -R 755 /home/vscode/.vscode-server
 
 USER vscode
 
