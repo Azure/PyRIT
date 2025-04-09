@@ -286,3 +286,15 @@ async def test_read_data_local_file_with_dummy_image(duckdb_instance):
         # Clean up the temporary file
         if os.path.exists(image_path):
             os.remove(image_path)
+
+
+@pytest.mark.asyncio
+async def test_get_data_filename(duckdb_instance):
+    """Test get_data_filename when a file_name is provided."""
+    serializer = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
+    provided_filename = "custom_image_name"
+    filename = await serializer.get_data_filename(file_name=provided_filename)
+    assert str(filename).endswith(f"{provided_filename}.{serializer.file_extension}")
+    assert os.path.isabs(filename)
+    assert os.path.exists(os.path.dirname(filename))
+    assert not os.path.exists(filename)  # File should not exist yet
