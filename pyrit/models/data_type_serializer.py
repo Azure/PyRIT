@@ -133,7 +133,7 @@ class DataTypeSerializer(abc.ABC):
 
         Arguments:
             data: bytes: The data to be saved.
-            output_filename (optional, str): filename to store image as. Defaults to UUID if not provided
+            output_filename (optional, str): filename to store data as. Defaults to UUID if not provided
         """
         file_path = await self.get_data_filename(file_name=output_filename)
         await self._memory.results_storage_io.write_file(file_path, data)
@@ -168,7 +168,7 @@ class DataTypeSerializer(abc.ABC):
             sample_width (optional, int): sample width in bytes. Defaults to 2
             sample_rate (optional, int): sample rate in Hz. Defaults to 16000
         """
-        file_path = output_filename or await self.get_data_filename()
+        file_path = await self.get_data_filename(file_name=output_filename)
 
         # save audio file locally first if in AzureStorageBlob so we can use wave.open to set audio parameters
         if self._is_azure_storage_url(str(file_path)):
@@ -254,9 +254,10 @@ class DataTypeSerializer(abc.ABC):
 
         if not self.data_sub_directory:
             raise RuntimeError("Data sub directory not set")
-        ticks = int(time.time() * 1_000_000)
 
+        ticks = int(time.time() * 1_000_000)
         results_path = self._memory.results_path
+        file_name = file_name if file_name else str(ticks)
 
         file_name = file_name if file_name else str(ticks)
         if self._is_azure_storage_url(results_path):
