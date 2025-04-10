@@ -9,7 +9,7 @@ from typing import Optional
 from pyrit.exceptions import (
     InvalidJsonException,
     pyrit_json_retry,
-    remove_markdown_json,
+    extract_json_from_response,
 )
 from pyrit.models import (
     PromptDataType,
@@ -92,16 +92,11 @@ class FuzzerConverter(PromptConverter):
         response = await self.converter_target.send_prompt_async(prompt_request=request)
 
         response_msg = response.get_value()
-        response_msg = remove_markdown_json(response_msg)
+        parsed_response = extract_json_from_response(response_msg)
 
-        try:
-            parsed_response = json.loads(response_msg)
-            if "output" not in parsed_response:
-                raise InvalidJsonException(message=f"Invalid JSON encountered; missing 'output' key: {response_msg}")
-            return parsed_response["output"]
-
-        except json.JSONDecodeError:
-            raise InvalidJsonException(message=f"Invalid JSON encountered: {response_msg}")
+        if "output" not in parsed_response:
+            raise InvalidJsonException(message=f"Invalid JSON encountered; missing 'output' key: {response_msg}")
+        return parsed_response["output"]
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
