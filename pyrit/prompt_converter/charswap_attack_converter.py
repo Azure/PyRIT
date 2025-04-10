@@ -1,17 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import logging
-import math
 import random
 import re
 import string
 
+from pyrit.common.utils import get_random_indices
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import ConverterResult, PromptConverter
-
-# Use logger
-logger = logging.getLogger(__name__)
 
 
 class CharSwapGenerator(PromptConverter):
@@ -79,14 +75,12 @@ class CharSwapGenerator(PromptConverter):
 
         # Tokenize the prompt into words and punctuation using regex
         words = re.findall(r"\w+|\S+", prompt)
-        word_list_len = len(words)
-        num_perturb_words = max(1, math.ceil(word_list_len * self.word_swap_ratio))
 
         # Copy the original word list for perturbation
         perturbed_word_list = words.copy()
 
         # Get random indices of words to undergo swapping
-        random_words_idx = self._get_n_random(0, word_list_len, num_perturb_words)
+        random_words_idx = get_random_indices(0, len(words), self.word_swap_ratio)
 
         # Apply perturbation by swapping characters in the selected words
         for idx in random_words_idx:
@@ -99,15 +93,3 @@ class CharSwapGenerator(PromptConverter):
         output_text = re.sub(r'\s([?.!,\'"])', r"\1", new_prompt).strip()
 
         return ConverterResult(output_text=output_text, output_type="text")
-
-    def _get_n_random(self, low: int, high: int, n: int) -> list:
-        """
-        Utility function to generate random indices.
-        Words at these indices will be subjected to perturbation.
-        """
-        result = []
-        try:
-            result = random.sample(range(low, high), n)
-        except ValueError:
-            logger.debug(f"[CharSwapConverter] Sample size of {n} exceeds population size of {high - low}")
-        return result
