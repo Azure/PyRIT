@@ -1,7 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-
+import logging
+import math
+import random
+import re
 from typing import List, Union
 
 
@@ -42,3 +45,71 @@ def combine_list(list1: Union[str, List[str]], list2: Union[str, List[str]]) -> 
     # Merge and keep only unique values
     combined = list(set(list1 + list2))
     return combined
+
+
+def get_random_indices(low: int, high: int, sample_ratio: float) -> list[int]:
+    """
+    Generate a list of random indices within a given range based on a sample ratio.
+    Args:
+        low: Lower bound of the range (inclusive).
+        high: Upper bound of the range (exclusive).
+        sample_ratio: Ratio of range to sample (0.0 to 1.0).
+    """
+    # Special case: return empty list
+    if sample_ratio == 0:
+        return []
+
+    result = []
+    n = math.ceil((high - low) * sample_ratio)
+
+    # Ensure at least 1 index for non-zero sample ratio
+    if sample_ratio > 0 and n == 0:
+        n = 1
+
+    try:
+        result = random.sample(range(low, high), n)
+    except ValueError:
+        logging.getLogger(__name__).debug(f"Sample size of {n} exceeds population size of {high - low}")
+    return result
+
+
+def select_word_indices(words: List[str], mode: str = "all", **kwargs) -> list[int]:
+    """
+    Select indices from a list of words based on specified selection mode.
+
+    Args:
+        words (list): A list of words to select from.
+        mode (str, optional): Selection mode.
+            Supported modes:
+                - "all": Select all word indices,.
+                - "regex": Select indices matching a regular expression.
+                - "keywords": Select indices of specific keywords.
+                - "random": Select random indices based on a sample ratio.
+
+    Returns:
+        list: Indices of selected words.
+    """
+    match mode:
+        case "all":
+            return list(range(len(words)))
+
+        case "keywords":
+            word_list = kwargs.get("keywords", [])
+            return [i for i, word in enumerate(words) if word in word_list]
+
+        case "random":
+            sample_ratio = kwargs.get("sample_ratio", 0.5)
+            return get_random_indices(0, len(words), sample_ratio)
+
+        case "regex":
+            regex = kwargs.get("regex", r".")
+            return [i for i, word in enumerate(words) if re.search(regex, word)]
+
+        case "custom":
+            custom_indices = kwargs.get("indices", [])
+            return [i for i in custom_indices if 0 <= i < len(words)]
+
+        case _:
+            return list(range(len(words)))
+
+    return list(range(len(words)))
