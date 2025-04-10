@@ -16,6 +16,9 @@ from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer
 from pyrit.score.question_answer_scorer import QuestionAnswerScorer
 from pyrit.prompt_normalizer import NormalizerRequest
+from pyrit.common.question_answer_helpers import (
+    get_question_prompt_pairs,
+)
 
 class QuestionAnswerPaths(enum.Enum):
     DEFAULT = pathlib.Path(DATASETS_PATH) / "orchestrators" / "benchmark" / "question_answer.yaml"
@@ -72,7 +75,7 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
 
     async def send_prompts_async(self, dataset: QuestionAnsweringDataset) -> None:
         """Sends prompts to the chat model and evaluates responses."""
-        qa_request_list = self.get_question_prompt_pairs(dataset=dataset)
+        qa_request_list = get_question_prompt_pairs(dataset=dataset)
         prompt_list = [entry[1] for entry in qa_request_list]
         return await super().send_prompts_async(prompt_list=prompt_list, prompt_type="text")
 
@@ -139,28 +142,3 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
         ]
 
         self.set_prepended_conversation(prepended_conversation=prepended_conversation)
-
-    def get_question_prompt_pairs(
-            self,
-            dataset: QuestionAnsweringDataset,
-        ):
-        """
-        Generates a list of question and answer pairs from the dataset.
-        """
-        QAList:List[Tuple[QuestionAnsweringEntry, str]] = []
-        for question in dataset.questions:
-            prompt = self._construct_evaluation_prompt(entry=question)
-            QAList.append((question, prompt))
-        return QAList
-
-    def _construct_evaluation_prompt(self, *, entry: QuestionAnsweringEntry) -> str:
-        available_choices = "\n".join(
-            f"index={c.index}, value={c.text}" for c in entry.choices
-        )
-        prompt = (
-            f"Question:\n"
-            f"{entry.question}\n\n"
-            f"Choices:\n"
-            f"{available_choices}"
-        )
-        return prompt
