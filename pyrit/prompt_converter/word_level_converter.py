@@ -10,6 +10,19 @@ from pyrit.prompt_converter.prompt_converter import ConverterResult
 
 
 class WordLevelConverter(PromptConverter):
+    """
+    Base class for word-level converters. Designed to convert text by processing each word individually.
+
+    Word selection is based on the `mode` and `mode_kwargs` parameters.
+    The `mode` parameter determines how words are selected for conversion.
+    The `mode_kwargs` parameter allows for additional configuration options specific to the selected mode.
+    Please refer to the `select_word_indices` function for more details on how to use these parameters.
+
+    Note:
+        The `convert_word_async` method is an abstract method that must be implemented by subclasses.
+        It defines the conversion logic for each word.
+    """
+
     def __init__(self, mode: str = "all", **mode_kwargs):
         self.mode = mode
         self.mode_kwargs = mode_kwargs
@@ -35,7 +48,7 @@ class WordLevelConverter(PromptConverter):
 
         self.validate_input(prompt=prompt)
 
-        words = prompt.split(' ')  # split by spaces only, preserving other whitespace
+        words = prompt.split(" ")  # split by spaces only, preserving other whitespace
         selected_indices = select_word_indices(words=words, mode=self.mode, **self.mode_kwargs)
 
         # Convert only selected words
