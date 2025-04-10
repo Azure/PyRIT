@@ -40,3 +40,9 @@ class NormalizerRequest(abc.ABC):
 
         if not self.seed_prompt_group.is_single_request():
             raise ValueError("Sequence must be equal for every piece of a single normalizer request.")
+
+    def is_multipart(self) -> bool:
+        """
+        Check if the request is multipart.
+        """
+        return len(self.seed_prompt_group.prompts) > 1

@@ -1,0 +1,204 @@
+classDiagram
+    %% Base Abstract Classes
+    class AttackContext {
+        <<abstract>>
+        +target: PromptTarget
+    }
+    
+    class AttackResult {
+        <<abstract>>
+    }
+    
+    class OrchestratorBuilder {
+        <<interface>>
+        +context()
+        +attack()
+    }
+    
+    class AttackBuilder {
+        <<interface>>
+        +execute()
+    }
+    
+    class AttackStrategy {
+        <<abstract>>
+        +identifier
+        +setup(context)
+        +execute(context)
+    }
+    
+    %% Base Implementation Classes
+    class MultiTurnBaseOrchestratorBuilder {
+        +with_max_turns(turns)
+        +with_system_prompt(system_prompt)
+        +with_seed_prompt(seed_prompt)
+        +with_backtracking(strategy)
+        +attack()
+    }
+    
+    class MultiTurnBaseAttackBuilder {
+        +with_objective(objective_text)
+        +with_objective_scorer(scorer)
+        +execute()
+    }
+    
+    class SingleTurnBaseOrchestratorBuilder {
+        +with_batch_size(batch_size)
+        +with_prompt_converters(prompt_converters)
+        +with_labels(labels)
+        +attack()
+    }
+    
+    class SingleTurnBaseAttackBuilder {
+        +with_prompts(prompts)
+        +with_scorers(scorers)
+        +execute()
+    }
+    
+    %% Concrete Implementation Classes
+    class RedTeamingOrchestratorBuilder {
+        +with_use_score_as_feedback(bool)
+        +attack()
+    }
+    
+    class RedTeamingAttackBuilder {
+        +with_objective(objective_text)
+        +execute()
+    }
+    
+    class RedTeamingStrategy {
+        -_conversation_manager
+        -_score_evaluator
+        -_use_score_as_feedback
+        +setup(context)
+        +execute(context)
+        -_generate_next_prompt(context)
+        -_send_to_target(context, prompt)
+        -_score_response(context, response)
+        -_evaluate_objective_achievement(context, response, score)
+    }
+    
+    class PromptSendingOrchestratorBuilder {
+        +attack()
+    }
+    
+    class PromptSendingAttackBuilder {
+        +execute()
+    }
+    
+    class PromptSendingAttackStrategy {
+        -_conversation_manager
+        -_scorers
+        +setup(context)
+        +execute(context)
+        -_get_prompt_requests(context)
+        -_score_responses(responses, context)
+    }
+    
+    %% Context/Result classes
+    class MultiTurnAttackContext {
+        +adversarial_chat
+        +session
+        +objective
+        +max_turns
+        +executed_turns
+        +achieved_objective
+        +last_response
+        +last_score
+    }
+    
+    class MultiTurnAttackResult {
+        +conversation_id
+        +objective
+        +achieved_objective
+        +executed_turns
+        +last_response
+        +last_score
+        +print_conversation()
+    }
+    
+    class SingleTurnAttackContext {
+        +batch_size
+        +prompts
+        +prompt_converters
+        +memory_labels
+        +metadata
+    }
+    
+    class SingleTurnAttackResult {
+        +orchestrator_id
+        +prompt_list
+        +print_conversations()
+    }
+    
+    %% Factories
+    class SingleTurnOrchestratorFactory {
+        +create(target, builder_type)
+    }
+    
+    class MultiTurnOrchestratorFactory {
+        +create(target, chat, builder_type)
+    }
+    
+    %% Enums
+    class SingleTurnOrchestratorType {
+        <<enumeration>>
+        PROMPT_SENDING
+    }
+    
+    class MultiTurnOrchestratorType {
+        <<enumeration>>
+        RED_TEAMING
+    }
+    
+    %% Component Classes
+    class ConversationManager {
+        +initialize_conversation_with_history()
+        +get_conversation()
+        +get_last_message()
+        +add_system_prompt()
+    }
+    
+    class ScoreEvaluator {
+        +evaluate_response()
+        +is_objective_achieved()
+        +get_feedback()
+    }
+    
+    %% Relationships
+    AttackContext <|-- MultiTurnAttackContext
+    AttackContext <|-- SingleTurnAttackContext
+    
+    AttackResult <|-- MultiTurnAttackResult
+    AttackResult <|-- SingleTurnAttackResult
+    
+    OrchestratorBuilder <|-- MultiTurnBaseOrchestratorBuilder
+    OrchestratorBuilder <|-- SingleTurnBaseOrchestratorBuilder
+    
+    AttackBuilder <|-- MultiTurnBaseAttackBuilder
+    AttackBuilder <|-- SingleTurnBaseAttackBuilder
+    
+    MultiTurnBaseOrchestratorBuilder <|-- RedTeamingOrchestratorBuilder
+    MultiTurnBaseAttackBuilder <|-- RedTeamingAttackBuilder
+    
+    SingleTurnBaseOrchestratorBuilder <|-- PromptSendingOrchestratorBuilder
+    SingleTurnBaseAttackBuilder <|-- PromptSendingAttackBuilder
+    
+    AttackStrategy <|-- RedTeamingStrategy
+    AttackStrategy <|-- PromptSendingAttackStrategy
+    
+    RedTeamingOrchestratorBuilder ..> RedTeamingAttackBuilder : creates
+    PromptSendingOrchestratorBuilder ..> PromptSendingAttackBuilder : creates
+    
+    RedTeamingAttackBuilder ..> RedTeamingStrategy : creates
+    PromptSendingAttackBuilder ..> PromptSendingAttackStrategy : creates
+    
+    RedTeamingStrategy --> ConversationManager : uses
+    RedTeamingStrategy --> ScoreEvaluator : uses
+    PromptSendingAttackStrategy --> ConversationManager : uses
+    
+    MultiTurnOrchestratorFactory ..> RedTeamingOrchestratorBuilder : creates
+    SingleTurnOrchestratorFactory ..> PromptSendingOrchestratorBuilder : creates
+    
+    MultiTurnOrchestratorFactory --> MultiTurnOrchestratorType : uses
+    SingleTurnOrchestratorFactory --> SingleTurnOrchestratorType : uses

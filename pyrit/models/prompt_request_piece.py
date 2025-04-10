@@ -154,6 +154,18 @@ class PromptRequestPiece(abc.ABC):
         from pyrit.models.prompt_request_response import PromptRequestResponse
 
         return PromptRequestResponse([self])  # noqa F821
+    
+    def has_error(self) -> bool:
+        """
+        Check if the prompt request piece has an error.
+        """
+        return self.response_error != "none"
+
+    def is_blocked(self) -> bool:
+        """
+        Check if the prompt request piece is blocked.
+        """
+        return self.response_error == "blocked"
 
     def to_dict(self) -> dict:
         return {
