@@ -81,7 +81,7 @@ class OpenAISoraTarget(OpenAITarget):
     try:
         CHECK_TASK_RETRY_MAX_NUM_ATTEMPTS: int = int(os.getenv("CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS", 25))
     except ValueError:
-        CHECK_TASK_RETRY_MAX_NUM_ATTEMPTS: int = 25
+        CHECK_TASK_RETRY_MAX_NUM_ATTEMPTS = 25
         logger.warning(
             "Invalid value for CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS. "
             + f"Using default value of {CHECK_TASK_RETRY_MAX_NUM_ATTEMPTS}."
