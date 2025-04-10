@@ -18,7 +18,7 @@ class ColloquialWordswapConverter(PromptConverter):
         """
         Initialize the converter with optional deterministic mode and custom substitutions.
 
-        Args:
+        Parameters:
         deterministic (bool): If True, use the first substitution for each wordswap.
                               If False, randomly choose a substitution for each wordswap. Defaults to False.
         custom_substitutions (Optional[Dict[str, List[str]]], Optional): A dictionary of custom substitutions to
@@ -50,7 +50,7 @@ class ColloquialWordswapConverter(PromptConverter):
         """
         Convert the given prompt to colloquial Singaporean context.
 
-        Args:
+        Parameters:
             prompt (str): The text to convert.
             input_type (PromptDataType): The type of input data.
 

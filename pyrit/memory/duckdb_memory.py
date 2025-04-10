@@ -66,7 +66,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         Creates an engine bound to the specified database file. The `has_echo` parameter
         controls the verbosity of SQL execution logging.
 
-        Args:
+        Parameters:
             has_echo (bool): Flag to enable detailed SQL execution logging.
         """
         try:
@@ -148,7 +148,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         """
         Inserts an entry into the Table.
 
-        Args:
+        Parameters:
             entry: An instance of a SQLAlchemy model to be added to the Table.
         """
         with closing(self.get_session()) as session:
@@ -176,7 +176,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         """
         Fetches data from the specified table model with optional conditions.
 
-        Args:
+        Parameters:
             model: The SQLAlchemy model class corresponding to the table you want to query.
             conditions: SQLAlchemy filter conditions (Optional).
             distinct: Flag to return distinct rows (default is False).
@@ -203,7 +203,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         """
         Updates the given entries with the specified field values.
 
-        Args:
+        Parameters:
             entries (Sequence[Base]): A list of SQLAlchemy model instances to be updated.
             update_fields (dict): A dictionary of field names and their new values.
 
@@ -242,7 +242,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
 
         Iterates over all tables, retrieves their data, and exports each to a file named after the table.
 
-        Args:
+        Parameters:
             export_type (str): The format to export the data in (defaults to "json").
         """
         table_models = self.get_all_table_models()

@@ -17,14 +17,14 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 class PDFConverter(PromptConverter):
     """
     Converts a text prompt into a PDF file. Supports various modes:
-    1. Template-Based Generation: If a `SeedPrompt` is provided, dynamic data can be injected into the
-       template using the `SeedPrompt.render_template_value` method, and the resulting content is converted to a PDF.
-    2. Direct Text-Based Generation: If no template is provided, the raw string prompt is converted directly
-       into a PDF.
-    3. Modify Existing PDFs (Overlay approach): Enables injecting text into existing PDFs at specified
-       coordinates, merging a new "overlay layer" onto the original PDF.
+    - Template-Based Generation: If a `SeedPrompt` is provided, dynamic data can be injected into the
+      template using the `SeedPrompt.render_template_value` method, and the resulting content is converted to a PDF.
+    - Direct Text-Based Generation: If no template is provided, the raw string prompt is converted directly
+      into a PDF.
+    - Modify Existing PDFs (Overlay approach): Enables injecting text into existing PDFs at specified
+      coordinates, merging a new "overlay layer" onto the original PDF.
 
-    Args:
+    Parameters:
         prompt_template (Optional[SeedPrompt], optional): A `SeedPrompt` object representing a template.
         font_type (Optional[str], optional): Font type for the PDF. Defaults to "Helvetica".
         font_size (Optional[int], optional): Font size for the PDF. Defaults to 12.
@@ -91,7 +91,7 @@ class PDFConverter(PromptConverter):
         Converts the given prompt into a PDF. If a template is provided, it injects the prompt into the template,
         otherwise, it generates a simple PDF with the prompt as the content. Further it can modify existing PDFs.
 
-        Args:
+        Parameters:
             prompt (str): The prompt to be embedded in the PDF.
             input_type (PromptDataType): The type of the input data (default: "text").
 
@@ -126,7 +126,7 @@ class PDFConverter(PromptConverter):
         """
         Prepares the content for the PDF, either from a template or directly from the prompt.
 
-        Args:
+        Parameters:
             prompt (str): The input prompt.
 
         Returns:
@@ -163,7 +163,7 @@ class PDFConverter(PromptConverter):
         """
         Generates a PDF with the given content.
 
-        Args:
+        Parameters:
             content (str): The text content to include in the PDF.
 
         Returns:
@@ -255,7 +255,7 @@ class PDFConverter(PromptConverter):
         """
         Generates an overlay PDF with the given text injected at the specified coordinates.
 
-        Args:
+        Parameters:
             page (PageObject): The original PDF page to overlay on.
             x (float): The x-coordinate for the text.
             y (float): The y-coordinate for the text.
@@ -316,7 +316,7 @@ class PDFConverter(PromptConverter):
         """
         Serializes the generated PDF using a data serializer.
 
-        Args:
+        Parameters:
             pdf_bytes (bytes): The generated PDF content in bytes.
             content (str): The original content of the PDF.
 

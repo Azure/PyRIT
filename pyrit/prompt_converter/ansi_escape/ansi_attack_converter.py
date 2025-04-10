@@ -36,7 +36,7 @@ class AnsiAttackConverter(PromptConverter):
         incorporate_user_prompt: bool = True,
     ):
         """
-        Args:
+        Parameters:
             include_raw (bool): Include scenarios with raw ANSI codes.
             include_escaped (bool): Include scenarios with escaped ANSI codes.
             include_tasks (bool): Include "ASKS + HIGH_LEVEL_TASKS" scenarios.

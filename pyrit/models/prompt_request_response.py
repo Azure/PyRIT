@@ -81,7 +81,7 @@ def group_conversation_request_pieces_by_sequence(
 
     This is done using the sequence number and conversation ID.
 
-    Args:
+    Parameters:
         request_pieces (Sequence[PromptRequestPiece]): A list of PromptRequestPiece objects representing individual
             request pieces.
 

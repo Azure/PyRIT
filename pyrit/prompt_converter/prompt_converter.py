@@ -30,7 +30,7 @@ class PromptConverter(abc.ABC, Identifier):
         """
         Converts the given prompts into a different representation
 
-        Args:
+        Parameters:
             prompt: The prompt to be converted.
 
         Returns:
@@ -42,7 +42,7 @@ class PromptConverter(abc.ABC, Identifier):
         """
         Checks if the input type is supported by the converter
 
-        Args:
+        Parameters:
             input_type: The input type to check
 
         Returns:
@@ -54,7 +54,7 @@ class PromptConverter(abc.ABC, Identifier):
         """
         Checks if the output type is supported by the converter
 
-        Args:
+        Parameters:
             output_type: The output type to check
 
         Returns:
@@ -68,7 +68,7 @@ class PromptConverter(abc.ABC, Identifier):
         Converts substrings within a prompt that are enclosed by specified start and end tokens. If there are no tokens
         present, the entire prompt is converted.
 
-        Args:
+        Parameters:
             prompt (str): The input prompt containing text to be converted.
             input_type (str): The type of input data. Defaults to "text".
             start_token (str): The token indicating the start of a substring to be converted. Defaults to "⟪" which is

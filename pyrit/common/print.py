@@ -16,7 +16,7 @@ def print_chat_messages_with_color(
 ) -> None:
     """Print chat messages with color to console.
 
-    Args:
+    Parameters:
         messages: List of chat messages.
         max_content_character_width: Maximum character width for the content.
         left_padding_width: Maximum character width for the left padding.

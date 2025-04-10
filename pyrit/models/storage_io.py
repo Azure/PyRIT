@@ -73,7 +73,7 @@ class DiskStorageIO(StorageIO):
     async def read_file(self, path: Union[Path, str]) -> bytes:
         """
         Asynchronously reads a file from the local disk.
-        Args:
+        Parameters:
             path (Union[Path, str]): The path to the file.
         Returns:
             bytes: The content of the file.
@@ -85,7 +85,7 @@ class DiskStorageIO(StorageIO):
     async def write_file(self, path: Union[Path, str], data: bytes) -> None:
         """
         Asynchronously writes data to a file on the local disk.
-        Args:
+        Parameters:
             path (Path): The path to the file.
             data (bytes): The content to write to the file.
         """
@@ -96,7 +96,7 @@ class DiskStorageIO(StorageIO):
     async def path_exists(self, path: Union[Path, str]) -> bool:
         """
         Checks if a path exists on the local disk.
-        Args:
+        Parameters:
             path (Path): The path to check.
         Returns:
             bool: True if the path exists, False otherwise.
@@ -107,7 +107,7 @@ class DiskStorageIO(StorageIO):
     async def is_file(self, path: Union[Path, str]) -> bool:
         """
         Checks if the given path is a file (not a directory).
-        Args:
+        Parameters:
             path (Path): The path to check.
         Returns:
             bool: True if the path is a file, False otherwise.
@@ -118,7 +118,7 @@ class DiskStorageIO(StorageIO):
     async def create_directory_if_not_exists(self, path: Union[Path, str]) -> None:
         """
         Asynchronously creates a directory if it doesn't exist on the local disk.
-        Args:
+        Parameters:
             path (Path): The directory path to create.
         """
         directory_path = self._convert_to_path(path)
@@ -171,7 +171,7 @@ class AzureBlobStorageIO(StorageIO):
         """
         (Async) Handles uploading blob to given storage container.
 
-        Args:
+        Parameters:
             file_name (str): File name to assign to uploaded blob.
             data (bytes): Byte representation of content to upload to container.
             content_type (str): Content type to upload.
@@ -219,7 +219,7 @@ class AzureBlobStorageIO(StorageIO):
         it extracts the relative blob path (e.g., "dir1/dir2/sample.png") to correctly access the blob.
         If a relative path is provided, it will use it as-is.
 
-        Args:
+        Parameters:
             path (str): The path to the file (blob) in Azure Blob Storage.
                                     This can be either a full URL or a relative path.
 
@@ -261,7 +261,7 @@ class AzureBlobStorageIO(StorageIO):
         """
         Writes data to Azure Blob Storage at the specified path.
 
-        Args:
+        Parameters:
             path (str): The full Azure Blob Storage URL
             data (bytes): The data to write.
         """

@@ -58,7 +58,7 @@ class SelfAskScaleScorer(Scorer):
         """
         Scores the given request_response using "self-ask" for the chat target and adds score to memory.
 
-        Args:
+        Parameters:
             request_response (PromptRequestPiece): The prompt request piece containing the text to be scored.
             task (str): The task based on which the text should be scored (the original attacker model's objective).
 

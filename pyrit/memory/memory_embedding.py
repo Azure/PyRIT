@@ -26,7 +26,7 @@ class MemoryEmbedding:
         """
         Generates metadata for a chat memory entry.
 
-        Args:
+        Parameters:
             chat_memory (ConversationData): The chat memory entry.
 
         Returns:

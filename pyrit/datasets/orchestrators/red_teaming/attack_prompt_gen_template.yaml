@@ -7,7 +7,7 @@ groups: |
   - Prompt Security
 source: github.com/prompt-security/ps-fuzz/dynamic_test.py
 data_type: text
-parameters: |
+parameters:
   - target_system_prompts_summary
   - attack_task
 value: >

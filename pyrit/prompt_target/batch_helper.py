@@ -11,7 +11,7 @@ def _get_chunks(*args, batch_size: int):
     """
     Helper function utilized during prompt batching to chunk based off of size.
 
-    Args:
+    Parameters:
         *args: Arguments to chunk; each argument should be a list
         batch_size (int): Batch size
 
@@ -30,7 +30,7 @@ def _validate_rate_limit_parameters(prompt_target: PromptTarget, batch_size: int
     Helper function to validate the constraints between Rate Limit (Requests Per Minute)
         and batch size.
 
-    Args:
+    Parameters:
         prompt_target (PromptTarget): Target to validate
         batch_size (int): Batch size
 
@@ -55,7 +55,7 @@ async def batch_task_async(
     """
     Performs provided task in batches and validates parameters using helpers.
 
-    Args:
+    Parameters:
         prompt_target(PromptTarget): Target to validate
         batch_size (int): Batch size
         items_to_batch (list[list[Any]]): Lists of items to batch

@@ -32,7 +32,7 @@ class AzureBlobStorageTarget(PromptTarget):
     The AzureBlobStorageTarget takes prompts, saves the prompts to a file, and stores them as a blob in a provided
     storage account container.
 
-    Args:
+    Parameters:
         container_url (str): URL to the Azure Blob Storage Container.
         sas_token (optional[str]): Optional Blob SAS token needed to authenticate blob operations. If not provided, a
             delegation SAS token will be created using Entra ID authentication.
@@ -88,7 +88,7 @@ class AzureBlobStorageTarget(PromptTarget):
         """
         (Async) Handles uploading blob to given storage container.
 
-        Args:
+        Parameters:
             file_name (str): File name to assign to uploaded blob.
             data (bytes): Byte representation of content to upload to container.
             content_type (str): Content type to upload.
@@ -133,7 +133,7 @@ class AzureBlobStorageTarget(PromptTarget):
         (Async) Sends prompt to target, which creates a file and uploads it as a blob
         to the provided storage container.
 
-        Args:
+        Parameters:
             normalized_prompt (str): A normalized prompt to be sent to the prompt target.
             conversation_id (str): The ID of the conversation.
             normalizer_id (str): ID provided by the prompt normalizer.

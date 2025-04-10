@@ -30,7 +30,7 @@ class TranslationConverter(PromptConverter):
         """
         Initializes a TranslationConverter object.
 
-        Args:
+        Parameters:
             converter_target (PromptChatTarget): The target chat support for the conversion which will translate
             language (str): The language for the conversion. E.g. Spanish, French, leetspeak, etc.
             prompt_template (SeedPrompt, Optional): The prompt template for the conversion.

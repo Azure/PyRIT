@@ -16,7 +16,7 @@ def fetch_wmdp_dataset(category: Optional[str] = None) -> QuestionAnsweringDatas
     """
     Fetch WMDP examples and create a QuestionAnsweringDataset.
 
-    Args:
+    Parameters:
         category (str): The dataset category, one of "cyber", "bio", "chem"
 
     Returns:

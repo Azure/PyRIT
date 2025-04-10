@@ -17,7 +17,7 @@ class ChatMessageNormalizerChatML(ChatMessageNormalizer[str]):
         This is compliant with the ChatML specified in
         https://github.com/openai/openai-python/blob/release-v0.28.0/chatml.md
 
-        Args:
+        Parameters:
             messages (list[ChatMessage]): The list of messages to normalize.
 
         Returns:
@@ -33,7 +33,7 @@ class ChatMessageNormalizerChatML(ChatMessageNormalizer[str]):
     def from_chatml(content: str) -> list[ChatMessage]:
         """Convert a chatML string to a list of chat messages.
 
-        Args:
+        Parameters:
             content (str): The ChatML string to convert.
 
         Returns:

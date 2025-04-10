@@ -20,7 +20,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
     """Question Answering Benchmark Orchestrator class is responsible for evaluating a question answering dataset
     using a scoring mechanism.
 
-    Args:
+    Parameters:
         Orchestrator (_type_): _description_
     """
 
@@ -41,7 +41,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
         """
         Initializes a QuestionAnsweringBenchmarkOrchestrator object.
 
-        Args:
+        Parameters:
             chat_model_under_evaluation (PromptChatTarget): The chat model to be evaluated.
             scorer (QuestionAnswerScorer): The scorer used to evaluate the chat model's responses.
             prompt_converters (list[PromptConverter], Optional): The prompt converters to be used.

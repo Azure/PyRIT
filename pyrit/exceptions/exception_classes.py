@@ -127,7 +127,7 @@ def pyrit_target_retry(func: Callable) -> Callable:
     with a wait time between retries that follows an exponential backoff strategy.
     Logs retry attempts at the INFO level and stops after a maximum number of attempts.
 
-    Args:
+    Parameters:
         func (Callable): The function to be decorated.
 
     Returns:
@@ -154,7 +154,7 @@ def pyrit_json_retry(func: Callable) -> Callable:
     with a wait time between retries that follows an exponential backoff strategy.
     Logs retry attempts at the INFO level and stops after a maximum number of attempts.
 
-    Args:
+    Parameters:
         func (Callable): The function to be decorated.
 
     Returns:
@@ -178,7 +178,7 @@ def pyrit_placeholder_retry(func: Callable) -> Callable:
     Retries the function if it raises MissingPromptPlaceholderException.
     Logs retry attempts at the INFO level and stops after a maximum number of attempts.
 
-    Args:
+    Parameters:
         func (Callable): The function to be decorated.
 
     Returns:

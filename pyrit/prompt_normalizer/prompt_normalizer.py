@@ -54,7 +54,7 @@ class PromptNormalizer(abc.ABC):
         """
         Sends a single request to a target.
 
-        Args:
+        Parameters:
             seed_prompt_group (SeedPromptGroup): The seed prompt group to be sent.
             target (PromptTarget): The target to which the prompt is sent.
             conversation_id (str, optional): The ID of the conversation. Defaults to None.
@@ -142,7 +142,7 @@ class PromptNormalizer(abc.ABC):
         """
         Sends a batch of prompts to the target asynchronously.
 
-        Args:
+        Parameters:
             requests (list[NormalizerRequest]): A list of NormalizerRequest objects to be sent.
             target (PromptTarget): The target to which the prompts are sent.
             labels (Optional[dict[str, str]], optional): A dictionary of labels to be included with the request.
@@ -296,7 +296,7 @@ class PromptNormalizer(abc.ABC):
 
         Applies parameters and converters to the prompt text and puts all the pieces together.
 
-        Args:
+        Parameters:
             seed_prompt_group (SeedPromptGroup): The group of seed prompts to be used.
             conversation_id (str): The ID of the conversation.
             request_converter_configurations (list[PromptConverterConfiguration]): List of configurations for

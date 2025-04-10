@@ -125,7 +125,7 @@ class SeedPrompt(YamlLoadable):
     def render_template_value(self, **kwargs) -> str:
         """Renders self.value as a template, applying provided parameters in kwargs
 
-        Args:
+        Parameters:
             kwargs:Key-value pairs to replace in the SeedPrompt value.
 
         Returns:
@@ -146,7 +146,7 @@ class SeedPrompt(YamlLoadable):
         """Renders self.value as a template, applying provided parameters in kwargs. For parameters in the template
          that are not provided as kwargs here, this function will leave them as is instead of raising an error.
 
-        Args:
+        Parameters:
             kwargs: Key-value pairs to replace in the SeedPrompt value.
 
         Returns:
@@ -251,7 +251,7 @@ class SeedPromptGroup(YamlLoadable):
     def render_template_value(self, **kwargs):
         """Renders self.value as a template, applying provided parameters in kwargs
 
-        Args:
+        Parameters:
             kwargs:Key-value pairs to replace in the SeedPromptGroup value.
 
         Returns:
@@ -372,7 +372,7 @@ class SeedPromptDataset(YamlLoadable):
         """
         Extracts and returns a list of prompt values from the dataset. By default, returns all of them.
 
-        Args:
+        Parameters:
             first (Optional[int]): If provided, values from the first N prompts are included.
             last (Optional[int]): If provided, values from the last N prompts are included.
 
@@ -437,7 +437,7 @@ class SeedPromptDataset(YamlLoadable):
     def render_template_value(self, **kwargs):
         """Renders self.value as a template, applying provided parameters in kwargs
 
-        Args:
+        Parameters:
             kwargs:Key-value pairs to replace in the SeedPromptDataset value.
 
         Returns:
@@ -474,7 +474,7 @@ class SeedPromptDataset(YamlLoadable):
         Groups the given list of SeedPrompts by their prompt_group_id and creates
         SeedPromptGroup instances.
 
-        Args:
+        Parameters:
             seed_prompts: A list of SeedPrompt objects.
 
         Returns:

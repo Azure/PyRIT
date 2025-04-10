@@ -50,7 +50,7 @@ class SkeletonKeyOrchestrator(Orchestrator):
         verbose: bool = False,
     ) -> None:
         """
-        Args:
+        Parameters:
             skeleton_key_prompt (str, Optional): The skeleton key sent to the target, Default: skeleton_key.prompt
             prompt_target (PromptTarget): The target for sending prompts.
             prompt_converters (list[PromptConverter], Optional): List of prompt converters. These are stacked in
@@ -129,7 +129,7 @@ class SkeletonKeyOrchestrator(Orchestrator):
         """
         Sends a skeleton key and prompt to the target for each prompt in a list of prompts.
 
-        Args:
+        Parameters:
             prompt_list (list[str]): The list of prompts to be sent.
             prompt_type (PromptDataType, Optional): The type of the prompts (e.g., "text"). Defaults to "text".
 

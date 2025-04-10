@@ -19,7 +19,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
     The AzureSpeechAudioTextConverter takes a .wav file and transcribes it into text.
     https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-to-text
 
-    Args:
+    Parameters:
         azure_speech_region (str): The name of the Azure region.
         azure_speech_key (str): The API key for accessing the service.
         recognition_language (str): Recognition voice language. Defaults to "en-US".
@@ -59,7 +59,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         """
         Converter that transcribes audio to text.
 
-        Args:
+        Parameters:
             prompt (str): File path to audio file
             input_type (PromptDataType): Type of data
         Returns:
@@ -87,7 +87,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         """
         Recognize audio file and return transcribed text.
 
-        Args:
+        Parameters:
             audio_bytes (bytes): Audio bytes input.
         Returns:
             str: Transcribed text
@@ -135,7 +135,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         """
         Callback function that appends transcribed text upon receiving a "recognized" event
 
-        Args:
+        Parameters:
             evt (SpeechRecognitionEventArgs): event
             transcript (list): list to store transcribed text
         """
@@ -146,7 +146,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         """
         Callback function that stops continuous recognition upon receiving an event 'evt'
 
-        Args:
+        Parameters:
             evt (SpeechRecognitionEventArgs): event
             recognizer (SpeechRecognizer): speech recognizer object
         """

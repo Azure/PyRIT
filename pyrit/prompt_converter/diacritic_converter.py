@@ -19,7 +19,7 @@ class DiacriticConverter(PromptConverter):
         """
         Initializes the DiacriticConverter.
 
-        Args:
+        Parameters:
             target_chars (str): Characters to apply the diacritic to. Defaults to "aeiou".
             accent (str): Type of diacritic to apply (default is 'acute').
 
@@ -67,7 +67,7 @@ class DiacriticConverter(PromptConverter):
         """
         Applies the diacritic to each specified target character in the text.
 
-        Args:
+        Parameters:
             text (str): The input text in which diacritics will be added.
 
         Returns:
@@ -84,7 +84,7 @@ class DiacriticConverter(PromptConverter):
         """
         Converts the given prompt by applying diacritics to target characters.
 
-        Args:
+        Parameters:
             prompt (str): The prompt to be converted.
 
         Returns:

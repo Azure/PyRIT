@@ -39,7 +39,7 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
         verbose: bool = False,
     ) -> None:
         """
-        Args:
+        Parameters:
             objective_target (PromptTarget): The target for sending prompts.
             prompt_converters (list[PromptConverter], Optional): List of prompt converters. These are stacked in
                 order.

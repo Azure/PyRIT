@@ -19,7 +19,7 @@ class AudioFrequencyConverter(PromptConverter):
     """
     The AudioFrequencyConverter takes an audio file and shifts its frequency, by default it will shift it above
     human range (=20kHz).
-    Args:
+    Parameters:
         output_format (str): The format of the audio file. Defaults to "wav".
         shift_value (int): The value by which the frequency will be shifted. Defaults to 20000 Hz.
     """
@@ -44,7 +44,7 @@ class AudioFrequencyConverter(PromptConverter):
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "audio_path") -> ConverterResult:
         """Convert an audio file by shifting its frequency.
 
-        Args:
+        Parameters:
             prompt (str): File path to audio file
             input_type (PromptDataType): Type of data, defaults to "audio_path"
 

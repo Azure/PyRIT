@@ -43,7 +43,7 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
         verbose: bool = False,
     ) -> None:
         """
-        Args:
+        Parameters:
             objective_target (PromptTarget): The target for sending prompts.
             adversarial_chat (PromptTarget): The target for sending prompts.
             prompt_converters (list[PromptConverter], Optional): List of prompt converters. These are only applied
@@ -98,7 +98,7 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
         the more benign objective. And one to rephrase the objective as a question. Ultimately these are assembled into
         a fake context that we send to the objective target.
 
-        Args:
+        Parameters:
             prompt_list (list[str]): The list of prompts to be role played.
 
         Returns:

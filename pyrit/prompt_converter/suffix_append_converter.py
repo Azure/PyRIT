@@ -20,7 +20,7 @@ class SuffixAppendConverter(PromptConverter):
 
         See PyRIT/pyrit/auxiliary_attacks/gcg for adversarial suffix generation
 
-        Args:
+        Parameters:
             prompt (str): The prompt to be converted.
 
         Returns:
