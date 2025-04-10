@@ -74,7 +74,7 @@ def get_random_indices(low: int, high: int, sample_ratio: float) -> list[int]:
     return result
 
 
-def select_word_indices(words: List[str], mode: str = "all", **kwargs):
+def select_word_indices(words: List[str], mode: str = "all", **kwargs) -> list[int]:
     """
     Select indices from a list of words based on specified selection mode.
 
@@ -90,21 +90,23 @@ def select_word_indices(words: List[str], mode: str = "all", **kwargs):
     Returns:
         list: Indices of selected words.
     """
-    if mode == "all":
-        return list(range(len(words)))
+    match mode:
+        case "all":
+            return list(range(len(words)))
 
-    elif mode == "regex":
-        regex = kwargs.get("regex", r".")
-        return [i for i, word in enumerate(words) if re.search(regex, word)]
+        case "keywords":
+            word_list = kwargs.get("keywords", [])
+            return [i for i, word in enumerate(words) if word in word_list]
 
-    elif mode == "keywords":
-        word_list = kwargs.get("keywords", [])
-        return [i for i, word in enumerate(words) if word in word_list]
+        case "random":
+            sample_ratio = kwargs.get("sample_ratio", 0.5)
+            return get_random_indices(0, len(words), sample_ratio)
 
-    elif mode == "random":
-        sample_ratio = kwargs.get("sample_ratio", 0.5)
-        return get_random_indices(0, len(words), sample_ratio)
+        case "regex":
+            regex = kwargs.get("regex", r".")
+            return [i for i, word in enumerate(words) if re.search(regex, word)]
 
-    # TODO: add more modes here ...
+        case _:
+            return list(range(len(words)))
 
     return list(range(len(words)))
