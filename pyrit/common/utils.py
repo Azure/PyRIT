@@ -106,6 +106,10 @@ def select_word_indices(words: List[str], mode: str = "all", **kwargs) -> list[i
             regex = kwargs.get("regex", r".")
             return [i for i, word in enumerate(words) if re.search(regex, word)]
 
+        case "custom":
+            custom_indices = kwargs.get("indices", [])
+            return [i for i in custom_indices if 0 <= i < len(words)]
+
         case _:
             return list(range(len(words)))
 
