@@ -39,7 +39,7 @@ def fetch_adv_bench_dataset(
 
     Useful link: https://arxiv.org/html/2407.01294v2/x2.png (Overview of the Harms Taxonomy)
 
-    Args:
+    Parameters:
         cache (bool): Whether to cache the fetched examples. Defaults to True.
 
         main_categories (Optional[List[str]]): A list of main harm categories to search for in the dataset.

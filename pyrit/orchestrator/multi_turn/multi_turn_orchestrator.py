@@ -34,7 +34,7 @@ class MultiTurnAttackResult:
     async def print_conversation_async(self):
         """Prints the conversation between the objective target and the adversarial chat, including the scores.
 
-        Args:
+        Parameters:
             prompt_target_conversation_id (str): the conversation ID for the prompt target.
         """
         target_messages = self._memory.get_conversation(conversation_id=self.conversation_id)
@@ -77,7 +77,7 @@ class MultiTurnOrchestrator(Orchestrator):
     The `MultiTurnOrchestrator` is an interface that coordinates attacks and conversations between
     a adversarial_chat target and an objective_target.
 
-    Args:
+    Parameters:
         objective_target (PromptTarget): The target to send the created prompts to.
         adversarial_chat (PromptChatTarget): The endpoint that creates prompts that are sent to the
             objective_target.
@@ -152,7 +152,7 @@ class MultiTurnOrchestrator(Orchestrator):
         """
         Applies the attack strategy until the conversation is complete or the maximum number of turns is reached.
 
-        Args:
+        Parameters:
             objective (str): The specific goal the orchestrator aims to achieve through the conversation.
             memory_labels (dict[str, str], Optional): A free-form dictionary of additional labels to apply to the
                 prompts throughout the attack. Any labels passed in will be combined with self._global_memory_labels
@@ -171,7 +171,7 @@ class MultiTurnOrchestrator(Orchestrator):
     ) -> list[MultiTurnAttackResult]:
         """Applies the attack strategy for each objective in the list of objectives.
 
-        Args:
+        Parameters:
             objectives (list[str]): The list of objectives to apply the attack strategy.
             memory_labels (dict[str, str], Optional): A free-form dictionary of additional labels to apply to the
                 prompts throughout the attack. Any labels passed in will be combined with self._global_memory_labels
@@ -197,7 +197,7 @@ class MultiTurnOrchestrator(Orchestrator):
         This can be used to set the system prompt of the objective target, or send a series of
         user/assistant messages from which the orchestrator should start the conversation from.
 
-        Args:
+        Parameters:
             prepended_conversation (str): The prepended conversation to send to the objective target.
         """
         self._prepended_conversation = prepended_conversation
@@ -234,7 +234,7 @@ class MultiTurnOrchestrator(Orchestrator):
         """Prepare the conversation by saving the prepended conversation to memory
         with the new conversation ID. This should only be called by inheriting classes.
 
-        Args:
+        Parameters:
             new_conversation_id (str): The ID for the new conversation.
 
         Returns:

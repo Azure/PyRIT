@@ -10,7 +10,7 @@ def limit_requests_per_minute(func: Callable) -> Callable:
     A decorator to enforce rate limit of the target through setting requests per minute.
     This should be applied to all send_prompt_async() functions on PromptTarget and PromptChatTarget.
 
-    Args:
+    Parameters:
         func (Callable): The function to be decorated.
 
     Returns:

@@ -43,7 +43,7 @@ class OpenAIDALLETarget(OpenAITarget):
         """
         Initialize the DALL-E target with specified parameters.
 
-        Args:
+        Parameters:
             model_name (str, Optional): The name of the model.
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
@@ -109,7 +109,7 @@ class OpenAIDALLETarget(OpenAITarget):
         """
         Send a prompt to the DALL-E target and return the response.
 
-        Args:
+        Parameters:
             prompt_request (PromptRequestResponse): The prompt request to send.
 
         Returns:

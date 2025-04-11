@@ -68,6 +68,7 @@ dependencies = [
 # always make sure the individual ones are in sync with the all group
 dev = [
     "black>=24.4.0",
+    "docutils>0.20",
     "flake8>=7.0.0",
     "flake8-copyright>=0.2.4",
     "ipykernel>=6.29.4",
@@ -83,6 +84,8 @@ dev = [
     "pytest-timeout>=2.3.1",
     "respx>=0.22.0",
     "semantic-kernel>=1.20.0",
+    "sphinx-autodoc2>=0.5.0",
+    "sphinxcontrib-bibtex>=2.6.3",
     "sphinxcontrib-mermaid>=1.0.0",
     "types-PyYAML>=6.0.12.9",
     "types-requests>=2.31.0.20240406",

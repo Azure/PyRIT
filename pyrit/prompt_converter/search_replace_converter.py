@@ -11,7 +11,7 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 class SearchReplaceConverter(PromptConverter):
     """Converts a string by replacing chosen phrase with a new phrase of choice
 
-    Args:
+    Parameters:
         pattern (str): the regex pattern to replace
         replace (str): the new phrase to replace with, can be a list and a random element is chosen
         regex_flags (int): regex flags to use for the replacement
@@ -27,7 +27,7 @@ class SearchReplaceConverter(PromptConverter):
         """
         Simple converter that just replaces character in string with a chosen new character
 
-        Args:
+        Parameters:
             prompt (str): prompt to convert
             input_type (PromptDataType): type of input
 

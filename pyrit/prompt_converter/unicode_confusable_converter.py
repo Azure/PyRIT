@@ -30,7 +30,7 @@ class UnicodeConfusableConverter(PromptConverter):
         """
         Initializes the UnicodeConfusableConverter.
 
-        Args:
+        Parameters:
             source_package: The package to use for homoglyph generation. Can be either "confusable_homoglyphs"
                 which can be found here: https://pypi.org/project/confusable-homoglyphs/ or "confusables" which can be
                 found here: https://pypi.org/project/confusables/. "Confusable_homoglyphs" is used by default as it is
@@ -53,7 +53,7 @@ class UnicodeConfusableConverter(PromptConverter):
         Converts the given prompt by applying confusable substitutions. This leads to a prompt that looks similar,
         but is actually different (e.g., replacing a Latin 'a' with a Cyrillic 'а').
 
-        Args:
+        Parameters:
             prompt (str): The prompt to be converted.
             input_type (str): The type of input (should be "text").
         Returns:
@@ -73,7 +73,7 @@ class UnicodeConfusableConverter(PromptConverter):
         """
         Retrieves homoglyph variants for a given word using the "confusable_homoglyphs" package.
 
-        Args:
+        Parameters:
             word (str): The word to find homoglyphs for.
         Returns:
             list: A list of homoglyph variants for the word.
@@ -96,7 +96,7 @@ class UnicodeConfusableConverter(PromptConverter):
         Generates a perturbed prompt by substituting characters with their homoglyph variants using the
         "confusable_homoglyphs" package.
 
-        Args:
+        Parameters:
             prompt (str): The original prompt.
         Returns:
             str: A perturbed prompt with character-level substitutions.
@@ -129,7 +129,7 @@ class UnicodeConfusableConverter(PromptConverter):
         """
         Pick a confusable character for the given character using the "confusables" package.
 
-        Args:
+        Parameters:
             char (str): The character to be replaced.
         Returns:
             str: The confusable character to replace the given character.

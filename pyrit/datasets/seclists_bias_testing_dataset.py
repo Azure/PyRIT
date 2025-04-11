@@ -30,7 +30,7 @@ def fetch_seclists_bias_testing_dataset(
     """
     Fetch SecLists AI LLM Bias Testing examples from a specified source and create a SeedPromptDataset.
 
-    Args:
+    Parameters:
         source (str): The source from which to fetch examples. Defaults to the SecLists repository Bias_Testing.
         source_type (Literal["public_url"]): The type of source ('public_url').
         cache (bool): Whether to cache the fetched examples. Defaults to True.

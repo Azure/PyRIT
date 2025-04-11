@@ -83,7 +83,7 @@ class GandalfScorer(Scorer):
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """Scores the text based on the password found in the text.
 
-        Args:
+        Parameters:
             text (str): The text to be scored.
             task (str): The task based on which the text should be scored (the original attacker model's objective).
                 Currently not supported for this scorer.

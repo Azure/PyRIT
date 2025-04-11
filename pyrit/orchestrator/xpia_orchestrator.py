@@ -39,7 +39,7 @@ class XPIAOrchestrator(Orchestrator):
         Then, the processing_callback is executed.
         The scorer scores the processing response to determine the success of the attack.
 
-        Args:
+        Parameters:
             attack_content: The content to attack the processing target with, e.g., a jailbreak.
             attack_setup_target: The target that generates the attack prompt and gets it into the attack location.
             processing_callback: The callback to execute after the attack prompt is positioned in the attack location.
@@ -124,7 +124,7 @@ class XPIATestOrchestrator(XPIAOrchestrator):
         a reference to the attack prompt to allow it to retrieve the attack prompt.
         The scorer scores the processing response to determine the success of the attack.
 
-        Args:
+        Parameters:
             attack_content: The content to attack the processing target with, e.g., a jailbreak.
             processing_prompt: The prompt to send to the processing target. This should include
                 placeholders to invoke plugins (if any).
@@ -183,7 +183,7 @@ class XPIAManualProcessingOrchestrator(XPIAOrchestrator):
         The operator should paste the output of the processing target into the console.
         Finally, the scorer scores the processing response to determine the success of the attack.
 
-        Args:
+        Parameters:
             attack_content: The content to attack the processing target with, e.g., a jailbreak.
             attack_setup_target: The target that generates the attack prompt and gets it into the attack location.
             scorer: The scorer to use to score the processing response.

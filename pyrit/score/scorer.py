@@ -42,7 +42,7 @@ class Scorer(abc.ABC):
         Score the request_response, add the results to the database
         and return a list of Score objects.
 
-        Args:
+        Parameters:
             request_response (PromptRequestPiece): The request response to be scored.
             task (str): The task based on which the text should be scored (the original attacker model's objective).
 
@@ -57,7 +57,7 @@ class Scorer(abc.ABC):
         Validates the request_response piece to score. Because some scorers may require
         specific PromptRequestPiece types or values.
 
-        Args:
+        Parameters:
             request_response (PromptRequestPiece): The request response to be validated.
             task (str): The task based on which the text should be scored (the original attacker model's objective).
         """
@@ -67,7 +67,7 @@ class Scorer(abc.ABC):
         """
         Scores the given text based on the task using the chat target.
 
-        Args:
+        Parameters:
             text (str): The text to be scored.
             task (str): The task based on which the text should be scored (the original attacker model's objective).
 
@@ -132,7 +132,7 @@ class Scorer(abc.ABC):
         """
         Scores the given image using the chat target.
 
-        Args:
+        Parameters:
             text (str): The image to be scored.
             task (str): The task based on which the text should be scored (the original attacker model's objective).
 
@@ -154,7 +154,7 @@ class Scorer(abc.ABC):
         """
         Scales a value from 0 to 1 based on the given min and max values. E.g. 3 stars out of 5 stars would be .5.
 
-        Args:
+        Parameters:
             value (float): The value to be scaled.
             min_value (float): The minimum value of the range.
             max_value (float): The maximum value of the range.
@@ -185,7 +185,7 @@ class Scorer(abc.ABC):
         """
         Extracts a task from the response using the last request (if it exists).
 
-        Args:
+        Parameters:
             response (PromptRequestPiece): The response to extract the task from.
 
         Returns:
@@ -230,7 +230,7 @@ class Scorer(abc.ABC):
 
         The scorer target response should be JSON with value, rationale, and optional metadata and description fields.
 
-        Args:
+        Parameters:
             prompt_target (PromptChatTarget): The target LLM to send the prompt request to.
             system_prompt (str): The system-level prompt that guides the behavior of the target LLM.
             prompt_request_value (str): The actual value or content to be scored by the LLM.

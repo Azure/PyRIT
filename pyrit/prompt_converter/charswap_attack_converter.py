@@ -23,7 +23,7 @@ class CharSwapGenerator(PromptConverter):
     def __init__(self, *, max_iterations: int = 10, word_swap_ratio: float = 0.2):
         """
         Initializes the CharSwapConverter.
-        Args:
+        Parameters:
             max_iterations (int): Number of times to generate perturbed prompts.
                 The higher the number the higher the chance that words are different from the original prompt.
             word_swap_ratio (float): Percentage of words to perturb in the prompt per iteration.
@@ -50,7 +50,7 @@ class CharSwapGenerator(PromptConverter):
     def _perturb_word(self, word: str) -> str:
         """
         Perturb a word by swapping two adjacent characters.
-        Args:
+        Parameters:
             word (str): The word to perturb.
         Returns:
             str: The perturbed word with swapped characters.
@@ -69,7 +69,7 @@ class CharSwapGenerator(PromptConverter):
     async def convert_async(self, *, prompt: str, input_type="text") -> ConverterResult:
         """
         Converts the given prompt by applying character swaps.
-        Args:
+        Parameters:
             prompt (str): The prompt to be converted.
         Returns:
             ConverterResult: The result containing the perturbed prompts.

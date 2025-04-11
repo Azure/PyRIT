@@ -22,7 +22,7 @@ class MathPromptConverter(LLMGenericTextConverter):
         """
         Initializes the converter with a specific target and template.
 
-        Args:
+        Parameters:
             converter_target (PromptChatTarget): The endpoint that converts the prompt.
             prompt_template (SeedPrompt): The prompt template to use.
         """

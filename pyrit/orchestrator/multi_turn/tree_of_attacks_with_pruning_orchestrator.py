@@ -45,7 +45,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
     """
     TreeOfAttacksWithPruningOrchestrator follows the TAP alogrithm to attack a chat target.
 
-    Args:
+    Parameters:
         objective_target (PromptChatTarget): The target for the objective prompt. Must be a PromptChatTarget.
         adversarial_chat (PromptChatTarget): The target for the adversarial chat prompt.
         scoring_target (PromptChatTarget): The target for scoring the responses.
@@ -150,7 +150,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         """
         Applies the TAP attack strategy asynchronously.
 
-        Args:
+        Parameters:
             objective (str): The specific goal the orchestrator aims to achieve through the conversation.
             memory_labels (dict[str, str], Optional): A free-form dictionary of additional labels to apply to the
                 prompts throughout the attack. Any labels passed in will be combined with self._global_memory_labels

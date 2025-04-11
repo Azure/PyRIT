@@ -49,7 +49,7 @@ class FuzzerConverter(PromptConverter):
         """
         Converter to generate versions of prompt with new, prepended sentences.
 
-        Args:
+        Parameters:
             prompt (str): The prompt to be converted.
             input_type (PromptDataType): The type of the input prompt.
         """

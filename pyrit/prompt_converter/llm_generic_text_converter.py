@@ -29,7 +29,7 @@ class LLMGenericTextConverter(PromptConverter):
         """
         Generic LLM converter that expects text to be transformed (e.g. no JSON parsing or format)
 
-        Args:
+        Parameters:
             converter_target (PromptChatTarget): The endpoint that converts the prompt
             system_prompt_template (SeedPrompt, Optional): The prompt template to set as the system prompt.
             user_prompt_template_with_objective (SeedPrompt, Optional): The prompt template to set as the user prompt.

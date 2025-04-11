@@ -13,7 +13,7 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 class QRCodeConverter(PromptConverter):
     """Converts a text string to a QR code image.
 
-    Args:
+    Parameters:
         scale (int, Optional): Scaling factor that determines the width/height in pixels of each
             black/white square (known as a "module") in the QR code. Defaults to 3.
         border (int, Optional): Controls how many modules thick the border should be.
@@ -60,7 +60,7 @@ class QRCodeConverter(PromptConverter):
         """
         Converter that converts string to QR code image.
 
-        Args:
+        Parameters:
             prompt (str): The prompt to be converted.
             input_type (PromptDataType): Type of data to be converted. Defaults to "text".
         Returns:

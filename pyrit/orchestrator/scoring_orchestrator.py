@@ -24,7 +24,7 @@ class ScoringOrchestrator(Orchestrator):
         verbose: bool = False,
     ) -> None:
         """
-        Args:
+        Parameters:
             batch_size (int, Optional): The (max) batch size for sending prompts. Defaults to 10.
                 Note: If using a scorer that takes a prompt target, and providing max requests per
                 minute on the target, this should be set to 1 to ensure proper rate limit management.
@@ -46,7 +46,7 @@ class ScoringOrchestrator(Orchestrator):
         prompt requests as well as prompt responses, or if you want more fine-grained control over the scorer
         tasks. If you only want to score prompt responses, use the `score_responses_by_filters_async` function.
 
-        Args:
+        Parameters:
             scorer (Scorer): The Scorer object to use for scoring.
             prompt_ids (list[str]): A list of prompt IDs correlating to the prompts to score.
             responses_only (bool, optional): If True, only the responses (messages with role "assistant") are
@@ -89,7 +89,7 @@ class ScoringOrchestrator(Orchestrator):
         """
         Scores the responses that match the specified filters.
 
-        Args:
+        Parameters:
             scorer (Scorer): The Scorer object to use for scoring.
             orchestrator_id (Optional[str | uuid.UUID], optional): The ID of the orchestrator. Defaults to None.
             conversation_id (Optional[str | uuid.UUID], optional): The ID of the conversation. Defaults to None.

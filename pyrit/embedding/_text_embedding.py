@@ -32,7 +32,7 @@ class _TextEmbedding(EmbeddingSupport, abc.ABC):
     def generate_text_embedding(self, text: str, **kwargs) -> EmbeddingResponse:
         """Generate text embedding
 
-        Args:
+        Parameters:
             text: The text to generate the embedding for
             **kwargs: Additional arguments to pass to the LLM client API
 

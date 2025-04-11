@@ -26,7 +26,7 @@ def run_trainer(*, model_name: str, setup: str = "single", **extra_config_parame
     """
     Trains and generates adversarial suffix - single model single prompt
 
-    Args:
+    Parameters:
         model_name (str): The name of the model, currently supports:
             "mistral", "llama_2", "llama_3", "vicuna", "phi_3_mini", "all_models"
         setup (str): Identifier for the setup, currently supporst

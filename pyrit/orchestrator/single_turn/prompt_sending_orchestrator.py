@@ -35,7 +35,7 @@ class PromptSendingOrchestrator(Orchestrator):
         verbose: bool = False,
     ) -> None:
         """
-        Args:
+        Parameters:
             objective_target (PromptTarget): The target for sending prompts.
             prompt_converters (list[PromptConverter], Optional): List of prompt converters. These are stacked in
                 the order they are provided. E.g. the output of converter1 is the input of converter2.
@@ -138,7 +138,7 @@ class PromptSendingOrchestrator(Orchestrator):
         """
         Sends the prompts to the prompt target.
 
-        Args:
+        Parameters:
             prompt_list (list[str]): The list of prompts to be sent.
             prompt_type (PromptDataType): The type of prompt data. Defaults to "text".
             memory_labels (dict[str, str], Optional): A free-form dictionary of additional labels to apply to the

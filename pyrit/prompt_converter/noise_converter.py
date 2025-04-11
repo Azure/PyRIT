@@ -26,7 +26,7 @@ class NoiseConverter(LLMGenericTextConverter):
         """
         Injects noise errors into a conversation
 
-        Args:
+        Parameters:
             converter_target (PromptChatTarget): The endpoint that converts the prompt
             noise (str): The noise to inject. Grammar error, delete random letter, insert random space, etc.
             number_errors (int): The number of errors to inject
