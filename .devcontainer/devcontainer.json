@@ -14,7 +14,8 @@
           "**/__pycache__/**": true,
           "**/.pytest_cache/**": true,
           "**/build/**": true,
-          "**/dist/**": true
+          "**/dist/**": true,
+          "**/pyrit/auxiliary_attacks/gcg/attack/**": true
         },
         "search.exclude": {
           "**/node_modules": true,
@@ -43,8 +44,7 @@
         "ms-python.python",
         "ms-toolsai.jupyter",
         "ms-azuretools.vscode-docker",
-        "tamasfe.even-better-toml",
-        "citation-file-format.citation-file-format"
+        "tamasfe.even-better-toml"
       ]
     }
   },
