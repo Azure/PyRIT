@@ -21,11 +21,11 @@ CURRENT_HASH=$(sha256sum /workspace/pyproject.toml | awk '{print $1}')
 # Check if hash file exists and if the hash has changed
 if [ ! -f "$HASH_FILE" ] || [ "$(cat $HASH_FILE)" != "$CURRENT_HASH" ]; then
     echo "📦 pyproject.toml has changed, installing environment..."
-    
+
     # Install dependencies
     conda install ipykernel -y
     pip install -e '.[dev,all]'
-    
+
     # Save the new hash
     echo "$CURRENT_HASH" > "$HASH_FILE"
 else
