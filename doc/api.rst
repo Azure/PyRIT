@@ -292,6 +292,7 @@ API Reference
     FuzzerShortenConverter
     FuzzerSimilarConverter
     HumanInTheLoopConverter
+    InsertPunctuationConverter
     LeetspeakConverter
     LLMGenericTextConverter
     MaliciousQuestionGeneratorConverter
@@ -314,6 +315,7 @@ API Reference
     UnicodeSubstitutionConverter
     UrlConverter
     VariationConverter
+    ZeroWidthConverter
 
 .. automodule:: pyrit.prompt_converter.fuzzer_converter
     :no-members:
