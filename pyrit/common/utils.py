@@ -7,6 +7,8 @@ import random
 import re
 from typing import List, Union
 
+logger = logging.getLogger(__name__)
+
 
 def combine_dict(existing_dict: dict = None, new_dict: dict = None) -> dict:
     """
@@ -69,7 +71,7 @@ def get_random_indices(low: int, high: int, sample_ratio: float) -> list[int]:
     try:
         result = random.sample(range(low, high), n)
     except ValueError:
-        logging.getLogger(__name__).debug(f"Sample size of {n} exceeds population size of {high - low}")
+        logger.debug(f"Sample size of {n} exceeds population size of {high - low}")
     return result
 
 
@@ -78,17 +80,31 @@ def select_word_indices(words: List[str], mode: str = "all", **kwargs) -> list[i
     Select indices from a list of words based on specified selection mode.
 
     Args:
-        words (list): A list of words to select from.
-        mode (str, optional): Selection mode.
+        words (List[str]): A list of words to select from.
+        mode (str, optional): Selection mode. Defaults to "all".
             Supported modes:
-                - "all": Select all word indices,.
-                - "regex": Select indices matching a regular expression.
+                - "all": Select all word indices.
+                - "custom": Select custom indices.
                 - "keywords": Select indices of specific keywords.
                 - "random": Select random indices based on a sample ratio.
+                - "regex": Select indices matching a regular expression.
+
+    Keyword Arguments:
+        indices (List[int]): Custom indices to select (for "custom" mode).
+        keywords (List[str]): List of keywords to match (for "keywords" mode).
+        regex (str or Pattern): Regular expression pattern to match (for "regex" mode).
+        sample_ratio (float): Ratio of words to randomly select (for "random" mode).
 
     Returns:
-        list: Indices of selected words.
+        List[int]: Indices of selected words.
     """
+    if not words:
+        return []
+
+    if mode not in ["all", "keywords", "random", "regex", "custom"]:
+        logger.warning(f"Unsupported word selection mode '{mode}'. Defaulting to 'all'.")
+        mode = "all"
+
     match mode:
         case "all":
             return list(range(len(words)))
