@@ -52,10 +52,11 @@ def combine_list(list1: Union[str, List[str]], list2: Union[str, List[str]]) -> 
 def get_random_indices(low: int, high: int, sample_ratio: float) -> list[int]:
     """
     Generate a list of random indices within a given range based on a sample ratio.
+
     Args:
-        low: Lower bound of the range (inclusive).
-        high: Upper bound of the range (exclusive).
-        sample_ratio: Ratio of range to sample (0.0 to 1.0).
+        low (int): Lower bound of the range (inclusive).
+        high (int): Upper bound of the range (exclusive).
+        sample_ratio (float): Ratio of range to sample (0.0 to 1.0).
     """
     # Special case: return empty list
     if sample_ratio == 0:
@@ -79,15 +80,16 @@ def select_word_indices(words: List[str], mode: str = "all", **kwargs) -> list[i
     """
     Select indices from a list of words based on specified selection mode.
 
+    Supported modes:
+        - "all": Select all word indices.
+        - "custom": Select custom indices.
+        - "keywords": Select indices of specific keywords.
+        - "random": Select random indices based on a sample ratio.
+        - "regex": Select indices matching a regular expression.
+
     Args:
         words (List[str]): A list of words to select from.
         mode (str, optional): Selection mode. Defaults to "all".
-            Supported modes:
-                - "all": Select all word indices.
-                - "custom": Select custom indices.
-                - "keywords": Select indices of specific keywords.
-                - "random": Select random indices based on a sample ratio.
-                - "regex": Select indices matching a regular expression.
 
     Keyword Arguments:
         indices (List[int]): Custom indices to select (for "custom" mode).
