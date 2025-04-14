@@ -16,9 +16,7 @@ from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer
 from pyrit.score.question_answer_scorer import QuestionAnswerScorer
 from pyrit.prompt_normalizer import NormalizerRequest
-from pyrit.common.question_answer_helpers import (
-    get_question_prompt_pairs,
-)
+from pyrit.common.question_answer_helpers import get_question_prompt_pairs
 
 class QuestionAnswerPaths(enum.Enum):
     DEFAULT = pathlib.Path(DATASETS_PATH) / "orchestrators" / "benchmark" / "question_answer.yaml"
@@ -73,7 +71,10 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
 
         self._set_default_conversation_start()
 
-    async def send_prompts_async(self, dataset: QuestionAnsweringDataset) -> None:
+    async def send_prompts_async(
+        self, 
+        dataset: QuestionAnsweringDataset
+    ) -> list[PromptRequestResponse]:
         """Sends prompts to the chat model and evaluates responses."""
         qa_request_list = get_question_prompt_pairs(dataset=dataset)
         prompt_list = [entry[1] for entry in qa_request_list]
