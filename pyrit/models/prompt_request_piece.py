@@ -64,7 +64,7 @@ class PromptRequestPiece(abc.ABC):
         converter_identifiers: Optional[List[Dict[str, str]]] = None,
         prompt_target_identifier: Optional[Dict[str, str]] = None,
         orchestrator_identifier: Optional[Dict[str, str]] = None,
-        scorer_identifier: Dict[str, str] = None,
+        scorer_identifier: Optional[Dict[str, str]] = None,
         original_value_data_type: PromptDataType = "text",
         converted_value_data_type: PromptDataType = "text",
         response_error: PromptResponseError = "none",

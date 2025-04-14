@@ -1,0 +1,28 @@
+sequenceDiagram
+    participant Client
+    participant Executor as AttackExecutor
+    participant Strategy as AttackStrategy
+    participant Aggregator as ResultAggregator
+    
+    Client->>Strategy: create strategy
+    Client->>Executor: execute_multi_objective_attack(strategy, context_template, objectives)
+    
+    loop For each objective
+        Executor->>Strategy: execute(context)
+        Strategy-->>Executor: result
+    end
+    
+    Executor-->>Client: results
+    
+    Client->>Aggregator: new ResultAggregator(results)
+    Client->>Aggregator: success_rate()
+    Aggregator-->>Client: success_rate
+    
+    Client->>Aggregator: score_statistics()
+    Aggregator-->>Client: statistics
+    
+    Client->>Aggregator: compare_success_by_objective()
+    Aggregator-->>Client: comparison
+    
+    Client->>Aggregator: summary()
+    Aggregator-->>Client: full_summary

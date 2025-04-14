@@ -1,35 +1,26 @@
 sequenceDiagram
     participant Client
-    participant Factory as SingleTurnOrchestratorFactory
-    participant Builder as PromptSendingOrchestratorBuilder
-    participant AttackBuilder as PromptSendingAttackBuilder
+    participant Factory as AttackStrategyFactory
     participant Strategy as PromptSendingAttackStrategy
     participant Target as PromptTarget
     participant PromptUtils
     participant ConvManager as ConversationManager
     
-    Client->>Factory: create(target, PROMPT_SENDING)
-    Factory-->>Builder: new PromptSendingOrchestratorBuilder()
-    Factory-->>Client: return builder
+    Client->>Factory: create(strategy_type=PROMPT_SENDING, objective_target, ...)
+    Factory-->>Strategy: new PromptSendingAttackStrategy(...)
+    Factory-->>Client: return strategy
     
-    Client->>Builder: with_batch_size(2)
-    Client->>Builder: attack()
-    Builder-->>AttackBuilder: new PromptSendingAttackBuilder(context)
-    Builder-->>Client: return attackBuilder
+    Client->>Client: context = SingleTurnAttackContext(prompts=["prompt1", "prompt2"], batch_size=2)
+    Client->>Strategy: execute(context=context)
     
-    Client->>AttackBuilder: with_prompts(["prompt1", "prompt2"])
-    Client->>AttackBuilder: execute()
-    
-    AttackBuilder->>Strategy: new PromptSendingAttackStrategy(...)
-    AttackBuilder->>Strategy: setup(context)
-    AttackBuilder->>Strategy: execute(context)
+    Strategy->>Strategy: _setup(context)
+    Strategy->>Strategy: _perform_attack(context)
     
     Strategy->>Strategy: _get_prompt_requests(context)
     Strategy->>PromptUtils: build_normalizer_requests(prompts, ...)
     PromptUtils-->>Strategy: normalizer_requests
     
     alt Has prepended conversation
-        Strategy->>Strategy: _prepare_conversation(normalizer_request)
         Strategy->>ConvManager: initialize_conversation_with_history()
     end
     
@@ -40,7 +31,7 @@ sequenceDiagram
         Strategy->>Strategy: _score_responses(responses, context) 
     end
     
-    Strategy-->>AttackBuilder: return SingleTurnAttackResult
-    AttackBuilder-->>Client: return result
+    Strategy->>Strategy: _teardown(context)
+    Strategy-->>Client: return SingleTurnAttackResult
     
     Client->>Client: result.print_conversations()

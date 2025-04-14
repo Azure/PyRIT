@@ -28,6 +28,7 @@ LIKERT_SCALES_PATH = pathlib.Path(DATASETS_PATH, "score", "likert_scales").resol
 SCALES_PATH = pathlib.Path(DATASETS_PATH, "score", "scales").resolve()
 
 RED_TEAM_ORCHESTRATOR_PATH = pathlib.Path(DATASETS_PATH, "orchestrators", "red_teaming").resolve()
+TREE_OF_ATTACHS_ORCHESTRATOR_PATH = pathlib.Path(DATASETS_PATH, "orchestrators", "tree_of_attacks").resolve()
 
 # Points to the root of the project
 HOME_PATH = pathlib.Path(PYRIT_PATH, "..").resolve()
