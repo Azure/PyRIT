@@ -4,10 +4,19 @@
   "service": "devcontainer",
   "remoteUser": "vscode",
   "workspaceFolder": "/workspace",
+  "containerEnv": {
+    "PYTHONPATH": "/workspace"
+  },
   "customizations": {
     "vscode": {
       "settings": {
         "python.defaultInterpreterPath": "/opt/conda/envs/pyrit-dev/bin/python",
+        "python.analysis.extraPaths": [
+          "/workspace"
+        ],
+        "python.linting.mypyArgs": [
+          "--cache-dir=/home/vscode/.cache/.mypy_cache"
+        ],
         "files.watcherExclude": {
           "**/.git/objects/**": true,
           "**/.git/subtree-cache/**": true,
@@ -33,7 +42,7 @@
         },
         "python.analysis.diagnosticMode": "workspace",
         "python.analysis.indexing": true,
-        "python.analysis.autoSearchPaths": false,
+        "python.analysis.autoSearchPaths": true,
         "python.linting.enabled": true,
         "explorer.autoReveal": false,
         "files.maxMemoryForLargeFilesMB": 4096,
