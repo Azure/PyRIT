@@ -54,7 +54,7 @@ async def test_send_prompt_async(aws_target, mock_prompt_request):
             "body": MagicMock(read=MagicMock(return_value=json.dumps({"content": [{"text": "I'm good, thanks!"}]})))
         }
 
-        response = await aws_target.send_prompt_async(prompt_request=mock_prompt_request)
+        response = await aws_target.send_prompt_async(prompt_request=mock_prompt_request) # type: ignore
 
         assert response.request_pieces[0].converted_value == "I'm good, thanks!"
 
@@ -90,6 +90,6 @@ async def test_complete_chat_async(aws_target):
 
         response = await aws_target._complete_chat_async(
             messages=[ChatMessageListDictContent(role="user", content=[{"type": "text", "text": "Test input"}])]
-        )
+        ) # type: ignore
 
         assert response == "Test Response"
