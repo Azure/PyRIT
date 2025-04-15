@@ -76,8 +76,10 @@ def test_parse_raw_http_request_ignores_content_length(patch_central_database):
 
 def test_parse_raw_http_respects_url_path(patch_central_database):
 
-    request1 = "POST https://diffsite.com/test/ HTTP/1.1\nHost: example.com\nContent-Type: " + \
-        "application/json\nContent-Length: 100\n\n"
+    request1 = (
+        "POST https://diffsite.com/test/ HTTP/1.1\nHost: example.com\nContent-Type: "
+        + "application/json\nContent-Length: 100\n\n"
+    )
     target = HTTPTarget(http_request=request1)
     headers, _, url, _, _ = target.parse_raw_http_request(request1)
     assert url == "https://diffsite.com/test/"
