@@ -5,9 +5,7 @@ import re
 
 import pytest
 
-from pyrit.prompt_converter.insert_punctuation_converter import (
-    InsertPunctuationConverter,
-)
+from pyrit.prompt_converter import InsertPunctuationConverter
 
 
 # Test for correctness

@@ -1,5 +1,5 @@
 datasets:
-  - ./pyrit/tests/integration/cli/illegal_integration_test.prompt
+  - ./tests/integration/cli/illegal_integration_test.prompt
 scenarios:
   - type: "PromptSendingOrchestrator"
   - type: "RedTeamingOrchestrator"
@@ -22,3 +22,5 @@ scoring:
     type: "OpenAIChatTarget"
   objective_scorer:
     type: "SelfAskRefusalScorer"
+database:
+  type: "DuckDB"

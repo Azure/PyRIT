@@ -46,7 +46,7 @@ class OpenAITTSTarget(OpenAITarget):
             model_name (str, Optional): The name of the model. Defaults to "tts-1".
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-                Defaults to the OPENAI_CHAT_KEY environment variable.
+                Defaults to the OPENAI_TTS_KEY environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
             use_aad_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
@@ -91,6 +91,9 @@ class OpenAITTSTarget(OpenAITarget):
         request = prompt_request.request_pieces[0]
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
+
+        # Refresh auth headers if using AAD
+        self.refresh_auth_headers()
 
         body = self._construct_request_body(request=request)
 
@@ -154,7 +157,7 @@ class OpenAITTSTarget(OpenAITarget):
             raise ValueError("This target only supports text prompt input.")
 
         request = prompt_request.request_pieces[0]
-        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
+        messages = self._memory.get_conversation(conversation_id=request.conversation_id)
 
         if len(messages) > 0:
             raise ValueError("This target only supports a single turn conversation.")
