@@ -100,9 +100,9 @@ class AWSBedrockClaudeChatTarget(PromptChatTarget):
                 raise ValueError("This target only supports text and image_path.")
 
     async def _complete_chat_async(self, messages: list[ChatMessageListDictContent]) -> str:
-        brt = boto3.client( # type: ignore
+        brt = boto3.client(
             service_name="bedrock-runtime", region_name="us-east-1", verify=self._enable_ssl_verification
-        )
+        )  # type: ignore
         native_request = self._construct_request_body(messages)
 
         request = json.dumps(native_request)
