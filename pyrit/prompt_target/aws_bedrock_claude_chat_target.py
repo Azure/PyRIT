@@ -20,6 +20,8 @@ logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     import boto3
     from botocore.exceptions import ClientError
+else:
+    boto3 = None
 
 
 class AWSBedrockClaudeChatTarget(PromptChatTarget):
@@ -102,7 +104,7 @@ class AWSBedrockClaudeChatTarget(PromptChatTarget):
     async def _complete_chat_async(self, messages: list[ChatMessageListDictContent]) -> str:
         brt = boto3.client(
             service_name="bedrock-runtime", region_name="us-east-1", verify=self._enable_ssl_verification
-        )  # type: ignore
+        )
         native_request = self._construct_request_body(messages)
 
         request = json.dumps(native_request)
