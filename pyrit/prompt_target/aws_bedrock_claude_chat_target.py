@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     import boto3
     from botocore.exceptions import ClientError
 
+
 class AWSBedrockClaudeChatTarget(PromptChatTarget):
     """
     This class initializes an AWS Bedrock target for any of the Anthropic Claude models.
@@ -103,21 +104,23 @@ class AWSBedrockClaudeChatTarget(PromptChatTarget):
             brt = boto3.client(
                 service_name="bedrock-runtime", region_name="us-east-1", verify=self._enable_ssl_verification
             )
-            native_request = self._construct_request_body(messages)
+        except Exception as e:
+            raise RuntimeError(f"An error occurred when initializing boto3 client: {str(e)}") from e
+        native_request = self._construct_request_body(messages)
 
-            request = json.dumps(native_request)
+        request = json.dumps(native_request)
 
-            try:
-                response = await asyncio.to_thread(brt.invoke_model, modelId=self._model_id, body=request)
-            except (ClientError, Exception) as e:
-                raise ValueError(f"ERROR: Can't invoke '{self._model_id}'. Reason: {e}")
+        try:
+            response = await asyncio.to_thread(brt.invoke_model, modelId=self._model_id, body=request)
+        except (ClientError, Exception) as e:
+            raise ValueError(f"ERROR: Can't invoke '{self._model_id}'. Reason: {e}")
 
-            model_response = json.loads(response["body"].read())
+        model_response = json.loads(response["body"].read())
 
-            answer = model_response["content"][0]["text"]
+        answer = model_response["content"][0]["text"]
 
-            logger.info(f'Received the following response from the prompt target "{answer}"')
-            return answer
+        logger.info(f'Received the following response from the prompt target "{answer}"')
+        return answer
 
     def _convert_local_image_to_base64(self, image_path: str) -> str:
         with open(image_path, "rb") as image_file:
