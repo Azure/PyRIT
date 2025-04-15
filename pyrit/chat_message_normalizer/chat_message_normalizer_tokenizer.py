@@ -39,9 +39,9 @@ class ChatMessageNormalizerTokenizerTemplate(ChatMessageNormalizer[str]):
         formatted_messages: str = ""
         for m in messages:
             messages_list.append({"role": m.role, "content": m.content})
-        formatted_messages = self.tokenizer.apply_chat_template(
+        formatted_messages = str(self.tokenizer.apply_chat_template(
             messages_list,
             tokenize=False,
             add_generation_prompt=True,
-        )
+        ))
         return formatted_messages
