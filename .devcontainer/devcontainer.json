@@ -15,7 +15,7 @@
           "/workspace"
         ],
         "python.linting.mypyArgs": [
-          "--cache-dir=/home/vscode/.cache/.mypy_cache"
+          "--cache-dir=.mypy_cache"
         ],
         "files.watcherExclude": {
           "**/.git/objects/**": true,
