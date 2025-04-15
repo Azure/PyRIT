@@ -20,9 +20,6 @@ logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     import boto3
     from botocore.exceptions import ClientError
-else:
-    boto3 = None
-
 
 class AWSBedrockClaudeChatTarget(PromptChatTarget):
     """
@@ -102,24 +99,25 @@ class AWSBedrockClaudeChatTarget(PromptChatTarget):
                 raise ValueError("This target only supports text and image_path.")
 
     async def _complete_chat_async(self, messages: list[ChatMessageListDictContent]) -> str:
-        brt = boto3.client(
-            service_name="bedrock-runtime", region_name="us-east-1", verify=self._enable_ssl_verification
-        )
-        native_request = self._construct_request_body(messages)
-
-        request = json.dumps(native_request)
-
         try:
-            response = await asyncio.to_thread(brt.invoke_model, modelId=self._model_id, body=request)
-        except (ClientError, Exception) as e:
-            raise ValueError(f"ERROR: Can't invoke '{self._model_id}'. Reason: {e}")
+            brt = boto3.client(
+                service_name="bedrock-runtime", region_name="us-east-1", verify=self._enable_ssl_verification
+            )
+            native_request = self._construct_request_body(messages)
 
-        model_response = json.loads(response["body"].read())
+            request = json.dumps(native_request)
 
-        answer = model_response["content"][0]["text"]
+            try:
+                response = await asyncio.to_thread(brt.invoke_model, modelId=self._model_id, body=request)
+            except (ClientError, Exception) as e:
+                raise ValueError(f"ERROR: Can't invoke '{self._model_id}'. Reason: {e}")
 
-        logger.info(f'Received the following response from the prompt target "{answer}"')
-        return answer
+            model_response = json.loads(response["body"].read())
+
+            answer = model_response["content"][0]["text"]
+
+            logger.info(f'Received the following response from the prompt target "{answer}"')
+            return answer
 
     def _convert_local_image_to_base64(self, image_path: str) -> str:
         with open(image_path, "rb") as image_file:
