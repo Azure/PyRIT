@@ -14,6 +14,7 @@ from sqlalchemy import inspect
 
 # Note this module needs to be imported at the top of a file so the values are modified
 
+os.environ["CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS"] = "5"
 os.environ["RETRY_MAX_NUM_ATTEMPTS"] = "2"
 os.environ["RETRY_WAIT_MIN_SECONDS"] = "0"
 os.environ["RETRY_WAIT_MAX_SECONDS"] = "1"

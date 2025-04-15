@@ -207,7 +207,7 @@ class RealtimeTarget(OpenAITarget):
         sample_width: int = 2,
         sample_rate: int = 16000,
         output_filename: str = None,
-    ):
+    ) -> str:
         """
         Saves audio bytes to a WAV file.
 
@@ -216,11 +216,12 @@ class RealtimeTarget(OpenAITarget):
             num_channels (int): Number of audio channels. Defaults to 1 for the PCM16 format
             sample_width (int): Sample width in bytes. Defaults to 2 for the PCM16 format
             sample_rate (int): Sample rate in Hz. Defaults to 16000 Hz for the PCM16 format
+            output_filename (str): Output filename. If None, a UUID filename will be used.
+
+        Returns:
+            str: The path to the saved audio file.
         """
         data = data_serializer_factory(category="prompt-memory-entries", data_type="audio_path")
-        if not output_filename:
-            filename = await data.get_data_filename()
-            output_filename = str(filename)
 
         await data.save_formatted_audio(
             data=audio_bytes,
@@ -229,7 +230,8 @@ class RealtimeTarget(OpenAITarget):
             sample_width=sample_width,
             sample_rate=sample_rate,
         )
-        return output_filename
+
+        return data.value
 
     async def cleanup_target(self):
         """
