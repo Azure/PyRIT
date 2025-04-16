@@ -6,6 +6,7 @@ from pyrit.orchestrator.multi_turn.multi_turn_orchestrator import MultiTurnAttac
 from pyrit.orchestrator.multi_turn.tree_of_attacks_with_pruning_orchestrator import TreeOfAttacksWithPruningOrchestrator
 from pyrit.orchestrator.scoring_orchestrator import ScoringOrchestrator
 from pyrit.orchestrator.single_turn.prompt_sending_orchestrator import PromptSendingOrchestrator
+from pyrit.orchestrator.single_turn.question_answer_benchmark_orchestrator import QuestionAnsweringBenchmarkOrchestrator
 from pyrit.orchestrator.single_turn.role_play_orchestrator import RolePlayOrchestrator, RolePlayPaths
 from pyrit.orchestrator.single_turn.context_compliance_orchestrator import (
     ContextComplianceOrchestrator,
@@ -36,6 +37,7 @@ __all__ = [
     "Orchestrator",
     "PAIROrchestrator",
     "PromptSendingOrchestrator",
+    "QuestionAnsweringBenchmarkOrchestrator",
     "RedTeamingOrchestrator",
     "RolePlayOrchestrator",
     "RolePlayPaths",

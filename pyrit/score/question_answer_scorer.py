@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import textwrap
 from typing import Generator, Tuple
-from collections import defaultdict
+from collections import defaultdict, deque
 
 from pydantic import BaseModel, ConfigDict
 
@@ -20,30 +20,7 @@ from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from typing import Optional, Sequence
 from pyrit.common.question_answer_helpers import construct_evaluation_prompt
-
-class TextScoreResult(BaseModel):
-    """Represents the result of scoring a text.
-
-    Do not build on this class; this class needs to be rewritten.
-
-    Parameters:
-        provided_answer (str): The provided answer.
-        correct_answer (str): The correct answer.
-        is_correct (bool): Whether the provided answer is correct.
-    """
-
-    model_config = ConfigDict(extra="forbid")
-    provided_answer: str
-    correct_answer: str
-    is_correct: bool
-
-    def __str__(self) -> str:
-        msg = f"Provided Answer: '{self.provided_answer}', "
-        msg += f"Correct Answer: '{self.correct_answer}', "
-        msg += f"Is Correct: '{self.is_correct}'"
-        return msg
-
-
+from pyrit.common.batch_helper import batch_task_async
 class QuestionAnswerScorer(Scorer):
     """A class that represents a question answering scorer.
 
@@ -64,7 +41,7 @@ class QuestionAnswerScorer(Scorer):
         self._score_category = category
         self.scorer_type = "true_false"
 
-    async def score_async(self, request_response: PromptRequestPiece, scored_question: QuestionAnsweringEntry, task: Optional[str] = None) -> Score:
+    async def score_async(self, request_response: PromptRequestPiece, task: QuestionAnsweringEntry) -> Score:
         """
         Score the request_reponse using the QuestionAnsweringEntry
         and return a since Score object 30
@@ -80,18 +57,18 @@ class QuestionAnswerScorer(Scorer):
         try:
             # This is the case where the model response is an integer, which is the index of the answer.
             answer_index = int(answer)
-            answer = scored_question.choices[answer_index].text
+            answer = task.choices[answer_index].text
         except ValueError:
             # If the model response is not an integer, then the model might have returned the answer as a string
             pass
 
         metadata = {
-            "question": str(scored_question.question),
-            "correct_answer": str(scored_question.correct_answer), 
+            "question": str(task.question),
+            "correct_answer": str(task.correct_answer), 
             "scored_answer": answer
         }
 
-        answer_correct = str(scored_question.correct_answer) in answer
+        answer_correct = str(task.correct_answer) in answer
 
         score = Score(
             score_value=str(answer_correct),
@@ -102,24 +79,33 @@ class QuestionAnswerScorer(Scorer):
             score_rationale=None,
             scorer_class_identifier=self.get_identifier(),
             prompt_request_response_id=request_response.id,
-            task=scored_question.question
+            task=task.question
         )
-
         return score
-
-    async def evaluate(
-        self, 
-        dataset: QuestionAnsweringDataset,
-        responses = Sequence[PromptRequestResponse]
-    ) -> list[Score]:
-        scores: list[Score] = []
-        responses_batched = self._batch_responses_by_conversation_id(responses = responses)
-        for question in dataset.questions:
-            conversation_id = self._find_matching_conversation_from_question(question, responses_batched)
-            scores.append(await self.score_async(responses_batched[conversation_id][3], question))
-            responses_batched[conversation_id] = []
-        return scores
     
+    async def score_prompts_with_tasks_batch_async(
+            self,
+            *,
+            request_responses:Sequence[PromptRequestPiece],
+            tasks: Sequence[QuestionAnsweringEntry],
+            batch_size = 10,
+    ) -> list[Score]:
+        if not tasks:
+            raise ValueError("Tasks must be provided.")
+        responses_batched = self._batch_responses_by_conversation_id(request_responses)
+        request_responses = self._get_answers_in_order(tasks=tasks, responses_batched=responses_batched)
+        if len(request_responses) != len(tasks):
+            raise ValueError(f"The number of tasks ({len(tasks)}) must match the number of provided answers ({len(request_responses)}).")
+        prompt_target = getattr(self, "_prompt_target", None)
+        results = await batch_task_async(
+            task_func=self.score_async,
+            task_arguments=["request_response", "task"],
+            prompt_target=prompt_target,
+            batch_size=batch_size,
+            items_to_batch=[request_responses, tasks],
+        )
+        return results
+        
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
         """
         Validates the request_response piece to score. Because some scorers may require
@@ -132,6 +118,21 @@ class QuestionAnswerScorer(Scorer):
         if (request_response.converted_value_data_type != "text"):
             raise ValueError("Question Answer Scorer only supports text data type")
     
+    def _get_answers_in_order(
+        self,
+        tasks: Sequence[QuestionAnsweringEntry], 
+        responses_batched: defaultdict
+    ) -> list:
+        if (len(tasks) != len(responses_batched)):
+            raise ValueError("The number of questions must match the number of conversations")
+        answers = []
+        question_deque = deque(tasks)
+        while len(question_deque):
+            question = question_deque.popleft()
+            matching_conversation = self._find_matching_conversation_from_question(question, responses_batched)
+            answers.append(responses_batched[matching_conversation][3])
+        return answers
+    
     def _batch_responses_by_conversation_id(self, responses: Sequence[PromptRequestPiece]) -> defaultdict:
         responses_batched = defaultdict(list)
         for response in responses:
@@ -141,9 +142,9 @@ class QuestionAnswerScorer(Scorer):
     def _find_matching_conversation_from_question(
         self,
         question: QuestionAnsweringEntry, 
-        reseponses_batched: defaultdict
+        responses_batched: defaultdict
     ) -> str:
         question_prompt = construct_evaluation_prompt(question)
-        for conversation in reseponses_batched:
-            if reseponses_batched[conversation] != [] and question_prompt in reseponses_batched[conversation][2].converted_value:
+        for conversation in responses_batched:
+            if responses_batched[conversation] != [] and question_prompt in responses_batched[conversation][2].converted_value:
                 return conversation
