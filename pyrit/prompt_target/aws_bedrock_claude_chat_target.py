@@ -5,7 +5,7 @@ import asyncio
 import base64
 import json
 import logging
-from typing import TYPE_CHECKING, MutableSequence, Optional
+from typing import MutableSequence, Optional
 
 from pyrit.chat_message_normalizer import ChatMessageNop, ChatMessageNormalizer
 from pyrit.models import (
@@ -16,10 +16,6 @@ from pyrit.models import (
 from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
-
-if TYPE_CHECKING:
-    import boto3
-    from botocore.exceptions import ClientError
 
 
 class AWSBedrockClaudeChatTarget(PromptChatTarget):
@@ -64,13 +60,6 @@ class AWSBedrockClaudeChatTarget(PromptChatTarget):
 
         self._valid_image_types = ["jpeg", "png", "webp", "gif"]
 
-        try:
-            import boto3  # noqa: F401
-            from botocore.exceptions import ClientError  # noqa: F401
-        except ModuleNotFoundError as e:
-            logger.error("Could not import boto. You may need to install it via 'pip install pyrit[all] or pyrit[aws]'")
-            raise e
-
     @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
@@ -101,11 +90,16 @@ class AWSBedrockClaudeChatTarget(PromptChatTarget):
 
     async def _complete_chat_async(self, messages: list[ChatMessageListDictContent]) -> str:
         try:
-            brt = boto3.client(
-                service_name="bedrock-runtime", region_name="us-east-1", verify=self._enable_ssl_verification
-            )
-        except Exception as e:
-            raise RuntimeError(f"An error occurred when initializing boto3 client: {str(e)}") from e
+            import boto3  # noqa: F401
+            from botocore.exceptions import ClientError  # noqa: F401
+        except ModuleNotFoundError as e:
+            logger.error("Could not import boto. You may need to install it via 'pip install pyrit[all] or pyrit[aws]'")
+            raise e
+
+        brt = boto3.client(
+            service_name="bedrock-runtime", region_name="us-east-1", verify=self._enable_ssl_verification
+        )
+
         native_request = self._construct_request_body(messages)
 
         request = json.dumps(native_request)
