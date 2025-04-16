@@ -1,0 +1,15 @@
+datasets:
+  - ./pyrit/datasets/seed_prompts/illegal.prompt
+scenarios:
+  - type: "PromptSendingOrchestrator"
+objective_target:
+  type: "OpenAIChatTarget"
+converters:
+  - type: "Base64Converter"
+  - type: "LeetspeakConverter"
+  - type: "TranslationConverter"
+    language: "spanish"
+adversarial_chat:
+  type: "OpenAIChatTarget"
+database:
+  type: "DuckDB"

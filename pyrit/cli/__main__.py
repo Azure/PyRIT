@@ -63,9 +63,7 @@ async def run_scenarios_async(config: ScannerConfig) -> None:
     memory_labels[SCANNER_EXECUTION_START_TIME_MEMORY_LABEL] = datetime.now().isoformat()
 
     seed_prompts = load_seed_prompts(config.datasets)
-    # You can apply prompt converters by doing the following:
-    # prompt_converters = config.create_prompt_converters()
-    prompt_converters: List[PromptConverter] = []
+    prompt_converters = config.create_prompt_converters()
     orchestrators = config.create_orchestrators(prompt_converters=prompt_converters)
 
     for orchestrator in orchestrators:
