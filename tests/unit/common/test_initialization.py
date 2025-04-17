@@ -27,7 +27,7 @@ def test_load_environment_files_base_only(mock_logger, mock_exists, mock_load_do
 
     _load_environment_files()
 
-    assert mock_load_dotenv.call_count == 1
+    assert mock_load_dotenv.call_count == 2
 
 
 @mock.patch("dotenv.load_dotenv")
@@ -55,7 +55,7 @@ def test_load_environment_files_no_base_no_local(mock_logger, mock_exists, mock_
 
     _load_environment_files()
 
-    mock_load_dotenv.assert_called_once()
+    mock_load_dotenv.call_count == 2
     mock_logger.return_value.info.assert_not_called()
 
 

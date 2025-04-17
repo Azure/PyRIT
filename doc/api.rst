@@ -114,6 +114,7 @@ API Reference
     fetch_adv_bench_dataset
     fetch_aya_redteaming_dataset
     fetch_babelscape_alert_dataset
+    fetch_darkbench_dataset
     fetch_decoding_trust_stereotypes_dataset
     fetch_examples
     fetch_forbidden_questions_dataset
@@ -121,6 +122,7 @@ API Reference
     fetch_librAI_do_not_answer_dataset
     fetch_llm_latent_adversarial_training_harmful_dataset
     fetch_many_shot_jailbreaking_dataset
+    fetch_mlcommons_ailuminate_demo_dataset
     fetch_pku_safe_rlhf_dataset
     fetch_seclists_bias_testing_dataset
     fetch_tdc23_redteaming_dataset
@@ -289,6 +291,7 @@ API Reference
     FuzzerShortenConverter
     FuzzerSimilarConverter
     HumanInTheLoopConverter
+    InsertPunctuationConverter
     LeetspeakConverter
     LLMGenericTextConverter
     MaliciousQuestionGeneratorConverter
@@ -311,6 +314,7 @@ API Reference
     UnicodeSubstitutionConverter
     UrlConverter
     VariationConverter
+    ZeroWidthConverter
 
 .. automodule:: pyrit.prompt_converter.fuzzer_converter
     :no-members:

@@ -15,7 +15,6 @@ nb_directory_path = pathlib.Path(path.DOCS_CODE_PATH, "memory").resolve()
 skipped_files = [
     "6_azure_sql_memory.ipynb",  # todo: requires Azure SQL setup, remove following completion of #4001
     "7_azure_sql_memory_orchestrators.ipynb",  # todo: remove following completion of #4001
-    "chat_message.ipynb",  # todo: hf model repo is gated, pick a new model
 ]
 
 
