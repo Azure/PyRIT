@@ -49,34 +49,40 @@ def combine_list(list1: Union[str, List[str]], list2: Union[str, List[str]]) -> 
     return combined
 
 
-def get_random_indices(low: int, high: int, sample_ratio: float) -> list[int]:
+def get_random_indices(start: int, size: int, percentage: int) -> List[int]:
     """
-    Generate a list of random indices within a given range based on a sample ratio.
+    Generate a list of random indices based on a specified percentage of the total size.
+    The indices are selected from the range [start, start + size).
 
     Args:
-        low (int): Lower bound of the range (inclusive).
-        high (int): Upper bound of the range (exclusive).
-        sample_ratio (float): Ratio of range to sample (0.0 to 1.0).
+        start (int): Starting index (inclusive). It's the first index that could possibly be selected.
+        size (int): Size of the collection to select from. This is the total number of indices available.
+            For example, if `start` is 0 and `size` is 10, the available indices are [0, 1, 2, ..., 9].
+        percentage (int): Percentage of indices to select from the specified range [0 to 100].
+            For example, 30 would mean 30% of the total size, and 50 would mean half of the total size.
     """
-    if sample_ratio < 0 or sample_ratio > 1:
-        raise ValueError("Sample ratio must be between 0 and 1")
+    if start < 0:
+        raise ValueError("Start index must be non-negative")
+    if size <= 0:
+        raise ValueError("Size must be greater than 0")
+    if percentage < 0 or percentage > 100:
+        raise ValueError("Percentage must be between 0 and 100")
 
-    # Special case: return empty list
-    if sample_ratio == 0:
+    if percentage == 0:
         return []
+    if percentage == 100:
+        return list(range(start, start + size))
 
-    result = []
-    n = math.ceil((high - low) * sample_ratio)
+    # Convert percentage to proportion
+    sample_proportion = percentage / 100.0
 
-    # Ensure at least 1 index for non-zero sample ratio
+    n = math.ceil(size * sample_proportion)  # the number of indices to select
+
+    # Ensure at least 1 index is selected for non-zero percentage
     if n == 0:
         n = 1
 
-    try:
-        result = random.sample(range(low, high), n)
-    except ValueError:
-        logger.debug(f"Sample size of {n} exceeds population size of {high - low}")
-    return result
+    return random.sample(range(start, start + size), n)
 
 
 def select_word_indices(
@@ -99,8 +105,8 @@ def select_word_indices(
     Keyword Arguments:
         indices (List[int]): Custom indices to select (for "custom" mode).
         keywords (List[str]): List of keywords to match (for "keywords" mode).
+        percentage (int): Percentage of indices to select (for "random" mode).
         regex (str or Pattern): Regular expression pattern to match (for "regex" mode).
-        sample_ratio (float): Ratio of words to randomly select (for "random" mode).
 
     Returns:
         List[int]: Indices of selected words.
@@ -121,8 +127,8 @@ def select_word_indices(
             return [i for i, word in enumerate(words) if word in word_list]
 
         case "random":
-            sample_ratio = kwargs.get("sample_ratio", 0.5)
-            return get_random_indices(0, len(words), sample_ratio)
+            percentage = kwargs.get("percentage", 50)
+            return get_random_indices(0, len(words), percentage)
 
         case "regex":
             regex = kwargs.get("regex", r".")
