@@ -5,7 +5,7 @@ import logging
 import math
 import random
 import re
-from typing import List, Union
+from typing import List, Literal, Union
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +79,9 @@ def get_random_indices(low: int, high: int, sample_ratio: float) -> list[int]:
     return result
 
 
-def select_word_indices(words: List[str], mode: str = "all", **kwargs) -> list[int]:
+def select_word_indices(
+    words: List[str], mode: Literal["all", "custom", "keywords", "random", "regex"], **kwargs
+) -> List[int]:
     """
     Select indices from a list of words based on specified selection mode.
 
