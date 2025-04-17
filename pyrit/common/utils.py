@@ -137,8 +137,3 @@ def select_word_indices(
         case "custom":
             custom_indices = kwargs.get("indices", [])
             return [i for i in custom_indices if 0 <= i < len(words)]
-
-        case _:
-            return list(range(len(words)))
-
-    return list(range(len(words)))
