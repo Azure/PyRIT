@@ -42,10 +42,6 @@ class EmojiConverter(WordLevelConverter):
         "z": ["🅩", "🆉", "🅉"],
     }
 
-    def __init__(self, *, join_value="-", mode: str = "all", **mode_kwargs):
-        super().__init__(mode=mode, **mode_kwargs)
-        self.join_value = join_value
-
     async def convert_word_async(self, word: str) -> str:
         word = word.lower()
         result = []
