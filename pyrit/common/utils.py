@@ -58,6 +58,9 @@ def get_random_indices(low: int, high: int, sample_ratio: float) -> list[int]:
         high (int): Upper bound of the range (exclusive).
         sample_ratio (float): Ratio of range to sample (0.0 to 1.0).
     """
+    if sample_ratio < 0 or sample_ratio > 1:
+        raise ValueError("Sample ratio must be between 0 and 1")
+
     # Special case: return empty list
     if sample_ratio == 0:
         return []
@@ -66,7 +69,7 @@ def get_random_indices(low: int, high: int, sample_ratio: float) -> list[int]:
     n = math.ceil((high - low) * sample_ratio)
 
     # Ensure at least 1 index for non-zero sample ratio
-    if sample_ratio > 0 and n == 0:
+    if n == 0:
         n = 1
 
     try:
