@@ -10,7 +10,7 @@ class LeetspeakConverter(WordLevelConverter):
     """Converts a string to a leetspeak version."""
 
     def __init__(
-        self, *, deterministic: bool = False, custom_substitutions: dict = None, mode: str = "all", **mode_kwargs
+        self, *, deterministic: bool = True, custom_substitutions: dict = None, mode: str = "all", **mode_kwargs
     ):
         """
         Initialize the converter with optional deterministic mode and custom substitutions.
