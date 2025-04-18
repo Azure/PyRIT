@@ -1,0 +1,238 @@
+classDiagram
+    %% Base Abstract Classes
+    class AttackContext {
+        <<abstract>>
+        +duplicate() Self
+    }
+    
+    class AttackResult {
+        <<abstract>>
+        +orchestrator_identifier dict[str, str]
+    }
+    
+    class AttackStrategy~T_Context, T_Result~ {
+        <<abstract>>
+        -_backtracking_strategy BacktrackingStrategy
+        -_logger Logger
+        -_id uuid
+        -_memory CentralMemory
+        -_memory_labels dict[str, str]
+        +get_identifier() dict
+        +execute(context) T_Result
+        #_setup(context) void
+        #_perform_attack(context) T_Result
+        #_teardown(context) void
+        +check_backtracking(context, response, score) bool
+    }
+
+    class BacktrackingStrategy~T_Context~ {
+        <<abstract>>
+        +name str
+        +should_backtrack(context, response, score) bool
+        +apply_backtracking(context) void
+    }
+
+    %% Context Classes
+    class ConversationSession {
+        +conversation_id str
+        +adversarial_chat_conversation_id str
+    }
+    
+    class MultiTurnAttackContext {
+        +session ConversationSession
+        +objective str
+        +max_turns int
+        +achieved_objective bool
+        +executed_turns int
+        +last_response PromptRequestPiece
+        +last_score Score
+        +custom_prompt str
+        +prompt_converters List[PromptConverter]
+        +prepended_conversation List[PromptRequestResponse]
+        +memory_labels Dict[str, str]
+    }
+    
+    class SingleTurnAttackContext {
+        +batch_size int
+        +prompts List[str]
+        +prompt_data_type PromptDataType
+        +prepended_conversation List[PromptRequestResponse]
+        +memory_labels Dict[str, str]
+        +metadata dict[str, Union[str, int]]
+    }
+
+    %% Result Classes
+    class MultiTurnAttackResult {
+        +conversation_id str
+        +objective str
+        +achieved_objective bool
+        +executed_turns int
+        +last_response PromptRequestPiece
+        +last_score Score
+        +memory_labels Dict[str, str]
+        +print_conversation(include_scores) void
+    }
+    
+    class SingleTurnAttackResult {
+        +prompt_list List[PromptRequestResponse]
+        +print_conversations() void
+    }
+
+    %% Factory & Executor Classes
+    class AttackStrategyFactory {
+        +create(strategy_type, **kwargs) AttackStrategy
+    }
+    
+    class AttackExecutor {
+        +execute_parallel(strategy, contexts, max_concurrency) List[Result]
+        +execute_multi_objective_attack(strategy, context_template, objectives, max_concurrency) List[Result]
+    }
+    
+    class AttackPipeline~T_Context, T_Result~ {
+        -_strategies List[AttackStrategy]
+        -_name str
+        -_result_selection ResultSelectionStrategy
+        -_max_concurrency int
+        +execute(context) T_Result
+        -_select_result(results) T_Result
+        -_select_first_success_result(results) T_Result
+        -_select_best_score_result(results) T_Result
+        -_select_all_results(results) T_Result
+    }
+
+    %% Concrete Strategy Classes
+    class RedTeamingStrategy {
+        -_objective_target PromptTarget
+        -_objective_scorer Scorer
+        -_adversarial_chat PromptChatTarget
+        -_use_score_as_feedback bool
+        -_conversation_manager ConversationManager
+        -_score_evaluator ScoreEvaluator
+        +_setup(context) void
+        +_perform_attack(context) MultiTurnAttackResult
+        +_teardown(context) void
+        -_generate_next_prompt(context) str
+        -_send_to_target(context, prompt) PromptRequestPiece
+        -_score_response(context, response) Score
+        -_evaluate_objective_achievement(context, response, score) bool
+    }
+    
+    class PromptSendingAttackStrategy {
+        -_objective_target PromptTarget
+        -_prompt_converters List[PromptConverter]
+        -_prompt_normalizer PromptNormalizer
+        -_scorers List[Scorer]
+        -_conversation_manager ConversationManager
+        +_setup(context) void
+        +_perform_attack(context) SingleTurnAttackResult
+        +_teardown(context) void
+        -_get_prompt_requests(context) List[PromptRequest]
+        -_score_responses(responses, context) void
+    }
+    
+    class TreeOfAttacksStrategy {
+        -_objective_target PromptChatTarget
+        -_adversarial_chat PromptChatTarget
+        -_scoring_target PromptChatTarget
+        +_setup(context) void
+        +_perform_attack(context) MultiTurnAttackResult
+        +_teardown(context) void
+    }
+
+    %% Enum Classes
+    class AttackStrategyType {
+        <<enumeration>>
+        RED_TEAMING
+        TREE_OF_ATTACKS
+        PROMPT_SENDING
+    }
+    
+    class ResultSelectionStrategy {
+        <<enumeration>>
+        FIRST_SUCCESS
+        BEST_SCORE
+        ALL
+    }
+
+    %% Component Classes
+    class ResultAggregator~T_Result~ {
+        -results List[T_Result]
+        +success_rate() float
+        +average_turns() float
+        +score_statistics() Dict[str, Any]
+        +attack_duration_statistics() Dict[str, Any]
+        +group_by_orchestrator() Dict[str, List[T_Result]]
+        +group_by_objective() Dict[str, List[MultiTurnAttackResult]]
+        +compare_success_by_objective() Dict[str, float]
+        +summary() Dict[str, Any]
+    }
+
+    %% Tree of Attacks specific classes
+    class TreeOfAttacksContext {
+        +width int
+        +depth int
+        +branching_factor int
+        +objective_achieved_score_threshold float
+        +on_topic_checking_enabled bool
+        +nodes List[TreeOfAttacksNode]
+        +tree_visualization Tree
+        +best_node TreeOfAttacksNode
+        +current_iteration int
+        +desired_response_prefix str
+        +duplicate() TreeOfAttacksContext
+    }
+    
+    class TreeOfAttacksResult {
+        +tree_visualization Tree
+        +print_tree() void
+    }
+    
+    class TreeOfAttacksNode {
+        +node_id str
+        +parent_id str
+        +objective_target_conversation_id str
+        +adversarial_chat_conversation_id str
+        +prompt_sent bool
+        +completed bool
+        +score float
+        +off_topic bool
+        +send_prompt_async(objective) void
+        +duplicate() TreeOfAttacksNode
+    }
+
+    %% Relationships
+    AttackContext <|-- MultiTurnAttackContext
+    AttackContext <|-- SingleTurnAttackContext
+    
+    AttackResult <|-- MultiTurnAttackResult
+    AttackResult <|-- SingleTurnAttackResult
+    
+    AttackStrategy <|-- RedTeamingStrategy
+    AttackStrategy <|-- PromptSendingAttackStrategy
+    AttackStrategy <|-- TreeOfAttacksStrategy
+    AttackStrategy <|-- AttackPipeline
+    
+    AttackStrategy ..> AttackResult : produces
+    AttackStrategy ..> AttackContext : consumes
+    
+    AttackStrategyFactory ..> AttackStrategy : creates
+    AttackStrategyFactory ..> AttackStrategyType : uses
+    
+    AttackExecutor ..> AttackStrategy : executes
+    
+    AttackPipeline *-- AttackStrategy : contains
+    AttackPipeline ..> ResultSelectionStrategy : uses
+    
+    ResultAggregator ..> AttackResult : analyzes
+    
+    MultiTurnAttackContext *-- ConversationSession : contains
+    %% Inheritance relationships
+    MultiTurnAttackContext <|-- TreeOfAttacksContext
+    MultiTurnAttackResult <|-- TreeOfAttacksResult
+    
+    %% Usage relationships
+    TreeOfAttacksContext o-- TreeOfAttacksNode : contains
+    TreeOfAttacksResult ..> Tree : contains
+    TreeOfAttacksStrategy ..> TreeOfAttacksNode : creates
+    TreeOfAttacksStrategy ..> TreeOfAttacksContext : uses
+    TreeOfAttacksStrategy ..> TreeOfAttacksResult : produces

@@ -43,7 +43,7 @@ class TreeOfAttacksNode:
         adversarial_chat_system_seed_prompt: SeedPrompt,
         desired_response_prefix: str,
         objective_scorer: Scorer,
-        on_topic_scorer: Scorer,
+        on_topic_scorer: Optional[Scorer] = None,
         prompt_converters: list[PromptConverter],
         orchestrator_id: dict[str, str],
         memory_labels: Optional[dict[str, str]] = None,
