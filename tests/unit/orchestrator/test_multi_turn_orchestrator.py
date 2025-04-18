@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
-from pyrit.orchestrator.multi_turn.multi_turn_orchestrator import MultiTurnAttackResult
+from pyrit.orchestrator.multi_turn.multi_turn_orchestrator import OrchestratorResult
 from pyrit.orchestrator.multi_turn.red_teaming_orchestrator import (
     RedTeamingOrchestrator,
 )
@@ -236,7 +236,7 @@ async def test_print_conversation_no_messages():
     mock_memory.get_conversation.return_value = []
     mock_memory.get_scores_by_prompt_ids.return_value = []
     with patch("pyrit.memory.CentralMemory.get_memory_instance", return_value=mock_memory):
-        result = MultiTurnAttackResult("conversation_id_123", False, "Test Objective")
+        result = OrchestratorResult("conversation_id_123", False, "Test Objective")
 
     await result.print_conversation_async()
 
@@ -293,7 +293,7 @@ async def test_print_conversation_with_messages():
         with patch(
             "pyrit.orchestrator.multi_turn.multi_turn_orchestrator.display_image_response", new_callable=AsyncMock
         ) as mock_display_image_response:
-            result = MultiTurnAttackResult("conversation_id_123", True, "Test Objective")
+            result = OrchestratorResult("conversation_id_123", True, "Test Objective")
 
             await result.print_conversation_async()
 

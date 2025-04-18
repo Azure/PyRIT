@@ -11,8 +11,8 @@ from treelib import Tree
 from pyrit.common.path import DATASETS_PATH
 from pyrit.common.utils import combine_dict
 from pyrit.memory import MemoryInterface
-from pyrit.models import SeedPrompt
-from pyrit.orchestrator import MultiTurnAttackResult, MultiTurnOrchestrator
+from pyrit.models import SeedPrompt, Score
+from pyrit.orchestrator import MultiTurnOrchestrator, OrchestratorResult, OrchestratorResultStatus
 from pyrit.orchestrator.multi_turn.tree_of_attacks_node import TreeOfAttacksNode
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_target import PromptChatTarget
@@ -22,18 +22,21 @@ from pyrit.score.scorer import Scorer
 logger = logging.getLogger(__name__)
 
 
-class TAPAttackResult(MultiTurnAttackResult):
+class TAPAttackResult(OrchestratorResult):
     def __init__(
         self,
+        *,
         conversation_id: str,
-        achieved_objective: bool,
         objective: str,
+        status: OrchestratorResultStatus,
+        score: Score,
         tree_visualization: Tree,
     ):
         super().__init__(
             conversation_id=conversation_id,
-            achieved_objective=achieved_objective,
             objective=objective,
+            status=status,
+            score=score,
         )
         self.tree_visualization = tree_visualization
 
@@ -170,6 +173,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         nodes: list[TreeOfAttacksNode] = []
 
         best_conversation_id = None
+        best_score = None
 
         updated_memory_labels = combine_dict(existing_dict=self._global_memory_labels, new_dict=memory_labels)
 
@@ -216,12 +220,14 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
 
             if len(nodes) > 0:
                 best_conversation_id = nodes[0].objective_target_conversation_id
+                best_score = nodes[0].score
 
-                if nodes[0].score >= self._objective_achieved_score_threshhold:
+                if nodes[0].score.get_value() >= self._objective_achieved_score_threshhold:
                     logger.info("The conversation has been stopped because the response is jailbroken.")
                     return TAPAttackResult(
                         conversation_id=best_conversation_id,
-                        achieved_objective=True,
+                        score=best_score,
+                        status="success",
                         objective=objective,
                         tree_visualization=tree_visualization,
                     )
@@ -234,9 +240,10 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
 
         return TAPAttackResult(
             conversation_id=best_conversation_id,
-            achieved_objective=False,
+            status="failure",
             objective=objective,
             tree_visualization=tree_visualization,
+            score=best_score
         )
 
     async def _send_prompt_to_nodes_async(
@@ -251,9 +258,9 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
 
     def _get_completed_on_topic_results_in_order(self, nodes: list[TreeOfAttacksNode]):
         completed_nodes = [
-            node for node in nodes if node and node.completed and (not node.off_topic) and isinstance(node.score, float)
+            node for node in nodes if node and node.completed and (not node.off_topic) and isinstance(node.score.get_value(), float)
         ]
-        completed_nodes.sort(key=lambda x: (x.score, random.random()), reverse=True)
+        completed_nodes.sort(key=lambda x: (x.score.get_value(), random.random()), reverse=True)
         return completed_nodes
 
     def _prune_nodes_over_width(
@@ -293,5 +300,5 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         if not result.completed:
             return "Pruned (no score available)"
         # get score into human-readable format by adding min value and multiplying by (max-min)
-        unnormalized_score = round(1 + result.score * 9)
+        unnormalized_score = round(1 + result.score.get_value() * 9)
         return f"Score: {unnormalized_score}/10 || "

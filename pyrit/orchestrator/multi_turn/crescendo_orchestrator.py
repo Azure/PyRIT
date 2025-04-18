@@ -15,7 +15,7 @@ from pyrit.exceptions import (
     remove_markdown_json,
 )
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt, SeedPromptGroup
-from pyrit.orchestrator import MultiTurnAttackResult, MultiTurnOrchestrator
+from pyrit.orchestrator import OrchestratorResult, MultiTurnOrchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
@@ -150,7 +150,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
     async def run_attack_async(
         self, *, objective: str, memory_labels: Optional[dict[str, str]] = None
-    ) -> MultiTurnAttackResult:
+    ) -> OrchestratorResult:
         """
         Executes the Crescendo Attack asynchronously.
 
@@ -298,10 +298,11 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         logger.info("\nRED_TEAMING_CHAT MEMORY: ")
         self._log_target_memory(conversation_id=adversarial_chat_conversation_id)
 
-        return MultiTurnAttackResult(
+        return OrchestratorResult(
             conversation_id=objective_target_conversation_id,
-            achieved_objective=achieved_objective,
             objective=objective,
+            status="success" if achieved_objective else "failure",
+            score=objective_score,
         )
 
     @pyrit_json_retry

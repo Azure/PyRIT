@@ -122,7 +122,7 @@ class TreeOfAttacksNode:
                 request_response=response,
                 task=objective,
             )
-        )[0].get_value()
+        )[0]
 
         self.completed = True
 
@@ -243,7 +243,7 @@ class TreeOfAttacksNode:
         return (
             "TreeOfAttackNode("
             f"completed={self.completed}, "
-            f"score={self.score}, "
+            f"score={self.score.get_value()}, "
             f"node_id={self.node_id}, "
             f"objective_target_conversation_id={self.objective_target_conversation_id})"
         )
