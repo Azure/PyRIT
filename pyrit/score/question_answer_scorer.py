@@ -22,13 +22,13 @@ from typing import Optional, Sequence
 from pyrit.common.question_answer_helpers import construct_evaluation_prompt
 from pyrit.common.batch_helper import batch_task_async
 class QuestionAnswerScorer(Scorer):
-    """A class that represents a question answering scorer.
+    """
+    A class that represents a question answering scorer.
 
     Parameters:
         dataset (QuestionAnsweringDataset): The dataset containing the questions and answers.
         evaluation_results (dict[QuestionAnsweringDataset, TextScoreResult]): A dictionary to store the evaluation
         results.
-
     """
 
     dataset: QuestionAnsweringDataset
@@ -47,7 +47,7 @@ class QuestionAnswerScorer(Scorer):
         and return a since Score object 30
 
         Args:
-            answer (str): The answer given by the target
+            request_response (PromptRequestPiece): The answer given by the target
             task (QuestionAnsweringEntry): The entry containing the original prompt and the correct answer
         Returns:
             Score: A single Score object representing the result
@@ -81,6 +81,7 @@ class QuestionAnswerScorer(Scorer):
             prompt_request_response_id=request_response.id,
             task=task.question
         )
+        request_response.scores = score
         return score
     
     async def score_prompts_with_tasks_batch_async(
@@ -92,8 +93,6 @@ class QuestionAnswerScorer(Scorer):
     ) -> list[Score]:
         if not tasks:
             raise ValueError("Tasks must be provided.")
-        responses_batched = self._batch_responses_by_conversation_id(request_responses)
-        request_responses = self._get_answers_in_order(tasks=tasks, responses_batched=responses_batched)
         if len(request_responses) != len(tasks):
             raise ValueError(f"The number of tasks ({len(tasks)}) must match the number of provided answers ({len(request_responses)}).")
         prompt_target = getattr(self, "_prompt_target", None)
@@ -117,34 +116,3 @@ class QuestionAnswerScorer(Scorer):
         """
         if (request_response.converted_value_data_type != "text"):
             raise ValueError("Question Answer Scorer only supports text data type")
-    
-    def _get_answers_in_order(
-        self,
-        tasks: Sequence[QuestionAnsweringEntry], 
-        responses_batched: defaultdict
-    ) -> list:
-        if (len(tasks) != len(responses_batched)):
-            raise ValueError("The number of questions must match the number of conversations")
-        answers = []
-        question_deque = deque(tasks)
-        while len(question_deque):
-            question = question_deque.popleft()
-            matching_conversation = self._find_matching_conversation_from_question(question, responses_batched)
-            answers.append(responses_batched[matching_conversation][3])
-        return answers
-    
-    def _batch_responses_by_conversation_id(self, responses: Sequence[PromptRequestPiece]) -> defaultdict:
-        responses_batched = defaultdict(list)
-        for response in responses:
-            responses_batched[response.conversation_id].append(response)
-        return responses_batched
-    
-    def _find_matching_conversation_from_question(
-        self,
-        question: QuestionAnsweringEntry, 
-        responses_batched: defaultdict
-    ) -> str:
-        question_prompt = construct_evaluation_prompt(question)
-        for conversation in responses_batched:
-            if responses_batched[conversation] != [] and question_prompt in responses_batched[conversation][2].converted_value:
-                return conversation

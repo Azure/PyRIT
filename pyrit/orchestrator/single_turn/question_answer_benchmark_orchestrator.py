@@ -1,22 +1,25 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-import textwrap
-from pathlib import Path
-from typing import Optional, List, Tuple
+from typing import Optional, Union
 import pathlib
-import enum
-
-import yaml
+import uuid
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import SeedPrompt, PromptRequestPiece, PromptRequestResponse, SeedPromptGroup, SeedPromptDataset, QuestionAnsweringDataset, QuestionAnsweringEntry
+from pyrit.models import (
+    PromptRequestPiece, 
+    PromptRequestResponse,
+    SeedPromptDataset, 
+    QuestionAnsweringDataset,
+    PromptDataType,
+)
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer
 from pyrit.score.question_answer_scorer import QuestionAnswerScorer
 from pyrit.prompt_normalizer import NormalizerRequest
-from pyrit.common.question_answer_helpers import get_question_prompt_pairs
+from pyrit.common.question_answer_helpers import construct_evaluation_prompt
+from pyrit.common.utils import combine_dict
 
 class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
     """
@@ -63,13 +66,75 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
         self._set_default_conversation_start()
 
     async def send_prompts_async(
-        self, 
-        dataset: QuestionAnsweringDataset
+        self,
+        *,
+        dataset: QuestionAnsweringDataset,
+        prompt_type: PromptDataType = "text",
+        memory_labels: Optional[dict[str, str]] = None,
+        metadata: Optional[dict[str, Union[str, int]]] = None,
     ) -> list[PromptRequestResponse]:
         """Sends prompts to the chat model and evaluates responses."""
-        qa_request_list = get_question_prompt_pairs(dataset=dataset)
-        prompt_list = [entry[1] for entry in qa_request_list]
-        return await super().send_prompts_async(prompt_list=prompt_list, prompt_type="text")
+        prompt_list = [construct_evaluation_prompt(entry) for entry in dataset.questions]
+        requests: list[NormalizerRequest] = []
+        for prompt in prompt_list:
+
+            requests.append(
+                self._create_normalizer_request(
+                    prompt_text=prompt,
+                    prompt_type=prompt_type,
+                    converters=self._prompt_converters,
+                    metadata=metadata,
+                    conversation_id=str(uuid.uuid4()),
+                )
+            )
+
+        return await self.send_normalizer_requests_async(
+            prompt_request_list=requests,
+            memory_labels=memory_labels,
+            dataset=dataset
+        )
+    
+    
+    async def send_normalizer_requests_async(
+        self,
+        *,
+        prompt_request_list: list[NormalizerRequest],
+        memory_labels: Optional[dict[str, str]] = None,
+        dataset: QuestionAnsweringDataset,
+    ) -> list[PromptRequestResponse]:
+        """
+        Sends the normalized prompts to the prompt target.
+        """
+
+        self.validate_normalizer_requests(prompt_request_list=prompt_request_list)
+
+        for prompt in prompt_request_list:
+            prompt.conversation_id = await self._prepare_conversation_async(normalizer_request=prompt)
+
+        # Normalizer is responsible for storing the requests in memory
+        # The labels parameter may allow me to stash class information for each kind of prompt.
+        responses: list[PromptRequestResponse] = await self._prompt_normalizer.send_prompt_batch_to_target_async(
+            requests=prompt_request_list,
+            target=self._objective_target,
+            labels=combine_dict(existing_dict=self._global_memory_labels, new_dict=memory_labels),
+            orchestrator_identifier=self.get_identifier(),
+            batch_size=self._batch_size,
+        )
+
+        if self._scorers and responses:
+            response_pieces = PromptRequestResponse.flatten_to_prompt_request_pieces(responses)
+
+            for scorer in self._scorers:
+                if isinstance(scorer, QuestionAnswerScorer):
+                    await scorer.score_prompts_with_tasks_batch_async(
+                        request_responses=response_pieces, batch_size=self._batch_size, tasks=dataset.questions
+                    )
+                else:
+                    await scorer.score_responses_inferring_tasks_batch_async(
+                        request_responses=response_pieces, batch_size=self._batch_size
+                    )
+
+        return responses
 
     def _set_default_conversation_start(self):
         """Sets the default conversation start for the orchestrator."""
