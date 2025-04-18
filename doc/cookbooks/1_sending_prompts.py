@@ -58,7 +58,7 @@ print(len(groups))
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_converter.charswap_attack_converter import CharSwapGenerator
+from pyrit.prompt_converter.charswap_attack_converter import CharSwapConverter
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
@@ -112,13 +112,13 @@ orchestrator.set_prepended_conversation(prepended_conversation=system_prompts)
 
 # Configure any converter configurations you want before you send the prompts
 # These can be applied on selective indexes or datatypes, and will be applied in order
-# E.g. CharSwapGenerator
+# E.g. CharSwapConverter
 requests = [
     NormalizerRequest(
         seed_prompt_group=prompt_group,
         request_converter_configurations=[
             PromptConverterConfiguration(
-                converters=[CharSwapGenerator()],
+                converters=[CharSwapConverter()],
                 prompt_data_types_to_apply=["text"],
             )
         ],

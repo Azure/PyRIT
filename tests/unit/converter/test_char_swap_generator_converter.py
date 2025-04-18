@@ -5,14 +5,14 @@ from unittest.mock import patch
 
 import pytest
 
-from pyrit.prompt_converter.charswap_attack_converter import CharSwapGenerator
+from pyrit.prompt_converter.charswap_attack_converter import CharSwapConverter
 
 
 # Test that the converter produces the expected number of outputs
 @pytest.mark.asyncio
-async def test_char_swap_generator_output_count():
-    converter = CharSwapGenerator(max_iterations=5)
-    prompt = "This is a test prompt for the char swap generator."
+async def test_char_swap_converter_output_count():
+    converter = CharSwapConverter(max_iterations=5)
+    prompt = "This is a test prompt for the char swap converter."
     result = await converter.convert_async(prompt=prompt)
     output_prompts = result.output_text.strip().split("\n")
     assert len(output_prompts) == 1  # Should generate 1 perturbed prompt
@@ -20,8 +20,8 @@ async def test_char_swap_generator_output_count():
 
 # Test that words longer than 3 characters are being perturbed
 @pytest.mark.asyncio
-async def test_char_swap_generator_word_perturbation():
-    converter = CharSwapGenerator(max_iterations=1, mode="random", percentage=100)
+async def test_char_swap_converter_word_perturbation():
+    converter = CharSwapConverter(max_iterations=1, mode="random", percentage=100)
     prompt = "Testing"
     with patch("random.randint", return_value=1):  # Force swap at position 1
         result = await converter.convert_async(prompt=prompt)
@@ -35,8 +35,8 @@ async def test_char_swap_generator_word_perturbation():
     ["Try or do?", "To be or not to be.", "2b oR n0t 2b"],
 )
 @pytest.mark.asyncio
-async def test_char_swap_generator_short_words(prompt):
-    converter = CharSwapGenerator(max_iterations=1, mode="random", percentage=100)
+async def test_char_swap_converter_short_words(prompt):
+    converter = CharSwapConverter(max_iterations=1, mode="random", percentage=100)
     result = await converter.convert_async(prompt=prompt)
     output_prompts = result.output_text.strip().split("\n")
     # Since all words are <= 3 letters, output should be the same as input
@@ -45,8 +45,8 @@ async def test_char_swap_generator_short_words(prompt):
 
 # Test that punctuation is not perturbed
 @pytest.mark.asyncio
-async def test_char_swap_generator_punctuation():
-    converter = CharSwapGenerator(max_iterations=1, mode="random", percentage=100)
+async def test_char_swap_converter_punctuation():
+    converter = CharSwapConverter(max_iterations=1, mode="random", percentage=100)
     prompt = "Hello, world!"
     result = await converter.convert_async(prompt=prompt)
     output_prompts = result.output_text.strip().split("\n")
@@ -57,22 +57,22 @@ async def test_char_swap_generator_punctuation():
 
 # Test that input type not supported raises ValueError
 @pytest.mark.asyncio
-async def test_char_swap_generator_input_type():
-    converter = CharSwapGenerator()
+async def test_char_swap_converter_input_type():
+    converter = CharSwapConverter()
     with pytest.raises(ValueError):
         await converter.convert_async(prompt="Test prompt", input_type="unsupported")
 
 
 # Test with zero iterations
 @pytest.mark.asyncio
-async def test_char_swap_generator_zero_iterations():
+async def test_char_swap_converter_zero_iterations():
     with pytest.raises(ValueError, match="max_iterations must be greater than 0"):
-        CharSwapGenerator(max_iterations=0)
+        CharSwapConverter(max_iterations=0)
 
 
 @pytest.mark.asyncio
-async def test_char_swap_generator_sample_ratio_other_than_1():
-    converter = CharSwapGenerator(max_iterations=1, mode="random", percentage=50)
+async def test_char_swap_converter_sample_ratio_other_than_1():
+    converter = CharSwapConverter(max_iterations=1, mode="random", percentage=50)
     prompt = "Testing word swap ratio"
     result = await converter.convert_async(prompt=prompt)
     output_prompts = result.output_text.strip().split("\n")
@@ -81,8 +81,8 @@ async def test_char_swap_generator_sample_ratio_other_than_1():
 
 # Test that swapping is happening randomly
 @pytest.mark.asyncio
-async def test_char_swap_generator_random_swapping():
-    converter = CharSwapGenerator(max_iterations=1, mode="random", percentage=100)
+async def test_char_swap_converter_random_swapping():
+    converter = CharSwapConverter(max_iterations=1, mode="random", percentage=100)
     prompt = "Character swapping test"
 
     with patch(

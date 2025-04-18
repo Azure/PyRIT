@@ -7,7 +7,7 @@ import string
 from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 
 
-class CharSwapGenerator(WordLevelConverter):
+class CharSwapConverter(WordLevelConverter):
     """Applies character swapping to words in the prompt to test adversarial textual robustness."""
 
     def __init__(self, *, max_iterations: int = 10, mode: str = "all", **mode_kwargs):
