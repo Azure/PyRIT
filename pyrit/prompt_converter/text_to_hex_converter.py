@@ -12,5 +12,5 @@ class TextToHexConverter(WordLevelConverter):
 
     def join_words(self, words: list[str]) -> str:
         if self.mode == "all":
-            return "20".join(words)
+            return "20".join(words)  # 20 is the hex representation of space
         return super().join_words(words)
