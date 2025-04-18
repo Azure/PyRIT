@@ -17,6 +17,8 @@ scenarios:
     depth: 5
     width: 3
     branching_factor: 6
+converters:
+  - type: "Base64Converter"
 objective_target:
   type: "OpenAIChatTarget"
 adversarial_chat:

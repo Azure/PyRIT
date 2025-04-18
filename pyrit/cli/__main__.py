@@ -12,7 +12,6 @@ from pyrit.common import initialize_pyrit
 from pyrit.memory import CentralMemory
 from pyrit.models import SeedPrompt, SeedPromptDataset
 from pyrit.models.seed_prompt import SeedPromptGroup
-from pyrit.prompt_converter.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
@@ -63,9 +62,7 @@ async def run_scenarios_async(config: ScannerConfig) -> None:
     memory_labels[SCANNER_EXECUTION_START_TIME_MEMORY_LABEL] = datetime.now().isoformat()
 
     seed_prompts = load_seed_prompts(config.datasets)
-    # You can apply prompt converters by doing the following:
-    # prompt_converters = config.create_prompt_converters()
-    prompt_converters: List[PromptConverter] = []
+    prompt_converters = config.create_prompt_converters()
     orchestrators = config.create_orchestrators(prompt_converters=prompt_converters)
 
     for orchestrator in orchestrators:
