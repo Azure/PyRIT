@@ -76,11 +76,7 @@ def get_random_indices(start: int, size: int, percentage: int) -> List[int]:
     # Convert percentage to proportion
     sample_proportion = percentage / 100.0
 
-    n = math.ceil(size * sample_proportion)  # the number of indices to select
-
-    # Ensure at least 1 index is selected for non-zero percentage
-    if n == 0:
-        n = 1
+    n = max(math.ceil(size * sample_proportion), 1)  # the number of indices to select
 
     return random.sample(range(start, start + size), n)
 
