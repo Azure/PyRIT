@@ -28,6 +28,11 @@ test_cases_success = [
         [PromptSendingOrchestrator],
         ["send_normalizer_requests_async"],
     ),
+    (
+        "--config-file 'tests/unit/cli/prompt_send_success_converters_custom_target.yaml'",
+        [PromptSendingOrchestrator],
+        ["send_normalizer_requests_async"],
+    ),
     ("--config-file 'tests/unit/cli/multi_turn_rto_success.yaml'", [RedTeamingOrchestrator], ["run_attack_async"]),
     ("--config-file 'tests/unit/cli/multi_turn_rto_args_success.yaml'", [RedTeamingOrchestrator], ["run_attack_async"]),
     ("--config-file 'tests/unit/cli/multi_turn_crescendo_success.yaml'", [CrescendoOrchestrator], ["run_attack_async"]),
@@ -107,6 +112,22 @@ test_cases_error = [
         "Scorer requires a scoring_target to be defined. "
         "Alternatively, the adversarial_target can be used for scoring purposes, but none was provided.",
         KeyError,
+    ),
+    (
+        "--config-file 'tests/unit/cli/prompt_send_no_converter_target.yaml'",
+        "Converter requires a converter_target to be defined. "
+        "Alternatively, the adversarial_target can be used for scoring purposes, but none was provided.",
+        KeyError,
+    ),
+    (
+        "--config-file 'tests/unit/cli/prompt_send_converters_wrong_arg.yaml'",
+        "TranslationConverter.__init__() got an unexpected keyword argument 'wrong_arg'",
+        TypeError,
+    ),
+    (
+        "--config-file 'tests/unit/cli/prompt_send_converters_missing_arg.yaml'",
+        "TranslationConverter.__init__() missing 1 required keyword-only argument: 'language'",
+        TypeError,
     ),
     (
         "--config-file 'tests/unit/cli/multi_turn_rto_wrong_arg.yaml'",

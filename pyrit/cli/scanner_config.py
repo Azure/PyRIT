@@ -206,7 +206,7 @@ class ConverterConfig(BaseModel, extra="allow"):
 
         init_kwargs = self.model_dump(exclude={"class_name", "converter_target"})
         signature = inspect.signature(converter_class.__init__)
-        
+
         converter_target_key: str = "converter_target"
         if converter_target_key in signature.parameters:
             if converter_target is None:
@@ -278,7 +278,7 @@ class ScannerConfig(BaseModel):
             if self.scoring.scoring_target is None and self.adversarial_chat is not None:
                 self.scoring.scoring_target = self.adversarial_chat
         return self
-    
+
     @model_validator(mode="after")
     def fill_converter_target(self) -> "ScannerConfig":
         """
@@ -289,14 +289,20 @@ class ScannerConfig(BaseModel):
             for converter_cfg in self.converters:
                 # Check if converter takes converter target
                 converter_class = load_class(
-                    module_name="pyrit.prompt_converter", class_name=converter_cfg.class_name, error_context="prompt_converter"
+                    module_name="pyrit.prompt_converter",
+                    class_name=converter_cfg.class_name,
+                    error_context="prompt_converter",
                 )
 
                 signature = inspect.signature(converter_class.__init__)
                 converter_target_key: str = "converter_target"
 
                 # If the converter takes a converter target and it is not set, set it to the adversarial chat
-                if converter_target_key in signature.parameters and converter_cfg.converter_target is None and self.adversarial_chat is not None:
+                if (
+                    converter_target_key in signature.parameters
+                    and converter_cfg.converter_target is None
+                    and self.adversarial_chat is not None
+                ):
                     converter_cfg.converter_target = self.adversarial_chat
 
         return self
