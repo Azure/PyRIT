@@ -271,7 +271,7 @@ async def test_run_attack_async(
 
         assert result is not None
         assert result.conversation_id is not None
-        assert result.achieved_objective is True
+        assert result.status == "success"
         assert mock_send_prompt.call_count <= max_turns
         assert mock_check_complete.call_count <= max_turns
         # Test that the global memory labels and passed-in memory labels were combined properly

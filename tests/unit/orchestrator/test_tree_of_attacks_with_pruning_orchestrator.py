@@ -144,7 +144,7 @@ async def test_run_attack_single_turn_success(
 
         result = await tap_orchestrator.run_attack_async(objective="objective")
 
-        assert result.achieved_objective
+        assert result.status == "success"
         assert result.objective == "objective"
 
         assert "pruned" not in str(result.tree_visualization).lower()
@@ -204,7 +204,7 @@ async def test_run_attack_max_depth_reached(
 
         result = await tap_orchestrator.run_attack_async(objective="objective")
 
-        assert not result.achieved_objective
+        assert result.status == "failure"
         assert result.objective == "objective"
 
         mock_adversarial_chat.assert_called_once()
@@ -245,7 +245,7 @@ async def test_run_attack_multiturn_failure(
 
         result = await tap_orchestrator.run_attack_async(objective="objective")
 
-        assert not result.achieved_objective
+        assert result.status == "failure"
         assert mock_send.call_count == depth
 
 
@@ -288,7 +288,7 @@ async def test_run_attack_success_in_last_turn(
 
         result = await tap_orchestrator.run_attack_async(objective="objective")
 
-        assert result.achieved_objective
+        assert result.status == "success"
         assert mock_send.call_count == depth
 
 
