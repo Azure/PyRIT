@@ -61,7 +61,9 @@ from pyrit.prompt_converter.unicode_replacement_converter import UnicodeReplacem
 from pyrit.prompt_converter.unicode_sub_converter import UnicodeSubstitutionConverter
 from pyrit.prompt_converter.url_converter import UrlConverter
 from pyrit.prompt_converter.variation_converter import VariationConverter
+from pyrit.prompt_converter.zalgo_converter import ZalgoConverter
 from pyrit.prompt_converter.zero_width_converter import ZeroWidthConverter
+
 
 
 __all__ = [
@@ -121,5 +123,6 @@ __all__ = [
     "UrlConverter",
     "VariationConverter",
     "VariationSelectorSmugglerConverter",
+    "ZalgoConverter",
     "ZeroWidthConverter",
 ]
