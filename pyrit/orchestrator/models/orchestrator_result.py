@@ -24,14 +24,13 @@ class OrchestratorResult:
         self,
         conversation_id: str,
         objective: str,
-        status: OrchestratorResultStatus,
+        status: OrchestratorResultStatus = "in_progress",
         score: Score = None,
         confidence: float = 0.1
     ):
-        self.status : status = "in_progress"
-
         self.conversation_id = conversation_id
         self.objective = objective
+        self.status = status
         self.score = score
         self.confidence = confidence
 
