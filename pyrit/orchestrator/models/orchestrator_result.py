@@ -10,7 +10,6 @@ from pyrit.common.display_response import display_image_response
 from pyrit.memory import CentralMemory
 from pyrit.models import Score
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -26,7 +25,7 @@ class OrchestratorResult:
         objective: str,
         status: OrchestratorResultStatus = "in_progress",
         score: Score = None,
-        confidence: float = 0.1
+        confidence: float = 0.1,
     ):
         self.conversation_id = conversation_id
         self.objective = objective
@@ -48,16 +47,22 @@ class OrchestratorResult:
             print("No conversation with the target")
             return
 
-        if self.achieved_objective:
+        if self.status == "success":
             print(
                 f"{Style.BRIGHT}{Fore.RED}The multi-turn orchestrator has completed the conversation and achieved "
                 f"the objective: {self.objective}"
             )
-        else:
+        elif self.status == "failure":
             print(
                 f"{Style.BRIGHT}{Fore.RED}The multi-turn orchestrator has not achieved the objective: "
                 f"{self.objective}"
             )
+        else:
+            print(
+                f"{Style.BRIGHT}{Fore.RED}The multi-turn orchestrator with objective: {self.objective} "
+                f"has ended with status: {self.status}"
+            )
+            return
 
         for message in target_messages:
             for piece in message.request_pieces:

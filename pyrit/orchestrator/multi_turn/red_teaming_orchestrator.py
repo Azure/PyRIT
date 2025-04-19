@@ -10,7 +10,7 @@ from uuid import uuid4
 from pyrit.common.path import RED_TEAM_ORCHESTRATOR_PATH
 from pyrit.common.utils import combine_dict
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt, SeedPromptGroup
-from pyrit.orchestrator import OrchestratorResult, MultiTurnOrchestrator
+from pyrit.orchestrator import MultiTurnOrchestrator, OrchestratorResult
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
@@ -204,7 +204,6 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
             status="success" if achieved_objective else "failure",
             score=score,
         )
-
 
     async def _retrieve_and_send_prompt_async(
         self,

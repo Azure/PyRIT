@@ -8,7 +8,6 @@ from abc import abstractmethod
 from pathlib import Path
 from typing import Optional, Sequence, Union
 
-
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score, SeedPrompt
 from pyrit.orchestrator import Orchestrator, OrchestratorResult
 from pyrit.prompt_converter import PromptConverter
@@ -17,8 +16,6 @@ from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
-
-
 
 
 class MultiTurnOrchestrator(Orchestrator):
@@ -63,7 +60,6 @@ class MultiTurnOrchestrator(Orchestrator):
         super().__init__(prompt_converters=prompt_converters, verbose=verbose)
 
         self._objective_target = objective_target
-        self._achieved_objective = False
 
         self._adversarial_chat_system_seed_prompt = SeedPrompt.from_yaml_file(adversarial_chat_system_prompt_path)
 

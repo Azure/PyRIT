@@ -15,7 +15,7 @@ from pyrit.exceptions import (
     remove_markdown_json,
 )
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt, SeedPromptGroup
-from pyrit.orchestrator import OrchestratorResult, MultiTurnOrchestrator
+from pyrit.orchestrator import MultiTurnOrchestrator, OrchestratorResult
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_normalizer.prompt_converter_configuration import (

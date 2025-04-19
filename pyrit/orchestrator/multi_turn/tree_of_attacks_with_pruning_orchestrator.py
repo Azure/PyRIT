@@ -11,8 +11,12 @@ from treelib import Tree
 from pyrit.common.path import DATASETS_PATH
 from pyrit.common.utils import combine_dict
 from pyrit.memory import MemoryInterface
-from pyrit.models import SeedPrompt, Score
-from pyrit.orchestrator import MultiTurnOrchestrator, OrchestratorResult, OrchestratorResultStatus
+from pyrit.models import Score, SeedPrompt
+from pyrit.orchestrator import (
+    MultiTurnOrchestrator,
+    OrchestratorResult,
+    OrchestratorResultStatus,
+)
 from pyrit.orchestrator.multi_turn.tree_of_attacks_node import TreeOfAttacksNode
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_target import PromptChatTarget
@@ -243,7 +247,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
             status="failure",
             objective=objective,
             tree_visualization=tree_visualization,
-            score=best_score
+            score=best_score,
         )
 
     async def _send_prompt_to_nodes_async(
@@ -258,7 +262,9 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
 
     def _get_completed_on_topic_results_in_order(self, nodes: list[TreeOfAttacksNode]):
         completed_nodes = [
-            node for node in nodes if node and node.completed and (not node.off_topic) and isinstance(node.score.get_value(), float)
+            node
+            for node in nodes
+            if node and node.completed and (not node.off_topic) and isinstance(node.score.get_value(), float)
         ]
         completed_nodes.sort(key=lambda x: (x.score.get_value(), random.random()), reverse=True)
         return completed_nodes

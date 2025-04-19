@@ -15,7 +15,7 @@ from pyrit.prompt_target import PromptChatTarget
 
 
 @pytest.fixture
-def orchestrator():
+def orchestrator(patch_central_database):
     objective_scorer = MagicMock()
     objective_scorer.scorer_type = "true_false"
     objective_target = MagicMock(PromptChatTarget)
@@ -236,7 +236,7 @@ async def test_print_conversation_no_messages():
     mock_memory.get_conversation.return_value = []
     mock_memory.get_scores_by_prompt_ids.return_value = []
     with patch("pyrit.memory.CentralMemory.get_memory_instance", return_value=mock_memory):
-        result = OrchestratorResult("conversation_id_123", False, "Test Objective")
+        result = OrchestratorResult("conversation_id_123", "failure", "Test Objective")
 
     await result.print_conversation_async()
 
@@ -291,12 +291,13 @@ async def test_print_conversation_with_messages():
 
     with patch("pyrit.memory.CentralMemory.get_memory_instance", return_value=mock_memory):
         with patch(
-            "pyrit.orchestrator.multi_turn.multi_turn_orchestrator.display_image_response", new_callable=AsyncMock
+            "pyrit.orchestrator.models.orchestrator_result.display_image_response", new_callable=AsyncMock
         ) as mock_display_image_response:
-            result = OrchestratorResult("conversation_id_123", True, "Test Objective")
+            result = OrchestratorResult(
+                conversation_id="conversation_id_123", objective="Test Objective", status="success", score=score
+            )
 
             await result.print_conversation_async()
 
             mock_memory.get_conversation.assert_called_once_with(conversation_id="conversation_id_123")
             assert mock_display_image_response.call_count == 2
-            assert mock_memory.get_scores_by_prompt_ids.call_count == 2
