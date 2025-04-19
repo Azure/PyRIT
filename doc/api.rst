@@ -247,6 +247,7 @@ API Reference
     CrescendoOrchestrator
     FlipAttackOrchestrator
     FuzzerOrchestrator
+    Orchestrator
     OrchestratorResult
     PAIROrchestrator
     PromptSendingOrchestrator
