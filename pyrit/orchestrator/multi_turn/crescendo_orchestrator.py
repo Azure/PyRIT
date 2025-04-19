@@ -15,7 +15,7 @@ from pyrit.exceptions import (
     remove_markdown_json,
 )
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt, SeedPromptGroup
-from pyrit.orchestrator import MultiTurnAttackResult, MultiTurnOrchestrator
+from pyrit.orchestrator import MultiTurnOrchestrator, OrchestratorResult
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
@@ -150,7 +150,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
     async def run_attack_async(
         self, *, objective: str, memory_labels: Optional[dict[str, str]] = None
-    ) -> MultiTurnAttackResult:
+    ) -> OrchestratorResult:
         """
         Executes the Crescendo Attack asynchronously.
 
@@ -168,11 +168,13 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
                 the passed-in labels take precedence. Defaults to None.
 
         Returns:
-            MultiTurnAttackResult: An object containing details about the attack outcome, including:
-                - conversation_id (UUID): The ID of the conversation where the objective was ultimately achieved or
+            OrchestratorResult: An object containing details about the attack outcome, including:
+                - conversation_id (str): The ID of the conversation where the objective was ultimately achieved or
                     failed.
-                - achieved_objective (bool): Indicates if the objective was successfully achieved within the turnlimit.
                 - objective (str): The initial objective of the attack.
+                - status (OrchestratorResultStatus): The status of the attack ("success", "failure", "pruned", etc.)
+                - score (Score): The score evaluating the attack outcome.
+                - confidence (float): The confidence level of the result.
 
         Raises:
             ValueError: If `max_turns` is set to a non-positive integer.
@@ -298,10 +300,12 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         logger.info("\nRED_TEAMING_CHAT MEMORY: ")
         self._log_target_memory(conversation_id=adversarial_chat_conversation_id)
 
-        return MultiTurnAttackResult(
+        return OrchestratorResult(
             conversation_id=objective_target_conversation_id,
-            achieved_objective=achieved_objective,
             objective=objective,
+            status="success" if achieved_objective else "failure",
+            score=objective_score,
+            confidence=1.0 if achieved_objective else 0.0,
         )
 
     @pyrit_json_retry
