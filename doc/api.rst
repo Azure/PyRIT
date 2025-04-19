@@ -247,9 +247,7 @@ API Reference
     CrescendoOrchestrator
     FlipAttackOrchestrator
     FuzzerOrchestrator
-    MultiTurnAttackResult
-    MultiTurnOrchestrator
-    Orchestrator
+    OrchestratorResult
     PAIROrchestrator
     PromptSendingOrchestrator
     RedTeamingOrchestrator

@@ -168,11 +168,13 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
                 the passed-in labels take precedence. Defaults to None.
 
         Returns:
-            MultiTurnAttackResult: An object containing details about the attack outcome, including:
-                - conversation_id (UUID): The ID of the conversation where the objective was ultimately achieved or
+            OrchestratorResult: An object containing details about the attack outcome, including:
+                - conversation_id (str): The ID of the conversation where the objective was ultimately achieved or
                     failed.
-                - achieved_objective (bool): Indicates if the objective was successfully achieved within the turnlimit.
                 - objective (str): The initial objective of the attack.
+                - status (OrchestratorResultStatus): The status of the attack ("success", "failure", "pruned", etc.)
+                - score (Score): The score evaluating the attack outcome.
+                - confidence (float): The confidence level of the result.
 
         Raises:
             ValueError: If `max_turns` is set to a non-positive integer.
@@ -303,6 +305,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             objective=objective,
             status="success" if achieved_objective else "failure",
             score=objective_score,
+            confidence=1.0 if achieved_objective else 0.0,
         )
 
     @pyrit_json_retry

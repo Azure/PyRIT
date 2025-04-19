@@ -165,10 +165,13 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
                 the passed-in labels take precedence. Defaults to None.
 
         Returns:
-            MultiTurnAttackResult: Contains the outcome of the attack, including:
-                - conversation_id (UUID): The ID associated with the final conversation state.
-                - achieved_objective (bool): Indicates whether the orchestrator successfully met the objective.
+            TAPAttackResult: Contains the outcome of the attack, including:
+                - conversation_id (str): The ID associated with the final conversation state.
                 - objective (str): The intended goal of the attack.
+                - status (OrchestratorResultStatus): The status of the attack ("success", "failure", "pruned", etc.)
+                - score (Score): The score evaluating the attack outcome.
+                - confidence (float): The confidence level of the result.
+                - tree_visualization (Tree): A visualization of the attack tree.
         """
 
         tree_visualization = Tree()

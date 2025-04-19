@@ -105,10 +105,12 @@ class MultiTurnOrchestrator(Orchestrator):
                 the passed-in labels take precedence. Defaults to None.
 
         Returns:
-            MultiTurnAttackResult: Contains the outcome of the attack, including:
-                - conversation_id (UUID): The ID associated with the final conversation state.
-                - achieved_objective (bool): Indicates whether the orchestrator successfully met the objective.
+            OrchestratorResult: Contains the outcome of the attack, including:
+                - conversation_id (str): The ID associated with the final conversation state.
                 - objective (str): The intended goal of the attack.
+                - status (OrchestratorResultStatus): The status of the attack ("success", "failure", "pruned", etc.)
+                - score (Score): The score evaluating the attack outcome.
+                - confidence (float): The confidence level of the result.
         """
 
     async def run_attacks_async(
@@ -125,7 +127,12 @@ class MultiTurnOrchestrator(Orchestrator):
             batch_size (int): The number of objectives to process in parallel. The default value is 5.
 
         Returns:
-            list[MultiTurnAttackResult]: The list of MultiTurnAttackResults for each objective.
+            list[OrchestratorResult]: The list of OrchestratorResults for each objective, each containing:
+                - conversation_id (str): The ID associated with the final conversation state.
+                - objective (str): The intended goal of the attack.
+                - status (OrchestratorResultStatus): The status of the attack ("success", "failure", "pruned", etc.)
+                - score (Score): The score evaluating the attack outcome.
+                - confidence (float): The confidence level of the result.
         """
         semaphore = asyncio.Semaphore(batch_size)
 

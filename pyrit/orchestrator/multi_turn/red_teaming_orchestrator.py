@@ -130,10 +130,12 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                 the passed-in labels take precedence. Defaults to None.
 
         Returns:
-            MultiTurnAttackResult: Contains the outcome of the attack, including:
-                - conversation_id (UUID): The ID associated with the final conversation state.
-                - achieved_objective (bool): Indicates whether the orchestrator successfully met the objective.
+            OrchestratorResult: Contains the outcome of the attack, including:
+                - conversation_id (str): The ID associated with the final conversation state.
                 - objective (str): The intended goal of the attack.
+                - status (OrchestratorResultStatus): The status of the attack ("success", "failure", "pruned", etc.)
+                - score (Score): The score evaluating the attack outcome.
+                - confidence (float): The confidence level of the result.
 
         Raises:
             RuntimeError: If the response from the target system contains an unexpected error.
@@ -203,6 +205,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
             objective=objective,
             status="success" if achieved_objective else "failure",
             score=score,
+            confidence=1.0 if achieved_objective else 0.0,
         )
 
     async def _retrieve_and_send_prompt_async(
