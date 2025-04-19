@@ -43,7 +43,7 @@ class RepeatTokenConverter(PromptConverter):
             case "split":
                 # function to split prompt on first punctuation (.?! only), preserve punctuation, 2 parts max.
                 def insert(text: str) -> list:
-                    parts = re.split(r"(\?|\.|\!)", text, 1)
+                    parts = re.split(r"(\?|\.|\!)", text, maxsplit=1)
                     if len(parts) == 3:  # if split mode with no punctuation
                         return [parts[0] + parts[1], parts[2]]
                     return ["", text]
