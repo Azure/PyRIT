@@ -14,7 +14,7 @@ from pyrit.exceptions import (
     remove_markdown_json,
 )
 from pyrit.memory import CentralMemory, MemoryInterface
-from pyrit.models import SeedPrompt, SeedPromptGroup
+from pyrit.models import Score, SeedPrompt, SeedPromptGroup
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
@@ -72,7 +72,7 @@ class TreeOfAttacksNode:
 
         self.prompt_sent = False
         self.completed = False
-        self.score = 0.0
+        self.score: Score = None  # Initialize as None since we don't have a score yet
         self.off_topic = False
 
     async def send_prompt_async(self, objective: str):

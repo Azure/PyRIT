@@ -226,7 +226,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
                 best_conversation_id = nodes[0].objective_target_conversation_id
                 best_score = nodes[0].score
 
-                if nodes[0].score.get_value() >= self._objective_achieved_score_threshhold:
+                if best_score and best_score.get_value() >= self._objective_achieved_score_threshhold:
                     logger.info("The conversation has been stopped because the response is jailbroken.")
                     return TAPAttackResult(
                         conversation_id=best_conversation_id,
@@ -247,7 +247,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
             status="failure",
             objective=objective,
             tree_visualization=tree_visualization,
-            score=best_score,
+            score=best_score if best_score else None,
         )
 
     async def _send_prompt_to_nodes_async(
@@ -264,9 +264,13 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         completed_nodes = [
             node
             for node in nodes
-            if node and node.completed and (not node.off_topic) and isinstance(node.score.get_value(), float)
+            if node
+            and node.completed
+            and (not node.off_topic)
+            and node.score
+            and isinstance(node.score.get_value(), float)
         ]
-        completed_nodes.sort(key=lambda x: (x.score.get_value(), random.random()), reverse=True)
+        completed_nodes.sort(key=lambda x: (x.score.get_value() if x.score else 0.0, random.random()), reverse=True)
         return completed_nodes
 
     def _prune_nodes_over_width(
