@@ -36,7 +36,7 @@ class WordLevelConverter(PromptConverter):
         pass
 
     def join_words(self, words: list[str]) -> str:
-        """Join the processed words into a single string"""
+        """Provide a way for subclasses to override the default behavior of joining words."""
         return " ".join(words)
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
