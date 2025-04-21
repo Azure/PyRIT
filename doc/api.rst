@@ -115,6 +115,7 @@ API Reference
     fetch_aya_redteaming_dataset
     fetch_babelscape_alert_dataset
     fetch_darkbench_dataset
+    fetch_multilingual_vulnerability_dataset
     fetch_decoding_trust_stereotypes_dataset
     fetch_examples
     fetch_forbidden_questions_dataset
