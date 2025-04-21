@@ -26,7 +26,7 @@ from pyrit.score.scorer import Scorer
 logger = logging.getLogger(__name__)
 
 
-class TAPAttackResult(OrchestratorResult):
+class TAPOrchestratorResult(OrchestratorResult):
     def __init__(
         self,
         *,
@@ -153,7 +153,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
 
     async def run_attack_async(
         self, *, objective: str, memory_labels: Optional[dict[str, str]] = None
-    ) -> TAPAttackResult:
+    ) -> TAPOrchestratorResult:
         """
         Applies the TAP attack strategy asynchronously.
 
@@ -165,7 +165,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
                 the passed-in labels take precedence. Defaults to None.
 
         Returns:
-            TAPAttackResult: Contains the outcome of the attack, including:
+            TAPOrchestratorResult: Contains the outcome of the attack, including:
                 - conversation_id (str): The ID associated with the final conversation state.
                 - objective (str): The intended goal of the attack.
                 - status (OrchestratorResultStatus): The status of the attack ("success", "failure", "pruned", etc.)
@@ -231,7 +231,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
 
                 if best_score and best_score.get_value() >= self._objective_achieved_score_threshhold:
                     logger.info("The conversation has been stopped because the response is jailbroken.")
-                    return TAPAttackResult(
+                    return TAPOrchestratorResult(
                         conversation_id=best_conversation_id,
                         score=best_score,
                         status="success",
@@ -245,7 +245,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
 
         logger.info("Could not achieve the conversation goal.")
 
-        return TAPAttackResult(
+        return TAPOrchestratorResult(
             conversation_id=best_conversation_id,
             status="failure",
             objective=objective,
