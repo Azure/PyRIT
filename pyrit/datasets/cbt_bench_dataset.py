@@ -19,8 +19,8 @@ def fetch_cbt_bench_dataset(config_name: str = "core_fine_seed") -> SeedPromptDa
 
     Note:
         For more information about the dataset and related materials, visit: \n
-        - https://huggingface.co/datasets/Psychotherapy-LLM/CBT-Bench \n
-        - Related to Cognitive Behavioral Therapy benchmarking and psychological safety tasks.
+        https://huggingface.co/datasets/Psychotherapy-LLM/CBT-Bench \n
+        Related to Cognitive Behavioral Therapy benchmarking and psychological safety tasks.
 
     Citation:
         Zhang, M., Yang, X., Zhang, X., Labrum, T., Chiu, J. C., Eack, S. M., Fang, F., Wang, W. Y., & Chen, Z. Z. (2024).
