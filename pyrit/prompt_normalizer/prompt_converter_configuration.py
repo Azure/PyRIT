@@ -22,17 +22,17 @@ class PromptConverterConfiguration:
     indexes_to_apply: list[int] = None
     prompt_data_types_to_apply: list[PromptDataType] = None
 
-
-def convert_to_configurations(converters: List[PromptConverter]) -> List[PromptConverterConfiguration]:
-    """
-    Converts a list of converters into a list of PromptConverterConfiguration objects.
-    Each converter gets its own configuration with default settings.
-    
-    Args:
-        converters: List of PromptConverters
+    @classmethod
+    def get_default(cls, converters: List[PromptConverter]) -> List["PromptConverterConfiguration"]:
+        """
+        Converts a list of converters into a list of PromptConverterConfiguration objects.
+        Each converter gets its own configuration with default settings.
         
-    Returns:
-        List[PromptConverterConfiguration]: List of configurations, one per converter
-    """
-    return [PromptConverterConfiguration(converters=[converter]) for converter in converters]
+        Args:
+            converters: List of PromptConverters
+            
+        Returns:
+            List[PromptConverterConfiguration]: List of configurations, one per converter
+        """
+        return [PromptConverterConfiguration(converters=[converter]) for converter in converters]
 

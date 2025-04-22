@@ -10,7 +10,7 @@ from pyrit.models import PromptRequestResponse, SeedPrompt
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import FlipConverter, PromptConverter
-from pyrit.prompt_normalizer import NormalizerRequest
+from pyrit.prompt_normalizer import NormalizerRequest, PromptConverterConfiguration
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer
 
@@ -28,7 +28,8 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
     def __init__(
         self,
         objective_target: PromptChatTarget,
-        prompt_converters: Optional[list[PromptConverter]] = None,
+        request_converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
+        response_converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
         scorers: Optional[list[Scorer]] = None,
         batch_size: int = 10,
         verbose: bool = False,

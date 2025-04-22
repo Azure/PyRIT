@@ -20,8 +20,6 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
 )
 
-from pyrit.prompt_normalizer.prompt_converter_configuration import convert_to_configurations
-
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer
 

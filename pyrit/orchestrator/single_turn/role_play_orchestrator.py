@@ -14,7 +14,6 @@ from pyrit.models import PromptRequestPiece, PromptRequestResponse, SeedPromptDa
 from pyrit.orchestrator import PromptSendingOrchestrator, OrchestratorResult
 from pyrit.prompt_converter import LLMGenericTextConverter, PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequest, PromptConverterConfiguration
-from pyrit.prompt_normalizer.prompt_converter_configuration import convert_to_configurations
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer
 
@@ -67,7 +66,7 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
         self._user_start_turn = role_play_definition.prompts[1]
         self._assistant_start_turn = role_play_definition.prompts[2]
 
-        rephrase_turn_converter = convert_to_configurations([
+        rephrase_turn_converter = PromptConverterConfiguration.get_default([
             LLMGenericTextConverter(
                 converter_target=adversarial_chat,
                 user_prompt_template_with_objective=self._rephrase_instructions,
