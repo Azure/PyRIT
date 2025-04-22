@@ -7,15 +7,21 @@ import pathlib
 import re
 from typing import Optional
 
+from pyrit.prompt_target.batch_helper import batch_task_async
+
+
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, SeedPromptDataset
 from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
-from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.orchestrator import PromptSendingOrchestrator, OrchestratorResult
 from pyrit.prompt_converter import PromptConverter, SearchReplaceConverter
 from pyrit.prompt_normalizer import NormalizerRequest
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
 )
+
+from pyrit.prompt_normalizer.prompt_converter_configuration import convert_to_configurations
+
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer
 
@@ -35,10 +41,12 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
         self,
         objective_target: PromptChatTarget,
         adversarial_chat: PromptChatTarget,
-        prompt_converters: Optional[list[PromptConverter]] = None,
         affirmative_response: Optional[str] = "yes.",
         context_description_instructions_path: Optional[pathlib.Path] = None,
-        scorers: Optional[list[Scorer]] = None,
+        request_converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
+        response_converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
+        objective_scorer: Optional[Scorer] = None,
+        auxiliary_scorers: Optional[list[Scorer]] = None,
         batch_size: int = 10,
         verbose: bool = False,
     ) -> None:
@@ -61,9 +69,7 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
 
         self._adversarial_chat = adversarial_chat
 
-        search_replace_converter = SearchReplaceConverter(
-            pattern=r"^.*\Z", replace=affirmative_response, regex_flags=re.DOTALL
-        )
+
 
         if context_description_instructions_path is None:
             context_description_instructions_path = ContextDescriptionPaths.GENERAL.value
@@ -75,21 +81,59 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
         self._answer_user_turn = context_description_instructions.prompts[1]
         self._rephrase_objective_to_question = context_description_instructions.prompts[2]
 
-        # these are applied to all adversarial chat responses, and ultimately to the objective target requests
-        self._conversation_history_converters = (
-            [PromptConverterConfiguration(converters=prompt_converters)] if prompt_converters else []
+        self._affirmative_seed_prompt = SeedPromptGroup(
+            prompts=[
+                SeedPrompt(
+                    value=affirmative_response,
+                    data_type="text",
+                )
+            ]
         )
+
 
         super().__init__(
             objective_target=objective_target,
-            prompt_converters=[search_replace_converter],
-            auxiliary_scorers=scorers,
+            request_converter_configurations=request_converter_configurations,
+            response_converter_configurations=response_converter_configurations,
+            objective_scorer=objective_scorer,
+            auxiliary_scorers=auxiliary_scorers,
+            should_convert_prepended_conversation=True,
             batch_size=batch_size,
             verbose=verbose,
         )
 
-    async def get_prepended_conversation_async(
-        self, normalizer_request: NormalizerRequest
+
+    async def run_attack_async(
+        self,
+        *,
+        objective: str,
+        retries_on_objective_failure: int = 0,
+        memory_labels: Optional[dict[str, str]] = None,
+    ) -> OrchestratorResult:
+        
+        prepended_conversation = await self._get_conversation_start(objective=objective)
+        return await super().run_attack_async(
+            objective=objective,
+            seed_prompt=self._affirmative_seed_prompt,
+            prepended_conversation=prepended_conversation,
+            retries_on_objective_failure=retries_on_objective_failure,
+            memory_labels=memory_labels,
+        )
+    
+    async def run_attacks_async(
+        self,
+        *,
+        objectives: list[str],
+        memory_labels: Optional[dict[str, str]] = None,
+    ) -> list[OrchestratorResult]:
+        return await super()._run_attacks_with_only_objectives_async(
+            objectives=objectives,
+            memory_labels=memory_labels,
+        )
+
+
+    async def _get_conversation_start(
+        self, objective: str
     ) -> Optional[list[PromptRequestResponse]]:
         """
         Returns the user turn prompts for the given list of prompts.
@@ -104,8 +148,6 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
         Returns:
             list[str]: The role playing prompts.
         """
-
-        objective = normalizer_request.seed_prompt_group.prompts[0].value
 
         benign_user_query = await self._get_objective_as_more_benign_question(objective=objective)
         benign_user_query_answer = await self._get_benign_question_answer(benign_user_query=benign_user_query)
@@ -135,15 +177,6 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
             ),
         ]
 
-    def validate_normalizer_requests(self, *, prompt_request_list: list[NormalizerRequest]):
-        if not prompt_request_list:
-            raise ValueError("No normalizer requests provided")
-
-        for request in prompt_request_list:
-            if len(request.seed_prompt_group.prompts) > 1:
-                raise ValueError("Multi-part messages not supported")
-            if request.seed_prompt_group.prompts[0].data_type != "text":
-                raise ValueError("Non text messages not supported")
 
     async def _get_benign_question_answer(self, benign_user_query: str) -> str:
         seed_prompt_to_get_user_turn_answer = SeedPromptGroup(
@@ -159,7 +192,6 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
             await self._prompt_normalizer.send_prompt_async(
                 seed_prompt_group=seed_prompt_to_get_user_turn_answer,
                 target=self._adversarial_chat,
-                response_converter_configurations=self._conversation_history_converters,
             )
         ).get_value()
 
@@ -179,7 +211,6 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
             await self._prompt_normalizer.send_prompt_async(
                 seed_prompt_group=seed_prompt_to_get_user_turn,
                 target=self._adversarial_chat,
-                response_converter_configurations=self._conversation_history_converters,
             )
         ).get_value()
 
@@ -199,7 +230,6 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
             await self._prompt_normalizer.send_prompt_async(
                 seed_prompt_group=seed_prompt_to_get_objective_as_a_question,
                 target=self._adversarial_chat,
-                response_converter_configurations=self._conversation_history_converters,
             )
         ).get_value()
 

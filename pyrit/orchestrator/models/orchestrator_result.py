@@ -49,17 +49,17 @@ class OrchestratorResult:
 
         if self.status == "success":
             print(
-                f"{Style.BRIGHT}{Fore.RED}The multi-turn orchestrator has completed the conversation and achieved "
+                f"{Style.BRIGHT}{Fore.RED}The orchestrator has completed the conversation and achieved "
                 f"the objective: {self.objective}"
             )
         elif self.status == "failure":
             print(
-                f"{Style.BRIGHT}{Fore.RED}The multi-turn orchestrator has not achieved the objective: "
+                f"{Style.BRIGHT}{Fore.RED}The orchestrator has not achieved the objective: "
                 f"{self.objective}"
             )
         else:
             print(
-                f"{Style.BRIGHT}{Fore.RED}The multi-turn orchestrator with objective: {self.objective} "
+                f"{Style.BRIGHT}{Fore.RED}The orchestrator with objective: {self.objective} "
                 f"has ended with status: {self.status}"
             )
 

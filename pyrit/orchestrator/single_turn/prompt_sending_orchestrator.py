@@ -79,12 +79,6 @@ class PromptSendingOrchestrator(Orchestrator):
         """
         self._prompt_normalizer.set_skip_criteria(skip_criteria=skip_criteria, skip_value_type=skip_value_type)
 
-    async def _convert_prepended_conversation_with_request_converters_async(self, prepended_conversation: list[PromptRequestResponse]):
-        """
-        Converts the prepended conversation to a list of PromptRequestResponse objects.
-        """
-        for request in prepended_conversation:
-            await self._prompt_normalizer.convert_values(request_response=request, converter_configurations=self._request_converter_configurations)
 
 
     async def run_attack_async(
@@ -114,10 +108,10 @@ class PromptSendingOrchestrator(Orchestrator):
         if prepended_conversation:
             # TODO raise error if it's not a PromptChatTarget
 
-            if self._should_convert_prepended_conversation:
-                await self._convert_prepended_conversation_with_request_converters_async(prepended_conversation)
 
             for request in prepended_conversation:
+                if self._should_convert_prepended_conversation:
+                    await self._prompt_normalizer.convert_values(request_response=request, converter_configurations=self._request_converter_configurations)
                 for piece in request.request_pieces:
                     piece.conversation_id = conversation_id
                     piece.orchestrator_identifier = self.get_identifier()
@@ -234,3 +228,38 @@ class PromptSendingOrchestrator(Orchestrator):
         return results
 
 
+    async def _run_attacks_with_only_objectives_async(
+        self,
+        *,
+        objectives: list[str],
+        memory_labels: Optional[dict[str, str]] = None,
+    ) -> list[OrchestratorResult]:
+        """
+        Runs multiple role play attacks in parallel using batch_size.
+
+        Args:
+            objectives (list[str]): List of objectives for the attacks.
+            memory_labels (dict[str, str], Optional): The memory labels to use for the attacks.
+        Returns:
+            list[OrchestratorResult]: List of results from each attack.
+        """
+
+        batch_items = [
+            objectives,
+        ]
+
+        batch_item_keys = [
+            "objective",
+        ]
+
+        results = await batch_task_async(
+            prompt_target=self._objective_target,
+            batch_size=self._batch_size,
+            items_to_batch=batch_items,
+            task_func=self.run_attack_async,
+            task_arguments=batch_item_keys,
+
+            memory_labels=memory_labels
+        )
+
+        return results
