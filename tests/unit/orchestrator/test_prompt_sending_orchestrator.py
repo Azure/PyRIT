@@ -387,3 +387,19 @@ async def test_prepare_conversation_without_prepended_conversation(patch_central
     assert conversation_id
 
     memory_mock.add_request_response_to_memory.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_prepare_conversation_with_conversation_id_no_conversation(patch_central_database):
+    objective_target_mock = MagicMock()
+    orchestrator = PromptSendingOrchestrator(objective_target=objective_target_mock)
+    memory_mock = MagicMock()
+
+    orchestrator._memory = memory_mock
+    normalizer_request = MagicMock()
+    normalizer_request.conversation_id = "existing-conversation-id"
+    conversation_id = await orchestrator._prepare_conversation_async(normalizer_request=normalizer_request)
+
+    assert conversation_id == "existing-conversation-id"
+
+    memory_mock.add_request_response_to_memory.assert_not_called()
