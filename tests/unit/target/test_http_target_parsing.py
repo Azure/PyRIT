@@ -55,7 +55,7 @@ def test_parse_raw_http_request(mock_http_target):
     headers, body, url, method, version = mock_http_target.parse_raw_http_request(sample_request)
     assert url == "https://example.com/"
     assert method == "POST"
-    assert headers == {"Host": "example.com", "Content-Type": "application/json"}
+    assert headers == {"host": "example.com", "content-type": "application/json"}
     assert body == '{"prompt": "{PLACEHOLDER_PROMPT}"}'
     assert version == "HTTP/1.1"
 
