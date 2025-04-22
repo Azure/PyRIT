@@ -137,7 +137,7 @@ async def test_send_prompts_and_score_async(mock_target: MockPromptTarget, num_c
 
     scorer.score_async = AsyncMock()  # type: ignore
 
-    orchestrator = PromptSendingOrchestrator(objective_target=mock_target, scorers=[scorer])
+    orchestrator = PromptSendingOrchestrator(objective_target=mock_target, auxiliary_scorers=[scorer])
     orchestrator._prompt_normalizer = AsyncMock()
 
     request_pieces = []
@@ -295,7 +295,7 @@ async def test_orchestrator_combine_memory_labels(mock_target: MockPromptTarget)
 @pytest.mark.asyncio
 async def test_orchestrator_get_score_memory(mock_target: MockPromptTarget):
     scorer = AsyncMock()
-    orchestrator = PromptSendingOrchestrator(objective_target=mock_target, scorers=[scorer])
+    orchestrator = PromptSendingOrchestrator(objective_target=mock_target, auxiliary_scorers=[scorer])
 
     request = PromptRequestPiece(
         role="user",

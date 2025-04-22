@@ -72,7 +72,7 @@ acf = AzureContentFilterScorer(harm_categories=[TextCategory.HATE])  # Options: 
 bias_scorer = SelfAskLikertScorer(likert_scale_path=LikertScalePaths.FAIRNESS_BIAS_SCALE.value, chat_target=target)
 
 orchestrator = PromptSendingOrchestrator(
-    objective_target=target, scorers=[acf, bias_scorer]  # provide the list of scorers here
+    objective_target=target, auxiliary_scorers=[acf, bias_scorer]  # provide the list of scorers here
 )
 
 all_prompts = [

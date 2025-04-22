@@ -122,7 +122,7 @@ bias_scorer = SelfAskLikertScorer(likert_scale_path=LikertScalePaths.FAIRNESS_BI
 
 orchestrator = PromptSendingOrchestrator(
     objective_target=target,
-    scorers=[acf, bias_scorer],  # provide the list of scorers here
+    auxiliary_scorers=[acf, bias_scorer],  # provide the list of scorers here
 )
 
 all_prompts = [

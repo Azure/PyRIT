@@ -7,13 +7,14 @@ from typing import Optional, Union
 
 from colorama import Fore, Style
 
-from pyrit.common.display_response import display_image_response
+
+from pyrit.prompt_target.batch_helper import batch_task_async
+
 from pyrit.common.utils import combine_dict
-from pyrit.models import PromptDataType, PromptRequestResponse
+from pyrit.models import PromptDataType, PromptRequestResponse, SeedPromptGroup, SeedPrompt
 from pyrit.models.filter_criteria import PromptConverterState, PromptFilterCriteria
-from pyrit.orchestrator import Orchestrator
-from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
+from pyrit.orchestrator import Orchestrator, OrchestratorResult
+from pyrit.prompt_normalizer import PromptNormalizer, PromptConverterConfiguration
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import Scorer
 
@@ -29,8 +30,11 @@ class PromptSendingOrchestrator(Orchestrator):
     def __init__(
         self,
         objective_target: PromptTarget,
-        prompt_converters: Optional[list[PromptConverter]] = None,
-        scorers: Optional[list[Scorer]] = None,
+        request_converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
+        response_converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
+        objective_scorer: Optional[Scorer] = None,
+        auxiliary_scorers: Optional[list[Scorer]] = None,
+        should_convert_prepended_conversation: bool = True,
         batch_size: int = 10,
         verbose: bool = False,
     ) -> None:
@@ -45,42 +49,25 @@ class PromptSendingOrchestrator(Orchestrator):
                 Note: If providing max requests per minute on the prompt_target, this should be set to 1 to
                 ensure proper rate limit management.
         """
-        super().__init__(prompt_converters=prompt_converters, verbose=verbose)
+        super().__init__(verbose=verbose)
 
         self._prompt_normalizer = PromptNormalizer()
-        self._scorers = scorers or []
+
+        if objective_scorer and objective_scorer.scorer_type != "true_false":
+            raise ValueError("Objective scorer must be a true/false scorer")
+
+        self._objective_scorer = objective_scorer or None
+        self._auxiliary_scorers = auxiliary_scorers or []
 
         self._objective_target = objective_target
 
+        self._request_converter_configurations = request_converter_configurations or []
+        self._response_converter_configurations = response_converter_configurations or []
+
+        self._should_convert_prepended_conversation = should_convert_prepended_conversation
         self._batch_size = batch_size
         self._prepended_conversation: list[PromptRequestResponse] = None
 
-    def set_prepended_conversation(self, *, prepended_conversation: list[PromptRequestResponse]):
-        """
-        Prepends a conversation to the prompt target.
-
-        This is sent along with each prompt request and can be the first part of aa conversation.
-        """
-        if prepended_conversation and not isinstance(self._objective_target, PromptChatTarget):
-            raise TypeError(
-                f"Only PromptChatTargets are able to modify conversation history. Instead objective_target is: "
-                f"{type(self._objective_target)}."
-            )
-
-        self._prepended_conversation = prepended_conversation
-
-    async def get_prepended_conversation_async(
-        self, *, normalizer_request: NormalizerRequest
-    ) -> Optional[list[PromptRequestResponse]]:
-        """
-        Returns the prepended conversation for the normalizer request.
-
-        Can be overwritten by subclasses to provide a different conversation.
-        """
-        if self._prepended_conversation:
-            return self._prepended_conversation
-
-        return None
 
     def set_skip_criteria(
         self, *, skip_criteria: PromptFilterCriteria, skip_value_type: PromptConverterState = "original"
@@ -92,123 +79,44 @@ class PromptSendingOrchestrator(Orchestrator):
         """
         self._prompt_normalizer.set_skip_criteria(skip_criteria=skip_criteria, skip_value_type=skip_value_type)
 
-    async def send_normalizer_requests_async(
+    async def _convert_prepended_conversation_with_request_converters_async(self, prepended_conversation: list[PromptRequestResponse]):
+        """
+        Converts the prepended conversation to a list of PromptRequestResponse objects.
+        """
+        for request in prepended_conversation:
+            await self._prompt_normalizer.convert_values(request_response=request, converter_configurations=self._request_converter_configurations)
+
+
+    async def run_attack_async(
         self,
         *,
-        prompt_request_list: list[NormalizerRequest],
+        objective: str,
+        seed_prompt: SeedPromptGroup = None,
+        prepended_conversation: Optional[list[PromptRequestResponse]] = None,
+        retries_on_objective_failure: int = 0,
         memory_labels: Optional[dict[str, str]] = None,
-    ) -> list[PromptRequestResponse]:
+    ) -> OrchestratorResult:
         """
-        Sends the normalized prompts to the prompt target.
-        """
-
-        self.validate_normalizer_requests(prompt_request_list=prompt_request_list)
-
-        for prompt in prompt_request_list:
-            prompt.conversation_id = await self._prepare_conversation_async(normalizer_request=prompt)
-
-        # Normalizer is responsible for storing the requests in memory
-        # The labels parameter may allow me to stash class information for each kind of prompt.
-        responses: list[PromptRequestResponse] = await self._prompt_normalizer.send_prompt_batch_to_target_async(
-            requests=prompt_request_list,
-            target=self._objective_target,
-            labels=combine_dict(existing_dict=self._global_memory_labels, new_dict=memory_labels),
-            orchestrator_identifier=self.get_identifier(),
-            batch_size=self._batch_size,
-        )
-
-        if self._scorers and responses:
-            response_pieces = PromptRequestResponse.flatten_to_prompt_request_pieces(responses)
-
-            for scorer in self._scorers:
-                await scorer.score_responses_inferring_tasks_batch_async(
-                    request_responses=response_pieces, batch_size=self._batch_size
-                )
-
-        return responses
-
-    async def send_prompts_async(
-        self,
-        *,
-        prompt_list: list[str],
-        prompt_type: PromptDataType = "text",
-        memory_labels: Optional[dict[str, str]] = None,
-        metadata: Optional[dict[str, Union[str, int]]] = None,
-    ) -> list[PromptRequestResponse]:
-        """
-        Sends the prompts to the prompt target.
+        Runs the attack.
 
         Args:
-            prompt_list (list[str]): The list of prompts to be sent.
-            prompt_type (PromptDataType): The type of prompt data. Defaults to "text".
-            memory_labels (dict[str, str], Optional): A free-form dictionary of additional labels to apply to the
-                prompts. Any labels passed in will be combined with self._global_memory_labels (from the
-                GLOBAL_MEMORY_LABELS environment variable) into one dictionary. In the case of collisions,
-                the passed-in labels take precedence. Defaults to None.
-            metadata (Optional(dict[str, str | int]): Any additional information to be added to the memory entry
-                corresponding to the prompts sent.
-
-        Returns:
-            list[PromptRequestResponse]: The responses from sending the prompts.
+            objective (str): The objective of the attack.
+            seed_prompt (SeedPromptGroup, Optional): The seed prompt groupto start the conversation. By default the objective is used.
+            prepended_conversation (list[PromptRequestResponse], Optional): The conversation to prepend to the attack.
+            memory_labels (dict[str, str], Optional): The memory labels to use for the attack.
         """
 
-        if isinstance(prompt_list, str):
-            prompt_list = [prompt_list]
-
-        requests: list[NormalizerRequest] = []
-        for prompt in prompt_list:
-
-            requests.append(
-                self._create_normalizer_request(
-                    prompt_text=prompt,
-                    prompt_type=prompt_type,
-                    converters=self._prompt_converters,
-                    metadata=metadata,
-                    conversation_id=str(uuid.uuid4()),
-                )
-            )
-
-        return await self.send_normalizer_requests_async(
-            prompt_request_list=requests,
-            memory_labels=memory_labels,
-        )
-
-    async def print_conversations_async(self):
-        """Prints the conversation between the objective target and the red teaming bot."""
-        messages = self.get_memory()
-
-        last_conversation_id = None
-
-        for message in messages:
-            if message.conversation_id != last_conversation_id:
-                print(f"{Style.NORMAL}{Fore.RESET}Conversation ID: {message.conversation_id}")
-                last_conversation_id = message.conversation_id
-
-            if message.role == "user" or message.role == "system":
-                print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
-            else:
-                print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
-                await display_image_response(message)
-
-            for score in message.scores:
-                print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
-
-    def validate_normalizer_requests(self, *, prompt_request_list: list[NormalizerRequest]):
-        """
-        Validates the normalizer request.
-
-        This is a no-op for this orchestrator, but subclasses may want to implement this.
-        """
-        pass
-
-    async def _prepare_conversation_async(self, normalizer_request: NormalizerRequest) -> str:
-        """
-        Adds the conversation to memory if there is a prepended conversation, and return the conversation ID.
-        """
         conversation_id = str(uuid.uuid4())
 
-        prepended_conversation = await self.get_prepended_conversation_async(normalizer_request=normalizer_request)
+        if not seed_prompt:
+            seed_prompt = SeedPromptGroup(prompts=[SeedPrompt(value=objective, data_type="text")])
+
         if prepended_conversation:
+            # TODO raise error if it's not a PromptChatTarget
+
+            if self._should_convert_prepended_conversation:
+                await self._convert_prepended_conversation_with_request_converters_async(prepended_conversation)
+
             for request in prepended_conversation:
                 for piece in request.request_pieces:
                     piece.conversation_id = conversation_id
@@ -219,4 +127,110 @@ class PromptSendingOrchestrator(Orchestrator):
                     piece.id = uuid.uuid4()
 
                 self._memory.add_request_response_to_memory(request=request)
-        return conversation_id
+
+        status = "unknown"
+        objective_score = None
+
+        for _ in range(retries_on_objective_failure + 1):
+
+            result = await self._prompt_normalizer.send_prompt_async(
+                seed_prompt_group=seed_prompt,
+                target=self._objective_target,
+                conversation_id=conversation_id,
+                request_converter_configurations=self._request_converter_configurations,
+                response_converter_configurations=self._response_converter_configurations,
+                labels=combine_dict(existing_dict=self._global_memory_labels, new_dict=memory_labels),
+                orchestrator_identifier=self.get_identifier(),
+            )
+
+
+            if not result:
+                continue
+
+            if self._auxiliary_scorers:
+                for piece in result.request_pieces:
+                    if piece.role == "assistant":
+                        for scorer in self._auxiliary_scorers:
+                            await scorer.score_async(
+                                request_response=piece,
+                            )
+                            
+            if self._objective_scorer:
+                status = "failure"
+                for piece in result.request_pieces:
+                    if piece.role == "assistant":
+                        objective_score_list = await self._objective_scorer.score_async(
+                            request_response=piece,
+                            task=objective,
+                        )
+
+                        # Find and save the first score that is true
+                        for score in objective_score_list:
+                            if score.get_value():
+                                objective_score = score
+                                status = "success"
+                                break
+                        if status == "success":
+                            break
+
+        return OrchestratorResult(
+            conversation_id=conversation_id,
+            objective=objective,
+            status=status,
+            score=objective_score,
+        )
+    
+    async def run_attacks_async(
+        self,
+        *,
+        objectives: list[str],
+        seed_prompts: Optional[list[SeedPromptGroup]] = None,
+        prepended_conversations: Optional[list[list[PromptRequestResponse]]] = None,
+        memory_labels: Optional[dict[str, str]] = None,
+    ) -> list[OrchestratorResult]:
+        """
+        Runs multiple attacks in parallel using batch_size.
+
+        Args:
+            objectives (list[str]): List of objectives for the attacks.
+            seed_prompts (list[SeedPromptGroup], Optional): List of seed prompt groups to start the conversations. 
+                If not provided, each objective will be used as its own seed prompt.
+            prepended_conversation (list[PromptRequestResponse], Optional): The conversation to prepend to each attack.
+            memory_labels (dict[str, str], Optional): The memory labels to use for the attacks.
+        Returns:
+            list[OrchestratorResult]: List of results from each attack.
+        """
+        if not seed_prompts:
+            seed_prompts = [None] * len(objectives)
+        elif len(seed_prompts) != len(objectives):
+            raise ValueError("Number of seed prompts must match number of objectives")
+
+        if not prepended_conversations:
+            prepended_conversations = [None] * len(objectives)
+        elif len(prepended_conversations) != len(objectives):
+            raise ValueError("Number of prepended conversations must match number of objectives")
+
+        batch_items = [
+            objectives,
+            seed_prompts,
+            prepended_conversations
+        ]
+
+        batch_item_keys = [
+            "objective",
+            "seed_prompt", 
+            "prepended_conversation",
+        ]
+
+        results = await batch_task_async(
+            prompt_target=self._objective_target,
+            batch_size=self._batch_size,
+            items_to_batch=batch_items,
+            task_func=self.run_attack_async,
+            task_arguments=batch_item_keys,
+            memory_labels=memory_labels
+        )
+
+        return results
+
+

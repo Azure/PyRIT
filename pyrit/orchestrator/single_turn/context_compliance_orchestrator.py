@@ -83,7 +83,7 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
         super().__init__(
             objective_target=objective_target,
             prompt_converters=[search_replace_converter],
-            scorers=scorers,
+            auxiliary_scorers=scorers,
             batch_size=batch_size,
             verbose=verbose,
         )

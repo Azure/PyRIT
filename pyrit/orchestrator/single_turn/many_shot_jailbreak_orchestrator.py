@@ -47,7 +47,7 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
 
         super().__init__(
             objective_target=objective_target,
-            scorers=scorers,
+            auxiliary_scorers=scorers,
             prompt_converters=prompt_converters,
             verbose=verbose,
         )

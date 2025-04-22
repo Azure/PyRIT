@@ -91,7 +91,7 @@ scorers = [
 
 orchestrator = PromptSendingOrchestrator(
     objective_target=objective_target,
-    scorers=scorers,
+    auxiliary_scorers=scorers,
 )
 
 

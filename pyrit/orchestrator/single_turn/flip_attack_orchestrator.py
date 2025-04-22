@@ -49,7 +49,7 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
         super().__init__(
             objective_target=objective_target,
             prompt_converters=[FlipConverter()] + (prompt_converters or []),
-            scorers=scorers,
+            auxiliary_scorers=scorers,
             batch_size=batch_size,
             verbose=verbose,
         )

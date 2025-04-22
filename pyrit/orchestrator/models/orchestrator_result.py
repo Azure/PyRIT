@@ -13,7 +13,7 @@ from pyrit.models import Score
 logger = logging.getLogger(__name__)
 
 
-OrchestratorResultStatus = Literal["success", "failure", "pruned", "adversarial_generation", "in_progress", "error"]
+OrchestratorResultStatus = Literal["success", "failure", "pruned", "adversarial_generation", "in_progress", "error", "unknown"]
 
 
 class OrchestratorResult:
@@ -62,7 +62,9 @@ class OrchestratorResult:
                 f"{Style.BRIGHT}{Fore.RED}The multi-turn orchestrator with objective: {self.objective} "
                 f"has ended with status: {self.status}"
             )
-            return
+
+        if self.score:
+            print(f"{Style.BRIGHT}{Fore.RED}objective score: {self.score} : {self.score.score_rationale}")
 
         for message in target_messages:
             for piece in message.request_pieces:
@@ -76,5 +78,8 @@ class OrchestratorResult:
 
                 await display_image_response(piece)
 
-                if self.score:
-                    print(f"{Style.RESET_ALL}score: {self.score} : {self.score.score_rationale}")
+                auxiliary_scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(piece.id)])
+                if auxiliary_scores and len(auxiliary_scores) > 0:
+                    for auxiliary_score in auxiliary_scores:
+                        if (not self.score) or (auxiliary_score.id != self.score.id):
+                            print(f"{Style.RESET_ALL}auxiliary score: {auxiliary_score} : {auxiliary_score.score_rationale}")

@@ -6,11 +6,15 @@ import logging
 import pathlib
 from typing import Optional
 
+from pyrit.prompt_target.batch_helper import batch_task_async
+
+
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, SeedPromptDataset
-from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, SeedPromptDataset, SeedPrompt, SeedPromptGroup
+from pyrit.orchestrator import PromptSendingOrchestrator, OrchestratorResult
 from pyrit.prompt_converter import LLMGenericTextConverter, PromptConverter
-from pyrit.prompt_normalizer import NormalizerRequest
+from pyrit.prompt_normalizer import NormalizerRequest, PromptConverterConfiguration
+from pyrit.prompt_normalizer.prompt_converter_configuration import convert_to_configurations
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer
 
@@ -34,8 +38,10 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
         objective_target: PromptChatTarget,
         adversarial_chat: PromptChatTarget,
         role_play_definition_path: pathlib.Path,
-        prompt_converters: Optional[list[PromptConverter]] = None,
-        scorers: Optional[list[Scorer]] = None,
+        request_converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
+        response_converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
+        objective_scorer: Optional[Scorer] = None,
+        auxiliary_scorers: Optional[list[Scorer]] = None,
         batch_size: int = 10,
         verbose: bool = False,
     ) -> None:
@@ -60,34 +66,77 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
         self._user_start_turn = role_play_definition.prompts[1]
         self._assistant_start_turn = role_play_definition.prompts[2]
 
-        rephrase_turn_converter = LLMGenericTextConverter(
-            converter_target=adversarial_chat,
-            user_prompt_template_with_objective=self._rephrase_instructions,
+        rephrase_turn_converter = convert_to_configurations([
+            LLMGenericTextConverter(
+                converter_target=adversarial_chat,
+                user_prompt_template_with_objective=self._rephrase_instructions,
+            )]
         )
 
         super().__init__(
             objective_target=objective_target,
-            prompt_converters=[rephrase_turn_converter] + (prompt_converters or []),
-            scorers=scorers,
+            request_converter_configurations= rephrase_turn_converter + (request_converter_configurations or []),
+            response_converter_configurations=response_converter_configurations,
+            objective_scorer=objective_scorer,
+            auxiliary_scorers=auxiliary_scorers,
             batch_size=batch_size,
             verbose=verbose,
         )
 
-        self._set_default_conversation_start()
 
-    def validate_normalizer_requests(self, *, prompt_request_list: list[NormalizerRequest]):
-        if not prompt_request_list:
-            raise ValueError("No normalizer requests provided")
+    async def run_attack_async(
+        self,
+        *,
+        objective: str,
+        retries_on_objective_failure: int = 0,
+        memory_labels: Optional[dict[str, str]] = None,
+    ) -> OrchestratorResult:
+        return await super().run_attack_async(
+            objective=objective,
+            prepended_conversation=self._get_conversation_start(),
+            retries_on_objective_failure=retries_on_objective_failure,
+            memory_labels=memory_labels,
+        )
+    
+    async def run_attacks_async(
+        self,
+        *,
+        objectives: list[str],
+        memory_labels: Optional[dict[str, str]] = None,
+    ) -> list[OrchestratorResult]:
+        """
+        Runs multiple role play attacks in parallel using batch_size.
 
-        for request in prompt_request_list:
-            if len(request.seed_prompt_group.prompts) > 1:
-                raise ValueError("Multi-part messages not supported")
-            if request.seed_prompt_group.prompts[0].data_type != "text":
-                raise ValueError("Non text messages not supported")
+        Args:
+            objectives (list[str]): List of objectives for the attacks.
+            memory_labels (dict[str, str], Optional): The memory labels to use for the attacks.
+        Returns:
+            list[OrchestratorResult]: List of results from each attack.
+        """
 
-    def _set_default_conversation_start(self):
+        batch_items = [
+            objectives,
+        ]
 
-        prepended_conversation = [
+        batch_item_keys = [
+            "objective",
+        ]
+
+        results = await batch_task_async(
+            prompt_target=self._objective_target,
+            batch_size=self._batch_size,
+            items_to_batch=batch_items,
+            task_func=self.run_attack_async,
+            task_arguments=batch_item_keys,
+            memory_labels=memory_labels
+        )
+
+        return results
+
+
+    def _get_conversation_start(self):
+
+        return [
             PromptRequestResponse(
                 request_pieces=[
                     PromptRequestPiece(
@@ -106,4 +155,3 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
             ),
         ]
 
-        self.set_prepended_conversation(prepended_conversation=prepended_conversation)

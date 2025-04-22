@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 from dataclasses import dataclass
+from typing import List
 
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter
@@ -20,3 +21,18 @@ class PromptConverterConfiguration:
     converters: list[PromptConverter]
     indexes_to_apply: list[int] = None
     prompt_data_types_to_apply: list[PromptDataType] = None
+
+
+def convert_to_configurations(converters: List[PromptConverter]) -> List[PromptConverterConfiguration]:
+    """
+    Converts a list of converters into a list of PromptConverterConfiguration objects.
+    Each converter gets its own configuration with default settings.
+    
+    Args:
+        converters: List of PromptConverters
+        
+    Returns:
+        List[PromptConverterConfiguration]: List of configurations, one per converter
+    """
+    return [PromptConverterConfiguration(converters=[converter]) for converter in converters]
+

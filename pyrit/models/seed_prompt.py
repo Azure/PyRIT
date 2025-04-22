@@ -220,7 +220,7 @@ class SeedPrompt(YamlLoadable):
 
 class SeedPromptGroup(YamlLoadable):
     """
-    A group of prompts that need to be sent together.
+    A group of prompts that need to be sent together, along with an objective.
 
     This class is useful when a target requires multiple (multimodal) prompt pieces to be grouped
     and sent together. All prompts in the group should share the same `prompt_group_id`.
