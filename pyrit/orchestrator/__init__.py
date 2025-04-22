@@ -14,6 +14,9 @@ from pyrit.orchestrator.single_turn.context_compliance_orchestrator import (
 
 from pyrit.orchestrator.fuzzer_orchestrator import FuzzerOrchestrator
 from pyrit.orchestrator.multi_turn.crescendo_orchestrator import CrescendoOrchestrator
+
+from pyrit.orchestrator.multi_turn.crescendo_ensemble_orchestrator import CrescendoEnsembleOrchestrator
+
 from pyrit.orchestrator.multi_turn.pair_orchestrator import PAIROrchestrator
 from pyrit.orchestrator.multi_turn.red_teaming_orchestrator import RedTeamingOrchestrator
 from pyrit.orchestrator.single_turn.flip_attack_orchestrator import FlipAttackOrchestrator
@@ -29,6 +32,9 @@ __all__ = [
     "ContextComplianceOrchestrator",
     "ContextDescriptionPaths",
     "CrescendoOrchestrator",
+
+    "CrescendoEnsembleOrchestrator",
+
     "FlipAttackOrchestrator",
     "FuzzerOrchestrator",
     "MultiTurnAttackResult",

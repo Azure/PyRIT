@@ -18,6 +18,8 @@ from pyrit.score.self_ask_true_false_scorer import SelfAskTrueFalseScorer, TrueF
 from pyrit.score.substring_scorer import SubStringScorer
 from pyrit.score.true_false_inverter_scorer import TrueFalseInverterScorer
 
+from pyrit.score.ensemble_scorer import EnsembleScorer
+
 __all__ = [
     "AzureContentFilterScorer",
     "ContentClassifierPaths",
@@ -39,4 +41,6 @@ __all__ = [
     "TrueFalseInverterScorer",
     "TrueFalseQuestion",
     "TrueFalseQuestionPaths",
+
+    "EnsembleScorer"
 ]
