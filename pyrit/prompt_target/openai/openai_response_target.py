@@ -3,7 +3,7 @@
 
 import json
 import logging
-from typing import Any, MutableSequence, Optional
+from typing import MutableSequence, Optional
 
 import httpx
 
@@ -23,7 +23,6 @@ from pyrit.models import (
     construct_response_from_request,
     data_serializer_factory,
 )
-from pyrit.models.chat_message import ChatMessage
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
@@ -46,14 +45,14 @@ class OpenAIResponseTarget(OpenAITarget):
         max_output_tokens: Optional[int] = None,
         temperature: Optional[float] = None,
         top_p: Optional[float] = None,
-        **kwargs
+        **kwargs,
     ):
         """
         Args:
             model_name (str, Optional): The name of the model.
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-                Defaults to the OPENAI_CHAT_KEY environment variable.
+                Defaults to the OPENAI_RESPONSES_KEY environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
@@ -73,9 +72,9 @@ class OpenAIResponseTarget(OpenAITarget):
         self._top_p = top_p
 
     def _set_openai_env_configuration_vars(self) -> None:
-        self.model_name_environment_variable = "OPENAI_CHAT_MODEL"
-        self.endpoint_environment_variable = "OPENAI_CHAT_ENDPOINT"
-        self.api_key_environment_variable = "OPENAI_CHAT_KEY"
+        self.model_name_environment_variable = "OPENAI_RESPONSES_MODEL"
+        self.endpoint_environment_variable = "OPENAI_RESPONSES_ENDPOINT"
+        self.api_key_environment_variable = "OPENAI_RESPONSES_KEY"
 
     @limit_requests_per_minute
     @pyrit_target_retry
@@ -107,12 +106,6 @@ class OpenAIResponseTarget(OpenAITarget):
             params["api-version"] = self._api_version
 
         try:
-            print("Sending request to the prompt target")
-            print("Endpoint: ", self._endpoint)
-            print("Method: POST")
-            print("Headers: ", self._headers)
-            print("Body: ", body)
-            print("Params: ", params)
             str_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(
                 endpoint_uri=self._endpoint,
                 method="POST",
@@ -248,7 +241,6 @@ class OpenAIResponseTarget(OpenAITarget):
             raise PyritException(message=f"Status {status} and error {error} from response: {response}")
         else:
             for piece in response["output"]:
-                print(piece)
                 if piece["type"] == "reasoning":
                     # TODO: consider storing that as well
                     continue
