@@ -1,5 +1,6 @@
 # scenario: verify converter functionality with all converters as of v0.8.1
-# adversarial_chat available as default converter_target
+# adversarial_chat available as default converter_target when necessary
+# converters that do not need a target also included
 datasets:
   - ./pyrit/datasets/seed_prompts/illegal.prompt
 scenarios:
@@ -7,7 +8,7 @@ scenarios:
 objective_target:
   type: "OpenAIChatTarget"
 converters:
-  -  type: "AnsiAttackConverter" # not in the api docs
+  - type: "AnsiAttackConverter" # not in the api docs
   - type: "AddImageTextConverter"
     img_to_add: "https://example.com/image.png"
   - type: "AddImageVideoConverter" # not in the api docs
