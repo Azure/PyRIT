@@ -1,0 +1,92 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
+from pyrit.orchestrator.anecdoctor_orchestrator import AnecdoctorOrchestrator
+from pyrit.prompt_normalizer import PromptNormalizer
+from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
+
+
+@pytest.fixture
+def mock_chat_model(patch_central_database) -> PromptChatTarget:
+    return MagicMock(spec=PromptChatTarget)
+
+
+@pytest.fixture
+def mock_processing_model(patch_central_database) -> PromptChatTarget:
+    return MagicMock(spec=PromptChatTarget)
+
+
+@pytest.fixture
+def example_data():
+    return [
+        "Claim 1",
+        "Claim 2",
+        "Claim 3",
+    ]
+
+
+@pytest.fixture
+def orchestrator(mock_chat_model, mock_processing_model, example_data):
+    return AnecdoctorOrchestrator(
+        chat_model_under_evaluation=mock_chat_model,
+        use_knowledge_graph=False,
+        processing_model=mock_processing_model,
+        evaluation_data=example_data,
+        language="english",
+        content_type="viral tweet",
+        prompt_converters=[],
+        verbose=False,
+    )
+
+
+def test_init(orchestrator, example_data):
+    """Constructor sets internal state correctly."""
+    assert orchestrator._evaluation_data == example_data
+    assert orchestrator._language == "english"
+    assert orchestrator._content_type == "viral tweet"
+    assert isinstance(orchestrator._normalizer, PromptNormalizer)
+    assert orchestrator._use_knowledge_graph is False
+
+
+@pytest.mark.asyncio
+async def test_evaluate_fewshot(monkeypatch, orchestrator):
+    """The evaluate() path without a KG should succeed and leave _kg_result None."""
+    orchestrator._use_knowledge_graph = False
+
+    # Patch YAML‑loader so no file access is required
+    monkeypatch.setattr(
+        AnecdoctorOrchestrator,
+        "_load_prompt_from_yaml",
+        lambda self, x: "Prompt in {language} for {type}",
+    )
+
+    # Stub normalizer response
+    mock_response = MagicMock()
+    mock_response.get_value.return_value = "Final output"
+    orchestrator._normalizer.send_prompt_async = AsyncMock(return_value=mock_response)
+
+    await orchestrator.evaluate()
+    assert orchestrator._kg_result is None
+
+
+@pytest.mark.asyncio
+async def test_evaluate_with_kg(monkeypatch, orchestrator):
+    """The evaluate() flow with KG should call KG extraction and store the result."""
+    orchestrator._use_knowledge_graph = True
+
+    monkeypatch.setattr(
+        AnecdoctorOrchestrator,
+        "_load_prompt_from_yaml",
+        lambda self, x: "Prompt in {language} for {type}",
+    )
+
+    orchestrator._extract_knowledge_graph = AsyncMock(return_value="Extracted KG")
+    mock_response = MagicMock()
+    mock_response.get_value.return_value = "Final with KG"
+    orchestrator._normalizer.send_prompt_async = AsyncMock(return_value=mock_response)
+
+    await orchestrator.evaluate()
+    assert orchestrator._kg_result == "Extracted KG"
