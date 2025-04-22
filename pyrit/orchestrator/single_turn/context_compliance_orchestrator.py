@@ -46,6 +46,7 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
         objective_scorer: Optional[Scorer] = None,
         auxiliary_scorers: Optional[list[Scorer]] = None,
         batch_size: int = 10,
+        retries_on_objective_failure: int = 0,
         verbose: bool = False,
     ) -> None:
         """
@@ -62,6 +63,7 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
             batch_size (int, Optional): The (max) batch size for sending prompts. Defaults to 10.
                 Note: If providing max requests per minute on the prompt_target, this should be set to 1 to
                 ensure proper rate limit management.
+            retries_on_objective_failure (int, Optional): Number of retries to attempt if objective fails. Defaults to 0.
             verbose (bool, Optional): Whether to log debug information. Defaults to False.
         """
 
@@ -97,6 +99,7 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
             auxiliary_scorers=auxiliary_scorers,
             should_convert_prepended_conversation=True,
             batch_size=batch_size,
+            retries_on_objective_failure=retries_on_objective_failure,
             verbose=verbose,
         )
 
@@ -105,7 +108,6 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
         self,
         *,
         objective: str,
-        retries_on_objective_failure: int = 0,
         memory_labels: Optional[dict[str, str]] = None,
     ) -> OrchestratorResult:
         
@@ -114,7 +116,6 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
             objective=objective,
             seed_prompt=self._affirmative_seed_prompt,
             prepended_conversation=prepended_conversation,
-            retries_on_objective_failure=retries_on_objective_failure,
             memory_labels=memory_labels,
         )
     

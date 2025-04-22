@@ -36,6 +36,7 @@ class PromptSendingOrchestrator(Orchestrator):
         auxiliary_scorers: Optional[list[Scorer]] = None,
         should_convert_prepended_conversation: bool = True,
         batch_size: int = 10,
+        retries_on_objective_failure: int = 0,
         verbose: bool = False,
     ) -> None:
         """
@@ -48,6 +49,8 @@ class PromptSendingOrchestrator(Orchestrator):
             batch_size (int, Optional): The (max) batch size for sending prompts. Defaults to 10.
                 Note: If providing max requests per minute on the prompt_target, this should be set to 1 to
                 ensure proper rate limit management.
+            retries_on_objective_failure (int, Optional): Number of retries to attempt if objective fails. Defaults to 0.
+            verbose (bool, Optional): Whether to log debug information. Defaults to False.
         """
         super().__init__(verbose=verbose)
 
@@ -66,6 +69,7 @@ class PromptSendingOrchestrator(Orchestrator):
 
         self._should_convert_prepended_conversation = should_convert_prepended_conversation
         self._batch_size = batch_size
+        self._retries_on_objective_failure = retries_on_objective_failure
         self._prepended_conversation: list[PromptRequestResponse] = None
 
 
@@ -87,7 +91,6 @@ class PromptSendingOrchestrator(Orchestrator):
         objective: str,
         seed_prompt: SeedPromptGroup = None,
         prepended_conversation: Optional[list[PromptRequestResponse]] = None,
-        retries_on_objective_failure: int = 0,
         memory_labels: Optional[dict[str, str]] = None,
     ) -> OrchestratorResult:
         """
@@ -125,7 +128,7 @@ class PromptSendingOrchestrator(Orchestrator):
         status = "unknown"
         objective_score = None
 
-        for _ in range(retries_on_objective_failure + 1):
+        for _ in range(self._retries_on_objective_failure + 1):
 
             result = await self._prompt_normalizer.send_prompt_async(
                 seed_prompt_group=seed_prompt,

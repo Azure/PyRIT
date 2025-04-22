@@ -30,7 +30,9 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
         objective_target: PromptChatTarget,
         request_converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
         response_converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
-        scorers: Optional[list[Scorer]] = None,
+        objective_scorer: Optional[Scorer] = None,
+        auxiliary_scorers: Optional[list[Scorer]] = None,
+        should_convert_prepended_conversation: bool = True,
         batch_size: int = 10,
         verbose: bool = False,
     ) -> None:

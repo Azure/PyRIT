@@ -43,6 +43,7 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
         auxiliary_scorers: Optional[list[Scorer]] = None,
         should_convert_prepended_conversation: bool = True,
         batch_size: int = 10,
+        retries_on_objective_failure: int = 0,
         verbose: bool = False,
     ) -> None:
         """
@@ -55,6 +56,7 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
             batch_size (int, Optional): The (max) batch size for sending prompts. Defaults to 10.
                 Note: If providing max requests per minute on the prompt_target, this should be set to 1 to
                 ensure proper rate limit management.
+            retries_on_objective_failure (int, Optional): Number of retries to attempt if objective fails. Defaults to 0.
             verbose (bool, Optional): Whether to log debug information. Defaults to False.
         """
 
@@ -81,6 +83,7 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
             auxiliary_scorers=auxiliary_scorers,
             should_convert_prepended_conversation=should_convert_prepended_conversation,
             batch_size=batch_size,
+            retries_on_objective_failure=retries_on_objective_failure,
             verbose=verbose,
         )
 
@@ -88,7 +91,6 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
         self,
         *,
         objective: str,
-        retries_on_objective_failure: int = 0,
         memory_labels: Optional[dict[str, str]] = None,
     ) -> OrchestratorResult:
         
@@ -96,7 +98,6 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
         return await super().run_attack_async(
             objective=objective,
             prepended_conversation=prepended_conversation,
-            retries_on_objective_failure=retries_on_objective_failure,
             memory_labels=memory_labels,
         )
     
