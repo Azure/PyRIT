@@ -21,7 +21,7 @@ class SelfAskScaleScorer(Scorer):
     class ScalePaths(enum.Enum):
         TREE_OF_ATTACKS_SCALE = Path(SCALES_PATH, "tree_of_attacks_scale.yaml").resolve()
         TASK_ACHIEVED_SCALE = Path(SCALES_PATH, "task_achieved_scale.yaml").resolve()
-        CRITERIA_SCALE = Path(SCALES_PATH, "criteria_example.yaml").resolve()
+        CRITERIA_SCALE = Path(SCALES_PATH, "criteria_example_scale.yaml").resolve()
 
     class SystemPaths(enum.Enum):
         GENERAL_SYSTEM_PROMPT = Path(SCALES_PATH, "general_system_prompt.yaml").resolve()
