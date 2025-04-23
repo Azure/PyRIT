@@ -3,7 +3,6 @@ name: system prompt for scoring whether or not an objective was achieved
 description: given a set of criteria for scoring how successful the objectives were met
 parameters:
   - minimum_value
-  - minimum_description
   - maximum_value
   - success_criteria
   - step_description
