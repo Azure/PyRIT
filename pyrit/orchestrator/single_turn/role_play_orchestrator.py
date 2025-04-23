@@ -68,7 +68,7 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
         self._user_start_turn = role_play_definition.prompts[1]
         self._assistant_start_turn = role_play_definition.prompts[2]
 
-        rephrase_turn_converter = PromptConverterConfiguration.get_default([
+        rephrase_turn_converter = PromptConverterConfiguration.create_configurations_from_converters([
             LLMGenericTextConverter(
                 converter_target=adversarial_chat,
                 user_prompt_template_with_objective=self._rephrase_instructions,

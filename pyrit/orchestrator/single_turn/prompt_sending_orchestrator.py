@@ -99,7 +99,7 @@ class PromptSendingOrchestrator(Orchestrator):
         Args:
             objective (str): The objective of the attack.
             seed_prompt (SeedPromptGroup, Optional): The seed prompt groupto start the conversation. By default the objective is used.
-            prepended_conversation (list[PromptRequestResponse], Optional): The conversation to prepend to the attack.
+            prepended_conversation (list[PromptRequestResponse], Optional): The conversation to prepend to the attack. Sent to objective target.
             memory_labels (dict[str, str], Optional): The memory labels to use for the attack.
         """
 

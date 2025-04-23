@@ -81,5 +81,5 @@ class OrchestratorResult:
                 auxiliary_scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(piece.id)])
                 if auxiliary_scores and len(auxiliary_scores) > 0:
                     for auxiliary_score in auxiliary_scores:
-                        if (not self.score) or (auxiliary_score.id != self.score.id):
+                        if not self.score or auxiliary_score.id != self.score.id:
                             print(f"{Style.RESET_ALL}auxiliary score: {auxiliary_score} : {auxiliary_score.score_rationale}")

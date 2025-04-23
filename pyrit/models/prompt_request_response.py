@@ -71,6 +71,20 @@ class PromptRequestResponse:
             response_pieces.extend(response.request_pieces)
 
         return response_pieces
+    
+    @staticmethod
+    def get_system_prompt_request(system_prompt: str) -> Sequence["PromptRequestResponse"]:
+        return [
+            PromptRequestResponse(
+                request_pieces=[
+                    PromptRequestPiece(
+                        original_value=system_prompt,
+                        role="system",
+                    )
+                ]
+            )
+        ]
+
 
 
 def group_conversation_request_pieces_by_sequence(
