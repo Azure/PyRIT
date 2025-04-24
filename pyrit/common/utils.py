@@ -81,7 +81,7 @@ def get_random_indices(*, start: int, size: int, proportion: float) -> List[int]
 
 
 def select_word_indices(
-    words: List[str],
+    words: List[str], 
     mode: Literal["all", "custom", "keywords", "random", "regex"],
     *,
     indices: Optional[List[int]] = None,
