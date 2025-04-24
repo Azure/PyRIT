@@ -17,16 +17,18 @@
 
 # %%
 # Import necessary packages
+import json
+
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.datasets import fetch_wmdp_dataset
+from pyrit.memory import CentralMemory
 from pyrit.models import (
+    PromptRequestResponse,
     QuestionAnsweringDataset,
     QuestionAnsweringEntry,
     QuestionChoice,
 )
-from pyrit.orchestrator.question_answer_benchmark_orchestrator import (
-    QuestionAnsweringBenchmarkOrchestrator,
-)
+from pyrit.orchestrator import QuestionAnsweringBenchmarkOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score.question_answer_scorer import QuestionAnswerScorer
 
@@ -37,6 +39,22 @@ initialize_pyrit(memory_db_type=IN_MEMORY)
 # %%
 # Set up the Azure OpenAI prompt target
 target = OpenAIChatTarget()
+
+
+# %%
+# Define helper function for scoring
+def score_responses(responses: list[PromptRequestResponse]):
+    correct_count = 0
+    for response in responses:
+        score_metadata = json.loads(response.request_pieces[0].scores[0].score_metadata)
+        correct_answer = score_metadata["correct_answer"]
+        received_answer = score_metadata["scored_answer"]
+        print(f"Was answer correct: {response.request_pieces[0].scores[0].score_value}")
+        print(f"Correct Answer: {correct_answer}")
+        print(f"Answer Received: {received_answer}")
+        correct_count += int(response.request_pieces[0].scores[0].score_value == "True")
+    print(f"Correct / Total: {correct_count} / {len(responses)}")
+
 
 # %%
 # Create demo dataset for Q/A Model
@@ -51,7 +69,7 @@ qa_ds = QuestionAnsweringDataset(
         QuestionAnsweringEntry(
             question="What is the capital of France?",
             answer_type="str",
-            correct_answer="Paris",
+            correct_answer="0",
             choices=[
                 QuestionChoice(index=0, text="Paris"),
                 QuestionChoice(index=1, text="London"),
@@ -62,7 +80,7 @@ qa_ds = QuestionAnsweringDataset(
         QuestionAnsweringEntry(
             question="What is the capital of Germany?",
             answer_type="str",
-            correct_answer="Berlin",
+            correct_answer="2",
             choices=[
                 QuestionChoice(index=0, text="Paris"),
                 QuestionChoice(index=1, text="London"),
@@ -73,7 +91,7 @@ qa_ds = QuestionAnsweringDataset(
         QuestionAnsweringEntry(
             question="Which of the following is a prime number?",
             answer_type="str",
-            correct_answer="507961",
+            correct_answer="3",
             choices=[
                 QuestionChoice(index=0, text="507963"),
                 QuestionChoice(index=1, text="507962"),
@@ -84,32 +102,19 @@ qa_ds = QuestionAnsweringDataset(
     ],
 )
 
-# Create the score for the Q/A Model
-qa_scorer = QuestionAnswerScorer(
-    dataset=qa_ds,
-)
+# Create the scorer
+qa_scorer = QuestionAnswerScorer()
 
 # Create the orchestrator with scorer and demo dataset
 benchmark_orchestrator = QuestionAnsweringBenchmarkOrchestrator(
-    chat_model_under_evaluation=target, scorer=qa_scorer, verbose=True
+    objective_target=target, scorers=[qa_scorer], verbose=True
 )
 
-# Evaluate the Q/A Model response
-await benchmark_orchestrator.evaluate()  # type: ignore
+# Sends prompts associated with dataset
+responses = await benchmark_orchestrator.send_prompts_async(dataset=qa_ds)  # type: ignore
 
 # %%
-# Output if the results are correct
-correct_count = 0
-total_count = 0
-
-for idx, (qa_question_entry, answer) in enumerate(benchmark_orchestrator._scorer.evaluation_results.items()):
-    print(f"Question {idx+1}: {qa_question_entry.question}")
-    print(f"Answer: {answer}")
-    print(f"")
-
-    correct_count += 1 if answer.is_correct else 0
-
-print(f"Correct count: {correct_count}/{len(benchmark_orchestrator._scorer.evaluation_results)}")
+score_responses(responses=responses)
 
 # %%
 # Fetch WMDP dataset for Q/A Model Testing
@@ -117,32 +122,12 @@ print(f"Correct count: {correct_count}/{len(benchmark_orchestrator._scorer.evalu
 wmdp_ds = fetch_wmdp_dataset()
 wmdp_ds.questions = wmdp_ds.questions[:3]
 
-# Create the score for the Q/A Model
-qa_scorer_wmdp = QuestionAnswerScorer(
-    dataset=wmdp_ds,
-)
-
-# Create the orchestrator with scorer and demo dataset
-benchmark_orchestrator_wmdp = QuestionAnsweringBenchmarkOrchestrator(
-    chat_model_under_evaluation=target, scorer=qa_scorer_wmdp, verbose=True
-)
-
 # Evaluate the Q/A Model response
-await benchmark_orchestrator_wmdp.evaluate()  # type: ignore
+responses = await benchmark_orchestrator.send_prompts_async(dataset=wmdp_ds)  # type: ignore
 
 # %%
 # Output if the results are correct
-correct_count = 0
-total_count = 0
-
-for idx, (qa_question_entry, answer) in enumerate(benchmark_orchestrator_wmdp._scorer.evaluation_results.items()):
-    print(f"Question {idx+1}: {qa_question_entry.question}")
-    print(f"Answer: {answer}")
-    print(f"")
-
-    correct_count += 1 if answer.is_correct else 0
-
-print(f"Correct count: {correct_count}/{len(benchmark_orchestrator_wmdp._scorer.evaluation_results)}")
+score_responses(responses=responses)
 
 # %%
 # Fetch WMDP dataset for Q/A Model Testing - Chem Subset
@@ -150,32 +135,12 @@ print(f"Correct count: {correct_count}/{len(benchmark_orchestrator_wmdp._scorer.
 wmdp_ds = fetch_wmdp_dataset(category="chem")
 wmdp_ds.questions = wmdp_ds.questions[:3]
 
-# Create the score for the Q/A Model
-qa_scorer_wmdp = QuestionAnswerScorer(
-    dataset=wmdp_ds,
-)
-
-# Create the orchestrator with scorer and demo dataset
-benchmark_orchestrator_wmdp = QuestionAnsweringBenchmarkOrchestrator(
-    chat_model_under_evaluation=target, scorer=qa_scorer_wmdp, verbose=True
-)
-
 # Evaluate the Q/A Model response
-await benchmark_orchestrator_wmdp.evaluate()  # type: ignore
+responses = await benchmark_orchestrator.send_prompts_async(dataset=wmdp_ds)  # type: ignore
 
 # %%
 # Output if the results are correct
-correct_count = 0
-total_count = 0
-
-for idx, (qa_question_entry, answer) in enumerate(benchmark_orchestrator_wmdp._scorer.evaluation_results.items()):
-    print(f"Question {idx+1}: {qa_question_entry.question}")
-    print(f"Answer: {answer}")
-    print(f"")
-
-    correct_count += 1 if answer.is_correct else 0
-
-print(f"Correct count: {correct_count}/{len(benchmark_orchestrator_wmdp._scorer.evaluation_results)}")
+score_responses(responses=responses)
 
 # %%
 # Fetch WMDP dataset for Q/A Model Testing - Bio Subset
@@ -183,32 +148,12 @@ print(f"Correct count: {correct_count}/{len(benchmark_orchestrator_wmdp._scorer.
 wmdp_ds = fetch_wmdp_dataset(category="bio")
 wmdp_ds.questions = wmdp_ds.questions[:3]
 
-# Create the score for the Q/A Model
-qa_scorer_wmdp = QuestionAnswerScorer(
-    dataset=wmdp_ds,
-)
-
-# Create the orchestrator with scorer and demo dataset
-benchmark_orchestrator_wmdp = QuestionAnsweringBenchmarkOrchestrator(
-    chat_model_under_evaluation=target, scorer=qa_scorer_wmdp, verbose=True
-)
-
 # Evaluate the Q/A Model response
-await benchmark_orchestrator_wmdp.evaluate()  # type: ignore
+responses = await benchmark_orchestrator.send_prompts_async(dataset=wmdp_ds)  # type: ignore
 
 # %%
 # Output if the results are correct
-correct_count = 0
-total_count = 0
-
-for idx, (qa_question_entry, answer) in enumerate(benchmark_orchestrator_wmdp._scorer.evaluation_results.items()):
-    print(f"Question {idx+1}: {qa_question_entry.question}")
-    print(f"Answer: {answer}")
-    print(f"")
-
-    correct_count += 1 if answer.is_correct else 0
-
-print(f"Correct count: {correct_count}/{len(benchmark_orchestrator_wmdp._scorer.evaluation_results)}")
+score_responses(responses=responses)
 
 # %%
 # Fetch WMDP dataset for Q/A Model Testing - Cyber Subset
@@ -216,44 +161,14 @@ print(f"Correct count: {correct_count}/{len(benchmark_orchestrator_wmdp._scorer.
 wmdp_ds = fetch_wmdp_dataset(category="cyber")
 wmdp_ds.questions = wmdp_ds.questions[:3]
 
-# Create the score for the Q/A Model
-qa_scorer_wmdp = QuestionAnswerScorer(
-    dataset=wmdp_ds,
-)
-
-# Create the orchestrator with scorer and demo dataset
-benchmark_orchestrator_wmdp = QuestionAnsweringBenchmarkOrchestrator(
-    chat_model_under_evaluation=target, scorer=qa_scorer_wmdp, verbose=True
-)
-
 # Evaluate the Q/A Model response
-await benchmark_orchestrator_wmdp.evaluate()  # type: ignore
+responses = await benchmark_orchestrator.send_prompts_async(dataset=wmdp_ds)  # type: ignore
 
 # %%
 # Output if the results are correct
-correct_count = 0
-total_count = 0
-
-for idx, (qa_question_entry, answer) in enumerate(benchmark_orchestrator_wmdp._scorer.evaluation_results.items()):
-    print(f"Question {idx+1}: {qa_question_entry.question}")
-    print(f"Answer: {answer}")
-    print(f"")
-
-    correct_count += 1 if answer.is_correct else 0
-
-print(f"Correct count: {correct_count}/{len(benchmark_orchestrator_wmdp._scorer.evaluation_results)}")
-
-# %%
-try:
-    wmdp_ds = fetch_wmdp_dataset(category="invalid string")
-except ValueError:
-    print("TEST PASS. Value Error Caught.")
-else:
-    print("TEST FAILED. No ValueError Caught.")
+score_responses(responses=responses)
 
 # %%
 # Close connection for memory instance
-from pyrit.memory import CentralMemory
-
 memory = CentralMemory.get_memory_instance()
 memory.dispose_engine()

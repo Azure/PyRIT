@@ -1,31 +1,30 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+from unittest.mock import MagicMock, patch
+
 import pytest
 from unit.mocks import MockPromptTarget
-from unittest.mock import MagicMock, patch
+
+from pyrit.models import SeedPrompt, SeedPromptDataset
+from pyrit.orchestrator import QuestionAnsweringBenchmarkOrchestrator
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.score import Scorer
-from pyrit.models import SeedPrompt, SeedPromptDataset
 
-from pyrit.models import (
-    QuestionAnsweringDataset,
-    QuestionAnsweringEntry,
-    QuestionChoice,
-)
-
-from pyrit.orchestrator import QuestionAnsweringBenchmarkOrchestrator
 
 @pytest.fixture
 def mock_objective_target(patch_central_database) -> MockPromptTarget:
     return MagicMock(spec=PromptChatTarget)
 
+
 @pytest.fixture
 def mock_prompt_converter():
     return MagicMock()
 
+
 @pytest.fixture
 def mock_scorer():
     return MagicMock(spec=Scorer)
+
 
 @pytest.fixture
 def mock_seed_prompt_dataset():
@@ -44,6 +43,7 @@ def mock_seed_prompt_dataset():
 
     return dataset_mock
 
+
 @pytest.fixture
 def question_answer_orchestrator(
     mock_objective_target,
@@ -57,7 +57,7 @@ def question_answer_orchestrator(
     `role_play_definition` loads the mock_seed_prompt_dataset.
     """
     with patch(
-        "pyrit.orchestrator.single_turn.role_play_orchestrator.SeedPromptDataset.from_yaml_file",
+        "pyrit.orchestrator.single_turn.question_answer_benchmark_orchestrator.SeedPromptDataset.from_yaml_file",
         return_value=mock_seed_prompt_dataset,
     ):
         orchestrator = QuestionAnsweringBenchmarkOrchestrator(
@@ -69,6 +69,7 @@ def question_answer_orchestrator(
             verbose=True,
         )
     return orchestrator
+
 
 def test_init(question_answer_orchestrator, mock_seed_prompt_dataset):
     """
@@ -82,3 +83,16 @@ def test_init(question_answer_orchestrator, mock_seed_prompt_dataset):
     # Check batch size, verbosity, etc.
     assert question_answer_orchestrator._batch_size == 3
     assert question_answer_orchestrator._verbose is True
+    assert len(question_answer_orchestrator._prompt_converters) == 1
+
+
+def test_default_conversation_start(question_answer_orchestrator):
+    """
+    Ensures that the default conversation start is prepended to the conversation list.
+    """
+    prepended = question_answer_orchestrator._prepended_conversation
+    assert len(prepended) == 2, "Should have user and assistant start turns"
+    assert prepended[0].request_pieces[0].role == "user"
+    assert prepended[0].request_pieces[0].original_value == "User start message"
+    assert prepended[1].request_pieces[0].role == "assistant"
+    assert prepended[1].request_pieces[0].original_value == "Assistant start message"

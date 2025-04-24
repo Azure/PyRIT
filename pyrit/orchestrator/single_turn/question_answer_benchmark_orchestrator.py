@@ -1,25 +1,26 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-from typing import Optional, Union
 import pathlib
 import uuid
+from typing import Optional, Union
 
 from pyrit.common.path import DATASETS_PATH
+from pyrit.common.question_answer_helpers import construct_evaluation_prompt
+from pyrit.common.utils import combine_dict
 from pyrit.models import (
-    PromptRequestPiece, 
-    PromptRequestResponse,
-    SeedPromptDataset, 
-    QuestionAnsweringDataset,
     PromptDataType,
+    PromptRequestPiece,
+    PromptRequestResponse,
+    QuestionAnsweringDataset,
+    SeedPromptDataset,
 )
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import PromptConverter
+from pyrit.prompt_normalizer import NormalizerRequest
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer
 from pyrit.score.question_answer_scorer import QuestionAnswerScorer
-from pyrit.prompt_normalizer import NormalizerRequest
-from pyrit.common.question_answer_helpers import construct_evaluation_prompt
-from pyrit.common.utils import combine_dict
+
 
 class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
     """
@@ -33,7 +34,10 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
     def __init__(
         self,
         objective_target: PromptChatTarget,
-        question_answer_definition_path: pathlib.Path = pathlib.Path(DATASETS_PATH) / "orchestrators" / "benchmark" / "one_plus_one.yaml",
+        question_answer_definition_path: pathlib.Path = pathlib.Path(DATASETS_PATH)
+        / "orchestrators"
+        / "benchmark"
+        / "one_plus_one.yaml",
         scorers: Optional[list[Scorer]] = None,
         prompt_converters: Optional[list[PromptConverter]] = None,
         verbose: bool = False,
@@ -50,7 +54,9 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
             verbose (bool, Optional): Whether to print verbose output. Defaults to False.
         """
 
-        question_answer_definition: SeedPromptDataset = SeedPromptDataset.from_yaml_file(question_answer_definition_path)
+        question_answer_definition: SeedPromptDataset = SeedPromptDataset.from_yaml_file(
+            question_answer_definition_path
+        )
 
         self._user_start_turn = question_answer_definition.prompts[0]
         self._assistant_start_turn = question_answer_definition.prompts[1]
@@ -60,12 +66,12 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
             scorers=scorers,
             prompt_converters=prompt_converters,
             verbose=verbose,
-            batch_size=batch_size
+            batch_size=batch_size,
         )
 
         self._set_default_conversation_start()
 
-    async def send_prompts_async(
+    async def send_prompts_async(  # type: ignore[override]
         self,
         *,
         dataset: QuestionAnsweringDataset,
@@ -89,13 +95,10 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
             )
 
         return await self.send_normalizer_requests_async(
-            prompt_request_list=requests,
-            memory_labels=memory_labels,
-            dataset=dataset
+            prompt_request_list=requests, memory_labels=memory_labels, dataset=dataset
         )
-    
-    
-    async def send_normalizer_requests_async(
+
+    async def send_normalizer_requests_async(  # type: ignore[override]
         self,
         *,
         prompt_request_list: list[NormalizerRequest],
