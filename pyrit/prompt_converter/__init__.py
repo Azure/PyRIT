@@ -65,7 +65,6 @@ from pyrit.prompt_converter.zalgo_converter import ZalgoConverter
 from pyrit.prompt_converter.zero_width_converter import ZeroWidthConverter
 
 
-
 __all__ = [
     "AddImageTextConverter",
     "AddImageVideoConverter",

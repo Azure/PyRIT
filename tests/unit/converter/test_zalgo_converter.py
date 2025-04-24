@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import pytest
+
 from pyrit.prompt_converter import ZalgoConverter
 
 
@@ -13,6 +14,7 @@ async def test_zalgo_output_changes_text():
     assert result.output_text != prompt
     assert all(c in result.output_text for c in prompt)  # should still contain all original letters
 
+
 @pytest.mark.asyncio
 async def test_zalgo_reproducible_seed():
     prompt = "seed test"
@@ -22,12 +24,14 @@ async def test_zalgo_reproducible_seed():
     result2 = await converter2.convert_async(prompt=prompt)
     assert result1.output_text == result2.output_text
 
+
 @pytest.mark.asyncio
 async def test_zalgo_zero_intensity_returns_original():
     prompt = "no chaos please"
     converter = ZalgoConverter(intensity=0)
     result = await converter.convert_async(prompt=prompt)
     assert result.output_text == prompt
+
 
 @pytest.mark.asyncio
 async def test_zalgo_intensity_caps_at_max():
