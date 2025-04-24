@@ -24,7 +24,7 @@ class ZalgoConverter(PromptConverter):
         self._seed = seed
     def _normalize_intensity(self) -> int:
         if self._intensity > MAX_INTENSITY:
-            logger.warning("This is higher intensity than is supported.  This will be substituted with the maximum intensity value of 100")
+            logger.warning("This is higher intensity than is supported (max 100)")
         return max(0, min(self._intensity, MAX_INTENSITY))
 
     async def convert_async(
