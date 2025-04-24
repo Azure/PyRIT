@@ -49,7 +49,7 @@ def combine_list(list1: Union[str, List[str]], list2: Union[str, List[str]]) -> 
     return combined
 
 
-def get_random_indices(start: int, size: int, percentage: int) -> List[int]:
+def get_random_indices(*, start: int, size: int, percentage: int) -> List[int]:
     """
     Generate a list of random indices based on a specified percentage of the total size.
     The indices are selected from the range [start, start + size).
