@@ -5,7 +5,7 @@ import logging
 import math
 import random
 import re
-from typing import List, Literal, Union
+from typing import List, Literal, Union, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +82,13 @@ def get_random_indices(*, start: int, size: int, percentage: int) -> List[int]:
 
 
 def select_word_indices(
-    words: List[str], mode: Literal["all", "custom", "keywords", "random", "regex"], **kwargs
+    words: List[str], 
+    mode: Literal["all", "custom", "keywords", "random", "regex"],
+    *,
+    indices: Optional[List[int]] = None,
+    keywords: Optional[List[str]] = None,
+    percentage: Optional[int] = None,
+    regex: Optional[Union[str, re.Pattern]] = None,
 ) -> List[int]:
     """
     Select indices from a list of words based on specified selection mode.
@@ -97,12 +103,10 @@ def select_word_indices(
     Args:
         words (List[str]): A list of words to select from.
         mode (str, optional): Selection mode. Defaults to "all".
-
-    Keyword Arguments:
-        indices (List[int]): Custom indices to select (for "custom" mode).
-        keywords (List[str]): List of keywords to match (for "keywords" mode).
-        percentage (int): Percentage of indices to select (for "random" mode).
-        regex (str or Pattern): Regular expression pattern to match (for "regex" mode).
+        indices (List[int], optional): Custom indices to select (for "custom" mode).
+        keywords (List[str], optional): List of keywords to match (for "keywords" mode).
+        percentage (int, optional): Percentage of indices to select (for "random" mode). Defaults to None.
+        regex (str or Pattern, optional): Regular expression pattern to match (for "regex" mode).
 
     Returns:
         List[int]: Indices of selected words.
@@ -119,19 +123,19 @@ def select_word_indices(
             return list(range(len(words)))
 
         case "keywords":
-            word_list = kwargs.get("keywords", [])
+            word_list = keywords or []
             return [i for i, word in enumerate(words) if word in word_list]
 
         case "random":
-            percentage = kwargs.get("percentage", 50)
-            return get_random_indices(0, len(words), percentage)
+            percentage = percentage or 50
+            return get_random_indices(start=0, size=len(words), percentage=percentage)
 
         case "regex":
-            regex = kwargs.get("regex", r".")
-            return [i for i, word in enumerate(words) if re.search(regex, word)]
+            pattern = regex or r"."
+            return [i for i, word in enumerate(words) if re.search(pattern, word)]
 
         case "custom":
-            custom_indices = kwargs.get("indices", [])
+            custom_indices = indices or []
             valid_indices = [i for i in custom_indices if 0 <= i < len(words)]
             invalid_indices = [i for i in custom_indices if i < 0 or i >= len(words)]
             if invalid_indices:
