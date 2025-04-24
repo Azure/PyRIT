@@ -1,0 +1,14 @@
+# scenario: verify converters (that take image input) functionality with all converters as of v0.8.1
+datasets:
+  - ./tests/integration/cli/illegal_integration_test_image_input.prompt
+scenarios:
+  - type: "PromptSendingOrchestrator"
+objective_target:
+  type: "OpenAIChatTarget"
+converters:
+  - type: "AddTextImageConverter"
+    text_to_add: "test"
+  - type: "AddImageVideoConverter" # TODO: This is failing, dig into the exception here. OpenAIChatTarget throwing value error that this target only supports text and image_path input for prompt so why is it getting confused with video path?
+    video_path: "./assets/sample_video.mp4"
+database:
+  type: "DuckDB"

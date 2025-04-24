@@ -24,6 +24,21 @@ test_cases_success = [
         ],
         ["send_normalizer_requests_async", "run_attack_async", "run_attack_async", "run_attack_async"],
     ),
+    (
+        "--config-file 'tests/integration/cli/prompt_send_success.yaml'",
+        [PromptSendingOrchestrator],
+        ["send_normalizer_requests_async"],
+    ),
+    (
+        "--config-file 'tests/integration/cli/prompt_send_success_converters_text_default.yaml'",
+        [PromptSendingOrchestrator],
+        ["send_normalizer_requests_async"],
+    ),
+    (
+        "--config-file 'tests/integration/cli/prompt_send_success_converters_image_default.yaml'",
+        [PromptSendingOrchestrator],
+        ["send_normalizer_requests_async"],
+    ),
 ]
 
 
