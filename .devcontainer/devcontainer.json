@@ -4,17 +4,27 @@
   "service": "devcontainer",
   "remoteUser": "vscode",
   "workspaceFolder": "/workspace",
+  "containerEnv": {
+    "PYTHONPATH": "/workspace"
+  },
   "customizations": {
     "vscode": {
       "settings": {
         "python.defaultInterpreterPath": "/opt/conda/envs/pyrit-dev/bin/python",
+        "python.analysis.extraPaths": [
+          "/workspace"
+        ],
+        "python.linting.mypyArgs": [
+          "--cache-dir=.mypy_cache"
+        ],
         "files.watcherExclude": {
           "**/.git/objects/**": true,
           "**/.git/subtree-cache/**": true,
           "**/__pycache__/**": true,
           "**/.pytest_cache/**": true,
           "**/build/**": true,
-          "**/dist/**": true
+          "**/dist/**": true,
+          "**/pyrit/auxiliary_attacks/gcg/attack/**": true
         },
         "search.exclude": {
           "**/node_modules": true,
@@ -32,7 +42,7 @@
         },
         "python.analysis.diagnosticMode": "workspace",
         "python.analysis.indexing": true,
-        "python.analysis.autoSearchPaths": false,
+        "python.analysis.autoSearchPaths": true,
         "python.linting.enabled": true,
         "explorer.autoReveal": false,
         "files.maxMemoryForLargeFilesMB": 4096,
@@ -43,8 +53,7 @@
         "ms-python.python",
         "ms-toolsai.jupyter",
         "ms-azuretools.vscode-docker",
-        "tamasfe.even-better-toml",
-        "citation-file-format.citation-file-format"
+        "tamasfe.even-better-toml"
       ]
     }
   },

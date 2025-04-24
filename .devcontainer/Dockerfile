@@ -1,4 +1,6 @@
-FROM mcr.microsoft.com/devcontainers/miniconda:3
+FROM mcr.microsoft.com/devcontainers/anaconda:3
+
+SHELL ["/bin/bash", "-c"]
 
 USER root
 
@@ -27,15 +29,28 @@ RUN apt-get update && apt-get install -y apt-transport-https ca-certificates cur
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
+# create env
 RUN conda create -n pyrit-dev python=3.11 -y && \
     chown -R vscode:vscode /opt/conda/envs/pyrit-dev
 
+# pre-commit cache
 RUN mkdir -p /home/vscode/.cache/pre-commit && \
     chown -R vscode:vscode /home/vscode/.cache/pre-commit
 
+# vscode server
 RUN mkdir -p /home/vscode/.vscode-server && \
     chown -R vscode:vscode /home/vscode/.vscode-server && \
     chmod -R 755 /home/vscode/.vscode-server
+
+# pip cache
+RUN mkdir -p /home/vscode/.cache/pip && \
+    chown -R vscode:vscode /home/vscode/.cache/pip && \
+    chmod -R 777 /home/vscode/.cache/pip
+
+# conda cache
+RUN mkdir -p /home/vscode/.cache/conda && \
+    chown -R vscode:vscode /home/vscode/.cache/conda && \
+    chmod -R 777 /home/vscode/.cache/conda
 
 USER vscode
 
