@@ -41,7 +41,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         try:
             import azure.cognitiveservices.speech as speechsdk
         except ModuleNotFoundError as e:
-            logger.error("Could not import azure.cognitiveservices.speech. You may need to install it via 'pip install pyrit[azspeech]'")
+            logger.error("Could not import azure.cognitiveservices.speech. You may need to install it via 'pip install pyrit[speech]'")
             raise e
 
         self._azure_speech_region: str = default_values.get_required_value(

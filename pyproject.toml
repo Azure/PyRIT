@@ -112,7 +112,7 @@ opencv = [
     "opencv-python>=4.11.0.86",
 ]
 
-azspeech = [
+speech = [
     "azure-cognitiveservices-speech>=1.36.0",
 ]
 
