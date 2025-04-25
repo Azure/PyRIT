@@ -51,7 +51,7 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
             verbose (bool, Optional): Whether to log debug information. Defaults to False.
         """
 
-        flip_converter = PromptConverterConfiguration.from_converters([FlipConverter()])
+        flip_converter = PromptConverterConfiguration.from_converters(converters=[FlipConverter()])
 
 
         super().__init__(
@@ -70,8 +70,7 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
         system_prompt_path = pathlib.Path(DATASETS_PATH) / "orchestrators" / "flip_attack.yaml"
         system_prompt = SeedPrompt.from_yaml_file(system_prompt_path).value
 
-        self._system_prompt = PromptRequestResponse.get_system_prompt_request(system_prompt)
-
+        self._system_prompt = PromptRequestResponse.from_system_prompt(system_prompt=system_prompt)
 
 
     async def run_attack_async(
@@ -87,7 +86,7 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
         return await super().run_attack_async(
             objective=objective,
             seed_prompt=seed_prompt,
-            prepended_conversation=self._system_prompt,
+            prepended_conversation=[self._system_prompt],
             memory_labels=memory_labels,
         )
 
