@@ -3,15 +3,14 @@
 
 import logging
 import pathlib
-from typing import Optional, Union
+from typing import Optional
 
 from pyrit.orchestrator.models.orchestrator_result import OrchestratorResult
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import PromptRequestResponse, SeedPrompt, SeedPromptGroup
-from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_converter import FlipConverter, PromptConverter
-from pyrit.prompt_normalizer import NormalizerRequest, PromptConverterConfiguration
+from pyrit.prompt_converter import FlipConverter
+from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer
 
@@ -40,13 +39,15 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
         """
         Args:
             objective_target (PromptChatTarget): The target for sending prompts.
-            prompt_converters (list[PromptConverter], Optional): List of prompt converters. These are stacked in
+            request_converter_configurations (list[PromptConverterConfiguration], Optional): List of prompt converters. These are stacked in
                 order on top of the flip converter.
-            scorers (list[Scorer], Optional): List of scorers to use for each prompt request response, to be
-                scored immediately after receiving response. Default is None.
+            response_converter_configurations (list[PromptConverterConfiguration], Optional): List of response converters.
+            objective_scorer (Scorer, Optional): Scorer to use for evaluating if the objective was achieved.
+            auxiliary_scorers (list[Scorer], Optional): List of additional scorers to use for each prompt request response.
             batch_size (int, Optional): The (max) batch size for sending prompts. Defaults to 10.
                 Note: If providing max requests per minute on the objective_target, this should be set to 1 to
-                ensure proper rate limit management.\
+                ensure proper rate limit management.
+            retries_on_objective_failure (int, Optional): Number of retries to attempt if objective fails. Defaults to 0.
             verbose (bool, Optional): Whether to log debug information. Defaults to False.
         """
 

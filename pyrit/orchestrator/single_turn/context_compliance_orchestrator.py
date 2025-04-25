@@ -32,7 +32,12 @@ class ContextDescriptionPaths(enum.Enum):
 
 class ContextComplianceOrchestrator(PromptSendingOrchestrator):
     """
-    This orchestrator implements a context compliance attack
+    This orchestrator implements a context compliance attack that attempts to bypass safety measures by
+    rephrasing the objective into a more benign context. It uses an adversarial chat target to:
+    1. Rephrase the objective as a more benign question
+    2. Generate a response to the benign question
+    3. Rephrase the original objective as a follow-up question
+    This creates a context that makes it harder for the target to detect the true intent.
     """
 
     def __init__(
@@ -51,15 +56,15 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
     ) -> None:
         """
         Args:
-            objective_target (PromptTarget): The target for sending prompts.
-            adversarial_chat (PromptTarget): The target for sending prompts.
-            prompt_converters (list[PromptConverter], Optional): List of prompt converters. These are only applied
-                to the conversation history since in this orchestrator, the latest prompt is usually just "yes"
+            objective_target (PromptChatTarget): The target for sending prompts.
+            adversarial_chat (PromptChatTarget): The target used to rephrase objectives into benign contexts.
             affirmative_response (str, Optional): The affirmative response to be used in the conversation history.
             context_description_instructions_path (pathlib.Path, Optional): Path to the context description instructions
                 YAML file.
-            scorers (list[Scorer], Optional): List of scorers to use for each prompt request response, to be
-                scored immediately after receiving response. Default is None.
+            request_converter_configurations (list[PromptConverterConfiguration], Optional): List of prompt converters.
+            response_converter_configurations (list[PromptConverterConfiguration], Optional): List of response converters.
+            objective_scorer (Scorer, Optional): Scorer to use for evaluating if the objective was achieved.
+            auxiliary_scorers (list[Scorer], Optional): List of additional scorers to use for each prompt request response.
             batch_size (int, Optional): The (max) batch size for sending prompts. Defaults to 10.
                 Note: If providing max requests per minute on the prompt_target, this should be set to 1 to
                 ensure proper rate limit management.

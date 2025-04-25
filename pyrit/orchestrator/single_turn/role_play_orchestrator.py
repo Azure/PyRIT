@@ -10,10 +10,10 @@ from pyrit.prompt_target.batch_helper import batch_task_async
 
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, SeedPromptDataset, SeedPrompt, SeedPromptGroup
+from pyrit.models import PromptRequestResponse, SeedPromptDataset
 from pyrit.orchestrator import PromptSendingOrchestrator, OrchestratorResult
-from pyrit.prompt_converter import LLMGenericTextConverter, PromptConverter
-from pyrit.prompt_normalizer import NormalizerRequest, PromptConverterConfiguration
+from pyrit.prompt_converter import LLMGenericTextConverter
+from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer
 
@@ -29,7 +29,9 @@ class RolePlayPaths(enum.Enum):
 
 class RolePlayOrchestrator(PromptSendingOrchestrator):
     """
-    This orchestrator implements a game role play
+    This orchestrator implements a role-playing attack where the objective is rephrased into a game or script context.
+    It uses an adversarial chat target to rephrase the objective into a more benign form that fits within the role-play
+    scenario, making it harder for the target to detect the true intent.
     """
 
     def __init__(
@@ -48,11 +50,14 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
     ) -> None:
         """
         Args:
-            objective_target (PromptTarget): The target for sending prompts.
-            prompt_converters (list[PromptConverter], Optional): List of prompt converters. These are stacked in
-                order.
-            scorers (list[Scorer], Optional): List of scorers to use for each prompt request response, to be
-                scored immediately after receiving response. Default is None.
+            objective_target (PromptChatTarget): The target for sending prompts.
+            adversarial_chat (PromptChatTarget): The target used to rephrase objectives into role-play scenarios.
+            role_play_definition_path (pathlib.Path): Path to the YAML file containing role-play definitions.
+            request_converter_configurations (list[PromptConverterConfiguration], Optional): List of prompt converters.
+            response_converter_configurations (list[PromptConverterConfiguration], Optional): List of response converters.
+            objective_scorer (Scorer, Optional): Scorer to use for evaluating if the objective was achieved.
+            auxiliary_scorers (list[Scorer], Optional): List of additional scorers to use for each prompt request response.
+            should_convert_prepended_conversation (bool, Optional): Whether to convert the prepended conversation.
             batch_size (int, Optional): The (max) batch size for sending prompts. Defaults to 10.
                 Note: If providing max requests per minute on the prompt_target, this should be set to 1 to
                 ensure proper rate limit management.
