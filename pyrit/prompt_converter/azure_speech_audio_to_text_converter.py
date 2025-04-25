@@ -1,12 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import importlib.util
 import logging
 import time
-
-if importlib.util.find_spec("azure-cognitiveservices-speech") is not None:
-    import azure.cognitiveservices.speech as speechsdk
 
 from pyrit.common import default_values
 from pyrit.models import PromptDataType
@@ -38,6 +34,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         azure_speech_key: str = None,
         recognition_language: str = "en-US",
     ) -> None:
+        import azure.cognitiveservices.speech as speechsdk
 
         self._azure_speech_region: str = default_values.get_required_value(
             env_var_name=self.AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE, passed_value=azure_speech_region
