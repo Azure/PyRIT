@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock
 
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.score.compound_scorer import CompoundScorer
@@ -11,37 +10,34 @@ from pyrit.score.scorer import Scorer
 
 class MockScorer(Scorer):
     """A mock scorer for testing purposes."""
-    
+
     def __init__(self, score_value: bool, score_rationale: str):
         self.scorer_type = "true_false"
         self._score_value = score_value
         self._score_rationale = score_rationale
-        
+
     async def score_async(self, request_response: PromptRequestPiece, *, task: str = None) -> list[Score]:
-        return [Score(
-            score_value=str(self._score_value),
-            score_value_description=None,
-            score_type=self.scorer_type,
-            score_category=None,
-            score_metadata=None,
-            score_rationale=self._score_rationale,
-            scorer_class_identifier={"name": "MockScorer"},
-            prompt_request_response_id=request_response.id,
-            task=task
-        )]
-        
+        return [
+            Score(
+                score_value=str(self._score_value),
+                score_value_description=None,
+                score_type=self.scorer_type,
+                score_category=None,
+                score_metadata=None,
+                score_rationale=self._score_rationale,
+                scorer_class_identifier={"name": "MockScorer"},
+                prompt_request_response_id=request_response.id,
+                task=task,
+            )
+        ]
+
     def validate(self, request_response: PromptRequestPiece, *, task: str = None) -> None:
         pass
 
 
 @pytest.fixture
 def mock_request():
-    return PromptRequestPiece(
-        role="user",
-        original_value="test content",
-        conversation_id="test-conv",
-        sequence=1
-    )
+    return PromptRequestPiece(role="user", original_value="test content", conversation_id="test-conv", sequence=1)
 
 
 @pytest.fixture
@@ -56,11 +52,8 @@ def false_scorer():
 
 @pytest.mark.asyncio
 async def test_compound_scorer_and_all_true(mock_request, true_scorer):
-    scorer = CompoundScorer(
-        logical_combination="AND",
-        scorers=[true_scorer, true_scorer]
-    )
-    
+    scorer = CompoundScorer(logical_combination="AND", scorers=[true_scorer, true_scorer])
+
     scores = await scorer.score_async(mock_request)
     assert len(scores) == 1
     assert scores[0].get_value() is True
@@ -69,11 +62,8 @@ async def test_compound_scorer_and_all_true(mock_request, true_scorer):
 
 @pytest.mark.asyncio
 async def test_compound_scorer_and_one_false(mock_request, true_scorer, false_scorer):
-    scorer = CompoundScorer(
-        logical_combination="AND",
-        scorers=[true_scorer, false_scorer]
-    )
-    
+    scorer = CompoundScorer(logical_combination="AND", scorers=[true_scorer, false_scorer])
+
     scores = await scorer.score_async(mock_request)
     assert len(scores) == 1
     assert scores[0].get_value() is False
@@ -82,11 +72,8 @@ async def test_compound_scorer_and_one_false(mock_request, true_scorer, false_sc
 
 @pytest.mark.asyncio
 async def test_compound_scorer_or_all_false(mock_request, false_scorer):
-    scorer = CompoundScorer(
-        logical_combination="OR",
-        scorers=[false_scorer, false_scorer]
-    )
-    
+    scorer = CompoundScorer(logical_combination="OR", scorers=[false_scorer, false_scorer])
+
     scores = await scorer.score_async(mock_request)
     assert len(scores) == 1
     assert scores[0].get_value() is False
@@ -95,11 +82,8 @@ async def test_compound_scorer_or_all_false(mock_request, false_scorer):
 
 @pytest.mark.asyncio
 async def test_compound_scorer_or_one_true(mock_request, true_scorer, false_scorer):
-    scorer = CompoundScorer(
-        logical_combination="OR",
-        scorers=[true_scorer, false_scorer]
-    )
-    
+    scorer = CompoundScorer(logical_combination="OR", scorers=[true_scorer, false_scorer])
+
     scores = await scorer.score_async(mock_request)
     assert len(scores) == 1
     assert scores[0].get_value() is True
@@ -110,27 +94,21 @@ def test_compound_scorer_invalid_scorer_type():
     class InvalidScorer(Scorer):
         def __init__(self):
             self.scorer_type = "invalid_type"
-            
+
         async def score_async(self, request_response: PromptRequestPiece, *, task: str = None) -> list[Score]:
             return []
-            
+
         def validate(self, request_response: PromptRequestPiece, *, task: str = None) -> None:
             pass
-            
+
     with pytest.raises(ValueError, match="All scorers must be true_false scorers"):
-        CompoundScorer(
-            logical_combination="AND",
-            scorers=[InvalidScorer()]
-        )
+        CompoundScorer(logical_combination="AND", scorers=[InvalidScorer()])
 
 
 @pytest.mark.asyncio
 async def test_compound_scorer_with_task(mock_request, true_scorer):
-    scorer = CompoundScorer(
-        logical_combination="AND",
-        scorers=[true_scorer]
-    )
-    
+    scorer = CompoundScorer(logical_combination="AND", scorers=[true_scorer])
+
     task = "test task"
     await scorer.score_async(mock_request, task=task)
 
@@ -138,8 +116,4 @@ async def test_compound_scorer_with_task(mock_request, true_scorer):
 def test_compound_scorer_empty_scorers_list():
     """Test that CompoundScorer raises an exception when given an empty list of scorers."""
     with pytest.raises(ValueError, match="At least one scorer must be provided"):
-        CompoundScorer(
-            logical_combination="AND",
-            scorers=[]
-        )
-
+        CompoundScorer(logical_combination="AND", scorers=[])

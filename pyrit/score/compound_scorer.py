@@ -2,22 +2,19 @@
 # Licensed under the MIT license.
 
 import uuid
-from typing import Optional, Literal, List, Dict, Any
+from typing import List, Literal, Optional
 
-from pyrit.common.path import DATASETS_PATH
-from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore
-from pyrit.prompt_target import PromptChatTarget
-from pyrit.prompt_target.batch_helper import batch_task_async
+from pyrit.models import PromptRequestPiece, Score
 from pyrit.score.scorer import Scorer
-
 
 LogicalCombination = Literal["AND", "OR"]
 
+
 class CompoundScorer(Scorer):
     """A scorer that aggregates other true_false scorers, either using AND or OR logic.
-    
+
     It returns a single score of True or False based on the logical combination of the scores of the constituent scorers.
-    
+
     Args:
         logical_combination: The logical operation to combine scores ("AND" or "OR")
         scorers: List of true_false scorers to combine
@@ -25,11 +22,7 @@ class CompoundScorer(Scorer):
     """
 
     def __init__(
-        self,
-        *,
-        logical_combination: LogicalCombination,
-        scorers: List[Scorer],
-        score_category: Optional[str] = None
+        self, *, logical_combination: LogicalCombination, scorers: List[Scorer], score_category: Optional[str] = None
     ) -> None:
         self.scorer_type = "true_false"
         self._logical_combination = logical_combination
@@ -41,16 +34,16 @@ class CompoundScorer(Scorer):
         for scorer in scorers:
             if scorer.scorer_type != "true_false":
                 raise ValueError("All scorers must be true_false scorers.")
-            
+
         self._scorers = scorers
 
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> List[Score]:
         """Scores the request response by combining results from all constituent scorers.
-        
+
         Args:
             request_response: The request response to be scored
             task: Optional task description for scoring context
-            
+
         Returns:
             List containing a single Score object representing the combined result
         """
@@ -69,13 +62,10 @@ class CompoundScorer(Scorer):
             score_rationale="",
             scorer_class_identifier=identifier_dict,
             prompt_request_response_id=request_response.id,
-            task=task
+            task=task,
         )
 
-        sub_rationale = "\n\n".join(
-            f"{score.scorer_class_identifier} {score.score_rationale}"
-            for score in scores
-        )
+        sub_rationale = "\n\n".join(f"{score.scorer_class_identifier} {score.score_rationale}" for score in scores)
 
         # Determine final score and rationale based on logical combination
         if self._logical_combination == "AND":
@@ -92,33 +82,35 @@ class CompoundScorer(Scorer):
                 if return_score.get_value() == True
                 else "All constituent scorers returned False in an OR compound scorer."
             )
-        
+
         return_score.score_rationale = f"{top_rationale}\n\n{sub_rationale}"
         return [return_score]
-    
-    async def _score_all_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> List[Score]:
+
+    async def _score_all_async(
+        self, request_response: PromptRequestPiece, *, task: Optional[str] = None
+    ) -> List[Score]:
         """Scores the request_response using all constituent scorers sequentially.
-        
+
         Args:
             request_response: The request response to be scored
             task: Optional task description for scoring context
-            
+
         Returns:
             List of scores from all constituent scorers
         """
         if not self._scorers:
             return []
-            
+
         all_scores = []
         for scorer in self._scorers:
             scores = await scorer.score_async(request_response=request_response, task=task)
             all_scores.extend(scores)
-            
+
         return all_scores
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> None:
         """Validates the request response for scoring.
-        
+
         Args:
             request_response: The request response to validate
             task: Optional task description for validation context
