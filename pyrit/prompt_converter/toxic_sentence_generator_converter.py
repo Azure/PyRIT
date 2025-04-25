@@ -7,6 +7,7 @@ to test AI safety mechanisms.
 
 import logging
 import pathlib
+from typing import Optional
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import PromptDataType, SeedPrompt
@@ -25,7 +26,7 @@ class ToxicSentenceGeneratorConverter(LLMGenericTextConverter):
     safety guardrails.
     """
 
-    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: SeedPrompt = None):
+    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: Optional[SeedPrompt] = None):
         """
         Initializes the converter with a specific target and template.
 

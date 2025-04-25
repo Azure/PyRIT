@@ -43,6 +43,25 @@ async def test_toxic_sentence_generator_converter_init(mock_target, mock_templat
 
 
 @pytest.mark.asyncio
+async def test_toxic_sentence_generator_converter_init_no_template(mock_target):
+    """Test that the converter initializes correctly without a template."""
+    default_template = MagicMock(spec=SeedPrompt)
+    with patch(
+        "pyrit.prompt_converter.toxic_sentence_generator_converter.SeedPrompt.from_yaml_file",
+        return_value=default_template,
+    ):
+        # Test with prompt_template=None
+        converter = ToxicSentenceGeneratorConverter(converter_target=mock_target, prompt_template=None)
+        assert converter._converter_target == mock_target
+        assert converter._system_prompt_template == default_template
+        
+        # Test with prompt_template not provided
+        converter = ToxicSentenceGeneratorConverter(converter_target=mock_target)
+        assert converter._converter_target == mock_target
+        assert converter._system_prompt_template == default_template
+
+
+@pytest.mark.asyncio
 async def test_toxic_sentence_generator_convert(mock_target, mock_template):
     """Test that the converter converts a prompt correctly."""
     with patch("pyrit.prompt_converter.toxic_sentence_generator_converter.SeedPrompt.from_yaml_file"):

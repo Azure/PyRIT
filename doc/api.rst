@@ -310,6 +310,7 @@ API Reference
     SuffixAppendConverter
     TenseConverter
     ToneConverter
+    ToxicSentenceGeneratorConverter
     TranslationConverter
     UnicodeConfusableConverter
     UnicodeSubstitutionConverter
