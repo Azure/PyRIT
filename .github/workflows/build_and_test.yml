@@ -33,13 +33,15 @@ jobs:
 
     steps:
       # checkout the PR branch (not the merge ref)
-      - uses: actions/checkout@v4
+      - name: Check out PR branch
+        uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
-          # keep token credentials so we can push later
+          # for pull-requests use the head repository and branch
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref:        ${{ github.event.pull_request.head.ref }}
+          # fetch whole history so merge-base works
+          fetch-depth: 0
           persist-credentials: true
-          # we need history so pre-commit can diff
-          fetch-depth: 0     
 
       # set an author for the bot commit
       - run: |
