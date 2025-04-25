@@ -58,18 +58,16 @@ from xpia_helpers import AzureStoragePlugin, SemanticKernelPluginAzureOpenAIProm
 from pyrit.common import AZURE_SQL, initialize_pyrit
 
 initialize_pyrit(memory_db_type=AZURE_SQL)
-from dotenv import load_dotenv
-
 
 azure_storage_plugin = AzureStoragePlugin(container_url=os.environ.get("AZURE_STORAGE_ACCOUNT_CONTAINER_URL"))
 
 processing_target = SemanticKernelPluginAzureOpenAIPromptTarget(
-    deployment_name= str(os.environ.get("XPIA_OPENAI_MODEL")),
+    deployment_name=str(os.environ.get("XPIA_OPENAI_MODEL")),
     api_key=str(os.environ.get("XPIA_OPENAI_KEY")),
     endpoint=str(os.environ.get("XPIA_OPENAI_GPT4O_ENDPOINT")),
     plugin=azure_storage_plugin,
     plugin_name="azure_storage",
-    api_version=str(os.environ.get("XPIA_OPENAI_API_VERSION"))
+    api_version=str(os.environ.get("XPIA_OPENAI_API_VERSION")),
 )
 
 # This requires the template parameter {{<plugin_name>.<kernel_function_name>}},
