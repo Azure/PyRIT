@@ -79,9 +79,7 @@ class PromptRequestResponse:
     
     @classmethod
     def from_system_prompt(cls, system_prompt: str) -> Self:
-        piece = PromptRequestPiece(original_value=system_prompt, role="system")
-        return cls(request_pieces=[piece])
-
+        return cls.from_prompt(prompt=system_prompt, role="system")
 
 
 def group_conversation_request_pieces_by_sequence(
