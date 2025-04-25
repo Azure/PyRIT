@@ -23,7 +23,7 @@ class PromptConverterConfiguration:
     prompt_data_types_to_apply: list[PromptDataType] = None
 
     @classmethod
-    def create_configurations_from_converters(cls, converters: List[PromptConverter]) -> List["PromptConverterConfiguration"]:
+    def from_converters(cls, *, converters: List[PromptConverter]) -> List["PromptConverterConfiguration"]:
         """
         Converts a list of converters into a list of PromptConverterConfiguration objects.
         Each converter gets its own configuration with default settings.
@@ -34,5 +34,7 @@ class PromptConverterConfiguration:
         Returns:
             List[PromptConverterConfiguration]: List of configurations, one per converter
         """
-        return [PromptConverterConfiguration(converters=[converter]) for converter in converters]
+        if not converters:
+            return []
+        return [cls(converters=[converter]) for converter in converters]
 

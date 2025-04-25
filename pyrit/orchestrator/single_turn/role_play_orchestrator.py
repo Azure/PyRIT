@@ -68,7 +68,7 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
         self._user_start_turn = role_play_definition.prompts[1]
         self._assistant_start_turn = role_play_definition.prompts[2]
 
-        rephrase_turn_converter = PromptConverterConfiguration.create_configurations_from_converters([
+        rephrase_turn_converter = PromptConverterConfiguration.from_converters([
             LLMGenericTextConverter(
                 converter_target=adversarial_chat,
                 user_prompt_template_with_objective=self._rephrase_instructions,
@@ -116,21 +116,13 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
     async def _get_conversation_start(self, objective: str = None) -> Optional[list[PromptRequestResponse]]:
 
         return [
-            PromptRequestResponse(
-                request_pieces=[
-                    PromptRequestPiece(
-                        role="user",
-                        original_value=self._user_start_turn.value,
-                    )
-                ]
+            PromptRequestResponse.from_prompt(
+                prompt=self._user_start_turn.value,
+                role="user",
             ),
-            PromptRequestResponse(
-                request_pieces=[
-                    PromptRequestPiece(
-                        role="assistant",
-                        original_value=self._assistant_start_turn.value,
-                    )
-                ]
+            PromptRequestResponse.from_prompt(
+                prompt=self._assistant_start_turn.value,
+                role="assistant", 
             ),
         ]
 

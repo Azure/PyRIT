@@ -1,9 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import asyncio
 import logging
 import uuid
-from typing import Optional, Union
+import copy
+from typing import Optional, Union, Any
 
 from colorama import Fore, Style
 
@@ -70,7 +72,6 @@ class PromptSendingOrchestrator(Orchestrator):
         self._should_convert_prepended_conversation = should_convert_prepended_conversation
         self._batch_size = batch_size
         self._retries_on_objective_failure = retries_on_objective_failure
-        self._prepended_conversation: list[PromptRequestResponse] = None
 
 
     def set_skip_criteria(
@@ -83,6 +84,101 @@ class PromptSendingOrchestrator(Orchestrator):
         """
         self._prompt_normalizer.set_skip_criteria(skip_criteria=skip_criteria, skip_value_type=skip_value_type)
 
+
+    async def _get_prepended_conversation(
+        self,
+        prepended_conversation: Optional[list[PromptRequestResponse]],
+        conversation_id: str,
+    ) -> Optional[list[PromptRequestResponse]]:
+        """
+        Processes the prepended conversation by converting it if needed and adding it to memory.
+
+        Args:
+            prepended_conversation (Optional[list[PromptRequestResponse]]): The conversation to prepend
+            conversation_id (str): The conversation ID to use for the request pieces
+
+        Returns:
+            Optional[list[PromptRequestResponse]]: The processed prepended conversation
+        """
+        if not prepended_conversation:
+            return None
+
+        # Create a deep copy of the prepended conversation to avoid modifying the original
+        prepended_conversation = copy.deepcopy(prepended_conversation)
+        
+        if not isinstance(self._objective_target, PromptChatTarget):
+            raise ValueError("Prepended conversation can only be used with a PromptChatTarget")
+
+        for request in prepended_conversation:
+            if self._should_convert_prepended_conversation:
+                await self._prompt_normalizer.convert_values(request_response=request, converter_configurations=self._request_converter_configurations)
+            for piece in request.request_pieces:
+                piece.conversation_id = conversation_id
+                piece.orchestrator_identifier = self.get_identifier()
+
+                # if the piece is retrieved from somewhere else, it needs to be unique
+                # and if not, this won't hurt anything
+                piece.id = uuid.uuid4()
+
+            self._memory.add_request_response_to_memory(request=request)
+
+        return prepended_conversation
+
+
+    async def _score_auxiliary_async(self, result: PromptRequestResponse) -> None:
+        """
+        Scores the response using auxiliary scorers if they are configured.
+
+        Args:
+            result (PromptRequestResponse): The response to score
+        """
+        if not self._auxiliary_scorers:
+            return
+
+        tasks = []
+        for piece in result.request_pieces:
+            if piece.role == "assistant":
+                for scorer in self._auxiliary_scorers:
+                    tasks.append(scorer.score_async(request_response=piece))
+        
+        if tasks:
+            await asyncio.gather(*tasks)
+
+
+    async def _score_objective_async(self, result: PromptRequestResponse, objective: str) -> tuple[str, Optional[Any]]:
+        """
+        Scores the response using the objective scorer if configured.
+
+        Args:
+            result (PromptRequestResponse): The response to score
+            objective (str): The objective to score against
+
+        Returns:
+            tuple[str, Optional[Any]]: A tuple containing the status and objective score
+        """
+        if not self._objective_scorer:
+            return "unknown", None
+
+        status = "failure"
+        objective_score = None
+
+        for piece in result.request_pieces:
+            if piece.role == "assistant":
+                objective_score_list = await self._objective_scorer.score_async(
+                    request_response=piece,
+                    task=objective,
+                )
+
+                # Find and save the first score that is true
+                for score in objective_score_list:
+                    if score.get_value():
+                        objective_score = score
+                        status = "success"
+                        break
+                if status == "success":
+                    break
+
+        return status, objective_score
 
 
     async def run_attack_async(
@@ -108,22 +204,7 @@ class PromptSendingOrchestrator(Orchestrator):
         if not seed_prompt:
             seed_prompt = SeedPromptGroup(prompts=[SeedPrompt(value=objective, data_type="text")])
 
-        if prepended_conversation:
-            # TODO raise error if it's not a PromptChatTarget
-
-
-            for request in prepended_conversation:
-                if self._should_convert_prepended_conversation:
-                    await self._prompt_normalizer.convert_values(request_response=request, converter_configurations=self._request_converter_configurations)
-                for piece in request.request_pieces:
-                    piece.conversation_id = conversation_id
-                    piece.orchestrator_identifier = self.get_identifier()
-
-                    # if the piece is retrieved from somewhere else, it needs to be unique
-                    # and if not, this won't hurt anything
-                    piece.id = uuid.uuid4()
-
-                self._memory.add_request_response_to_memory(request=request)
+        prepended_conversation = await self._get_prepended_conversation(prepended_conversation, conversation_id)
 
         status = "unknown"
         objective_score = None
@@ -140,35 +221,15 @@ class PromptSendingOrchestrator(Orchestrator):
                 orchestrator_identifier=self.get_identifier(),
             )
 
-
             if not result:
                 continue
 
-            if self._auxiliary_scorers:
-                for piece in result.request_pieces:
-                    if piece.role == "assistant":
-                        for scorer in self._auxiliary_scorers:
-                            await scorer.score_async(
-                                request_response=piece,
-                            )
-                            
-            if self._objective_scorer:
-                status = "failure"
-                for piece in result.request_pieces:
-                    if piece.role == "assistant":
-                        objective_score_list = await self._objective_scorer.score_async(
-                            request_response=piece,
-                            task=objective,
-                        )
+            await self._score_auxiliary_async(result)
+            
+            status, objective_score = await self._score_objective_async(result, objective)
 
-                        # Find and save the first score that is true
-                        for score in objective_score_list:
-                            if score.get_value():
-                                objective_score = score
-                                status = "success"
-                                break
-                        if status == "success":
-                            break
+            if status == "success":
+                break
 
         return OrchestratorResult(
             conversation_id=conversation_id,

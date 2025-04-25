@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Literal
+from typing import Literal, Annotated
 
 from colorama import Fore, Style
 
@@ -13,8 +13,25 @@ from pyrit.models import Score
 logger = logging.getLogger(__name__)
 
 
-OrchestratorResultStatus = Literal["success", "failure", "pruned", "adversarial_generation", "in_progress", "error", "unknown"]
+OrchestratorResultStatus = Annotated[
+    Literal["success", "failure", "pruned", "adversarial_generation", "in_progress", "error", "unknown"],
+    """
+    The status of an orchestrator result.
 
+    Completion States:
+        success: The orchestrator run is complete and achieved its objective.
+        failure: The orchestrator run is complete and failed to achieve its objective.
+        error: The orchestrator run is complete and encountered an error.
+        unknown: The orchestrator run is complete and it is unknown whether it achieved its objective.
+
+    Intermediate States:
+        in_progress: The orchestrator is still running.
+
+    Special States:
+        pruned: The conversation was pruned as part of an attack and not related to success/failure/unknown/error.
+        adversarial_generation: The conversation was used as part of adversarial generation and not related to success/failure/unknown/error.
+    """
+]
 
 class OrchestratorResult:
     """The result of an orchestrator."""

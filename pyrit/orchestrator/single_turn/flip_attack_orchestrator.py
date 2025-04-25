@@ -50,7 +50,7 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
             verbose (bool, Optional): Whether to log debug information. Defaults to False.
         """
 
-        flip_converter = PromptConverterConfiguration.create_configurations_from_converters([FlipConverter()])
+        flip_converter = PromptConverterConfiguration.from_converters([FlipConverter()])
 
 
         super().__init__(

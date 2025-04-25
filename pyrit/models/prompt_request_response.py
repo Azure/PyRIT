@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Dict, MutableSequence, Optional, Sequence, Union
+from typing import Dict, MutableSequence, Optional, Sequence, Union, Self
 
 from pyrit.models.literals import PromptDataType, PromptResponseError
 from pyrit.models.prompt_request_piece import PromptRequestPiece
@@ -72,18 +72,15 @@ class PromptRequestResponse:
 
         return response_pieces
     
-    @staticmethod
-    def get_system_prompt_request(system_prompt: str) -> Sequence["PromptRequestResponse"]:
-        return [
-            PromptRequestResponse(
-                request_pieces=[
-                    PromptRequestPiece(
-                        original_value=system_prompt,
-                        role="system",
-                    )
-                ]
-            )
-        ]
+    @classmethod
+    def from_prompt(cls, *, prompt: str, role: str) -> Self:
+        piece = PromptRequestPiece(original_value=prompt, role=role)
+        return cls(request_pieces=[piece])
+    
+    @classmethod
+    def from_system_prompt(cls, system_prompt: str) -> Self:
+        piece = PromptRequestPiece(original_value=system_prompt, role="system")
+        return cls(request_pieces=[piece])
 
 
 
