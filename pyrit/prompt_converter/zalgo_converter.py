@@ -34,7 +34,7 @@ class ZalgoConverter(PromptConverter):
             except (TypeError, ValueError):
                 raise ValueError(f"Invalid intensity value: {intensity!r} (must be an integer)")
             normalized_intensity = max(0, min(intensity, MAX_INTENSITY))
-            if intensity > MAX_INTENSITY:
+            if intensity != normalized_intensity:
                 logger.warning(
                     f"ZalgoConverter supports intensity between 0 and {MAX_INTENSITY}, "
                     f"but received a value of {intensity}. Normalizing to {normalized_intensity}."
