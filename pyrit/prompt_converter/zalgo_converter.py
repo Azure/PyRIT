@@ -24,29 +24,36 @@ class ZalgoConverter(PromptConverter):
             intensity (int): Number of combining marks per character (higher = more cursed). Default is 10.
             seed (Optional[int]): Optional seed for reproducible output.
         """
-        self._intensity = intensity
+        self._intensity = self._normalize_intensity(intensity)
+        # normalize intensity here
         self._seed = seed
 
-    def _normalize_intensity(self) -> int:
-        if self._intensity > MAX_INTENSITY:
-            logger.warning("This is higher intensity than is supported (max 100)")
-        return max(0, min(self._intensity, MAX_INTENSITY))
+    def _normalize_intensity(self, intensity: int) -> int:
+            try:
+                intensity = int(intensity)
+            except (TypeError, ValueError):
+                raise ValueError(f"Invalid intensity value: {intensity!r} (must be an integer)")
+            normalized_intensity = max(0, min(intensity, MAX_INTENSITY))
+            if intensity > MAX_INTENSITY:
+                logger.warning(f"""ZalgoConverter supports intensity between 0 and 100, 
+                               but received a value of {self._intensity}. Normalizing to {normalized_intensity}""")
+
+            return normalized_intensity
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Converts text into cursed Zalgo text using combining Unicode marks.
         """
-        intensity = self._normalize_intensity()
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
-        if intensity <= 0:
+        if self._intensity <= 0:
             output_text = prompt
         else:
             if self._seed is not None:
                 random.seed(self._seed)
 
             def glitch(char: str) -> str:
-                return char + "".join(random.choice(ZALGO_MARKS) for _ in range(random.randint(1, intensity)))
+                return char + "".join(random.choice(ZALGO_MARKS) for _ in range(random.randint(1, self._intensity)))
 
             output_text = "".join(glitch(c) if c.isalnum() else c for c in prompt)
         return ConverterResult(output_text=output_text, output_type="text")
