@@ -8,68 +8,14 @@ from abc import abstractmethod
 from pathlib import Path
 from typing import Optional, Sequence, Union
 
-from colorama import Fore, Style
-
-from pyrit.common.display_response import display_image_response
-from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score, SeedPrompt
-from pyrit.orchestrator import Orchestrator
+from pyrit.orchestrator import Orchestrator, OrchestratorResult
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
-
-
-class MultiTurnAttackResult:
-    """The result of a multi-turn attack."""
-
-    def __init__(self, conversation_id: str, achieved_objective: bool, objective: str):
-        self.conversation_id = conversation_id
-        self.achieved_objective = achieved_objective
-        self.objective = objective
-        self._memory = CentralMemory.get_memory_instance()
-
-    async def print_conversation_async(self):
-        """Prints the conversation between the objective target and the adversarial chat, including the scores.
-
-        Args:
-            prompt_target_conversation_id (str): the conversation ID for the prompt target.
-        """
-        target_messages = self._memory.get_conversation(conversation_id=self.conversation_id)
-
-        if not target_messages or len(target_messages) == 0:
-            print("No conversation with the target")
-            return
-
-        if self.achieved_objective:
-            print(
-                f"{Style.BRIGHT}{Fore.RED}The multi-turn orchestrator has completed the conversation and achieved "
-                f"the objective: {self.objective}"
-            )
-        else:
-            print(
-                f"{Style.BRIGHT}{Fore.RED}The multi-turn orchestrator has not achieved the objective: "
-                f"{self.objective}"
-            )
-
-        for message in target_messages:
-            for piece in message.request_pieces:
-                if piece.role == "user":
-                    print(f"{Style.BRIGHT}{Fore.BLUE}{piece.role}:")
-                    if piece.converted_value != piece.original_value:
-                        print(f"Original value: {piece.original_value}")
-                    print(f"Converted value: {piece.converted_value}")
-                else:
-                    print(f"{Style.NORMAL}{Fore.YELLOW}{piece.role}: {piece.converted_value}")
-
-                await display_image_response(piece)
-
-                scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(piece.id)])
-                if scores and len(scores) > 0:
-                    for score in scores:
-                        print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
 
 
 class MultiTurnOrchestrator(Orchestrator):
@@ -114,7 +60,6 @@ class MultiTurnOrchestrator(Orchestrator):
         super().__init__(prompt_converters=prompt_converters, verbose=verbose)
 
         self._objective_target = objective_target
-        self._achieved_objective = False
 
         self._adversarial_chat_system_seed_prompt = SeedPrompt.from_yaml_file(adversarial_chat_system_prompt_path)
 
@@ -148,7 +93,7 @@ class MultiTurnOrchestrator(Orchestrator):
     @abstractmethod
     async def run_attack_async(
         self, *, objective: str, memory_labels: Optional[dict[str, str]] = None
-    ) -> MultiTurnAttackResult:
+    ) -> OrchestratorResult:
         """
         Applies the attack strategy until the conversation is complete or the maximum number of turns is reached.
 
@@ -160,15 +105,17 @@ class MultiTurnOrchestrator(Orchestrator):
                 the passed-in labels take precedence. Defaults to None.
 
         Returns:
-            MultiTurnAttackResult: Contains the outcome of the attack, including:
-                - conversation_id (UUID): The ID associated with the final conversation state.
-                - achieved_objective (bool): Indicates whether the orchestrator successfully met the objective.
+            OrchestratorResult: Contains the outcome of the attack, including:
+                - conversation_id (str): The ID associated with the final conversation state.
                 - objective (str): The intended goal of the attack.
+                - status (OrchestratorResultStatus): The status of the attack ("success", "failure", "pruned", etc.)
+                - score (Score): The score evaluating the attack outcome.
+                - confidence (float): The confidence level of the result.
         """
 
     async def run_attacks_async(
         self, *, objectives: list[str], memory_labels: Optional[dict[str, str]] = None, batch_size=5
-    ) -> list[MultiTurnAttackResult]:
+    ) -> list[OrchestratorResult]:
         """Applies the attack strategy for each objective in the list of objectives.
 
         Args:
@@ -180,7 +127,12 @@ class MultiTurnOrchestrator(Orchestrator):
             batch_size (int): The number of objectives to process in parallel. The default value is 5.
 
         Returns:
-            list[MultiTurnAttackResult]: The list of MultiTurnAttackResults for each objective.
+            list[OrchestratorResult]: The list of OrchestratorResults for each objective, each containing:
+                - conversation_id (str): The ID associated with the final conversation state.
+                - objective (str): The intended goal of the attack.
+                - status (OrchestratorResultStatus): The status of the attack ("success", "failure", "pruned", etc.)
+                - score (Score): The score evaluating the attack outcome.
+                - confidence (float): The confidence level of the result.
         """
         semaphore = asyncio.Semaphore(batch_size)
 
@@ -224,7 +176,7 @@ class MultiTurnOrchestrator(Orchestrator):
                 len(self._prepended_conversation) > 1
                 and self._prepended_conversation[-2].request_pieces[0].role == "user"
             ):
-                self._last_prepended_user_message = self._prepended_conversation[-2].request_pieces[0].converted_value
+                self._last_prepended_user_message = self._prepended_conversation[-2].get_value()
             else:
                 raise ValueError(
                     "There must be a user message preceding the assistant message in prepended conversations."

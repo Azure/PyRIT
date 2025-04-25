@@ -8,7 +8,11 @@ from pyrit.prompt_converter.add_image_to_video_converter import AddImageVideoCon
 from pyrit.prompt_converter.add_text_image_converter import AddTextImageConverter
 from pyrit.prompt_converter.ansi_escape.ansi_attack_converter import AnsiAttackConverter
 from pyrit.prompt_converter.ascii_art_converter import AsciiArtConverter
-from pyrit.prompt_converter.ascii_smuggler_converter import AsciiSmugglerConverter
+from pyrit.prompt_converter.token_smuggling import (
+    AsciiSmugglerConverter,
+    SneakyBitsSmugglerConverter,
+    VariationSelectorSmugglerConverter,
+)
 from pyrit.prompt_converter.atbash_converter import AtbashConverter
 from pyrit.prompt_converter.audio_frequency_converter import AudioFrequencyConverter
 from pyrit.prompt_converter.azure_speech_audio_to_text_converter import AzureSpeechAudioToTextConverter
@@ -32,6 +36,7 @@ from pyrit.prompt_converter.fuzzer_converter import (
     FuzzerSimilarConverter,
 )
 from pyrit.prompt_converter.human_in_the_loop_converter import HumanInTheLoopConverter
+from pyrit.prompt_converter.insert_punctuation_converter import InsertPunctuationConverter
 from pyrit.prompt_converter.leetspeak_converter import LeetspeakConverter
 from pyrit.prompt_converter.llm_generic_text_converter import LLMGenericTextConverter
 from pyrit.prompt_converter.malicious_question_generator_converter import MaliciousQuestionGeneratorConverter
@@ -52,9 +57,12 @@ from pyrit.prompt_converter.text_to_hex_converter import TextToHexConverter
 from pyrit.prompt_converter.tone_converter import ToneConverter
 from pyrit.prompt_converter.translation_converter import TranslationConverter
 from pyrit.prompt_converter.unicode_confusable_converter import UnicodeConfusableConverter
+from pyrit.prompt_converter.unicode_replacement_converter import UnicodeReplacementConverter
 from pyrit.prompt_converter.unicode_sub_converter import UnicodeSubstitutionConverter
 from pyrit.prompt_converter.url_converter import UrlConverter
 from pyrit.prompt_converter.variation_converter import VariationConverter
+from pyrit.prompt_converter.zero_width_converter import ZeroWidthConverter
+
 
 __all__ = [
     "AddImageTextConverter",
@@ -85,6 +93,7 @@ __all__ = [
     "FuzzerShortenConverter",
     "FuzzerSimilarConverter",
     "HumanInTheLoopConverter",
+    "InsertPunctuationConverter",
     "LeetspeakConverter",
     "LLMGenericTextConverter",
     "MaliciousQuestionGeneratorConverter",
@@ -99,6 +108,7 @@ __all__ = [
     "RepeatTokenConverter",
     "ROT13Converter",
     "SearchReplaceConverter",
+    "SneakyBitsSmugglerConverter",
     "StringJoinConverter",
     "SuffixAppendConverter",
     "TextToHexConverter",
@@ -106,7 +116,10 @@ __all__ = [
     "ToneConverter",
     "TranslationConverter",
     "UnicodeConfusableConverter",
+    "UnicodeReplacementConverter",
     "UnicodeSubstitutionConverter",
     "UrlConverter",
     "VariationConverter",
+    "VariationSelectorSmugglerConverter",
+    "ZeroWidthConverter",
 ]

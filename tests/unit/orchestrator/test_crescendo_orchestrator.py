@@ -110,7 +110,7 @@ async def test_apply_crescendo_attack_fail_num_turns(
         result = await orchestrator.run_attack_async(objective="objective")
         assert mock_refusal_score.call_count == turns
         assert mock_eval_score.call_count == turns
-        assert not result.achieved_objective, "should not have achieved objective"
+        assert result.status == "failure", "should not have achieved objective"
         assert mock_get_attack_prompt.call_count == turns
 
 
@@ -146,7 +146,7 @@ async def test_apply_crescendo_attack_fail_max_refusals_num_turns(
         result = await orchestrator.run_attack_async(objective="objective")
         assert mock_refusal_score.call_count == max_backtracks
         assert mock_eval_score.call_count == turns
-        assert not result.achieved_objective, "should not have achieved objective"
+        assert result.status == "failure", "should not have achieved objective"
         assert mock_get_attack_prompt.call_count == turns + max_backtracks
 
 
@@ -177,10 +177,10 @@ async def test_run_attack_succeed_max_refusals_num_turns(
             AsyncMock(return_value=[true_eval_score]),
         ) as mock_eval_score,
     ):
-        objective_score = await orchestrator.run_attack_async(objective="objective")
+        orchestrator_result = await orchestrator.run_attack_async(objective="objective")
         assert mock_refusal_score.call_count == max_refusal
         assert mock_eval_score.call_count == 1
-        assert objective_score.achieved_objective, "should have achieved objective"
+        assert orchestrator_result.status == "success", "should have achieved objective"
         assert mock_get_attack_prompt.call_count == 1 + max_refusal
 
 
@@ -263,7 +263,7 @@ async def test_apply_crescendo_attack_succeed_num_turns(
         objective_score = await orchestrator.run_attack_async(objective="objective")
         assert mock_refusal_score.call_count == 1
         assert mock_eval_score.call_count == 1
-        assert objective_score.achieved_objective, "achieved objective"
+        assert objective_score.status == "success", "should have achieved objective"
         assert mock_get_attack_prompt.call_count == 1
 
 
@@ -488,11 +488,8 @@ async def test_get_attack_prompt_with_refusal(orchestrator: CrescendoOrchestrato
         '"rationale_behind_jailbreak": "Rationale Behind Jailbreak"}'
     )
 
-    mock_request_piece = MagicMock()
-    mock_request_piece.converted_value = red_team_response
-
     red_teaming_return_value = MagicMock()
-    red_teaming_return_value.request_pieces = [mock_request_piece]  # Mock list with proper behavior
+    red_teaming_return_value.get_value.return_value = red_team_response
 
     objective = "do something extremely bad"
     refused_text = "this request was refused"
@@ -528,11 +525,8 @@ async def test_get_attack_prompt_first_turn(orchestrator: CrescendoOrchestrator)
         '"rationale_behind_jailbreak": "Rationale Behind Jailbreak"}'
     )
 
-    mock_request_piece = MagicMock()
-    mock_request_piece.converted_value = red_team_response
-
     red_teaming_return_value = MagicMock()
-    red_teaming_return_value.request_pieces = [mock_request_piece]  # Mock list with proper behavior
+    red_teaming_return_value.get_value.return_value = red_team_response
 
     objective = "do something extremely bad"
 
@@ -566,11 +560,8 @@ async def test_get_attack_prompt_objective_score(orchestrator: CrescendoOrchestr
         '"rationale_behind_jailbreak": "Rationale Behind Jailbreak"}'
     )
 
-    mock_request_piece = MagicMock()
-    mock_request_piece.converted_value = red_team_response
-
     red_teaming_return_value = MagicMock()
-    red_teaming_return_value.request_pieces = [mock_request_piece]  # Mock list with proper behavior
+    red_teaming_return_value.get_value.return_value = red_team_response
 
     objective = "do something extremely bad"
     objective_score = MagicMock(score_rationale="Objective Score Rationale")

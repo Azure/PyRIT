@@ -51,6 +51,7 @@ class OpenAIChatTarget(OpenAITarget):
         presence_penalty: Optional[float] = None,
         seed: Optional[int] = None,
         n: Optional[int] = None,
+        is_json_supported: bool = True,
         extra_body_parameters: Optional[dict[str, Any]] = None,
         **kwargs,
     ):
@@ -59,7 +60,7 @@ class OpenAIChatTarget(OpenAITarget):
             model_name (str, Optional): The name of the model.
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-                Defaults to the AZURE_OPENAI_CHAT_KEY environment variable.
+                Defaults to the OPENAI_CHAT_KEY environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
             use_aad_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
@@ -92,7 +93,14 @@ class OpenAIChatTarget(OpenAITarget):
             seed (int, Optional): If specified, openAI will make a best effort to sample deterministically,
                 such that repeated requests with the same seed and parameters should return the same result.
             n (int, Optional): The number of completions to generate for each prompt.
+            is_json_supported (bool, Optional): If True, the target will supports formatting responses as JSON by
+                setting the response_format header. Official OpenAI models all support this, but if you are using
+                this target with different models, is_json_supported should be set correctly to avoid issues when
+                using adversarial infrastructure (e.g. Crescendo scorers will set this flag).
             extra_body_parameters (dict, Optional): Additional parameters to be included in the request body.
+            httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
+                httpx.AsyncClient() constructor.
+                For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
         """
         super().__init__(**kwargs)
 
@@ -107,6 +115,7 @@ class OpenAIChatTarget(OpenAITarget):
         self._presence_penalty = presence_penalty
         self._seed = seed
         self._n = n
+        self._is_json_supported = is_json_supported
         self._extra_body_parameters = extra_body_parameters
 
     def _set_openai_env_configuration_vars(self) -> None:
@@ -127,6 +136,8 @@ class OpenAIChatTarget(OpenAITarget):
         """
 
         self._validate_request(prompt_request=prompt_request)
+        self.refresh_auth_headers()
+
         request_piece: PromptRequestPiece = prompt_request.request_pieces[0]
 
         is_json_response = self.is_response_format_json(request_piece)
@@ -138,7 +149,9 @@ class OpenAIChatTarget(OpenAITarget):
 
         body = await self._construct_request_body(conversation=conversation, is_json_response=is_json_response)
 
-        params = {"api-version": self._api_version}
+        params = {}
+        if self._api_version is not None:
+            params["api-version"] = self._api_version
 
         try:
             str_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(
@@ -152,7 +165,11 @@ class OpenAIChatTarget(OpenAITarget):
         except httpx.HTTPStatusError as StatusError:
             if StatusError.response.status_code == 400:
                 # Handle Bad Request
-                return handle_bad_request_exception(response_text=StatusError.response.text, request=request_piece)
+                return handle_bad_request_exception(
+                    response_text=StatusError.response.text,
+                    request=request_piece,
+                    error_code=StatusError.response.status_code,
+                )
             elif StatusError.response.status_code == 429:
                 raise RateLimitException()
             else:
@@ -333,7 +350,10 @@ class OpenAIChatTarget(OpenAITarget):
         request_piece: PromptRequestPiece,
     ) -> PromptRequestResponse:
 
-        response = json.loads(open_ai_str_response)
+        try:
+            response = json.loads(open_ai_str_response)
+        except json.JSONDecodeError as e:
+            raise PyritException(message=f"Failed to parse JSON response. Please check your endpoint: {e}")
 
         finish_reason = response["choices"][0]["finish_reason"]
         extracted_response: str = ""
@@ -346,6 +366,10 @@ class OpenAIChatTarget(OpenAITarget):
             if not extracted_response:
                 logger.log(logging.ERROR, "The chat returned an empty response.")
                 raise EmptyResponseException(message="The chat returned an empty response.")
+        elif finish_reason == "content_filter":
+            return handle_bad_request_exception(
+                response_text=open_ai_str_response, request=request_piece, error_code=400, is_content_filter=True
+            )
         else:
             raise PyritException(message=f"Unknown finish_reason {finish_reason} from response: {response}")
 
@@ -373,4 +397,4 @@ class OpenAIChatTarget(OpenAITarget):
 
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""
-        return True
+        return self._is_json_supported

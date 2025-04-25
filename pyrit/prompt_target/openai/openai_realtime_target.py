@@ -40,7 +40,7 @@ class RealtimeTarget(OpenAITarget):
             model_name (str, Optional): The name of the model.
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-                Defaults to the AZURE_OPENAI_CHAT_KEY environment variable.
+                Defaults to the OPENAI_CHAT_KEY environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
             use_aad_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
@@ -56,6 +56,9 @@ class RealtimeTarget(OpenAITarget):
             voice (literal str, Optional): The voice to use. Defaults to None.
                 the only supported voices by the AzureOpenAI Realtime API are "alloy", "echo", and "shimmer".
             existing_convo (dict[str, websockets.WebSocketClientProtocol], Optional): Existing conversations.
+            httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
+                httpx.AsyncClient() constructor.
+                For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
         """
 
         super().__init__(api_version=api_version, **kwargs)
@@ -78,19 +81,36 @@ class RealtimeTarget(OpenAITarget):
         logger.info(f"Connecting to WebSocket: {self._endpoint}")
 
         query_params = {
-            "api-version": self._api_version,
             "deployment": self._model_name,
-            "api-key": self._api_key,
             "OpenAI-Beta": "realtime=v1",
         }
+
+        self._add_auth_param_to_query_params(query_params)
+
+        if self._api_version is not None:
+            query_params["api-version"] = self._api_version
+
         url = f"{self._endpoint}?{urlencode(query_params)}"
 
         websocket = await websockets.connect(url)
         logger.info("Successfully connected to AzureOpenAI Realtime API")
         return websocket
 
+    def _add_auth_param_to_query_params(self, query_params: dict) -> None:
+        """
+        Adds the authentication parameter to the query parameters. This is how
+        Realtime API works, it doesn't use the headers for auth.
+
+        Args:
+            query_params (dict): The query parameters.
+        """
+        if self._api_key:
+            query_params["api-key"] = self._api_key
+
+        if self._azure_auth:
+            query_params["access_token"] = self._azure_auth.refresh_token()
+
     def _set_system_prompt_and_config_vars(self):
-        # Sets the system prompt and configuration variables for the target.
 
         session_config = {
             "modalities": ["audio", "text"],
@@ -138,14 +158,12 @@ class RealtimeTarget(OpenAITarget):
 
     @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        # Sends a prompt to the target and returns the response.
 
         convo_id = prompt_request.request_pieces[0].conversation_id
         if convo_id not in self._existing_conversation:
             websocket = await self.connect()
             self._existing_conversation[convo_id] = websocket
 
-            # Store system prompt in memory:
             self.set_system_prompt(
                 system_prompt=self.system_prompt,
                 conversation_id=convo_id,
@@ -189,7 +207,7 @@ class RealtimeTarget(OpenAITarget):
         sample_width: int = 2,
         sample_rate: int = 16000,
         output_filename: str = None,
-    ):
+    ) -> str:
         """
         Saves audio bytes to a WAV file.
 
@@ -198,11 +216,12 @@ class RealtimeTarget(OpenAITarget):
             num_channels (int): Number of audio channels. Defaults to 1 for the PCM16 format
             sample_width (int): Sample width in bytes. Defaults to 2 for the PCM16 format
             sample_rate (int): Sample rate in Hz. Defaults to 16000 Hz for the PCM16 format
+            output_filename (str): Output filename. If None, a UUID filename will be used.
+
+        Returns:
+            str: The path to the saved audio file.
         """
         data = data_serializer_factory(category="prompt-memory-entries", data_type="audio_path")
-        if not output_filename:
-            filename = await data.get_data_filename()
-            output_filename = str(filename)
 
         await data.save_formatted_audio(
             data=audio_bytes,
@@ -211,7 +230,8 @@ class RealtimeTarget(OpenAITarget):
             sample_width=sample_width,
             sample_rate=sample_rate,
         )
-        return output_filename
+
+        return data.value
 
     async def cleanup_target(self):
         """

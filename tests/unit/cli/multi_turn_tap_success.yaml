@@ -1,0 +1,13 @@
+datasets:
+  - ./pyrit/datasets/seed_prompts/illegal.prompt
+scenarios:
+  - type: "TreeOfAttacksWithPruningOrchestrator"
+objective_target:
+  type: "OpenAIChatTarget"
+adversarial_chat:
+  type: "OpenAIChatTarget"
+scoring:
+  scoring_target:
+    type: "OpenAIChatTarget"
+database:
+  type: "DuckDB"

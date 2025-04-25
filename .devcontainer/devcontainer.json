@@ -1,0 +1,62 @@
+{
+  "name": "PyRIT | Python Dev Container",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "devcontainer",
+  "remoteUser": "vscode",
+  "workspaceFolder": "/workspace",
+  "containerEnv": {
+    "PYTHONPATH": "/workspace"
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/opt/conda/envs/pyrit-dev/bin/python",
+        "python.analysis.extraPaths": [
+          "/workspace"
+        ],
+        "python.linting.mypyArgs": [
+          "--cache-dir=.mypy_cache"
+        ],
+        "files.watcherExclude": {
+          "**/.git/objects/**": true,
+          "**/.git/subtree-cache/**": true,
+          "**/__pycache__/**": true,
+          "**/.pytest_cache/**": true,
+          "**/build/**": true,
+          "**/dist/**": true,
+          "**/pyrit/auxiliary_attacks/gcg/attack/**": true
+        },
+        "search.exclude": {
+          "**/node_modules": true,
+          "**/bower_components": true,
+          "**/build": true,
+          "**/dist": true,
+          "**/.git": true
+        },
+        "files.exclude": {
+          "**/.git": true,
+          "**/node_modules": true,
+          "**/dist": true,
+          "**/build": true,
+          "**/__pycache__": true
+        },
+        "python.analysis.diagnosticMode": "workspace",
+        "python.analysis.indexing": true,
+        "python.analysis.autoSearchPaths": true,
+        "python.linting.enabled": true,
+        "explorer.autoReveal": false,
+        "files.maxMemoryForLargeFilesMB": 4096,
+        "files.useExperimentalFileWatcher": true,
+        "git.showUntrackedFiles": true
+      },
+      "extensions": [
+        "ms-python.python",
+        "ms-toolsai.jupyter",
+        "ms-azuretools.vscode-docker",
+        "tamasfe.even-better-toml"
+      ]
+    }
+  },
+  "postCreateCommand": "/bin/bash -i .devcontainer/devcontainer_setup.sh",
+  "forwardPorts": [4213, 8888]
+}

@@ -36,7 +36,7 @@ jobs:
       PYRIT_TEST_SECRET: $(env-global)
     name: create_env_file
   - bash: |
-      cp .env_local_example .env.local
+      cp build_scripts/env_local_integration_test .env.local
     displayName: "Create .env.local from example"
   - bash: pip install --upgrade setuptools pip packaging
     name: upgrade_pip_and_setuptools_before_installing_PyRIT
@@ -44,6 +44,19 @@ jobs:
     name: install_tkinter
   - bash: pip install .[dev,all] -v
     name: install_PyRIT
+  # This step ensures that integration tests are run outside of the PyRIT repository to test that .env files are accessed correctly.
+  - bash: |
+      PyRIT_DIR=$(pwd)
+      NEW_DIR="integration_test_directory"
+      cd ..
+      mkdir -p $NEW_DIR/tests
+      cp $PyRIT_DIR/.env $NEW_DIR
+      cp $PyRIT_DIR/.env.local $NEW_DIR
+      cp -r $PyRIT_DIR/doc $NEW_DIR
+      cp -r $PyRIT_DIR/assets $NEW_DIR
+      cp -r $PyRIT_DIR/tests/integration $NEW_DIR/tests
+      cd $NEW_DIR
+    displayName: "Create and switch to new integration test directory"
   - bash: make integration-test
     name: run_integration_tests
   - bash: rm -f .env

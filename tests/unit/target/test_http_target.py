@@ -54,15 +54,38 @@ async def test_send_prompt_async(mock_request, mock_http_target, mock_http_respo
     prompt_request.request_pieces = [MagicMock(converted_value="test_prompt")]
     mock_request.return_value = mock_http_response
     response = await mock_http_target.send_prompt_async(prompt_request=prompt_request)
-    assert response.request_pieces[0].converted_value == "value1"
+    assert response.get_value() == "value1"
     assert mock_request.call_count == 1
     mock_request.assert_called_with(
         method="POST",
         url="https://example.com/",
-        headers={"Host": "example.com", "Content-Type": "application/json"},
+        headers={"host": "example.com", "content-type": "application/json"},
         content='{"prompt": "test_prompt"}',
         follow_redirects=True,
     )
+
+
+def test_parse_raw_http_request_ignores_content_length(patch_central_database):
+
+    request = "POST / HTTP/1.1\nHost: example.com\nContent-Type: application/json\nContent-Length: 100\n\n"
+    target = HTTPTarget(http_request=request)
+
+    headers, _, _, _, _ = target.parse_raw_http_request(request)
+    assert headers == {"host": "example.com", "content-type": "application/json"}
+
+
+def test_parse_raw_http_respects_url_path(patch_central_database):
+
+    request1 = (
+        "POST https://diffsite.com/test/ HTTP/1.1\nHost: example.com\nContent-Type: "
+        + "application/json\nContent-Length: 100\n\n"
+    )
+    target = HTTPTarget(http_request=request1)
+    headers, _, url, _, _ = target.parse_raw_http_request(request1)
+    assert url == "https://diffsite.com/test/"
+
+    # The host header should still be example.com
+    assert headers == {"host": "example.com", "content-type": "application/json"}
 
 
 @pytest.mark.asyncio
@@ -111,12 +134,12 @@ async def test_send_prompt_regex_parse_async(mock_request, mock_http_target):
     mock_request.return_value = mock_response
 
     response = await mock_http_target.send_prompt_async(prompt_request=prompt_request)
-    assert response.request_pieces[0].converted_value == "Match: 1234"
+    assert response.get_value() == "Match: 1234"
     assert mock_request.call_count == 1
     mock_request.assert_called_with(
         method="POST",
         url="https://example.com/",
-        headers={"Host": "example.com", "Content-Type": "application/json"},
+        headers={"host": "example.com", "content-type": "application/json"},
         content='{"prompt": "test_prompt"}',
         follow_redirects=True,
     )
@@ -134,14 +157,14 @@ async def test_send_prompt_async_keeps_original_template(mock_request, mock_http
     prompt_request.request_pieces = [MagicMock(converted_value="test_prompt")]
     response = await mock_http_target.send_prompt_async(prompt_request=prompt_request)
 
-    assert response.request_pieces[0].converted_value == "value1"
+    assert response.get_value() == "value1"
     assert mock_http_target.http_request == original_http_request
 
     assert mock_request.call_count == 1
     mock_request.assert_called_with(
         method="POST",
         url="https://example.com/",
-        headers={"Host": "example.com", "Content-Type": "application/json"},
+        headers={"host": "example.com", "content-type": "application/json"},
         content='{"prompt": "test_prompt"}',
         follow_redirects=True,
     )
@@ -160,14 +183,14 @@ async def test_send_prompt_async_keeps_original_template(mock_request, mock_http
     mock_request.assert_any_call(
         method="POST",
         url="https://example.com/",
-        headers={"Host": "example.com", "Content-Type": "application/json"},
+        headers={"host": "example.com", "content-type": "application/json"},
         content='{"prompt": "test_prompt"}',
         follow_redirects=True,
     )
     mock_request.assert_any_call(
         method="POST",
         url="https://example.com/",
-        headers={"Host": "example.com", "Content-Type": "application/json"},
+        headers={"host": "example.com", "content-type": "application/json"},
         content='{"prompt": "second_test_prompt"}',
         follow_redirects=True,
     )

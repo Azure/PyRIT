@@ -39,7 +39,7 @@ class OpenAICompletionTarget(OpenAITarget):
             model_name (str, Optional): The name of the model.
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-                Defaults to the AZURE_OPENAI_CHAT_KEY environment variable.
+                Defaults to the OPENAI_CHAT_KEY environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
             use_aad_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
@@ -64,6 +64,9 @@ class OpenAICompletionTarget(OpenAITarget):
                 tokens based on whether they appear in the text so far, increasing the model's likelihood to
                 talk about new topics.
             n (int, Optional): How many completions to generate for each prompt.
+            httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
+                httpx.AsyncClient() constructor.
+                For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
         """
 
         super().__init__(*args, **kwargs)
@@ -89,9 +92,13 @@ class OpenAICompletionTarget(OpenAITarget):
 
         logger.info(f"Sending the following prompt to the prompt target: {request_piece}")
 
+        self.refresh_auth_headers()
+
         body = await self._construct_request_body(request=request_piece)
 
-        params = {"api-version": self._api_version}
+        params = {}
+        if self._api_version is not None:
+            params["api-version"] = self._api_version
 
         try:
             str_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(

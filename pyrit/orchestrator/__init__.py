@@ -2,7 +2,8 @@
 # Licensed under the MIT license.
 
 from pyrit.orchestrator.orchestrator_class import Orchestrator
-from pyrit.orchestrator.multi_turn.multi_turn_orchestrator import MultiTurnAttackResult, MultiTurnOrchestrator
+from pyrit.orchestrator.models.orchestrator_result import OrchestratorResult, OrchestratorResultStatus
+from pyrit.orchestrator.multi_turn.multi_turn_orchestrator import MultiTurnOrchestrator
 from pyrit.orchestrator.multi_turn.tree_of_attacks_with_pruning_orchestrator import TreeOfAttacksWithPruningOrchestrator
 from pyrit.orchestrator.scoring_orchestrator import ScoringOrchestrator
 from pyrit.orchestrator.single_turn.prompt_sending_orchestrator import PromptSendingOrchestrator
@@ -32,7 +33,8 @@ __all__ = [
     "CrescendoOrchestrator",
     "FlipAttackOrchestrator",
     "FuzzerOrchestrator",
-    "MultiTurnAttackResult",
+    "OrchestratorResult",
+    "OrchestratorResultStatus",
     "MultiTurnOrchestrator",
     "Orchestrator",
     "PAIROrchestrator",

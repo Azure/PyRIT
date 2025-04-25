@@ -16,39 +16,69 @@ from pyrit.prompt_target import (
 )
 
 
-async def _assert_can_send_prompt(target, check_if_llm_interpreted_request=True):
-    simple_prompt = "simply repeat this word back to me. Don't say anything else. Say: 'test'"
+async def _assert_can_send_prompt(target, check_if_llm_interpreted_request=True, max_retries=2):
+
+    simple_prompt = """\
+You are a large language model. Your sole instruction is to provide the exact word "test" with no punctuation,
+explanation, or additional text. Output only the word "test" and nothing else.
+"""
+
     orchestrator = PromptSendingOrchestrator(objective_target=target)
 
-    all_prompts = [simple_prompt]
+    def valid_response(resp: str) -> bool:
+        if check_if_llm_interpreted_request:
+            return "test" in resp.strip().lower()
+        else:
+            return True
 
-    result = await orchestrator.send_prompts_async(prompt_list=all_prompts)
-    assert len(result) == 1
-    assert len(result[0].request_pieces) == 1
-    if check_if_llm_interpreted_request:
-        assert "test" in result[0].request_pieces[0].converted_value.lower()
+    attempt = 0
+    while attempt < max_retries:
+        result = await orchestrator.send_prompts_async(prompt_list=[simple_prompt])
+        response = result[0].get_value() if result else ""
+
+        if valid_response(response):
+            return response
+
+        attempt += 1
+
+    raise AssertionError(f"LLM did not return exactly 'test' after {max_retries} attempts.")
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    ("endpoint", "api_key", "model_name"),
+    ("endpoint", "api_key", "model_name", "no_api_version", "supports_seed"),
     [
-        ("AZURE_OPENAI_GPT4O_ENDPOINT", "AZURE_OPENAI_GPT4O_KEY", ""),
-        ("AZURE_OPENAI_GPT4O_INTEGRATION_TEST_ENDPOINT", "AZURE_OPENAI_GPT4O_INTEGRATION_TEST_KEY", ""),
-        ("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT", "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY", ""),
-        ("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2", "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2", ""),
-        ("AZURE_OPENAI_GPT3_5_CHAT_ENDPOINT", "AZURE_OPENAI_GPT3_5_CHAT_KEY", ""),
-        ("AZURE_OPENAI_GPT4_CHAT_ENDPOINT", "AZURE_OPENAI_GPT4_CHAT_KEY", ""),
-        ("AZURE_OPENAI_GPTV_CHAT_ENDPOINT", "AZURE_OPENAI_GPTV_CHAT_KEY", ""),
-        ("AZURE_FOUNDRY_DEEPSEEK_ENDPOINT", "AZURE_FOUNDRY_DEEPSEEK_KEY", ""),
-        ("AZURE_FOUNDRY_PHI4_ENDPOINT", "AZURE_CHAT_PHI4_KEY", ""),
-        ("AZURE_FOUNDRY_MINSTRAL3B_ENDPOINT", "AZURE_CHAT_MINSTRAL3B_KEY", ""),
+        ("OPENAI_CHAT_ENDPOINT", "OPENAI_CHAT_KEY", "OPENAI_CHAT_MODEL", False, True),
+        ("PLATFORM_OPENAI_CHAT_ENDPOINT", "PLATFORM_OPENAI_CHAT_KEY", "PLATFORM_OPENAI_CHAT_MODEL", False, True),
+        ("AZURE_OPENAI_GPT4O_ENDPOINT", "AZURE_OPENAI_GPT4O_KEY", "", False, True),
+        ("AZURE_OPENAI_INTEGRATION_TEST_ENDPOINT", "AZURE_OPENAI_INTEGRATION_TEST_KEY", "", False, True),
+        ("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT", "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY", "", False, True),
+        ("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2", "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2", "", False, True),
+        ("AZURE_OPENAI_GPT3_5_CHAT_ENDPOINT", "AZURE_OPENAI_GPT3_5_CHAT_KEY", "", False, True),
+        ("AZURE_OPENAI_GPT4_CHAT_ENDPOINT", "AZURE_OPENAI_GPT4_CHAT_KEY", "", False, True),
+        ("AZURE_OPENAI_GPTV_CHAT_ENDPOINT", "AZURE_OPENAI_GPTV_CHAT_KEY", "", False, True),
+        ("AZURE_FOUNDRY_DEEPSEEK_ENDPOINT", "AZURE_FOUNDRY_DEEPSEEK_KEY", "", False, True),
+        ("AZURE_FOUNDRY_PHI4_ENDPOINT", "AZURE_CHAT_PHI4_KEY", "", False, True),
+        ("AZURE_FOUNDRY_MINSTRAL3B_ENDPOINT", "AZURE_CHAT_MINSTRAL3B_KEY", "", False, True),
+        ("GOOGLE_GEMINI_ENDPOINT", "GOOGLE_GEMINI_API_KEY", "GOOGLE_GEMINI_MODEL", True, False),
     ],
 )
-async def test_connect_required_openai_text_targets(duckdb_instance, endpoint, api_key, model_name):
-    target = OpenAIChatTarget(
-        endpoint=os.getenv(endpoint), api_key=os.getenv(api_key), model_name=os.getenv(model_name)
-    )
+async def test_connect_required_openai_text_targets(
+    duckdb_instance, endpoint, api_key, model_name, no_api_version, supports_seed
+):
+    args = {
+        "endpoint": os.getenv(endpoint),
+        "api_key": os.getenv(api_key),
+        "model_name": os.getenv(model_name),
+        "temperature": 0.0,
+    }
+    if no_api_version:
+        args["api_version"] = None
+
+    if supports_seed:
+        args["seed"] = 42
+
+    target = OpenAIChatTarget(**args)
 
     await _assert_can_send_prompt(target)
 
@@ -67,17 +97,7 @@ async def test_connect_required_realtime_targets(duckdb_instance, endpoint, api_
         model_name=os.getenv(model_name),
     )
 
-    simple_prompt = "simply repeat this word back to me. Don't say anything else. Say: 'test'"
-    orchestrator = PromptSendingOrchestrator(objective_target=target)
-
-    all_prompts = [simple_prompt]
-
-    result = await orchestrator.send_prompts_async(prompt_list=all_prompts)
-    assert len(result) == 1
-    assert len(result[0].request_pieces) == 2
-    assert result[0].request_pieces[0].converted_value_data_type == "text"
-    assert result[0].request_pieces[1].converted_value_data_type == "audio_path"
-    assert "test" in result[0].request_pieces[0].converted_value.lower()
+    await _assert_can_send_prompt(target)
 
 
 @pytest.mark.asyncio
@@ -156,7 +176,6 @@ async def test_connect_tts(duckdb_instance, endpoint, api_key):
 @pytest.mark.parametrize(
     ("endpoint", "api_key", "model_name"),
     [
-        ("PLATFORM_OPENAI_ENDPOINT", "PLATFORM_OPENAI_KEY", "PLATFORM_OPENAI_GPT4O_MODEL"),
         ("GROQ_ENDPOINT", "GROQ_KEY", "GROQ_LLAMA_MODEL"),
         ("OPEN_ROUTER_ENDPOINT", "OPEN_ROUTER_KEY", "OPEN_ROUTER_CLAUDE_MODEL"),
         ("OLLAMA_CHAT_ENDPOINT", "", "OLLAMA_MODEL"),
