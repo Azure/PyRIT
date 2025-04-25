@@ -15,10 +15,9 @@ def if_speechsdk_installed():
 
 @pytest.mark.skipif(not if_speechsdk_installed(), reason="Azure Speech SDK is not installed.")
 class TestAzureSpeechAudioToTextConverter:
-    import azure.cognitiveservices.speech as speechsdk
 
     @patch("pyrit.common.default_values.get_required_value", side_effect=lambda env_var_name, passed_value: passed_value)
-    def test_azure_speech_audio_text_converter_initialization(mock_get_required_value):
+    def test_azure_speech_audio_text_converter_initialization(self, mock_get_required_value):
         converter = AzureSpeechAudioToTextConverter(
             azure_speech_region="dummy_region", azure_speech_key="dummy_key", recognition_language="es-ES"
         )
@@ -29,7 +28,9 @@ class TestAzureSpeechAudioToTextConverter:
 
     @patch("azure.cognitiveservices.speech.SpeechRecognizer")
     @patch("pyrit.prompt_converter.azure_speech_audio_to_text_converter.logger")
-    def test_stop_cb(mock_logger, MockSpeechRecognizer):
+    def test_stop_cb(self, mock_logger, MockSpeechRecognizer):
+        import azure.cognitiveservices.speech as speechsdk
+
         # Create a mock event
         mock_event = MagicMock()
         mock_event.result.reason = speechsdk.ResultReason.Canceled
@@ -53,7 +54,9 @@ class TestAzureSpeechAudioToTextConverter:
 
     @patch("azure.cognitiveservices.speech.SpeechRecognizer")
     @patch("pyrit.prompt_converter.azure_speech_audio_to_text_converter.logger")
-    def test_transcript_cb(mock_logger, MockSpeechRecognizer):
+    def test_transcript_cb(self, mock_logger, MockSpeechRecognizer):
+        import azure.cognitiveservices.speech as speechsdk
+
         # Create a mock event
         mock_event = MagicMock()
         mock_event.result.reason = speechsdk.ResultReason.RecognizedSpeech
@@ -73,14 +76,14 @@ class TestAzureSpeechAudioToTextConverter:
         assert mock_event.result.text in transcript
 
 
-    def test_azure_speech_audio_text_converter_input_supported():
+    def test_azure_speech_audio_text_converter_input_supported(self):
         converter = AzureSpeechAudioToTextConverter()
         assert converter.input_supported("image_path") is False
         assert converter.input_supported("audio_path") is True
 
 
     @pytest.mark.asyncio
-    async def test_azure_speech_audio_text_converter_nonexistent_path():
+    async def test_azure_speech_audio_text_converter_nonexistent_path(self):
         converter = AzureSpeechAudioToTextConverter()
         prompt = "nonexistent_path2.wav"
         with pytest.raises(FileNotFoundError):
@@ -89,7 +92,7 @@ class TestAzureSpeechAudioToTextConverter:
 
     @pytest.mark.asyncio
     @patch("os.path.exists", return_value=True)
-    async def test_azure_speech_audio_text_converter_non_wav_file(mock_path_exists):
+    async def test_azure_speech_audio_text_converter_non_wav_file(self, mock_path_exists):
         converter = AzureSpeechAudioToTextConverter()
         prompt = "dummy_audio.mp3"
         with pytest.raises(ValueError):

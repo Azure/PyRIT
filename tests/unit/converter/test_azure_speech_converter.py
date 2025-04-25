@@ -16,7 +16,6 @@ def if_speechsdk_installed():
 
 @pytest.mark.skipif(not if_speechsdk_installed(), reason="Azure Speech SDK is not installed.")
 class TestAzureSpeechTextToAudioConverter:
-    import azure.cognitiveservices.speech as speechsdk
 
     @pytest.mark.asyncio
     @patch("azure.cognitiveservices.speech.SpeechSynthesizer")
@@ -26,8 +25,10 @@ class TestAzureSpeechTextToAudioConverter:
         side_effect=lambda env_var_name, passed_value: passed_value or "dummy_value",
     )
     async def test_azure_speech_text_to_audio_convert_async(
-        mock_get_required_value, MockSpeechConfig, MockSpeechSynthesizer, duckdb_instance
+        self, mock_get_required_value, MockSpeechConfig, MockSpeechSynthesizer, duckdb_instance
     ):
+        import azure.cognitiveservices.speech as speechsdk
+
         mock_synthesizer = MagicMock()
         mock_result = MagicMock()
 
@@ -57,7 +58,7 @@ class TestAzureSpeechTextToAudioConverter:
 
 
     @pytest.mark.asyncio
-    async def test_send_prompt_to_audio_file_raises_value_error() -> None:
+    async def test_send_prompt_to_audio_file_raises_value_error(self) -> None:
         converter = AzureSpeechTextToAudioConverter(output_format="mp3")
         # testing empty space string
         prompt = "     "
@@ -65,7 +66,7 @@ class TestAzureSpeechTextToAudioConverter:
             await converter.convert_async(prompt=prompt, input_type="text")  # type: ignore
 
 
-    def test_azure_speech_audio_text_converter_input_supported():
+    def test_azure_speech_audio_text_converter_input_supported(self):
         converter = AzureSpeechTextToAudioConverter()
         assert converter.input_supported("audio_path") is False
         assert converter.input_supported("text") is True

@@ -3,6 +3,7 @@
 
 import logging
 import time
+from typing import Any
 
 from pyrit.common import default_values
 from pyrit.models import PromptDataType
@@ -130,24 +131,24 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
 
         return "".join(transcribed_text)
 
-    def transcript_cb(self, evt: speechsdk.SpeechRecognitionEventArgs, transcript: list[str]) -> None:
+    def transcript_cb(self, evt: Any, transcript: list[str]) -> None:
         """
         Callback function that appends transcribed text upon receiving a "recognized" event
 
         Args:
-            evt (SpeechRecognitionEventArgs): event
+            evt (azure.cognitiveservices.speech.SpeechRecognitionEventArgs): event
             transcript (list): list to store transcribed text
         """
         logger.info("RECOGNIZED: {}".format(evt.result.text))
         transcript.append(evt.result.text)
 
-    def stop_cb(self, evt: speechsdk.SpeechRecognitionEventArgs, recognizer: speechsdk.SpeechRecognizer) -> None:
+    def stop_cb(self, evt: Any, recognizer: Any) -> None:
         """
         Callback function that stops continuous recognition upon receiving an event 'evt'
 
         Args:
-            evt (SpeechRecognitionEventArgs): event
-            recognizer (SpeechRecognizer): speech recognizer object
+            evt (azure.cognitiveservices.speech.SpeechRecognitionEventArgs): event
+            recognizer (azure.cognitiveservices.speech.SpeechRecognizer): speech recognizer object
         """
         logger.info("CLOSING on {}".format(evt))
         recognizer.stop_continuous_recognition_async()

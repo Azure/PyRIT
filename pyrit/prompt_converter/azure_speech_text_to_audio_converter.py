@@ -4,8 +4,6 @@
 import logging
 from typing import Literal
 
-import azure.cognitiveservices.speech as speechsdk
-
 from pyrit.common import default_values
 from pyrit.models import PromptDataType, data_serializer_factory
 from pyrit.prompt_converter import ConverterResult, PromptConverter
@@ -41,6 +39,7 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         synthesis_voice_name: str = "en-US-AvaNeural",
         output_format: AzureSpeachAudioFormat = "wav",
     ) -> None:
+        import azure.cognitiveservices.speech as speechsdk
 
         self._azure_speech_region: str = default_values.get_required_value(
             env_var_name=self.AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE, passed_value=azure_speech_region
