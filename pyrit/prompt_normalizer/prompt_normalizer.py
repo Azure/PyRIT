@@ -5,6 +5,7 @@ import abc
 import asyncio
 import logging
 import traceback
+import copy
 from typing import Any, List, Optional
 from uuid import uuid4
 
@@ -334,3 +335,46 @@ class PromptNormalizer(abc.ABC):
 
         await self.convert_values(converter_configurations=request_converter_configurations, request_response=response)
         return response
+
+    async def add_prepended_conversation_to_memory(
+        self,
+        prepended_conversation: Optional[list[PromptRequestResponse]],
+        conversation_id: str,
+        should_convert: bool = True,
+        converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
+        orchestrator_identifier: Optional[dict[str, str]] = None,
+    ) -> Optional[list[PromptRequestResponse]]:
+        """
+        Processes the prepended conversation by converting it if needed and adding it to memory.
+
+        Args:
+            prepended_conversation (Optional[list[PromptRequestResponse]]): The conversation to prepend
+            conversation_id (str): The conversation ID to use for the request pieces
+            should_convert (bool): Whether to convert the prepended conversation
+            converter_configurations (Optional[list[PromptConverterConfiguration]]): Configurations for converting the request
+            orchestrator_identifier (Optional[dict[str, str]]): Identifier for the orchestrator
+
+        Returns:
+            Optional[list[PromptRequestResponse]]: The processed prepended conversation
+        """
+        if not prepended_conversation:
+            return None
+
+        # Create a deep copy of the prepended conversation to avoid modifying the original
+        prepended_conversation = copy.deepcopy(prepended_conversation)
+
+        for request in prepended_conversation:
+            if should_convert and converter_configurations:
+                await self.convert_values(request_response=request, converter_configurations=converter_configurations)
+            for piece in request.request_pieces:
+                piece.conversation_id = conversation_id
+                if orchestrator_identifier:
+                    piece.orchestrator_identifier = orchestrator_identifier
+
+                # if the piece is retrieved from somewhere else, it needs to be unique
+                # and if not, this won't hurt anything
+                piece.id = uuid4()
+
+            self._memory.add_request_response_to_memory(request=request)
+
+        return prepended_conversation

@@ -85,44 +85,31 @@ class PromptSendingOrchestrator(Orchestrator):
         self._prompt_normalizer.set_skip_criteria(skip_criteria=skip_criteria, skip_value_type=skip_value_type)
 
 
-    async def _get_prepended_conversation(
+    async def _add_prepended_conversation_to_memory(
         self,
         prepended_conversation: Optional[list[PromptRequestResponse]],
         conversation_id: str,
-    ) -> Optional[list[PromptRequestResponse]]:
+    ):
         """
         Processes the prepended conversation by converting it if needed and adding it to memory.
 
         Args:
             prepended_conversation (Optional[list[PromptRequestResponse]]): The conversation to prepend
             conversation_id (str): The conversation ID to use for the request pieces
-
-        Returns:
-            Optional[list[PromptRequestResponse]]: The processed prepended conversation
         """
         if not prepended_conversation:
-            return None
+            return
 
-        # Create a deep copy of the prepended conversation to avoid modifying the original
-        prepended_conversation = copy.deepcopy(prepended_conversation)
-        
         if not isinstance(self._objective_target, PromptChatTarget):
             raise ValueError("Prepended conversation can only be used with a PromptChatTarget")
 
-        for request in prepended_conversation:
-            if self._should_convert_prepended_conversation:
-                await self._prompt_normalizer.convert_values(request_response=request, converter_configurations=self._request_converter_configurations)
-            for piece in request.request_pieces:
-                piece.conversation_id = conversation_id
-                piece.orchestrator_identifier = self.get_identifier()
-
-                # if the piece is retrieved from somewhere else, it needs to be unique
-                # and if not, this won't hurt anything
-                piece.id = uuid.uuid4()
-
-            self._memory.add_request_response_to_memory(request=request)
-
-        return prepended_conversation
+        await self._prompt_normalizer.add_prepended_conversation_to_memory(
+            prepended_conversation=prepended_conversation,
+            conversation_id=conversation_id,
+            should_convert=self._should_convert_prepended_conversation,
+            converter_configurations=self._request_converter_configurations,
+            orchestrator_identifier=self.get_identifier(),
+        )
 
 
     async def _score_auxiliary_async(self, result: PromptRequestResponse) -> None:
@@ -194,7 +181,7 @@ class PromptSendingOrchestrator(Orchestrator):
 
         Args:
             objective (str): The objective of the attack.
-            seed_prompt (SeedPromptGroup, Optional): The seed prompt groupto start the conversation. By default the objective is used.
+            seed_prompt (SeedPromptGroup, Optional): The seed prompt group to start the conversation. By default the objective is used.
             prepended_conversation (list[PromptRequestResponse], Optional): The conversation to prepend to the attack. Sent to objective target.
             memory_labels (dict[str, str], Optional): The memory labels to use for the attack.
         """
@@ -204,7 +191,7 @@ class PromptSendingOrchestrator(Orchestrator):
         if not seed_prompt:
             seed_prompt = SeedPromptGroup(prompts=[SeedPrompt(value=objective, data_type="text")])
 
-        prepended_conversation = await self._get_prepended_conversation(prepended_conversation, conversation_id)
+        await self._add_prepended_conversation_to_memory(prepended_conversation, conversation_id)
 
         status = "unknown"
         objective_score = None
