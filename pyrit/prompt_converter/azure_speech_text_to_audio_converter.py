@@ -2,7 +2,10 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Literal
+from typing import Literal, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import azure.cognitiveservices.speech as speechsdk
 
 from pyrit.common import default_values
 from pyrit.models import PromptDataType, data_serializer_factory
@@ -39,7 +42,11 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         synthesis_voice_name: str = "en-US-AvaNeural",
         output_format: AzureSpeachAudioFormat = "wav",
     ) -> None:
-        import azure.cognitiveservices.speech as speechsdk
+        try:
+            import azure.cognitiveservices.speech as speechsdk
+        except ModuleNotFoundError as e:
+            logger.error("Could not import azure.cognitiveservices.speech. You may need to install it via 'pip install pyrit[azspeech]'")
+            raise e
 
         self._azure_speech_region: str = default_values.get_required_value(
             env_var_name=self.AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE, passed_value=azure_speech_region

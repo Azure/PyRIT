@@ -3,7 +3,10 @@
 
 import logging
 import time
-from typing import Any
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import azure.cognitiveservices.speech as speechsdk
 
 from pyrit.common import default_values
 from pyrit.models import PromptDataType
@@ -35,7 +38,11 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         azure_speech_key: str = None,
         recognition_language: str = "en-US",
     ) -> None:
-        import azure.cognitiveservices.speech as speechsdk
+        try:
+            import azure.cognitiveservices.speech as speechsdk
+        except ModuleNotFoundError as e:
+            logger.error("Could not import azure.cognitiveservices.speech. You may need to install it via 'pip install pyrit[azspeech]'")
+            raise e
 
         self._azure_speech_region: str = default_values.get_required_value(
             env_var_name=self.AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE, passed_value=azure_speech_region
@@ -136,7 +143,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         Callback function that appends transcribed text upon receiving a "recognized" event
 
         Args:
-            evt (azure.cognitiveservices.speech.SpeechRecognitionEventArgs): event
+            evt (speechsdk.SpeechRecognitionEventArgs): event
             transcript (list): list to store transcribed text
         """
         logger.info("RECOGNIZED: {}".format(evt.result.text))
@@ -147,8 +154,8 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         Callback function that stops continuous recognition upon receiving an event 'evt'
 
         Args:
-            evt (azure.cognitiveservices.speech.SpeechRecognitionEventArgs): event
-            recognizer (azure.cognitiveservices.speech.SpeechRecognizer): speech recognizer object
+            evt (speechsdk.SpeechRecognitionEventArgs): event
+            recognizer (speechsdk.SpeechRecognizer): speech recognizer object
         """
         logger.info("CLOSING on {}".format(evt))
         recognizer.stop_continuous_recognition_async()
