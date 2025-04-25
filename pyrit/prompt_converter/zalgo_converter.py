@@ -10,7 +10,7 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 # Unicode combining characters for Zalgo effect (U+0300–U+036F)
 ZALGO_MARKS = [chr(code) for code in range(0x0300, 0x036F + 1)]
-# Setting a max intensity so people don't do anything insane
+# Setting a max intensity so people don't do anything unreasonable
 MAX_INTENSITY = 100
 logger = logging.getLogger(__name__)
 
