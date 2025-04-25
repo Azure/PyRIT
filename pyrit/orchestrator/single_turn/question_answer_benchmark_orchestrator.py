@@ -31,13 +31,13 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
         Orchestrator (_type_): _description_
     """
 
+    DEFAULT_QUESTION_ANSWERING_BENCHMARK_DEFINITION_PATH = pathlib.Path(DATASETS_PATH) / "orchestrators"/ "benchmark"/ "one_plus_one.yaml"
+
     def __init__(
         self,
+        *
         objective_target: PromptChatTarget,
-        question_answer_definition_path: pathlib.Path = pathlib.Path(DATASETS_PATH)
-        / "orchestrators"
-        / "benchmark"
-        / "one_plus_one.yaml",
+        question_answer_definition_path: pathlib.Path = DEFAULT_QUESTION_ANSWERING_BENCHMARK_DEFINITION_PATH,
         scorers: Optional[list[Scorer]] = None,
         prompt_converters: Optional[list[PromptConverter]] = None,
         verbose: bool = False,
@@ -79,7 +79,9 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
         memory_labels: Optional[dict[str, str]] = None,
         metadata: Optional[dict[str, Union[str, int]]] = None,
     ) -> list[PromptRequestResponse]:
-        """Sends prompts to the chat model and evaluates responses."""
+        """
+        Sends prompts to the chat model and evaluates responses.
+        """
         prompt_list = [construct_evaluation_prompt(entry) for entry in dataset.questions]
         requests: list[NormalizerRequest] = []
         for prompt in prompt_list:
@@ -140,7 +142,9 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
         return responses
 
     def _set_default_conversation_start(self):
-        """Sets the default conversation start for the orchestrator."""
+        """
+        Sets the default conversation start for the orchestrator.
+        """
         prepended_conversation = [
             PromptRequestResponse(
                 request_pieces=[

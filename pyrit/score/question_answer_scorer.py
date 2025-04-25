@@ -7,7 +7,11 @@ import json
 from typing import Optional, Sequence
 
 from pyrit.common.batch_helper import batch_task_async
-from pyrit.models import QuestionAnsweringEntry, Score
+from pyrit.models import (
+    QuestionAnsweringEntry, 
+    Score,
+    PromptRequestResponse
+)
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.score.scorer import Scorer
 
@@ -25,7 +29,10 @@ class QuestionAnswerScorer(Scorer):
         self.scorer_type = "true_false"
 
     async def score_async(  # type: ignore[override]
-        self, request_response: PromptRequestPiece, task: QuestionAnsweringEntry
+        self,
+        *,
+        request_response: PromptRequestPiece, 
+        task: QuestionAnsweringEntry
     ) -> list[Score]:
         """
         Score the request_reponse using the QuestionAnsweringEntry
@@ -102,3 +109,26 @@ class QuestionAnswerScorer(Scorer):
         """
         if request_response.converted_value_data_type != "text":
             raise ValueError("Question Answer Scorer only supports text data type")
+        
+    def report_scores(responses: list[PromptRequestResponse]):
+        """
+        Reports the score values from the list of prompt request responses
+        Checks for presence of scores in reponse before scoring
+
+        Args:
+            responses (list[PromptRequestResponse]): The list of responses to be reported on
+        """
+        correct_count = 0
+        if any(not response.request_pieces[0].scores for response in responses):
+            raise ValueError("Not all responses have scores, please score all responses before reporting")
+        if any(response.request_pieces[0].scores[0].score_type != "true_false" for response in responses):
+            raise ValueError("Score types are not 'true_false'")
+        for response in responses:
+            score_metadata = json.loads(response.request_pieces[0].scores[0].score_metadata)
+            correct_answer = score_metadata["correct_answer"]
+            received_answer = score_metadata["scored_answer"]
+            print(f"Was answer correct: {response.request_pieces[0].scores[0].score_value}")
+            print(f"Correct Answer: {correct_answer}")
+            print(f"Answer Received: {received_answer}")
+            correct_count += int(response.request_pieces[0].scores[0].score_value == "True")
+        print(f"Correct / Total: {correct_count} / {len(responses)}")
