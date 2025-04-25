@@ -23,7 +23,8 @@ class ToxicSentenceGeneratorConverter(LLMGenericTextConverter):
     existing PromptTarget.
     
     Based on Project Moonshot's attack module that generates toxic sentences to test LLM
-    safety guardrails.
+    safety guardrails:
+    https://github.com/aiverify-foundation/moonshot-data/blob/main/attack-modules/toxic_sentence_generator.py
     """
 
     def __init__(self, *, converter_target: PromptChatTarget, prompt_template: Optional[SeedPrompt] = None):
