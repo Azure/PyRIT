@@ -45,22 +45,22 @@ def _validate_rate_limit_parameters(prompt_target: PromptTarget, batch_size: int
 
 async def batch_task_async(
     *,
-    prompt_target: PromptTarget,
     batch_size: int,
     items_to_batch: Sequence[Sequence[Any]],
     task_func: Callable,
     task_arguments: list[str],
+    prompt_target: PromptTarget = None,
     **task_kwargs,
 ):
     """
     Performs provided task in batches and validates parameters using helpers.
 
     Args:
-        prompt_target(PromptTarget): Target to validate
         batch_size (int): Batch size
         items_to_batch (list[list[Any]]): Lists of items to batch
         task_func (Callable): Task to perform in batches
         task_arguments (list[str]): Name of arguments to assign lists of items to
+        prompt_target(PromptTarget): Target to perform rate limiting and batching
         **task_kwargs: Any other keyword arguments that task needs
 
     Returns:
