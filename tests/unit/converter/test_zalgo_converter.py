@@ -41,10 +41,12 @@ async def test_zalgo_intensity_caps_at_max(caplog):
     # Should still complete successfully without crashing and adjust to max intensity
     # check if it warns
     assert any(
-        record.levelname == "WARNING" and "ZalgoConverter supports intensity" in record.message for record in caplog.records
+        record.levelname == "WARNING" and "ZalgoConverter supports intensity" in record.message
+        for record in caplog.records
     )
     assert isinstance(result.output_text, str)
     assert len(result.output_text) > len(prompt)
+
 
 @pytest.mark.asyncio
 async def test_zalgo_float_intensity():
@@ -54,30 +56,31 @@ async def test_zalgo_float_intensity():
     assert isinstance(result.output_text, str)
     assert len(result.output_text) > len(prompt)
 
+
 @pytest.mark.asyncio
 async def test_zalgo_string_intensity():
     prompt = "test string"
-    converter = ZalgoConverter(intensity = "7", seed = 1)
-    result = await converter.convert_async(prompt = prompt)
+    converter = ZalgoConverter(intensity="7", seed=1)
+    result = await converter.convert_async(prompt=prompt)
     assert isinstance(result.output_text, str)
     assert len(result.output_text) > len(prompt)
+
 
 @pytest.mark.asyncio
 async def test_zalgo_negative_intensity(caplog):
     prompt = "test string"
-    converter = ZalgoConverter(intensity = -300, seed = 1)
-    result = await converter.convert_async(prompt = prompt)
+    converter = ZalgoConverter(intensity=-300, seed=1)
+    result = await converter.convert_async(prompt=prompt)
     assert isinstance(result.output_text, str)
     assert len(result.output_text) == len(prompt)
     assert any(
-        record.levelname == "WARNING" and "ZalgoConverter supports intensity" in record.message for record in caplog.records
+        record.levelname == "WARNING" and "ZalgoConverter supports intensity" in record.message
+        for record in caplog.records
     )
+
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("bad_intensity", ["this isn't an int", None])
 async def test_zalgo_invalid_intensity(bad_intensity):
     with pytest.raises(ValueError):
-        converter = ZalgoConverter(intensity = bad_intensity, seed = 1)
-
-
-        
+        ZalgoConverter(intensity=bad_intensity, seed=1)

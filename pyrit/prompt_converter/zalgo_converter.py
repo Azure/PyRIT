@@ -29,28 +29,30 @@ class ZalgoConverter(PromptConverter):
         self._seed = seed
 
     def _normalize_intensity(self, intensity: int) -> int:
-            try:
-                intensity = int(intensity)
-            except (TypeError, ValueError):
-                raise ValueError(f"Invalid intensity value: {intensity!r} (must be an integer)")
-            normalized_intensity = max(0, min(intensity, MAX_INTENSITY))
-            if intensity != normalized_intensity:
-                logger.warning(
-                    f"ZalgoConverter supports intensity between 0 and {MAX_INTENSITY}, "
-                    f"but received a value of {intensity}. Normalizing to {normalized_intensity}."
-                )
-            return normalized_intensity
+        try:
+            intensity = int(intensity)
+        except (TypeError, ValueError):
+            raise ValueError(f"Invalid intensity value: {intensity!r} (must be an integer)")
+        normalized_intensity = max(0, min(intensity, MAX_INTENSITY))
+        if intensity != normalized_intensity:
+            logger.warning(
+                f"ZalgoConverter supports intensity between 0 and {MAX_INTENSITY}, "
+                f"but received a value of {intensity}. Normalizing to {normalized_intensity}."
+            )
+        return normalized_intensity
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Converts text into cursed Zalgo text using combining Unicode marks.
-        """    
+        """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
+
         def glitch(char: str) -> str:
-            return char + "".join(random.choice(ZALGO_MARKS) for _ in range(random.randint(1, self._intensity)))            
+            return char + "".join(random.choice(ZALGO_MARKS) for _ in range(random.randint(1, self._intensity)))
+
         if self._intensity <= 0:
-            output_text = prompt            
+            output_text = prompt
         else:
             if self._seed is not None:
                 random.seed(self._seed)
