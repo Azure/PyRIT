@@ -19,8 +19,64 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  autofix-pre-commit:
+    # run only for pull requests and only when the author is *not* the bot
+    if: github.event_name == 'pull_request' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    # the job needs write access to push back to the branch
+    permissions:
+      # allow commit and push
+      contents: write
+      # lets the commit show up in PR
+      pull-requests: write
+
+    steps:
+      # checkout the PR branch (not the merge ref)
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          # keep token credentials so we can push later
+          persist-credentials: true
+          # we need history so pre-commit can diff
+          fetch-depth: 0     
+
+      # set an author for the bot commit
+      - run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      # install Python & the dev extras that bring in pre-commit
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+      - run: |
+          pip install --upgrade pip setuptools packaging
+          pip install .[dev,all]
+
+      # run pre-commit in fix mode limited to the diff vs main
+      - name: Run pre-commit with autofix
+        id: precommit_fix
+        run: |
+          git fetch origin main
+          # --from-ref/--to-ref restricts hooks to the PR changes
+          pre-commit run --from-ref origin/main --to-ref HEAD || true
+
+      # if any file changed, commit & push it
+      #    stefanzweifel/git-auto-commit-action commits only when diff != 0
+      - name: Commit & push auto-fixes (if any)
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "auto-fixes from pre-commit 🚀"
+          branch: ${{ github.head_ref }}
+          skip_fetch: true
+
   # Pre-commit job runs only once on Ubuntu
   pre-commit:
+    if: |
+       (github.event_name == 'push') ||
+       (github.event_name == 'pull_request' && needs.autofix-pre-commit.outputs.fixes_pushed == 'false')
+    needs: [autofix-pre-commit] 
     runs-on: ubuntu-latest
     env:
       PIP_CACHE_DIR: ${{ github.workspace }}/.cache/pip
