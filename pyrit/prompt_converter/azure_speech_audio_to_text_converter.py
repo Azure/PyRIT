@@ -1,10 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import importlib.util
 import logging
 import time
 
-import azure.cognitiveservices.speech as speechsdk
+if importlib.util.find_spec("azure-cognitiveservices-speech") is not None:
+    import azure.cognitiveservices.speech as speechsdk
 
 from pyrit.common import default_values
 from pyrit.models import PromptDataType
