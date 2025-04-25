@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import uuid
 from typing import List, Literal, Optional
 
 from pyrit.models import PromptRequestPiece, Score
@@ -13,7 +12,8 @@ LogicalCombination = Literal["AND", "OR"]
 class CompoundScorer(Scorer):
     """A scorer that aggregates other true_false scorers, either using AND or OR logic.
 
-    It returns a single score of True or False based on the logical combination of the scores of the constituent scorers.
+    It returns a single score of True or False based on the logical combination of the scores of the constituent
+    scorers.
 
     Args:
         logical_combination: The logical operation to combine scores ("AND" or "OR")
@@ -72,14 +72,14 @@ class CompoundScorer(Scorer):
             return_score.score_value = str(all(score.get_value() for score in scores))
             top_rationale = (
                 "All constituent scorers returned True in an AND compound scorer."
-                if return_score.get_value() == True
+                if return_score.get_value() is True
                 else "At least one constituent scorer returned False in an AND compound scorer."
             )
         else:
             return_score.score_value = str(any(score.get_value() for score in scores))
             top_rationale = (
                 "At least one constituent scorer returned True in an OR compound scorer."
-                if return_score.get_value() == True
+                if return_score.get_value() is True
                 else "All constituent scorers returned False in an OR compound scorer."
             )
 
