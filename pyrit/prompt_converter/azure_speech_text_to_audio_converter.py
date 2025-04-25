@@ -42,12 +42,6 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         synthesis_voice_name: str = "en-US-AvaNeural",
         output_format: AzureSpeachAudioFormat = "wav",
     ) -> None:
-        try:
-            import azure.cognitiveservices.speech as speechsdk
-        except ModuleNotFoundError as e:
-            logger.error("Could not import azure.cognitiveservices.speech. You may need to install it via 'pip install pyrit[speech]'")
-            raise e
-
         self._azure_speech_region: str = default_values.get_required_value(
             env_var_name=self.AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE, passed_value=azure_speech_region
         )
@@ -67,6 +61,12 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         return output_type == "audio_path"
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        try:
+            import azure.cognitiveservices.speech as speechsdk
+        except ModuleNotFoundError as e:
+            logger.error("Could not import azure.cognitiveservices.speech. You may need to install it via 'pip install pyrit[speech]'")
+            raise e
+
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 

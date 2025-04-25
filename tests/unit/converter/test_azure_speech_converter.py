@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import os
-import importlib.util
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -10,11 +9,15 @@ import pytest
 from pyrit.prompt_converter import AzureSpeechTextToAudioConverter
 
 
-def if_speechsdk_installed():
-    return importlib.util.find_spec("azure-cognitiveservices-speech") is not None
+def is_speechsdk_installed():
+    try:
+        import azure.cognitiveservices.speech  # noqa: F401
+        return True
+    except ModuleNotFoundError:
+        return False
 
 
-@pytest.mark.skipif(not if_speechsdk_installed(), reason="Azure Speech SDK is not installed.")
+@pytest.mark.skipif(not is_speechsdk_installed(), reason="Azure Speech SDK is not installed.")
 class TestAzureSpeechTextToAudioConverter:
 
     @pytest.mark.asyncio

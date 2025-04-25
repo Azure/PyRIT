@@ -38,11 +38,6 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         azure_speech_key: str = None,
         recognition_language: str = "en-US",
     ) -> None:
-        try:
-            import azure.cognitiveservices.speech as speechsdk
-        except ModuleNotFoundError as e:
-            logger.error("Could not import azure.cognitiveservices.speech. You may need to install it via 'pip install pyrit[speech]'")
-            raise e
 
         self._azure_speech_region: str = default_values.get_required_value(
             env_var_name=self.AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE, passed_value=azure_speech_region
@@ -99,6 +94,12 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         Returns:
             str: Transcribed text
         """
+        try:
+            import azure.cognitiveservices.speech as speechsdk
+        except ModuleNotFoundError as e:
+            logger.error("Could not import azure.cognitiveservices.speech. You may need to install it via 'pip install pyrit[speech]'")
+            raise e
+
         speech_config = speechsdk.SpeechConfig(
             subscription=self._azure_speech_key,
             region=self._azure_speech_region,
@@ -157,6 +158,12 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
             evt (speechsdk.SpeechRecognitionEventArgs): event
             recognizer (speechsdk.SpeechRecognizer): speech recognizer object
         """
+        try:
+            import azure.cognitiveservices.speech as speechsdk
+        except ModuleNotFoundError as e:
+            logger.error("Could not import azure.cognitiveservices.speech. You may need to install it via 'pip install pyrit[speech]'")
+            raise e
+
         logger.info("CLOSING on {}".format(evt))
         recognizer.stop_continuous_recognition_async()
         self.done = True
