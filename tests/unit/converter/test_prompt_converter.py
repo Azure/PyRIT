@@ -466,6 +466,7 @@ def setup_memory():
 def is_speechsdk_installed():
     try:
         import azure.cognitiveservices.speech  # noqa: F401
+
         return True
     except ModuleNotFoundError:
         return False
@@ -485,13 +486,13 @@ def is_speechsdk_installed():
             AzureSpeechAudioToTextConverter(azure_speech_region="region", azure_speech_key="key"),
             ["audio_path"],
             ["text"],
-            marks=pytest.mark.skipif(not is_speechsdk_installed(), reason="Azure Speech SDK is not installed.")
+            marks=pytest.mark.skipif(not is_speechsdk_installed(), reason="Azure Speech SDK is not installed."),
         ),
         pytest.param(
             AzureSpeechTextToAudioConverter(azure_speech_region="region", azure_speech_key="key"),
             ["text"],
             ["audio_path"],
-            marks=pytest.mark.skipif(not is_speechsdk_installed(), reason="Azure Speech SDK is not installed.")
+            marks=pytest.mark.skipif(not is_speechsdk_installed(), reason="Azure Speech SDK is not installed."),
         ),
         (Base64Converter(), ["text"], ["text"]),
         (BinaryConverter(), ["text"], ["text"]),

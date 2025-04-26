@@ -2,10 +2,10 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Literal, TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
-    import azure.cognitiveservices.speech as speechsdk
+    import azure.cognitiveservices.speech as speechsdk  # noqa: F401
 
 from pyrit.common import default_values
 from pyrit.models import PromptDataType, data_serializer_factory
@@ -62,9 +62,12 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         try:
-            import azure.cognitiveservices.speech as speechsdk
+            import azure.cognitiveservices.speech as speechsdk  # noqa: F811
         except ModuleNotFoundError as e:
-            logger.error("Could not import azure.cognitiveservices.speech. You may need to install it via 'pip install pyrit[speech]'")
+            logger.error(
+                "Could not import azure.cognitiveservices.speech. "
+                + "You may need to install it via 'pip install pyrit[speech]'"
+            )
             raise e
 
         if not self.input_supported(input_type):

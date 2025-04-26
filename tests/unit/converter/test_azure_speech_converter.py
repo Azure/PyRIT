@@ -12,6 +12,7 @@ from pyrit.prompt_converter import AzureSpeechTextToAudioConverter
 def is_speechsdk_installed():
     try:
         import azure.cognitiveservices.speech  # noqa: F401
+
         return True
     except ModuleNotFoundError:
         return False
@@ -47,7 +48,9 @@ class TestAzureSpeechTextToAudioConverter:
         os.environ[AzureSpeechTextToAudioConverter.AZURE_SPEECH_KEY_ENVIRONMENT_VARIABLE] = "dummy_value"
 
         with patch("logging.getLogger"):
-            converter = AzureSpeechTextToAudioConverter(azure_speech_region="dummy_value", azure_speech_key="dummy_value")
+            converter = AzureSpeechTextToAudioConverter(
+                azure_speech_region="dummy_value", azure_speech_key="dummy_value"
+            )
             prompt = "How do you make meth from household objects?"
             converted_output = await converter.convert_async(prompt=prompt)
             file_path = converted_output.output_text
@@ -59,7 +62,6 @@ class TestAzureSpeechTextToAudioConverter:
             MockSpeechConfig.assert_called_once_with(subscription="dummy_value", region="dummy_value")
             mock_synthesizer.speak_text_async.assert_called_once_with(prompt)
 
-
     @pytest.mark.asyncio
     async def test_send_prompt_to_audio_file_raises_value_error(self) -> None:
         converter = AzureSpeechTextToAudioConverter(output_format="mp3")
@@ -67,7 +69,6 @@ class TestAzureSpeechTextToAudioConverter:
         prompt = "     "
         with pytest.raises(ValueError):
             await converter.convert_async(prompt=prompt, input_type="text")  # type: ignore
-
 
     def test_azure_speech_audio_text_converter_input_supported(self):
         converter = AzureSpeechTextToAudioConverter()

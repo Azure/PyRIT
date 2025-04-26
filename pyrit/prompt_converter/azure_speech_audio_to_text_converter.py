@@ -3,10 +3,10 @@
 
 import logging
 import time
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    import azure.cognitiveservices.speech as speechsdk
+    import azure.cognitiveservices.speech as speechsdk  # noqa: F401
 
 from pyrit.common import default_values
 from pyrit.models import PromptDataType
@@ -95,9 +95,12 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
             str: Transcribed text
         """
         try:
-            import azure.cognitiveservices.speech as speechsdk
+            import azure.cognitiveservices.speech as speechsdk  # noqa: F811
         except ModuleNotFoundError as e:
-            logger.error("Could not import azure.cognitiveservices.speech. You may need to install it via 'pip install pyrit[speech]'")
+            logger.error(
+                "Could not import azure.cognitiveservices.speech. "
+                + "You may need to install it via 'pip install pyrit[speech]'"
+            )
             raise e
 
         speech_config = speechsdk.SpeechConfig(
@@ -159,9 +162,12 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
             recognizer (speechsdk.SpeechRecognizer): speech recognizer object
         """
         try:
-            import azure.cognitiveservices.speech as speechsdk
+            import azure.cognitiveservices.speech as speechsdk  # noqa: F811
         except ModuleNotFoundError as e:
-            logger.error("Could not import azure.cognitiveservices.speech. You may need to install it via 'pip install pyrit[speech]'")
+            logger.error(
+                "Could not import azure.cognitiveservices.speech. "
+                + "You may need to install it via 'pip install pyrit[speech]'"
+            )
             raise e
 
         logger.info("CLOSING on {}".format(evt))
