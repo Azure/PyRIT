@@ -25,7 +25,6 @@ class ZalgoConverter(PromptConverter):
             seed (Optional[int]): Optional seed for reproducible output.
         """
         self._intensity = self._normalize_intensity(intensity)
-        # normalize intensity here
         self._seed = seed
 
     def _normalize_intensity(self, intensity: int) -> int:
