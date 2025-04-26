@@ -315,6 +315,7 @@ API Reference
     UnicodeSubstitutionConverter
     UrlConverter
     VariationConverter
+    ZalgoConverter
     ZeroWidthConverter
 
 .. automodule:: pyrit.prompt_converter.fuzzer_converter
