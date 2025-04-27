@@ -49,45 +49,44 @@ def combine_list(list1: Union[str, List[str]], list2: Union[str, List[str]]) -> 
     return combined
 
 
-def get_random_indices(*, start: int, size: int, percentage: int) -> List[int]:
+def get_random_indices(*, start: int, size: int, proportion: float) -> List[int]:
     """
-    Generate a list of random indices based on a specified percentage of the total size.
+    Generate a list of random indices based on the specified proportion of a given size.
     The indices are selected from the range [start, start + size).
 
     Args:
         start (int): Starting index (inclusive). It's the first index that could possibly be selected.
         size (int): Size of the collection to select from. This is the total number of indices available.
             For example, if `start` is 0 and `size` is 10, the available indices are [0, 1, 2, ..., 9].
-        percentage (int): Percentage of indices to select from the specified range [0 to 100].
-            For example, 30 would mean 30% of the total size, and 50 would mean half of the total size.
+        proportion (float): The proportion of indices to select from the total size. Must be between 0 and 1.
+            For example, if `proportion` is 0.5 and `size` is 10, 5 randomly selected indices will be returned.
+
+    Returns:
+        List[int]: A list of randomly selected indices based on the specified proportion.
     """
     if start < 0:
         raise ValueError("Start index must be non-negative")
     if size <= 0:
         raise ValueError("Size must be greater than 0")
-    if percentage < 0 or percentage > 100:
-        raise ValueError("Percentage must be between 0 and 100")
+    if proportion < 0 or proportion > 1:
+        raise ValueError("Proportion must be between 0 and 1")
 
-    if percentage == 0:
+    if proportion == 0:
         return []
-    if percentage == 100:
+    if proportion == 1:
         return list(range(start, start + size))
 
-    # Convert percentage to proportion
-    sample_proportion = percentage / 100.0
-
-    n = max(math.ceil(size * sample_proportion), 1)  # the number of indices to select
-
+    n = max(math.ceil(size * proportion), 1)  # the number of indices to select
     return random.sample(range(start, start + size), n)
 
 
 def select_word_indices(
-    words: List[str], 
+    words: List[str],
     mode: Literal["all", "custom", "keywords", "random", "regex"],
     *,
     indices: Optional[List[int]] = None,
     keywords: Optional[List[str]] = None,
-    percentage: Optional[int] = None,
+    proportion: Optional[float] = None,
     regex: Optional[Union[str, re.Pattern]] = None,
 ) -> List[int]:
     """
@@ -105,7 +104,7 @@ def select_word_indices(
         mode (str, optional): Selection mode. Defaults to "all".
         indices (List[int], optional): Custom indices to select (for "custom" mode).
         keywords (List[str], optional): List of keywords to match (for "keywords" mode).
-        percentage (int, optional): Percentage of indices to select (for "random" mode). Defaults to None.
+        proportion (float, optional): Proportion of words to select (for "random" mode).
         regex (str or Pattern, optional): Regular expression pattern to match (for "regex" mode).
 
     Returns:
@@ -127,8 +126,8 @@ def select_word_indices(
             return [i for i, word in enumerate(words) if word in word_list]
 
         case "random":
-            percentage = percentage or 50
-            return get_random_indices(start=0, size=len(words), percentage=percentage)
+            proportion = 0.5 if proportion is None else proportion
+            return get_random_indices(start=0, size=len(words), proportion=proportion)
 
         case "regex":
             pattern = regex or r"."

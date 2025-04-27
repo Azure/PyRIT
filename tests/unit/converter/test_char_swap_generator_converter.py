@@ -21,7 +21,7 @@ async def test_char_swap_converter_output_count():
 # Test that words longer than 3 characters are being perturbed
 @pytest.mark.asyncio
 async def test_char_swap_converter_word_perturbation():
-    converter = CharSwapConverter(max_iterations=1, mode="random", percentage=100)
+    converter = CharSwapConverter(max_iterations=1, mode="random", proportion=1)
     prompt = "Testing"
     with patch("random.randint", return_value=1):  # Force swap at position 1
         result = await converter.convert_async(prompt=prompt)
@@ -36,7 +36,7 @@ async def test_char_swap_converter_word_perturbation():
 )
 @pytest.mark.asyncio
 async def test_char_swap_converter_short_words(prompt):
-    converter = CharSwapConverter(max_iterations=1, mode="random", percentage=100)
+    converter = CharSwapConverter(max_iterations=1, mode="random", proportion=1)
     result = await converter.convert_async(prompt=prompt)
     output_prompts = result.output_text.strip().split("\n")
     # Since all words are <= 3 letters, output should be the same as input
@@ -46,7 +46,7 @@ async def test_char_swap_converter_short_words(prompt):
 # Test that punctuation is not perturbed
 @pytest.mark.asyncio
 async def test_char_swap_converter_punctuation():
-    converter = CharSwapConverter(max_iterations=1, mode="random", percentage=100)
+    converter = CharSwapConverter(max_iterations=1, mode="random", proportion=1)
     prompt = "Hello, world!"
     result = await converter.convert_async(prompt=prompt)
     output_prompts = result.output_text.strip().split("\n")
@@ -72,7 +72,7 @@ async def test_char_swap_converter_zero_iterations():
 
 @pytest.mark.asyncio
 async def test_char_swap_converter_sample_ratio_other_than_1():
-    converter = CharSwapConverter(max_iterations=1, mode="random", percentage=50)
+    converter = CharSwapConverter(max_iterations=1, mode="random", proportion=0.5)
     prompt = "Testing word swap ratio"
     result = await converter.convert_async(prompt=prompt)
     output_prompts = result.output_text.strip().split("\n")
@@ -82,7 +82,7 @@ async def test_char_swap_converter_sample_ratio_other_than_1():
 # Test that swapping is happening randomly
 @pytest.mark.asyncio
 async def test_char_swap_converter_random_swapping():
-    converter = CharSwapConverter(max_iterations=1, mode="random", percentage=100)
+    converter = CharSwapConverter(max_iterations=1, mode="random", proportion=1)
     prompt = "Character swapping test"
 
     with patch(
