@@ -10,13 +10,13 @@ from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 class CharSwapConverter(WordLevelConverter):
     """Applies character swapping to words in the prompt to test adversarial textual robustness."""
 
-    def __init__(self, *, max_iterations: int = 10, mode: str = "all", **mode_kwargs):
+    def __init__(self, *, max_iterations: int = 10, mode: str = "random", proportion: float = 0.2, **mode_kwargs):
         """
         Args:
             max_iterations (int): Number of times to generate perturbed prompts.
                 The higher the number the higher the chance that words are different from the original prompt.
         """
-        super().__init__(mode=mode, **mode_kwargs)
+        super().__init__(mode=mode, proportion=proportion, **mode_kwargs)
 
         # Ensure max_iterations is positive
         if max_iterations <= 0:
