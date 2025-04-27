@@ -138,5 +138,8 @@ def select_word_indices(
             valid_indices = [i for i in custom_indices if 0 <= i < len(words)]
             invalid_indices = [i for i in custom_indices if i < 0 or i >= len(words)]
             if invalid_indices:
-                logger.warning(f"Ignoring out-of-bounds indices: {invalid_indices}")
+                raise ValueError(
+                    f"Invalid indices {invalid_indices} provided for custom selection. "
+                    f"Valid range is 0 to {len(words) - 1}."
+                )
             return valid_indices
