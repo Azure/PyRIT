@@ -219,4 +219,7 @@ class PromptSendingOrchestrator(Orchestrator):
                     piece.id = uuid.uuid4()
 
                 self._memory.add_request_response_to_memory(request=request)
+        elif normalizer_request.conversation_id:
+            # if the normalizer request has a conversation ID, use it
+            return normalizer_request.conversation_id
         return conversation_id

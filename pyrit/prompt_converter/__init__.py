@@ -8,7 +8,11 @@ from pyrit.prompt_converter.add_image_to_video_converter import AddImageVideoCon
 from pyrit.prompt_converter.add_text_image_converter import AddTextImageConverter
 from pyrit.prompt_converter.ansi_escape.ansi_attack_converter import AnsiAttackConverter
 from pyrit.prompt_converter.ascii_art_converter import AsciiArtConverter
-from pyrit.prompt_converter.ascii_smuggler_converter import AsciiSmugglerConverter
+from pyrit.prompt_converter.token_smuggling import (
+    AsciiSmugglerConverter,
+    SneakyBitsSmugglerConverter,
+    VariationSelectorSmugglerConverter,
+)
 from pyrit.prompt_converter.atbash_converter import AtbashConverter
 from pyrit.prompt_converter.audio_frequency_converter import AudioFrequencyConverter
 from pyrit.prompt_converter.azure_speech_audio_to_text_converter import AzureSpeechAudioToTextConverter
@@ -57,6 +61,7 @@ from pyrit.prompt_converter.unicode_replacement_converter import UnicodeReplacem
 from pyrit.prompt_converter.unicode_sub_converter import UnicodeSubstitutionConverter
 from pyrit.prompt_converter.url_converter import UrlConverter
 from pyrit.prompt_converter.variation_converter import VariationConverter
+from pyrit.prompt_converter.zalgo_converter import ZalgoConverter
 from pyrit.prompt_converter.zero_width_converter import ZeroWidthConverter
 
 
@@ -104,6 +109,7 @@ __all__ = [
     "RepeatTokenConverter",
     "ROT13Converter",
     "SearchReplaceConverter",
+    "SneakyBitsSmugglerConverter",
     "StringJoinConverter",
     "SuffixAppendConverter",
     "TextToHexConverter",
@@ -115,5 +121,7 @@ __all__ = [
     "UnicodeSubstitutionConverter",
     "UrlConverter",
     "VariationConverter",
+    "VariationSelectorSmugglerConverter",
+    "ZalgoConverter",
     "ZeroWidthConverter",
 ]

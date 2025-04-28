@@ -14,6 +14,7 @@ services:
       - pip-cache:/home/vscode/.cache/pip:cached
       - precommit-cache:/home/vscode/.cache/pre-commit:cached
       - conda-cache:/home/vscode/.cache/conda:cached
+      - mypy-cache:/workspace/.mypy_cache:cached
     ports:
       - "4213:4213"
       - "8888:8888"
@@ -25,3 +26,4 @@ volumes:
   pip-cache:
   precommit-cache:
   conda-cache:
+  mypy-cache:

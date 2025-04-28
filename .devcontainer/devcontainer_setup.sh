@@ -1,6 +1,31 @@
 #!/bin/bash
 set -e
 
+MYPY_CACHE="/workspace/.mypy_cache"
+# Create the mypy cache directory if it doesn't exist
+if [ ! -d "$MYPY_CACHE" ]; then
+    echo "Creating mypy cache directory..."
+    sudo mkdir -p $MYPY_CACHE
+    sudo chown vscode:vscode $MYPY_CACHE
+    sudo chmod 777 $MYPY_CACHE
+else
+    # Check ownership
+    OWNER=$(stat -c '%U:%G' $MYPY_CACHE)
+
+    if [ "$OWNER" != "vscode:vscode" ]; then
+        echo "Fixing mypy cache directory ownership..."
+        sudo chown -R vscode:vscode $MYPY_CACHE
+    fi
+
+    # Check permissions
+    PERMS=$(stat -c '%a' $MYPY_CACHE)
+
+    if [ "$PERMS" != "777" ]; then
+        echo "Fixing mypy cache directory permissions..."
+        sudo chmod -R 777 $MYPY_CACHE
+    fi
+fi
+
 # cleanup old extensions
 rm -rf /home/vscode/.vscode-server/extensions/{*,.[!.]*,..?*}
 
