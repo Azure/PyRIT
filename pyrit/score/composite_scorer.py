@@ -4,8 +4,9 @@
 from typing import List, Optional
 
 from pyrit.models import PromptRequestPiece, Score
-from pyrit.score.scorer import Scorer
 from pyrit.score.score_aggregator import ScoreAggregator
+from pyrit.score.scorer import Scorer
+
 
 class CompositeScorer(Scorer):
     """A scorer that aggregates other true_false scorers using a specified aggregation function.
@@ -20,11 +21,7 @@ class CompositeScorer(Scorer):
     """
 
     def __init__(
-        self,
-        *,
-        aggregator: ScoreAggregator,
-        scorers: List[Scorer],
-        score_category: Optional[str] = None
+        self, *, aggregator: ScoreAggregator, scorers: List[Scorer], score_category: Optional[str] = None
     ) -> None:
         self.scorer_type = "true_false"
         self._aggregator = aggregator

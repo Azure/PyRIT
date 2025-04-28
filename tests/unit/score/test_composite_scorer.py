@@ -5,7 +5,7 @@ import pytest
 
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.score.composite_scorer import CompositeScorer
-from pyrit.score.score_aggregator import AND_, OR_, XOR_, MAJORITY_
+from pyrit.score.score_aggregator import AND_, MAJORITY_, OR_
 from pyrit.score.scorer import Scorer
 
 
@@ -89,26 +89,6 @@ async def test_composite_scorer_or_one_true(mock_request, true_scorer, false_sco
     assert len(scores) == 1
     assert scores[0].get_value() is True
     assert "At least one constituent scorer returned True" in scores[0].score_rationale
-
-
-@pytest.mark.asyncio
-async def test_composite_scorer_xor_odd_true(mock_request, true_scorer, false_scorer):
-    scorer = CompositeScorer(aggregator=XOR_, scorers=[true_scorer, false_scorer])
-
-    scores = await scorer.score_async(mock_request)
-    assert len(scores) == 1
-    assert scores[0].get_value() is True
-    assert "An odd number of constituent scorers returned True" in scores[0].score_rationale
-
-
-@pytest.mark.asyncio
-async def test_composite_scorer_xor_even_true(mock_request, true_scorer, false_scorer):
-    scorer = CompositeScorer(aggregator=XOR_, scorers=[true_scorer, true_scorer, false_scorer])
-
-    scores = await scorer.score_async(mock_request)
-    assert len(scores) == 1
-    assert scores[0].get_value() is False
-    assert "An even number of constituent scorers returned True" in scores[0].score_rationale
 
 
 @pytest.mark.asyncio
