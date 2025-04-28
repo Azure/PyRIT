@@ -94,8 +94,8 @@ class OpenAIResponseTarget(OpenAITarget):
         is_json_response = self.is_response_format_json(request_piece)
 
         conversation = [prompt_request]
-        # conversation = self._memory.get_conversation(conversation_id=request_piece.conversation_id)
-        # conversation.append(prompt_request)
+        conversation = self._memory.get_conversation(conversation_id=request_piece.conversation_id)
+        conversation.append(prompt_request)
 
         logger.info(f"Sending the following prompt to the prompt target: {prompt_request}")
 
@@ -236,23 +236,46 @@ class OpenAIResponseTarget(OpenAITarget):
 
         status = response["status"]
         error = response["error"]
-        extracted_response: str = ""
+        extracted_response_pieces = []
         if status != "completed" or error:
             raise PyritException(message=f"Status {status} and error {error} from response: {response}")
         else:
             for piece in response["output"]:
-                if piece["type"] == "reasoning":
-                    # TODO: consider storing that as well
-                    continue
-
-                extracted_response = piece["content"][0]["text"]
+                # TODO: should we track "reasoning" as different from "text"?
+                if piece["type"] == "output_text":
+                    piece_text = piece["content"][0]["text"]
+                elif piece["type"] == "reasoning":
+                    for summary_piece in piece["content"][0]["summary"]:
+                        if summary_piece["type"] == "summary_text":
+                            piece_text += summary_piece["text"]
+                    if not piece_text:
+                        continue  # Skip empty reasoning summaries
 
                 # Handle empty response
-                if not extracted_response:
+                if not piece_text:
                     logger.log(logging.ERROR, "The chat returned an empty response.")
                     raise EmptyResponseException(message="The chat returned an empty response.")
 
-        return construct_response_from_request(request=request_piece, response_text_pieces=[extracted_response])
+                extracted_response_pieces.append(
+                    PromptRequestPiece(
+                        role="assistant",
+                        original_value=piece_text,
+                        conversation_id=request_piece.conversation_id,
+                        labels=request_piece.labels,
+                        prompt_target_identifier=request_piece.prompt_target_identifier,
+                        orchestrator_identifier=request_piece.orchestrator_identifier,
+                        original_value_data_type="text",
+                        converted_value_data_type="text",
+                        response_error=error,
+                    )
+                )
+        
+        if not extracted_response_pieces:
+            raise PyritException(message="No valid response pieces found in the response.")
+
+        return PromptRequestResponse(
+            request_pieces=extracted_response_pieces
+        )
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         """Validates the structure and content of a prompt request for compatibility of this target.
