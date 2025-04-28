@@ -16,11 +16,8 @@ class BinaryConverter(WordLevelConverter):
         BITS_16 = 16
         BITS_32 = 32
 
-    def __init__(
-        self, bits_per_char: BinaryConverter.BitsPerChar = BitsPerChar.BITS_16, mode: str = "all", **mode_kwargs
-    ):
-        super().__init__(mode=mode, **mode_kwargs)
-
+    def __init__(self, bits_per_char: BinaryConverter.BitsPerChar = BitsPerChar.BITS_16):
+        super().__init__()
         if not isinstance(bits_per_char, BinaryConverter.BitsPerChar):
             raise TypeError("bits_per_char must be an instance of BinaryConverter.BitsPerChar Enum.")
         self.bits_per_char = bits_per_char
