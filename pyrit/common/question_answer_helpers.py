@@ -3,9 +3,8 @@
 
 from pyrit.models import QuestionAnsweringEntry
 
-def construct_evaluation_prompt(
-        entry: QuestionAnsweringEntry
-    ) -> str:
+
+def construct_evaluation_prompt(entry: QuestionAnsweringEntry) -> str:
     """
     From question and choices in entry, creates prompt to be send to target
 

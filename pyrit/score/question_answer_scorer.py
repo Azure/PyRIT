@@ -6,13 +6,9 @@ from __future__ import annotations
 import json
 from typing import Optional, Sequence
 
-from pyrit.common.batch_helper import batch_task_async
-from pyrit.models import (
-    QuestionAnsweringEntry, 
-    Score,
-    PromptRequestResponse
-)
+from pyrit.models import PromptRequestResponse, QuestionAnsweringEntry, Score
 from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.prompt_target.batch_helper import batch_task_async
 from pyrit.score.scorer import Scorer
 
 
@@ -21,18 +17,22 @@ class QuestionAnswerScorer(Scorer):
     A class that represents a question answering scorer.
     """
 
-    def __init__(self, category: str = None) -> None:
+    def __init__(
+        self,
+        *,
+        category: str = "",
+    ) -> None:
         """
         Initializes the QuestionAnswerScorer object.
+
+        Args:
+            category (str): an optional parameter to the category metadata
         """
         self._score_category = category
         self.scorer_type = "true_false"
 
     async def score_async(  # type: ignore[override]
-        self,
-        *,
-        request_response: PromptRequestPiece, 
-        task: QuestionAnsweringEntry
+        self, *, request_response: PromptRequestPiece, task: QuestionAnsweringEntry
     ) -> list[Score]:
         """
         Score the request_reponse using the QuestionAnsweringEntry
@@ -63,10 +63,10 @@ class QuestionAnswerScorer(Scorer):
             Score(
                 score_value=str(answer_correct),
                 score_type=self.scorer_type,
-                score_value_description=None,
+                score_value_description="",
                 score_metadata=metadata,
                 score_category=self._score_category,
-                score_rationale=None,
+                score_rationale="",
                 scorer_class_identifier=self.get_identifier(),
                 prompt_request_response_id=request_response.id,
                 task=task.question,
@@ -109,8 +109,8 @@ class QuestionAnswerScorer(Scorer):
         """
         if request_response.converted_value_data_type != "text":
             raise ValueError("Question Answer Scorer only supports text data type")
-        
-    def report_scores(responses: list[PromptRequestResponse]):
+
+    def report_scores(self, responses: list[PromptRequestResponse]) -> None:
         """
         Reports the score values from the list of prompt request responses
         Checks for presence of scores in reponse before scoring

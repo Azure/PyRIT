@@ -8,7 +8,6 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.common.question_answer_helpers import construct_evaluation_prompt
 from pyrit.common.utils import combine_dict
 from pyrit.models import (
-    PromptDataType,
     PromptRequestPiece,
     PromptRequestResponse,
     QuestionAnsweringDataset,
@@ -31,11 +30,13 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
         Orchestrator (_type_): _description_
     """
 
-    DEFAULT_QUESTION_ANSWERING_BENCHMARK_DEFINITION_PATH = pathlib.Path(DATASETS_PATH) / "orchestrators"/ "benchmark"/ "one_plus_one.yaml"
+    DEFAULT_QUESTION_ANSWERING_BENCHMARK_DEFINITION_PATH = (
+        pathlib.Path(DATASETS_PATH) / "orchestrators" / "benchmark" / "one_plus_one.yaml"
+    )
 
     def __init__(
         self,
-        *
+        *,
         objective_target: PromptChatTarget,
         question_answer_definition_path: pathlib.Path = DEFAULT_QUESTION_ANSWERING_BENCHMARK_DEFINITION_PATH,
         scorers: Optional[list[Scorer]] = None,
@@ -49,7 +50,7 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
         Args:
             objective_target (PromptChatTarget): The chat model to be evaluated.
             scorer (QuestionAnswerScorer): The scorer used to evaluate the chat model's responses.
-            prompt_converters (list[PromptConverter], Optional): The prompt converters to be used.
+            prompt_converters (list[PromptConverter], Optional): The promptp converters to be used.
             evaluation_prompt (str, Optional): The evaluation prompt to be used. Defaults to None.
             verbose (bool, Optional): Whether to print verbose output. Defaults to False.
         """
@@ -57,7 +58,8 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
         question_answer_definition: SeedPromptDataset = SeedPromptDataset.from_yaml_file(
             question_answer_definition_path
         )
-
+        if len(question_answer_definition.prompts) != 2:
+            raise ValueError("Prompt list does not have 2 elements (user and assistant turns)")
         self._user_start_turn = question_answer_definition.prompts[0]
         self._assistant_start_turn = question_answer_definition.prompts[1]
 
@@ -75,12 +77,14 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
         self,
         *,
         dataset: QuestionAnsweringDataset,
-        prompt_type: PromptDataType = "text",
         memory_labels: Optional[dict[str, str]] = None,
         metadata: Optional[dict[str, Union[str, int]]] = None,
     ) -> list[PromptRequestResponse]:
         """
         Sends prompts to the chat model and evaluates responses.
+
+        Args:
+            dataset (QuestionAnsweringDataset): dataset of questions that need to be converted and sent
         """
         prompt_list = [construct_evaluation_prompt(entry) for entry in dataset.questions]
         requests: list[NormalizerRequest] = []
@@ -89,7 +93,6 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
             requests.append(
                 self._create_normalizer_request(
                     prompt_text=prompt,
-                    prompt_type=prompt_type,
                     converters=self._prompt_converters,
                     metadata=metadata,
                     conversation_id=str(uuid.uuid4()),

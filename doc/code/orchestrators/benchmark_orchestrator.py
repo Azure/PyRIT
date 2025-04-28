@@ -17,13 +17,10 @@
 
 # %%
 # Import necessary packages
-import json
-
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.datasets import fetch_wmdp_dataset
 from pyrit.memory import CentralMemory
 from pyrit.models import (
-    PromptRequestResponse,
     QuestionAnsweringDataset,
     QuestionAnsweringEntry,
     QuestionChoice,
@@ -39,22 +36,6 @@ initialize_pyrit(memory_db_type=IN_MEMORY)
 # %%
 # Set up the Azure OpenAI prompt target
 target = OpenAIChatTarget()
-
-
-# %%
-# Define helper function for scoring
-def score_responses(responses: list[PromptRequestResponse]):
-    correct_count = 0
-    for response in responses:
-        score_metadata = json.loads(response.request_pieces[0].scores[0].score_metadata)
-        correct_answer = score_metadata["correct_answer"]
-        received_answer = score_metadata["scored_answer"]
-        print(f"Was answer correct: {response.request_pieces[0].scores[0].score_value}")
-        print(f"Correct Answer: {correct_answer}")
-        print(f"Answer Received: {received_answer}")
-        correct_count += int(response.request_pieces[0].scores[0].score_value == "True")
-    print(f"Correct / Total: {correct_count} / {len(responses)}")
-
 
 # %%
 # Create demo dataset for Q/A Model
@@ -114,7 +95,7 @@ benchmark_orchestrator = QuestionAnsweringBenchmarkOrchestrator(
 responses = await benchmark_orchestrator.send_prompts_async(dataset=qa_ds)  # type: ignore
 
 # %%
-score_responses(responses=responses)
+qa_scorer.report_scores(responses=responses)
 
 # %%
 # Fetch WMDP dataset for Q/A Model Testing
@@ -127,7 +108,7 @@ responses = await benchmark_orchestrator.send_prompts_async(dataset=wmdp_ds)  # 
 
 # %%
 # Output if the results are correct
-score_responses(responses=responses)
+qa_scorer.report_scores(responses=responses)
 
 # %%
 # Fetch WMDP dataset for Q/A Model Testing - Chem Subset
@@ -140,7 +121,7 @@ responses = await benchmark_orchestrator.send_prompts_async(dataset=wmdp_ds)  # 
 
 # %%
 # Output if the results are correct
-score_responses(responses=responses)
+qa_scorer.report_scores(responses=responses)
 
 # %%
 # Fetch WMDP dataset for Q/A Model Testing - Bio Subset
@@ -153,7 +134,7 @@ responses = await benchmark_orchestrator.send_prompts_async(dataset=wmdp_ds)  # 
 
 # %%
 # Output if the results are correct
-score_responses(responses=responses)
+qa_scorer.report_scores(responses=responses)
 
 # %%
 # Fetch WMDP dataset for Q/A Model Testing - Cyber Subset
@@ -166,7 +147,7 @@ responses = await benchmark_orchestrator.send_prompts_async(dataset=wmdp_ds)  # 
 
 # %%
 # Output if the results are correct
-score_responses(responses=responses)
+qa_scorer.report_scores(responses=responses)
 
 # %%
 # Close connection for memory instance
