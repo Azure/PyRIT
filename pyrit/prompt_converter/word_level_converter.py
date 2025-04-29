@@ -4,7 +4,7 @@
 import abc
 import logging
 import re
-from typing import List, Union, TypeVar, final
+from typing import List, TypeVar, Union, final
 
 from pyrit.common.utils import get_random_indices
 from pyrit.models.literals import PromptDataType
@@ -111,7 +111,6 @@ class WordLevelConverter(PromptConverter):
                 return valid_indices
             case _:
                 return list(range(len(words)))
-
 
     def validate_input(self, prompt: str) -> None:
         """Validate the input before processing (can be overridden by subclasses)"""

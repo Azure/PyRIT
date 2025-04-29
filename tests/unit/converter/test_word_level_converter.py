@@ -2,8 +2,9 @@
 # Licensed under the MIT license.
 
 import re
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 
@@ -52,6 +53,7 @@ class TestWordLevelConverter:
         class CustomJoinConverter(SimpleWordLevelConverter):
             def join_words(self, words: list[str]) -> str:
                 return "#".join(words)
+
         converter = CustomJoinConverter().select_all()
         result = await converter.convert_async(prompt="hello world test")
         assert result.output_text == "HELLO#WORLD#TEST"
