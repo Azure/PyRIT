@@ -293,6 +293,9 @@ class SeedPromptGroup(YamlLoadable):
         unique_sequences = {prompt.sequence for prompt in self.prompts}
         return len(unique_sequences) <= 1
 
+    def is_single_part_single_text_request(self) -> bool:
+        return len(self.prompts) == 1 and self.prompts[0].data_type == "text"
+
     def __repr__(self):
         return f"<SeedPromptGroup(prompts={len(self.prompts)} prompts)>"
 

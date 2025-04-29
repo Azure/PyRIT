@@ -52,7 +52,7 @@ class OrchestratorResult:
 
         self._memory = CentralMemory.get_memory_instance()
 
-    async def print_conversation_async(self):
+    async def print_conversation_async(self, include_auxiliary_scores: bool = False):
         """Prints the conversation between the objective target and the adversarial chat, including the scores.
 
         Args:
@@ -80,8 +80,6 @@ class OrchestratorResult:
                 f"has ended with status: {self.status}"
             )
 
-        if self.score:
-            print(f"{Style.BRIGHT}{Fore.RED}objective score: {self.score} : {self.score.score_rationale}")
 
         for message in target_messages:
             for piece in message.request_pieces:
@@ -95,7 +93,11 @@ class OrchestratorResult:
 
                 await display_image_response(piece)
 
-                auxiliary_scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(piece.id)]) or []
-                for auxiliary_score in auxiliary_scores:
-                     if not self.score or auxiliary_score.id != self.score.id:
-                         print(f"{Style.RESET_ALL}auxiliary score: {auxiliary_score} : {auxiliary_score.score_rationale}")
+                if include_auxiliary_scores:
+                    auxiliary_scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(piece.id)]) or []
+                    for auxiliary_score in auxiliary_scores:
+                        if not self.score or auxiliary_score.id != self.score.id:
+                            print(f"{Style.DIM}{Fore.WHITE}auxiliary score: {auxiliary_score} : {auxiliary_score.score_rationale}")
+
+        if self.score:
+            print(f"{Style.NORMAL}{Fore.WHITE}objective score: {self.score} : {self.score.score_rationale}")

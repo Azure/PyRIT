@@ -142,12 +142,15 @@ class PromptSendingOrchestrator(Orchestrator):
 
         Returns:
             tuple[str, Optional[Any]]: A tuple containing the status and objective score
+            If the objective_scorer returns a list of scores, the first score that is true will be returned as the objective score.
+            Note, this behavior can be overridden by setting the objective_scorer to a CompositeScorer.
         """
         if not self._objective_scorer:
             return "unknown", None
 
         status = "failure"
         objective_score = None
+        first_failure_score = None
 
         for piece in result.request_pieces:
             if piece.role == "assistant":
@@ -162,8 +165,14 @@ class PromptSendingOrchestrator(Orchestrator):
                         objective_score = score
                         status = "success"
                         break
+                    elif first_failure_score is None:
+                        first_failure_score = score
                 if status == "success":
                     break
+
+        # If no success was found, use the first failure score
+        if status == "failure" and first_failure_score is not None:
+            objective_score = first_failure_score
 
         return status, objective_score
 
