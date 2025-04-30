@@ -1,8 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from pyrit.models import PromptResponse, SeedPrompt
 from pyrit.prompt_converter import ToxicSentenceGeneratorConverter
@@ -54,7 +55,7 @@ async def test_toxic_sentence_generator_converter_init_no_template(mock_target):
         converter = ToxicSentenceGeneratorConverter(converter_target=mock_target, prompt_template=None)
         assert converter._converter_target == mock_target
         assert converter._system_prompt_template == default_template
-        
+
         # Test with prompt_template not provided
         converter = ToxicSentenceGeneratorConverter(converter_target=mock_target)
         assert converter._converter_target == mock_target

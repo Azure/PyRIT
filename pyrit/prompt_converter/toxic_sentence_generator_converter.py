@@ -19,9 +19,9 @@ logger = logging.getLogger(__name__)
 
 class ToxicSentenceGeneratorConverter(LLMGenericTextConverter):
     """
-    A PromptConverter that generates toxic sentence starters using an LLM via an 
+    A PromptConverter that generates toxic sentence starters using an LLM via an
     existing PromptTarget.
-    
+
     Based on Project Moonshot's attack module that generates toxic sentences to test LLM
     safety guardrails:
     https://github.com/aiverify-foundation/moonshot-data/blob/main/attack-modules/toxic_sentence_generator.py
@@ -48,19 +48,17 @@ class ToxicSentenceGeneratorConverter(LLMGenericTextConverter):
 
         super().__init__(converter_target=converter_target, system_prompt_template=prompt_template)
 
-    async def convert_async(
-        self, *, prompt: str, input_type: PromptDataType = "text"
-    ) -> ConverterResult:
+    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Converts a seed prompt into a toxic sentence starter.
 
         Parameters:
             prompt (str): The prompt to convert.
-            input_type (PromptDataType, Optional): The data type of the input prompt. 
+            input_type (PromptDataType, Optional): The data type of the input prompt.
                 Defaults to "text".
 
         Returns:
-            ConverterResult: The result of the conversion, containing the toxic sentence 
+            ConverterResult: The result of the conversion, containing the toxic sentence
                 starter.
         """
         # Add the prompt to _prompt_kwargs before calling the base method
