@@ -31,7 +31,7 @@ from pyrit.score import (
 logger = logging.getLogger(__name__)
 
 
-class CrescendoEnsembleOrchestrator(MultiTurnOrchestrator):
+class CrescendoOrchestrator(MultiTurnOrchestrator):
     """
     The `CrescendoOrchestrator` class represents an orchestrator that executes the Crescendo attack.
 
