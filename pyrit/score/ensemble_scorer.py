@@ -1,85 +1,121 @@
-from typing import Optional, Dict
+from typing import Optional, Union, Dict, List
 
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.score import (
     Scorer,
-    SubStringScorer,
+    SubStringsMultipleScorer,
     AzureContentFilterScorer,
     SelfAskScaleScorer,
+    HumanInTheLoopScorer
 )
 
 class EnsembleScorer(Scorer):
 
     def __init__(self, 
-                 substring_scorer: SubStringScorer = None, 
-                 substring_scorer_weight: float = None, 
-                 azure_content_filter_scorer: AzureContentFilterScorer = None,
-                 azure_content_filter_scorer_weights: Dict[str, float] = None,
-                 self_ask_scale_scorer: SelfAskScaleScorer = None, 
-                 self_ask_scale_scorer_weight: float = None,
-                 
+                 weak_scorer_dict: Dict[str, List[Union[Scorer, Union[float, Dict[str, float]]]]],
+                 fit_weights: bool = False,
+                 ground_truth_scorer: Scorer = HumanInTheLoopScorer(),
+                 lr: float = 1e-2,
                  category = "jailbreak"):
         self.scorer_type = "float_scale"
         self._score_category = category
 
-        self._substring_scorer = substring_scorer
-        self._substring_scorer_weight = substring_scorer_weight
+        if not isinstance(weak_scorer_dict, dict) or (len(weak_scorer_dict) == 0):
+            raise ValueError("Please pass a nonempty dictionary of weights")
 
-        self._azure_content_filter_scorer = azure_content_filter_scorer
-        self._azure_content_filter_scorer_weights = azure_content_filter_scorer_weights
+        for k, v in weak_scorer_dict.items():
+            scorer, weight = v
+            if isinstance(scorer, AzureContentFilterScorer) and not isinstance(weight, dict):
+                raise ValueError("Weights for AzureContentFilterScorer must be a dictionary of category (str) to weight (float)")
+            if isinstance(scorer, AzureContentFilterScorer) and isinstance(weight, dict):
+                for acfs_k, acfs_v in weight.items():
+                    if not isinstance(acfs_k, str) or not isinstance(acfs_v, float):
+                        raise ValueError("Weights for AzureContentFilterScorer must be a dictionary of category (str) to weight (float)")
+            elif not isinstance(weight, float):
+                raise ValueError("Weight for this scorer must be a float")
 
-        self._ask_scale_scorer = self_ask_scale_scorer
-        self._ask_scale_scorer_weight = self_ask_scale_scorer_weight
+        self._weak_scorer_dict = weak_scorer_dict
 
-        if (self._substring_scorer is None) and (self._azure_content_filter_scorer is None) and (self._ask_scale_scorer is None):
-            raise ValueError("Pass at least one Scorer to constructor")
+        self._fit_weights = fit_weights
+        self._ground_truth_scorer = ground_truth_scorer
+        self._lr = lr
 
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         self.validate(request_response, task=task)
 
-        score_value = 0
+        ensemble_score_value = 0
+        score_values = {}
         metadata = {}
-        if self._substring_scorer is not None:
-            assert self._substring_scorer_weight is not None, "Pass a weight for the SubstringScorer"
+        for scorer_name, value in self._weak_scorer_dict.items():
+            scorer, weight = value
+            current_scores = await scorer.score_async(request_response=request_response, task=task)
+            for curr_score in current_scores:
+                if isinstance(scorer, AzureContentFilterScorer):
+                    score_category = curr_score.score_category
+                    curr_weight = weight[score_category]
+                    metadata_label = "_".join([scorer_name, score_category, "weight"])
 
-            substring_scores = await self._substring_scorer.score_async(request_response=request_response, task=task)
-            for score in substring_scores:
-                score_value += self._substring_scorer_weight * int(score.get_value())
-                metadata["SubstringScorer_weight"] = str(self._substring_scorer_weight)
+                    curr_score_value = float(curr_score.get_value())
+                    if scorer_name not in score_values:
+                        score_values[scorer_name] = {}
+                    score_values[scorer_name][score_category] = curr_score_value
+                else:
+                    curr_weight = weight
+                    metadata_label = "_".join([scorer_name, "weight"])
+                    curr_score_value = float(curr_score.get_value())
+                    score_values[scorer_name] = curr_score_value
+                
+                
+                ensemble_score_value += curr_weight * curr_score_value
 
-        if self._azure_content_filter_scorer is not None:
-            assert self._azure_content_filter_scorer_weights is not None, "Pass a weight for the AzureContentFilterScorer"
+                metadata[metadata_label] = str(curr_weight)
 
-            azure_content_filter_scores = await self._azure_content_filter_scorer.score_async(request_response=request_response, task=task)
-            for i, score in enumerate(azure_content_filter_scores):
-                score_category = score.score_category
-                score_value += self._azure_content_filter_scorer_weights[score_category] * float(score.get_value())
-                metadata[f"AzureContentFilterScorer_weight_{score_category}"] = str(self._azure_content_filter_scorer_weights[score_category])
+        ensemble_score_rationale = f"Total Ensemble Score is {ensemble_score_value}"
 
-        if self._ask_scale_scorer is not None:
-            assert self._ask_scale_scorer_weight is not None, "Pass a weight for the AskScaleScorer"
-
-            ask_scale_scores = await self._ask_scale_scorer.score_async(request_response=request_response, task=task)
-            for score in ask_scale_scores:
-                score_value += self._ask_scale_scorer_weight * float(score.get_value())
-                metadata["AskScaleScorer_weight"] = str(self._ask_scale_scorer_weight)
-
-        score_rationale = f"Total Ensemble Score is {score_value}"
-
-        score = Score(
+        ensemble_score = Score(
             score_type="float_scale",
-            score_value=str(score_value),
+            score_value=str(ensemble_score_value),
             score_value_description=None,
             score_category=self._score_category,
             score_metadata=metadata,
-            score_rationale=score_rationale,
+            score_rationale=ensemble_score_rationale,
             scorer_class_identifier=self.get_identifier(),
             prompt_request_response_id=request_response.id,
             task=task,
         )
-        self._memory.add_scores_to_memory(scores=[score])
+        self._memory.add_scores_to_memory(scores=[ensemble_score])
 
-        return [score]
+        if self._fit_weights:
+            await self.step_weights(score_values, ensemble_score, request_response=request_response, task=task)
+
+        return [ensemble_score]
+
+    async def step_weights(self, 
+                           score_values: Dict[str, float], 
+                           ensemble_score: Scorer,
+                           request_response: PromptRequestPiece, 
+                           *, 
+                           task: Optional[str] = None,
+                           loss_metric: str = "MSE"):
+        ground_truth_scores = await self._ground_truth_scorer.score_async(request_response=request_response, task=task)
+        for ground_truth_score in ground_truth_scores:
+            if loss_metric == "MSE":
+                diff = ensemble_score.get_value() - float(ground_truth_score.get_value())
+                d_loss_d_ensemble_score = 2 * diff
+            elif loss_metric == "MAE":
+                diff = ensemble_score.get_value() - float(ground_truth_score.get_value())
+                d_loss_d_ensemble_score = -1 if diff < 0 else 1
+
+            for scorer_name in score_values:
+                if scorer_name == "AzureContentFilterScorer":
+                    self._weak_scorer_dict[scorer_name][1] = {score_category: 
+                                                                self._weak_scorer_dict[scorer_name][1][score_category] -
+                                                                    self._lr * score_values[scorer_name][score_category] * d_loss_d_ensemble_score
+                                                            for score_category in self._weak_scorer_dict[scorer_name][1]}
+                else:
+                    self._weak_scorer_dict[scorer_name][1] = self._weak_scorer_dict[scorer_name][1] - self._lr * score_values[scorer_name] * d_loss_d_ensemble_score
+        
+            print(self._weak_scorer_dict)
 
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):

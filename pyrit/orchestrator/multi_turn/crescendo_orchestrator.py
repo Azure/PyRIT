@@ -4,7 +4,7 @@
 import json
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, List
 from uuid import uuid4
 
 from pyrit.common.path import DATASETS_PATH
@@ -23,15 +23,15 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import (
 )
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import (
+    Scorer,
     FloatScaleThresholdScorer,
     SelfAskRefusalScorer,
-    SelfAskScaleScorer,
 )
 
 logger = logging.getLogger(__name__)
 
 
-class CrescendoOrchestrator(MultiTurnOrchestrator):
+class CrescendoEnsembleOrchestrator(MultiTurnOrchestrator):
     """
     The `CrescendoOrchestrator` class represents an orchestrator that executes the Crescendo attack.
 
@@ -62,7 +62,8 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         self,
         objective_target: PromptChatTarget,
         adversarial_chat: PromptChatTarget,
-        scoring_target: PromptChatTarget,
+        refusal_target: PromptChatTarget,
+        objective_float_scale_scorer: Scorer,
         adversarial_chat_system_prompt_path: Optional[Path] = None,
         objective_achieved_score_threshhold: float = 0.7,
         max_turns: int = 10,
@@ -77,12 +78,8 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         )
 
         objective_scorer = FloatScaleThresholdScorer(
-            scorer=SelfAskScaleScorer(
-                chat_target=scoring_target,
-                scale_arguments_path=SelfAskScaleScorer.ScalePaths.TASK_ACHIEVED_SCALE.value,
-                system_prompt_path=SelfAskScaleScorer.SystemPaths.RED_TEAMER_SYSTEM_PROMPT.value,
-            ),
-            threshold=objective_achieved_score_threshhold,
+            scorer=objective_float_scale_scorer,
+            threshold=objective_achieved_score_threshhold
         )
 
         super().__init__(
@@ -96,7 +93,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         )
 
         self._refusal_scorer = SelfAskRefusalScorer(
-            chat_target=scoring_target,
+            chat_target=refusal_target,
         )
 
         self._prompt_normalizer = PromptNormalizer()
