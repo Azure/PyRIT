@@ -253,6 +253,7 @@ API Reference
     OrchestratorResult
     PAIROrchestrator
     PromptSendingOrchestrator
+    QuestionAnsweringBenchmarkOrchestrator
     RedTeamingOrchestrator
     ScoringOrchestrator
     SkeletonKeyOrchestrator
@@ -388,6 +389,7 @@ API Reference
     MarkdownInjectionScorer
     PromptShieldScorer
     Scorer
+    QuestionAnswerScorer
     SelfAskCategoryScorer
     SelfAskLikertScorer
     SelfAskRefusalScorer
