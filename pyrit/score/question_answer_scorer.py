@@ -36,7 +36,7 @@ class QuestionAnswerScorer(Scorer):
     ) -> list[Score]:
         """
         Score the request_reponse using the QuestionAnsweringEntry
-        and return a since Score object 30
+        and return a single score object
 
         Args:
             request_response (PromptRequestPiece): The answer given by the target
@@ -45,7 +45,6 @@ class QuestionAnswerScorer(Scorer):
             Score: A single Score object representing the result
         """
         answer = request_response.converted_value
-        answer_correct = False
         try:
             # This is the case where the model response is an integer, which is the index of the answer.
             answer = task.choices[int(answer)].text
@@ -57,11 +56,9 @@ class QuestionAnswerScorer(Scorer):
         metadata_json = {"question": str(task.question), "correct_answer": correct_answer, "scored_answer": answer}
         metadata = json.dumps(metadata_json)
 
-        answer_correct = correct_answer in answer
-
         score = [
             Score(
-                score_value=str(answer_correct),
+                score_value=str(correct_answer in answer),
                 score_type=self.scorer_type,
                 score_value_description="",
                 score_metadata=metadata,

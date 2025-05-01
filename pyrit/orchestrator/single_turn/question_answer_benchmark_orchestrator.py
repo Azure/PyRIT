@@ -23,11 +23,8 @@ from pyrit.score.question_answer_scorer import QuestionAnswerScorer
 
 class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
     """
-    Question Answering Benchmark Orchestrator class is responsible for evaluating a question answering dataset
-    using a scoring mechanism.
-
-    Args:
-        Orchestrator (_type_): _description_
+    Question Answering Benchmark Orchestrator class is responsible for sending multiple choice questions
+    as defined in a QuestionAnsweringDataset
     """
 
     DEFAULT_QUESTION_ANSWERING_BENCHMARK_DEFINITION_PATH = (
@@ -49,9 +46,8 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
 
         Args:
             objective_target (PromptChatTarget): The chat model to be evaluated.
-            scorer (QuestionAnswerScorer): The scorer used to evaluate the chat model's responses.
+            scorers (QuestionAnswerScorer): The scorer used to evaluate the chat model's responses.
             prompt_converters (list[PromptConverter], Optional): The promptp converters to be used.
-            evaluation_prompt (str, Optional): The evaluation prompt to be used. Defaults to None.
             verbose (bool, Optional): Whether to print verbose output. Defaults to False.
         """
 
@@ -59,7 +55,7 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
             question_answer_definition_path
         )
         if len(question_answer_definition.prompts) != 2:
-            raise ValueError("Prompt list does not have 2 elements (user and assistant turns)")
+            raise ValueError("Prompt list must have exactly 2 elements (user and assistant turns)")
         self._user_start_turn = question_answer_definition.prompts[0]
         self._assistant_start_turn = question_answer_definition.prompts[1]
 
@@ -119,8 +115,6 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
         for prompt in prompt_request_list:
             prompt.conversation_id = await self._prepare_conversation_async(normalizer_request=prompt)
 
-        # Normalizer is responsible for storing the requests in memory
-        # The labels parameter may allow me to stash class information for each kind of prompt.
         responses: list[PromptRequestResponse] = await self._prompt_normalizer.send_prompt_batch_to_target_async(
             requests=prompt_request_list,
             target=self._objective_target,
