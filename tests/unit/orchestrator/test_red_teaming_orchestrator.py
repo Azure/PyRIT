@@ -271,7 +271,7 @@ async def test_run_attack_async(
 
         assert result is not None
         assert result.conversation_id is not None
-        assert result.achieved_objective is True
+        assert result.status == "success"
         assert mock_send_prompt.call_count <= max_turns
         assert mock_check_complete.call_count <= max_turns
         # Test that the global memory labels and passed-in memory labels were combined properly
@@ -300,7 +300,7 @@ async def test_run_attack_async_blocked_response(
         result = await red_teaming_orchestrator.run_attack_async(objective="objective")
 
         assert result.conversation_id is not None
-        assert red_teaming_orchestrator._achieved_objective is False
+        assert result.status == "failure"
         assert mock_send_prompt.call_count == 5
 
 
