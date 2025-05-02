@@ -39,7 +39,6 @@ chapters:
       - file: code/orchestrators/5_crescendo_orchestrator
       - file: code/orchestrators/6_skeleton_key_attack
       - file: code/orchestrators/advbench_prompt_sending_orchestrator
-      - file: code/orchestrators/benchmark_orchestrator
       - file: code/orchestrators/context_compliance_orchestrator
       - file: code/orchestrators/flip_orchestrator
       - file: code/orchestrators/fuzzing_jailbreak_templates
@@ -47,6 +46,7 @@ chapters:
       - file: code/orchestrators/librAI_do_not_answer
       - file: code/orchestrators/many_shot_jailbreak
       - file: code/orchestrators/pair_orchestrator
+      - file: code/orchestrators/qa_benchmark_orchestrator
       - file: code/orchestrators/role_playing_orchestrator
       - file: code/orchestrators/tree_of_attacks_with_pruning
       - file: code/orchestrators/violent_durian
