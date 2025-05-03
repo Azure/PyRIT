@@ -33,7 +33,9 @@ def mock_prompt_converter():
 @pytest.fixture
 def mock_scorer():
     # Example scorer mock if needed
-    return MagicMock(spec=Scorer)
+    scorer = MagicMock(spec=Scorer)
+    scorer.scorer_type = "true_false"  # Add the required scorer_type attribute
+    return scorer
 
 
 @pytest.fixture
@@ -80,8 +82,8 @@ def role_play_orchestrator(
             objective_target=mock_objective_target,
             adversarial_chat=mock_adversarial_chat,
             role_play_definition_path="fake/path/role_play.yaml",
-            prompt_converters=[mock_prompt_converter],
-            scorers=[mock_scorer],
+            request_converter_configurations=[mock_prompt_converter],
+            objective_scorer=mock_scorer,
             batch_size=3,
             verbose=True,
         )
@@ -103,16 +105,18 @@ def test_init(role_play_orchestrator, mock_seed_prompt_dataset):
     assert role_play_orchestrator._verbose is True
 
 
-def test_default_conversation_start(role_play_orchestrator):
+@pytest.mark.asyncio
+async def test_get_conversation_start(role_play_orchestrator):
     """
-    Ensures that the default conversation start is prepended to the conversation list.
+    Ensures that the conversation start is correctly formatted with user and assistant messages.
     """
-    prepended = role_play_orchestrator._prepended_conversation
-    assert len(prepended) == 2, "Should have user and assistant start turns"
-    assert prepended[0].request_pieces[0].role == "user"
-    assert prepended[0].request_pieces[0].original_value == "User start message"
-    assert prepended[1].request_pieces[0].role == "assistant"
-    assert prepended[1].request_pieces[0].original_value == "Assistant start message"
+    conversation_start = await role_play_orchestrator._get_conversation_start()
+    
+    assert len(conversation_start) == 2, "Should have user and assistant start turns"
+    assert conversation_start[0].request_pieces[0].role == "user"
+    assert conversation_start[0].request_pieces[0].original_value == "User start message"
+    assert conversation_start[1].request_pieces[0].role == "assistant"
+    assert conversation_start[1].request_pieces[0].original_value == "Assistant start message"
 
 
 @pytest.mark.asyncio
@@ -120,11 +124,9 @@ async def test_get_role_playing_sets_default_converter(role_play_orchestrator):
     """
     Ensures role playing orchestrator sets the default converter
     """
-    assert len(role_play_orchestrator._prompt_converters) == 2
-    assert isinstance(role_play_orchestrator._prompt_converters[0], LLMGenericTextConverter)
-    instructions = role_play_orchestrator._prompt_converters[
-        0
-    ]._user_prompt_template_with_objective.render_template_value()
+    assert len(role_play_orchestrator._request_converter_configurations) == 2
+    assert isinstance(role_play_orchestrator._request_converter_configurations[0].converters[0], LLMGenericTextConverter)
+    instructions = role_play_orchestrator._request_converter_configurations[0].converters[0]._user_prompt_template_with_objective.render_template_value()
     assert instructions == "Rephrased objective"
 
 

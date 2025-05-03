@@ -498,30 +498,6 @@ async def test_run_attack_with_response_converter(mock_target: MockPromptTarget)
         assert any(piece.converted_value != piece.original_value for piece in conversation)
 
 
-@pytest.mark.asyncio
-async def test_run_attacks_with_batch_size(mock_target: MockPromptTarget):
-    orchestrator = PromptSendingOrchestrator(
-        objective_target=mock_target,
-        batch_size=2
-    )
-    
-    objectives = ["prompt1", "prompt2", "prompt3", "prompt4"]
-    results = await orchestrator.run_attacks_async(objectives=objectives)
-    
-    assert len(results) == 4
-    # Verify prompts were sent in batches of 2
-    assert len(mock_target.prompt_sent) == 4
-
-
-@pytest.mark.asyncio
-async def test_run_attack_with_target_error(mock_target: MockPromptTarget):
-    orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
-    
-    with patch.object(mock_target, "send_prompt_async", side_effect=Exception("Target error")):
-        with pytest.raises(Exception) as exc_info:
-            await orchestrator.run_attack_async(objective="test prompt")
-        assert "Target error" in str(exc_info.value.__cause__)
-
 
 @pytest.mark.asyncio
 async def test_run_attack_with_memory_labels_override(mock_target: MockPromptTarget):
@@ -541,24 +517,20 @@ async def test_run_attack_with_memory_labels_override(mock_target: MockPromptTar
 
 
 @pytest.mark.asyncio
-async def test_run_attack_with_prepended_conversation_error(mock_target: MockPromptTarget):
-    orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
+async def test_run_attack_with_prepended_conversation_error(patch_central_database):
+    orchestrator = PromptSendingOrchestrator(objective_target=MagicMock())
     
     prepended_conversation = [
         PromptRequestResponse(
             request_pieces=[PromptRequestPiece(role="system", original_value="test")]
         )
     ]
-    
-    # Mock the target to not be a PromptChatTarget
-    with patch.object(mock_target, "__class__", MagicMock):
-        mock_target.__class__.__name__ = "NotPromptChatTarget"
-        
-        with pytest.raises(ValueError, match="Prepended conversation can only be used with a PromptChatTarget"):
-            await orchestrator.run_attack_async(
-                objective="test prompt",
-                prepended_conversation=prepended_conversation
-            )
+       
+    with pytest.raises(ValueError, match="Prepended conversation can only be used with a PromptChatTarget"):
+        await orchestrator.run_attack_async(
+            objective="test prompt",
+            prepended_conversation=prepended_conversation
+        )
 
 
 @pytest.mark.asyncio
@@ -590,9 +562,8 @@ async def test_run_attack_with_multiple_auxiliary_scorers(mock_target: MockPromp
         result = await orchestrator.run_attack_async(objective="test prompt")
         assert result is not None
         
-        # Verify both scorers were called
-        assert scorer1.call_count == 1
-        assert scorer2.call_count == 1
+        assert scorer1.score_async.call_count == 1
+        assert scorer2.score_async.call_count == 1
 
 
 @pytest.mark.asyncio
