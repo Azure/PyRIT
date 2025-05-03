@@ -3,16 +3,20 @@
 
 from __future__ import annotations
 
+import pathlib
 import json
 from typing import Optional, Sequence
 
-from pyrit.models import PromptRequestResponse, QuestionAnsweringEntry, Score
+from pyrit.common.path import DATASETS_PATH
+
+from pyrit.models import PromptRequestResponse, QuestionAnsweringEntry, Score, UnvalidatedScore
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.prompt_target.batch_helper import batch_task_async
-from pyrit.score.scorer import Scorer
+from pyrit.prompt_target import PromptChatTarget
+from pyrit.score import Scorer, SelfAskTrueFalseScorer
 
 
-class QuestionAnswerScorer(Scorer):
+class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
     """
     A class that represents a question answering scorer.
     """
@@ -20,7 +24,8 @@ class QuestionAnswerScorer(Scorer):
     def __init__(
         self,
         *,
-        category: str = "",
+        chat_target: PromptChatTarget,
+        true_false_question_path: Optional[pathlib.Path] = None,
     ) -> None:
         """
         Initializes the QuestionAnswerScorer object.
@@ -28,11 +33,17 @@ class QuestionAnswerScorer(Scorer):
         Args:
             category (str): an optional parameter to the category metadata
         """
-        self._score_category = category
-        self.scorer_type = "true_false"
 
-    async def score_async(  # type: ignore[override]
-        self, *, request_response: PromptRequestPiece, task: QuestionAnsweringEntry
+        if not true_false_question_path:
+            true_false_question_path = pathlib.Path(DATASETS_PATH, "score", "true_false_question", "question_answering.yaml")
+
+        super().__init__(
+            chat_target=chat_target,
+            true_false_question_path=true_false_question_path,
+        )
+
+    async def score_async( 
+        self, *, request_response: PromptRequestPiece, task: str
     ) -> list[Score]:
         """
         Score the request_reponse using the QuestionAnsweringEntry
@@ -40,60 +51,32 @@ class QuestionAnswerScorer(Scorer):
 
         Args:
             request_response (PromptRequestPiece): The answer given by the target
-            task (QuestionAnsweringEntry): The entry containing the original prompt and the correct answer
+            task (QuestionAnsweringEntry): The entry containing the original question and the correct answer
         Returns:
             Score: A single Score object representing the result
         """
-        answer = request_response.converted_value
-        try:
-            # This is the case where the model response is an integer, which is the index of the answer.
-            answer = task.choices[int(answer)].text
-        except ValueError:
-            # If the model response is not an integer, then the model might have returned the answer as a string
-            pass
 
-        correct_answer = task.choices[int(task.correct_answer)].text
-        metadata_json = {"question": str(task.question), "correct_answer": correct_answer, "scored_answer": answer}
-        metadata = json.dumps(metadata_json)
+        self.validate(request_response, task=task)
 
-        score = [
-            Score(
-                score_value=str(correct_answer in answer),
-                score_type=self.scorer_type,
-                score_value_description="",
-                score_metadata=metadata,
-                score_category=self._score_category,
-                score_rationale="",
-                scorer_class_identifier=self.get_identifier(),
-                prompt_request_response_id=request_response.id,
-                task=task.question,
-            )
-        ]
-        request_response.scores = score
-        return score
+        prompt = f"{task}\n\nThe target response is as follows. Evaluate if the response is correct:\n{request_response.converted_value}"
 
-    async def score_prompts_with_tasks_batch_async(  # type: ignore[override]
-        self,
-        *,
-        request_responses: Sequence[PromptRequestPiece],
-        tasks: Sequence[QuestionAnsweringEntry],
-        batch_size=10,
-    ) -> list[Score]:
-        if not tasks:
-            raise ValueError("Tasks must be provided.")
-        if len(request_responses) != len(tasks):
-            raise ValueError(
-                f"Number of tasks ({len(tasks)}) must match number of provided answers ({len(request_responses)})."
-            )
-        prompt_target = getattr(self, "_prompt_target", None)
-        results = await batch_task_async(
-            task_func=self.score_async,
-            task_arguments=["request_response", "task"],
-            prompt_target=prompt_target,
-            batch_size=batch_size,
-            items_to_batch=[request_responses, tasks],
+        unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
+            prompt_target=self._prompt_target,
+            system_prompt=self._system_prompt,
+            prompt_request_value=prompt,
+            prompt_request_data_type="text",
+            scored_prompt_id=request_response.id,
+            category=self._score_category,
+            task=task,
+            orchestrator_identifier=request_response.orchestrator_identifier,
         )
-        return results
+
+        score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value)
+
+        self._memory.add_scores_to_memory(scores=[score])
+        return [score]
+
+    
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
         """
@@ -106,6 +89,9 @@ class QuestionAnswerScorer(Scorer):
         """
         if request_response.converted_value_data_type != "text":
             raise ValueError("Question Answer Scorer only supports text data type")
+        
+        if not task:
+            raise ValueError("Task must be provided")
 
     def report_scores(self, responses: list[PromptRequestResponse]) -> None:
         """

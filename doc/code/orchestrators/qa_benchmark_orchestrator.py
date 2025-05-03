@@ -29,7 +29,7 @@ from pyrit.models import (
 )
 from pyrit.orchestrator import QuestionAnsweringBenchmarkOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score.question_answer_scorer import QuestionAnswerScorer
+from pyrit.score.self_ask_question_answer_scorer import SelfAskQuestionAnswerScorer
 
 # %%
 # Initialize PyRIT (load environment files and set central memory instance)
@@ -86,7 +86,7 @@ qa_ds = QuestionAnsweringDataset(
 )
 
 # Create the scorer
-qa_scorer = QuestionAnswerScorer()
+qa_scorer = SelfAskQuestionAnswerScorer()
 
 # Create the orchestrator with scorer and demo dataset
 benchmark_orchestrator = QuestionAnsweringBenchmarkOrchestrator(
