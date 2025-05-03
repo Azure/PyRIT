@@ -1,21 +1,22 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from pyrit.models import SeedPrompt, SeedPromptDataset, SeedPromptGroup
-from pyrit.orchestrator import ContextComplianceOrchestrator, ContextDescriptionPaths
-from pyrit.prompt_converter import SearchReplaceConverter
+from pyrit.orchestrator import ContextComplianceOrchestrator, ContextDescriptionPaths, PromptSendingOrchestrator
+from pyrit.prompt_converter import SearchReplaceConverter, Base64Converter
 from pyrit.prompt_normalizer import NormalizerRequest
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.score import Scorer
+from pyrit.prompt_target import PromptTarget
 
 
 @pytest.fixture
 def mock_objective_target():
-    return MagicMock(spec=PromptChatTarget)
+    return MagicMock(spec=PromptTarget)
 
 
 @pytest.fixture
@@ -75,7 +76,7 @@ def context_compliance_orchestrator(
     return orchestrator
 
 
-def test_init(context_compliance_orchestrator, mock_seed_prompt_dataset):
+def test_init(context_compliance_orchestrator, mock_seed_prompt_dataset, mock_template):
     assert context_compliance_orchestrator._batch_size == 5
     assert context_compliance_orchestrator._verbose is True
     assert len(context_compliance_orchestrator._scorers) == 1
@@ -89,6 +90,8 @@ def test_init(context_compliance_orchestrator, mock_seed_prompt_dataset):
     assert context_compliance_orchestrator._rephrase_objective_to_user_turn == mock_seed_prompt_dataset.prompts[0]
     assert context_compliance_orchestrator._answer_user_turn == mock_seed_prompt_dataset.prompts[1]
     assert context_compliance_orchestrator._rephrase_objective_to_question == mock_seed_prompt_dataset.prompts[2]
+
+    assert context_compliance_orchestrator._template == mock_template
 
 
 @pytest.mark.parametrize("context_path", list(ContextDescriptionPaths))
