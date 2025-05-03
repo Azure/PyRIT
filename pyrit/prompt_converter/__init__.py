@@ -63,6 +63,7 @@ from pyrit.prompt_converter.url_converter import UrlConverter
 from pyrit.prompt_converter.variation_converter import VariationConverter
 from pyrit.prompt_converter.zalgo_converter import ZalgoConverter
 from pyrit.prompt_converter.zero_width_converter import ZeroWidthConverter
+from pyrit.prompt_converter.toxic_sentence_generator_converter import ToxicSentenceGeneratorConverter
 
 
 __all__ = [
@@ -124,4 +125,5 @@ __all__ = [
     "VariationSelectorSmugglerConverter",
     "ZalgoConverter",
     "ZeroWidthConverter",
+    "ToxicSentenceGeneratorConverter",
 ]
