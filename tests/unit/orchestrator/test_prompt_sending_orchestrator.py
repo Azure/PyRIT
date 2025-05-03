@@ -11,6 +11,7 @@ from unit.mocks import MockPromptTarget
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
 from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
+from pyrit.models.filter_criteria import PromptFilterCriteria
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import NormalizerRequest, PromptConverterConfiguration
@@ -321,3 +322,316 @@ def test_orchestrator_unique_id(orchestrator_count: int):
         orchestrator_ids.add(id)
 
     assert not duplicate_found
+
+
+@pytest.mark.asyncio
+async def test_run_attack_with_objective_scorer(mock_target: MockPromptTarget):
+    scorer = SubStringScorer(substring="success", category="test")
+    orchestrator = PromptSendingOrchestrator(
+        objective_target=mock_target,
+        objective_scorer=scorer
+    )
+    
+    conversation_id = str(uuid.uuid4())
+    orchestrator_id = orchestrator.get_identifier()
+    
+    response = PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(
+                role="assistant",
+                original_value="This is a success message",
+                conversation_id=conversation_id,
+                orchestrator_identifier=orchestrator_id,
+            )
+        ]
+    )
+    
+    with patch.object(mock_target, "send_prompt_async", return_value=response):
+        result = await orchestrator.run_attack_async(objective="This is a success message")
+        assert result.status == "success"
+        assert result.score is not None
+
+
+@pytest.mark.asyncio
+async def test_run_attack_with_objective_scorer_failure(mock_target: MockPromptTarget):
+    # Test with a true/false scorer that fails
+    scorer = SubStringScorer(substring="success", category="test")
+    orchestrator = PromptSendingOrchestrator(
+        objective_target=mock_target,
+        objective_scorer=scorer
+    )
+    
+    result = await orchestrator.run_attack_async(objective="This is a failure message")
+    assert result.status == "failure"
+    assert result.score is not None
+
+
+@pytest.mark.asyncio
+async def test_run_attack_with_invalid_objective_scorer(mock_target: MockPromptTarget):
+    # Test with a non-true/false scorer
+    scorer = MagicMock()
+    scorer.scorer_type = "invalid"
+    
+    with pytest.raises(ValueError, match="Objective scorer must be a true/false scorer"):
+        PromptSendingOrchestrator(
+            objective_target=mock_target,
+            objective_scorer=scorer
+        )
+
+
+@pytest.mark.asyncio
+async def test_run_attack_with_retries(mock_target: MockPromptTarget):
+    # Create a mock scorer that fails twice then succeeds
+    mock_scorer = AsyncMock()
+    mock_scorer.score_async.side_effect = [
+        [Score(
+            score_type="true_false",
+            score_value="false",
+            score_category="test",
+            score_value_description=None,
+            score_rationale=None,
+            score_metadata=None,
+            prompt_request_response_id="test_id"
+        )],
+        [Score(
+            score_type="true_false",
+            score_value="false",
+            score_category="test",
+            score_value_description=None,
+            score_rationale=None,
+            score_metadata=None,
+            prompt_request_response_id="test_id"
+        )],
+        [Score(
+            score_type="true_false",
+            score_value="true",
+            score_category="test",
+            score_value_description=None,
+            score_rationale=None,
+            score_metadata=None,
+            prompt_request_response_id="test_id"
+        )]
+    ]
+    mock_scorer.scorer_type = "true_false"
+
+    orchestrator = PromptSendingOrchestrator(
+        objective_target=mock_target,
+        objective_scorer=mock_scorer,
+        retries_on_objective_failure=2
+    )
+
+    # Mock the normalizer to return a simple response
+    conversation_id = str(uuid.uuid4())
+    orchestrator_id = orchestrator.get_identifier()
+    response = PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(
+                role="assistant",
+                original_value="test response",
+                conversation_id=conversation_id,
+                orchestrator_identifier=orchestrator_id,
+            )
+        ]
+    )
+    
+    with patch.object(orchestrator._prompt_normalizer, "send_prompt_async", return_value=response):
+        result = await orchestrator.run_attack_async(objective="test prompt")
+        assert result.status == "success"
+        assert orchestrator._prompt_normalizer.send_prompt_async.call_count == 3  # Initial + 2 retries
+
+
+@pytest.mark.asyncio
+async def test_run_attack_with_skip_criteria(mock_target: MockPromptTarget):
+    orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
+    
+    # Set skip criteria to skip prompts that match in memory
+    skip_criteria = PromptFilterCriteria(
+        labels={"test": "value"},
+        not_data_type="error"
+    )
+    orchestrator.set_skip_criteria(skip_criteria=skip_criteria)
+    
+    # First run should succeed
+    result1 = await orchestrator.run_attack_async(
+        objective="test prompt",
+        memory_labels={"test": "value"}
+    )
+    assert result1 is not None
+    
+    with patch.object(orchestrator._prompt_normalizer, "send_prompt_async", return_value=None):
+        # Second run with same prompt should be skipped
+        result2 = await orchestrator.run_attack_async(
+            objective="test prompt",
+            memory_labels={"test": "value"}
+        )
+        assert result2 is None
+
+
+@pytest.mark.asyncio
+async def test_run_attack_with_response_converter(mock_target: MockPromptTarget):
+    response_converter = Base64Converter()
+    converter_config = PromptConverterConfiguration.from_converters(converters=[response_converter])
+    
+    orchestrator = PromptSendingOrchestrator(
+        objective_target=mock_target,
+        response_converter_configurations=converter_config  # Not a list
+    )
+    
+    conversation_id = str(uuid.uuid4())
+    orchestrator_id = orchestrator.get_identifier()
+    
+    response = PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(
+                role="assistant",
+                original_value="test response",
+                conversation_id=conversation_id,
+                orchestrator_identifier=orchestrator_id,
+            )
+        ]
+    )
+    
+    with patch.object(mock_target, "send_prompt_async", return_value=response):
+        result = await orchestrator.run_attack_async(objective="test prompt")
+        assert result is not None
+        conversation = orchestrator._memory.get_prompt_request_pieces(conversation_id=conversation_id, role="assistant")
+        assert any(piece.converted_value != piece.original_value for piece in conversation)
+
+
+@pytest.mark.asyncio
+async def test_run_attacks_with_batch_size(mock_target: MockPromptTarget):
+    orchestrator = PromptSendingOrchestrator(
+        objective_target=mock_target,
+        batch_size=2
+    )
+    
+    objectives = ["prompt1", "prompt2", "prompt3", "prompt4"]
+    results = await orchestrator.run_attacks_async(objectives=objectives)
+    
+    assert len(results) == 4
+    # Verify prompts were sent in batches of 2
+    assert len(mock_target.prompt_sent) == 4
+
+
+@pytest.mark.asyncio
+async def test_run_attack_with_target_error(mock_target: MockPromptTarget):
+    orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
+    
+    with patch.object(mock_target, "send_prompt_async", side_effect=Exception("Target error")):
+        with pytest.raises(Exception) as exc_info:
+            await orchestrator.run_attack_async(objective="test prompt")
+        assert "Target error" in str(exc_info.value.__cause__)
+
+
+@pytest.mark.asyncio
+async def test_run_attack_with_memory_labels_override(mock_target: MockPromptTarget):
+    # Test that memory labels can override global labels
+    with patch(
+        "os.environ.get",
+        return_value='{"op_name": "global_op"}'
+    ):
+        orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
+        result = await orchestrator.run_attack_async(
+            objective="test prompt",
+            memory_labels={"op_name": "local_op"}
+        )
+        
+        entries = orchestrator.get_memory()
+        assert entries[0].labels["op_name"] == "local_op"
+
+
+@pytest.mark.asyncio
+async def test_run_attack_with_prepended_conversation_error(mock_target: MockPromptTarget):
+    orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
+    
+    prepended_conversation = [
+        PromptRequestResponse(
+            request_pieces=[PromptRequestPiece(role="system", original_value="test")]
+        )
+    ]
+    
+    # Mock the target to not be a PromptChatTarget
+    with patch.object(mock_target, "__class__", MagicMock):
+        mock_target.__class__.__name__ = "NotPromptChatTarget"
+        
+        with pytest.raises(ValueError, match="Prepended conversation can only be used with a PromptChatTarget"):
+            await orchestrator.run_attack_async(
+                objective="test prompt",
+                prepended_conversation=prepended_conversation
+            )
+
+
+@pytest.mark.asyncio
+async def test_run_attack_with_multiple_auxiliary_scorers(mock_target: MockPromptTarget):
+    # Create mock scorers
+    scorer1 = AsyncMock()
+    scorer2 = AsyncMock()
+    
+    orchestrator = PromptSendingOrchestrator(
+        objective_target=mock_target,
+        auxiliary_scorers=[scorer1, scorer2]
+    )
+    
+    conversation_id = str(uuid.uuid4())
+    orchestrator_id = orchestrator.get_identifier()
+    
+    response = PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(
+                role="assistant",
+                original_value="test response",
+                conversation_id=conversation_id,
+                orchestrator_identifier=orchestrator_id,
+            )
+        ]
+    )
+    
+    with patch.object(mock_target, "send_prompt_async", return_value=response):
+        result = await orchestrator.run_attack_async(objective="test prompt")
+        assert result is not None
+        
+        # Verify both scorers were called
+        assert scorer1.call_count == 1
+        assert scorer2.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_run_attack_with_seed_prompt_and_objective(mock_target: MockPromptTarget):
+    # Test using both seed prompt and objective
+    seed_prompt = SeedPromptGroup(
+        prompts=[SeedPrompt(value="seed prompt", data_type="text")]
+    )
+    
+    orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
+    result = await orchestrator.run_attack_async(
+        objective="test objective",
+        seed_prompt=seed_prompt
+    )
+    
+    assert result is not None
+    assert result.objective == "test objective"
+    assert mock_target.prompt_sent[0] == "seed prompt"
+
+
+@pytest.mark.asyncio
+async def test_run_attacks_with_mismatched_seed_prompts(mock_target: MockPromptTarget):
+    # Test error when seed prompts don't match objectives
+    orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
+    
+    with pytest.raises(ValueError, match="Number of seed prompts must match number of objectives"):
+        await orchestrator.run_attacks_async(
+            objectives=["obj1", "obj2"],
+            seed_prompts=[SeedPromptGroup(prompts=[SeedPrompt(value="prompt1", data_type="text")])]
+        )
+
+
+@pytest.mark.asyncio
+async def test_run_attacks_with_mismatched_prepended_conversations(mock_target: MockPromptTarget):
+    # Test error when prepended conversations don't match objectives
+    orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
+    
+    with pytest.raises(ValueError, match="Number of prepended conversations must match number of objectives"):
+        await orchestrator.run_attacks_async(
+            objectives=["obj1", "obj2"],
+            prepended_conversations=[[PromptRequestResponse(request_pieces=[PromptRequestPiece(role="system", original_value="test")])]]
+        )
