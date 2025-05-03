@@ -60,9 +60,8 @@ class LookBackScorer(Scorer):
             category="illegal",
             orchestrator_identifier=conversation[0].request_pieces[0].orchestrator_identifier,
         )
-        
-        unvalidated_score.raw_score_value = float(unvalidated_score.raw_score_value)
-        score = unvalidated_score.to_score(score_value=float(unvalidated_score.raw_score_value))
+
+        score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value)
         self._memory.add_scores_to_memory(scores=[score])
 
         # Output score results
