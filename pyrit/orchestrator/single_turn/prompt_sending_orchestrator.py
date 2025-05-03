@@ -218,7 +218,8 @@ class PromptSendingOrchestrator(Orchestrator):
             )
 
             if not result:
-                continue
+                # This can happen if we skipped the prompts
+                return None
 
             await self._score_auxiliary_async(result)
             
@@ -285,7 +286,7 @@ class PromptSendingOrchestrator(Orchestrator):
             memory_labels=memory_labels
         )
 
-        return results
+        return [result for result in results if result is not None]
 
 
     async def _run_attacks_with_only_objectives_async(
