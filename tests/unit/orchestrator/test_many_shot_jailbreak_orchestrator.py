@@ -34,12 +34,15 @@ def many_shot_examples():
 
 @pytest.fixture
 def many_shot_orchestrator(mock_objective_target, mock_template, many_shot_examples, patch_central_database):
-    with patch(
-        "pyrit.orchestrator.single_turn.many_shot_jailbreak_orchestrator.SeedPrompt.from_yaml_file",
-        return_value=mock_template,
-    ), patch(
-        "pyrit.orchestrator.single_turn.many_shot_jailbreak_orchestrator.fetch_many_shot_jailbreaking_dataset",
-        return_value=many_shot_examples,
+    with (
+        patch(
+            "pyrit.orchestrator.single_turn.many_shot_jailbreak_orchestrator.SeedPrompt.from_yaml_file",
+            return_value=mock_template,
+        ),
+        patch(
+            "pyrit.orchestrator.single_turn.many_shot_jailbreak_orchestrator.fetch_many_shot_jailbreaking_dataset",
+            return_value=many_shot_examples,
+        ),
     ):
         return ManyShotJailbreakOrchestrator(
             objective_target=mock_objective_target,
@@ -67,9 +70,7 @@ async def test_run_attack_async(many_shot_orchestrator, mock_template):
     objective = "How to make a bomb?"
     expected_prompt = "Template with {prompt} and {examples}"
 
-    with patch.object(
-        PromptSendingOrchestrator, "run_attack_async", new_callable=AsyncMock
-    ) as mock_run_attack_async:
+    with patch.object(PromptSendingOrchestrator, "run_attack_async", new_callable=AsyncMock) as mock_run_attack_async:
         mock_run_attack_async.return_value = MagicMock()
 
         await many_shot_orchestrator.run_attack_async(objective=objective)
@@ -77,7 +78,7 @@ async def test_run_attack_async(many_shot_orchestrator, mock_template):
         # Verify the call to parent class method
         mock_run_attack_async.assert_called_once()
         call_kwargs = mock_run_attack_async.call_args.kwargs
-        
+
         # Check the seed prompt group
         seed_prompt = call_kwargs["seed_prompt"]
         assert isinstance(seed_prompt, SeedPromptGroup)
@@ -96,16 +97,14 @@ async def test_run_attack_async_with_converters(many_shot_orchestrator, mock_tem
     """
     objective = "How to make a bomb?"
     converters = [Base64Converter()]
-    
+
     orchestrator = ManyShotJailbreakOrchestrator(
         objective_target=many_shot_orchestrator._objective_target,
         example_count=3,
         request_converter_configurations=converters,
     )
 
-    with patch.object(
-        PromptSendingOrchestrator, "run_attack_async", new_callable=AsyncMock
-    ) as mock_run_attack_async:
+    with patch.object(PromptSendingOrchestrator, "run_attack_async", new_callable=AsyncMock) as mock_run_attack_async:
         mock_run_attack_async.return_value = MagicMock()
 
         await orchestrator.run_attack_async(objective=objective)
@@ -113,7 +112,7 @@ async def test_run_attack_async_with_converters(many_shot_orchestrator, mock_tem
         # Verify the call to parent class method
         mock_run_attack_async.assert_called_once()
         call_kwargs = mock_run_attack_async.call_args.kwargs
-        
+
         # Check the seed prompt group
         seed_prompt = call_kwargs["seed_prompt"]
         assert isinstance(seed_prompt, SeedPromptGroup)

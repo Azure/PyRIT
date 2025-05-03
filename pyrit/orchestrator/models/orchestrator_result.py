@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Literal, Annotated
+from typing import Annotated, Literal
 
 from colorama import Fore, Style
 
@@ -30,8 +30,9 @@ OrchestratorResultStatus = Annotated[
     Special States:
         pruned: The conversation was pruned as part of an attack and not related to success/failure/unknown/error.
         adversarial_generation: The conversation was used as part of adversarial generation and not related to success/failure/unknown/error.
-    """
+    """,
 ]
+
 
 class OrchestratorResult:
     """The result of an orchestrator."""
@@ -70,16 +71,12 @@ class OrchestratorResult:
                 f"the objective: {self.objective}"
             )
         elif self.status == "failure":
-            print(
-                f"{Style.BRIGHT}{Fore.RED}The orchestrator has not achieved the objective: "
-                f"{self.objective}"
-            )
+            print(f"{Style.BRIGHT}{Fore.RED}The orchestrator has not achieved the objective: " f"{self.objective}")
         else:
             print(
                 f"{Style.BRIGHT}{Fore.RED}The orchestrator with objective: {self.objective} "
                 f"has ended with status: {self.status}"
             )
-
 
         for message in target_messages:
             for piece in message.request_pieces:
@@ -94,10 +91,14 @@ class OrchestratorResult:
                 await display_image_response(piece)
 
                 if include_auxiliary_scores:
-                    auxiliary_scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(piece.id)]) or []
+                    auxiliary_scores = (
+                        self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(piece.id)]) or []
+                    )
                     for auxiliary_score in auxiliary_scores:
                         if not self.score or auxiliary_score.id != self.score.id:
-                            print(f"{Style.DIM}{Fore.WHITE}auxiliary score: {auxiliary_score} : {auxiliary_score.score_rationale}")
+                            print(
+                                f"{Style.DIM}{Fore.WHITE}auxiliary score: {auxiliary_score} : {auxiliary_score.score_rationale}"
+                            )
 
         if self.score:
             print(f"{Style.NORMAL}{Fore.WHITE}objective score: {self.score} : {self.score.score_rationale}")

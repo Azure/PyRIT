@@ -3,16 +3,20 @@
 
 from __future__ import annotations
 
-import pathlib
 import json
+import pathlib
 from typing import Optional, Sequence
 
 from pyrit.common.path import DATASETS_PATH
-
-from pyrit.models import PromptRequestResponse, QuestionAnsweringEntry, Score, UnvalidatedScore
+from pyrit.models import (
+    PromptRequestResponse,
+    QuestionAnsweringEntry,
+    Score,
+    UnvalidatedScore,
+)
 from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.prompt_target.batch_helper import batch_task_async
 from pyrit.prompt_target import PromptChatTarget
+from pyrit.prompt_target.batch_helper import batch_task_async
 from pyrit.score import Scorer, SelfAskTrueFalseScorer
 
 
@@ -35,16 +39,16 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
         """
 
         if not true_false_question_path:
-            true_false_question_path = pathlib.Path(DATASETS_PATH, "score", "true_false_question", "question_answering.yaml")
+            true_false_question_path = pathlib.Path(
+                DATASETS_PATH, "score", "true_false_question", "question_answering.yaml"
+            )
 
         super().__init__(
             chat_target=chat_target,
             true_false_question_path=true_false_question_path,
         )
 
-    async def score_async( 
-        self, *, request_response: PromptRequestPiece, task: str
-    ) -> list[Score]:
+    async def score_async(self, *, request_response: PromptRequestPiece, task: str) -> list[Score]:
         """
         Score the request_reponse using the QuestionAnsweringEntry
         and return a single score object
@@ -76,8 +80,6 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
 
-    
-
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
         """
         Validates the request_response piece to score. Because some scorers may require
@@ -89,7 +91,7 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
         """
         if request_response.converted_value_data_type != "text":
             raise ValueError("Question Answer Scorer only supports text data type")
-        
+
         if not task:
             raise ValueError("Task must be provided")
 

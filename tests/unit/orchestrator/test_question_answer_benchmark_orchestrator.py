@@ -4,8 +4,16 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from pyrit.models import QuestionAnsweringEntry, QuestionChoice, SeedPrompt, SeedPromptGroup
-from pyrit.orchestrator import QuestionAnsweringBenchmarkOrchestrator, PromptSendingOrchestrator
+from pyrit.models import (
+    QuestionAnsweringEntry,
+    QuestionChoice,
+    SeedPrompt,
+    SeedPromptGroup,
+)
+from pyrit.orchestrator import (
+    PromptSendingOrchestrator,
+    QuestionAnsweringBenchmarkOrchestrator,
+)
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.score import Scorer
 
@@ -56,18 +64,25 @@ def test_init(question_answer_orchestrator, mock_objective_target, mock_scorer):
     assert question_answer_orchestrator._objective_scorer == mock_scorer
     assert question_answer_orchestrator._batch_size == 3
     assert question_answer_orchestrator._verbose is True
-    assert question_answer_orchestrator._question_asking_format_string == QuestionAnsweringBenchmarkOrchestrator.QUESTION_ASKING_FORMAT_STRING
-    assert question_answer_orchestrator._options_format_string == QuestionAnsweringBenchmarkOrchestrator.OPTIONS_FORMAT_STRING
-    assert question_answer_orchestrator._objective_format_string == QuestionAnsweringBenchmarkOrchestrator.OBJECTIVE_FORMAT_STRING
+    assert (
+        question_answer_orchestrator._question_asking_format_string
+        == QuestionAnsweringBenchmarkOrchestrator.QUESTION_ASKING_FORMAT_STRING
+    )
+    assert (
+        question_answer_orchestrator._options_format_string
+        == QuestionAnsweringBenchmarkOrchestrator.OPTIONS_FORMAT_STRING
+    )
+    assert (
+        question_answer_orchestrator._objective_format_string
+        == QuestionAnsweringBenchmarkOrchestrator.OBJECTIVE_FORMAT_STRING
+    )
 
 
 def test_get_objective(question_answer_orchestrator, mock_question_answer_entry):
     """Tests that _get_objective correctly formats the objective string."""
     objective = question_answer_orchestrator._get_objective(mock_question_answer_entry)
     expected = QuestionAnsweringBenchmarkOrchestrator.OBJECTIVE_FORMAT_STRING.format(
-        question="What is the capital of France?",
-        index="0",
-        answer="Paris"
+        question="What is the capital of France?", index="0", answer="Paris"
     )
     assert objective == expected
 
@@ -90,14 +105,14 @@ def test_get_objective_invalid_choice(question_answer_orchestrator):
 def test_get_question_text(question_answer_orchestrator, mock_question_answer_entry):
     """Tests that _get_question_text correctly formats the question and options."""
     seed_prompt_group = question_answer_orchestrator._get_question_text(mock_question_answer_entry)
-    
+
     assert isinstance(seed_prompt_group, SeedPromptGroup)
     assert len(seed_prompt_group.prompts) == 1
-    
+
     prompt = seed_prompt_group.prompts[0]
     assert isinstance(prompt, SeedPrompt)
     assert prompt.data_type == "text"
-    
+
     # Check that the formatted text contains the question and all options
     formatted_text = prompt.value
     assert "What is the capital of France?" in formatted_text
@@ -110,25 +125,21 @@ def test_get_question_text(question_answer_orchestrator, mock_question_answer_en
 @pytest.mark.asyncio
 async def test_run_attack_async(question_answer_orchestrator, mock_question_answer_entry):
     """Tests that run_attack_async properly formats the prompt and calls the parent class method."""
-    with patch.object(
-        PromptSendingOrchestrator, "run_attack_async", new_callable=AsyncMock
-    ) as mock_run_attack_async:
+    with patch.object(PromptSendingOrchestrator, "run_attack_async", new_callable=AsyncMock) as mock_run_attack_async:
         mock_run_attack_async.return_value = MagicMock()
 
-        await question_answer_orchestrator.run_attack_async(
-            question_answering_entry=mock_question_answer_entry
-        )
+        await question_answer_orchestrator.run_attack_async(question_answering_entry=mock_question_answer_entry)
 
         # Verify the call to parent class method
         mock_run_attack_async.assert_called_once()
         call_kwargs = mock_run_attack_async.call_args.kwargs
-        
+
         # Check the seed prompt group
         seed_prompt = call_kwargs["seed_prompt"]
         assert isinstance(seed_prompt, SeedPromptGroup)
         assert len(seed_prompt.prompts) == 1
         assert seed_prompt.prompts[0].data_type == "text"
-        
+
         # Check that the formatted text contains the question and all options
         formatted_text = seed_prompt.prompts[0].value
         assert "What is the capital of France?" in formatted_text
@@ -140,9 +151,7 @@ async def test_run_attack_async(question_answer_orchestrator, mock_question_answ
         # Check the objective
         objective = call_kwargs["objective"]
         expected_objective = QuestionAnsweringBenchmarkOrchestrator.OBJECTIVE_FORMAT_STRING.format(
-            question="What is the capital of France?",
-            index="0",
-            answer="Paris"
+            question="What is the capital of France?", index="0", answer="Paris"
         )
         assert objective == expected_objective
 
@@ -151,15 +160,13 @@ async def test_run_attack_async(question_answer_orchestrator, mock_question_answ
 async def test_run_attacks_async(question_answer_orchestrator, mock_question_answer_entry):
     """Tests that run_attacks_async properly handles multiple entries."""
     entries = [mock_question_answer_entry, mock_question_answer_entry]
-    
+
     with patch.object(
         QuestionAnsweringBenchmarkOrchestrator, "run_attack_async", new_callable=AsyncMock
     ) as mock_run_attack_async:
         mock_run_attack_async.return_value = MagicMock()
-        
-        results = await question_answer_orchestrator.run_attacks_async(
-            question_answering_entries=entries
-        )
-        
+
+        results = await question_answer_orchestrator.run_attacks_async(question_answering_entries=entries)
+
         assert mock_run_attack_async.call_count == 2
         assert len(results) == 2

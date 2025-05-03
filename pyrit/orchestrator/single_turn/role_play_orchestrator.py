@@ -6,15 +6,13 @@ import logging
 import pathlib
 from typing import Optional
 
-from pyrit.prompt_target.batch_helper import batch_task_async
-
-
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import PromptRequestResponse, SeedPromptDataset
-from pyrit.orchestrator import PromptSendingOrchestrator, OrchestratorResult
+from pyrit.orchestrator import OrchestratorResult, PromptSendingOrchestrator
 from pyrit.prompt_converter import LLMGenericTextConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import PromptChatTarget
+from pyrit.prompt_target.batch_helper import batch_task_async
 from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
@@ -73,16 +71,18 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
         self._user_start_turn = role_play_definition.prompts[1]
         self._assistant_start_turn = role_play_definition.prompts[2]
 
-        rephrase_turn_converter = PromptConverterConfiguration.from_converters(converters= [
-            LLMGenericTextConverter(
-                converter_target=adversarial_chat,
-                user_prompt_template_with_objective=self._rephrase_instructions,
-            )]
+        rephrase_turn_converter = PromptConverterConfiguration.from_converters(
+            converters=[
+                LLMGenericTextConverter(
+                    converter_target=adversarial_chat,
+                    user_prompt_template_with_objective=self._rephrase_instructions,
+                )
+            ]
         )
 
         super().__init__(
             objective_target=objective_target,
-            request_converter_configurations= rephrase_turn_converter + (request_converter_configurations or []),
+            request_converter_configurations=rephrase_turn_converter + (request_converter_configurations or []),
             response_converter_configurations=response_converter_configurations,
             objective_scorer=objective_scorer,
             auxiliary_scorers=auxiliary_scorers,
@@ -98,14 +98,14 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
         objective: str,
         memory_labels: Optional[dict[str, str]] = None,
     ) -> OrchestratorResult:
-        
+
         prepended_conversation = await self._get_conversation_start(objective=objective)
         return await super().run_attack_async(
             objective=objective,
             prepended_conversation=prepended_conversation,
             memory_labels=memory_labels,
         )
-    
+
     async def run_attacks_async(
         self,
         *,
@@ -117,7 +117,6 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
             memory_labels=memory_labels,
         )
 
-
     async def _get_conversation_start(self, objective: str = None) -> Optional[list[PromptRequestResponse]]:
 
         return [
@@ -127,7 +126,6 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
             ),
             PromptRequestResponse.from_prompt(
                 prompt=self._assistant_start_turn.value,
-                role="assistant", 
+                role="assistant",
             ),
         ]
-

@@ -111,7 +111,7 @@ async def test_get_conversation_start(role_play_orchestrator):
     Ensures that the conversation start is correctly formatted with user and assistant messages.
     """
     conversation_start = await role_play_orchestrator._get_conversation_start()
-    
+
     assert len(conversation_start) == 2, "Should have user and assistant start turns"
     assert conversation_start[0].request_pieces[0].role == "user"
     assert conversation_start[0].request_pieces[0].original_value == "User start message"
@@ -125,8 +125,14 @@ async def test_get_role_playing_sets_default_converter(role_play_orchestrator):
     Ensures role playing orchestrator sets the default converter
     """
     assert len(role_play_orchestrator._request_converter_configurations) == 2
-    assert isinstance(role_play_orchestrator._request_converter_configurations[0].converters[0], LLMGenericTextConverter)
-    instructions = role_play_orchestrator._request_converter_configurations[0].converters[0]._user_prompt_template_with_objective.render_template_value()
+    assert isinstance(
+        role_play_orchestrator._request_converter_configurations[0].converters[0], LLMGenericTextConverter
+    )
+    instructions = (
+        role_play_orchestrator._request_converter_configurations[0]
+        .converters[0]
+        ._user_prompt_template_with_objective.render_template_value()
+    )
     assert instructions == "Rephrased objective"
 
 

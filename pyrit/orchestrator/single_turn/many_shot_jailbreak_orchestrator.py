@@ -5,13 +5,13 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-from pyrit.orchestrator.models.orchestrator_result import OrchestratorResult
 from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets import fetch_many_shot_jailbreaking_dataset
 from pyrit.models import PromptRequestResponse, SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_target import PromptTarget
+from pyrit.orchestrator.models.orchestrator_result import OrchestratorResult
 from pyrit.prompt_normalizer import PromptConverterConfiguration
+from pyrit.prompt_target import PromptTarget
 from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
@@ -81,7 +81,6 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
         )
         if not self._examples:
             raise ValueError("Many shot examples must be provided.")
-        
 
     async def run_attack_async(
         self,
@@ -89,11 +88,11 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
         objective: str,
         memory_labels: Optional[dict[str, str]] = None,
     ) -> OrchestratorResult:
-        
+
         many_shot_prompt = self._template.render_template_value(prompt=objective, examples=self._examples)
 
         seed_prompt = SeedPromptGroup(prompts=[SeedPrompt(value=many_shot_prompt, data_type="text")])
-        
+
         return await super().run_attack_async(
             objective=objective,
             seed_prompt=seed_prompt,
@@ -110,4 +109,3 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
             objectives=objectives,
             memory_labels=memory_labels,
         )
-

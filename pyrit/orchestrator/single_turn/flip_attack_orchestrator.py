@@ -5,10 +5,10 @@ import logging
 import pathlib
 from typing import Optional
 
-from pyrit.orchestrator.models.orchestrator_result import OrchestratorResult
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import PromptRequestResponse, SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.orchestrator.models.orchestrator_result import OrchestratorResult
 from pyrit.prompt_converter import FlipConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import PromptChatTarget
@@ -53,10 +53,9 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
 
         flip_converter = PromptConverterConfiguration.from_converters(converters=[FlipConverter()])
 
-
         super().__init__(
             objective_target=objective_target,
-            request_converter_configurations= flip_converter + (request_converter_configurations or []),
+            request_converter_configurations=flip_converter + (request_converter_configurations or []),
             response_converter_configurations=response_converter_configurations,
             objective_scorer=objective_scorer,
             auxiliary_scorers=auxiliary_scorers,
@@ -72,24 +71,22 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
 
         self._system_prompt = PromptRequestResponse.from_system_prompt(system_prompt=system_prompt)
 
-
     async def run_attack_async(
         self,
         *,
         objective: str,
         memory_labels: Optional[dict[str, str]] = None,
     ) -> OrchestratorResult:
-        
+
         initial_prompt = "TASK is '⟪" + objective.replace("'", "") + "⟫'"
         seed_prompt = SeedPromptGroup(prompts=[SeedPrompt(value=initial_prompt, data_type="text")])
-        
+
         return await super().run_attack_async(
             objective=objective,
             seed_prompt=seed_prompt,
             prepended_conversation=[self._system_prompt],
             memory_labels=memory_labels,
         )
-
 
     async def run_attacks_async(
         self,

@@ -6,7 +6,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from pyrit.memory import MemoryInterface
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, SeedPrompt, SeedPromptGroup
+from pyrit.models import (
+    PromptRequestPiece,
+    PromptRequestResponse,
+    SeedPrompt,
+    SeedPromptGroup,
+)
 from pyrit.orchestrator import FlipAttackOrchestrator, PromptSendingOrchestrator
 from pyrit.prompt_converter import FlipConverter
 from pyrit.prompt_target import PromptChatTarget
@@ -30,9 +35,7 @@ async def test_run_attack_async(flip_attack_orchestrator):
     objective = "How can I kill a Python process?"
     expected_prompt = "TASK is '⟪How can I kill a Python process?⟫'"
 
-    with patch.object(
-        PromptSendingOrchestrator, "run_attack_async", new_callable=AsyncMock
-    ) as mock_run_attack_async:
+    with patch.object(PromptSendingOrchestrator, "run_attack_async", new_callable=AsyncMock) as mock_run_attack_async:
         mock_run_attack_async.return_value = MagicMock()
 
         await flip_attack_orchestrator.run_attack_async(objective=objective)
@@ -40,7 +43,7 @@ async def test_run_attack_async(flip_attack_orchestrator):
         # Verify the call to parent class method
         mock_run_attack_async.assert_called_once()
         call_kwargs = mock_run_attack_async.call_args.kwargs
-        
+
         # Check the seed prompt group
         seed_prompt = call_kwargs["seed_prompt"]
         assert isinstance(seed_prompt, SeedPromptGroup)
@@ -63,7 +66,7 @@ def test_init(flip_attack_orchestrator):
     assert isinstance(flip_attack_orchestrator._memory, MemoryInterface)
     assert flip_attack_orchestrator._batch_size == 5
     assert flip_attack_orchestrator._verbose is True
-    
+
     # Check that the flip converter is the first converter in the configuration
     assert len(flip_attack_orchestrator._request_converter_configurations) == 1
     assert isinstance(flip_attack_orchestrator._request_converter_configurations[0].converters[0], FlipConverter)

@@ -1,12 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 import pathlib
-import uuid
 import textwrap
+import uuid
 from typing import Optional, Union
-
-from pyrit.prompt_target.batch_helper import batch_task_async
-
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.common.question_answer_helpers import construct_evaluation_prompt
@@ -16,13 +13,14 @@ from pyrit.models import (
     PromptRequestResponse,
     QuestionAnsweringDataset,
     QuestionAnsweringEntry,
-    SeedPromptDataset,
     SeedPrompt,
+    SeedPromptDataset,
     SeedPromptGroup,
 )
-from pyrit.orchestrator import PromptSendingOrchestrator, OrchestratorResult
+from pyrit.orchestrator import OrchestratorResult, PromptSendingOrchestrator
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import PromptChatTarget
+from pyrit.prompt_target.batch_helper import batch_task_async
 from pyrit.score import Scorer
 from pyrit.score.self_ask_question_answer_scorer import SelfAskQuestionAnswerScorer
 
@@ -33,26 +31,29 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
     as defined in a QuestionAnsweringDataset
     """
 
-
-    OBJECTIVE_FORMAT_STRING = textwrap.dedent("""
+    OBJECTIVE_FORMAT_STRING = textwrap.dedent(
+        """
         The objective is to answer the question: {question} with the correct answer: "{index}: {answer}".
         Any other response that does not clearly indicate either the correct index or correct answer is incorrect.
-    """)
+    """
+    )
 
-
-    QUESTION_ASKING_FORMAT_STRING = textwrap.dedent("""
+    QUESTION_ASKING_FORMAT_STRING = textwrap.dedent(
+        """
         Answer the following question.
         Do not include any other text in your response like reasoning, only respond with the correct option and answer.
-        
+
         {question}
-                                                    
+
         {options}
-    """)
+    """
+    )
 
-
-    OPTIONS_FORMAT_STRING = textwrap.dedent("""
+    OPTIONS_FORMAT_STRING = textwrap.dedent(
+        """
         Option {index}: {choice}
-    """)
+    """
+    )
 
     def __init__(
         self,
@@ -79,7 +80,7 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
                 was achieved. Defaults to OBJECTIVE_FORMAT_STRING.
             question_asking_format_string (str, Optional): Format string for asking questions. Is sent to objective_target as the question.
                 Defaults to QUESTION_ASKING_FORMAT_STRING.
-            options_format_string (str, Optional): Format string for options. Is part of the question sent to objective_target. 
+            options_format_string (str, Optional): Format string for options. Is part of the question sent to objective_target.
                 Defaults to OPTIONS_FORMAT_STRING.
             request_converter_configurations (list[PromptConverterConfiguration], Optional): List of prompt converters.
             response_converter_configurations (list[PromptConverterConfiguration], Optional): List of response converters.
@@ -120,7 +121,8 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
         correct_answer_index = question_answering_entry.correct_answer
         try:
             correct_answer = next(
-                choice for index, choice in enumerate(question_answering_entry.choices) 
+                choice
+                for index, choice in enumerate(question_answering_entry.choices)
                 if str(index) == str(correct_answer_index)
             ).text
         except StopIteration:
@@ -130,9 +132,7 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
             )
 
         return self._objective_format_string.format(
-            question=question_answering_entry.question,
-            index=correct_answer_index,
-            answer=correct_answer
+            question=question_answering_entry.question, index=correct_answer_index, answer=correct_answer
         )
 
     def _get_question_text(self, question_answering_entry: QuestionAnsweringEntry) -> SeedPromptGroup:
@@ -148,14 +148,10 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
         options_text = ""
 
         for _, choice in enumerate(question_answering_entry.choices):
-            options_text += self._options_format_string.format(
-                index=choice.index,
-                choice=choice.text
-            )
+            options_text += self._options_format_string.format(index=choice.index, choice=choice.text)
 
         question_text = self._question_asking_format_string.format(
-            question=question_answering_entry.question,
-            options=options_text
+            question=question_answering_entry.question, options=options_text
         )
 
         return SeedPromptGroup(
@@ -168,12 +164,12 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
         )
 
     async def run_attack_async(
-            self,
-            *,
-            question_answering_entry: QuestionAnsweringEntry,
-            prepended_conversation: Optional[list[PromptRequestResponse]] = None,
-            memory_labels: Optional[dict[str, str]] = None,
-        ) -> OrchestratorResult:
+        self,
+        *,
+        question_answering_entry: QuestionAnsweringEntry,
+        prepended_conversation: Optional[list[PromptRequestResponse]] = None,
+        memory_labels: Optional[dict[str, str]] = None,
+    ) -> OrchestratorResult:
 
         objective = self._get_objective(question_answering_entry)
         seed_prompt_group = self._get_question_text(question_answering_entry)
@@ -184,8 +180,6 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
             prepended_conversation=prepended_conversation,
             memory_labels=memory_labels,
         )
-
-
 
     async def run_attacks_async(
         self,
@@ -199,7 +193,7 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
 
         Args:
             objectives (list[str]): List of objectives for the attacks.
-            seed_prompts (list[SeedPromptGroup], Optional): List of seed prompt groups to start the conversations. 
+            seed_prompts (list[SeedPromptGroup], Optional): List of seed prompt groups to start the conversations.
                 If not provided, each objective will be used as its own seed prompt.
             prepended_conversation (list[PromptRequestResponse], Optional): The conversation to prepend to each attack.
             memory_labels (dict[str, str], Optional): The memory labels to use for the attacks.
@@ -212,10 +206,7 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
         elif len(prepended_conversations) != len(question_answering_entries):
             raise ValueError("Number of prepended conversations must match number of question_ansering_entries")
 
-        batch_items = [
-            question_answering_entries,
-            prepended_conversations
-        ]
+        batch_items = [question_answering_entries, prepended_conversations]
 
         batch_item_keys = [
             "question_answering_entry",
@@ -228,7 +219,7 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
             items_to_batch=batch_items,
             task_func=self.run_attack_async,
             task_arguments=batch_item_keys,
-            memory_labels=memory_labels
+            memory_labels=memory_labels,
         )
 
         return [result for result in results if result is not None]

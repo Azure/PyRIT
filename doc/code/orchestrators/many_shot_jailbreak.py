@@ -61,4 +61,3 @@ result = await orchestrator.run_attack_async(objective=malicious_prompt)  # type
 
 # Use the orchestrator's method to print conversations
 await result.print_conversation_async()  # type: ignore
-

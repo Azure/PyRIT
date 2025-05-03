@@ -27,14 +27,13 @@ class PromptConverterConfiguration:
         """
         Converts a list of converters into a list of PromptConverterConfiguration objects.
         Each converter gets its own configuration with default settings.
-        
+
         Args:
             converters: List of PromptConverters
-            
+
         Returns:
             List[PromptConverterConfiguration]: List of configurations, one per converter
         """
         if not converters:
             return []
         return [cls(converters=[converter]) for converter in converters]
-

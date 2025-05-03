@@ -2,22 +2,25 @@
 # Licensed under the MIT license.
 
 import asyncio
+import copy
 import logging
 import uuid
-import copy
-from typing import Optional, Union, Any
+from typing import Any, Optional, Union
 
 from colorama import Fore, Style
 
-
-from pyrit.prompt_target.batch_helper import batch_task_async
-
 from pyrit.common.utils import combine_dict
-from pyrit.models import PromptDataType, PromptRequestResponse, SeedPromptGroup, SeedPrompt
+from pyrit.models import (
+    PromptDataType,
+    PromptRequestResponse,
+    SeedPrompt,
+    SeedPromptGroup,
+)
 from pyrit.models.filter_criteria import PromptConverterState, PromptFilterCriteria
 from pyrit.orchestrator import Orchestrator, OrchestratorResult
-from pyrit.prompt_normalizer import PromptNormalizer, PromptConverterConfiguration
+from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
+from pyrit.prompt_target.batch_helper import batch_task_async
 from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
@@ -73,7 +76,6 @@ class PromptSendingOrchestrator(Orchestrator):
         self._batch_size = batch_size
         self._retries_on_objective_failure = retries_on_objective_failure
 
-
     def set_skip_criteria(
         self, *, skip_criteria: PromptFilterCriteria, skip_value_type: PromptConverterState = "original"
     ):
@@ -83,7 +85,6 @@ class PromptSendingOrchestrator(Orchestrator):
         If prompts match this in memory, then they won't be sent to a target.
         """
         self._prompt_normalizer.set_skip_criteria(skip_criteria=skip_criteria, skip_value_type=skip_value_type)
-
 
     async def _add_prepended_conversation_to_memory(
         self,
@@ -111,7 +112,6 @@ class PromptSendingOrchestrator(Orchestrator):
             orchestrator_identifier=self.get_identifier(),
         )
 
-
     async def _score_auxiliary_async(self, result: PromptRequestResponse) -> None:
         """
         Scores the response using auxiliary scorers if they are configured.
@@ -127,10 +127,9 @@ class PromptSendingOrchestrator(Orchestrator):
             if piece.role == "assistant":
                 for scorer in self._auxiliary_scorers:
                     tasks.append(scorer.score_async(request_response=piece))
-        
+
         if tasks:
             await asyncio.gather(*tasks)
-
 
     async def _score_objective_async(self, result: PromptRequestResponse, objective: str) -> tuple[str, Optional[Any]]:
         """
@@ -175,7 +174,6 @@ class PromptSendingOrchestrator(Orchestrator):
             objective_score = first_failure_score
 
         return status, objective_score
-
 
     async def run_attack_async(
         self,
@@ -222,7 +220,7 @@ class PromptSendingOrchestrator(Orchestrator):
                 return None
 
             await self._score_auxiliary_async(result)
-            
+
             status, objective_score = await self._score_objective_async(result, objective)
 
             if status == "success":
@@ -234,7 +232,7 @@ class PromptSendingOrchestrator(Orchestrator):
             status=status,
             score=objective_score,
         )
-    
+
     async def run_attacks_async(
         self,
         *,
@@ -248,7 +246,7 @@ class PromptSendingOrchestrator(Orchestrator):
 
         Args:
             objectives (list[str]): List of objectives for the attacks.
-            seed_prompts (list[SeedPromptGroup], Optional): List of seed prompt groups to start the conversations. 
+            seed_prompts (list[SeedPromptGroup], Optional): List of seed prompt groups to start the conversations.
                 If not provided, each objective will be used as its own seed prompt.
             prepended_conversation (list[PromptRequestResponse], Optional): The conversation to prepend to each attack.
             memory_labels (dict[str, str], Optional): The memory labels to use for the attacks.
@@ -265,15 +263,11 @@ class PromptSendingOrchestrator(Orchestrator):
         elif len(prepended_conversations) != len(objectives):
             raise ValueError("Number of prepended conversations must match number of objectives")
 
-        batch_items = [
-            objectives,
-            seed_prompts,
-            prepended_conversations
-        ]
+        batch_items = [objectives, seed_prompts, prepended_conversations]
 
         batch_item_keys = [
             "objective",
-            "seed_prompt", 
+            "seed_prompt",
             "prepended_conversation",
         ]
 
@@ -283,11 +277,10 @@ class PromptSendingOrchestrator(Orchestrator):
             items_to_batch=batch_items,
             task_func=self.run_attack_async,
             task_arguments=batch_item_keys,
-            memory_labels=memory_labels
+            memory_labels=memory_labels,
         )
 
         return [result for result in results if result is not None]
-
 
     async def _run_attacks_with_only_objectives_async(
         self,
@@ -319,8 +312,7 @@ class PromptSendingOrchestrator(Orchestrator):
             items_to_batch=batch_items,
             task_func=self.run_attack_async,
             task_arguments=batch_item_keys,
-
-            memory_labels=memory_labels
+            memory_labels=memory_labels,
         )
 
         return results

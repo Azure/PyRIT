@@ -5,13 +5,23 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from pyrit.models import SeedPrompt, SeedPromptDataset, SeedPromptGroup, PromptRequestResponse, PromptRequestPiece
-from pyrit.orchestrator import ContextComplianceOrchestrator, ContextDescriptionPaths, PromptSendingOrchestrator
-from pyrit.prompt_converter import SearchReplaceConverter, Base64Converter
+from pyrit.models import (
+    PromptRequestPiece,
+    PromptRequestResponse,
+    SeedPrompt,
+    SeedPromptDataset,
+    SeedPromptGroup,
+)
+from pyrit.orchestrator import (
+    ContextComplianceOrchestrator,
+    ContextDescriptionPaths,
+    PromptSendingOrchestrator,
+)
+from pyrit.prompt_converter import Base64Converter, SearchReplaceConverter
 from pyrit.prompt_normalizer import NormalizerRequest
+from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.score import Scorer
-from pyrit.prompt_target import PromptTarget
 
 
 @pytest.fixture

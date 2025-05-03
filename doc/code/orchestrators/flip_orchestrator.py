@@ -28,7 +28,6 @@ from pyrit.orchestrator import FlipAttackOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskRefusalScorer, TrueFalseInverterScorer
 
-
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
 target = OpenAIChatTarget()

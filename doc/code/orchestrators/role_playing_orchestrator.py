@@ -30,10 +30,9 @@ from pyrit.orchestrator.single_turn.role_play_orchestrator import (
     RolePlayPaths,
 )
 from pyrit.prompt_converter import CharSwapGenerator
+from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score.azure_content_filter_scorer import AzureContentFilterScorer
-from pyrit.prompt_normalizer import PromptConverterConfiguration
-
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

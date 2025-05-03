@@ -7,20 +7,17 @@ import pathlib
 import re
 from typing import Optional
 
-from pyrit.prompt_target.batch_helper import batch_task_async
-
-
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, SeedPromptDataset
 from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
-from pyrit.orchestrator import PromptSendingOrchestrator, OrchestratorResult
+from pyrit.orchestrator import OrchestratorResult, PromptSendingOrchestrator
 from pyrit.prompt_converter import PromptConverter, SearchReplaceConverter
 from pyrit.prompt_normalizer import NormalizerRequest
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
 )
-
 from pyrit.prompt_target import PromptChatTarget
+from pyrit.prompt_target.batch_helper import batch_task_async
 from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
@@ -74,8 +71,6 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
 
         self._adversarial_chat = adversarial_chat
 
-
-
         if context_description_instructions_path is None:
             context_description_instructions_path = ContextDescriptionPaths.GENERAL.value
 
@@ -95,7 +90,6 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
             ]
         )
 
-
         super().__init__(
             objective_target=objective_target,
             request_converter_configurations=request_converter_configurations,
@@ -108,14 +102,13 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
             verbose=verbose,
         )
 
-
     async def run_attack_async(
         self,
         *,
         objective: str,
         memory_labels: Optional[dict[str, str]] = None,
     ) -> OrchestratorResult:
-        
+
         prepended_conversation = await self._get_conversation_start(objective=objective)
         return await super().run_attack_async(
             objective=objective,
@@ -123,7 +116,7 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
             prepended_conversation=prepended_conversation,
             memory_labels=memory_labels,
         )
-    
+
     async def run_attacks_async(
         self,
         *,
@@ -135,10 +128,7 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
             memory_labels=memory_labels,
         )
 
-
-    async def _get_conversation_start(
-        self, objective: str
-    ) -> Optional[list[PromptRequestResponse]]:
+    async def _get_conversation_start(self, objective: str) -> Optional[list[PromptRequestResponse]]:
         """
         Returns the user turn prompts for the given list of prompts.
 
@@ -180,7 +170,6 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
                 ],
             ),
         ]
-
 
     async def _get_benign_question_answer(self, benign_user_query: str) -> str:
         seed_prompt_to_get_user_turn_answer = SeedPromptGroup(
