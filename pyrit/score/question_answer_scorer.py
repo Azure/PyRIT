@@ -3,140 +3,129 @@
 
 from __future__ import annotations
 
-import textwrap
-from typing import Generator, Tuple
+import json
+from typing import Optional, Sequence
 
-from pydantic import BaseModel, ConfigDict
+from pyrit.models import PromptRequestResponse, QuestionAnsweringEntry, Score
+from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.prompt_target.batch_helper import batch_task_async
+from pyrit.score.scorer import Scorer
 
-from pyrit.memory import CentralMemory
-from pyrit.models import QuestionAnsweringDataset, QuestionAnsweringEntry
 
-
-class TextScoreResult(BaseModel):
-    """Represents the result of scoring a text.
-
-    Do not build on this class; this class needs to be rewritten.
-
-    Parameters:
-        provided_answer (str): The provided answer.
-        correct_answer (str): The correct answer.
-        is_correct (bool): Whether the provided answer is correct.
+class QuestionAnswerScorer(Scorer):
+    """
+    A class that represents a question answering scorer.
     """
 
-    model_config = ConfigDict(extra="forbid")
-    provided_answer: str
-    correct_answer: str
-    is_correct: bool
-
-    def __str__(self) -> str:
-        msg = f"Provided Answer: '{self.provided_answer}', "
-        msg += f"Correct Answer: '{self.correct_answer}', "
-        msg += f"Is Correct: '{self.is_correct}'"
-        return msg
-
-
-class QuestionAnswerScorer:
-    """A class that represents a question answering scorer.
-
-    Parameters:
-        dataset (QuestionAnsweringDataset): The dataset containing the questions and answers.
-        evaluation_results (dict[QuestionAnsweringDataset, TextScoreResult]): A dictionary to store the evaluation
-        results.
-
-    """
-
-    dataset: QuestionAnsweringDataset
-    evaluation_results: dict[QuestionAnsweringEntry, TextScoreResult]
-
-    def __init__(self, dataset: QuestionAnsweringDataset):
+    def __init__(
+        self,
+        *,
+        category: str = "",
+    ) -> None:
         """
         Initializes the QuestionAnswerScorer object.
 
         Args:
-            dataset (QuestionAnsweringDataset): The dataset containing the questions and answers.
+            category (str): an optional parameter to the category metadata
         """
-        self.dataset = dataset
-        self.evaluation_results = {}
-        self._memory = CentralMemory.get_memory_instance()
+        self._score_category = category
+        self.scorer_type = "true_false"
 
-    def _construct_evaluation_prompt(self, *, entry: QuestionAnsweringEntry) -> str:
-        available_choices = ""
-        for c in entry.choices:
-            available_choices += f"index={c.index}, value={c.text}\n"
-
-        return textwrap.dedent(
-            f"""\
-            Questions:
-            {entry.question}
-
-            Choices:
-            {available_choices}
-
-            Answer:
-
-            """
-        )
-
-    def get_next_question_prompt_pair(self) -> Generator[Tuple[QuestionAnsweringEntry, str], None, None]:
+    async def score_async(  # type: ignore[override]
+        self, *, request_response: PromptRequestPiece, task: QuestionAnsweringEntry
+    ) -> list[Score]:
         """
-        Generates the next question-prompt pair from the dataset.
-
-        Yields:
-            A tuple containing the next question-prompt pair.
-                - The first element is a QuestionAnsweringEntry object representing the question.
-                - The second element is a string representing the prompt that should be asked.
-
-        """
-        for entry in self.dataset.questions:
-            prompt = self._construct_evaluation_prompt(entry=entry)
-            yield entry, prompt
-
-    def score_question(self, question: QuestionAnsweringEntry, answer: str) -> TextScoreResult:
-        """Scores the provided answer for a given question.
+        Score the request_reponse using the QuestionAnsweringEntry
+        and return a single score object
 
         Args:
-            question (QuestionAnsweringEntry): The question to be scored.
-            answer (str): The answer provided by the model.
-
+            request_response (PromptRequestPiece): The answer given by the target
+            task (QuestionAnsweringEntry): The entry containing the original prompt and the correct answer
         Returns:
-            TextScoreResult: The score result for the question and answer pair.
+            Score: A single Score object representing the result
         """
-        valid_answer_found = False
-        is_answer_correct = False
-        predicted_answer_content_by_index = ""
+        answer = request_response.converted_value
         try:
             # This is the case where the model response is an integer, which is the index of the answer.
-            predicted_answer_index = int(answer)
-            predicted_answer_content_by_index = question.choices[predicted_answer_index].text
-            valid_answer_found = True
+            answer = task.choices[int(answer)].text
         except ValueError:
             # If the model response is not an integer, then the model might have returned the answer as a string
             pass
 
-        if str(question.correct_answer) in answer:
-            # Try to see if the model contains that answer as a substring.
-            # If the correct answer is a substring of the model response, then mark the result as correct.
-            is_answer_correct = True
-            valid_answer_found = True
+        correct_answer = task.choices[int(task.correct_answer)].text
+        metadata_json = {"question": str(task.question), "correct_answer": correct_answer, "scored_answer": answer}
+        metadata = json.dumps(metadata_json)
 
-        if is_answer_correct:
-            score_result = TextScoreResult(
-                correct_answer=str(question.correct_answer),
-                provided_answer=answer,
-                is_correct=True,
+        score = [
+            Score(
+                score_value=str(correct_answer in answer),
+                score_type=self.scorer_type,
+                score_value_description="",
+                score_metadata=metadata,
+                score_category=self._score_category,
+                score_rationale="",
+                scorer_class_identifier=self.get_identifier(),
+                prompt_request_response_id=request_response.id,
+                task=task.question,
             )
-        elif valid_answer_found:
-            score_result = TextScoreResult(
-                correct_answer=str(question.correct_answer),
-                # Note, we might want to return the full answer here, not just the index.
-                provided_answer=predicted_answer_content_by_index,
-                is_correct=predicted_answer_content_by_index == question.correct_answer,
+        ]
+        request_response.scores = score
+        return score
+
+    async def score_prompts_with_tasks_batch_async(  # type: ignore[override]
+        self,
+        *,
+        request_responses: Sequence[PromptRequestPiece],
+        tasks: Sequence[QuestionAnsweringEntry],
+        batch_size=10,
+    ) -> list[Score]:
+        if not tasks:
+            raise ValueError("Tasks must be provided.")
+        if len(request_responses) != len(tasks):
+            raise ValueError(
+                f"Number of tasks ({len(tasks)}) must match number of provided answers ({len(request_responses)})."
             )
-        else:
-            score_result = TextScoreResult(
-                correct_answer=str(question.correct_answer),
-                provided_answer=answer,
-                is_correct=False,
-            )
-        self.evaluation_results[question] = score_result
-        return score_result
+        prompt_target = getattr(self, "_prompt_target", None)
+        results = await batch_task_async(
+            task_func=self.score_async,
+            task_arguments=["request_response", "task"],
+            prompt_target=prompt_target,
+            batch_size=batch_size,
+            items_to_batch=[request_responses, tasks],
+        )
+        return results
+
+    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
+        """
+        Validates the request_response piece to score. Because some scorers may require
+        specific PromptRequestPiece types or values.
+
+        Args:
+            request_response (PromptRequestPiece): The request response to be validated.
+            task (str): The task based on which the text should be scored (the original attacker model's objective).
+        """
+        if request_response.converted_value_data_type != "text":
+            raise ValueError("Question Answer Scorer only supports text data type")
+
+    def report_scores(self, responses: list[PromptRequestResponse]) -> None:
+        """
+        Reports the score values from the list of prompt request responses
+        Checks for presence of scores in reponse before scoring
+
+        Args:
+            responses (list[PromptRequestResponse]): The list of responses to be reported on
+        """
+        correct_count = 0
+        if any(not response.request_pieces[0].scores for response in responses):
+            raise ValueError("Not all responses have scores, please score all responses before reporting")
+        if any(response.request_pieces[0].scores[0].score_type != "true_false" for response in responses):
+            raise ValueError("Score types are not 'true_false'")
+        for response in responses:
+            score_metadata = json.loads(response.request_pieces[0].scores[0].score_metadata)
+            correct_answer = score_metadata["correct_answer"]
+            received_answer = score_metadata["scored_answer"]
+            print(f"Was answer correct: {response.request_pieces[0].scores[0].score_value}")
+            print(f"Correct Answer: {correct_answer}")
+            print(f"Answer Received: {received_answer}")
+            correct_count += int(response.request_pieces[0].scores[0].score_value == "True")
+        print(f"Correct / Total: {correct_count} / {len(responses)}")
