@@ -52,5 +52,5 @@ __all__ = [
     "TrueFalseInverterScorer",
     "TrueFalseQuestion",
     "TrueFalseQuestionPaths",
-    "LookBackScorer",
+    "QuestionAnswerScorer",
 ]
