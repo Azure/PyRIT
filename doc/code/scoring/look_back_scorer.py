@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 from pathlib import Path
+from typing import Optional
+
 import yaml
 
 from pyrit.common.path import DATASETS_PATH
@@ -9,45 +11,61 @@ from pyrit.models.score import Score, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer import Scorer
 
-class LookBackScorer(Scorer):
 
-    def __init__(
-        self, 
-        chat_target: PromptChatTarget = None,
-        conversation_id: str = None
-        ) -> None:
-        self._conversation_id = conversation_id
+class LookBackScorer(Scorer):
+    """
+    Create a score from analyzing the entire conversation and adds them to the database.
+
+    Parameters:
+        chat_target (PromptChatTarget): The chat target to use for scoring.
+        conversation_id: The id of the conversation to score.
+    """
+
+    def __init__(self, chat_target: PromptChatTarget = None) -> None:
         self._prompt_target = chat_target
         self.scorer_type = "float_scale"
-        
-        behavior_change_prompt_path = Path(DATASETS_PATH, "score","scales", "behavior_change_system_prompt.yaml").resolve()
+
+        behavior_change_prompt_path = Path(
+            DATASETS_PATH, "score", "scales", "behavior_change_system_prompt.yaml"
+        ).resolve()
         behavior_change_scale_path = Path(DATASETS_PATH, "score", "likert_scales", "behavior_change.yaml")
         behavior_change_scale = yaml.safe_load(behavior_change_scale_path.read_text(encoding="utf-8"))
 
         scoring_instructions_template = SeedPrompt.from_yaml_file(behavior_change_prompt_path)
 
-        self._system_prompt = scoring_instructions_template.render_template_value(step_description=behavior_change_scale)
-    
-    async def score_async(self) -> list[Score]:
-        score_description = (
-            "The scorer looks for behavior change in the conversation."
+        self._system_prompt = scoring_instructions_template.render_template_value(
+            step_description=behavior_change_scale
         )
 
-        # Retrieve conversation from provided conversation_id
-        conversation = self._memory.get_conversation(conversation_id=self._conversation_id)
+    async def score_async(self, request_piece: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+        """
+        Scores the conversation based on detected behavior change.
+
+        Args:
+            text (str): The text to be scored.
+            task (str): The task based on which the text should be scored (the original attacker model's objective).
+                Currently not supported for this scorer.
+
+        Returns:
+            The score is the detected amount of behavior change throughout the conversation.
+        """
+
+        # Retrieve conversation from provided PromptRequestPiece
+        conversation = self._memory.get_conversation(conversation_id=request_piece.conversation_id)
+
         if not conversation:
-            raise ValueError(f"Conversation with ID {self._conversation_id} not found in memory.")
+            raise ValueError(f"Conversation with ID {request_piece.conversation_id} not found in memory.")
 
         # Loop through each request to create a single string containing the conversation text
         conversation_as_text = ""
-        for request_response in conversation:
+        for request in conversation:
             # If the request contains a system or user prompt, ignore
-            if request_response.get_value().startswith("# Instructions"):
+            if request.request_pieces[0].original_value.startswith("# Instructions"):
                 pass
             else:
-                conversation_as_text += request_response.request_pieces[0].role
+                conversation_as_text += request.request_pieces[0].role
                 conversation_as_text += ": "
-                conversation_as_text += request_response.get_value()
+                conversation_as_text += request.request_pieces[0].original_value
                 conversation_as_text += "\n"
 
         # Send full conversation to LLM for scoring
@@ -68,9 +86,5 @@ class LookBackScorer(Scorer):
         print("LookBackScorer:", score.score_value, score.score_value_description, "Rationale: ", score.score_rationale)
         return [score]
 
-    def validate(self, request_response: PromptRequestPiece):
+    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
         pass
-      
-
-
-    

@@ -30,6 +30,7 @@ __all__ = [
     "HumanInTheLoopScorerGradio",
     "InsecureCodeScorer",
     "LikertScalePaths",
+    "LookBackScorer",
     "MarkdownInjectionScorer",
     "PromptShieldScorer",
     "Scorer",
@@ -42,5 +43,4 @@ __all__ = [
     "TrueFalseInverterScorer",
     "TrueFalseQuestion",
     "TrueFalseQuestionPaths",
-    "LookBackScorer",
 ]
