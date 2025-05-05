@@ -253,6 +253,7 @@ API Reference
     OrchestratorResult
     PAIROrchestrator
     PromptSendingOrchestrator
+    QuestionAnsweringBenchmarkOrchestrator
     RedTeamingOrchestrator
     ScoringOrchestrator
     SkeletonKeyOrchestrator
@@ -310,6 +311,7 @@ API Reference
     SuffixAppendConverter
     TenseConverter
     ToneConverter
+    ToxicSentenceGeneratorConverter
     TranslationConverter
     UnicodeConfusableConverter
     UnicodeSubstitutionConverter
@@ -389,6 +391,7 @@ API Reference
     MarkdownInjectionScorer
     PromptShieldScorer
     Scorer
+    QuestionAnswerScorer
     SelfAskCategoryScorer
     SelfAskLikertScorer
     SelfAskRefusalScorer
