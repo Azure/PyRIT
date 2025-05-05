@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import asyncio
 import logging
 import uuid
 from typing import Optional, Union
@@ -120,10 +121,14 @@ class PromptSendingOrchestrator(Orchestrator):
         if self._scorers and responses:
             response_pieces = PromptRequestResponse.flatten_to_prompt_request_pieces(responses)
 
-            for scorer in self._scorers:
-                await scorer.score_responses_inferring_tasks_batch_async(
-                    request_responses=response_pieces, batch_size=self._batch_size
+            scoring_tasks = [
+                scorer.score_responses_inferring_tasks_batch_async(
+                    request_responses=response_pieces,
+                    batch_size=self._batch_size,
                 )
+                for scorer in self._scorers
+            ]
+            await asyncio.gather(*scoring_tasks)
 
         return responses
 
