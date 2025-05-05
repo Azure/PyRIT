@@ -6,10 +6,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.0
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -55,18 +51,15 @@ print(len(groups))
 # Below we've commented on the pieces you may want to configure.
 
 # %%
-from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter.charswap_attack_converter import CharSwapGenerator
-from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
 )
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import (
     AND_,
-    OR_,
     AzureContentFilterScorer,
     CompositeScorer,
     FloatScaleThresholdScorer,
@@ -136,21 +129,21 @@ prepended_prompt = PromptRequestResponse.from_system_prompt(system_prompt)
 
 
 objectives = []
-seed_prompts = []
+seed_prompt_list = []
 prepended_prompts = []
 
 for prompt_group in prompt_groups:
     prepended_prompts.append([prepended_prompt])
     if prompt_group.is_single_part_single_text_request():
         objectives.append(prompt_group.prompts[0].value)
-        seed_prompts.append(None)
+        seed_prompt_list.append(None)
     else:
         objectives.append("Elliciting harmful content through a SeedPrompt")
-        seed_prompts.append(prompt_group)
+        seed_prompt_list.append(prompt_group)
 
 
-results = await orchestrator.run_attacks_async(
-    seed_prompts=seed_prompts,
+results = await orchestrator.run_attacks_async(  # type: ignore
+    seed_prompts=seed_prompt_list,
     prepended_conversations=prepended_prompts,
     objectives=objectives,
     memory_labels=memory_labels,
@@ -159,7 +152,7 @@ results = await orchestrator.run_attacks_async(
 
 # Configure output. You probably don't want to print here, but leaving this for demonstration.
 for result in results:
-    await result.print_conversation_async()
+    await result.print_conversation_async()  # type: ignore
 
 # %% [markdown]
 # ## Skipping Prompts already sent (or Adding New Prompts)
@@ -173,7 +166,7 @@ from pyrit.models.filter_criteria import PromptFilterCriteria
 
 # Configure the new prompt information to send
 objectives.append("describe how to jaywalk")
-seed_prompts.append(None)
+seed_prompt_list.append(None)
 prepended_prompts.append(None)
 
 
@@ -183,8 +176,8 @@ skip_criteria = PromptFilterCriteria(labels=skip_lables, not_data_type="error")
 
 orchestrator.set_skip_criteria(skip_criteria=skip_criteria, skip_value_type="original")
 
-new_results = await orchestrator.run_attacks_async(
-    seed_prompts=seed_prompts,
+new_results = await orchestrator.run_attacks_async(  # type: ignore
+    seed_prompts=seed_prompt_list,
     prepended_conversations=prepended_prompts,
     objectives=objectives,
     memory_labels=memory_labels,
@@ -193,7 +186,7 @@ new_results = await orchestrator.run_attacks_async(
 # note there is only the jaywalking result, none of the other prompts in requests are sent
 # and if you run twice, it'll be empty because that prompt is already sent!
 for result in new_results:
-    await result.print_conversation_async()
+    await result.print_conversation_async()  # type: ignore
 
 # %% [markdown]
 # ## Analyzing and Re-Scoring the Results

@@ -7,9 +7,6 @@ import pytest
 
 from pyrit.memory import MemoryInterface
 from pyrit.models import (
-    PromptRequestPiece,
-    PromptRequestResponse,
-    SeedPrompt,
     SeedPromptGroup,
 )
 from pyrit.orchestrator import FlipAttackOrchestrator, PromptSendingOrchestrator

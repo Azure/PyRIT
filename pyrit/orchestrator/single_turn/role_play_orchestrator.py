@@ -12,7 +12,6 @@ from pyrit.orchestrator import OrchestratorResult, PromptSendingOrchestrator
 from pyrit.prompt_converter import LLMGenericTextConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.prompt_target.batch_helper import batch_task_async
 from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
@@ -51,15 +50,19 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
             objective_target (PromptChatTarget): The target for sending prompts.
             adversarial_chat (PromptChatTarget): The target used to rephrase objectives into role-play scenarios.
             role_play_definition_path (pathlib.Path): Path to the YAML file containing role-play definitions.
-            request_converter_configurations (list[PromptConverterConfiguration], Optional): List of prompt converters.
-            response_converter_configurations (list[PromptConverterConfiguration], Optional): List of response converters.
+            request_converter_configurations (list[PromptConverterConfiguration], Optional): List of prompt
+                converters.
+            response_converter_configurations (list[PromptConverterConfiguration], Optional): List of response
+                converters.
             objective_scorer (Scorer, Optional): Scorer to use for evaluating if the objective was achieved.
-            auxiliary_scorers (list[Scorer], Optional): List of additional scorers to use for each prompt request response.
+            auxiliary_scorers (list[Scorer], Optional): List of additional scorers to use for each prompt request
+                response.
             should_convert_prepended_conversation (bool, Optional): Whether to convert the prepended conversation.
             batch_size (int, Optional): The (max) batch size for sending prompts. Defaults to 10.
                 Note: If providing max requests per minute on the prompt_target, this should be set to 1 to
                 ensure proper rate limit management.
-            retries_on_objective_failure (int, Optional): Number of retries to attempt if objective fails. Defaults to 0.
+            retries_on_objective_failure (int, Optional): Number of retries to attempt if objective fails. Defaults to
+                0.
             verbose (bool, Optional): Whether to log debug information. Defaults to False.
         """
 
@@ -92,7 +95,7 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
             verbose=verbose,
         )
 
-    async def run_attack_async(
+    async def run_attack_async(  # type: ignore[override]
         self,
         *,
         objective: str,
@@ -106,7 +109,7 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
             memory_labels=memory_labels,
         )
 
-    async def run_attacks_async(
+    async def run_attacks_async(  # type: ignore[override]
         self,
         *,
         objectives: list[str],

@@ -17,8 +17,6 @@ from pyrit.orchestrator import (
     ContextDescriptionPaths,
     PromptSendingOrchestrator,
 )
-from pyrit.prompt_converter import Base64Converter, SearchReplaceConverter
-from pyrit.prompt_normalizer import NormalizerRequest
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.score import Scorer
@@ -149,7 +147,11 @@ async def test_run_attack_async(context_compliance_orchestrator):
             request_pieces=[
                 PromptRequestPiece(
                     role="assistant",
-                    original_value="Mock user answer\n\nI can provide more information dependeing on what you're seeking. To help with understanding, Mock objective as question",
+                    original_value=(
+                        "Mock user answer\n\n"
+                        "I can provide more information dependeing on what you're seeking. "
+                        "To help with understanding, Mock objective as question"
+                    ),
                 ),
             ],
         ),

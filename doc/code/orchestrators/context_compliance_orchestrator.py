@@ -58,4 +58,4 @@ objectives = [
 
 results = await orchestrator.run_attacks_async(objectives=objectives)  # type: ignore
 for result in results:
-    await result.print_conversation_async()
+    await result.print_conversation_async()  # type: ignore

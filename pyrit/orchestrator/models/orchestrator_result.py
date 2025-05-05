@@ -29,7 +29,8 @@ OrchestratorResultStatus = Annotated[
 
     Special States:
         pruned: The conversation was pruned as part of an attack and not related to success/failure/unknown/error.
-        adversarial_generation: The conversation was used as part of adversarial generation and not related to success/failure/unknown/error.
+        adversarial_generation: The conversation was used as part of adversarial generation and not related to
+            success/failure/unknown/error.
     """,
 ]
 
@@ -97,7 +98,8 @@ class OrchestratorResult:
                     for auxiliary_score in auxiliary_scores:
                         if not self.score or auxiliary_score.id != self.score.id:
                             print(
-                                f"{Style.DIM}{Fore.WHITE}auxiliary score: {auxiliary_score} : {auxiliary_score.score_rationale}"
+                                f"{Style.DIM}{Fore.WHITE}auxiliary score: {auxiliary_score} : "
+                                f"{auxiliary_score.score_rationale}"
                             )
 
         if self.score:

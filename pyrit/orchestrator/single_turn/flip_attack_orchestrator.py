@@ -39,15 +39,18 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
         """
         Args:
             objective_target (PromptChatTarget): The target for sending prompts.
-            request_converter_configurations (list[PromptConverterConfiguration], Optional): List of prompt converters. These are stacked in
-                order on top of the flip converter.
-            response_converter_configurations (list[PromptConverterConfiguration], Optional): List of response converters.
+            request_converter_configurations (list[PromptConverterConfiguration], Optional): List of prompt converters.
+                These are stacked in order on top of the flip converter.
+            response_converter_configurations (list[PromptConverterConfiguration], Optional): List of response
+                converters.
             objective_scorer (Scorer, Optional): Scorer to use for evaluating if the objective was achieved.
-            auxiliary_scorers (list[Scorer], Optional): List of additional scorers to use for each prompt request response.
+            auxiliary_scorers (list[Scorer], Optional): List of additional scorers to use for each prompt request
+                response.
             batch_size (int, Optional): The (max) batch size for sending prompts. Defaults to 10.
                 Note: If providing max requests per minute on the objective_target, this should be set to 1 to
                 ensure proper rate limit management.
-            retries_on_objective_failure (int, Optional): Number of retries to attempt if objective fails. Defaults to 0.
+            retries_on_objective_failure (int, Optional): Number of retries to attempt if objective fails. Defaults to
+                0.
             verbose (bool, Optional): Whether to log debug information. Defaults to False.
         """
 
@@ -71,7 +74,7 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
 
         self._system_prompt = PromptRequestResponse.from_system_prompt(system_prompt=system_prompt)
 
-    async def run_attack_async(
+    async def run_attack_async(  # type: ignore[override]
         self,
         *,
         objective: str,
@@ -88,7 +91,7 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
             memory_labels=memory_labels,
         )
 
-    async def run_attacks_async(
+    async def run_attacks_async(  # type: ignore[override]
         self,
         *,
         objectives: list[str],

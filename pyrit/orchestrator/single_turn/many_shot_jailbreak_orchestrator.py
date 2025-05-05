@@ -7,7 +7,7 @@ from typing import Optional
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets import fetch_many_shot_jailbreaking_dataset
-from pyrit.models import PromptRequestResponse, SeedPrompt, SeedPromptGroup
+from pyrit.models import SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.orchestrator.models.orchestrator_result import OrchestratorResult
 from pyrit.prompt_normalizer import PromptConverterConfiguration
@@ -44,13 +44,16 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
         Args:
             objective_target (PromptTarget): The target for sending prompts.
             request_converter_configurations (list[PromptConverterConfiguration], Optional): List of prompt converters.
-            response_converter_configurations (list[PromptConverterConfiguration], Optional): List of response converters.
+            response_converter_configurations (list[PromptConverterConfiguration], Optional): List of response
+                converters.
             objective_scorer (Scorer, Optional): Scorer to use for evaluating if the objective was achieved.
-            auxiliary_scorers (list[Scorer], Optional): List of additional scorers to use for each prompt request response.
+            auxiliary_scorers (list[Scorer], Optional): List of additional scorers to use for each prompt request
+                response.
             batch_size (int, Optional): The (max) batch size for sending prompts. Defaults to 10.
                 Note: If providing max requests per minute on the prompt_target, this should be set to 1 to
                 ensure proper rate limit management.
-            retries_on_objective_failure (int, Optional): Number of retries to attempt if objective fails. Defaults to 0.
+            retries_on_objective_failure (int, Optional): Number of retries to attempt if objective fails. Defaults to
+                0.
             verbose (bool, Optional): Whether to log debug information. Defaults to False.
             example_count (int, Optional): The number of examples to include from the examples dataset.
                 Defaults to the first 100.
@@ -82,7 +85,7 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
         if not self._examples:
             raise ValueError("Many shot examples must be provided.")
 
-    async def run_attack_async(
+    async def run_attack_async(  # type: ignore[override]
         self,
         *,
         objective: str,
@@ -99,7 +102,7 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
             memory_labels=memory_labels,
         )
 
-    async def run_attacks_async(
+    async def run_attacks_async(  # type: ignore[override]
         self,
         *,
         objectives: list[str],

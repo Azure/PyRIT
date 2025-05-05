@@ -14,8 +14,7 @@ from pyrit.models.filter_criteria import PromptFilterCriteria
 from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
-from pyrit.prompt_normalizer import NormalizerRequest, PromptConverterConfiguration
-from pyrit.prompt_target import PromptChatTarget
+from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.score import SubStringScorer
 
 
@@ -123,7 +122,7 @@ async def test_run_attack_with_seed_prompt(mock_target: MockPromptTarget):
             ]
         )
 
-        result = await orchestrator.run_attack_async(
+        await orchestrator.run_attack_async(
             objective="Elliciting harmful content through a SeedPrompt", seed_prompt=group
         )
         assert orchestrator._prompt_normalizer.send_prompt_async.called
@@ -142,20 +141,18 @@ async def test_run_attacks_with_scoring(mock_target: MockPromptTarget, num_conve
     orchestrator = PromptSendingOrchestrator(objective_target=mock_target, auxiliary_scorers=[scorer])
     orchestrator._prompt_normalizer = AsyncMock()
 
-    request_pieces = []
     orchestrator_id = orchestrator.get_identifier()
-
     conversation_id = str(uuid.uuid4())
     request_pieces = [
         PromptRequestPiece(
             role="user",
-            original_value=f"request_",
+            original_value="request_",
             conversation_id=conversation_id,
             orchestrator_identifier=orchestrator_id,
         ),
         PromptRequestPiece(
             role="assistant",
-            original_value=f"response_",
+            original_value="response_",
             conversation_id=conversation_id,
             orchestrator_identifier=orchestrator_id,
         ),
@@ -165,7 +162,7 @@ async def test_run_attacks_with_scoring(mock_target: MockPromptTarget, num_conve
         return_value=PromptRequestResponse(request_pieces=request_pieces)
     )
 
-    results = await orchestrator.run_attacks_async(objectives=[f"request_{n}" for n in range(num_conversations)])
+    await orchestrator.run_attacks_async(objectives=[f"request_{n}" for n in range(num_conversations)])
 
     assert orchestrator._prompt_normalizer.send_prompt_async.call_count == num_conversations
     assert scorer.score_async.call_count == num_conversations
@@ -224,7 +221,7 @@ async def test_run_attacks_with_env_local_memory_labels(mock_target: MockPromptT
         side_effect=lambda key, default=None: '{"op_name": "dummy_op"}' if key == "GLOBAL_MEMORY_LABELS" else default,
     ):
         orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
-        results = await orchestrator.run_attacks_async(objectives=["hello"])
+        await orchestrator.run_attacks_async(objectives=["hello"])
         assert mock_target.prompt_sent == ["hello"]
 
         expected_labels = {"op_name": "dummy_op"}
@@ -238,7 +235,7 @@ async def test_run_attacks_with_env_local_memory_labels(mock_target: MockPromptT
 async def test_run_attacks_with_memory_labels(mock_target: MockPromptTarget):
     orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
     new_labels = {"op_name": "op1", "username": "name1"}
-    results = await orchestrator.run_attacks_async(objectives=["hello"], memory_labels=new_labels)
+    await orchestrator.run_attacks_async(objectives=["hello"], memory_labels=new_labels)
     assert mock_target.prompt_sent == ["hello"]
 
     expected_labels = {"op_name": "op1", "username": "name1"}
@@ -256,7 +253,7 @@ async def test_run_attacks_combine_memory_labels(mock_target: MockPromptTarget):
     ):
         orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
         new_labels = {"op_name": "op2", "username": "dummy_name"}
-        results = await orchestrator.run_attacks_async(objectives=["hello"], memory_labels=new_labels)
+        await orchestrator.run_attacks_async(objectives=["hello"], memory_labels=new_labels)
         assert mock_target.prompt_sent == ["hello"]
 
         expected_labels = {"op_name": "op2", "username": "dummy_name"}
@@ -299,7 +296,7 @@ async def test_orchestrator_get_score_memory(mock_target: MockPromptTarget):
 def test_orchestrator_unique_id(orchestrator_count: int):
     orchestrator_ids = set()
     duplicate_found = False
-    for n in range(orchestrator_count):
+    for _ in range(orchestrator_count):
         id = PromptSendingOrchestrator(objective_target=MagicMock()).get_identifier()["id"]
 
         if id in orchestrator_ids:
@@ -475,7 +472,7 @@ async def test_run_attack_with_memory_labels_override(mock_target: MockPromptTar
     # Test that memory labels can override global labels
     with patch("os.environ.get", return_value='{"op_name": "global_op"}'):
         orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
-        result = await orchestrator.run_attack_async(objective="test prompt", memory_labels={"op_name": "local_op"})
+        await orchestrator.run_attack_async(objective="test prompt", memory_labels={"op_name": "local_op"})
 
         entries = orchestrator.get_memory()
         assert entries[0].labels["op_name"] == "local_op"

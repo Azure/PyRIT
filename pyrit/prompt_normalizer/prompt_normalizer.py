@@ -351,7 +351,8 @@ class PromptNormalizer(abc.ABC):
             prepended_conversation (Optional[list[PromptRequestResponse]]): The conversation to prepend
             conversation_id (str): The conversation ID to use for the request pieces
             should_convert (bool): Whether to convert the prepended conversation
-            converter_configurations (Optional[list[PromptConverterConfiguration]]): Configurations for converting the request
+            converter_configurations (Optional[list[PromptConverterConfiguration]]): Configurations for converting the
+                request
             orchestrator_identifier (Optional[dict[str, str]]): Identifier for the orchestrator
 
         Returns:

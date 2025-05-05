@@ -3,7 +3,7 @@
 
 from typing import Dict, MutableSequence, Optional, Self, Sequence, Union
 
-from pyrit.models.literals import PromptDataType, PromptResponseError
+from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 
 
@@ -73,7 +73,7 @@ class PromptRequestResponse:
         return response_pieces
 
     @classmethod
-    def from_prompt(cls, *, prompt: str, role: str) -> Self:
+    def from_prompt(cls, *, prompt: str, role: ChatMessageRole) -> Self:
         piece = PromptRequestPiece(original_value=prompt, role=role)
         return cls(request_pieces=[piece])
 

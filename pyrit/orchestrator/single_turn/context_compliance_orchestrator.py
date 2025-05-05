@@ -4,20 +4,16 @@
 import enum
 import logging
 import pathlib
-import re
 from typing import Optional
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, SeedPromptDataset
 from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import OrchestratorResult, PromptSendingOrchestrator
-from pyrit.prompt_converter import PromptConverter, SearchReplaceConverter
-from pyrit.prompt_normalizer import NormalizerRequest
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
 )
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.prompt_target.batch_helper import batch_task_async
 from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
@@ -56,16 +52,20 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
             objective_target (PromptChatTarget): The target for sending prompts.
             adversarial_chat (PromptChatTarget): The target used to rephrase objectives into benign contexts.
             affirmative_response (str, Optional): The affirmative response to be used in the conversation history.
-            context_description_instructions_path (pathlib.Path, Optional): Path to the context description instructions
-                YAML file.
-            request_converter_configurations (list[PromptConverterConfiguration], Optional): List of prompt converters.
-            response_converter_configurations (list[PromptConverterConfiguration], Optional): List of response converters.
+            context_description_instructions_path (pathlib.Path, Optional): Path to the context description
+                instructions YAML file.
+            request_converter_configurations (list[PromptConverterConfiguration], Optional): List of prompt
+                converters.
+            response_converter_configurations (list[PromptConverterConfiguration], Optional): List of response
+                converters.
             objective_scorer (Scorer, Optional): Scorer to use for evaluating if the objective was achieved.
-            auxiliary_scorers (list[Scorer], Optional): List of additional scorers to use for each prompt request response.
+            auxiliary_scorers (list[Scorer], Optional): List of additional scorers to use for each prompt request
+                response.
             batch_size (int, Optional): The (max) batch size for sending prompts. Defaults to 10.
                 Note: If providing max requests per minute on the prompt_target, this should be set to 1 to
                 ensure proper rate limit management.
-            retries_on_objective_failure (int, Optional): Number of retries to attempt if objective fails. Defaults to 0.
+            retries_on_objective_failure (int, Optional): Number of retries to attempt if objective fails. Defaults to
+                0.
             verbose (bool, Optional): Whether to log debug information. Defaults to False.
         """
 
@@ -102,7 +102,7 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
             verbose=verbose,
         )
 
-    async def run_attack_async(
+    async def run_attack_async(  # type: ignore[override]
         self,
         *,
         objective: str,
@@ -117,7 +117,7 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
             memory_labels=memory_labels,
         )
 
-    async def run_attacks_async(
+    async def run_attacks_async(  # type: ignore[override]
         self,
         *,
         objectives: list[str],

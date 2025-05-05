@@ -2,16 +2,12 @@
 # Licensed under the MIT license.
 
 import asyncio
-import copy
 import logging
 import uuid
-from typing import Any, Optional, Union
-
-from colorama import Fore, Style
+from typing import Any, Optional
 
 from pyrit.common.utils import combine_dict
 from pyrit.models import (
-    PromptDataType,
     PromptRequestResponse,
     SeedPrompt,
     SeedPromptGroup,
@@ -54,7 +50,8 @@ class PromptSendingOrchestrator(Orchestrator):
             batch_size (int, Optional): The (max) batch size for sending prompts. Defaults to 10.
                 Note: If providing max requests per minute on the prompt_target, this should be set to 1 to
                 ensure proper rate limit management.
-            retries_on_objective_failure (int, Optional): Number of retries to attempt if objective fails. Defaults to 0.
+            retries_on_objective_failure (int, Optional): Number of retries to attempt if objective fails. Defaults to
+                0.
             verbose (bool, Optional): Whether to log debug information. Defaults to False.
         """
         super().__init__(verbose=verbose)
@@ -141,7 +138,8 @@ class PromptSendingOrchestrator(Orchestrator):
 
         Returns:
             tuple[str, Optional[Any]]: A tuple containing the status and objective score
-            If the objective_scorer returns a list of scores, the first score that is true will be returned as the objective score.
+            If the objective_scorer returns a list of scores, the first score that is true will be returned as the
+            objective score.
             Note, this behavior can be overridden by setting the objective_scorer to a CompositeScorer.
         """
         if not self._objective_scorer:
@@ -188,8 +186,10 @@ class PromptSendingOrchestrator(Orchestrator):
 
         Args:
             objective (str): The objective of the attack.
-            seed_prompt (SeedPromptGroup, Optional): The seed prompt group to start the conversation. By default the objective is used.
-            prepended_conversation (list[PromptRequestResponse], Optional): The conversation to prepend to the attack. Sent to objective target.
+            seed_prompt (SeedPromptGroup, Optional): The seed prompt group to start the conversation. By default the
+                objective is used.
+            prepended_conversation (list[PromptRequestResponse], Optional): The conversation to prepend to the attack.
+                Sent to objective target.
             memory_labels (dict[str, str], Optional): The memory labels to use for the attack.
         """
 
