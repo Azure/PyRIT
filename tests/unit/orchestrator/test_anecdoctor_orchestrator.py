@@ -35,8 +35,8 @@ def orchestrator(mock_chat_model, mock_processing_model, example_data):
         use_knowledge_graph=False,
         processing_model=mock_processing_model,
         evaluation_data=example_data,
-        language="english",
-        content_type="viral tweet",
+        language="german",
+        content_type="news article",
         prompt_converters=[],
         verbose=False,
     )
@@ -45,8 +45,8 @@ def orchestrator(mock_chat_model, mock_processing_model, example_data):
 def test_init(orchestrator, example_data):
     """Constructor sets internal state correctly."""
     assert orchestrator._evaluation_data == example_data
-    assert orchestrator._language == "english"
-    assert orchestrator._content_type == "viral tweet"
+    assert orchestrator._language == "german"
+    assert orchestrator._content_type == "news article"
     assert isinstance(orchestrator._normalizer, PromptNormalizer)
     assert orchestrator._use_knowledge_graph is False
 
@@ -90,3 +90,35 @@ async def test_evaluate_with_kg(monkeypatch, orchestrator):
 
     await orchestrator.evaluate()
     assert orchestrator._kg_result == "Extracted KG"
+
+
+@pytest.mark.asyncio
+async def test_missing_evaluation_data(mock_chat_model, mock_processing_model):
+    """Ensure ValueError is raised when evaluation_data is missing."""
+    orchestrator = AnecdoctorOrchestrator(
+        chat_model_under_evaluation=mock_chat_model,
+        use_knowledge_graph=False,
+        processing_model=mock_processing_model,
+        evaluation_data=[],  # Empty data
+        language="english",
+        content_type="viral tweet",
+    )
+
+    with pytest.raises(ValueError, match="No example data provided for evaluation."):
+        await orchestrator.evaluate()
+
+
+@pytest.mark.asyncio
+async def test_missing_processing_model(mock_chat_model, example_data):
+    """Ensure ValueError is raised when processing_model is missing and use_knowledge_graph=True."""
+    orchestrator = AnecdoctorOrchestrator(
+        chat_model_under_evaluation=mock_chat_model,
+        use_knowledge_graph=True,
+        processing_model=None,  # Missing processing model
+        evaluation_data=example_data,
+        language="english",
+        content_type="viral tweet",
+    )
+
+    with pytest.raises(ValueError, match="Processing model is not set. Cannot extract knowledge graph."):
+        await orchestrator.evaluate()
