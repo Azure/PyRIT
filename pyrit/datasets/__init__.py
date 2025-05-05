@@ -1,7 +1,6 @@
-# Copyright (c) Microsoft Corporation.
+'''# Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.datasets.ccp_sensitive_prompts_dataset import fetch_ccp_sensitive_prompts_dataset
 
 from pyrit.datasets.adv_bench_dataset import fetch_adv_bench_dataset
 from pyrit.datasets.aya_redteaming_dataset import fetch_aya_redteaming_dataset
@@ -29,7 +28,6 @@ __all__ = [
     "fetch_adv_bench_dataset",
     "fetch_aya_redteaming_dataset",
     "fetch_babelscape_alert_dataset",
-    "fetch_ccp_sensitive_prompts_dataset",  # Added this line
     "fetch_darkbench_dataset",
     "fetch_multilingual_vulnerability_dataset",
     "fetch_decoding_trust_stereotypes_dataset",
@@ -47,3 +45,4 @@ __all__ = [
     "fetch_wmdp_dataset",
     "fetch_xstest_dataset",
 ]
+'''
