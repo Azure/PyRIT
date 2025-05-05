@@ -35,10 +35,11 @@ that happened since the last release will influence the new version number.
 
 Set the version in `pyproject.toml` and `pyrit/__init__.py` to the version established in step 1.
 
-## Update README.md
+## Update README File
 
-Readme.md is published to PyPI and also needs to be updated so the
-links work properly.
+The README file is published to PyPI and also needs to be updated so the
+links work properly. Note: There may not be any links to update, but it is
+good practice to check in case our README changes.
 
 Replace all "main" links like
 "https://github.com/Azure/PyRIT/blob/main/doc/README.md" with "raw" links that have
