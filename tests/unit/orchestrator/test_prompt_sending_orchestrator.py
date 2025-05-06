@@ -413,10 +413,12 @@ async def test_run_attack_with_retries(mock_target: MockPromptTarget):
         ]
     )
 
-    with patch.object(orchestrator._prompt_normalizer, "send_prompt_async", return_value=response):
+    with patch.object(
+        orchestrator._prompt_normalizer, "send_prompt_async", new_callable=MagicMock, return_value=response
+    ) as mock_send_prompt:
         result = await orchestrator.run_attack_async(objective="test prompt")
         assert result.status == "success"
-        assert orchestrator._prompt_normalizer.send_prompt_async.call_count == 3  # Initial + 2 retries
+        assert mock_send_prompt.call_count == 3  # Initial + 2 retries
 
 
 @pytest.mark.asyncio

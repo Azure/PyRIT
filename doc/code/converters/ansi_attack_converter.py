@@ -55,7 +55,7 @@ ansi_converter = PromptConverterConfiguration.from_converters(
 prompt_target = OpenAIChatTarget()
 
 orchestrator = PromptSendingOrchestrator(
-    objective_target=prompt_target, request_converter_configurations=ansi_converter 
+    objective_target=prompt_target, request_converter_configurations=ansi_converter
 )
 
 results = await orchestrator.run_attacks_async(objectives=objectives)  # type: ignore

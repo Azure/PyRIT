@@ -46,7 +46,7 @@ from urllib.error import URLError
 from urllib.request import urlopen
 
 
-def start_flask_app():
+def start_flask_app() -> subprocess.Popen:
     # Get the notebook's directory
     notebook_dir = os.getcwd()
 
@@ -140,7 +140,7 @@ if sys.platform == "win32":
 
 
 # Using PlaywrightTarget with the interaction function and scorer
-async def main(page: Page):
+async def main(page: Page) -> None:
     target = PlaywrightTarget(interaction_func=interact_with_my_app, page=page)
 
     orchestrator = PromptSendingOrchestrator(objective_target=target)
@@ -151,7 +151,7 @@ async def main(page: Page):
     await result.print_conversation_async()  # type: ignore
 
 
-async def run():
+async def run() -> None:
     async with async_playwright() as playwright:
         browser = await playwright.chromium.launch(headless=False)
         context = await browser.new_context()

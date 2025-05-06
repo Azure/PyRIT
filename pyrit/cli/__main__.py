@@ -6,17 +6,11 @@ from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser, Namespace
 from datetime import datetime
 from pathlib import Path
 from typing import List
-from uuid import uuid4
 
 from pyrit.common import initialize_pyrit
 from pyrit.memory import CentralMemory
 from pyrit.models import SeedPrompt, SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPromptGroup
 from pyrit.prompt_converter.prompt_converter import PromptConverter
-from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
-from pyrit.prompt_normalizer.prompt_converter_configuration import (
-    PromptConverterConfiguration,
-)
 
 from .scanner_config import ScannerConfig
 
@@ -73,9 +67,7 @@ async def run_scenarios_async(config: ScannerConfig) -> None:
         if hasattr(orchestrator, "run_attacks_async"):
             await orchestrator.run_attacks_async(objectives=objectives, memory_labels=memory_labels)
         else:
-            raise ValueError(
-                f"The orchestrator {type(orchestrator).__name__} does not have run_attacks_async. "
-            )
+            raise ValueError(f"The orchestrator {type(orchestrator).__name__} does not have run_attacks_async. ")
 
     # Print conversation pieces from memory
     memory = CentralMemory.get_memory_instance()

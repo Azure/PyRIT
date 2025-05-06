@@ -151,7 +151,7 @@ class PromptSendingOrchestrator(Orchestrator):
         if not self._objective_scorer:
             return "unknown", None
 
-        status = "failure"
+        status: OrchestratorResultStatus = "failure"
         objective_score = None
         first_failure_score = None
 

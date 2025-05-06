@@ -47,8 +47,6 @@ converters = PromptConverterConfiguration.from_converters(
 
 
 target = TextTarget()
-orchestrator = PromptSendingOrchestrator(
-    objective_target=target, request_converter_configurations=converters
-)
+orchestrator = PromptSendingOrchestrator(objective_target=target, request_converter_configurations=converters)
 
 await orchestrator.run_attack_async(objective=objective)  # type: ignore

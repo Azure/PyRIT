@@ -88,7 +88,11 @@ def context_compliance_orchestrator(
     return orchestrator
 
 
-def test_init(context_compliance_orchestrator, mock_seed_prompt_dataset, mock_scorer):
+def test_init(
+    context_compliance_orchestrator: ContextComplianceOrchestrator,
+    mock_seed_prompt_dataset: SeedPromptDataset,
+    mock_scorer: Scorer,
+) -> None:
     """
     Tests that the orchestrator is initialized with the correct configuration
     """
@@ -111,7 +115,7 @@ def test_init(context_compliance_orchestrator, mock_seed_prompt_dataset, mock_sc
 
 
 @pytest.mark.parametrize("context_path", list(ContextDescriptionPaths))
-def test_context_description_paths_exist(context_path):
+def test_context_description_paths_exist(context_path: ContextDescriptionPaths) -> None:
     """
     Checks the yaml files in ContextDescriptionPaths exist and are valid.
       1) Each path in ContextDescriptionPaths should exist as a file
@@ -127,7 +131,7 @@ def test_context_description_paths_exist(context_path):
 
 
 @pytest.mark.asyncio
-async def test_run_attack_async(context_compliance_orchestrator):
+async def test_run_attack_async(context_compliance_orchestrator: ContextComplianceOrchestrator) -> None:
     """
     Tests that run_attack_async properly calls _get_conversation_start and super().run_attack_async
     with the correct arguments.
@@ -182,7 +186,7 @@ async def test_run_attack_async(context_compliance_orchestrator):
 
 
 @pytest.mark.asyncio
-async def test_run_attacks_async(context_compliance_orchestrator):
+async def test_run_attacks_async(context_compliance_orchestrator: ContextComplianceOrchestrator) -> None:
     """
     Tests that run_attacks_async properly calls the parent class method
     """

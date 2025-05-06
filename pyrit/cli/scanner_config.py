@@ -110,8 +110,9 @@ class ScenarioConfig(BaseModel, extra="allow"):
         # Handle converters: prefer request_converter_configurations if present, else prompt_converters
         if "request_converter_configurations" in constructor_arg_names:
             if prompt_converters:
-                scenario_args["request_converter_configurations"] = PromptConverterConfiguration.from_prompt_converters(
-                    converters=prompt_converters)
+                scenario_args["request_converter_configurations"] = PromptConverterConfiguration.from_converters(
+                    converters=prompt_converters
+                )
         elif "prompt_converters" in constructor_arg_names:
             scenario_args["prompt_converters"] = prompt_converters
 
@@ -305,8 +306,7 @@ class ScannerConfig(BaseModel):
         return instances
 
     def create_orchestrators(
-        self,
-        prompt_converters: Optional[list[PromptConverter] | list[PromptConverterConfiguration]] = None
+        self, prompt_converters: Optional[list[PromptConverter] | list[PromptConverterConfiguration]] = None
     ) -> list[Any]:
         """
         Helper method to instantiate all orchestrators from the scenario configs,

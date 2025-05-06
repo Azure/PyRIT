@@ -168,8 +168,8 @@ data = [
 
 # This is a single request with two parts, one image and one text
 
-seed_prompt_group= SeedPromptGroup(
-    prompts= [
+seed_prompt_group = SeedPromptGroup(
+    prompts=[
         SeedPrompt(
             value="Describe this picture:",
             data_type="text",
