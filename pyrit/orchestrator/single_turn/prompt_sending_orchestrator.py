@@ -4,7 +4,7 @@
 import asyncio
 import logging
 import uuid
-from typing import Any, Optional
+from typing import Any, Optional, Sequence
 
 from pyrit.common.utils import combine_dict
 from pyrit.models import (
@@ -13,7 +13,11 @@ from pyrit.models import (
     SeedPromptGroup,
 )
 from pyrit.models.filter_criteria import PromptConverterState, PromptFilterCriteria
-from pyrit.orchestrator import Orchestrator, OrchestratorResult
+from pyrit.orchestrator import (
+    Orchestrator,
+    OrchestratorResult,
+    OrchestratorResultStatus,
+)
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
@@ -128,7 +132,9 @@ class PromptSendingOrchestrator(Orchestrator):
         if tasks:
             await asyncio.gather(*tasks)
 
-    async def _score_objective_async(self, result: PromptRequestResponse, objective: str) -> tuple[str, Optional[Any]]:
+    async def _score_objective_async(
+        self, result: PromptRequestResponse, objective: str
+    ) -> tuple[OrchestratorResultStatus, Optional[Any]]:
         """
         Scores the response using the objective scorer if configured.
 
@@ -137,7 +143,7 @@ class PromptSendingOrchestrator(Orchestrator):
             objective (str): The objective to score against
 
         Returns:
-            tuple[str, Optional[Any]]: A tuple containing the status and objective score
+            tuple[OrchestratorResultStatus, Optional[Any]]: A tuple containing the status and objective score
             If the objective_scorer returns a list of scores, the first score that is true will be returned as the
             objective score.
             Note, this behavior can be overridden by setting the objective_scorer to a CompositeScorer.
@@ -200,7 +206,7 @@ class PromptSendingOrchestrator(Orchestrator):
 
         await self._add_prepended_conversation_to_memory(prepended_conversation, conversation_id)
 
-        status = "unknown"
+        status: OrchestratorResultStatus = "unknown"
         objective_score = None
 
         for _ in range(self._retries_on_objective_failure + 1):
@@ -263,7 +269,7 @@ class PromptSendingOrchestrator(Orchestrator):
         elif len(prepended_conversations) != len(objectives):
             raise ValueError("Number of prepended conversations must match number of objectives")
 
-        batch_items = [objectives, seed_prompts, prepended_conversations]
+        batch_items: list[Sequence[Any]] = [objectives, seed_prompts, prepended_conversations]
 
         batch_item_keys = [
             "objective",

@@ -6,6 +6,10 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.0
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -51,7 +55,7 @@ print(len(groups))
 # Below we've commented on the pieces you may want to configure.
 
 # %%
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import PromptRequestResponse, SeedPromptGroup
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter.charswap_attack_converter import CharSwapGenerator
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
@@ -129,7 +133,7 @@ prepended_prompt = PromptRequestResponse.from_system_prompt(system_prompt)
 
 
 objectives = []
-seed_prompt_list = []
+seed_prompt_list: list[SeedPromptGroup] = []
 prepended_prompts = []
 
 for prompt_group in prompt_groups:

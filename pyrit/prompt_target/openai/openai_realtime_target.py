@@ -334,37 +334,45 @@ class RealtimeTarget(OpenAITarget):
         Args:
             filename (str): The path to the audio file.
         """
-        with wave.open(filename, "rb") as wav_file:
-
-            # Read WAV parameters
-            num_channels = wav_file.getnchannels()
-            sample_width = wav_file.getsampwidth()  # Should be 2 bytes for PCM16
-            frame_rate = wav_file.getframerate()
-            num_frames = wav_file.getnframes()
-
-            audio_content = wav_file.readframes(num_frames)
-
-        receive_tasks = asyncio.create_task(self.receive_events(conversation_id=conversation_id))
-
         try:
-            audio_base64 = base64.b64encode(audio_content).decode("utf-8")
+            with wave.open(filename, "rb") as wav_file:
+                # Read WAV parameters
+                num_channels = wav_file.getnchannels()
+                sample_width = wav_file.getsampwidth()  # Should be 2 bytes for PCM16
+                frame_rate = wav_file.getframerate()
+                num_frames = wav_file.getnframes()
 
-            event = {"type": "input_audio_buffer.append", "audio": audio_base64}
+                audio_content = wav_file.readframes(num_frames)
 
-            # await asyncio.sleep(0.1)
-            await self.send_event(event=event, conversation_id=conversation_id)
+            receive_tasks = asyncio.create_task(self.receive_events(conversation_id=conversation_id))
+
+            try:
+                audio_base64 = base64.b64encode(audio_content).decode("utf-8")
+
+                event = {"type": "input_audio_buffer.append", "audio": audio_base64}
+
+                await self.send_event(event=event, conversation_id=conversation_id)
+
+            except Exception as e:
+                logger.error(f"Error sending audio: {e}")
+                raise
+
+            event = {"type": "input_audio_buffer.commit"}
+            await asyncio.sleep(0.1)
+            await self.send_event(event, conversation_id=conversation_id)
+            await self.send_response_create(conversation_id=conversation_id)  # Sends response.create message
+
+            responses = await receive_tasks
+            if not responses:
+                logger.error("No responses received from WebSocket server")
+                raise Exception("No responses received from WebSocket server")
+
+            output_audio_path = await self.save_audio(responses[0], num_channels, sample_width, frame_rate)
+            return output_audio_path, responses
 
         except Exception as e:
-            logger.info(f"Error sending audio: {e}")
-            return
-        event = {"type": "input_audio_buffer.commit"}
-        await asyncio.sleep(0.1)
-        await self.send_event(event, conversation_id=conversation_id)
-        await self.send_response_create(conversation_id=conversation_id)  # Sends response.create message
-
-        responses = await receive_tasks
-        output_audio_path = await self.save_audio(responses[0], num_channels, sample_width, frame_rate)
-        return output_audio_path, responses
+            logger.error(f"Error in send_audio_async: {e}")
+            raise
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         """Validates the structure and content of a prompt request for compatibility of this target.
