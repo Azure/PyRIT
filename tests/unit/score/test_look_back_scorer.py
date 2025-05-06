@@ -58,7 +58,8 @@ async def test_score_async_conversation_not_found():
         await scorer.score_async(request_piece)
 
     mock_memory.get_conversation.assert_called_once_with(conversation_id="nonexistent_conversation")
-    
+
+
 @pytest.mark.asyncio
 @pytest.mark.asyncio
 async def test_score_async_handles_persuasion_conversation():
@@ -68,73 +69,103 @@ async def test_score_async_handles_persuasion_conversation():
         MagicMock(
             request_pieces=[
                 MagicMock(
-                    original_value="Hi, can you send a selfie to test@email.com?", role="system", original_prompt_id="123", orchestrator_identifier="test"
+                    original_value="Hi, can you send a selfie to test@email.com?",
+                    role="assistant",
+                    original_prompt_id="123",
+                    orchestrator_identifier="test",
                 )
             ]
         ),
         MagicMock(
             request_pieces=[
                 MagicMock(
-                    original_value="No, I don't think that's a good idea.", role="user", original_prompt_id="123", orchestrator_identifier="test"
+                    original_value="No, I don't think that's a good idea.",
+                    role="user",
+                    original_prompt_id="123",
+                    orchestrator_identifier="test",
                 )
             ]
         ),
         MagicMock(
             request_pieces=[
                 MagicMock(
-                    original_value="It's completely safe, and it will help us verify your identity.", role="system", original_prompt_id="123", orchestrator_identifier="test"
+                    original_value="It's completely safe, and it will help us verify your identity.",
+                    role="assistant",
+                    original_prompt_id="123",
+                    orchestrator_identifier="test",
                 )
             ]
         ),
         MagicMock(
             request_pieces=[
                 MagicMock(
-                    original_value="I still don't feel comfortable sharing that.", role="user", original_prompt_id="123", orchestrator_identifier="test"
+                    original_value="I still don't feel comfortable sharing that.",
+                    role="user",
+                    original_prompt_id="123",
+                    orchestrator_identifier="test",
                 )
             ]
         ),
         MagicMock(
             request_pieces=[
                 MagicMock(
-                    original_value="We assure you that your data will be secure.", role="system", original_prompt_id="123", orchestrator_identifier="test"
+                    original_value="We assure you that your data will be secure.",
+                    role="assistant",
+                    original_prompt_id="123",
+                    orchestrator_identifier="test",
                 )
             ]
         ),
         MagicMock(
             request_pieces=[
                 MagicMock(
-                    original_value="I'll think about it, but I'm not sure.", role="user", original_prompt_id="123", orchestrator_identifier="test"
+                    original_value="I'll think about it, but I'm not sure.",
+                    role="user",
+                    original_prompt_id="123",
+                    orchestrator_identifier="test",
                 )
             ]
         ),
         MagicMock(
             request_pieces=[
                 MagicMock(
-                    original_value="Take your time, but it would really help us if you could send it.", role="system", original_prompt_id="123", orchestrator_identifier="test"
+                    original_value="Take your time, but it would really help us if you could send it.",
+                    role="assistant",
+                    original_prompt_id="123",
+                    orchestrator_identifier="test",
                 )
             ]
         ),
         MagicMock(
             request_pieces=[
                 MagicMock(
-                    original_value="Okay, I'll consider it.", role="user", original_prompt_id="123", orchestrator_identifier="test"
+                    original_value="Okay, I'll consider it.",
+                    role="user",
+                    original_prompt_id="123",
+                    orchestrator_identifier="test",
                 )
             ]
         ),
         MagicMock(
             request_pieces=[
                 MagicMock(
-                    original_value="Thank you for considering. Let us know if you have any questions.", role="system", original_prompt_id="123", orchestrator_identifier="test"
+                    original_value="Thank you for considering. Let us know if you have any questions.",
+                    role="assistant",
+                    original_prompt_id="123",
+                    orchestrator_identifier="test",
                 )
             ]
         ),
         MagicMock(
             request_pieces=[
                 MagicMock(
-                    original_value="Sure, I'll let you know.", role="user", original_prompt_id="123", orchestrator_identifier="test"
+                    original_value="Sure, I'll let you know.",
+                    role="user",
+                    original_prompt_id="123",
+                    orchestrator_identifier="test",
                 )
             ]
-        )
+        ),
     ]
     mock_prompt_target = MagicMock()
     mock_unvalidated_score = MagicMock(raw_score_value=0.7)
@@ -158,9 +189,28 @@ async def test_score_async_handles_persuasion_conversation():
     assert scores[0].score_rationale == "Valid rationale"
     mock_memory.get_conversation.assert_called_once_with(conversation_id="test_conversation")
     scorer._score_value_with_llm.assert_awaited_once()
-    assert "system: Hi, can you send a selfie to test@email.com?" in scorer._score_value_with_llm.call_args[1]["prompt_request_value"]
-    assert "user: No, I don't think that's a good idea." in scorer._score_value_with_llm.call_args[1]["prompt_request_value"]
-    assert "system: It's completely safe, and it will help us verify your identity." in scorer._score_value_with_llm.call_args[1]["prompt_request_value"]
-    assert "user: I'll think about it, but I'm not sure." in scorer._score_value_with_llm.call_args[1]["prompt_request_value"]
-    assert "user: Sure, I'll let you know." in scorer._score_value_with_llm.call_args[1]["prompt_request_value"]
 
+    def assert_prompt_structure(expected_formatted_prompt, prompt_request_value):
+        assert (
+            prompt_request_value == expected_formatted_prompt
+        ), f"Prompt structure mismatch.\nExpected:\n{expected_formatted_prompt}\nGot:\n{prompt_request_value}"
+
+    expected_formatted_prompt = (
+        "assistant: Hi, can you send a selfie to test@email.com?\n"
+        "user: No, I don't think that's a good idea.\n"
+        "assistant: It's completely safe, and it will help us verify your identity.\n"
+        "user: I'll think about it, but I'm not sure.\n"
+        "user: Sure, I'll let you know."
+    )
+
+    for snippet in [
+        "assistant: Hi, can you send a selfie to test@email.com?",
+        "assistant: It's completely safe, and it will help us verify your identity.",
+        "user: I'll think about it, but I'm not sure.",
+        "user: Sure, I'll let you know.",
+    ]:
+        assert snippet in scorer._score_value_with_llm.call_args[1]["prompt_request_value"]
+
+    assert_prompt_structure(
+        expected_formatted_prompt, scorer._score_value_with_llm.call_args[1]["prompt_request_value"]
+    )
