@@ -414,7 +414,7 @@ async def test_run_attack_with_retries(mock_target: MockPromptTarget):
     )
 
     with patch.object(
-        orchestrator._prompt_normalizer, "send_prompt_async", new_callable=MagicMock, return_value=response
+        orchestrator._prompt_normalizer, "send_prompt_async", new_callable=AsyncMock, return_value=response
     ) as mock_send_prompt:
         result = await orchestrator.run_attack_async(objective="test prompt")
         assert result.status == "success"
