@@ -3,10 +3,12 @@
 
 import abc
 import asyncio
+from dataclasses import dataclass
 import logging
 import traceback
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4
+import uuid
 
 from pyrit.exceptions import EmptyResponseException
 from pyrit.memory import CentralMemory, MemoryInterface
@@ -16,16 +18,26 @@ from pyrit.models import (
     construct_response_from_request,
 )
 from pyrit.models.filter_criteria import PromptConverterState, PromptFilterCriteria
-from pyrit.models.seed_prompt import SeedPromptGroup
+from pyrit.models.literals import PromptDataType
+from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
+from pyrit.prompt_converter.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequest, PromptConverterConfiguration
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
 
 logger = logging.getLogger(__name__)
 
+@dataclass
+class PromptValidationCriteria:
+    """Criteria for validating normalizer requests"""
+    multipart_allowed: bool = False
+    allowed_data_types: Optional[List[PromptDataType]] = None
+    
+    def __post_init__(self):
+        if self.allowed_data_types is None:
+            self.allowed_data_types = ["text"]
 
 class PromptNormalizer(abc.ABC):
-    _memory: MemoryInterface = None
 
     def __init__(self, start_token: str = "⟪", end_token: str = "⟫") -> None:
         """
@@ -44,13 +56,13 @@ class PromptNormalizer(abc.ABC):
         *,
         seed_prompt_group: SeedPromptGroup,
         target: PromptTarget,
-        conversation_id: str = None,
+        conversation_id: str,
         request_converter_configurations: list[PromptConverterConfiguration] = [],
         response_converter_configurations: list[PromptConverterConfiguration] = [],
         sequence: int = -1,
         labels: Optional[dict[str, str]] = None,
         orchestrator_identifier: Optional[dict[str, str]] = None,
-    ) -> PromptRequestResponse:
+    ) -> Optional[PromptRequestResponse]:
         """
         Sends a single request to a target.
 
@@ -80,7 +92,7 @@ class PromptNormalizer(abc.ABC):
             request_converter_configurations=request_converter_configurations,
             target=target,
             sequence=sequence,
-            labels=labels,
+            labels=labels or {},
             orchestrator_identifier=orchestrator_identifier,
         )
 
@@ -334,3 +346,107 @@ class PromptNormalizer(abc.ABC):
 
         await self.convert_values(converter_configurations=request_converter_configurations, request_response=response)
         return response
+
+    @staticmethod
+    def build_normalizer_requests(
+        *,
+        prompts: List[str],
+        prompt_type: PromptDataType = "text",
+        converters: Optional[List[PromptConverter]] = None,
+        metadata: Optional[dict[str, Union[str, int]]] = None,
+    ) -> List[NormalizerRequest]:
+        """
+        Build normalizer requests from the provided prompts.
+        
+        Args:
+            prompts: The list of prompts to normalize
+            batch_size: The maximum batch size for sending prompts
+            memory_labels: Optional memory labels for the attack
+            
+        Returns:
+            A list of NormalizerRequest objects
+        """
+        if not prompts:
+            raise ValueError("No prompts provided")
+
+        return [
+            PromptNormalizer._create_normalizer_request(
+                prompt_text=prompt,
+                prompt_type=prompt_type,
+                converters=converters or [],
+                metadata=metadata,
+                conversation_id=str(uuid.uuid4()),
+            )
+            for prompt in prompts
+        ]
+    
+    @staticmethod
+    def _create_normalizer_request(
+        *,
+        prompt_text: str,
+        prompt_type: PromptDataType = "text",
+        conversation_id: Optional[str] = None,
+        converters: Optional[List[PromptConverter]] = None,
+        metadata: Optional[Dict[str, Union[str, int]]] = None,
+    ) -> NormalizerRequest:
+        """
+        Create a normalizer request for a prompt.
+        
+        Args:
+            prompt_text: The text of the prompt
+            prompt_type: The type of the prompt data
+            converters: Optional list of prompt converters
+            metadata: Optional metadata for the prompt
+
+        Returns:
+            A NormalizerRequest object
+        """
+        seed_prompt_group = SeedPromptGroup(
+            prompts=[
+                SeedPrompt(
+                    value=prompt_text,
+                    data_type=prompt_type,
+                    metadata=metadata,
+                )
+            ]
+        )
+
+        converter_configurations = [PromptConverterConfiguration(
+            converters=converters or []
+        )]
+
+        return NormalizerRequest(
+            seed_prompt_group=seed_prompt_group,
+            request_converter_configurations=converter_configurations,
+            conversation_id=conversation_id or str(uuid.uuid4()),
+        )
+    
+    @staticmethod
+    def validate_normalizer_requests(
+        *,
+        requests: List[NormalizerRequest],
+        criteria: PromptValidationCriteria,
+    ) -> None:
+        """
+        Validate normalizer requests based on provided criteria.
+        
+        Args:
+            requests: The list of normalizer requests to validate
+            criteria: The validation criteria
+            
+        Raises:
+            ValueError: If any request doesn't meet the criteria
+        """
+        if not requests:
+            raise ValueError("No normalizer requests provided")
+
+        for request in requests:
+            # Check if multipart messages are allowed
+            if not criteria.multipart_allowed and request.is_multipart():
+                raise ValueError("Multi-part messages not supported")
+                
+            # Check that data types are supported
+            for prompt in request.seed_prompt_group.prompts:
+                if criteria.allowed_data_types is not None and prompt.data_type not in criteria.allowed_data_types:
+                    supported = ", ".join(criteria.allowed_data_types)
+                    raise ValueError(f"Unsupported data type: {prompt.data_type}. Supported types: {supported}")

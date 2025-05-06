@@ -1,0 +1,37 @@
+sequenceDiagram
+    participant Client
+    participant Factory as AttackStrategyFactory
+    participant Strategy as PromptSendingAttackStrategy
+    participant Target as PromptTarget
+    participant PromptUtils
+    participant ConvManager as ConversationManager
+    
+    Client->>Factory: create(strategy_type=PROMPT_SENDING, objective_target, ...)
+    Factory-->>Strategy: new PromptSendingAttackStrategy(...)
+    Factory-->>Client: return strategy
+    
+    Client->>Client: context = SingleTurnAttackContext(prompts=["prompt1", "prompt2"], batch_size=2)
+    Client->>Strategy: execute(context=context)
+    
+    Strategy->>Strategy: _setup(context)
+    Strategy->>Strategy: _perform_attack(context)
+    
+    Strategy->>Strategy: _get_prompt_requests(context)
+    Strategy->>PromptUtils: build_normalizer_requests(prompts, ...)
+    PromptUtils-->>Strategy: normalizer_requests
+    
+    alt Has prepended conversation
+        Strategy->>ConvManager: initialize_conversation_with_history()
+    end
+    
+    Strategy->>Target: send_prompt_batch_to_target_async(requests)
+    Target-->>Strategy: responses
+    
+    alt Has scorers
+        Strategy->>Strategy: _score_responses(responses, context) 
+    end
+    
+    Strategy->>Strategy: _teardown(context)
+    Strategy-->>Client: return SingleTurnAttackResult
+    
+    Client->>Client: result.print_conversations()

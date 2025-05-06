@@ -1,0 +1,51 @@
+sequenceDiagram
+    participant Client
+    participant Factory as AttackStrategyFactory
+    participant Pipeline as AttackPipeline
+    participant Strategy1 as RedTeamingStrategy
+    participant Strategy2 as TreeOfAttacksStrategy
+    participant Context as MultiTurnAttackContext
+    
+    Client->>Factory: create(strategy_type=RED_TEAMING, ...)
+    Factory-->>Strategy1: new RedTeamingStrategy(...)
+    Factory-->>Client: return strategy1
+    
+    Client->>Factory: create(strategy_type=TREE_OF_ATTACKS, ...)
+    Factory-->>Strategy2: new TreeOfAttacksStrategy(...)
+    Factory-->>Client: return strategy2
+    
+    Client->>Client: strategies = [strategy1, strategy2]
+    Client->>Pipeline: new AttackPipeline(strategies, result_selection=FIRST_SUCCESS)
+    
+    Client->>Context: new MultiTurnAttackContext(objective, max_turns)
+    Client->>Pipeline: execute(context=context)
+    
+    par Strategy 1 execution
+        Pipeline->>Context: context1 = context.duplicate()
+        Pipeline->>Strategy1: execute(context=context1)
+        Strategy1->>Strategy1: _setup(context1)
+        Strategy1->>Strategy1: _perform_attack(context1)
+        Strategy1->>Strategy1: _teardown(context1)
+        Strategy1-->>Pipeline: return result1
+    and Strategy 2 execution
+        Pipeline->>Context: context2 = context.duplicate()
+        Pipeline->>Strategy2: execute(context=context2)
+        Strategy2->>Strategy2: _setup(context2)
+        Strategy2->>Strategy2: _perform_attack(context2)
+        Strategy2->>Strategy2: _teardown(context2)
+        Strategy2-->>Pipeline: return result2
+    end
+    
+    Pipeline->>Pipeline: _select_result([result1, result2])
+    
+    alt FIRST_SUCCESS
+        Pipeline->>Pipeline: _select_first_success_result(results)
+    else BEST_SCORE
+        Pipeline->>Pipeline: _select_best_score_result(results)
+    else ALL
+        Pipeline->>Pipeline: _select_all_results(results)
+    end
+    
+    Pipeline-->>Client: return selected_result
+    
+    Client->>Client: result.print_conversation()

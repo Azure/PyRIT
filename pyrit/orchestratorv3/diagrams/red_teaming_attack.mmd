@@ -1,0 +1,45 @@
+sequenceDiagram
+    participant Client
+    participant Factory as AttackStrategyFactory
+    participant Strategy as RedTeamingStrategy
+    participant Target as PromptTarget
+    participant AdversarialChat as PromptChatTarget
+    participant ScoreEval as ScoreEvaluator
+    participant ConvManager as ConversationManager
+    
+    Client->>Factory: create(strategy_type=RED_TEAMING, objective_target, objective_scorer, ...)
+    Factory-->>Strategy: new RedTeamingStrategy(...)
+    Factory-->>Client: return strategy
+    
+    Client->>Client: context = MultiTurnAttackContext(objective, max_turns)
+    Client->>Strategy: execute(context=context)
+    
+    Strategy->>Strategy: _setup(context)
+    Strategy->>ConvManager: initialize_conversation_with_history()
+    Strategy->>AdversarialChat: set_system_prompt(...)
+    
+    Strategy->>Strategy: _perform_attack(context)
+    
+    loop Until objective achieved or max turns reached
+        Strategy->>Strategy: _generate_next_prompt(context)
+        Strategy->>ConvManager: get_last_message()
+        Strategy->>AdversarialChat: send prompt
+        AdversarialChat-->>Strategy: attack prompt
+        
+        Strategy->>Strategy: _send_to_target(context, prompt)
+        Strategy->>Target: send prompt
+        Target-->>Strategy: response
+        
+        Strategy->>Strategy: _score_response(context, response)
+        Strategy->>ScoreEval: evaluate_response(response)
+        ScoreEval-->>Strategy: score
+        
+        Strategy->>Strategy: _evaluate_objective_achievement(context, response, score)
+        Strategy->>ScoreEval: is_objective_achieved(score)
+        ScoreEval-->>Strategy: achievement status
+    end
+    
+    Strategy->>Strategy: _teardown(context)
+    Strategy-->>Client: return MultiTurnAttackResult
+    
+    Client->>Client: result.print_conversation()
