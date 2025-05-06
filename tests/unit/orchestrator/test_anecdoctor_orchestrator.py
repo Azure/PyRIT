@@ -21,6 +21,7 @@ def mock_processing_model(patch_central_database) -> PromptChatTarget:
 
 @pytest.fixture
 def example_data():
+    """Example data for testing."""
     return [
         "Claim 1",
         "Claim 2",
@@ -120,5 +121,6 @@ async def test_missing_processing_model(mock_chat_model, example_data):
         content_type="viral tweet",
     )
 
-    with pytest.raises(ValueError, match="Processing model is not set. Cannot extract knowledge graph."):
+    with pytest.raises(ValueError,
+                       match="Processing model is not set. Cannot extract knowledge graph."):
         await orchestrator.evaluate()
