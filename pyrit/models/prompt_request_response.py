@@ -73,12 +73,12 @@ class PromptRequestResponse:
         return response_pieces
 
     @classmethod
-    def from_prompt(cls, *, prompt: str, role: ChatMessageRole) -> Self:
+    def from_prompt(cls, *, prompt: str, role: ChatMessageRole) -> "PromptRequestResponse":
         piece = PromptRequestPiece(original_value=prompt, role=role)
         return cls(request_pieces=[piece])
 
     @classmethod
-    def from_system_prompt(cls, system_prompt: str) -> Self:
+    def from_system_prompt(cls, system_prompt: str) -> "PromptRequestResponse":
         return cls.from_prompt(prompt=system_prompt, role="system")
 
 
