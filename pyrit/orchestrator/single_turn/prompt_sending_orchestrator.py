@@ -199,17 +199,17 @@ class PromptSendingOrchestrator(Orchestrator):
             memory_labels (dict[str, str], Optional): The memory labels to use for the attack.
         """
 
-        conversation_id = str(uuid.uuid4())
+        conversation_id = ""
 
         if not seed_prompt:
             seed_prompt = SeedPromptGroup(prompts=[SeedPrompt(value=objective, data_type="text")])
-
-        await self._add_prepended_conversation_to_memory(prepended_conversation, conversation_id)
 
         status: OrchestratorResultStatus = "unknown"
         objective_score = None
 
         for _ in range(self._retries_on_objective_failure + 1):
+            conversation_id = str(uuid.uuid4())
+            await self._add_prepended_conversation_to_memory(prepended_conversation, conversation_id)
 
             result = await self._prompt_normalizer.send_prompt_async(
                 seed_prompt_group=seed_prompt,

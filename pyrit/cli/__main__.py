@@ -69,32 +69,12 @@ async def run_scenarios_async(config: ScannerConfig) -> None:
     orchestrators = config.create_orchestrators(prompt_converters=prompt_converters)
 
     for orchestrator in orchestrators:
-        if hasattr(orchestrator, "run_attack_async"):
-            # Run attack for each seed prompt
-            for prompt in seed_prompts:
-                await orchestrator.run_attack_async(objective=prompt.value, memory_labels=memory_labels)
-        elif hasattr(orchestrator, "send_normalizer_requests_async"):
-            converter_configurations = [PromptConverterConfiguration(converters=prompt_converters)]
-            normalizer_requests = []
-            for prompt in seed_prompts:
-                request = NormalizerRequest(
-                    seed_prompt_group=SeedPromptGroup(prompts=[prompt]),
-                    request_converter_configurations=converter_configurations,
-                    conversation_id=str(uuid4()),
-                )
-                normalizer_requests.append(request)
-
-            # Send normalizer requests to orchestrator
-            await orchestrator.send_normalizer_requests_async(
-                prompt_request_list=normalizer_requests,
-                memory_labels=memory_labels,
-            )
+        objectives = [prompt.value for prompt in seed_prompts]
+        if hasattr(orchestrator, "run_attacks_async"):
+            await orchestrator.run_attacks_async(objectives=objectives, memory_labels=memory_labels)
         else:
-            # If the orchestrator doesn't implement either method
-            supported_methods = ["run_attack_async", "send_normalizer_requests_async"]
             raise ValueError(
-                f"The orchestrator {type(orchestrator).__name__} does not have a supported method. "
-                f"Supported methods: {supported_methods}."
+                f"The orchestrator {type(orchestrator).__name__} does not have run_attacks_async. "
             )
 
     # Print conversation pieces from memory

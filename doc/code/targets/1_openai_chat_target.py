@@ -5,7 +5,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.6
+#       jupytext_version: 1.17.0
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -38,8 +42,8 @@ target = OpenAIChatTarget()
 
 orchestrator = PromptSendingOrchestrator(objective_target=target)
 
-response = await orchestrator.send_prompts_async(prompt_list=[jailbreak_prompt])  # type: ignore
-await orchestrator.print_conversations_async()  # type: ignore
+response = await orchestrator.run_attack_async(objective=jailbreak_prompt)  # type: ignore
+await response.print_conversation_async()  # type: ignore
 
 # %% [markdown]
 # ## OpenAI Configuration

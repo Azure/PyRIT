@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from pyrit.common.initialization import MemoryDatabaseType
 from pyrit.prompt_converter.prompt_converter import PromptConverter
+from pyrit.prompt_normalizer import PromptConverterConfiguration
 
 SupportedExecutionTypes = Literal["local"]
 
@@ -92,7 +93,6 @@ class ScenarioConfig(BaseModel, extra="allow"):
         complex_args = {
             "objective_target": objective_target,
             "adversarial_chat": adversarial_chat,
-            "prompt_converters": prompt_converters,
             "scoring_target": scoring_target,
             "objective_scorer": objective_scorer,
         }
@@ -106,6 +106,14 @@ class ScenarioConfig(BaseModel, extra="allow"):
         for key, value in complex_args.items():
             if key in constructor_arg_names and value is not None:
                 scenario_args[key] = value
+
+        # Handle converters: prefer request_converter_configurations if present, else prompt_converters
+        if "request_converter_configurations" in constructor_arg_names:
+            if prompt_converters:
+                scenario_args["request_converter_configurations"] = PromptConverterConfiguration.from_prompt_converters(
+                    converters=prompt_converters)
+        elif "prompt_converters" in constructor_arg_names:
+            scenario_args["prompt_converters"] = prompt_converters
 
         # And the instantiation of the orchestrator
         try:
@@ -296,7 +304,10 @@ class ScannerConfig(BaseModel):
             instances.append(converter_cfg.create_instance())
         return instances
 
-    def create_orchestrators(self, prompt_converters: Optional[List[PromptConverter]] = None) -> List[Any]:
+    def create_orchestrators(
+        self,
+        prompt_converters: Optional[list[PromptConverter] | list[PromptConverterConfiguration]] = None
+    ) -> list[Any]:
         """
         Helper method to instantiate all orchestrators from the scenario configs,
         injecting objective_target, adversarial_chat, scoring_target, objective_scorer, etc.

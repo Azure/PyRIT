@@ -95,6 +95,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         objective_achieved_score_threshold: float = 0.8,
         desired_response_prefix="Sure, here is",
         verbose: bool = False,
+        batch_size: int = 1,
     ) -> None:
 
         adversarial_chat_seed_prompt = adversarial_chat_seed_prompt or SeedPrompt.from_yaml_file(
@@ -118,6 +119,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
             adversarial_chat_seed_prompt=adversarial_chat_seed_prompt,
             objective_scorer=objective_scorer,
             verbose=verbose,
+            batch_size=batch_size,
         )
 
         if "desired_prefix" not in self._adversarial_chat_system_seed_prompt.parameters:

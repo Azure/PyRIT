@@ -7,10 +7,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.0
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -37,7 +33,7 @@ initialize_pyrit(memory_db_type=AZURE_SQL)
 
 target = OpenAIChatTarget()
 
-# You can optionally pass memory labels to `send_prompts_async`, which will be associated with each prompt and assist in retrieving or scoring later. In the case of collisions, these take precedence over `GLOBAL_MEMORY_LABELS` in env.local.
+# You can optionally pass memory labels to `run_attacks_async`, which will be associated with each prompt and assist in retrieving or scoring later. In the case of collisions, these take precedence over `GLOBAL_MEMORY_LABELS` in env.local.
 test_op_name = str(uuid.uuid4())
 test_user_name = str(uuid.uuid4())
 memory_labels = {"op_name": test_op_name, "username": test_user_name}

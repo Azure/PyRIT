@@ -22,7 +22,7 @@ test_cases_success = [
             CrescendoOrchestrator,
             RedTeamingOrchestrator,
         ],
-        ["send_normalizer_requests_async", "run_attack_async", "run_attack_async", "run_attack_async"],
+        ["run_attacks_async", "run_attacks_async", "run_attacks_async", "run_attacks_async"],
     ),
 ]
 

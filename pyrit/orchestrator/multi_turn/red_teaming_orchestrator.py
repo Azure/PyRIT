@@ -64,6 +64,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         max_turns: int = 5,
         objective_scorer: Scorer,
         use_score_as_feedback: bool = True,
+        batch_size: int = 1,
         verbose: bool = False,
     ) -> None:
 
@@ -81,6 +82,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
             prompt_converters=prompt_converters,
             objective_scorer=objective_scorer,
             verbose=verbose,
+            batch_size=batch_size,
         )
 
         self._prompt_normalizer = PromptNormalizer()
