@@ -3,10 +3,20 @@
 
 import abc
 import json
+import os
 import uuid
 from abc import abstractmethod
-from typing import Optional, Sequence
+from dataclasses import dataclass
+from typing import List, Optional, Sequence
 
+from jinja2 import StrictUndefined, Template
+
+from pyrit.common import YamlLoadable
+from pyrit.common.path import (
+    PATHS_DICT,
+    SCORER_EVALS_RESULTS_METRICS_PATH,
+    SCORER_EVALS_RESULTS_SCORES_CSV_PATH,
+)
 from pyrit.exceptions import (
     InvalidJsonException,
     pyrit_json_retry,
@@ -25,6 +35,83 @@ from pyrit.prompt_target import PromptChatTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
 
 
+@dataclass
+class ScorerEvalConfig(YamlLoadable):
+
+    csv_path: str
+    assistant_response_col_name: str
+    manual_grading_col_names: List[str]
+    normalized: bool
+    scorer_trials: int
+    tasks_col_name: Optional[str]
+    json_output_save_dir: Optional[str]
+    csv_scores_save_dir: Optional[str]
+
+    """
+    Configuration class that can be passed into scorer eval functions to get scorer metrics based on dataset.
+
+    Parameters:
+        csv_path (str): Path to the CSV file containing the test data.
+        assistant_response_col_name (str): Name of the column containing the assistant's responses to grade.
+        manual_grading_col_names (List[str]): List of column names containing manual scores.
+        normalized (bool): Whether the manual scores are already normalized between 0 and 1.
+        scorer_trials (int): Number of trials to run the scorer on all responses. Defaults to 1.
+        tasks_col_name (Optional[str]): Name of the column containing task descriptions. If this is provided
+            and the scorer accepts tasks, then the tasks will be taken into account during scoring. Defaults to None.
+        json_output_save_dir (Optional[str]): Path to the directory to save the JSON output. Defaults to
+            the SCORER_EVALS_RESULTS_METRICS_PATH, which will be created if it does not exist. Pass in None if
+            you do not want to save the JSON output.
+        csv_scores_save_dir (Optional[str]): Path to the directory to save the CSV of the all scores across the
+            individual trials. Defaults to the SCORER_EVALS_RESULTS_SCORES_CSV_PATH, which will be created
+            if it does not exist. Pass in None if you do not want to save the CSV of scores.
+    """
+
+    def __init__(
+        self,
+        *,
+        csv_path: str,
+        assistant_response_col_name: str,
+        manual_grading_col_names: List[str],
+        normalized: bool,
+        scorer_trials: int = 1,
+        tasks_col_name: Optional[str] = None,
+        json_output_save_dir: Optional[str] = str(SCORER_EVALS_RESULTS_METRICS_PATH),
+        csv_scores_save_dir: Optional[str] = str(SCORER_EVALS_RESULTS_SCORES_CSV_PATH),
+    ):
+        self.csv_path = self._render_path(csv_path)
+        self.json_output_save_dir = self._render_path(json_output_save_dir)
+        self.csv_scores_save_dir = self._render_path(csv_scores_save_dir)
+        if not os.path.exists(self.csv_path):
+            raise ValueError(f"CSV file does not exist: {self.csv_path}")
+        if not self.csv_path.endswith(".csv"):
+            raise ValueError(f"CSV file path must end with .csv: {self.csv_path}")
+        if self.json_output_save_dir and not os.path.exists(self.json_output_save_dir):
+            raise ValueError(f"JSON output directory path does not exist: {json_output_save_dir}")
+        if self.csv_scores_save_dir and not os.path.exists(self.csv_scores_save_dir):
+            raise ValueError(f"Model scores CSV directory path does not exist: {self.csv_scores_save_dir}")
+
+        self.assistant_response_col_name = assistant_response_col_name
+        self.manual_grading_col_names = manual_grading_col_names
+        self.normalized = normalized
+        self.scorer_trials = scorer_trials
+        self.tasks_col_name = tasks_col_name
+
+    def _render_path(self, path):
+        """Renders self.csv_path as a template and replaces placeholders for PyRIT default paths
+
+        Raises:
+            ValueError: If parameters are missing or invalid in the template.
+        """
+        if path:
+            jinja_template = Template(path, undefined=StrictUndefined)
+
+            try:
+                path = jinja_template.render(**PATHS_DICT)
+            except Exception as e:
+                raise ValueError(f"Error applying parameters: {str(e)}")
+        return path
+
+
 class Scorer(abc.ABC):
     """
     Abstract base class for scorers.
@@ -35,6 +122,37 @@ class Scorer(abc.ABC):
     @property
     def _memory(self) -> MemoryInterface:
         return CentralMemory.get_memory_instance()
+
+    @classmethod
+    def eval_stats_to_json(cls) -> str:
+        """
+        Prints evaluation statistics for the scorer in json format.
+
+        Raises:
+            ValueError: If official evaluation has not yet been run on the scorer class or there is an error
+                reading a JSON file.
+
+        Returns:
+            str: A JSON string representation of the evaluation statistics for the scorer across the different scales.
+        """
+        evals_dir = getattr(cls, "EVALS_DIR_PATH", None)
+        if not evals_dir:
+            raise ValueError(
+                f"Scorer evaluation has not yet been run on {cls.__name__} or is missing. "
+                "Thus, there are no stats to return."
+            )
+        if not evals_dir.exists() or not evals_dir.is_dir():
+            raise ValueError(f"EVALS_DIR_PATH for {cls.__name__} is invalid or does not exist: {evals_dir}")
+        eval_data = {}
+        for file in evals_dir.glob("*.json"):
+            if file.is_file():
+                scale_name = file.stem
+                try:
+                    with open(file, "r", encoding="utf-8") as json_file:
+                        eval_data[scale_name] = json.load(json_file)
+                except Exception as e:
+                    raise ValueError(f"Error reading JSON file {file}") from e
+        return json.dumps(eval_data)
 
     @abstractmethod
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
@@ -63,6 +181,17 @@ class Scorer(abc.ABC):
         """
         raise NotImplementedError("score_async method not implemented")
 
+    async def run_evaluation(self, config: ScorerEvalConfig, batch_size: int = 10):
+        """
+        Runs the evaluation of the scorer using the provided configuration and returns metrics.
+        This method should be implemented by subclasses that have scorer evaluation logic set up.
+
+        Args:
+            config (ScorerEvalConfig): The configuration for the evaluation.
+            batch_size (int): The size of the batches to use for scoring. Defaults to 10.
+        """
+        raise NotImplementedError("run_evaluation method is not implemented for this scorer yet.")
+
     async def score_text_async(self, text: str, *, task: Optional[str] = None) -> list[Score]:
         """
         Scores the given text based on the task using the chat target.
@@ -81,6 +210,28 @@ class Scorer(abc.ABC):
 
         request_piece.id = None
         return await self.score_async(request_piece, task=task)
+
+    async def score_text_batch_async(
+        self,
+        *,
+        texts: Sequence[str],
+        tasks: Optional[Sequence[str]] = None,
+        batch_size: int = 10,
+    ) -> list[Score]:
+        if tasks:
+            if len(tasks) != len(texts):
+                raise ValueError("The number of tasks must match the number of texts.")
+        if len(texts) == 0:
+            return []
+        prompt_target = getattr(self, "_prompt_target")
+        results = await batch_task_async(
+            task_func=self.score_text_async,
+            task_arguments=["text", "task"] if tasks else ["text"],
+            prompt_target=prompt_target,
+            batch_size=batch_size,
+            items_to_batch=[texts, tasks] if tasks else [texts],
+        )
+        return [score for sublist in results for score in sublist]
 
     async def score_responses_inferring_tasks_batch_async(
         self,

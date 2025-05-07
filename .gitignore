@@ -3,6 +3,7 @@ submodules/
 results/
 dbdata/
 eval/
+scorer_evals_results/
 default_memory.json.memory
 
 # Byte-compiled / optimized / DLL files

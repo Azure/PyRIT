@@ -10,7 +10,7 @@ from pyrit.score.human_in_the_loop_gradio import HumanInTheLoopScorerGradio
 from pyrit.score.insecure_code_scorer import InsecureCodeScorer
 from pyrit.score.markdown_injection import MarkdownInjectionScorer
 from pyrit.score.prompt_shield_scorer import PromptShieldScorer
-from pyrit.score.scorer import Scorer
+from pyrit.score.scorer import Scorer, ScorerEvalConfig
 from pyrit.score.self_ask_category_scorer import ContentClassifierPaths, SelfAskCategoryScorer
 from pyrit.score.self_ask_likert_scorer import LikertScalePaths, SelfAskLikertScorer
 from pyrit.score.self_ask_refusal_scorer import SelfAskRefusalScorer
@@ -32,6 +32,7 @@ __all__ = [
     "MarkdownInjectionScorer",
     "PromptShieldScorer",
     "Scorer",
+    "ScorerEvalConfig",
     "SelfAskCategoryScorer",
     "SelfAskLikertScorer",
     "SelfAskRefusalScorer",
