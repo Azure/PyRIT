@@ -110,6 +110,17 @@ in the repository that should be shipped with the package.
 If we run inside the repository, we may not face errors that users encounter
 with a clean installation and no locally cloned repository.
 
+If at any point you need to make changes to fix bugs discovered while testing, or there is another change to include with the release, follow the steps below after the item has been merged into `main`.
+```bash
+git checkout main
+git fetch main
+git log main # to identify the commit hash of the change you want to cherry-pick
+git checkout releases/vx.y.z
+git cherry-pick <commit-hash>
+git push origin releases/vx.y.z
+git tag -a vx.y.z -m "vx.y.z release" --force # to update the tag to the correct commit
+```
+
 ## 6. Publish to PyPi
 
 Create an account on pypi.org if you don't have one yet.
