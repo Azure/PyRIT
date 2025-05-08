@@ -286,12 +286,10 @@ def test_add_auth_param_to_query_params_with_both_auth_methods(target_with_aad):
 @pytest.mark.asyncio
 async def test_receive_events_empty_output(target: RealtimeTarget):
     """Test handling of response.done event with empty output array."""
-    # Create mock WebSocket and add it to existing conversations
     mock_websocket = AsyncMock()
     conversation_id = "test_empty_output"
     target._existing_conversation[conversation_id] = mock_websocket
 
-    # Setup the mock to return an empty output array response
     empty_output_response = {
         "type": "response.done",
         "event_id": "event_123",
@@ -306,10 +304,8 @@ async def test_receive_events_empty_output(target: RealtimeTarget):
         },
     }
 
-    # Configure mock websocket to yield our test response
+    # mock websocket yield our test response
     mock_websocket.__aiter__.return_value = [json.dumps(empty_output_response)]
-
-    # Call receive_events and expect an IndexError
     with pytest.raises(ServerErrorException, match="The server had an error processing your request"):
         await target.receive_events(conversation_id)
 
