@@ -17,25 +17,19 @@ OrchestratorResultStatus = Annotated[
     Literal["success", "failure", "pruned", "adversarial_generation", "in_progress", "error", "unknown"],
     """The status of an orchestrator result.
 
-    .. admonition:: Completion States
-       :class: note
+    Completion States:
+        - success: The orchestrator run is complete and achieved its objective.
+        - failure: The orchestrator run is complete and failed to achieve its objective.
+        - error: The orchestrator run is complete and encountered an error.
+        - unknown: The orchestrator run is complete and it is unknown whether it achieved its objective.
 
-       * success: The orchestrator run is complete and achieved its objective.
-       * failure: The orchestrator run is complete and failed to achieve its objective.
-       * error: The orchestrator run is complete and encountered an error.
-       * unknown: The orchestrator run is complete and it is unknown whether it achieved its objective.
+    Intermediate States:
+        - in_progress: The orchestrator is still running.
 
-    .. admonition:: Intermediate States
-       :class: note
-
-       * in_progress: The orchestrator is still running.
-
-    .. admonition:: Special States
-       :class: note
-
-       * pruned: The conversation was pruned as part of an attack and not related to success/failure/unknown/error.
-       * adversarial_generation: The conversation was used as part of adversarial generation and not related to
-         success/failure/unknown/error.
+    Special States:
+        - pruned: The conversation was pruned as part of an attack and not related to success/failure/unknown/error.
+        - adversarial_generation: The conversation was used as part of adversarial generation and not related to
+          success/failure/unknown/error.
     """,
 ]
 

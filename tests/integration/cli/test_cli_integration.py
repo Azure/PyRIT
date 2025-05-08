@@ -22,11 +22,10 @@ test_cases_success = [
             CrescendoOrchestrator,
             RedTeamingOrchestrator,
         ],
-        ["run_attacks_async", "run_attacks_async", "run_attacks_async", "run_attacks_async"],
     ),
 ]
 
 
-@pytest.mark.parametrize("command, orchestrator_classes, methods", test_cases_success)
-def test_cli_integration_success(command, orchestrator_classes, methods):
+@pytest.mark.parametrize("command, orchestrator_classes", test_cases_success)
+def test_cli_integration_success(command, orchestrator_classes):
     main(shlex.split(command))

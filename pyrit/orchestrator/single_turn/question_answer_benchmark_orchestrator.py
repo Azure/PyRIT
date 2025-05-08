@@ -50,7 +50,7 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
         self,
         *,
         objective_target: PromptChatTarget,
-        objective_scorer: Scorer = None,
+        objective_scorer: Optional[Scorer] = None,
         objective_format_string: str = OBJECTIVE_FORMAT_STRING,
         question_asking_format_string: str = QUESTION_ASKING_FORMAT_STRING,
         options_format_string: str = OPTIONS_FORMAT_STRING,
@@ -192,7 +192,7 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
         if not prepended_conversations:
             prepended_conversations = [None] * len(question_answering_entries)
         elif len(prepended_conversations) != len(question_answering_entries):
-            raise ValueError("Number of prepended conversations must match number of question_ansering_entries")
+            raise ValueError("Number of prepended conversations must match number of question_answering_entries")
 
         # Type the batch items as Sequence[Sequence[Any]] to match the expected type
         batch_items: list[Sequence[Any]] = [

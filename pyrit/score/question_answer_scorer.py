@@ -27,9 +27,9 @@ class QuestionAnswerScorer(Scorer):
         Scores PromptRequestResponse objects that contain correct_answer_index and/or correct_answer metadata
 
         Args:
-            correct_answer_matching_patterns (list[str]): A list of patterns to check for in the response. If any pattern
-                is found in the response, the score will be True. These patterns should be format strings that
-                will be formatted with the correct answer metadata.
+            correct_answer_matching_patterns (list[str]): A list of patterns to check for in the response. If any
+                pattern is found in the response, the score will be True. These patterns should be format strings
+                that will be formatted with the correct answer metadata.
         """
         self._correct_answer_matching_patterns = correct_answer_matching_patterns
         self._score_category = category
