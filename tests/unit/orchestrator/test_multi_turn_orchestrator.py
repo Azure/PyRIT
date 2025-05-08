@@ -294,7 +294,10 @@ async def test_print_conversation_with_messages():
             "pyrit.orchestrator.models.orchestrator_result.display_image_response", new_callable=AsyncMock
         ) as mock_display_image_response:
             result = OrchestratorResult(
-                conversation_id="conversation_id_123", objective="Test Objective", status="success", objective_score=score
+                conversation_id="conversation_id_123",
+                objective="Test Objective",
+                status="success",
+                objective_score=score,
             )
 
             await result.print_conversation_async()

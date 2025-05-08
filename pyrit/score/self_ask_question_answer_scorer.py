@@ -13,10 +13,10 @@ from pyrit.models import (
 )
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.score import Scorer
+from pyrit.score import SelfAskTrueFalseScorer
 
 
-class SelfAskQuestionAnswerScorer(Scorer):
+class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
     """
     A class that represents a self-ask question answering scorer.
 

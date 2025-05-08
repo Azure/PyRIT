@@ -158,9 +158,7 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
         seed_prompt_group = self._get_question_text(question_answering_entry)
 
         # This is used by the QuestionAnswerScorer to know the correct answer
-        seed_prompt_group.prompts[0].metadata["correct_answer_index"] = str(
-            question_answering_entry.correct_answer
-        )
+        seed_prompt_group.prompts[0].metadata["correct_answer_index"] = str(question_answering_entry.correct_answer)
         seed_prompt_group.prompts[0].metadata["correct_answer"] = str(
             question_answering_entry.get_correct_answer_text()
         )

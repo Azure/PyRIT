@@ -26,13 +26,11 @@ def text_request_piece(patch_central_database) -> PromptRequestPiece:
         role="user",
         original_value="test content",
         original_value_data_type="text",
-        prompt_metadata={
-            "correct_answer_index": "0",
-            "correct_answer": "Paris"
-        }
+        prompt_metadata={"correct_answer_index": "0", "correct_answer": "Paris"},
     )
     piece.id = None
     return piece
+
 
 @pytest.mark.asyncio
 async def test_question_answer_scorer_validate_image(image_request_piece: PromptRequestPiece):
@@ -51,10 +49,12 @@ async def test_question_answer_scorer_validate_missing_metadata():
         original_value="test content",
         converted_value="test response",
         converted_value_data_type="text",
-        prompt_metadata={}
+        prompt_metadata={},
     )
     scorer = QuestionAnswerScorer(category="new_category")
-    with pytest.raises(ValueError, match="Question Answer Scorer requires metadata with either correct_answer_index or correct_answer"):
+    with pytest.raises(
+        ValueError, match="Question Answer Scorer requires metadata with either correct_answer_index or correct_answer"
+    ):
         await scorer.score_async(request_piece)
 
 
@@ -68,9 +68,11 @@ async def test_question_answer_scorer_validate_missing_metadata():
         ("London", False),
         ("The answer is 0: Paris", True),
         ("The answer is Paris", True),
-    ]
+    ],
 )
-async def test_question_answer_scorer_score(response: str, expected_score: bool, text_request_piece: PromptRequestPiece):
+async def test_question_answer_scorer_score(
+    response: str, expected_score: bool, text_request_piece: PromptRequestPiece
+):
     text_request_piece.converted_value = response
     scorer = QuestionAnswerScorer(category="new_category")
 
@@ -93,10 +95,7 @@ async def test_question_answer_scorer_adds_to_memory():
             original_value="test content",
             converted_value="0: Paris",
             converted_value_data_type="text",
-            prompt_metadata={
-                "correct_answer_index": "0",
-                "correct_answer": "Paris"
-            }
+            prompt_metadata={"correct_answer_index": "0", "correct_answer": "Paris"},
         )
         await scorer.score_async(request_piece)
 
@@ -114,11 +113,8 @@ async def test_question_answer_scorer_no_category():
             original_value="test content",
             converted_value="0: Paris",
             converted_value_data_type="text",
-            prompt_metadata={
-                "correct_answer_index": "0",
-                "correct_answer": "Paris"
-            }
+            prompt_metadata={"correct_answer_index": "0", "correct_answer": "Paris"},
         )
         await scorer.score_async(request_piece)
 
-        memory.add_scores_to_memory.assert_called_once() 
+        memory.add_scores_to_memory.assert_called_once()

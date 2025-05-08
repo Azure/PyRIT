@@ -44,16 +44,13 @@ class QuestionAnsweringEntry(BaseModel):
     correct_answer: Union[int, str, float]
     choices: list[QuestionChoice]
 
-
     def get_correct_answer_text(self) -> str:
         """Get the text of the correct answer."""
 
         correct_answer_index = self.correct_answer
         try:
             return next(
-                choice
-                for index, choice in enumerate(self.choices)
-                if str(index) == str(correct_answer_index)
+                choice for index, choice in enumerate(self.choices) if str(index) == str(correct_answer_index)
             ).text
         except StopIteration:
             raise ValueError(

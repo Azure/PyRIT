@@ -16,8 +16,8 @@ from pyrit.models import (
     PromptRequestPiece,
     PromptRequestResponse,
     Score,
+    construct_response_from_request,
     group_conversation_request_pieces_by_sequence,
-    construct_response_from_request
 )
 from pyrit.models.prompt_request_piece import sort_request_pieces
 from pyrit.orchestrator import PromptSendingOrchestrator
@@ -630,18 +630,13 @@ def test_prompt_request_piece_to_dict():
 def test_construct_response_from_request_combines_metadata():
     # Create a request piece with metadata
     request = PromptRequestPiece(
-        role="user",
-        original_value="test prompt",
-        conversation_id="123",
-        prompt_metadata={"key1": "value1", "key2": 2}
+        role="user", original_value="test prompt", conversation_id="123", prompt_metadata={"key1": "value1", "key2": 2}
     )
 
     additional_metadata = {"key2": 3, "key3": "value3"}
 
     response = construct_response_from_request(
-        request=request,
-        response_text_pieces=["test response"],
-        prompt_metadata=additional_metadata
+        request=request, response_text_pieces=["test response"], prompt_metadata=additional_metadata
     )
 
     assert len(response.request_pieces) == 1
@@ -660,16 +655,9 @@ def test_construct_response_from_request_combines_metadata():
 
 
 def test_construct_response_from_request_no_metadata():
-    request = PromptRequestPiece(
-        role="user",
-        original_value="test prompt",
-        conversation_id="123"
-    )
+    request = PromptRequestPiece(role="user", original_value="test prompt", conversation_id="123")
 
-    response = construct_response_from_request(
-        request=request,
-        response_text_pieces=["test response"]
-    )
+    response = construct_response_from_request(request=request, response_text_pieces=["test response"])
 
     assert len(response.request_pieces) == 1
     response_piece = response.request_pieces[0]

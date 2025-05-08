@@ -69,13 +69,16 @@ class QuestionAnswerScorer(Scorer):
                 score_metadata=None,
                 score_type=self.scorer_type,
                 score_category=self._score_category,
-                score_rationale=f"Found matching text '{matching_text}' in response" if matching_text else "No matching text found in response",
+                score_rationale=(
+                    f"Found matching text '{matching_text}' in response"
+                    if matching_text
+                    else "No matching text found in response"
+                ),
                 scorer_class_identifier=self.get_identifier(),
                 prompt_request_response_id=request_response.id,
                 task=task,
             )
         ]
-
 
         self._memory.add_scores_to_memory(scores=scores)
         return scores

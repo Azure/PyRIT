@@ -4,8 +4,6 @@
 from typing import Dict, MutableSequence, Optional, Sequence, Union
 
 from pyrit.common.utils import combine_dict
-
-
 from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 

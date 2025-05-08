@@ -108,4 +108,7 @@ class OrchestratorResult:
                             )
 
         if self.objective_score:
-            print(f"{Style.NORMAL}{Fore.WHITE}objective score: {self.objective_score} : {self.objective_score.score_rationale}")
+            print(
+                f"{Style.NORMAL}{Fore.WHITE}objective score: {self.objective_score} : "
+                f"{self.objective_score.score_rationale}"
+            )
