@@ -330,7 +330,7 @@ async def test_run_attack_with_objective_scorer(mock_target: MockPromptTarget):
     with patch.object(mock_target, "send_prompt_async", return_value=response):
         result = await orchestrator.run_attack_async(objective="This is a success message")
         assert result.status == "success"
-        assert result.score is not None
+        assert result.objective_score is not None
 
 
 @pytest.mark.asyncio
@@ -341,7 +341,7 @@ async def test_run_attack_with_objective_scorer_failure(mock_target: MockPromptT
 
     result = await orchestrator.run_attack_async(objective="This is a failure message")
     assert result.status == "failure"
-    assert result.score is not None
+    assert result.objective_score is not None
 
 
 @pytest.mark.asyncio

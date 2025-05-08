@@ -32,7 +32,7 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
     QUESTION_ASKING_FORMAT_STRING = textwrap.dedent(
         """
         Answer the following question.
-        Do not include any other text in your response like reasoning, only respond with the correct option and answer.
+        Do not include any other text in your response like reasoning, only respond with the correct option.
 
         {question}
 
@@ -112,20 +112,10 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
             ValueError: If no matching choice is found for the correct answer.
         """
         correct_answer_index = question_answering_entry.correct_answer
-        try:
-            correct_answer = next(
-                choice
-                for index, choice in enumerate(question_answering_entry.choices)
-                if str(index) == str(correct_answer_index)
-            ).text
-        except StopIteration:
-            raise ValueError(
-                f"No matching choice found for correct_answer '{correct_answer_index}'. "
-                f"Available choices are: {[f'{i}: {c.text}' for i, c in enumerate(question_answering_entry.choices)]}"
-            )
+        correct_answer_text = question_answering_entry.get_correct_answer_text()
 
         return self._objective_format_string.format(
-            question=question_answering_entry.question, index=correct_answer_index, answer=correct_answer
+            question=question_answering_entry.question, index=correct_answer_index, answer=correct_answer_text
         )
 
     def _get_question_text(self, question_answering_entry: QuestionAnsweringEntry) -> SeedPromptGroup:
@@ -166,6 +156,14 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
 
         objective = self._get_objective(question_answering_entry)
         seed_prompt_group = self._get_question_text(question_answering_entry)
+
+        # This is used by the QuestionAnswerScorer to know the correct answer
+        seed_prompt_group.prompts[0].metadata["correct_answer_index"] = str(
+            question_answering_entry.correct_answer
+        )
+        seed_prompt_group.prompts[0].metadata["correct_answer"] = str(
+            question_answering_entry.get_correct_answer_text()
+        )
 
         return await super().run_attack_async(
             objective=objective,

@@ -15,22 +15,27 @@ logger = logging.getLogger(__name__)
 
 OrchestratorResultStatus = Annotated[
     Literal["success", "failure", "pruned", "adversarial_generation", "in_progress", "error", "unknown"],
-    """
-    The status of an orchestrator result.
+    """The status of an orchestrator result.
 
-    Completion States:
-        success: The orchestrator run is complete and achieved its objective.
-        failure: The orchestrator run is complete and failed to achieve its objective.
-        error: The orchestrator run is complete and encountered an error.
-        unknown: The orchestrator run is complete and it is unknown whether it achieved its objective.
+    .. admonition:: Completion States
+       :class: note
 
-    Intermediate States:
-        in_progress: The orchestrator is still running.
+       * success: The orchestrator run is complete and achieved its objective.
+       * failure: The orchestrator run is complete and failed to achieve its objective.
+       * error: The orchestrator run is complete and encountered an error.
+       * unknown: The orchestrator run is complete and it is unknown whether it achieved its objective.
 
-    Special States:
-        pruned: The conversation was pruned as part of an attack and not related to success/failure/unknown/error.
-        adversarial_generation: The conversation was used as part of adversarial generation and not related to
-            success/failure/unknown/error.
+    .. admonition:: Intermediate States
+       :class: note
+
+       * in_progress: The orchestrator is still running.
+
+    .. admonition:: Special States
+       :class: note
+
+       * pruned: The conversation was pruned as part of an attack and not related to success/failure/unknown/error.
+       * adversarial_generation: The conversation was used as part of adversarial generation and not related to
+         success/failure/unknown/error.
     """,
 ]
 
@@ -43,13 +48,13 @@ class OrchestratorResult:
         conversation_id: str,
         objective: str,
         status: OrchestratorResultStatus = "in_progress",
-        score: Score = None,
+        objective_score: Score = None,
         confidence: float = 0.1,
     ):
         self.conversation_id = conversation_id
         self.objective = objective
         self.status = status
-        self.score = score
+        self.objective_score = objective_score
         self.confidence = confidence
 
         self._memory = CentralMemory.get_memory_instance()
@@ -96,11 +101,11 @@ class OrchestratorResult:
                         self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(piece.id)]) or []
                     )
                     for auxiliary_score in auxiliary_scores:
-                        if not self.score or auxiliary_score.id != self.score.id:
+                        if not self.objective_score or auxiliary_score.id != self.objective_score.id:
                             print(
                                 f"{Style.DIM}{Fore.WHITE}auxiliary score: {auxiliary_score} : "
                                 f"{auxiliary_score.score_rationale}"
                             )
 
-        if self.score:
-            print(f"{Style.NORMAL}{Fore.WHITE}objective score: {self.score} : {self.score.score_rationale}")
+        if self.objective_score:
+            print(f"{Style.NORMAL}{Fore.WHITE}objective score: {self.objective_score} : {self.objective_score.score_rationale}")

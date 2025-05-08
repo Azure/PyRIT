@@ -236,7 +236,7 @@ class PromptSendingOrchestrator(Orchestrator):
             conversation_id=conversation_id,
             objective=objective,
             status=status,
-            score=objective_score,
+            objective_score=objective_score,
         )
 
     async def run_attacks_async(

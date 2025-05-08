@@ -3,24 +3,25 @@
 
 from __future__ import annotations
 
-import json
 import pathlib
 from typing import Optional
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import (
-    PromptRequestResponse,
     Score,
     UnvalidatedScore,
 )
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.score import SelfAskTrueFalseScorer
+from pyrit.score import Scorer
 
 
-class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
+class SelfAskQuestionAnswerScorer(Scorer):
     """
-    A class that represents a question answering scorer.
+    A class that represents a self-ask question answering scorer.
+
+    Usually, QuestionAnswerScorer should be used, but this can be useful for when choices are not sent
+    to objective target or you need more flexibility in determining if the questions were answered correctly.
     """
 
     def __init__(
@@ -33,7 +34,8 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
         Initializes the SelfAskQuestionAnswerScorer object.
 
         Args:
-            category (str): an optional parameter to the category metadata
+            chat_target (PromptChatTarget): The chat target to use for the scorer.
+            true_false_question_path (pathlib.Path): The path to the true/false question file.
         """
 
         if not true_false_question_path:
@@ -53,7 +55,7 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
 
         Args:
             request_response (PromptRequestPiece): The answer given by the target
-            task (QuestionAnsweringEntry): The entry containing the original question and the correct answer
+            task (QuestionAnsweringEntry): The objective, which usually contains the question and the correct answer
         Returns:
             Score: A single Score object representing the result
         """
@@ -95,26 +97,3 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
 
         if not task:
             raise ValueError("Task must be provided")
-
-    def report_scores(self, responses: list[PromptRequestResponse]) -> None:
-        """
-        Reports the score values from the list of prompt request responses
-        Checks for presence of scores in reponse before scoring
-
-        Args:
-            responses (list[PromptRequestResponse]): The list of responses to be reported on
-        """
-        correct_count = 0
-        if any(not response.request_pieces[0].scores for response in responses):
-            raise ValueError("Not all responses have scores, please score all responses before reporting")
-        if any(response.request_pieces[0].scores[0].score_type != "true_false" for response in responses):
-            raise ValueError("Score types are not 'true_false'")
-        for response in responses:
-            score_metadata = json.loads(response.request_pieces[0].scores[0].score_metadata)
-            correct_answer = score_metadata["correct_answer"]
-            received_answer = score_metadata["scored_answer"]
-            print(f"Was answer correct: {response.request_pieces[0].scores[0].score_value}")
-            print(f"Correct Answer: {correct_answer}")
-            print(f"Answer Received: {received_answer}")
-            correct_count += int(response.request_pieces[0].scores[0].score_value == "True")
-        print(f"Correct / Total: {correct_count} / {len(responses)}")

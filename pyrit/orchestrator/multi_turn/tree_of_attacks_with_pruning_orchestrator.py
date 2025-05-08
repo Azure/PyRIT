@@ -33,14 +33,14 @@ class TAPOrchestratorResult(OrchestratorResult):
         conversation_id: str,
         objective: str,
         status: OrchestratorResultStatus,
-        score: Score,
+        objective_score: Score,
         tree_visualization: Tree,
     ):
         super().__init__(
             conversation_id=conversation_id,
             objective=objective,
             status=status,
-            score=score,
+            objective_score=objective_score,
         )
         self.tree_visualization = tree_visualization
 
@@ -182,7 +182,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         nodes: list[TreeOfAttacksNode] = []
 
         best_conversation_id = None
-        best_score = None
+        best_objective_score = None
 
         updated_memory_labels = combine_dict(existing_dict=self._global_memory_labels, new_dict=memory_labels)
 
@@ -229,13 +229,13 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
 
             if len(nodes) > 0:
                 best_conversation_id = nodes[0].objective_target_conversation_id
-                best_score = nodes[0].score
+                best_objective_score = nodes[0].objective_score
 
-                if best_score and best_score.get_value() >= self._objective_achieved_score_threshhold:
+                if best_objective_score and best_objective_score.get_value() >= self._objective_achieved_score_threshhold:
                     logger.info("The conversation has been stopped because the response is jailbroken.")
                     return TAPOrchestratorResult(
                         conversation_id=best_conversation_id,
-                        score=best_score,
+                        objective_score=best_objective_score,
                         status="success",
                         objective=objective,
                         tree_visualization=tree_visualization,
@@ -252,7 +252,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
             status="failure",
             objective=objective,
             tree_visualization=tree_visualization,
-            score=best_score if best_score else None,
+            objective_score=best_objective_score if best_objective_score else None,
         )
 
     async def _send_prompt_to_nodes_async(
@@ -272,10 +272,10 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
             if node
             and node.completed
             and (not node.off_topic)
-            and node.score
-            and isinstance(node.score.get_value(), float)
+            and node.objective_score
+            and isinstance(node.objective_score.get_value(), float)
         ]
-        completed_nodes.sort(key=lambda x: (x.score.get_value() if x.score else 0.0, random.random()), reverse=True)
+        completed_nodes.sort(key=lambda x: (x.objective_score.get_value() if x.objective_score else 0.0, random.random()), reverse=True)
         return completed_nodes
 
     def _prune_nodes_over_width(
@@ -315,5 +315,5 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         if not result.completed:
             return "Pruned (no score available)"
         # get score into human-readable format by adding min value and multiplying by (max-min)
-        unnormalized_score = round(1 + result.score.get_value() * 9)
+        unnormalized_score = round(1 + result.objective_score.get_value() * 9)
         return f"Score: {unnormalized_score}/10 || "

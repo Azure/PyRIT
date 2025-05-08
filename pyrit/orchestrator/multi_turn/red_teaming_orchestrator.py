@@ -206,7 +206,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
             conversation_id=objective_target_conversation_id,
             objective=objective,
             status="success" if achieved_objective else "failure",
-            score=score,
+            objective_score=score,
             confidence=1.0 if achieved_objective else 0.0,
         )
 

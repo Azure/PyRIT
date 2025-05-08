@@ -306,7 +306,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             conversation_id=objective_target_conversation_id,
             objective=objective,
             status="success" if achieved_objective else "failure",
-            score=objective_score,
+            objective_score=objective_score,
             confidence=1.0 if achieved_objective else 0.0,
         )
 

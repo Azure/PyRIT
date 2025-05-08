@@ -391,6 +391,7 @@ API Reference
     LikertScalePaths
     MarkdownInjectionScorer
     PromptShieldScorer
+    QuestionAnswerScorer
     Scorer
     ScoreAggregator
     SelfAskCategoryScorer

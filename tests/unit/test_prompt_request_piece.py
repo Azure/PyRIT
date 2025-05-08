@@ -17,6 +17,7 @@ from pyrit.models import (
     PromptRequestResponse,
     Score,
     group_conversation_request_pieces_by_sequence,
+    construct_response_from_request
 )
 from pyrit.models.prompt_request_piece import sort_request_pieces
 from pyrit.orchestrator import PromptSendingOrchestrator
@@ -624,3 +625,60 @@ def test_prompt_request_piece_to_dict():
     assert result["originator"] == entry.originator
     assert result["original_prompt_id"] == str(entry.original_prompt_id)
     assert result["scores"] == [score.to_dict() for score in entry.scores]
+
+
+def test_construct_response_from_request_combines_metadata():
+    # Create a request piece with metadata
+    request = PromptRequestPiece(
+        role="user",
+        original_value="test prompt",
+        conversation_id="123",
+        prompt_metadata={"key1": "value1", "key2": 2}
+    )
+
+    additional_metadata = {"key2": 3, "key3": "value3"}
+
+    response = construct_response_from_request(
+        request=request,
+        response_text_pieces=["test response"],
+        prompt_metadata=additional_metadata
+    )
+
+    assert len(response.request_pieces) == 1
+    response_piece = response.request_pieces[0]
+
+    assert response_piece.prompt_metadata["key1"] == "value1"  # Original value preserved
+    assert response_piece.prompt_metadata["key2"] == 3  # Overridden by additional metadata
+    assert response_piece.prompt_metadata["key3"] == "value3"  # Added from additional metadata
+
+    assert response_piece.role == "assistant"
+    assert response_piece.original_value == "test response"
+    assert response_piece.conversation_id == "123"
+    assert response_piece.original_value_data_type == "text"
+    assert response_piece.converted_value_data_type == "text"
+    assert response_piece.response_error == "none"
+
+
+def test_construct_response_from_request_no_metadata():
+    request = PromptRequestPiece(
+        role="user",
+        original_value="test prompt",
+        conversation_id="123"
+    )
+
+    response = construct_response_from_request(
+        request=request,
+        response_text_pieces=["test response"]
+    )
+
+    assert len(response.request_pieces) == 1
+    response_piece = response.request_pieces[0]
+
+    assert not response_piece.prompt_metadata
+
+    assert response_piece.role == "assistant"
+    assert response_piece.original_value == "test response"
+    assert response_piece.conversation_id == "123"
+    assert response_piece.original_value_data_type == "text"
+    assert response_piece.converted_value_data_type == "text"
+    assert response_piece.response_error == "none"

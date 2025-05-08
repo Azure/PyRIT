@@ -3,6 +3,9 @@
 
 from typing import Dict, MutableSequence, Optional, Sequence, Union
 
+from pyrit.common.utils import combine_dict
+
+
 from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 
@@ -152,6 +155,11 @@ def construct_response_from_request(
     """
     Constructs a response entry from a request.
     """
+
+    # prompt metadat should be combined with the request piece metadata
+    if request.prompt_metadata:
+        prompt_metadata = combine_dict(request.prompt_metadata, prompt_metadata)
+
     return PromptRequestResponse(
         request_pieces=[
             PromptRequestPiece(

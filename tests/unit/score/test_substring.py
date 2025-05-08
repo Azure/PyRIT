@@ -51,3 +51,12 @@ async def test_substring_scorer_adds_to_memory():
         await scorer.score_text_async(text="string")
 
         memory.add_scores_to_memory.assert_called_once()
+
+@pytest.mark.asyncio
+async def test_substring_scorer_no_category():
+    memory = MagicMock(MemoryInterface)
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        scorer = SubStringScorer(substring="string")
+        await scorer.score_text_async(text="string")
+
+        memory.add_scores_to_memory.assert_called_once()

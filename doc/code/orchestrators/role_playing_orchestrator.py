@@ -39,9 +39,11 @@ initialize_pyrit(memory_db_type=IN_MEMORY)
 objective_target = OpenAIChatTarget()
 adversarial_chat = OpenAIChatTarget()
 
+converters = PromptConverterConfiguration.from_converters(converters=[CharSwapGenerator()])
+
 orchestrator = RolePlayOrchestrator(
     objective_target=objective_target,
-    request_converter_configurations=PromptConverterConfiguration.from_converters(converters=[CharSwapGenerator()]),
+    request_converter_configurations=converters,
     adversarial_chat=adversarial_chat,
     role_play_definition_path=RolePlayPaths.MOVIE_SCRIPT.value,
     auxiliary_scorers=[AzureContentFilterScorer()],
