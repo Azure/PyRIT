@@ -86,6 +86,7 @@ chapters:
       - file: code/scoring/5_human_scorers
       - file: code/scoring/6_refusal_scorer
       - file: code/scoring/insecure_code_scorer
+      - file: code/scoring/look_back_scorer
       - file: code/scoring/prompt_shield_scorer
       - file: code/scoring/true_false_batch_scoring
       - file: code/scoring/human_in_the_loop_scorer_gradio

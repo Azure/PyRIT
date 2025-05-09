@@ -95,4 +95,4 @@ request_response = red_teaming_orchestrator._memory.get_prompt_request_pieces(co
 request_piece = request_response[0]
 
 # Returns a score using entire conversation as context
-score = (await score_conversation.score_async(request_piece))[0]
+score = (await score_conversation.score_async(request_piece))[0]  # type: ignore
