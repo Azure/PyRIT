@@ -21,6 +21,7 @@ from pyrit.score.self_ask_scale_scorer import SelfAskScaleScorer
 from pyrit.score.self_ask_true_false_scorer import SelfAskTrueFalseScorer, TrueFalseQuestion, TrueFalseQuestionPaths
 from pyrit.score.substring_scorer import SubStringScorer
 from pyrit.score.true_false_inverter_scorer import TrueFalseInverterScorer
+from pyrit.score.look_back_scorer import LookBackScorer
 from pyrit.score.question_answer_scorer import QuestionAnswerScorer
 
 __all__ = [
@@ -35,6 +36,7 @@ __all__ = [
     "HumanInTheLoopScorerGradio",
     "InsecureCodeScorer",
     "LikertScalePaths",
+    "LookBackScorer",
     "MAJORITY_",
     "MarkdownInjectionScorer",
     "OR_",
