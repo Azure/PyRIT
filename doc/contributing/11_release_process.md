@@ -128,6 +128,8 @@ Note: You may need to build the package again if those changes modify any depend
 Create an account on pypi.org if you don't have one yet.
 Ask one of the other maintainers to add you to the `pyrit` project on PyPI.
 
+Note: Before publishing to PyPi, have your API token for scope 'Project: pyrit' handy. You can create one under your PyPi Account settings. This token will be used to publish the release.
+
 ```bash
 pip install twine
 twine upload dist/*
