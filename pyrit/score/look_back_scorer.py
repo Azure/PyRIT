@@ -18,7 +18,6 @@ class LookBackScorer(Scorer):
 
     Parameters:
         chat_target (PromptChatTarget): The chat target to use for scoring.
-        conversation_id: The id of the conversation to score.
     """
 
     def __init__(self, chat_target: PromptChatTarget = None) -> None:
@@ -39,10 +38,11 @@ class LookBackScorer(Scorer):
 
     async def score_async(self, request_piece: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
-        Scores the conversation based on detected behavior change.
+        Scores the entire conversation based on detected behavior change.
 
         Args:
-            text (str): The text to be scored.
+            request_piece (PromptRequestPiece): A piece of the conversation to be scored.
+                The converation ID is used to retrieve the full conversation from memory.
             task (str): The task based on which the text should be scored (the original attacker model's objective).
                 Currently not supported for this scorer.
 
