@@ -20,7 +20,7 @@ class LookBackScorer(Scorer):
         chat_target (PromptChatTarget): The chat target to use for scoring.
     """
 
-    def __init__(self, chat_target: PromptChatTarget = None) -> None:
+    def __init__(self, chat_target: PromptChatTarget) -> None:
         self._prompt_target = chat_target
         self.scorer_type = "float_scale"
 
@@ -60,13 +60,10 @@ class LookBackScorer(Scorer):
         conversation_as_text = ""
         for request in conversation:
             # If the request contains a system or user prompt, ignore
-            if request.request_pieces[0].original_value.startswith("# Instructions"):
-                pass
-            else:
-                conversation_as_text += request.request_pieces[0].role
-                conversation_as_text += ": "
-                conversation_as_text += request.request_pieces[0].original_value
-                conversation_as_text += "\n"
+            if request.request_pieces[0].role in ["user", "assistant"]:
+                conversation_as_text += (
+                    f"{request.request_pieces[0].role}: {request.request_pieces[0].original_value}\n"
+                )
 
         # Send full conversation to LLM for scoring
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
