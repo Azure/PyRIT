@@ -389,6 +389,7 @@ API Reference
     HumanInTheLoopScorer
     HumanInTheLoopScorerGradio
     LikertScalePaths
+    LookBackScorer
     MarkdownInjectionScorer
     PromptShieldScorer
     QuestionAnswerScorer
