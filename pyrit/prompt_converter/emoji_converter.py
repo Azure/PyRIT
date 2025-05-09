@@ -3,11 +3,16 @@
 
 import random
 
-from pyrit.models import PromptDataType
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 
 
-class EmojiConverter(PromptConverter):
+class EmojiConverter(WordLevelConverter):
+    """
+    Converts English text to randomly chosen circle or square character emojis.
+
+    Inspired by https://github.com/BASI-LABS/parseltongue/blob/main/src/utils.ts
+    """
+
     emoji_dict = {
         "a": ["🅐", "🅰️", "🄰"],
         "b": ["🅑", "🅱️", "🄱"],
@@ -37,28 +42,12 @@ class EmojiConverter(PromptConverter):
         "z": ["🅩", "🆉", "🅉"],
     }
 
-    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
-        """
-        Converts English text to randomly chosen circle or square character emojis.
-
-        Inspired by https://github.com/BASI-LABS/parseltongue/blob/main/src/utils.ts
-        """
-        if not self.input_supported(input_type):
-            raise ValueError("Input type not supported")
-
-        prompt = prompt.lower()
+    async def convert_word_async(self, word: str) -> str:
+        word = word.lower()
         result = []
-        for char in prompt:
+        for char in word:
             if char in EmojiConverter.emoji_dict:
                 result.append(random.choice(EmojiConverter.emoji_dict[char]))
             else:
                 result.append(char)
-        ret_text = "".join(result)
-
-        return ConverterResult(output_text=ret_text, output_type="text")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"
+        return "".join(result)
