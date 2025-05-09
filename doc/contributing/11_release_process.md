@@ -132,7 +132,7 @@ Note: Before publishing to PyPi, have your API token for scope 'Project: pyrit' 
 
 ```bash
 pip install twine
-twine upload dist/*
+twine upload dist/* # this should be the same as dist/pyrit-x.y.z-py3-none-any.whl
 ```
 
 If successful, it will print
