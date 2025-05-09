@@ -15,14 +15,7 @@ from pydantic.types import PositiveInt
 from tinytag import TinyTag
 
 from pyrit.common import utils
-from pyrit.common.path import (
-    DATASETS_PATH,
-    DB_DATA_PATH,
-    DOCS_CODE_PATH,
-    HOME_PATH,
-    LOG_PATH,
-    PYRIT_PATH,
-)
+from pyrit.common.path import PATHS_DICT
 from pyrit.common.yaml_loadable import YamlLoadable
 from pyrit.models import DataTypeSerializer
 from pyrit.models.literals import PromptDataType
@@ -69,15 +62,6 @@ class SeedPrompt(YamlLoadable):
     prompt_group_alias: Optional[str]
     sequence: Optional[int]
 
-    TEMPLATE_PATHS = {
-        "datasets_path": DATASETS_PATH,
-        "pyrit_home_path": HOME_PATH,
-        "pyrit_path": PYRIT_PATH,
-        "db_data_path": DB_DATA_PATH,
-        "log_path": LOG_PATH,
-        "docs_code_path": DOCS_CODE_PATH,
-    }
-
     def __init__(
         self,
         *,
@@ -120,7 +104,7 @@ class SeedPrompt(YamlLoadable):
         self.sequence = sequence
 
         # Render the template to replace existing values
-        self.value = self.render_template_value_silent(**self.TEMPLATE_PATHS)
+        self.value = self.render_template_value_silent(**PATHS_DICT)
 
     def render_template_value(self, **kwargs) -> str:
         """Renders self.value as a template, applying provided parameters in kwargs
