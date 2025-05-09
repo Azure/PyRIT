@@ -383,6 +383,7 @@ API Reference
 
     AzureContentFilterScorer
     ContentClassifierPaths
+    CompositeScorer
     FloatScaleThresholdScorer
     GandalfScorer
     HumanInTheLoopScorer
@@ -391,13 +392,15 @@ API Reference
     LookBackScorer
     MarkdownInjectionScorer
     PromptShieldScorer
-    Scorer
     QuestionAnswerScorer
+    Scorer
+    ScoreAggregator
     SelfAskCategoryScorer
     SelfAskLikertScorer
     SelfAskRefusalScorer
     SelfAskScaleScorer
     SelfAskTrueFalseScorer
+    SelfAskQuestionAnswerScorer
     SubStringScorer
     TrueFalseInverterScorer
     TrueFalseQuestion

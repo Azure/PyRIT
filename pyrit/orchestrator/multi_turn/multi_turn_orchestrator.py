@@ -36,6 +36,7 @@ class MultiTurnOrchestrator(Orchestrator):
             prompts before sending them to the prompt target. Defaults to None.
         objective_scorer (Scorer): The scorer classifies the prompt target outputs as sufficient (True) or
             insufficient (False) to satisfy the objective that is specified in the attack_strategy.
+        batch_size (int, Optional): The number of objectives to process in parallel. The default value is 1.
         verbose (bool, Optional): Whether to print debug information. Defaults to False.
 
     Raises:
@@ -54,6 +55,7 @@ class MultiTurnOrchestrator(Orchestrator):
         max_turns: int = 5,
         prompt_converters: Optional[list[PromptConverter]] = None,
         objective_scorer: Scorer,
+        batch_size: int = 1,
         verbose: bool = False,
     ) -> None:
 
@@ -70,6 +72,8 @@ class MultiTurnOrchestrator(Orchestrator):
         self._adversarial_chat = adversarial_chat
 
         self._adversarial_chat_seed_prompt = self._get_adversarial_chat_seed_prompt(adversarial_chat_seed_prompt)
+
+        self._batch_size = batch_size
 
         if max_turns <= 0:
             raise ValueError("The maximum number of turns must be greater than or equal to 0.")
@@ -114,7 +118,7 @@ class MultiTurnOrchestrator(Orchestrator):
         """
 
     async def run_attacks_async(
-        self, *, objectives: list[str], memory_labels: Optional[dict[str, str]] = None, batch_size=5
+        self, *, objectives: list[str], memory_labels: Optional[dict[str, str]] = None
     ) -> list[OrchestratorResult]:
         """Applies the attack strategy for each objective in the list of objectives.
 
@@ -124,7 +128,6 @@ class MultiTurnOrchestrator(Orchestrator):
                 prompts throughout the attack. Any labels passed in will be combined with self._global_memory_labels
                 (from the GLOBAL_MEMORY_LABELS environment variable) into one dictionary. In the case of collisions,
                 the passed-in labels take precedence. Defaults to None.
-            batch_size (int): The number of objectives to process in parallel. The default value is 5.
 
         Returns:
             list[OrchestratorResult]: The list of OrchestratorResults for each objective, each containing:
@@ -134,7 +137,7 @@ class MultiTurnOrchestrator(Orchestrator):
                 - score (Score): The score evaluating the attack outcome.
                 - confidence (float): The confidence level of the result.
         """
-        semaphore = asyncio.Semaphore(batch_size)
+        semaphore = asyncio.Semaphore(self._batch_size)
 
         async def limited_run_attack(objective):
             async with semaphore:
