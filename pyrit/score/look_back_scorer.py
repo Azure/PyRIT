@@ -10,6 +10,7 @@ from pyrit.models import PromptRequestPiece, SeedPrompt
 from pyrit.models.score import Score, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer import Scorer
+import re
 
 
 class LookBackScorer(Scorer):
@@ -17,12 +18,14 @@ class LookBackScorer(Scorer):
     Create a score from analyzing the entire conversation and adds them to the database.
 
     Parameters:
+        exclude_instruction_prompts (bool): If True, excludes instruction prompts from the conversation.
         chat_target (PromptChatTarget): The chat target to use for scoring.
     """
 
-    def __init__(self, chat_target: PromptChatTarget) -> None:
+    def __init__(self, exclude_instruction_prompts: bool, chat_target: PromptChatTarget) -> None:
         self._prompt_target = chat_target
         self.scorer_type = "float_scale"
+        self.exclude_instruction_prompts = exclude_instruction_prompts
 
         behavior_change_prompt_path = Path(
             DATASETS_PATH, "score", "scales", "behavior_change_system_prompt.yaml"
@@ -41,6 +44,7 @@ class LookBackScorer(Scorer):
         Scores the entire conversation based on detected behavior change.
 
         Args:
+            exclude_instruction_prompts (bool): If True, excludes instruction prompts from the conversation.
             request_piece (PromptRequestPiece): A piece of the conversation to be scored.
                 The converation ID is used to retrieve the full conversation from memory.
             task (str): The task based on which the text should be scored (the original attacker model's objective).
@@ -59,7 +63,13 @@ class LookBackScorer(Scorer):
         # Loop through each request to create a single string containing the conversation text
         conversation_as_text = ""
         for request in conversation:
-            # If the request contains a system or user prompt, ignore
+            # Check exclude_instruction_prompts flag
+            if self.exclude_instruction_prompts:
+                # Skip instruction prompts
+                if re.search(r"#\s*Instructions", request.request_pieces[0].original_value, re.IGNORECASE):
+                    continue
+            # Append the request text to the conversation string
+            # Only append user and assistant roles to the conversation string
             if request.request_pieces[0].role in ["user", "assistant"]:
                 conversation_as_text += (
                     f"{request.request_pieces[0].role}: {request.request_pieces[0].original_value}\n"
