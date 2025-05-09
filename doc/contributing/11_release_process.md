@@ -121,6 +121,8 @@ git push origin releases/vx.y.z
 git tag -a vx.y.z -m "vx.y.z release" --force # to update the tag to the correct commit
 ```
 
+Note: You may need to build the package again if those changes modify any dependencies, and consider retesting the notebooks if the changes affect them.
+
 ## 6. Publish to PyPi
 
 Create an account on pypi.org if you don't have one yet.
