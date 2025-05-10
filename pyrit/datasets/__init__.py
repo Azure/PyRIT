@@ -22,6 +22,7 @@ from pyrit.datasets.seclists_bias_testing_dataset import fetch_seclists_bias_tes
 from pyrit.datasets.tdc23_redteaming_dataset import fetch_tdc23_redteaming_dataset
 from pyrit.datasets.wmdp_dataset import fetch_wmdp_dataset
 from pyrit.datasets.xstest_dataset import fetch_xstest_dataset
+from pyrit.datasets.cbt_bench import fetch_cbt_bench_dataset
 
 __all__ = [
     "fetch_adv_bench_dataset",
@@ -43,4 +44,5 @@ __all__ = [
     "fetch_tdc23_redteaming_dataset",
     "fetch_wmdp_dataset",
     "fetch_xstest_dataset",
+    "fetch_cbt_bench_dataset",
 ]
