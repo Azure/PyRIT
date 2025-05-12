@@ -1,12 +1,8 @@
-from typing import Optional, Dict, List, Literal, get_args
+from typing import Optional, Dict, Literal, get_args
 from dataclasses import dataclass
 
 from pyrit.models import PromptRequestPiece, Score
-from pyrit.score import (
-    Scorer,
-    AzureContentFilterScorer,
-    HumanInTheLoopScorer
-)
+from pyrit.score import Scorer
 
 @dataclass
 class WeakScorerSpec:
@@ -23,7 +19,7 @@ class EnsembleScorer(Scorer):
                  weak_scorer_dict: Dict[str, WeakScorerSpec],
                  fit_weights: bool = False,
                  lr: float = 1e-2,
-                 ground_truth_scorer: Optional[Scorer] = None,
+                 ground_truth_scorer: Scorer,
                  category: str = "jailbreak"):
         self.scorer_type = "float_scale"
         self._score_category = category
@@ -32,7 +28,7 @@ class EnsembleScorer(Scorer):
             raise ValueError("Please pass a nonempty dictionary of weights")
 
         for scorer_name, weak_scorer_spec in weak_scorer_dict.items():
-            if isinstance(weak_scorer_spec.scorer, AzureContentFilterScorer):
+            if scorer_name == "AzureContentFilterScorer":
                 if not isinstance(weak_scorer_spec.class_weights, dict) or len(weak_scorer_spec.class_weights) == 0:
                     raise ValueError("Weights for AzureContentFilterScorer must be a dictionary of category (str) to weight (float)")
                 for acfs_k, acfs_v in weak_scorer_spec.class_weights.items():
@@ -46,10 +42,7 @@ class EnsembleScorer(Scorer):
         self._fit_weights = fit_weights
         self._lr = lr
 
-        self._ground_truth_scorer = (
-            ground_truth_scorer if ground_truth_scorer is not None
-            else HumanInTheLoopScorer()
-        )
+        self._ground_truth_scorer = ground_truth_scorer
 
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         self.validate(request_response, task=task)
@@ -61,7 +54,7 @@ class EnsembleScorer(Scorer):
             scorer = weak_scorer_spec.scorer
             current_scores = await scorer.score_async(request_response=request_response, task=task)
             for curr_score in current_scores:
-                if isinstance(scorer, AzureContentFilterScorer):
+                if scorer_name == "AzureContentFilterScorer":
                     score_category = curr_score.score_category
                     curr_weight = weak_scorer_spec.class_weights[score_category]
                     metadata_label = "_".join([scorer_name, score_category, "weight"])
