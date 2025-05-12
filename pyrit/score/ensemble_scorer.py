@@ -1,44 +1,55 @@
-from typing import Optional, Union, Dict, List
+from typing import Optional, Dict, List, Literal, get_args
+from dataclasses import dataclass
 
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.score import (
     Scorer,
-    SubStringsMultipleScorer,
     AzureContentFilterScorer,
-    SelfAskScaleScorer,
     HumanInTheLoopScorer
 )
+
+@dataclass
+class WeakScorerSpec:
+    scorer: Scorer
+    weight: Optional[float] = None
+    class_weights: Optional[Dict[str, float]] = None
+
+LossMetric = Literal["MSE", "MAE"]
 
 class EnsembleScorer(Scorer):
 
     def __init__(self, 
-                 weak_scorer_dict: Dict[str, List[Union[Scorer, Union[float, Dict[str, float]]]]],
+                 *,
+                 weak_scorer_dict: Dict[str, WeakScorerSpec],
                  fit_weights: bool = False,
-                 ground_truth_scorer: Scorer = HumanInTheLoopScorer(),
                  lr: float = 1e-2,
-                 category = "jailbreak"):
+                 ground_truth_scorer: Optional[Scorer] = None,
+                 category: str = "jailbreak"):
         self.scorer_type = "float_scale"
         self._score_category = category
 
         if not isinstance(weak_scorer_dict, dict) or (len(weak_scorer_dict) == 0):
             raise ValueError("Please pass a nonempty dictionary of weights")
 
-        for k, v in weak_scorer_dict.items():
-            scorer, weight = v
-            if isinstance(scorer, AzureContentFilterScorer) and not isinstance(weight, dict):
-                raise ValueError("Weights for AzureContentFilterScorer must be a dictionary of category (str) to weight (float)")
-            if isinstance(scorer, AzureContentFilterScorer) and isinstance(weight, dict):
-                for acfs_k, acfs_v in weight.items():
+        for scorer_name, weak_scorer_spec in weak_scorer_dict.items():
+            if isinstance(weak_scorer_spec.scorer, AzureContentFilterScorer):
+                if not isinstance(weak_scorer_spec.class_weights, dict) or len(weak_scorer_spec.class_weights) == 0:
+                    raise ValueError("Weights for AzureContentFilterScorer must be a dictionary of category (str) to weight (float)")
+                for acfs_k, acfs_v in weak_scorer_spec.class_weights.items():
                     if not isinstance(acfs_k, str) or not isinstance(acfs_v, float):
                         raise ValueError("Weights for AzureContentFilterScorer must be a dictionary of category (str) to weight (float)")
-            elif not isinstance(weight, float):
+            elif not isinstance(weak_scorer_spec.weight, float):
                 raise ValueError("Weight for this scorer must be a float")
 
         self._weak_scorer_dict = weak_scorer_dict
 
         self._fit_weights = fit_weights
-        self._ground_truth_scorer = ground_truth_scorer
         self._lr = lr
+
+        self._ground_truth_scorer = (
+            ground_truth_scorer if ground_truth_scorer is not None
+            else HumanInTheLoopScorer()
+        )
 
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         self.validate(request_response, task=task)
@@ -46,13 +57,13 @@ class EnsembleScorer(Scorer):
         ensemble_score_value = 0
         score_values = {}
         metadata = {}
-        for scorer_name, value in self._weak_scorer_dict.items():
-            scorer, weight = value
+        for scorer_name, weak_scorer_spec in self._weak_scorer_dict.items():
+            scorer = weak_scorer_spec.scorer
             current_scores = await scorer.score_async(request_response=request_response, task=task)
             for curr_score in current_scores:
                 if isinstance(scorer, AzureContentFilterScorer):
                     score_category = curr_score.score_category
-                    curr_weight = weight[score_category]
+                    curr_weight = weak_scorer_spec.class_weights[score_category]
                     metadata_label = "_".join([scorer_name, score_category, "weight"])
 
                     curr_score_value = float(curr_score.get_value())
@@ -60,7 +71,7 @@ class EnsembleScorer(Scorer):
                         score_values[scorer_name] = {}
                     score_values[scorer_name][score_category] = curr_score_value
                 else:
-                    curr_weight = weight
+                    curr_weight = weak_scorer_spec.weight
                     metadata_label = "_".join([scorer_name, "weight"])
                     curr_score_value = float(curr_score.get_value())
                     score_values[scorer_name] = curr_score_value
@@ -96,7 +107,10 @@ class EnsembleScorer(Scorer):
                            request_response: PromptRequestPiece, 
                            *, 
                            task: Optional[str] = None,
-                           loss_metric: str = "MSE"):
+                           loss_metric: LossMetric = "MSE"):
+        if loss_metric not in get_args(LossMetric):
+            raise ValueError(f"Loss metric {loss_metric} is not a valid loss metric.")
+
         ground_truth_scores = await self._ground_truth_scorer.score_async(request_response=request_response, task=task)
         for ground_truth_score in ground_truth_scores:
             if loss_metric == "MSE":
@@ -108,15 +122,13 @@ class EnsembleScorer(Scorer):
 
             for scorer_name in score_values:
                 if scorer_name == "AzureContentFilterScorer":
-                    self._weak_scorer_dict[scorer_name][1] = {score_category: 
-                                                                self._weak_scorer_dict[scorer_name][1][score_category] -
-                                                                    self._lr * score_values[scorer_name][score_category] * d_loss_d_ensemble_score
-                                                            for score_category in self._weak_scorer_dict[scorer_name][1]}
+                    self._weak_scorer_dict[scorer_name].class_weights = {score_category: 
+                                                                            self._weak_scorer_dict[scorer_name][1][score_category] -
+                                                                            self._lr * score_values[scorer_name][score_category] * d_loss_d_ensemble_score
+                                                                         for score_category in self._weak_scorer_dict[scorer_name][1]}
                 else:
-                    self._weak_scorer_dict[scorer_name][1] = self._weak_scorer_dict[scorer_name][1] - self._lr * score_values[scorer_name] * d_loss_d_ensemble_score
+                    self._weak_scorer_dict[scorer_name].weight = self._weak_scorer_dict[scorer_name].weight - self._lr * score_values[scorer_name] * d_loss_d_ensemble_score
         
-            print(self._weak_scorer_dict)
-
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
         if request_response.original_value_data_type != "text":

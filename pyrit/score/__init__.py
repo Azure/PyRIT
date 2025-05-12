@@ -21,7 +21,7 @@ from pyrit.score.substrings_multiple_scorer import SubStringsMultipleScorer
 from pyrit.score.substring_scorer import SubStringScorer
 from pyrit.score.true_false_inverter_scorer import TrueFalseInverterScorer
 
-from pyrit.score.ensemble_scorer import EnsembleScorer
+from pyrit.score.ensemble_scorer import EnsembleScorer, WeakScorerSpec
 
 __all__ = [
     "AzureContentFilterScorer",
@@ -48,5 +48,6 @@ __all__ = [
     "TrueFalseQuestion",
     "TrueFalseQuestionPaths",
 
-    "EnsembleScorer"
+    "EnsembleScorer",
+    "WeakScorerSpec"
 ]
