@@ -74,7 +74,7 @@ try:
     start_time = time.time()
 
     # Send prompts asynchronously
-    responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
+    responses = await orchestrator.run_attacks_async(objectives=prompt_list)  # type: ignore
 
     # Record end time
     end_time = time.time()
