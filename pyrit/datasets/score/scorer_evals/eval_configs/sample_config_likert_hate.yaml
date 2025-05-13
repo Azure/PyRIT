@@ -1,0 +1,13 @@
+csv_path: >
+  {{ scorer_evals_path }}/eval_datasets/likert_hate_speech_sample_dataset.csv
+assistant_response_col_name: "assistant_response"
+manual_grading_col_names:
+  - "human_likert_score_1"
+  - "human_likert_score_2"
+  - "human_likert_score_3"
+normalized: False
+scorer_trials: 1
+json_output_save_dir: >
+  {{ scorer_evals_results_metrics_path }}
+csv_scores_save_dir: >
+  {{ scorer_evals_results_scores_csv_path }}
