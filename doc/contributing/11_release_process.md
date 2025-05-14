@@ -35,10 +35,11 @@ that happened since the last release will influence the new version number.
 
 Set the version in `pyproject.toml` and `pyrit/__init__.py` to the version established in step 1.
 
-## Update README.md
+## Update README File
 
-Readme.md is published to PyPI and also needs to be updated so the
-links work properly.
+The README file is published to PyPI and also needs to be updated so the
+links work properly. Note: There may not be any links to update, but it is
+good practice to check in case our README changes.
 
 Replace all "main" links like
 "https://github.com/Azure/PyRIT/blob/main/doc/README.md" with "raw" links that have
@@ -54,7 +55,7 @@ For directories, update using the "tree" link, e.g.,
 This is required for the release branch because PyPI does not pick up
 other files besides the README, which results in local links breaking.
 
-## 3. Publish to github
+## 3. Publish to GitHub
 
 Commit your changes and push them to the repository on a branch called
 `releases/vx.y.z`, then run
@@ -83,7 +84,7 @@ This should print
 
 > Successfully built pyrit-x.y.z.tar.gz and pyrit-x.y.z-py3-none-any.whl
 
-## 5. Test built package
+## 5. Test Built Package
 
 This step is crucial to ensure that the new package works out of the box.
 Create a new conda environment with `conda create -n release-test-vx.y.z python=3.11 -y`
@@ -99,7 +100,8 @@ Before running the demos, execute `az login` or `az login --use-device-code`, as
 
 Additionally, verify that your environment file includes all the test secrets needed to run the demos. If not, update your .env file using the secrets from the key vault.
 
-In the new location, run all notebooks.
+In the new location, run all notebooks that are currently skipped by integration tests. These are listed in `skipped_files` in each `tests/integration/<folder>/test_notebooks_*.py` file. You may need to `pip install ipykernel` and `pip install jupyter` to run these notebooks as expected.
+
 This can be done using `python .\doc\generate_docs\pct_to_ipynb.py --run-id <run-id> --kernel-name <kernel>` or manually.
 Check the output to make sure that the notebooks succeeded.
 
@@ -108,14 +110,29 @@ in the repository that should be shipped with the package.
 If we run inside the repository, we may not face errors that users encounter
 with a clean installation and no locally cloned repository.
 
+If at any point you need to make changes to fix bugs discovered while testing, or there is another change to include with the release, follow the steps below after the item has been merged into `main`.
+```bash
+git checkout main
+git fetch main
+git log main # to identify the commit hash of the change you want to cherry-pick
+git checkout releases/vx.y.z
+git cherry-pick <commit-hash>
+git push origin releases/vx.y.z
+git tag -a vx.y.z -m "vx.y.z release" --force # to update the tag to the correct commit
+```
+
+Note: You may need to build the package again if those changes modify any dependencies, and consider retesting the notebooks if the changes affect them.
+
 ## 6. Publish to PyPi
 
 Create an account on pypi.org if you don't have one yet.
 Ask one of the other maintainers to add you to the `pyrit` project on PyPI.
 
+Note: Before publishing to PyPi, have your API token for scope 'Project: pyrit' handy. You can create one under your PyPi Account settings. This token will be used to publish the release.
+
 ```bash
 pip install twine
-twine upload dist/*
+twine upload dist/* # this should be the same as dist/pyrit-x.y.z-py3-none-any.whl
 ```
 
 If successful, it will print

@@ -5,7 +5,7 @@ import json
 import logging
 import os
 from abc import ABC
-from typing import Callable
+from typing import Callable, Optional
 
 from openai import RateLimitError
 from tenacity import (
@@ -61,6 +61,14 @@ class RateLimitException(PyritException):
 
     def __init__(self, status_code: int = 429, *, message: str = "Rate Limit Exception"):
         super().__init__(status_code, message=message)
+
+
+class ServerErrorException(PyritException):
+    """Exception class for opaque 5xx errors returned by the server."""
+
+    def __init__(self, status_code: int = 500, *, message: str = "Server Error", body: Optional[str] = None):
+        super().__init__(status_code, message=message)
+        self.body = body
 
 
 class EmptyResponseException(BadRequestException):
