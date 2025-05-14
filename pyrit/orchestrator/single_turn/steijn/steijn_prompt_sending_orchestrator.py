@@ -85,6 +85,8 @@ class SteijnPromptSendingOrchestrator(Orchestrator):
         """
         self._prompt_normalizer.set_skip_criteria(skip_criteria=skip_criteria, skip_value_type=skip_value_type)
 
+    # Todo: This function will be refactored into run_attacks_async
+    # Todo: Instead of Normalizer request object, Objective, Expected output, and prompt type should be passed.
     async def send_normalizer_requests_async(
             self,
             *,
@@ -105,6 +107,7 @@ class SteijnPromptSendingOrchestrator(Orchestrator):
             if prompt.seed_prompt_group.prompts[0].expected_output:
                 expected_output_list.append(prompt.seed_prompt_group.prompts[0].expected_output)
 
+        # Todo: In the new design, do not forget to set the expected output and reference prompt before sending the request to scorer.
         responses: List[PromptRequestResponse] = await self._prompt_normalizer.send_prompt_batch_to_target_async(
             requests=prompt_request_list,
             target=self._objective_target,
@@ -150,6 +153,7 @@ class SteijnPromptSendingOrchestrator(Orchestrator):
             if "conversation" in qa:
                 # Flush any accumulated single-turn requests.
                 if single_turn_requests:
+                    # Todo: This function will be refactored into run_attacks_async
                     await self.send_normalizer_requests_async(prompt_request_list=single_turn_requests)
                     single_turn_requests = []
 
@@ -159,6 +163,8 @@ class SteijnPromptSendingOrchestrator(Orchestrator):
                     prompt_text = turn["question"]
                     print("Question:", prompt_text)
                     expected_output = turn["expected_outcome"]
+
+                    # Todo: We can pass these information directly to run attacks function
                     request = self._create_normalizer_request(
                         prompt_text=prompt_text,
                         expected_output=expected_output,
@@ -168,8 +174,10 @@ class SteijnPromptSendingOrchestrator(Orchestrator):
                         conversation_id=conversation_id,
                     )
 
+                    # Todo: This function will be refactored into run_attacks_async
                     results = await self.send_normalizer_requests_async(prompt_request_list=[request])
                     all_responses.extend(results)
+                    # Todo: OrchestratorResult will be returned, find a way to get the thread_id from the result. You can use metadata
                     flattened = PromptRequestResponse.flatten_to_prompt_request_pieces(results)
                     if idx == 0:
                         thread_id = flattened[0].prompt_metadata.get("thread_id")
