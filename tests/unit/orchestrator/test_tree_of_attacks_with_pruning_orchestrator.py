@@ -251,7 +251,7 @@ async def test_run_attack_multiturn_failure(
         async def side_effect(objective, nodes, tree_visualization):
             for node in nodes:
                 node.completed = True
-                node.score = create_score(0.0)
+                node.objective_score = create_score(0.0)
 
         mock_send.side_effect = side_effect
 
@@ -294,7 +294,7 @@ async def test_run_attack_success_in_last_turn(
 
             for node in nodes:
                 node.completed = True
-                node.score = create_score(score)
+                node.objective_score = create_score(score)
 
         mock_send.side_effect = side_effect
 
@@ -316,11 +316,11 @@ def test_prune_nodes_over_width():
     )
 
     nodes = [
-        MagicMock(node_id="1", score=create_score(0.0), completed=True, off_topic=False),
-        MagicMock(node_id="2", score=create_score(1.0), completed=True, off_topic=False),
-        MagicMock(node_id="3", score=create_score(0.0), completed=True, off_topic=False),
-        MagicMock(node_id="4", score=create_score(0.1), completed=True, off_topic=False),
-        MagicMock(node_id="5", score=create_score(0.5), completed=True, off_topic=False),
+        MagicMock(node_id="1", objective_score=create_score(0.0), completed=True, off_topic=False),
+        MagicMock(node_id="2", objective_score=create_score(1.0), completed=True, off_topic=False),
+        MagicMock(node_id="3", objective_score=create_score(0.0), completed=True, off_topic=False),
+        MagicMock(node_id="4", objective_score=create_score(0.1), completed=True, off_topic=False),
+        MagicMock(node_id="5", objective_score=create_score(0.5), completed=True, off_topic=False),
     ]
 
     tree = MagicMock()
