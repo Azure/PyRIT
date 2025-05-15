@@ -156,8 +156,9 @@ async def test_run_attack_async(question_answer_orchestrator, mock_question_answ
         assert objective == expected_objective
 
 
+@pytest.mark.parametrize("repeat_count", [1, 5])
 @pytest.mark.asyncio
-async def test_run_attacks_async(question_answer_orchestrator, mock_question_answer_entry):
+async def test_run_attacks_async(question_answer_orchestrator, mock_question_answer_entry, repeat_count):
     """Tests that run_attacks_async properly handles multiple entries."""
     entries = [mock_question_answer_entry, mock_question_answer_entry]
 
@@ -166,7 +167,9 @@ async def test_run_attacks_async(question_answer_orchestrator, mock_question_ans
     ) as mock_run_attack_async:
         mock_run_attack_async.return_value = MagicMock()
 
-        results = await question_answer_orchestrator.run_attacks_async(question_answering_entries=entries)
+        results = await question_answer_orchestrator.run_attacks_async(
+            question_answering_entries=entries, question_repeat_count=repeat_count
+        )
 
-        assert mock_run_attack_async.call_count == 2
-        assert len(results) == 2
+        assert mock_run_attack_async.call_count == 2 * repeat_count
+        assert len(results) == 2 * repeat_count

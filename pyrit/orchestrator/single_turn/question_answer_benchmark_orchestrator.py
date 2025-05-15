@@ -174,6 +174,7 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
         self,
         *,
         question_answering_entries: list[QuestionAnsweringEntry],
+        question_repeat_count: int = 1,
         prepended_conversations: Optional[list[PromptRequestResponse]] = None,
         memory_labels: Optional[dict[str, str]] = None,
     ) -> list[OrchestratorResult]:
@@ -184,10 +185,21 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
             question_answering_entries (list[QuestionAnsweringEntry]): List of question answering entries to process.
             prepended_conversations (list[PromptRequestResponse], Optional): The conversations to prepend to each
                 attack.
+            question_repeat_count (int): allows for repetition of QuestionAnsweringEntry objects
             memory_labels (dict[str, str], Optional): The memory labels to use for the attacks.
         Returns:
             list[OrchestratorResult]: List of results from each attack.
         """
+
+        question_answering_entries = [
+            entry for entry in question_answering_entries for _ in range(question_repeat_count)
+        ]
+        if prepended_conversations:
+            prepended_conversations = [
+                prepended_conversation
+                for prepended_conversation in prepended_conversations
+                for _ in range(question_repeat_count)
+            ]
 
         if not prepended_conversations:
             prepended_conversations = [None] * len(question_answering_entries)
