@@ -10,7 +10,8 @@ This is a mapping of the database schema and shows how our databases map togethe
       'lineColor': '#f39e3d',
       'secondaryColor': '#f6bb77',
       'primaryBorderColor': '#f39e3d',
-      'nodeBorder': '2px'
+      'clusterBorder': '#000000',
+      'clusterBkg': '#fff8f0'
     }
   }
 }%%
