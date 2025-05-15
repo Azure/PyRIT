@@ -17,9 +17,9 @@ class EnsembleScorer(Scorer):
     def __init__(self, 
                  *,
                  weak_scorer_dict: Dict[str, WeakScorerSpec],
+                 ground_truth_scorer: Scorer,
                  fit_weights: bool = False,
                  lr: float = 1e-2,
-                 ground_truth_scorer: Scorer,
                  category: str = "jailbreak"):
         self.scorer_type = "float_scale"
         self._score_category = category
@@ -36,6 +36,9 @@ class EnsembleScorer(Scorer):
                         raise ValueError("Weights for AzureContentFilterScorer must be a dictionary of category (str) to weight (float)")
             elif not isinstance(weak_scorer_spec.weight, float):
                 raise ValueError("Weight for this scorer must be a float")
+            
+        if not isinstance(lr, float) or lr <= 0:
+            raise ValueError("Learning rate must be a floating point number greater than 0")
 
         self._weak_scorer_dict = weak_scorer_dict
 
@@ -90,15 +93,15 @@ class EnsembleScorer(Scorer):
         self._memory.add_scores_to_memory(scores=[ensemble_score])
 
         if self._fit_weights:
-            await self.step_weights(score_values, ensemble_score, request_response=request_response, task=task)
+            await self.step_weights(score_values=score_values, ensemble_score=ensemble_score, request_response=request_response, task=task)
 
         return [ensemble_score]
 
     async def step_weights(self, 
+                           *,
                            score_values: Dict[str, float], 
                            ensemble_score: Scorer,
                            request_response: PromptRequestPiece, 
-                           *, 
                            task: Optional[str] = None,
                            loss_metric: LossMetric = "MSE"):
         if loss_metric not in get_args(LossMetric):
