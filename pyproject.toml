@@ -1,6 +1,6 @@
 [project]
 name = "pyrit"
-version = "0.8.2.dev0"
+version = "0.9.1.dev0"
 description = "The Python Risk Identification Tool for LLMs (PyRIT) is a library used to assess the robustness of LLMs"
 authors = [
     { name = "Microsoft AI Red Team", email = "airedteam@microsoft.com" },
@@ -30,7 +30,6 @@ dependencies = [
     "aiofiles==23.2.1", # Pin the version to downgrade aiofiles to make sure it works with Gradio.
     "appdirs>=1.4.0",
     "art>=6.1.0",
-    "azure-cognitiveservices-speech>=1.36.0",
     "azure-core>=1.26.1",
     "azure-identity>=1.19.0",
     "azure-ai-contentsafety>=1.0.0",
@@ -118,10 +117,15 @@ opencv = [
     "opencv-python>=4.11.0.86",
 ]
 
+speech = [
+    "azure-cognitiveservices-speech>=1.36.0",
+]
+
 # all includes all functional dependencies excluding the ones from the "dev" extra
 all = [
     "accelerate>=0.34.2",
     "azure-ai-ml>=1.13.0",
+    "azure-cognitiveservices-speech>=1.36.0",
     "azureml-mlflow>=1.57.0",
     "boto3>=1.36.6",
     "flask>=3.1.0",
