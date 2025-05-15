@@ -15,7 +15,7 @@ class CompositeScorer(Scorer):
     scorers.
 
     Args:
-        aggregator: The aggregation function to use (e.g. AND_, OR_, MAJORITY_)
+        aggregator: The aggregation function to use (e.g. `AND_`, `OR_`, `MAJORITY_`)
         scorers: List of true_false scorers to combine
         score_category: Optional category for the score
     """

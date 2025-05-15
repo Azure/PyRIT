@@ -88,7 +88,7 @@ This should print
 
 This step is crucial to ensure that the new package works out of the box.
 Create a new conda environment with `conda create -n release-test-vx.y.z python=3.11 -y`
-and install the built wheel file `pip install dist/pyrit-x.y.z-py3-none-any.whl`.
+and install the built wheel file `pip install dist/pyrit-x.y.z-py3-none-any.whl[all,dev]`.
 
 Once the package is successfully installed in the new conda environment, run `pip show pyrit`. Ensure that the version matches the release `vx.y.z` and that the package is found under the site-packages directory of the environment, like `..\anaconda3\envs\release-test-vx.y.z\Lib\site-packages`.
 
@@ -100,10 +100,7 @@ Before running the demos, execute `az login` or `az login --use-device-code`, as
 
 Additionally, verify that your environment file includes all the test secrets needed to run the demos. If not, update your .env file using the secrets from the key vault.
 
-In the new location, run all notebooks that are currently skipped by integration tests. These are listed in `skipped_files` in each `tests/integration/<folder>/test_notebooks_*.py` file. You may need to `pip install ipykernel` and `pip install jupyter` to run these notebooks as expected.
-
-This can be done using `python .\doc\generate_docs\pct_to_ipynb.py --run-id <run-id> --kernel-name <kernel>` or manually.
-Check the output to make sure that the notebooks succeeded.
+In the new location, run all notebooks that are currently skipped by integration tests (there are less than 10) in VS Code. These are listed in `skipped_files` in each `tests/integration/<folder>/test_notebooks_*.py` file. Note that some of these notebooks have known issues and it may make sense to skip testing them until those are fixed. Check with the last person to deploy or look for the relevant release work item for more information. In running the notebooks, you may also see exceptions. If this happens, make sure to look for existing bugs open on the ADO board or create a new one if it does not exist! If it is easy to fix, we prefer to fix the issue before the release continues.
 
 Note: copying the doc folder elsewhere is essential since we store data files
 in the repository that should be shipped with the package.
@@ -121,14 +118,14 @@ git push origin releases/vx.y.z
 git tag -a vx.y.z -m "vx.y.z release" --force # to update the tag to the correct commit
 ```
 
-Note: You may need to build the package again if those changes modify any dependencies, and consider retesting the notebooks if the changes affect them.
+Note: You may need to build the package again if those changes modify any dependencies, and consider retesting the notebooks if the changes affect them. If you reuse the same conda environment, it is best to `pip uninstall pyrit` to force the reinstall.
 
-## 6. Publish to PyPi
+## 6. Publish to PyPI
 
 Create an account on pypi.org if you don't have one yet.
 Ask one of the other maintainers to add you to the `pyrit` project on PyPI.
 
-Note: Before publishing to PyPi, have your API token for scope 'Project: pyrit' handy. You can create one under your PyPi Account settings. This token will be used to publish the release.
+Note: Before publishing to PyPI, have your API token for scope 'Project: pyrit' handy. You can create one under your PyPI Account settings. This token will be used to publish the release.
 
 ```bash
 pip install twine

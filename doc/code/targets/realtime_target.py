@@ -5,9 +5,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.17.0
 #   kernelspec:
-#     display_name: pyrit2
+#     display_name: pyrit-dev
 #     language: python
 #     name: python3
 # ---
@@ -40,25 +40,26 @@ from pathlib import Path
 
 from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
 
+# This is audio asking how to cut down a tree
 audio_path = Path("../../../assets/converted_audio.wav").resolve()
 
-normalizer_request = NormalizerRequest(
-    seed_prompt_group=SeedPromptGroup(
-        prompts=[
-            SeedPrompt(
-                value=str(audio_path),
-                data_type="audio_path",
-            ),
-        ]
-    )
+# The objective string itself is not sent to the target
+objective = "Cutting down a tree"
+
+seed_prompt_group = SeedPromptGroup(
+    prompts=[
+        SeedPrompt(
+            value=str(audio_path),
+            data_type="audio_path",
+        ),
+    ]
 )
 
-# %%
+
 orchestrator = PromptSendingOrchestrator(objective_target=target)
-await orchestrator.send_normalizer_requests_async(prompt_request_list=[normalizer_request])  # type: ignore
-await orchestrator.print_conversations_async()  # type: ignore
+result = await orchestrator.run_attack_async(objective=objective, seed_prompt=seed_prompt_group)  # type: ignore
+await result.print_conversation_async()  # type: ignore
 await target.cleanup_target()  # type: ignore
 
 # %% [markdown]
@@ -72,8 +73,10 @@ second_prompt_to_send = "What is the size of that city?"
 # Showing how to send multiple prompts but each is its own conversation, ie the second prompt is not a follow up to the first
 
 orchestrator = PromptSendingOrchestrator(objective_target=target)
-response = await orchestrator.send_prompts_async(prompt_list=[prompt_to_send, second_prompt_to_send])  # type: ignore
-await orchestrator.print_conversations_async()  # type: ignore
+results = await orchestrator.run_attacks_async(objectives=[prompt_to_send, second_prompt_to_send])  # type: ignore
+
+for result in results:
+    await result.print_conversation_async()  # type: ignore
 await target.cleanup_target()  # type: ignore
 
 # %% [markdown]
@@ -116,10 +119,3 @@ red_teaming_orchestrator = RedTeamingOrchestrator(
 result = await red_teaming_orchestrator.run_attack_async(objective=objective, memory_labels={"harm_category": "illegal"})  # type: ignore
 await result.print_conversation_async()  # type: ignore
 await target.cleanup_target()  # type: ignore
-
-
-# %%
-from pyrit.memory import CentralMemory
-
-memory = CentralMemory.get_memory_instance()
-memory.dispose_engine()

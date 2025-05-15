@@ -12,7 +12,7 @@ class SubStringScorer(Scorer):
     Scorer that checks if a given substring is present in the text.
     """
 
-    def __init__(self, *, substring: str, category: str = None) -> None:
+    def __init__(self, *, substring: str, category: str = "") -> None:
 
         self._substring = substring
         self._score_category = category

@@ -33,8 +33,12 @@ explanation, or additional text. Output only the word "test" and nothing else.
 
     attempt = 0
     while attempt < max_retries:
-        result = await orchestrator.send_prompts_async(prompt_list=[simple_prompt])
-        response = result[0].get_value() if result else ""
+        result = await orchestrator.run_attack_async(objective=simple_prompt)
+
+        if result:
+            response = orchestrator._memory.get_conversation(conversation_id=result.conversation_id)[-1].get_value()
+        else:
+            response = ""
 
         if valid_response(response):
             return response
