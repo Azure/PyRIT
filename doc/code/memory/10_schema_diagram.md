@@ -9,7 +9,8 @@ This is a mapping of the database schema and shows how our databases map togethe
     'themeVariables': {
       'lineColor': '#f39e3d',
       'secondaryColor': '#f6bb77',
-      'primaryBorderColor': '#f39e3d'
+      'primaryBorderColor': '#f39e3d',
+      'nodeBorder': '2px'
     }
   }
 }%%
