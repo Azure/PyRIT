@@ -3,18 +3,6 @@ This is a mapping of the database schema and shows how our databases map togethe
 ```
 
 ```mermaid
-%%{
-  init: {
-    'theme': 'base',
-    'themeVariables': {
-      'lineColor': '#f39e3d',
-      'secondaryColor': '#f6bb77',
-      'primaryBorderColor': '#f39e3d',
-      'clusterBorder': '#000000',
-      'clusterBkg': '#fff8f0'
-    }
-  }
-}%%
 graph LR
     subgraph SeedPromptEntries
         S_id["id (UUID)"]
@@ -80,10 +68,4 @@ graph LR
     %% Relationship arrow
     S_value_sha256 -->P_original_value_sha256
     P_conversation_id -->Sc_prompt_request_response_id
-
-    %% Apply table style
-    class S_id,S_value,S_value_sha256,S_data_type,S_name,S_dataset_name,S_harm_categories,S_description,S_authors,S_groups,S_source,S_date_added,S_added_by,S_prompt_metadata,S_parameters,S_prompt_group_id,S_sequence tableStyle;
-    class P_id,P_role,P_original_value,P_original_value_sha256,P_original_value_data_type,P_conversation_id,P_sequence,P_timestamp,P_labels,P_prompt_metadata,P_converter_identifiers,P_prompt_target_identifier,P_orchestrator_identifier,P_response_error,P_converted_value_data_type,P_converted_value,P_converted_value_sha256,P_original_prompt_id tableStyle;
-    class Sc_id,Sc_score_value,Sc_score_value_description,Sc_score_type,Sc_prompt_request_response_id,Sc_score_category,Sc_score_rationale,Sc_score_metadata,Sc_scorer_class_identifier,Sc_timestamp,Sc_task tableStyle;
-    class E_id,E_embedding,E_embedding_type_name tableStyle;
 ```
