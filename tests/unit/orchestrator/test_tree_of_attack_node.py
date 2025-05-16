@@ -46,7 +46,7 @@ async def test_send_prompt_async(tree_of_attack_node):
 
     assert tree_of_attack_node.prompt_sent is True
     assert tree_of_attack_node.completed is True
-    assert tree_of_attack_node.score.get_value() == 0.9
+    assert tree_of_attack_node.objective_score.get_value() == 0.9
 
 
 def test_duplicate(tree_of_attack_node):

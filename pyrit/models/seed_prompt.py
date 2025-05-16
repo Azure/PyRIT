@@ -53,7 +53,6 @@ class SeedPrompt(YamlLoadable):
     id: Optional[uuid.UUID]
     value: str
     expected_output: Optional[str]
-    reference_value: Optional[str]
     value_sha256: str
     data_type: PromptDataType
     name: Optional[str]
@@ -86,7 +85,6 @@ class SeedPrompt(YamlLoadable):
         id: Optional[uuid.UUID] = None,
         value: str,
         expected_output: Optional[str] = None,
-        reference_value: Optional[str] = None,
         value_sha256: Optional[str] = None,
         data_type: PromptDataType,
         name: Optional[str] = None,
@@ -107,7 +105,6 @@ class SeedPrompt(YamlLoadable):
         self.id = id if id else uuid.uuid4()
         self.value = value
         self.expected_output = expected_output
-        self.reference_value = reference_value
         self.value_sha256 = value_sha256
         self.data_type = data_type
         self.name = name
@@ -226,7 +223,7 @@ class SeedPrompt(YamlLoadable):
 
 class SeedPromptGroup(YamlLoadable):
     """
-    A group of prompts that need to be sent together.
+    A group of prompts that need to be sent together, along with an objective.
 
     This class is useful when a target requires multiple (multimodal) prompt pieces to be grouped
     and sent together. All prompts in the group should share the same `prompt_group_id`.
@@ -298,6 +295,9 @@ class SeedPromptGroup(YamlLoadable):
     def is_single_request(self) -> bool:
         unique_sequences = {prompt.sequence for prompt in self.prompts}
         return len(unique_sequences) <= 1
+
+    def is_single_part_single_text_request(self) -> bool:
+        return len(self.prompts) == 1 and self.prompts[0].data_type == "text"
 
     def __repr__(self):
         return f"<SeedPromptGroup(prompts={len(self.prompts)} prompts)>"

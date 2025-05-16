@@ -1,192 +1,172 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from unit.mocks import MockPromptTarget
 
-from pyrit.models import SeedPrompt, SeedPromptDataset
-from pyrit.orchestrator import QuestionAnsweringBenchmarkOrchestrator
+from pyrit.models import (
+    QuestionAnsweringEntry,
+    QuestionChoice,
+    SeedPrompt,
+    SeedPromptGroup,
+)
+from pyrit.orchestrator import (
+    PromptSendingOrchestrator,
+    QuestionAnsweringBenchmarkOrchestrator,
+)
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.score import Scorer
 
 
 @pytest.fixture
-def mock_objective_target(patch_central_database) -> MockPromptTarget:
-    return MagicMock(spec=PromptChatTarget)
-
-
-@pytest.fixture
-def mock_prompt_converter():
-    return MagicMock()
+def mock_objective_target() -> MagicMock:
+    mock = MagicMock(spec=PromptChatTarget)
+    mock._max_requests_per_minute = None
+    return mock
 
 
 @pytest.fixture
 def mock_scorer():
-    return MagicMock(spec=Scorer)
+    scorer = MagicMock(spec=Scorer)
+    scorer.scorer_type = "true_false"
+    return scorer
 
 
 @pytest.fixture
-def mock_seed_prompt_dataset():
-    """
-    Creates a mock a SeedPromptDataset with two promtps corresponding to
-    user_start_turn, assistant_start_turn
-    """
-    user_start_mock = MagicMock(spec=SeedPrompt)
-    user_start_mock.value = "User start message"
-
-    assistant_start_mock = MagicMock(spec=SeedPrompt)
-    assistant_start_mock.value = "Assistant start message"
-
-    dataset_mock = MagicMock(spec=SeedPromptDataset)
-    dataset_mock.prompts = [user_start_mock, assistant_start_mock]
-
-    return dataset_mock
+def mock_question_answer_entry():
+    return QuestionAnsweringEntry(
+        question="What is the capital of France?",
+        answer_type="str",
+        correct_answer="0",
+        choices=[
+            QuestionChoice(index=0, text="Paris"),
+            QuestionChoice(index=1, text="London"),
+            QuestionChoice(index=2, text="Berlin"),
+            QuestionChoice(index=3, text="Madrid"),
+        ],
+    )
 
 
 @pytest.fixture
-def mock_single_prompt_seed_prompt_dataset():
-    """
-    Creates a mock a SeedPromptDataset that is malformed
-    with only user_start_turn
-    """
-    user_start_mock = MagicMock(spec=SeedPrompt)
-    user_start_mock.value = "User start message"
-
-    dataset_mock = MagicMock(spec=SeedPromptDataset)
-    dataset_mock.prompts = [user_start_mock]
-
-    return dataset_mock
+def question_answer_orchestrator(mock_objective_target, mock_scorer, patch_central_database):
+    """Creates a QuestionAnsweringBenchmarkOrchestrator instance with mocked dependencies."""
+    return QuestionAnsweringBenchmarkOrchestrator(
+        objective_target=mock_objective_target,
+        objective_scorer=mock_scorer,
+        batch_size=3,
+        verbose=True,
+    )
 
 
-@pytest.fixture
-def mock_three_prompt_seed_prompt_dataset():
-    """
-    Creates a mock a SeedPromptDataset that is malformed
-    with 2 user and 2 assistant start turns
-    """
-    user_start_one_mock = MagicMock(spec=SeedPrompt)
-    user_start_one_mock.value = "User start message"
-
-    assistant_start_one_mock = MagicMock(spec=SeedPrompt)
-    assistant_start_one_mock.value = "Assistant start message"
-
-    user_start_two_mock = MagicMock(spec=SeedPrompt)
-    user_start_two_mock.value = "User start message"
-
-    assistant_start_two_mock = MagicMock(spec=SeedPrompt)
-    assistant_start_two_mock.value = "Assistant start message"
-
-    dataset_mock = MagicMock(spec=SeedPromptDataset)
-    dataset_mock.prompts = [
-        user_start_one_mock,
-        assistant_start_one_mock,
-        user_start_two_mock,
-        assistant_start_two_mock,
-    ]
-
-    return dataset_mock
-
-
-@pytest.fixture
-def question_answer_orchestrator(
-    mock_objective_target,
-    mock_prompt_converter,
-    mock_scorer,
-    mock_seed_prompt_dataset,
-    patch_central_database,
-):
-    """
-    A fixture that patches the from_yaml_file method so that
-    `role_play_definition` loads the mock_seed_prompt_dataset.
-    """
-    with patch(
-        "pyrit.orchestrator.single_turn.question_answer_benchmark_orchestrator.SeedPromptDataset.from_yaml_file",
-        return_value=mock_seed_prompt_dataset,
-    ):
-        orchestrator = QuestionAnsweringBenchmarkOrchestrator(
-            objective_target=mock_objective_target,
-            question_answer_definition_path="fake/path/question_answer.yaml",
-            prompt_converters=[mock_prompt_converter],
-            scorers=[mock_scorer],
-            batch_size=3,
-            verbose=True,
-        )
-    return orchestrator
-
-
-def test_init(question_answer_orchestrator, mock_seed_prompt_dataset):
-    """
-    Verifies that the orchestrator sets internal fields on init and loads
-    the correct prompts from the given YAML dataset.
-    """
-    # Check if the orchestrator references the right rephrase/user/assistant prompts
-    assert question_answer_orchestrator._user_start_turn == mock_seed_prompt_dataset.prompts[0]
-    assert question_answer_orchestrator._assistant_start_turn == mock_seed_prompt_dataset.prompts[1]
-
-    # Check batch size, verbosity, etc.
+def test_init(question_answer_orchestrator, mock_objective_target, mock_scorer):
+    """Verifies that the orchestrator sets internal fields on init correctly."""
+    assert question_answer_orchestrator._objective_target == mock_objective_target
+    assert question_answer_orchestrator._objective_scorer == mock_scorer
     assert question_answer_orchestrator._batch_size == 3
     assert question_answer_orchestrator._verbose is True
-    assert len(question_answer_orchestrator._prompt_converters) == 1
+    assert (
+        question_answer_orchestrator._question_asking_format_string
+        == QuestionAnsweringBenchmarkOrchestrator.QUESTION_ASKING_FORMAT_STRING
+    )
+    assert (
+        question_answer_orchestrator._options_format_string
+        == QuestionAnsweringBenchmarkOrchestrator.OPTIONS_FORMAT_STRING
+    )
+    assert (
+        question_answer_orchestrator._objective_format_string
+        == QuestionAnsweringBenchmarkOrchestrator.OBJECTIVE_FORMAT_STRING
+    )
 
 
-def test_failed_init_too_few_samples(
-    mock_objective_target,
-    mock_prompt_converter,
-    mock_scorer,
-    mock_single_prompt_seed_prompt_dataset,
-    patch_central_database,
-):
-    """
-    Verifies that constructing the orchestrator results in the expeted ValueError
-    """
-    with patch(
-        "pyrit.orchestrator.single_turn.question_answer_benchmark_orchestrator.SeedPromptDataset.from_yaml_file",
-        return_value=mock_single_prompt_seed_prompt_dataset,
-    ):
-        with pytest.raises(ValueError, match=r"Prompt list must have exactly 2 elements \(user and assistant turns\)"):
-            QuestionAnsweringBenchmarkOrchestrator(
-                objective_target=mock_objective_target,
-                question_answer_definition_path="fake/path/question_answer.yaml",
-                prompt_converters=[mock_prompt_converter],
-                scorers=[mock_scorer],
-                batch_size=3,
-                verbose=True,
-            )
+def test_get_objective(question_answer_orchestrator, mock_question_answer_entry):
+    """Tests that _get_objective correctly formats the objective string."""
+    objective = question_answer_orchestrator._get_objective(mock_question_answer_entry)
+    expected = QuestionAnsweringBenchmarkOrchestrator.OBJECTIVE_FORMAT_STRING.format(
+        question="What is the capital of France?", index="0", answer="Paris"
+    )
+    assert objective == expected
 
 
-def test_failed_init_too_many_samples(
-    mock_objective_target,
-    mock_prompt_converter,
-    mock_scorer,
-    mock_three_prompt_seed_prompt_dataset,
-    patch_central_database,
-):
-    """
-    Verifies that constructing the orchestrator results in the expeted ValueError
-    """
-    with patch(
-        "pyrit.orchestrator.single_turn.question_answer_benchmark_orchestrator.SeedPromptDataset.from_yaml_file",
-        return_value=mock_three_prompt_seed_prompt_dataset,
-    ):
-        with pytest.raises(ValueError, match=r"Prompt list must have exactly 2 elements \(user and assistant turns\)"):
-            QuestionAnsweringBenchmarkOrchestrator(
-                objective_target=mock_objective_target,
-                question_answer_definition_path="fake/path/question_answer.yaml",
-                prompt_converters=[mock_prompt_converter],
-                scorers=[mock_scorer],
-                batch_size=3,
-                verbose=True,
-            )
+def test_get_objective_invalid_choice(question_answer_orchestrator):
+    """Tests that _get_objective raises ValueError for invalid correct_answer."""
+    invalid_entry = QuestionAnsweringEntry(
+        question="What is the capital of France?",
+        answer_type="str",
+        correct_answer="4",  # Invalid index
+        choices=[
+            QuestionChoice(index=0, text="Paris"),
+            QuestionChoice(index=1, text="London"),
+        ],
+    )
+    with pytest.raises(ValueError, match="No matching choice found for correct_answer '4'"):
+        question_answer_orchestrator._get_objective(invalid_entry)
 
 
-def test_default_conversation_start(question_answer_orchestrator):
-    """
-    Ensures that the default conversation start is prepended to the conversation list.
-    """
-    prepended = question_answer_orchestrator._prepended_conversation
-    assert len(prepended) == 2, "Should have user and assistant start turns"
-    assert prepended[0].request_pieces[0].role == "user"
-    assert prepended[0].request_pieces[0].original_value == "User start message"
-    assert prepended[1].request_pieces[0].role == "assistant"
-    assert prepended[1].request_pieces[0].original_value == "Assistant start message"
+def test_get_question_text(question_answer_orchestrator, mock_question_answer_entry):
+    """Tests that _get_question_text correctly formats the question and options."""
+    seed_prompt_group = question_answer_orchestrator._get_question_text(mock_question_answer_entry)
+
+    assert isinstance(seed_prompt_group, SeedPromptGroup)
+    assert len(seed_prompt_group.prompts) == 1
+
+    prompt = seed_prompt_group.prompts[0]
+    assert isinstance(prompt, SeedPrompt)
+    assert prompt.data_type == "text"
+
+    # Check that the formatted text contains the question and all options
+    formatted_text = prompt.value
+    assert "What is the capital of France?" in formatted_text
+    assert "Option 0: Paris" in formatted_text
+    assert "Option 1: London" in formatted_text
+    assert "Option 2: Berlin" in formatted_text
+    assert "Option 3: Madrid" in formatted_text
+
+
+@pytest.mark.asyncio
+async def test_run_attack_async(question_answer_orchestrator, mock_question_answer_entry):
+    """Tests that run_attack_async properly formats the prompt and calls the parent class method."""
+    with patch.object(PromptSendingOrchestrator, "run_attack_async", new_callable=AsyncMock) as mock_run_attack_async:
+        mock_run_attack_async.return_value = MagicMock()
+
+        await question_answer_orchestrator.run_attack_async(question_answering_entry=mock_question_answer_entry)
+
+        # Verify the call to parent class method
+        mock_run_attack_async.assert_called_once()
+        call_kwargs = mock_run_attack_async.call_args.kwargs
+
+        # Check the seed prompt group
+        seed_prompt = call_kwargs["seed_prompt"]
+        assert isinstance(seed_prompt, SeedPromptGroup)
+        assert len(seed_prompt.prompts) == 1
+        assert seed_prompt.prompts[0].data_type == "text"
+
+        # Check that the formatted text contains the question and all options
+        formatted_text = seed_prompt.prompts[0].value
+        assert "What is the capital of France?" in formatted_text
+        assert "Option 0: Paris" in formatted_text
+        assert "Option 1: London" in formatted_text
+        assert "Option 2: Berlin" in formatted_text
+        assert "Option 3: Madrid" in formatted_text
+
+        # Check the objective
+        objective = call_kwargs["objective"]
+        expected_objective = QuestionAnsweringBenchmarkOrchestrator.OBJECTIVE_FORMAT_STRING.format(
+            question="What is the capital of France?", index="0", answer="Paris"
+        )
+        assert objective == expected_objective
+
+
+@pytest.mark.asyncio
+async def test_run_attacks_async(question_answer_orchestrator, mock_question_answer_entry):
+    """Tests that run_attacks_async properly handles multiple entries."""
+    entries = [mock_question_answer_entry, mock_question_answer_entry]
+
+    with patch.object(
+        QuestionAnsweringBenchmarkOrchestrator, "run_attack_async", new_callable=AsyncMock
+    ) as mock_run_attack_async:
+        mock_run_attack_async.return_value = MagicMock()
+
+        results = await question_answer_orchestrator.run_attacks_async(question_answering_entries=entries)
+
+        assert mock_run_attack_async.call_count == 2
+        assert len(results) == 2

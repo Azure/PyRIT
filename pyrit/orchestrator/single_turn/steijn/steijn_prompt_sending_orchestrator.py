@@ -1,21 +1,28 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+
+import re
 import asyncio
 import logging
-import re
 import uuid
-from typing import Optional, Union, List, Dict, Any
+from typing import Any, Optional, Sequence, List, Dict, Coroutine
 
-from colorama import Fore, Style
-
-from pyrit.common.display_response import display_image_response
 from pyrit.common.utils import combine_dict
-from pyrit.models import PromptRequestResponse
+from pyrit.models import (
+    PromptRequestResponse,
+    SeedPrompt,
+    SeedPromptGroup,
+)
 from pyrit.models.filter_criteria import PromptConverterState, PromptFilterCriteria
-from pyrit.orchestrator import Orchestrator
-from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
+from pyrit.orchestrator import (
+    Orchestrator,
+    OrchestratorResult,
+    OrchestratorResultStatus,
+)
+from pyrit.orchestrator.models.orchestrator_result import OrchestratorResult
+from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
+from pyrit.prompt_target.batch_helper import batch_task_async
 from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
@@ -33,9 +40,13 @@ class SteijnPromptSendingOrchestrator(Orchestrator):
     def __init__(
             self,
             objective_target: PromptTarget,
-            prompt_converters: Optional[List[PromptConverter]] = None,
-            scorers: Optional[List[Scorer]] = None,
-            batch_size: int = 1,
+            request_converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
+            response_converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
+            objective_scorer: Optional[Scorer] = None,
+            auxiliary_scorers: Optional[list[Scorer]] = None,
+            should_convert_prepended_conversation: bool = True,
+            batch_size: int = 10,
+            retries_on_objective_failure: int = 0,
             verbose: bool = False,
     ) -> None:
         """
@@ -46,35 +57,24 @@ class SteijnPromptSendingOrchestrator(Orchestrator):
             batch_size (int, Optional): The (max) batch size for sending prompts.
             verbose (bool, Optional): Enables verbose logging.
         """
-        super().__init__(prompt_converters=prompt_converters, verbose=verbose)
+        super().__init__(verbose=verbose)
+
         self._prompt_normalizer = PromptNormalizer()
-        self._scorers = scorers or []
+
+        if not objective_scorer:
+            raise ValueError("Objective scorer must be provided.")
+
+        self._objective_scorer = objective_scorer or None
+        self._auxiliary_scorers = auxiliary_scorers or []
+
         self._objective_target = objective_target
+
+        self._request_converter_configurations = request_converter_configurations or []
+        self._response_converter_configurations = response_converter_configurations or []
+
+        self._should_convert_prepended_conversation = should_convert_prepended_conversation
         self._batch_size = batch_size
-        self._prepended_conversation: Optional[List[PromptRequestResponse]] = None
-
-    def set_prepended_conversation(self, *, prepended_conversation: List[PromptRequestResponse]):
-        """
-        Prepends a conversation to the prompt target.
-        This is sent along with each prompt request and can be the first part of a conversation.
-        """
-        if prepended_conversation and not isinstance(self._objective_target, PromptChatTarget):
-            raise TypeError(
-                f"Only PromptChatTargets are able to modify conversation history. Instead objective_target is: "
-                f"{type(self._objective_target)}."
-            )
-        self._prepended_conversation = prepended_conversation
-
-    async def get_prepended_conversation_async(
-            self, *, normalizer_request: NormalizerRequest
-    ) -> Optional[List[PromptRequestResponse]]:
-        """
-        Returns the prepended conversation for the normalizer request.
-        Can be overwritten by subclasses to provide a different conversation.
-        """
-        if self._prepended_conversation:
-            return self._prepended_conversation
-        return None
+        self._retries_on_objective_failure = retries_on_objective_failure
 
     def set_skip_criteria(
             self, *, skip_criteria: PromptFilterCriteria, skip_value_type: PromptConverterState = "original"
@@ -85,161 +85,284 @@ class SteijnPromptSendingOrchestrator(Orchestrator):
         """
         self._prompt_normalizer.set_skip_criteria(skip_criteria=skip_criteria, skip_value_type=skip_value_type)
 
-    # Todo: This function will be refactored into run_attacks_async
-    # Todo: Instead of Normalizer request object, Objective, Expected output, and prompt type should be passed.
-    async def send_normalizer_requests_async(
+    async def _add_prepended_conversation_to_memory(
             self,
-            *,
-            prompt_request_list: List[NormalizerRequest],
-            memory_labels: Optional[Dict[str, str]] = None,
-    ) -> List[PromptRequestResponse]:
+            prepended_conversation: Optional[list[PromptRequestResponse]],
+            conversation_id: str,
+    ):
         """
-        Sends the normalized prompts to the prompt target.
+        Processes the prepended conversation by converting it if needed and adding it to memory.
+
+        Args:
+            prepended_conversation (Optional[list[PromptRequestResponse]]): The conversation to prepend
+            conversation_id (str): The conversation ID to use for the request pieces
         """
-        expected_output_list = []
-        request_prompts = []
-        self.validate_normalizer_requests(prompt_request_list=prompt_request_list)
+        if not prepended_conversation:
+            return
 
-        for prompt in prompt_request_list:
-            # Reuse conversation_id if already set; otherwise, generate a new one.
-            prompt.conversation_id = await self._prepare_conversation_async(normalizer_request=prompt)
-            request_prompts.append(prompt.seed_prompt_group.prompts[0].value)
-            if prompt.seed_prompt_group.prompts[0].expected_output:
-                expected_output_list.append(prompt.seed_prompt_group.prompts[0].expected_output)
+        if not isinstance(self._objective_target, PromptChatTarget):
+            raise ValueError("Prepended conversation can only be used with a PromptChatTarget")
 
-        # Todo: In the new design, do not forget to set the expected output and reference prompt before sending the request to scorer.
-        responses: List[PromptRequestResponse] = await self._prompt_normalizer.send_prompt_batch_to_target_async(
-            requests=prompt_request_list,
-            target=self._objective_target,
-            labels=combine_dict(existing_dict=self._global_memory_labels, new_dict=memory_labels),
+        await self._prompt_normalizer.add_prepended_conversation_to_memory(
+            prepended_conversation=prepended_conversation,
+            conversation_id=conversation_id,
+            should_convert=self._should_convert_prepended_conversation,
+            converter_configurations=self._request_converter_configurations,
             orchestrator_identifier=self.get_identifier(),
-            batch_size=self._batch_size,
         )
 
-        response_pieces = []
-        if self._scorers and responses:
-            response_pieces = PromptRequestResponse.flatten_to_prompt_request_pieces(responses)
-            for i, piece in enumerate(response_pieces):
-                if i < len(expected_output_list):
-                    piece.expected_output = expected_output_list[i]
-                if i < len(request_prompts):
-                    piece.prompt_metadata["reference_prompt"] = request_prompts[i]
+    async def _score_auxiliary_async(self, result: PromptRequestResponse) -> None:
+        """
+        Scores the response using auxiliary scorers if they are configured.
 
-        for scorer in self._scorers:
-            await scorer.score_responses_inferring_tasks_batch_async(
-                request_responses=response_pieces, batch_size=5
+        Args:
+            result (PromptRequestResponse): The response to score
+        """
+        if not self._auxiliary_scorers:
+            return
+
+        tasks = []
+        for piece in result.request_pieces:
+            if piece.role == "assistant":
+                for scorer in self._auxiliary_scorers:
+                    tasks.append(scorer.score_async(request_response=piece))
+
+        if tasks:
+            await asyncio.gather(*tasks)
+
+    async def _score_objective_async(
+            self, result: PromptRequestResponse, objective: str
+    ) -> tuple[OrchestratorResultStatus, Optional[Any]]:
+        """
+        Scores the response using the objective scorer if configured.
+
+        Args:
+            result (PromptRequestResponse): The response to score
+            objective (str): The objective to score against
+
+        Returns:
+            tuple[OrchestratorResultStatus, Optional[Any]]: A tuple containing the status and objective score
+            If the objective_scorer returns a list of scores, the first score that is true will be returned as the
+            objective score.
+            Note, this behavior can be overridden by setting the objective_scorer to a CompositeScorer.
+        """
+        if not self._objective_scorer:
+            return "unknown", None
+
+        status: OrchestratorResultStatus = "failure"
+        objective_score = None
+        first_failure_score = None
+
+        for piece in result.request_pieces:
+            if piece.role == "assistant":
+                objective_score_list = await self._objective_scorer.score_async(
+                    request_response=piece,
+                    task=objective,
+                )
+
+                # Find and save the first score that is true
+                for score in objective_score_list:
+                    if score.get_value():
+                        objective_score = score
+                        if float(score.score_value) > 0.5:
+                            status = "success"
+                        break
+                    elif first_failure_score is None:
+                        first_failure_score = score
+                if status == "success":
+                    break
+
+        # If no success was found, use the first failure score
+        if status == "failure" and first_failure_score is not None:
+            objective_score = first_failure_score
+
+        return status, objective_score
+
+    async def run_attack_async(
+            self,
+            *,
+            objective: str,
+            expected_output: Optional[str] = None,
+            seed_prompt: SeedPromptGroup = None,
+            prepended_conversation: Optional[list[PromptRequestResponse]] = None,
+            memory_labels: Optional[dict[str, str]] = None,
+            conversation_id: str = ""
+    ) -> tuple[None, None] | tuple[OrchestratorResult, PromptRequestResponse]:
+        """
+        Runs the attack and returns both the OrchestratorResult and the PromptRequestResponse.
+
+        Returns:
+            Tuple of (OrchestratorResult, PromptRequestResponse)
+        """
+
+        prompt_request_response = None
+        if not seed_prompt:
+            seed_prompt = SeedPromptGroup(prompts=[
+                SeedPrompt(value=objective, expected_output=expected_output, data_type="text")
+            ])
+
+        status: OrchestratorResultStatus = "unknown"
+        objective_score = None
+
+        for _ in range(self._retries_on_objective_failure + 1):
+            if conversation_id is None or conversation_id == "":
+                conversation_id = str(uuid.uuid4())
+
+            await self._add_prepended_conversation_to_memory(prepended_conversation, conversation_id)
+
+            prompt_request_response = await self._prompt_normalizer.send_prompt_async(
+                seed_prompt_group=seed_prompt,
+                target=self._objective_target,
+                conversation_id=conversation_id,
+                request_converter_configurations=self._request_converter_configurations,
+                response_converter_configurations=self._response_converter_configurations,
+                labels=combine_dict(existing_dict=self._global_memory_labels, new_dict=memory_labels),
+                orchestrator_identifier=self.get_identifier(),
             )
 
-        return responses
+            if not prompt_request_response:
+                return None, None
 
-    async def send_qa_pairs_async(self, qa_pairs: List[Dict[str, Any]]) -> list[PromptRequestResponse]:
+            piece = prompt_request_response.request_pieces[0]
+            piece.expected_output = expected_output
+            prompt_request_response.request_pieces = [piece]
+
+            await self._score_auxiliary_async(prompt_request_response)
+            status, objective_score = await self._score_objective_async(prompt_request_response, objective)
+
+            if status == "success":
+                break
+
+        orchestrator_result = OrchestratorResult(
+            conversation_id=conversation_id,
+            objective=objective,
+            status=status,
+            objective_score=objective_score,
+        )
+
+        return orchestrator_result, prompt_request_response
+
+
+    async def run_attacks_async(
+            self,
+            *,
+            objectives: list[str],
+            conversation_ids: Optional[list[str]] = None,
+            expected_outputs: Optional[list[str]] = None,
+            seed_prompts: Optional[list[SeedPromptGroup]] = None,
+            prepended_conversations: Optional[list[list[PromptRequestResponse]]] = None,
+            memory_labels: Optional[dict[str, str]] = None,
+    ) -> list[OrchestratorResult]:
         """
-        Sends a list of QA pairs to the prompt target.
-        Supports both single-turn and multi-turn conversational test cases.
-        For multi-turn cases, all turns in a conversation share the same conversation ID.
-        For multi-turn conversations, the first turn's response is awaited so that its thread ID can be extracted
-        and then the target's HTTP request URL is updated accordingly.
-        Single-turn cases are batched together.
+        Runs multiple attacks in parallel using batch_size.
+        Returns list of OrchestratorResult.
         """
-        all_responses = []
-        single_turn_requests: List[NormalizerRequest] = []
+
+        if not expected_outputs:
+            expected_outputs = [None] * len(objectives)
+        elif len(expected_outputs) != len(objectives):
+            raise ValueError("Number of expected outputs must match number of objectives")
+
+        if not seed_prompts:
+            seed_prompts = [None] * len(objectives)
+        elif len(seed_prompts) != len(objectives):
+            raise ValueError("Number of seed prompts must match number of objectives")
+
+        if not prepended_conversations:
+            prepended_conversations = [None] * len(objectives)
+        elif len(prepended_conversations) != len(objectives):
+            raise ValueError("Number of prepended conversations must match number of objectives")
+
+        if not conversation_ids:
+            conversation_ids = [None] * len(objectives)
+        elif len(conversation_ids) != len(objectives):
+            raise ValueError("Number of conversation IDs must match number of objectives")
+
+        batch_items: list[Sequence[Any]] = [
+            objectives, expected_outputs, seed_prompts, prepended_conversations, conversation_ids
+        ]
+        batch_item_keys = [
+            "objective", "expected_output", "seed_prompt", "prepended_conversation", "conversation_id"
+        ]
+
+        # Note: run_attack_async now returns (OrchestratorResult, PromptRequestResponse)
+        results = await batch_task_async(
+            prompt_target=self._objective_target,
+            batch_size=self._batch_size,
+            items_to_batch=batch_items,
+            task_func=self.run_attack_async,
+            task_arguments=batch_item_keys,
+            memory_labels=memory_labels,
+        )
+
+        # Unpack the first item in the tuple, i.e., OrchestratorResult
+        return [res[0] for res in results if res is not None and res[0] is not None]
+
+
+    async def send_qa_pairs_async(self, qa_pairs: List[Dict[str, Any]]) -> None:
+        """
+        Sends a list of QA pairs using run_attack_async and run_attacks_async.
+        Preserves thread management for multi-turn conversations.
+        Returns a list of PromptRequestResponse objects.
+        """
+        single_turn_objectives = []
+        single_turn_expected_outputs = []
+
         start_request_copy = self._objective_target.http_request
 
         for i, qa in enumerate(qa_pairs):
-            print("\nExecuting test case:", i+1)
-            self._objective_target.http_request = start_request_copy # Reset to the original request for each test case.
+            print(f"\nExecuting test case: {i + 1}")
+            self._objective_target.http_request = start_request_copy
 
-            # Multi-turn test case.
             if "conversation" in qa:
-                # Flush any accumulated single-turn requests.
-                if single_turn_requests:
-                    # Todo: This function will be refactored into run_attacks_async
-                    await self.send_normalizer_requests_async(prompt_request_list=single_turn_requests)
-                    single_turn_requests = []
-
                 conversation_id = str(uuid.uuid4())
                 is_thread_id_set = False
+
                 for idx, turn in enumerate(qa["conversation"]):
                     prompt_text = turn["question"]
-                    print("Question:", prompt_text)
                     expected_output = turn["expected_outcome"]
+                    print("Question:", prompt_text)
 
-                    # Todo: We can pass these information directly to run attacks function
-                    request = self._create_normalizer_request(
-                        prompt_text=prompt_text,
+                    result, prompt_response = await self.run_attack_async(
+                        objective=prompt_text,
                         expected_output=expected_output,
-                        prompt_type="text",
-                        converters=self._prompt_converters,
-                        metadata=None,
-                        conversation_id=conversation_id,
+                        conversation_id=conversation_id
                     )
 
-                    # Todo: This function will be refactored into run_attacks_async
-                    results = await self.send_normalizer_requests_async(prompt_request_list=[request])
-                    all_responses.extend(results)
-                    # Todo: OrchestratorResult will be returned, find a way to get the thread_id from the result. You can use metadata
-                    flattened = PromptRequestResponse.flatten_to_prompt_request_pieces(results)
-                    if idx == 0:
-                        thread_id = flattened[0].prompt_metadata.get("thread_id")
-                        if thread_id and not is_thread_id_set:
-                            # Update the target's HTTP URL to include the threadId.
-                            match = re.search(r"(https?://[^\s/$.?#].[^\s]*)", self._objective_target.http_request)
-                            if match:
-                                url = match.group(1)
-                                self._objective_target.http_request = self._objective_target.http_request.replace(
-                                    url, f"{url}?threadId={thread_id}"
-                                )
-                                is_thread_id_set = True
+                    if not result:
+                        continue
+
+                    # Thread ID handling
+                    if idx == 0 and not is_thread_id_set:
+                        assistant_piece = next((p for p in prompt_response.request_pieces if p.role == "assistant"), None)
+                        if assistant_piece and assistant_piece.prompt_metadata:
+                            thread_id = assistant_piece.prompt_metadata.get("thread_id")
+                            if thread_id:
+                                match = re.search(r"(https?://[^\s/$.?#].[^\s]*)", self._objective_target.http_request)
+                                if match:
+                                    url = match.group(1)
+                                    self._objective_target.http_request = self._objective_target.http_request.replace(
+                                        url, f"{url}?threadId={thread_id}"
+                                    )
+                                    is_thread_id_set = True
                         else:
                             print("Thread ID not found in the first turn's response. Aborting this conversation.")
                             break
 
-                    # Optionally, wait a bit between turns.
                     await asyncio.sleep(1)
+
             else:
-                # Single-turn test case: accumulate the request.
-                prompt_text = qa["question"]
-                print("Question:", prompt_text)
-                expected_output = qa["expected_outcome"]
-                request = self._create_normalizer_request(
-                    prompt_text=prompt_text,
-                    expected_output=expected_output,
-                    prompt_type="text",
-                    converters=self._prompt_converters,
-                    metadata=None,
-                    conversation_id=str(uuid.uuid4()),
-                )
-                single_turn_requests.append(request)
+                # Single-turn QA
+                single_turn_objectives.append(qa["question"])
+                single_turn_expected_outputs.append(qa["expected_outcome"])
 
-        # Flush any remaining single-turn requests in one batch.
-        if single_turn_requests:
-            results = await self.send_normalizer_requests_async(prompt_request_list=single_turn_requests)
-            all_responses.extend(results)
+        # Run batched single-turn prompts
+        if single_turn_objectives:
+            await self.run_attacks_async(
+                objectives=single_turn_objectives,
+                expected_outputs=single_turn_expected_outputs,
+            )
 
-        return all_responses
-
-    def validate_normalizer_requests(self, *, prompt_request_list: List[NormalizerRequest]):
-        """
-        Validates the normalizer requests.
-        This is a no-op for this orchestrator, but subclasses may implement additional checks.
-        """
-        pass
-
-    async def _prepare_conversation_async(self, normalizer_request: NormalizerRequest) -> str:
-        """
-        Adds the conversation to memory if there is a prepended conversation, and returns the conversation ID.
-        If a conversation ID is already provided in the NormalizerRequest, it is reused.
-        """
-        conversation_id = normalizer_request.conversation_id or str(uuid.uuid4())
-        prepended_conversation = await self.get_prepended_conversation_async(normalizer_request=normalizer_request)
-        if prepended_conversation:
-            for request in prepended_conversation:
-                for piece in request.request_pieces:
-                    piece.conversation_id = conversation_id
-                    piece.orchestrator_identifier = self.get_identifier()
-                    piece.id = uuid.uuid4()
-                self._memory.add_request_response_to_memory(request=request)
-        return conversation_id
 
     def get_all_chat_results(self) -> List[dict]:
         """

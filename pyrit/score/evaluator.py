@@ -118,7 +118,7 @@ class Evaluator(Scorer):
             scored_prompt_id=request_response.id,
             category=self._score_category,
             task=task,
-            request_prompt=request_response.prompt_metadata.get("reference_prompt"),
+            request_prompt=request_response.original_value,
             expected_output=request_response.expected_output,
             additional_evaluator_variables=self._additional_evaluator_variables,
         )
