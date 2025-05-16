@@ -178,7 +178,7 @@ class SteijnPromptSendingOrchestrator(Orchestrator):
 
         return status, objective_score
 
-    async def run_attack_async(
+    async def execute_step_async(
             self,
             *,
             objective: str,
@@ -243,7 +243,7 @@ class SteijnPromptSendingOrchestrator(Orchestrator):
         return orchestrator_result, prompt_request_response
 
 
-    async def run_attacks_async(
+    async def execute_multiple_steps_async(
             self,
             *,
             objectives: list[str],
@@ -290,7 +290,7 @@ class SteijnPromptSendingOrchestrator(Orchestrator):
             prompt_target=self._objective_target,
             batch_size=self._batch_size,
             items_to_batch=batch_items,
-            task_func=self.run_attack_async,
+            task_func=self.execute_step_async,
             task_arguments=batch_item_keys,
             memory_labels=memory_labels,
         )
@@ -323,7 +323,7 @@ class SteijnPromptSendingOrchestrator(Orchestrator):
                     expected_output = turn["expected_outcome"]
                     print("Question:", prompt_text)
 
-                    result, prompt_response = await self.run_attack_async(
+                    result, prompt_response = await self.execute_step_async(
                         objective=prompt_text,
                         expected_output=expected_output,
                         conversation_id=conversation_id
@@ -358,7 +358,7 @@ class SteijnPromptSendingOrchestrator(Orchestrator):
 
         # Run batched single-turn prompts
         if single_turn_objectives:
-            await self.run_attacks_async(
+            await self.execute_multiple_steps_async(
                 objectives=single_turn_objectives,
                 expected_outputs=single_turn_expected_outputs,
             )
