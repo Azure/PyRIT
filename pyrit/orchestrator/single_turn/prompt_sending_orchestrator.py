@@ -220,7 +220,6 @@ class PromptSendingOrchestrator(Orchestrator):
                 labels=combine_dict(existing_dict=self._global_memory_labels, new_dict=memory_labels),
                 orchestrator_identifier=self.get_identifier(),
             )
-            i+=1
 
             if not result:
                 # This can happen if we skipped the prompts

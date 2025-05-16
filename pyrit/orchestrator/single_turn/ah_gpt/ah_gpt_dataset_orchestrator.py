@@ -135,8 +135,6 @@ class AHGPTPromptSendingOrchestrator(Orchestrator):
             for i, piece in enumerate(response_pieces):
                 if i < len(expected_output_list):
                     piece.expected_output = expected_output_list[i]
-                if i < len(request_prompts):
-                    piece.prompt_metadata["reference_prompt"] = request_prompts[i]
 
         for scorer in self._scorers:
             await scorer.score_responses_inferring_tasks_batch_async(
