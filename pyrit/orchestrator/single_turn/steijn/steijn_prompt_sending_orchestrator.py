@@ -205,7 +205,7 @@ class SteijnPromptSendingOrchestrator(Orchestrator):
         objective_score = None
 
         for _ in range(self._retries_on_objective_failure + 1):
-            if conversation_id == "":
+            if conversation_id is None or conversation_id == "":
                 conversation_id = str(uuid.uuid4())
 
             await self._add_prepended_conversation_to_memory(prepended_conversation, conversation_id)
@@ -257,6 +257,12 @@ class SteijnPromptSendingOrchestrator(Orchestrator):
         Runs multiple attacks in parallel using batch_size.
         Returns list of OrchestratorResult.
         """
+
+        if not expected_outputs:
+            expected_outputs = [None] * len(objectives)
+        elif len(expected_outputs) != len(objectives):
+            raise ValueError("Number of expected outputs must match number of objectives")
+
         if not seed_prompts:
             seed_prompts = [None] * len(objectives)
         elif len(seed_prompts) != len(objectives):
@@ -266,6 +272,11 @@ class SteijnPromptSendingOrchestrator(Orchestrator):
             prepended_conversations = [None] * len(objectives)
         elif len(prepended_conversations) != len(objectives):
             raise ValueError("Number of prepended conversations must match number of objectives")
+
+        if not conversation_ids:
+            conversation_ids = [None] * len(objectives)
+        elif len(conversation_ids) != len(objectives):
+            raise ValueError("Number of conversation IDs must match number of objectives")
 
         batch_items: list[Sequence[Any]] = [
             objectives, expected_outputs, seed_prompts, prepended_conversations, conversation_ids
