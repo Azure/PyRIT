@@ -1,6 +1,4 @@
-``` {note}
-This is a mapping of the database schema and shows how our databases map together!
-```
+Our memory contains multiple components. This diagram  shows a mapping of our database schema and how our components map together! The arrows indicate the values that map one database to another.
 
 ```mermaid
 graph LR
@@ -58,7 +56,7 @@ graph LR
         Sc_timestamp["timestamp : (TIMESTAMP)"]
         Sc_task["task : (VARCHAR)"]
     end
-    
+
     subgraph EmbeddingData
         E_id["id (UUID)"]
         E_embedding["embedding (NULL)"]
@@ -68,4 +66,6 @@ graph LR
     %% Relationship arrow
     S_value_sha256 -->P_original_value_sha256
     P_conversation_id -->Sc_prompt_request_response_id
+
+
 ```
