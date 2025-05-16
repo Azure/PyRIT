@@ -1,39 +1,45 @@
-<p align="center"><img src="./doc/roakey.png" width="150"></p>
+# PyRIT - SQLAlchemy 1.4 Compatible Version
 
-# Python Risk Identification Tool for generative AI (PyRIT)
+This is a modified version of [PyRIT (Python Risk Identification Tool for LLMs)](https://github.com/Azure/PyRIT) that has been patched to work with SQLAlchemy 1.4.47 instead of SQLAlchemy 2.0+.
 
-The Python Risk Identification Tool for generative AI (PyRIT) is an open source
-framework built to empower security professionals and engineers to proactively
-identify risks in generative AI systems.
+## Overview
 
-- Check out our [website](https://azure.github.io/PyRIT/) for more information
-  about how to use, install, or contribute to PyRIT.
-- Visit our [Discord server](https://discord.gg/9fMpq3tc8u) to chat with the team and community.
+PyRIT is a library used to assess the robustness of Large Language Models (LLMs). This fork maintains all the functionality of the original PyRIT but makes it compatible with environments that require SQLAlchemy 1.4.x.
 
-## Trademarks
+## Key Modifications
 
-This project may contain trademarks or logos for projects, products, or services.
-Authorized use of Microsoft trademarks or logos is subject to and must follow
-[Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general).
-Use of Microsoft trademarks or logos in modified versions of this project must
-not cause confusion or imply Microsoft sponsorship.
-Any use of third-party trademarks or logos are subject to those third-party's
-policies.
+- Modified database models to work with SQLAlchemy 1.4.47
+- Added custom UUID type implementation for SQLAlchemy 1.4
+- Replaced SQLAlchemy 2.0-specific features with 1.4-compatible alternatives
+- Added compatibility with pydantic-sqlalchemy 0.0.9
 
-## Citing PyRIT
+## Installation
 
-If you use PyRIT in your research, please cite our preprint paper as follows:
-
-```
-@misc{munoz2024pyritframeworksecurityrisk,
-      title={PyRIT: A Framework for Security Risk Identification and Red Teaming in Generative AI Systems},
-      author={Gary D. Lopez Munoz and Amanda J. Minnich and Roman Lutz and Richard Lundeen and Raja Sekhar Rao Dheekonda and Nina Chikanov and Bolor-Erdene Jagdagdorj and Martin Pouliot and Shiven Chawla and Whitney Maxwell and Blake Bullwinkel and Katherine Pratt and Joris de Gruyter and Charlotte Siska and Pete Bryan and Tori Westerhoff and Chang Kawaguchi and Christian Seifert and Ram Shankar Siva Kumar and Yonatan Zunger},
-      year={2024},
-      eprint={2410.02828},
-      archivePrefix={arXiv},
-      primaryClass={cs.CR},
-      url={https://arxiv.org/abs/2410.02828},
-}
+```bash
+pip install pyrit-sqlalchemy14
 ```
 
-Additionally, please cite the tool itself following the `CITATION.cff` file in the root of this repository.
+Or with Poetry:
+
+```bash
+poetry add pyrit-sqlalchemy14
+```
+
+## Requirements
+
+- Python 3.10 or higher
+- SQLAlchemy 1.4.47 (not compatible with SQLAlchemy 2.0+)
+- pydantic-sqlalchemy 0.0.9
+
+## Usage
+
+The usage is identical to the original PyRIT library. Please refer to the [official PyRIT documentation](https://github.com/Azure/PyRIT) for details.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- Original PyRIT developed by Microsoft AI Red Team
+- This SQLAlchemy 1.4 compatible version is maintained independently

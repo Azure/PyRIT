@@ -1,7 +1,7 @@
 [project]
-name = "pyrit"
-version = "0.9.1.dev0"
-description = "The Python Risk Identification Tool for LLMs (PyRIT) is a library used to assess the robustness of LLMs"
+name = "pyrit-sqlalchemy14"
+version = "0.9.1"
+description = "SQLAlchemy 1.4 compatible version of PyRIT (Python Risk Identification Tool for LLMs)"
 authors = [
     { name = "Microsoft AI Red Team", email = "airedteam@microsoft.com" },
 ]
@@ -47,13 +47,14 @@ dependencies = [
     "openai>=1.58.1",
     "pillow>=10.3.0",
     "pydantic>=2.7.1",
+    "pydantic-sqlalchemy>=0.0.9",
     "pyodbc>=5.1.0",
     "pycountry>=24.6.1",
     "python-dotenv>=1.0.1",
     "pypdf>=5.1.0",
     "segno>=1.6.1",
     "scipy>=1.14.1",
-    "SQLAlchemy>=2.0.28",
+    "SQLAlchemy>=1.4.47,<2.0.0",
     "termcolor>=2.4.0",
     "tenacity>=8.2.3",
     "tinytag>=2.0.0",
@@ -203,7 +204,6 @@ fixable = [
     "PL",
     "PT",
     "PTH",
-    "PYI",
     "RET",
     "RSE",
     "RUF",
