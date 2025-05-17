@@ -45,10 +45,10 @@ graph LR
 
     subgraph ScoreEntries
         Sc_id["id : UUID"]
+        Sc_prompt_request_response_id["prompt_request_response_id  : (VARCHAR)"]
         Sc_score_value["score_value : (VARCHAR)"]
         Sc_score_value_description["score_value_description : (VARCHAR)"]
         Sc_score_type["score_type : (VARCHAR)"]
-        Sc_prompt_request_response_id["prompt_request_response_id  : (VARCHAR)"]
         Sc_score_category["score_category : (VARCHAR)"]
         Sc_score_rationale["score_rationale : (VARCHAR)"]
         Sc_score_metadata["score_metadata : (VARCHAR)"]
@@ -64,8 +64,8 @@ graph LR
     end
 
     %% Relationship arrow
-    S_value_sha256 -->P_original_value_sha256
-    P_conversation_id -->Sc_prompt_request_response_id
+    S_value_sha256 --> |N:N relationship to query| P_original_value_sha256
+    P_id --> |1:N relationship to query| Sc_prompt_request_response_id
 
 
 ```
