@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import uuid
-from typing import List, Literal, Optional, Union
+from typing import Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import (
@@ -19,9 +19,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 from sqlalchemy.types import TypeDecorator
 
-from pyrit.models import PromptDataType, PromptRequestPiece, Score, SeedPrompt
+from pyrit.models import PromptDataType, PromptRequestPiece, Score, ScoreType, SeedPrompt
 
 # Create the base class for SQLAlchemy 1.4
 Base = declarative_base()
@@ -198,38 +199,61 @@ class EmbeddingDataEntry(Base):
         return f"EmbeddingDataEntry(id={self.id}, embedding_type_name={self.embedding_type_name})"
 
 
-class ScoreEntry(Base):
-    """Represents the Score Memory Entry"""
+class ScoreEntry(Base):  # type: ignore
+    """
+    Represents the Score Memory Entry
+    """
 
     __tablename__ = "ScoreEntries"
     __table_args__ = {"extend_existing": True}
+
     id = Column(GUID, nullable=False, primary_key=True)
-    name = Column(String, nullable=False)
-    value = Column(Float, nullable=False)
-    prompt_memory_entry_id = Column(GUID, ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
-    prompt_request_response_id = Column(GUID, nullable=True)
+    score_value = Column(String, nullable=False)
+    score_value_description = Column(String, nullable=True)
+    score_type = Column(String, nullable=False)  # Will store ScoreType values
+    score_category = Column(String, nullable=False)
+    score_rationale = Column(String, nullable=True)
+    score_metadata = Column(String, nullable=True)
+    scorer_class_identifier = Column(JSON)  # Dict[str, str]
+    prompt_request_response_id = Column(GUID, ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
     timestamp = Column(DateTime, nullable=False)
     task = Column(String, nullable=True)
-
-    # Define relationship with PromptMemoryEntry
-    # prompt_memory_entry = relationship("PromptMemoryEntry", back_populates="scores")
+    prompt_request_piece = relationship("PromptMemoryEntry", back_populates="scores")
 
     def __init__(self, *, entry: Score):
         self.id = entry.id
-        self.name = entry.name
-        self.value = entry.value
-        self.prompt_memory_entry_id = entry.prompt_memory_entry_id
+        self.score_value = entry.score_value
+        self.score_value_description = entry.score_value_description
+        # Ensure score_type is a valid ScoreType value
+        if entry.score_type in ("true_false", "float_scale"):
+            self.score_type = entry.score_type
+        else:
+            raise ValueError(f"Invalid score_type: {entry.score_type}")
+        self.score_category = entry.score_category
+        self.score_rationale = entry.score_rationale
+        self.score_metadata = entry.score_metadata
+        self.scorer_class_identifier = entry.scorer_class_identifier
+        # Handle None case for prompt_request_response_id
         self.prompt_request_response_id = entry.prompt_request_response_id if entry.prompt_request_response_id else None
         self.timestamp = entry.timestamp
         self.task = entry.task
 
     def get_score(self) -> Score:
+        # Cast score_type to ScoreType since we validated it in __init__
+        score_type_val = self.score_type
+        if score_type_val not in ("true_false", "float_scale"):
+            raise ValueError(f"Invalid score_type: {score_type_val}")
+            
         return Score(
             id=self.id,
-            name=self.name,
-            value=self.value,
-            prompt_memory_entry_id=self.prompt_memory_entry_id,
-            prompt_request_response_id=self.prompt_request_response_id,
+            score_value=self.score_value,
+            score_value_description=self.score_value_description,
+            score_type=score_type_val,  # type: ignore
+            score_category=self.score_category,
+            score_rationale=self.score_rationale,
+            score_metadata=self.score_metadata,
+            scorer_class_identifier=self.scorer_class_identifier,
+            prompt_request_response_id=self.prompt_request_response_id if self.prompt_request_response_id else None,
             timestamp=self.timestamp,
             task=self.task,
         )
@@ -237,10 +261,14 @@ class ScoreEntry(Base):
     def to_dict(self) -> dict:
         return {
             "id": str(self.id),
-            "name": self.name,
-            "value": self.value,
-            "prompt_memory_entry_id": str(self.prompt_memory_entry_id),
-            "prompt_request_response_id": str(self.prompt_request_response_id) if self.prompt_request_response_id else None,
+            "score_value": self.score_value,
+            "score_value_description": self.score_value_description,
+            "score_type": self.score_type,
+            "score_category": self.score_category,
+            "score_rationale": self.score_rationale,
+            "score_metadata": self.score_metadata,
+            "scorer_class_identifier": self.scorer_class_identifier,
+            "prompt_request_response_id": str(self.prompt_request_response_id),
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,
             "task": self.task,
         }
@@ -358,7 +386,6 @@ class SeedPromptEntry(Base):
         )
 
 # Now set up the relationships that couldn't be defined earlier due to forward references
-from sqlalchemy.orm import relationship
 
 # Add relationship between PromptMemoryEntry and ScoreEntry
 PromptMemoryEntry.scores = relationship("ScoreEntry", backref="prompt_memory_entry")
