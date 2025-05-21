@@ -25,6 +25,7 @@ from pyrit.prompt_converter import (
     CharSwapGenerator,
     CodeChameleonConverter,
     ColloquialWordswapConverter,
+    DenylistConverter,
     DiacriticConverter,
     EmojiConverter,
     FlipConverter,
@@ -73,7 +74,7 @@ async def test_convert_tokens_entire_string_async() -> None:
 
 
 @pytest.mark.asyncio
-async def test_test_convert_tokens_raises_with_non_text_input_type():
+async def test_convert_tokens_raises_with_non_text_input_type():
     prompt = "This is a test ⟪to convert⟪ and ⟫another part⟫."
     converter = Base64Converter()
     with pytest.raises(ValueError, match="Input type must be text when start or end tokens are present."):
@@ -81,7 +82,7 @@ async def test_test_convert_tokens_raises_with_non_text_input_type():
 
 
 @pytest.mark.asyncio
-async def test_test_convert_tokens_raises_uneven_tokens():
+async def test_convert_tokens_raises_uneven_tokens():
     converter = Base64Converter()
     prompt = "This is a test ⟪to convert⟫ and ⟪another part."
     with pytest.raises(ValueError, match="Uneven number of start tokens and end tokens."):
