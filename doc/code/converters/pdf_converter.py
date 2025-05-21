@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.6
+#       jupytext_version: 1.17.0
 #   kernelspec:
-#     display_name: pyrit-312
+#     display_name: pyrit-dev
 #     language: python
 #     name: python3
 # ---
@@ -41,11 +41,11 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import PDFConverter
+from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import TextTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
-# Define dynamic data for injection
 prompt_data = {
     "hiring_manager_name": "Jane Doe",
     "current_role": "AI Engineer",
@@ -68,26 +68,33 @@ prompt_template = SeedPrompt.from_yaml_file(template_path)
 prompt_target = TextTarget()
 
 # Initialize the PDFConverter
-pdf_converter = PDFConverter(
-    prompt_template=prompt_template,
-    font_type="Helvetica",
-    font_size=12,
-    page_width=210,
-    page_height=297,
+pdf_converter = PromptConverterConfiguration.from_converters(
+    converters=[
+        PDFConverter(
+            prompt_template=prompt_template,
+            font_type="Arial",
+            font_size=12,
+            page_width=210,
+            page_height=297,
+        )
+    ]
 )
 
 # Define a single prompt for the orchestrator
-prompts = [str(prompt_data)]
+prompts = str(prompt_data)
 
 # Initialize the orchestrator
 orchestrator = PromptSendingOrchestrator(
     objective_target=prompt_target,  # Target system (Azure OpenAI or other LLM target)
-    prompt_converters=[pdf_converter],  # Attach the PDFConverter
+    request_converter_configurations=pdf_converter,  # Attach the PDFConverter
     verbose=False,  # Set to True for detailed logging
 )
 
-await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
-await orchestrator.print_conversations_async()  # type: ignore
+await orchestrator.run_attack_async(objective=prompts)  # type: ignore
+memory = orchestrator.get_memory()
+
+for entry in memory:
+    print(entry)
 
 # %% [markdown]
 # # Direct Prompt PDF Generation (No Template)
@@ -100,32 +107,36 @@ prompt = "This is a simple test string for PDF generation. No templates here!"
 prompt_target = TextTarget()
 
 # Initialize the PDFConverter without a template
-pdf_converter = PDFConverter(
-    prompt_template=None,  # No template provided
-    font_type="Helvetica",
-    font_size=12,
-    page_width=210,
-    page_height=297,
+pdf_converter = PromptConverterConfiguration.from_converters(
+    converters=[
+        PDFConverter(
+            prompt_template=None,  # No template provided
+            font_type="Arial",
+            font_size=12,
+            page_width=210,
+            page_height=297,
+        )
+    ]
 )
-
-# Define the list of prompts as strings (required by PromptSendingOrchestrator)
-prompts = [prompt]
 
 # Initialize the orchestrator
 orchestrator = PromptSendingOrchestrator(
     objective_target=prompt_target,
-    prompt_converters=[pdf_converter],
+    request_converter_configurations=pdf_converter,
     verbose=False,
 )
 
-await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
-await orchestrator.print_conversations_async()  # type: ignore
+await orchestrator.run_attack_async(objective=prompt)  # type: ignore
 
-import tempfile
+memory = orchestrator.get_memory()
+
+for entry in memory:
+    print(entry)
 
 # %% [markdown]
 # # Modify Existing PDF with Injection Items
 # %%
+import tempfile
 from pathlib import Path
 
 import requests
@@ -175,32 +186,29 @@ prompt = "This is a simple test string for PDF generation. No templates here!"
 prompt_target = TextTarget()
 
 # Initialize the PDFConverter with the existing PDF and injection items
-pdf_converter = PDFConverter(
-    prompt_template=None,  # No template provided
-    font_type="Helvetica",
-    font_size=12,
-    page_width=210,
-    page_height=297,
-    existing_pdf=cv_pdf_path,  # Provide the existing PDF
-    injection_items=injection_items,  # Provide the injection items
+pdf_converter = PromptConverterConfiguration.from_converters(
+    converters=[
+        PDFConverter(
+            prompt_template=None,  # No template provided
+            font_type="Arial",
+            font_size=12,
+            page_width=210,
+            page_height=297,
+            existing_pdf=cv_pdf_path,  # Provide the existing PDF
+            injection_items=injection_items,  # Provide the injection items
+        )
+    ]
 )
 
-# Define the list of prompts as strings (required by PromptSendingOrchestrator)
-prompts = [prompt]
-
-# Initialize the orchestrator
 orchestrator = PromptSendingOrchestrator(
     objective_target=prompt_target,
-    prompt_converters=[pdf_converter],
+    request_converter_configurations=pdf_converter,
     verbose=False,
 )
 
-# Run the orchestrator to modify the PDF and inspect the result
-await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
-await orchestrator.print_conversations_async()  # type: ignore
+await orchestrator.run_attack_async(objective=prompt)  # type: ignore
 
-# %%
-import os
+memory = orchestrator.get_memory()
 
-orchestrator.dispose_db_engine()
-os.remove(cv_pdf_path)
+for entry in memory:
+    print(entry)

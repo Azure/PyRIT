@@ -21,7 +21,7 @@ test_cases_success = [
     (
         "--config-file 'tests/unit/cli/prompt_send_success.yaml'",
         [PromptSendingOrchestrator],
-        ["send_normalizer_requests_async"],
+        ["run_attack_async"],
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_success_converters_default.yaml'",
@@ -74,7 +74,7 @@ test_cases_success = [
             CrescendoOrchestrator,
             RedTeamingOrchestrator,
         ],
-        ["send_normalizer_requests_async", "run_attack_async", "run_attack_async", "run_attack_async"],
+        ["run_attacks_async", "run_attack_async", "run_attack_async", "run_attack_async"],
     ),
 ]
 

@@ -22,7 +22,6 @@ test_cases_success = [
             CrescendoOrchestrator,
             RedTeamingOrchestrator,
         ],
-        ["send_normalizer_requests_async", "run_attack_async", "run_attack_async", "run_attack_async"],
     ),
     (
         "--config-file 'tests/integration/cli/prompt_send_success.yaml'",
@@ -42,6 +41,6 @@ test_cases_success = [
 ]
 
 
-@pytest.mark.parametrize("command, orchestrator_classes, methods", test_cases_success)
-def test_cli_integration_success(command, orchestrator_classes, methods):
+@pytest.mark.parametrize("command, orchestrator_classes", test_cases_success)
+def test_cli_integration_success(command, orchestrator_classes):
     main(shlex.split(command))

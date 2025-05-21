@@ -253,6 +253,7 @@ API Reference
     OrchestratorResult
     PAIROrchestrator
     PromptSendingOrchestrator
+    QuestionAnsweringBenchmarkOrchestrator
     RedTeamingOrchestrator
     ScoringOrchestrator
     SkeletonKeyOrchestrator
@@ -310,11 +311,13 @@ API Reference
     SuffixAppendConverter
     TenseConverter
     ToneConverter
+    ToxicSentenceGeneratorConverter
     TranslationConverter
     UnicodeConfusableConverter
     UnicodeSubstitutionConverter
     UrlConverter
     VariationConverter
+    ZalgoConverter
     ZeroWidthConverter
 
 .. automodule:: pyrit.prompt_converter.fuzzer_converter
@@ -380,19 +383,24 @@ API Reference
 
     AzureContentFilterScorer
     ContentClassifierPaths
+    CompositeScorer
     FloatScaleThresholdScorer
     GandalfScorer
     HumanInTheLoopScorer
     HumanInTheLoopScorerGradio
     LikertScalePaths
+    LookBackScorer
     MarkdownInjectionScorer
     PromptShieldScorer
+    QuestionAnswerScorer
     Scorer
+    ScoreAggregator
     SelfAskCategoryScorer
     SelfAskLikertScorer
     SelfAskRefusalScorer
     SelfAskScaleScorer
     SelfAskTrueFalseScorer
+    SelfAskQuestionAnswerScorer
     SubStringScorer
     TrueFalseInverterScorer
     TrueFalseQuestion
