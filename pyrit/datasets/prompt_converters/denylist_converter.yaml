@@ -1,7 +1,9 @@
 name: denylist_converter
 description: |
-  A general strategy for substituting a given set of words from a prompt.
+  A general strategy for replacing a given set of denied words from a prompt.
 authors:
+  - AI Red Team
+groups:
   - AI Red Team
 source: AI Red Team
 parameters:
