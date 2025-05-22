@@ -3,6 +3,7 @@
 
 import logging
 import pathlib
+from typing import Optional
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import PromptDataType, SeedPrompt
@@ -16,7 +17,7 @@ class DenylistConverter(LLMGenericTextConverter):
     """Converts input forbidding certain words or phrases"""
 
     def __init__(
-        self, *, converter_target: PromptChatTarget, prompt_template: SeedPrompt = None, denylist: list[str] = []
+        self, *, converter_target: PromptChatTarget, prompt_template: Optional[SeedPrompt] = None, denylist: list[str] = []
     ):
         # set to default strategy if not provided
         prompt_template = (
@@ -43,8 +44,7 @@ class DenylistConverter(LLMGenericTextConverter):
         # check if the prompt contains any words from the  denylist and if so,
         # update the prompt replacing the denied words with synonyms
         denylist = self._prompt_kwargs.get("denylist", [])
-        for word in denylist:
-            if prompt.find(word) != -1:
-                return await super().convert_async(prompt=prompt, input_type=input_type)
+        if any(word in prompt for word in denylist):
+            return await super().convert_async(prompt=prompt, input_type=input_type)
         logger.info(f"Prompt does not contain any words from the denylist. prompt: {prompt}, denylist: {denylist}")
         return ConverterResult(output_text=prompt, output_type=input_type)
