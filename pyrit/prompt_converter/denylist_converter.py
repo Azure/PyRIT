@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class DenylistConverter(LLMGenericTextConverter):
     """Converts input forbidding certain words or phrases"""
 
-    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: SeedPrompt = None, denylist = []):
+    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: SeedPrompt = None, denylist: list[str] = []):
         # set to default strategy if not provided
         prompt_template = (
             prompt_template
@@ -45,5 +45,5 @@ class DenylistConverter(LLMGenericTextConverter):
         for word in denylist:
             if prompt.find(word) != -1:
                 return await super().convert_async(prompt=prompt, input_type=input_type)
-        print("here")
+        logger.info(f"Prompt does not contain any words from the denylist. prompt: {prompt}, denylist: {denylist}")
         return ConverterResult(output_text=prompt, output_type=input_type)
