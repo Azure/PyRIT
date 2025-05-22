@@ -1,5 +1,4 @@
 import logging
-import json
 import pathlib
 
 from pyrit.common.path import DATASETS_PATH

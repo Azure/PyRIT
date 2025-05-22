@@ -25,7 +25,6 @@ from pyrit.prompt_converter import (
     CharSwapGenerator,
     CodeChameleonConverter,
     ColloquialWordswapConverter,
-    DenylistConverter,
     DiacriticConverter,
     EmojiConverter,
     FlipConverter,
