@@ -17,7 +17,11 @@ class DenylistConverter(LLMGenericTextConverter):
     """Converts input forbidding certain words or phrases"""
 
     def __init__(
-        self, *, converter_target: PromptChatTarget, prompt_template: Optional[SeedPrompt] = None, denylist: list[str] = []
+        self,
+        *,
+        converter_target: PromptChatTarget,
+        prompt_template: Optional[SeedPrompt] = None,
+        denylist: list[str] = [],
     ):
         # set to default strategy if not provided
         prompt_template = (
