@@ -48,7 +48,7 @@ async def test_denylist_word_match(duckdb_instance) -> None:
 
 
 @pytest.mark.asyncio
-async def test_denylist_phrase_and_word_match(duckdb_instance) -> None:
+async def test_denylist_phrase_match(duckdb_instance) -> None:
     converter = DenylistConverter(
         converter_target=MockPromptTarget(),
         prompt_template=None,
