@@ -3,7 +3,7 @@
 
 import pytest
 
-from PyRIT.pyrit.prompt_converter.denylist_converter import DenylistConverter
+from pyrit.prompt_converter.denylist_converter import DenylistConverter
 from unit.mocks import MockPromptTarget
 
 
