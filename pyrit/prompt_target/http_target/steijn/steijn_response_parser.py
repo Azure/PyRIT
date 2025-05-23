@@ -11,9 +11,9 @@ class SteijnResponseParser:
     @staticmethod
     def parse_response(response):
         """Parses the assistant's response content and extracts structured data."""
+
         response_data = {}
         response_text = response.content.decode("utf-8")
-
         for field in SteijnResponseParser.response_fields_regex_dict:
             matches = re.findall(field["pattern"], response_text, re.DOTALL)
 
@@ -34,4 +34,7 @@ class SteijnResponseParser:
 
                 response_data[field["name"]] = content
 
+        if response_data == {}:
+            # If no matches found, return the entire response as a fallback
+            response_data["Response body: "] = response_text
         return response_data

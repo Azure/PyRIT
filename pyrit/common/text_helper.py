@@ -264,7 +264,7 @@ def _render_report_html(
 
 def generate_simulation_report(
         results: list,
-        threshold: float = 0.9,
+        threshold: float = 0.8,
         title: str = "Comprehensive Simulation Report",
         description: str = "",
         execution_time: float = 0.0,
@@ -288,7 +288,7 @@ def generate_simulation_report(
 
 def generate_dataset_report(
         results: list,
-        threshold: float = 0.7,
+        threshold: float = 0.5,
         title: str = "Comprehensive Dataset Report",
         description: str = "",
         execution_time: float = 0.0,

@@ -4,6 +4,7 @@
 import re
 import asyncio
 import logging
+import time
 import uuid
 from typing import Any, Optional, Sequence, List, Dict, Coroutine
 
@@ -209,6 +210,10 @@ class SteijnPromptSendingOrchestrator(Orchestrator):
                 conversation_id = str(uuid.uuid4())
 
             await self._add_prepended_conversation_to_memory(prepended_conversation, conversation_id)
+
+            # Multi-step conversations return 500 occasionally when assistant state is busy and we send a new request.
+            # This is a workaround to wait for the assistant to be ready.
+            await asyncio.sleep(20)
 
             prompt_request_response = await self._prompt_normalizer.send_prompt_async(
                 seed_prompt_group=seed_prompt,
