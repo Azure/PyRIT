@@ -26,22 +26,22 @@ test_cases_success = [
     (
         "--config-file 'tests/unit/cli/prompt_send_success_converters_default.yaml'",
         [PromptSendingOrchestrator],
-        ["send_normalizer_requests_async"],
+        ["run_attack_async"],
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_success_converters_custom_target.yaml'",
         [PromptSendingOrchestrator],
-        ["send_normalizer_requests_async"],
+        ["run_attack_async"],
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_success_converters_llm_mixed_target.yaml'",
         [PromptSendingOrchestrator],
-        ["send_normalizer_requests_async"],
+        ["run_attack_async"],
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_success_converters_no_target.yaml'",
         [PromptSendingOrchestrator],
-        ["send_normalizer_requests_async"],
+        ["run_attack_async"],
     ),
     ("--config-file 'tests/unit/cli/multi_turn_rto_success.yaml'", [RedTeamingOrchestrator], ["run_attack_async"]),
     ("--config-file 'tests/unit/cli/multi_turn_rto_args_success.yaml'", [RedTeamingOrchestrator], ["run_attack_async"]),

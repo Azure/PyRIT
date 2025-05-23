@@ -11,7 +11,7 @@ converters:
   - type: "AnsiAttackConverter"
   - type: "AddImageTextConverter"
     img_to_add: "./assets/pyrit_architecture.png"
-  - type: "AsciiArtConverter" # TODO: Why is this failing with input type not supported when input type is text?
+  - type: "AsciiArtConverter" # TODO: Need to figure out how to run multiple converters without stacking in integration tests. This fails right now because they layer on top of each other (as expected).
   - type: "AsciiSmugglerConverter"
   - type: "AtbashConverter"
   - type: "AudioFrequencyConverter"

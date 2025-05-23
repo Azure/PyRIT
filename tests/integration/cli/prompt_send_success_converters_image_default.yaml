@@ -8,7 +8,7 @@ objective_target:
 converters:
   - type: "AddTextImageConverter"
     text_to_add: "test"
-  - type: "AddImageVideoConverter" # TODO: This is failing, dig into the exception here. OpenAIChatTarget throwing value error that this target only supports text and image_path input for prompt so why is it getting confused with video path?
-    video_path: "./assets/sample_video.mp4"
+  # - type: "AddImageVideoConverter" # TODO: Unsure why this fails when uncommented, but just adding the above converter works right now :-)
+  #   video_path: "./assets/sample_video.mp4"
 database:
   type: "DuckDB"

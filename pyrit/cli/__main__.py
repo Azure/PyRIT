@@ -9,7 +9,7 @@ from typing import List
 
 from pyrit.common import initialize_pyrit
 from pyrit.memory import CentralMemory
-from pyrit.models import SeedPrompt, SeedPromptDataset
+from pyrit.models import SeedPrompt, SeedPromptDataset, SeedPromptGroup
 from pyrit.prompt_converter.prompt_converter import PromptConverter
 
 from .scanner_config import ScannerConfig
@@ -32,21 +32,21 @@ def parse_args(args=None) -> Namespace:
     return parser.parse_args(args)
 
 
-def load_seed_prompts(dataset_paths: List[str]) -> List[SeedPrompt]:
+def load_seed_prompts(dataset_paths: List[str]) -> List[SeedPromptGroup]:
     """
     loads each dataset file path into a list of SeedPrompt objects.
     """
     if not dataset_paths:
         raise ValueError("No datasets provided in the configuration.")
 
-    all_prompts: List[SeedPrompt] = []
+    groups: List[SeedPromptGroup] = []
     for path_str in dataset_paths:
         path = Path(path_str)
         if not path.exists():
             raise FileNotFoundError(f"Dataset file '{path}' does not exist.")
         dataset = SeedPromptDataset.from_yaml_file(path)
-        all_prompts.extend(dataset.prompts)
-    return all_prompts
+        groups.extend(dataset.group_seed_prompts_by_prompt_group_id(seed_prompts=dataset.prompts))
+    return groups
 
 
 async def run_scenarios_async(config: ScannerConfig) -> None:
@@ -61,9 +61,9 @@ async def run_scenarios_async(config: ScannerConfig) -> None:
     orchestrators = config.create_orchestrators(prompt_converters=prompt_converters)
 
     for orchestrator in orchestrators:
-        objectives = [prompt.value for prompt in seed_prompts]
+        objectives = [prompt_group.prompts[0].value for prompt_group in seed_prompts]
         if hasattr(orchestrator, "run_attacks_async"):
-            await orchestrator.run_attacks_async(objectives=objectives, memory_labels=memory_labels)
+            await orchestrator.run_attacks_async(objectives=objectives, seed_prompts=seed_prompts, memory_labels=memory_labels)
         else:
             raise ValueError(f"The orchestrator {type(orchestrator).__name__} does not have run_attacks_async. ")
 
