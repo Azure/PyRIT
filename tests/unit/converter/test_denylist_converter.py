@@ -20,7 +20,7 @@ def mock_template():
 
 @pytest.fixture
 def mock_target() -> MockPromptTarget:
-    target = MockPromptTarget()
+    target = MagicMock()
     response = PromptRequestResponse(
         request_pieces=[
             PromptRequestPiece(
