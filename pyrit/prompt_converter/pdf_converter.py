@@ -18,11 +18,11 @@ class PDFConverter(PromptConverter):
     """
     Converts a text prompt into a PDF file. Supports various modes:
     1. Template-Based Generation: If a `SeedPrompt` is provided, dynamic data can be injected into the
-       template using the `SeedPrompt.render_template_value` method, and the resulting content is converted to a PDF.
+    template using the `SeedPrompt.render_template_value` method, and the resulting content is converted to a PDF.
     2. Direct Text-Based Generation: If no template is provided, the raw string prompt is converted directly
-       into a PDF.
+    into a PDF.
     3. Modify Existing PDFs (Overlay approach): Enables injecting text into existing PDFs at specified
-       coordinates, merging a new "overlay layer" onto the original PDF.
+    coordinates, merging a new "overlay layer" onto the original PDF.
 
     Args:
         prompt_template (Optional[SeedPrompt], optional): A `SeedPrompt` object representing a template.
