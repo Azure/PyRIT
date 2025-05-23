@@ -45,12 +45,12 @@ class PromptNormalizer(abc.ABC):
         *,
         seed_prompt_group: SeedPromptGroup,
         target: PromptTarget,
-        conversation_id: str = None,
         request_converter_configurations: list[PromptConverterConfiguration] = [],
         response_converter_configurations: list[PromptConverterConfiguration] = [],
         sequence: int = -1,
         labels: Optional[dict[str, str]] = None,
         orchestrator_identifier: Optional[dict[str, str]] = None,
+        conversation_id: Optional[str] = None,
     ) -> PromptRequestResponse:
         """
         Sends a single request to a target.
@@ -290,7 +290,7 @@ class PromptNormalizer(abc.ABC):
         target: PromptTarget,
         sequence: int,
         labels: dict[str, str],
-        orchestrator_identifier: Optional[dict[str, str]],
+        orchestrator_identifier: Optional[dict[str, str]] = None,
     ) -> PromptRequestResponse:
         """
         Builds a prompt request response based on the given parameters.
@@ -338,22 +338,22 @@ class PromptNormalizer(abc.ABC):
 
     async def add_prepended_conversation_to_memory(
         self,
-        prepended_conversation: Optional[list[PromptRequestResponse]],
         conversation_id: str,
         should_convert: bool = True,
         converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
         orchestrator_identifier: Optional[dict[str, str]] = None,
+        prepended_conversation: Optional[list[PromptRequestResponse]] = None,
     ) -> Optional[list[PromptRequestResponse]]:
         """
         Processes the prepended conversation by converting it if needed and adding it to memory.
 
         Args:
-            prepended_conversation (Optional[list[PromptRequestResponse]]): The conversation to prepend
             conversation_id (str): The conversation ID to use for the request pieces
             should_convert (bool): Whether to convert the prepended conversation
             converter_configurations (Optional[list[PromptConverterConfiguration]]): Configurations for converting the
                 request
             orchestrator_identifier (Optional[dict[str, str]]): Identifier for the orchestrator
+            prepended_conversation (Optional[list[PromptRequestResponse]]): The conversation to prepend
 
         Returns:
             Optional[list[PromptRequestResponse]]: The processed prepended conversation

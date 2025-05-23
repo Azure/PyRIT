@@ -34,7 +34,7 @@ class OpenAITTSTarget(OpenAITarget):
         *,
         voice: TTSVoice = "alloy",
         response_format: TTSResponseFormat = "mp3",
-        language: Optional[str] = "en",
+        language: str = "en",
         speed: Optional[float] = None,
         api_version: str = "2025-02-01-preview",
         **kwargs,
@@ -61,7 +61,7 @@ class OpenAITTSTarget(OpenAITarget):
                 httpx.AsyncClient() constructor.
             voice (str, Optional): The voice to use for TTS. Defaults to "alloy".
             response_format (str, Optional): The format of the audio response. Defaults to "mp3".
-            language (str, Optional): The language for TTS. Defaults to "en".
+            language (str): The language for TTS. Defaults to "en".
             speed (float, Optional): The speed of the TTS. Select a value from 0.25 to 4.0. 1.0 is normal.
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
                 httpx.AsyncClient() constructor.

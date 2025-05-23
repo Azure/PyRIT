@@ -34,8 +34,8 @@ class OpenAITarget(PromptChatTarget):
         endpoint: Optional[str] = None,
         api_key: Optional[str] = None,
         headers: Optional[str] = None,
-        use_aad_auth: Optional[bool] = False,
-        api_version: Optional[str] = "2024-06-01",
+        use_aad_auth: bool = False,
+        api_version: str = "2024-06-01",
         max_requests_per_minute: Optional[int] = None,
         httpx_client_kwargs: Optional[dict] = None,
     ) -> None:
@@ -52,11 +52,11 @@ class OpenAITarget(PromptChatTarget):
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
                 Defaults to the OPENAI_CHAT_KEY environment variable.
             headers (str, Optional): Extra headers of the endpoint (JSON).
-            use_aad_auth (bool, Optional): When set to True, user authentication is used
+            use_aad_auth (bool): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default . Please run `az login` locally
                 to leverage user AuthN.
-            api_version (str, Optional): The version of the Azure OpenAI API. Defaults to
+            api_version (str): The version of the Azure OpenAI API. Defaults to
                 "2024-06-01". If set to None, this will not be added as a query parameter to requests.
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target

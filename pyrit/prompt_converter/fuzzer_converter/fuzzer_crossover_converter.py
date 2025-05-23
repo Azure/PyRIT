@@ -38,7 +38,7 @@ class FuzzerCrossOverConverter(FuzzerConverter):
         self,
         *,
         converter_target: PromptChatTarget,
-        prompt_template: SeedPrompt = None,
+        prompt_template: Optional[SeedPrompt] = None,
         prompt_templates: Optional[List[str]] = None,
     ):
         prompt_template = (

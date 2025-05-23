@@ -3,7 +3,7 @@
 
 import logging
 import time
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
     import azure.cognitiveservices.speech as speechsdk  # noqa: F401
@@ -34,8 +34,8 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
 
     def __init__(
         self,
-        azure_speech_region: str = None,
-        azure_speech_key: str = None,
+        azure_speech_region: Optional[str] = None,
+        azure_speech_key: Optional[str] = None,
         recognition_language: str = "en-US",
     ) -> None:
 

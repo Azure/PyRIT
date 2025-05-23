@@ -216,40 +216,41 @@ class Scorer(abc.ABC):
         prompt_request_value: str,
         prompt_request_data_type: PromptDataType,
         scored_prompt_id: str,
-        category: str = None,
-        task: str = None,
-        score_value_output_key: Optional[str] = "score_value",
-        rationale_output_key: Optional[str] = "rationale",
-        description_output_key: Optional[str] = "description",
-        metadata_output_key: Optional[str] = "metadata",
-        category_output_key: Optional[str] = "category",
-        orchestrator_identifier: dict[str, str] = None,
+        category: Optional[str] = None,
+        task: Optional[str] = None,
+        score_value_output_key: str = "score_value",
+        rationale_output_key: str = "rationale",
+        description_output_key: str = "description",
+        metadata_output_key: str = "metadata",
+        category_output_key: str = "category",
+        orchestrator_identifier: Optional[dict[str, str]] = None,
     ) -> UnvalidatedScore:
         """
-        Sends a request to a target, and takes care of retries.
+                Sends a request to a target, and takes care of retries.
 
-        The scorer target response should be JSON with value, rationale, and optional metadata and description fields.
+                The scorer target response should be JSON with value, rationale, and optional metadata and
+                description fields.
 
-        Args:
-            prompt_target (PromptChatTarget): The target LLM to send the prompt request to.
-            system_prompt (str): The system-level prompt that guides the behavior of the target LLM.
-            prompt_request_value (str): The actual value or content to be scored by the LLM.
-            prompt_request_data_type (PromptDataType): The type of the data being sent in the prompt request.
-            scored_prompt_id (str): The ID of the scored prompt.
-            category (str, Optional): The category of the score. Can also be parsed from the JSON response if not
-                provided.
-            task (str, Optional): A description of the task that is associated with the score, used for contextualizing
-                the result.
-            score_value_output_key (str, Optional): The key in the JSON response that contains the score value.
-            rationale_output_key (str, Optional): The key in the JSON response that contains the rationale.
-            description_output_key (str, Optional): The key in the JSON response that contains the description.
-            metadata_output_key (str, Optional): The key in the JSON response that contains the metadata.
-            orchestrator_identifier (dict[str, str], Optional): A dictionary containing orchestrator-specific
-                identifiers.
+                Args:
+                    prompt_target (PromptChatTarget): The target LLM to send the prompt request to.
+                    system_prompt (str): The system-level prompt that guides the behavior of the target LLM.
+                    prompt_request_value (str): The actual value or content to be scored by the LLM.
+                    prompt_request_data_type (PromptDataType): The type of the data being sent in the prompt request.
+                    scored_prompt_id (str): The ID of the scored prompt.
+                    category (str, Optional): The category of the score. Can also be parsed from the JSON response if
+                        not provided.
+                    task (str, Optional): A description of the task that is associated with the score, used for
+                        contextualizing the result.
+                    score_value_output_key (str): The key in the JSON response that contains the score value.
+                    rationale_output_key (str): The key in the JSON response that contains the rationale.
+                    description_output_key (str): The key in the JSON response that contains the description.
+                    category_output_key (str): The key in the JSON response that contains the category.
+        C            orchestrator_identifier (dict[str, str], Optional): A dictionary containing orchestrator-specific
+                        identifiers.
 
-        Returns:
-            UnvalidatedScore: The score object containing the response from the target LLM.
-                score_value still needs to be normalized and validated.
+                Returns:
+                    UnvalidatedScore: The score object containing the response from the target LLM.
+                        score_value still needs to be normalized and validated.
         """
 
         conversation_id = str(uuid.uuid4())

@@ -52,9 +52,9 @@ class PromptShieldTarget(PromptTarget):
 
     def __init__(
         self,
-        endpoint: str = None,
-        api_key: str = None,
-        api_version: Optional[str] = "2024-02-15-preview",
+        endpoint: Optional[str] = None,
+        api_key: Optional[str] = None,
+        api_version: str = "2024-02-15-preview",
         field: Optional[PromptShieldEntryField] = None,
         max_requests_per_minute: Optional[int] = None,
     ) -> None:
