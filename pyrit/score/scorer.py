@@ -245,7 +245,7 @@ class Scorer(abc.ABC):
                     rationale_output_key (str): The key in the JSON response that contains the rationale.
                     description_output_key (str): The key in the JSON response that contains the description.
                     category_output_key (str): The key in the JSON response that contains the category.
-        C            orchestrator_identifier (dict[str, str], Optional): A dictionary containing orchestrator-specific
+                    orchestrator_identifier (dict[str, str], Optional): A dictionary containing orchestrator-specific
                         identifiers.
 
                 Returns:
