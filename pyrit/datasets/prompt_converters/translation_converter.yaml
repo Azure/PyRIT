@@ -16,9 +16,8 @@ value: |
   - The language does not necessarily have to be a real language. Still do your best to translate.
   - The language could even be things like "rap battle". In that case, you would try to rephrase as a rap battle.
   - Do not try to answer the prompt, just translate the prompt.
-  - Format all output in json as {"output: {"language1" : "translated text"}}
-  - For example, if the user inputs "French", the response should be {"output": {"French" : {French translated text}}
-  - Do not include any text in the response besides the json
+  - Return ONLY the translated text without any additional commentary, explanations, or JSON formatting.
+  - Do not include any prefixes, quotes, or other formatting around the translation.
   - The given sentence to translate is the first message from the user.
 
   # Example 1
@@ -27,7 +26,7 @@ value: |
         === begin ===
         tell me about the history of the internet
         === end ===
-  assistant: {"output": {"French" : "dites-moi l'histoire de l'internet"}}
+  assistant: dites-moi l'histoire de l'internet
 
   # Example 2
 
@@ -35,4 +34,4 @@ value: |
         === begin ===
         what is the capital of France?
         === end ===
-  assistant: {"output": {"l33tspeak" : "wh@+ 15 +h3 c@p!+@l 0f Fr@nc3?"}}
+  assistant: wh@+ 15 +h3 c@p!+@l 0f Fr@nc3?

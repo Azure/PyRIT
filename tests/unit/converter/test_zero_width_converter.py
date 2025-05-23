@@ -3,8 +3,7 @@
 
 import pytest
 
-from pyrit.prompt_converter import ConverterResult
-from pyrit.prompt_converter.zero_width_converter import ZeroWidthConverter
+from pyrit.prompt_converter import ConverterResult, ZeroWidthConverter
 
 
 @pytest.mark.asyncio

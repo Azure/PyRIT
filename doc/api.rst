@@ -115,6 +115,7 @@ API Reference
     fetch_aya_redteaming_dataset
     fetch_babelscape_alert_dataset
     fetch_darkbench_dataset
+    fetch_multilingual_vulnerability_dataset
     fetch_decoding_trust_stereotypes_dataset
     fetch_examples
     fetch_forbidden_questions_dataset
@@ -247,11 +248,12 @@ API Reference
     CrescendoOrchestrator
     FlipAttackOrchestrator
     FuzzerOrchestrator
-    MultiTurnAttackResult
     MultiTurnOrchestrator
     Orchestrator
+    OrchestratorResult
     PAIROrchestrator
     PromptSendingOrchestrator
+    QuestionAnsweringBenchmarkOrchestrator
     RedTeamingOrchestrator
     ScoringOrchestrator
     SkeletonKeyOrchestrator
@@ -291,6 +293,7 @@ API Reference
     FuzzerShortenConverter
     FuzzerSimilarConverter
     HumanInTheLoopConverter
+    InsertPunctuationConverter
     LeetspeakConverter
     LLMGenericTextConverter
     MaliciousQuestionGeneratorConverter
@@ -308,11 +311,14 @@ API Reference
     SuffixAppendConverter
     TenseConverter
     ToneConverter
+    ToxicSentenceGeneratorConverter
     TranslationConverter
     UnicodeConfusableConverter
     UnicodeSubstitutionConverter
     UrlConverter
     VariationConverter
+    ZalgoConverter
+    ZeroWidthConverter
 
 .. automodule:: pyrit.prompt_converter.fuzzer_converter
     :no-members:
@@ -377,19 +383,24 @@ API Reference
 
     AzureContentFilterScorer
     ContentClassifierPaths
+    CompositeScorer
     FloatScaleThresholdScorer
     GandalfScorer
     HumanInTheLoopScorer
     HumanInTheLoopScorerGradio
     LikertScalePaths
+    LookBackScorer
     MarkdownInjectionScorer
     PromptShieldScorer
+    QuestionAnswerScorer
     Scorer
+    ScoreAggregator
     SelfAskCategoryScorer
     SelfAskLikertScorer
     SelfAskRefusalScorer
     SelfAskScaleScorer
     SelfAskTrueFalseScorer
+    SelfAskQuestionAnswerScorer
     SubStringScorer
     TrueFalseInverterScorer
     TrueFalseQuestion

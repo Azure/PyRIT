@@ -21,7 +21,7 @@ test_cases_success = [
     (
         "--config-file 'tests/unit/cli/prompt_send_success.yaml'",
         [PromptSendingOrchestrator],
-        ["send_normalizer_requests_async"],
+        ["run_attack_async"],
     ),
     ("--config-file 'tests/unit/cli/multi_turn_rto_success.yaml'", [RedTeamingOrchestrator], ["run_attack_async"]),
     ("--config-file 'tests/unit/cli/multi_turn_rto_args_success.yaml'", [RedTeamingOrchestrator], ["run_attack_async"]),
@@ -54,7 +54,7 @@ test_cases_success = [
             CrescendoOrchestrator,
             RedTeamingOrchestrator,
         ],
-        ["send_normalizer_requests_async", "run_attack_async", "run_attack_async", "run_attack_async"],
+        ["run_attacks_async", "run_attack_async", "run_attack_async", "run_attack_async"],
     ),
 ]
 
