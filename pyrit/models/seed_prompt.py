@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass
@@ -52,8 +53,8 @@ class SeedPrompt(YamlLoadable):
 
     id: Optional[uuid.UUID]
     value: str
-    value_sha256: str
-    data_type: PromptDataType
+    value_sha256: Optional[str]
+    data_type: Optional[PromptDataType]
     name: Optional[str]
     dataset_name: Optional[str]
     harm_categories: Optional[Sequence[str]]
@@ -84,7 +85,7 @@ class SeedPrompt(YamlLoadable):
         id: Optional[uuid.UUID] = None,
         value: str,
         value_sha256: Optional[str] = None,
-        data_type: PromptDataType,
+        data_type: Optional[PromptDataType]= None,
         name: Optional[str] = None,
         dataset_name: Optional[str] = None,
         harm_categories: Optional[Sequence[str]] = None,
@@ -103,7 +104,27 @@ class SeedPrompt(YamlLoadable):
         self.id = id if id else uuid.uuid4()
         self.value = value
         self.value_sha256 = value_sha256
-        self.data_type = data_type
+
+        if data_type:
+            # If data_type is provided, use it directly
+            self.data_type = data_type
+        else:
+            # If data_type is not provided, infer it from the value
+            # Note: Does not assign 'error' or 'url' implicitly
+            if os.path.isfile(value):
+                _, ext = os.path.splitext(value)
+                ext = ext.lstrip(".")
+                if ext in ["mp4", "avi", "mov", "mkv", "ogv", "flv", "wmv", "webm"]:
+                    self.data_type = "video_path"
+                elif ext in ["flac", "mp3", "mpeg", "mpga", "m4a", "ogg", "wav"]:
+                    self.data_type = "audio_path"
+                elif ext in ["jpg", "jpeg", "png", "gif", "bmp", "tiff", "tif"]:
+                    self.data_type = "image_path"
+                else:
+                    raise ValueError(f"Unable to infer data_type from file extension: {ext}")
+            else:
+                self.data_type = "text"
+
         self.name = name
         self.dataset_name = dataset_name
         self.harm_categories = harm_categories or []
