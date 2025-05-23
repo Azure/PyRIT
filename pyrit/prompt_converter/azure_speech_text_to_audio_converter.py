@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Optional
 
 if TYPE_CHECKING:
     import azure.cognitiveservices.speech as speechsdk  # noqa: F401
@@ -36,8 +36,8 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
 
     def __init__(
         self,
-        azure_speech_region: str = None,
-        azure_speech_key: str = None,
+        azure_speech_region: Optional[str] = None,
+        azure_speech_key: Optional[str] = None,
         synthesis_language: str = "en_US",
         synthesis_voice_name: str = "en-US-AvaNeural",
         output_format: AzureSpeachAudioFormat = "wav",

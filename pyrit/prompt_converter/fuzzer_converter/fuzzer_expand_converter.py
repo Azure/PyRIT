@@ -3,6 +3,7 @@
 
 import pathlib
 import uuid
+from typing import Optional
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt
@@ -21,7 +22,7 @@ class FuzzerExpandConverter(FuzzerConverter):
         self,
         *,
         converter_target: PromptChatTarget,
-        prompt_template: SeedPrompt = None,
+        prompt_template: Optional[SeedPrompt] = None,
     ):
         prompt_template = (
             prompt_template

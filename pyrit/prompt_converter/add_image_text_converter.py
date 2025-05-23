@@ -6,7 +6,6 @@ import logging
 import string
 import textwrap
 from io import BytesIO
-from typing import Optional
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -34,11 +33,11 @@ class AddImageTextConverter(PromptConverter):
     def __init__(
         self,
         img_to_add: str,
-        font_name: Optional[str] = "helvetica.ttf",
-        color: Optional[tuple[int, int, int]] = (0, 0, 0),
-        font_size: Optional[int] = 15,
-        x_pos: Optional[int] = 10,
-        y_pos: Optional[int] = 10,
+        font_name: str = "helvetica.ttf",
+        color: tuple[int, int, int] = (0, 0, 0),
+        font_size: int = 15,
+        x_pos: int = 10,
+        y_pos: int = 10,
     ):
         if not img_to_add:
             raise ValueError("Please provide valid image path")

@@ -47,7 +47,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
         hf_access_token: Optional[str] = None,
         use_cuda: bool = False,
         tensor_format: str = "pt",
-        necessary_files: list = None,
+        necessary_files: Optional[list] = None,
         max_new_tokens: int = 20,
         temperature: float = 1.0,
         top_p: float = 1.0,

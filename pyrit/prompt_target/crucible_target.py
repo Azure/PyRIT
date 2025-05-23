@@ -25,7 +25,7 @@ class CrucibleTarget(PromptTarget):
         self,
         *,
         endpoint: str,
-        api_key: str = None,
+        api_key: Optional[str] = None,
         max_requests_per_minute: Optional[int] = None,
     ) -> None:
         super().__init__(max_requests_per_minute=max_requests_per_minute)

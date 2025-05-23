@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import re
+from typing import Optional
 
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import ConverterResult, PromptConverter
@@ -35,7 +36,11 @@ class RepeatTokenConverter(PromptConverter):
     """
 
     def __init__(
-        self, *, token_to_repeat: str = None, times_to_repeat: int = None, token_insert_mode: str = "split"
+        self,
+        *,
+        token_to_repeat: Optional[str] = None,
+        times_to_repeat: Optional[int] = None,
+        token_insert_mode: str = "split",
     ) -> None:
         self.token_to_repeat = " " + token_to_repeat.strip()
         self.times_to_repeat = times_to_repeat

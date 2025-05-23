@@ -4,6 +4,7 @@
 import logging
 import os
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 
@@ -38,7 +39,7 @@ class AddImageVideoConverter(PromptConverter):
     def __init__(
         self,
         video_path: str,
-        output_path: str = None,
+        output_path: Optional[str] = None,
         img_position: tuple = (10, 10),
         img_resize_size: tuple = (500, 500),
     ):

@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Literal, Optional
+from typing import Literal
 
 from datasets import load_dataset
 
@@ -10,14 +10,14 @@ from pyrit.models.seed_prompt import SeedPrompt
 
 
 def fetch_babelscape_alert_dataset(
-    category: Optional[Literal["alert", "alert_adversarial"]] = "alert_adversarial",
+    category: Literal["alert", "alert_adversarial"] = "alert_adversarial",
 ) -> SeedPromptDataset:
     """
     Fetch the Babelscape/ALERT dataset and create a SeedPromptDataset.
 
     Args:
-        category (Optional[str]): The dataset category, "alert" or "alert_adversarial".
-            If None, both categories will be loaded. Defaults to "alert_adversarial".
+        category (str): The dataset category, "alert" or "alert_adversarial".
+            If omitted, both categories will be loaded. Defaults to "alert_adversarial".
 
     Returns:
         SeedPromptDataset: A SeedPromptDataset containing the examples.

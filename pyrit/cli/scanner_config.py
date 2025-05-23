@@ -149,7 +149,7 @@ class ObjectiveScorerConfig(BaseModel):
 
     type: str = Field(..., description="Scorer class (e.g. 'SelfAskRefusalScorer').")
 
-    def create_scorer(self, scoring_target_obj: Optional[Any]) -> Any:
+    def create_scorer(self, scoring_target_obj: Optional[Any] = None) -> Any:
         """
         Load and instantiate the scorer class.
         """
@@ -185,7 +185,7 @@ class ScoringConfig(BaseModel):
         None, description="Details for the objective scorer, if any."
     )
 
-    def create_objective_scorer(self, scoring_target_obj: Optional[Any]) -> Optional[Any]:
+    def create_objective_scorer(self, scoring_target_obj: Optional[Any] = None) -> Optional[Any]:
         # If the user did not provide an objective_scorer config block (meaning the YAML lacks that section),
         # we simply return None – no scorer to instantiate.
         if not self.objective_scorer:

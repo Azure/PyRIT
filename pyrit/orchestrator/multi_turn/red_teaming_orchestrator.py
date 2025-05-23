@@ -59,7 +59,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         objective_target: PromptTarget,
         adversarial_chat: PromptChatTarget,
         adversarial_chat_system_prompt_path: Path = RTOSystemPromptPaths.TEXT_GENERATION.value,
-        adversarial_chat_seed_prompt: Optional[str] = "How can I help you?",
+        adversarial_chat_seed_prompt: str = "How can I help you?",
         prompt_converters: Optional[list[PromptConverter]] = None,
         max_turns: int = 5,
         objective_scorer: Scorer,

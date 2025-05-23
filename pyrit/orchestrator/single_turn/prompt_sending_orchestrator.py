@@ -89,8 +89,8 @@ class PromptSendingOrchestrator(Orchestrator):
 
     async def _add_prepended_conversation_to_memory(
         self,
-        prepended_conversation: Optional[list[PromptRequestResponse]],
         conversation_id: str,
+        prepended_conversation: Optional[list[PromptRequestResponse]] = None,
     ):
         """
         Processes the prepended conversation by converting it if needed and adding it to memory.
@@ -209,7 +209,9 @@ class PromptSendingOrchestrator(Orchestrator):
 
         for _ in range(self._retries_on_objective_failure + 1):
             conversation_id = str(uuid.uuid4())
-            await self._add_prepended_conversation_to_memory(prepended_conversation, conversation_id)
+            await self._add_prepended_conversation_to_memory(
+                prepended_conversation=prepended_conversation, conversation_id=conversation_id
+            )
 
             result = await self._prompt_normalizer.send_prompt_async(
                 seed_prompt_group=seed_prompt,

@@ -26,13 +26,13 @@ class PDFConverter(PromptConverter):
 
     Args:
         prompt_template (Optional[SeedPrompt], optional): A `SeedPrompt` object representing a template.
-        font_type (Optional[str], optional): Font type for the PDF. Defaults to "Helvetica".
-        font_size (Optional[int], optional): Font size for the PDF. Defaults to 12.
-        font_color (Optional[tuple], optional): Font color for the PDF in RGB format. Defaults to (255, 255, 255).
-        page_width (Optional[int], optional): Width of the PDF page in mm. Defaults to 210 (A4 width).
-        page_height (Optional[int], optional): Height of the PDF page in mm. Defaults to 297 (A4 height).
-        column_width (Optional[int], optional): Width of each column in the PDF. Defaults to 0 (full page width).
-        row_height (Optional[int], optional): Height of each row in the PDF. Defaults to 10.
+        font_type (str): Font type for the PDF. Defaults to "Helvetica".
+        font_size (int): Font size for the PDF. Defaults to 12.
+        font_color (tuple): Font color for the PDF in RGB format. Defaults to (255, 255, 255).
+        page_width (int): Width of the PDF page in mm. Defaults to 210 (A4 width).
+        page_height (int): Height of the PDF page in mm. Defaults to 297 (A4 height).
+        column_width (int): Width of each column in the PDF. Defaults to 0 (full page width).
+        row_height (int): Height of each row in the PDF. Defaults to 10.
         existing_pdf (Optional[Path], optional): Path to an existing PDF file. Defaults to None.
         injection_items (Optional[List[Dict]], optional): A list of injection items for modifying an existing PDF.
     """
@@ -40,13 +40,13 @@ class PDFConverter(PromptConverter):
     def __init__(
         self,
         prompt_template: Optional[SeedPrompt] = None,
-        font_type: Optional[str] = "Helvetica",
-        font_size: Optional[int] = 12,
-        font_color: Optional[tuple] = (255, 255, 255),
-        page_width: Optional[int] = 210,
-        page_height: Optional[int] = 297,
-        column_width: Optional[int] = 0,
-        row_height: Optional[int] = 10,
+        font_type: str = "Helvetica",
+        font_size: int = 12,
+        font_color: tuple = (255, 255, 255),
+        page_width: int = 210,
+        page_height: int = 297,
+        column_width: int = 0,
+        row_height: int = 10,
         existing_pdf: Optional[Path] = None,
         injection_items: Optional[List[Dict]] = None,
     ) -> None:

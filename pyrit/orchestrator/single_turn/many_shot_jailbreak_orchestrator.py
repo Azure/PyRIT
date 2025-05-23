@@ -37,7 +37,7 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
         batch_size: int = 10,
         retries_on_objective_failure: int = 0,
         verbose: bool = False,
-        example_count: Optional[int] = 100,
+        example_count: int = 100,
         many_shot_examples: Optional[list[dict[str, str]]] = None,
     ) -> None:
         """

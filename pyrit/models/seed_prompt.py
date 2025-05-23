@@ -50,24 +50,24 @@ class PartialUndefined(Undefined):
 class SeedPrompt(YamlLoadable):
     """Represents a seed prompt with various attributes and metadata."""
 
-    id: Optional[uuid.UUID]
     value: str
     value_sha256: str
     data_type: PromptDataType
-    name: Optional[str]
-    dataset_name: Optional[str]
-    harm_categories: Optional[Sequence[str]]
-    description: Optional[str]
-    authors: Optional[Sequence[str]]
-    groups: Optional[Sequence[str]]
-    source: Optional[str]
-    date_added: Optional[datetime]
-    added_by: Optional[str]
-    metadata: Optional[Dict[str, Union[str, int]]]
-    parameters: Optional[Sequence[str]]
-    prompt_group_id: Optional[uuid.UUID]
-    prompt_group_alias: Optional[str]
-    sequence: Optional[int]
+    id: Optional[uuid.UUID] = None
+    name: Optional[str] = None
+    dataset_name: Optional[str] = None
+    harm_categories: Optional[Sequence[str]] = None
+    description: Optional[str] = None
+    authors: Optional[Sequence[str]] = None
+    groups: Optional[Sequence[str]] = None
+    source: Optional[str] = None
+    date_added: Optional[datetime] = None
+    added_by: Optional[str] = None
+    metadata: Optional[Dict[str, Union[str, int]]] = None
+    parameters: Optional[Sequence[str]] = None
+    prompt_group_id: Optional[uuid.UUID] = None
+    prompt_group_alias: Optional[str] = None
+    sequence: Optional[int] = None
 
     TEMPLATE_PATHS = {
         "datasets_path": DATASETS_PATH,
