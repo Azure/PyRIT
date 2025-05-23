@@ -14,25 +14,27 @@ logger = logging.getLogger(__name__)
 
 
 class DenylistConverter(LLMGenericTextConverter):
-    """Converts input forbidding certain words or phrases"""
+    """Eliminates forbidden words or phrases in a prompt by replacing them with synonyms."""
 
     def __init__(
         self,
         *,
         converter_target: PromptChatTarget,
-        prompt_template: Optional[SeedPrompt] = None,
+        system_prompt_template: Optional[SeedPrompt] = None,
         denylist: list[str] = [],
     ):
         # set to default strategy if not provided
-        prompt_template = (
-            prompt_template
-            if prompt_template
+        system_prompt_template = (
+            system_prompt_template
+            if system_prompt_template
             else SeedPrompt.from_yaml_file(
                 pathlib.Path(DATASETS_PATH) / "prompt_converters" / "denylist_converter.yaml"
             )
         )
 
-        super().__init__(converter_target=converter_target, system_prompt_template=prompt_template, denylist=denylist)
+        super().__init__(
+            converter_target=converter_target, system_prompt_template=system_prompt_template, denylist=denylist
+        )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
@@ -44,7 +46,7 @@ class DenylistConverter(LLMGenericTextConverter):
         Returns:
             str: The converted prompt without any denied words.
         """
-        self._prompt_kwargs["prompt"] = prompt
+
         # check if the prompt contains any words from the  denylist and if so,
         # update the prompt replacing the denied words with synonyms
         denylist = self._prompt_kwargs.get("denylist", [])
