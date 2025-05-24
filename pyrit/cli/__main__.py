@@ -9,8 +9,7 @@ from typing import List
 
 from pyrit.common import initialize_pyrit
 from pyrit.memory import CentralMemory
-from pyrit.models import SeedPrompt, SeedPromptDataset, SeedPromptGroup
-from pyrit.prompt_converter.prompt_converter import PromptConverter
+from pyrit.models.seed_prompt import SeedPrompt, SeedPromptDataset
 
 from .scanner_config import ScannerConfig
 

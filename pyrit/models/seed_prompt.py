@@ -85,7 +85,7 @@ class SeedPrompt(YamlLoadable):
         id: Optional[uuid.UUID] = None,
         value: str,
         value_sha256: Optional[str] = None,
-        data_type: Optional[PromptDataType]= None,
+        data_type: Optional[PromptDataType] = None,
         name: Optional[str] = None,
         dataset_name: Optional[str] = None,
         harm_categories: Optional[Sequence[str]] = None,

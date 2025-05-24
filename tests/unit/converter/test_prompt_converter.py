@@ -510,7 +510,7 @@ def is_speechsdk_installed():
         (PDFConverter(), ["text"], ["url"]),
         (QRCodeConverter(), ["text"], ["image_path"]),
         (RandomCapitalLettersConverter(), ["text"], ["text"]),
-        (RepeatTokenConverter(token_to_repeat="test"), ["text"], ["text"]),
+        (RepeatTokenConverter(token_to_repeat="test", times_to_repeat=2), ["text"], ["text"]),
         (ROT13Converter(), ["text"], ["text"]),
         (SearchReplaceConverter(pattern=" ", replace="_"), ["text"], ["text"]),
         (StringJoinConverter(), ["text"], ["text"]),
