@@ -1,0 +1,12 @@
+# test case: no converter target specified, and adversarial_chat not available for default
+datasets:
+  - ./pyrit/datasets/seed_prompts/illegal.prompt
+scenarios:
+  - type: "PromptSendingOrchestrator"
+objective_target:
+  type: "OpenAIChatTarget"
+converters:
+  - type: "TranslationConverter"
+    language: "spanish"
+database:
+  type: "DuckDB"

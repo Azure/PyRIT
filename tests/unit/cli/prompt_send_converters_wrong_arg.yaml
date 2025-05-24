@@ -1,0 +1,14 @@
+# test case: wrong argument for converter
+datasets:
+  - ./pyrit/datasets/seed_prompts/illegal.prompt
+scenarios:
+  - type: "PromptSendingOrchestrator"
+objective_target:
+  type: "OpenAIChatTarget"
+converters:
+  - type: "TranslationConverter"
+    wrong_arg: "wrong"
+    converter_target:
+      type: "OpenAIChatTarget"
+database:
+  type: "DuckDB"

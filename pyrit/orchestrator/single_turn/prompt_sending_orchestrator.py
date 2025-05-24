@@ -183,7 +183,7 @@ class PromptSendingOrchestrator(Orchestrator):
         self,
         *,
         objective: str,
-        seed_prompt: SeedPromptGroup = None,
+        seed_prompt: Optional[SeedPromptGroup] = None,
         prepended_conversation: Optional[list[PromptRequestResponse]] = None,
         memory_labels: Optional[dict[str, str]] = None,
     ) -> OrchestratorResult:
@@ -202,7 +202,7 @@ class PromptSendingOrchestrator(Orchestrator):
         conversation_id = ""
 
         if not seed_prompt:
-            seed_prompt = SeedPromptGroup(prompts=[SeedPrompt(value=objective, data_type="text")])
+            seed_prompt = SeedPromptGroup(prompts=[SeedPrompt(value=objective)])
 
         status: OrchestratorResultStatus = "unknown"
         objective_score = None

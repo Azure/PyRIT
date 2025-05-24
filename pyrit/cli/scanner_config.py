@@ -194,21 +194,38 @@ class ScoringConfig(BaseModel):
         return self.objective_scorer.create_scorer(scoring_target_obj=scoring_target_obj)
 
 
-class ConverterConfig(BaseModel):
+class ConverterConfig(BaseModel, extra="allow"):
     """
     Configuration for a single prompt converter, e.g. type: "Base64Converter"
     """
 
     class_name: str = Field(..., alias="type", description="The prompt converter class name (e.g. 'Base64Converter').")
 
-    def create_instance(self) -> Any:
+    converter_target: Optional[TargetConfig] = Field(
+        None, description="If provided, use this target for the converter LLM instead of 'adversarial_chat'."
+    )
+
+    def create_instance(self, converter_target: Optional[Any]) -> Any:
         """
         Dynamically load and instantiate the converter class
         """
         converter_class = load_class(
             module_name="pyrit.prompt_converter", class_name=self.class_name, error_context="prompt_converter"
         )
-        init_kwargs = self.model_dump(exclude={"class_name"})
+
+        init_kwargs = self.model_dump(exclude={"class_name", "converter_target"})
+        signature = inspect.signature(converter_class.__init__)
+
+        converter_target_key: str = "converter_target"
+        if converter_target_key in signature.parameters:
+            if converter_target is None:
+                raise KeyError(
+                    "Converter requires a converter_target to be defined. "
+                    "Alternatively, the adversarial_target can be used for scoring purposes, "
+                    "but none was provided."
+                )
+            init_kwargs[converter_target_key] = converter_target
+
         return converter_class(**init_kwargs)
 
 
@@ -271,6 +288,34 @@ class ScannerConfig(BaseModel):
                 self.scoring.scoring_target = self.adversarial_chat
         return self
 
+    @model_validator(mode="after")
+    def fill_converter_target(self) -> "ScannerConfig":
+        """
+        If config.converters are provided but don't explicitly define a converter_target,
+        default it to the adversarial_chat
+        """
+        if self.converters:
+            for converter_cfg in self.converters:
+                # Check if converter takes converter target
+                converter_class = load_class(
+                    module_name="pyrit.prompt_converter",
+                    class_name=converter_cfg.class_name,
+                    error_context="prompt_converter",
+                )
+
+                signature = inspect.signature(converter_class.__init__)
+                converter_target_key: str = "converter_target"
+
+                # If the converter takes a converter target and it is not set, set it to the adversarial chat
+                if (
+                    converter_target_key in signature.parameters
+                    and converter_cfg.converter_target is None
+                    and self.adversarial_chat is not None
+                ):
+                    converter_cfg.converter_target = self.adversarial_chat
+
+        return self
+
     @classmethod
     def from_yaml(cls, path: str) -> "ScannerConfig":
         """
@@ -301,8 +346,12 @@ class ScannerConfig(BaseModel):
         if not self.converters:
             return []
         instances = []
+
+        converter_target = None
         for converter_cfg in self.converters:
-            instances.append(converter_cfg.create_instance())
+            if converter_cfg.converter_target:
+                converter_target = converter_cfg.converter_target.create_instance()
+            instances.append(converter_cfg.create_instance(converter_target=converter_target))
         return instances
 
     def create_orchestrators(
