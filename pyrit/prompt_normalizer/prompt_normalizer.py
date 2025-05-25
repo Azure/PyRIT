@@ -110,7 +110,7 @@ class PromptNormalizer(abc.ABC):
             # Ensure request to memory before processing exception
             self._memory.add_request_response_to_memory(request=request)
 
-            print(f"EXCEPTION encountered: {str(ex.with_traceback())}")
+            print(f"EXCEPTION encountered: {str(ex.with_traceback(ex.__traceback__))}")
             error_response = construct_response_from_request(
                 request=request.request_pieces[0],
                 response_text_pieces=[f"{ex}\n{repr(ex)}\n{traceback.format_exc()}"],
@@ -222,7 +222,9 @@ class PromptNormalizer(abc.ABC):
                 piece.converted_value = converted_text
                 piece.converted_value_data_type = converted_text_data_type
 
-    def set_skip_criteria(self, skip_criteria: PromptFilterCriteria, skip_value_type: PromptConverterState, ensure_response=True) -> None:
+    def set_skip_criteria(
+        self, skip_criteria: PromptFilterCriteria, skip_value_type: PromptConverterState, ensure_response=True
+    ) -> None:
         """
         Sets the skip criteria for the orchestrator.
 
@@ -246,18 +248,12 @@ class PromptNormalizer(abc.ABC):
             "converted_value_sha256": self._skip_criteria.converted_value_sha256,
         }
 
-        prompts_to_skip = self._memory.get_prompt_request_pieces(
-            role="user",
-            **skip_args
-        )
+        prompts_to_skip = self._memory.get_prompt_request_pieces(role="user", **skip_args)
 
         if ensure_response:
             # If a request was sent but we don't have a response we need to retry
             # so remove such requests from the prompts to skip list.
-            responses = self._memory.get_prompt_request_pieces(
-                role="assistant",
-                **skip_args
-            )
+            responses = self._memory.get_prompt_request_pieces(role="assistant", **skip_args)
             response_conversation_ids = {response.conversation_id for response in responses}
             request_conversation_ids = {prompt.conversation_id for prompt in prompts_to_skip}
             missing_response_conversation_ids = request_conversation_ids - response_conversation_ids

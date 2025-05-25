@@ -3,7 +3,7 @@
 
 import json
 import logging
-from typing import MutableSequence, Optional
+from typing import Any, MutableSequence, Optional
 
 import httpx
 
@@ -20,9 +20,9 @@ from pyrit.models import (
     DataTypeSerializer,
     PromptRequestPiece,
     PromptRequestResponse,
-    construct_response_from_request,
     data_serializer_factory,
 )
+from pyrit.models.literals import PromptDataType
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
@@ -42,9 +42,11 @@ class OpenAIResponseTarget(OpenAITarget):
     def __init__(
         self,
         *,
+        api_version: Optional[str] = "2025-04-16",
         max_output_tokens: Optional[int] = None,
         temperature: Optional[float] = None,
         top_p: Optional[float] = None,
+        extra_body_parameters: Optional[dict[str, Any]] = None,
         **kwargs,
     ):
         """
@@ -64,12 +66,14 @@ class OpenAIResponseTarget(OpenAITarget):
                 randomness of the response.
             top_p (float, Optional): The top-p parameter for controlling the diversity of the
                 response.
+            extra_body_parameters (dict, Optional): Additional parameters to be included in the request body.
         """
-        super().__init__(api_version=None, **kwargs)
+        super().__init__(api_version=api_version, **kwargs)
 
         self._max_output_tokens = max_output_tokens
         self._temperature = temperature
         self._top_p = top_p
+        self._extra_body_parameters = extra_body_parameters
 
     def _set_openai_env_configuration_vars(self) -> None:
         self.model_name_environment_variable = "OPENAI_RESPONSES_MODEL"
@@ -89,11 +93,12 @@ class OpenAIResponseTarget(OpenAITarget):
         """
 
         self._validate_request(prompt_request=prompt_request)
+        self.refresh_auth_headers()
+
         request_piece: PromptRequestPiece = prompt_request.request_pieces[0]
 
         is_json_response = self.is_response_format_json(request_piece)
 
-        conversation = [prompt_request]
         conversation = self._memory.get_conversation(conversation_id=request_piece.conversation_id)
         conversation.append(prompt_request)
 
@@ -114,11 +119,8 @@ class OpenAIResponseTarget(OpenAITarget):
                 params=params,
             )
         except httpx.HTTPStatusError as StatusError:
-            if StatusError.response.status_code == 400 or (
-                StatusError.response.status_code == 500 and "content_filter_results" in StatusError.response.text
-            ):
+            if StatusError.response.status_code == 400:
                 # Handle Bad Request
-                # Note that AOAI seems to have moved content_filter errors from 400 to 500
                 return handle_bad_request_exception(
                     response_text=StatusError.response.text,
                     request=request_piece,
@@ -182,28 +184,41 @@ class OpenAIResponseTarget(OpenAITarget):
         Returns:
             list[dict]: The list of constructed chat messages.
         """
-        prompt_request_pieces = conversation[-1].request_pieces
+        full_request = []
+        for message in conversation:
 
-        content = []
-        role = "user"
-        for prompt_request_piece in prompt_request_pieces:
-            role = prompt_request_piece.role
-            if prompt_request_piece.converted_value_data_type == "text":
-                entry = {"type": "input_text", "text": prompt_request_piece.converted_value}
-                content.append(entry)
-            elif prompt_request_piece.converted_value_data_type == "image_path":
-                data_base64_encoded_url = await self._convert_local_image_to_data_url(
-                    prompt_request_piece.converted_value
-                )
-                image_url_entry = {"url": data_base64_encoded_url}
-                entry = {"type": "input_image", "image_url": image_url_entry}  # type: ignore
-                content.append(entry)
-            else:
-                raise ValueError(
-                    f"Multimodal data type {prompt_request_piece.converted_value_data_type} is not yet supported."
-                )
+            prompt_request_pieces = message.request_pieces
 
-        return ChatMessageListDictContent(role=role, content=content).model_dump(exclude_none=True)  # type: ignore
+            if len(prompt_request_pieces) == 0:
+                raise ValueError("No prompt request pieces found in the conversation.")
+
+            content = []
+            for prompt_request_piece in prompt_request_pieces:
+                role = prompt_request_piece.role
+                if prompt_request_piece.converted_value_data_type == "text":
+                    if role == "user":
+                        type = "input_text"
+                    else:
+                        type = "output_text"
+                    entry = {"type": type, "text": prompt_request_piece.converted_value}
+                    content.append(entry)
+                elif prompt_request_piece.converted_value_data_type == "image_path":
+                    data_base64_encoded_url = await self._convert_local_image_to_data_url(
+                        prompt_request_piece.converted_value
+                    )
+                    image_url_entry = {"url": data_base64_encoded_url}
+                    entry = {"type": "input_image", "image_url": image_url_entry}  # type: ignore
+                    content.append(entry)
+                else:
+                    raise ValueError(
+                        f"Multimodal data type {prompt_request_piece.converted_value_data_type} is not yet supported."
+                    )
+
+            full_request.append(
+                ChatMessageListDictContent(role=role, content=content).model_dump(exclude_none=True)  # type: ignore
+            )
+
+        return full_request
 
     async def _construct_request_body(
         self, conversation: MutableSequence[PromptRequestResponse], is_json_response: bool
@@ -216,8 +231,13 @@ class OpenAIResponseTarget(OpenAITarget):
             "temperature": self._temperature,
             "top_p": self._top_p,
             "stream": False,
-            "input": [input],
+            "input": input,
+            "response_format": {"type": "json_object"} if is_json_response else None,
         }
+
+        if self._extra_body_parameters:
+            for key, value in self._extra_body_parameters.items():
+                body_parameters[key] = value
 
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
@@ -234,48 +254,64 @@ class OpenAIResponseTarget(OpenAITarget):
         except json.JSONDecodeError as e:
             raise PyritException(message=f"Failed to parse JSON response. Please check your endpoint: {e}")
 
-        status = response["status"]
-        error = response["error"]
+        status = response.get("status")
+        error = response.get("error")
         extracted_response_pieces = []
-        if status != "completed" or error:
+        if status is None:
+            if error and "code" in error and error["code"] == "content_filter":
+                # TODO validate that this is correct with AOAI
+                return handle_bad_request_exception(
+                    response_text=open_ai_str_response, request=request_piece, error_code=400, is_content_filter=True
+                )
+            else:
+                raise PyritException(message=f"Unexpected response format: {response}. Expected 'status' key.")
+        elif status != "completed" or error is not None:
             raise PyritException(message=f"Status {status} and error {error} from response: {response}")
         else:
             for piece in response["output"]:
-                # TODO: should we track "reasoning" as different from "text"?
-                if piece["type"] == "output_text":
-                    piece_text = piece["content"][0]["text"]
+                piece_type: PromptDataType = "text"
+                if piece["type"] == "message":
+                    piece_value = piece["content"][0]["text"]
                 elif piece["type"] == "reasoning":
+                    # TODO: add option to request reasoning summaries
+                    # TODO: ensure proper serialization of reasoning summaries
+                    piece_value = ""
+                    piece_type = "reasoning"
                     for summary_piece in piece["content"][0]["summary"]:
                         if summary_piece["type"] == "summary_text":
-                            piece_text += summary_piece["text"]
-                    if not piece_text:
+                            piece_value += summary_piece["text"]
+                    if not piece_value:
                         continue  # Skip empty reasoning summaries
+                else:
+                    # other options include "image_generation_call", "file_search_call", "function_call",
+                    # "web_search_call", "computer_call", "code_interpreter_call", "local_shell_call",
+                    # "mcp_call", "mcp_list_tools", "mcp_approval_request"
+                    raise ValueError(
+                        f"Unsupported response type: {piece['type']}. PyRIT does not yet support this response type."
+                    )
 
                 # Handle empty response
-                if not piece_text:
+                if not piece_value:
                     logger.log(logging.ERROR, "The chat returned an empty response.")
                     raise EmptyResponseException(message="The chat returned an empty response.")
 
                 extracted_response_pieces.append(
                     PromptRequestPiece(
                         role="assistant",
-                        original_value=piece_text,
+                        original_value=piece_value,
                         conversation_id=request_piece.conversation_id,
                         labels=request_piece.labels,
                         prompt_target_identifier=request_piece.prompt_target_identifier,
                         orchestrator_identifier=request_piece.orchestrator_identifier,
-                        original_value_data_type="text",
-                        converted_value_data_type="text",
-                        response_error=error,
+                        original_value_data_type=piece_type,
+                        response_error=error or "none",
                     )
                 )
-        
+
         if not extracted_response_pieces:
             raise PyritException(message="No valid response pieces found in the response.")
 
-        return PromptRequestResponse(
-            request_pieces=extracted_response_pieces
-        )
+        return PromptRequestResponse(request_pieces=extracted_response_pieces)
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         """Validates the structure and content of a prompt request for compatibility of this target.

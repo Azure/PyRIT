@@ -3,7 +3,7 @@
 
 from typing import Literal
 
-PromptDataType = Literal["text", "image_path", "audio_path", "video_path", "url", "error"]
+PromptDataType = Literal["text", "image_path", "audio_path", "video_path", "url", "reasoning", "error"]
 
 """
 The type of the error in the prompt response
