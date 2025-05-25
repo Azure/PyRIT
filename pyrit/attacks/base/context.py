@@ -21,6 +21,12 @@ ContextT = TypeVar("ContextT", bound="AttackContext")
 class AttackContext:
     """Base class for all attack contexts"""
 
+    # Natural-language description of what the attack tries to achieve
+    objective: str
+
+    # Key–value pairs stored in the model’s memory for this single request
+    memory_labels: Dict[str, str] = field(default_factory=dict)
+
     def duplicate(self) -> Self:
         """
         Create a deep copy of the context to avoid concurrency issues
@@ -35,7 +41,10 @@ class AttackContext:
 class ConversationSession:
     """Session for conversations"""
 
+    # Unique identifier of the main conversation between the attacker and model
     conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+
+    # Separate identifier used when the attack leverages an “adversarial chat”
     adversarial_chat_conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
 
@@ -43,27 +52,58 @@ class ConversationSession:
 class MultiTurnAttackContext(AttackContext):
     """Context for multi-turn attacks"""
 
+    # Object holding all conversation-level identifiers for this attack
     session: ConversationSession = field(default_factory=lambda: ConversationSession())
-    objective: Optional[str] = None
+
+    # Hard limit on how many turns the attack is allowed to take
     max_turns: int = 5
+
+    # Indicates whether the objective has already been fulfilled
     achieved_objective: bool = False
+
+    # Counter of turns that have actually been executed so far
     executed_turns: int = 0
+
+    # Model response produced in the latest turn
     last_response: Optional[PromptRequestPiece] = None
+
+    # Score assigned to the latest response by a scorer component
     last_score: Optional[Score] = None
+
+    # Optional custom prompt that overrides the default one for the next turn
     custom_prompt: Optional[str] = None
+
+    # Converters applied to transform prompts before they are sent
     prompt_converters: List[PromptConverter] = field(default_factory=list)
+
+    # Conversation exchanged with the model that is always prepended to each turn
     prepended_conversation: List[PromptRequestResponse] = field(default_factory=list)
-    memory_labels: Optional[Dict[str, str]] = None
 
 
 @dataclass
 class SingleTurnAttackContext(AttackContext):
     """Context for single-turn attacks"""
 
+    # Unique identifier of the main conversation between the attacker and model
+    conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+
+    # Number of prompts that will be sent in a single batch
     batch_size: int = 1
+
+    # How many times a failed request should automatically be retried
     num_retries_on_failure: int = 0
-    objective: Optional[str] = None
+
+    # Group of seed prompts from which single-turn prompts will be drawn
     seed_prompt_group: Optional[SeedPromptGroup] = None
+
+    # Conversation that is automatically prepended to each single-turn prompt
     prepended_conversation: List[PromptRequestResponse] = field(default_factory=list)
-    memory_labels: Optional[Dict[str, str]] = None
+
+    # Response format to request (e.g., "json")
+    response_format: Optional[str] = None
+
+    # System prompt for chat-based targets
+    system_prompt: Optional[str] = None
+
+    # Arbitrary metadata that downstream orchestrators or scorers may attach
     metadata: Optional[dict[str, Union[str, int]]] = None
