@@ -55,8 +55,8 @@ class Orchestrator(abc.ABC, Identifier):
         prompt_text: str,
         prompt_type: PromptDataType = "text",
         conversation_id: Optional[str] = None,
-        converters=None,
-        metadata=None,
+        converters=Optional[None],
+        metadata=Optional[None],
     ) -> NormalizerRequest:
 
         if converters is None:

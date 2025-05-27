@@ -50,6 +50,7 @@ class Score:
     def __init__(
         self,
         *,
+        id: Optional[uuid.UUID | str] = None,
         score_value: str,
         score_value_description: str,
         score_type: ScoreType,
@@ -57,8 +58,7 @@ class Score:
         score_rationale: str,
         score_metadata: str,
         prompt_request_response_id: str | uuid.UUID,
-        scorer_class_identifier: Dict[str, str] = None,
-        id: Optional[uuid.UUID | str] = None,
+        scorer_class_identifier: Optional[Dict[str, str]] = None,
         timestamp: Optional[datetime] = None,
         task: Optional[str] = None,
     ):

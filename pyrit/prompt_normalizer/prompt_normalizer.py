@@ -45,12 +45,12 @@ class PromptNormalizer(abc.ABC):
         *,
         seed_prompt_group: SeedPromptGroup,
         target: PromptTarget,
+        conversation_id: Optional[str] = None,
         request_converter_configurations: list[PromptConverterConfiguration] = [],
         response_converter_configurations: list[PromptConverterConfiguration] = [],
         sequence: int = -1,
         labels: Optional[dict[str, str]] = None,
         orchestrator_identifier: Optional[dict[str, str]] = None,
-        conversation_id: Optional[str] = None,
     ) -> PromptRequestResponse:
         """
         Sends a single request to a target.

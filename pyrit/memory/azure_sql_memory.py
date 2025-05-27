@@ -286,9 +286,9 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         self,
         Model,
         *,
+        conditions: Optional = None,  # type: ignore
         distinct: bool = False,
         join_scores: bool = False,
-        conditions: Optional = None,  # type: ignore
     ) -> MutableSequence[Model]:
         """
         Fetches data from the specified table model with optional conditions.

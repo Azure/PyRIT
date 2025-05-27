@@ -17,10 +17,10 @@ class AzureTextEmbedding(_TextEmbedding):
     def __init__(
         self,
         *,
-        api_version: str = "2024-02-01",
         api_key: Optional[str] = None,
         endpoint: Optional[str] = None,
         deployment: Optional[str] = None,
+        api_version: str = "2024-02-01",
     ) -> None:
         """Generate embedding using the Azure API
 
