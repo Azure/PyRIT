@@ -1,11 +1,9 @@
-[project]
+[tool.poetry]
 name = "pyrit-sqlalchemy14"
-version = "0.9.1"
+version = "0.9.7"
 description = "SQLAlchemy 1.4 compatible version of PyRIT (Python Risk Identification Tool for LLMs)"
-authors = [
-    { name = "Microsoft AI Red Team", email = "airedteam@microsoft.com" },
-]
-readme = "README.md"
+authors = ["Microsoft AI Red Team <airedteam@microsoft.com>"]
+readme = "README.sqlalchemy14.md"
 license = "MIT"
 keywords = [
     "llm",
@@ -24,121 +22,115 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
 ]
-requires-python = ">=3.10, <3.14"
-dependencies = [
-    "aioconsole>=0.7.1",
-    "aiofiles==23.2.1", # Pin the version to downgrade aiofiles to make sure it works with Gradio.
-    "appdirs>=1.4.0",
-    "art>=6.1.0",
-    "azure-core>=1.26.1",
-    "azure-identity>=1.19.0",
-    "azure-ai-contentsafety>=1.0.0",
-    "azure-storage-blob>=12.19.0",
-    "colorama>=0.4.6",
-    "confusables>=1.2.0",
-    "confusable-homoglyphs>=3.3.1",
-    "datasets>=3.0.0",
-    "duckdb>=1.1.0",
-    "duckdb-engine>=0.15.0",
-    "fpdf2>=2.8.2",
-    "httpx[http2]>=0.27.2",
-    "jinja2>=3.1.4",
-    "numpy>=1.26.4",
-    "openai>=1.58.1",
-    "pillow>=10.3.0",
-    "pydantic>=2.7.1",
-    "pydantic-sqlalchemy>=0.0.9",
-    "pyodbc>=5.1.0",
-    "pycountry>=24.6.1",
-    "python-dotenv>=1.0.1",
-    "pypdf>=5.1.0",
-    "segno>=1.6.1",
-    "scipy>=1.14.1",
-    "SQLAlchemy>=1.4.47,<2.0.0",
-    "termcolor>=2.4.0",
-    "tenacity>=8.2.3",
-    "tinytag>=2.0.0",
-    "tqdm>=4.66.2",
-    "transformers>=4.40.0",
-    "treelib>=1.7.0",
-    "websockets>=12.0",
-]
+packages = [{include = "pyrit"}]
 
-[project.optional-dependencies]
-# always make sure the individual ones are in sync with the all group
-dev = [
-    "black>=24.4.0",
-    "flake8>=7.0.0",
-    "flake8-copyright>=0.2.4",
-    "ipykernel>=6.29.4",
-    "jupyter>=1.0.0",
-    "jupyter-book>=1.0.2",
-    "jupytext>=1.16.1",
-    "mypy>=1.9.0",
-    "mock-alchemy>=0.2.6",
-    "pre-commit>=3.3.3",
-    "pytest>=7.3.1",
-    "pytest-asyncio>=0.23.5",
-    "pytest-cov>=4.0.0",
-    "pytest-timeout>=2.3.1",
-    "respx>=0.22.0",
-    "semantic-kernel>=1.20.0",
-    "sphinxcontrib-mermaid>=1.0.0",
-    "types-PyYAML>=6.0.12.9",
-    "types-requests>=2.31.0.20240406",
-]
-huggingface = [
-    "torch>=2.3.0",
-]
-gcg = [
-    "accelerate>=0.34.2",
-    "azure-ai-ml>=1.13.0",
-    "azureml-mlflow>=1.57.0",
-    "mlflow>=2.16.2",
-    "ml-collections>=0.1.1",
-    "torch>=2.3.0",
-]
-playwright = [
-    "flask>=3.1.0",
-    "ollama>=0.4.4",
-    "playwright>=1.49.0",
-]
-gradio = [
-    "gradio>=5.16.0",
-    "rpyc>=6.0.1",
-    "pywebview>=5.4"
-]
+[tool.poetry.dependencies]
+python = ">=3.10,<3.14"
+aioconsole = ">=0.7.1"
+aiofiles = "==23.2.1"
+appdirs = ">=1.4.0"
+art = ">=6.1.0"
+azure-core = ">=1.26.1"
+azure-identity = ">=1.19.0"
+azure-ai-contentsafety = ">=1.0.0"
+azure-storage-blob = ">=12.19.0"
+colorama = ">=0.4.6"
+confusables = ">=1.2.0"
+confusable-homoglyphs = ">=3.3.1"
+datasets = ">=3.0.0"
+duckdb = ">=1.1.0"
+duckdb-engine = ">=0.15.0"
+fpdf2 = ">=2.8.2"
+httpx = {extras = ["http2"], version = ">=0.27.0"}
+jinja2 = ">=3.1.4"
+numpy = ">=1.26.4"
+openai = ">=1.58.1"
+pillow = ">=10.3.0"
+pydantic = ">=1.5.1,<2.0.0"
+pydantic-sqlalchemy = ">=0.0.9"
+pyodbc = ">=5.1.0"
+pycountry = ">=24.6.1"
+python-dotenv = ">=1.0.1"
+pypdf = ">=5.1.0"
+segno = ">=1.6.1"
+scipy = ">=1.14.1"
+sqlalchemy = ">=1.4.47,<2.0.0"
+termcolor = ">=2.4.0"
+tenacity = ">=8.2.3"
+tinytag = ">=2.0.0"
+tqdm = ">=4.66.2"
+transformers = ">=4.40.0"
+treelib = ">=1.7.0"
+websockets = ">=12.0"
 
-opencv = [
-    "opencv-python>=4.11.0.86",
-]
+[tool.poetry.group.dev.dependencies]
+black = ">=24.4.0"
+flake8 = ">=7.0.0"
+flake8-copyright = ">=0.2.4"
+ipykernel = ">=6.29.4"
+jupyter = ">=1.0.0"
+jupyter-book = ">=1.0.2"
+jupytext = ">=1.16.1"
+mypy = ">=1.9.0"
+mock-alchemy = ">=0.2.6"
+pre-commit = ">=3.3.3"
+pytest = ">=7.3.1"
+pytest-asyncio = ">=0.23.5"
+pytest-cov = ">=4.0.0"
+pytest-timeout = ">=2.3.1"
+respx = ">=0.22.0"
+semantic-kernel = ">=1.20.0"
+sphinxcontrib-mermaid = ">=1.0.0"
+types-PyYAML = ">=6.0.12.9"
+types-requests = ">=2.31.0.20240406"
 
-speech = [
-    "azure-cognitiveservices-speech>=1.36.0",
-]
+[tool.poetry.group.huggingface.dependencies]
+torch = ">=2.3.0"
 
-# all includes all functional dependencies excluding the ones from the "dev" extra
-all = [
-    "accelerate>=0.34.2",
-    "azure-ai-ml>=1.13.0",
-    "azure-cognitiveservices-speech>=1.36.0",
-    "azureml-mlflow>=1.57.0",
-    "flask>=3.1.0",
-    "ipykernel>=6.29.4",
-    "jupyter>=1.0.0",
-    "gradio>=5.16.0",
-    "mlflow>=2.16.2",
-    "ml-collections>=0.1.1",
-    "ollama>=0.4.4",
-    "opencv-python>=4.11.0.86",
-    "playwright>=1.49.0",
-    "pywebview>=5.4",
-    "rpyc>=6.0.1",
-    "torch>=2.3.0",
-    "types-PyYAML>=6.0.12.9",
-]
+[tool.poetry.group.gcg.dependencies]
+accelerate = ">=0.34.2"
+azure-ai-ml = ">=1.13.0"
+azureml-mlflow = ">=1.57.0"
+mlflow = ">=2.16.2"
+ml-collections = ">=0.1.1"
+torch = ">=2.3.0"
 
-[project.scripts]
+[tool.poetry.group.playwright.dependencies]
+flask = ">=3.1.0"
+ollama = ">=0.4.4"
+playwright = ">=1.49.0"
+
+[tool.poetry.group.gradio.dependencies]
+gradio = ">=5.16.0"
+rpyc = ">=6.0.1"
+pywebview = ">=5.4"
+
+[tool.poetry.group.opencv.dependencies]
+opencv-python = ">=4.11.0.86"
+
+[tool.poetry.group.speech.dependencies]
+azure-cognitiveservices-speech = ">=1.36.0"
+
+[tool.poetry.group.all.dependencies]
+accelerate = ">=0.34.2"
+azure-ai-ml = ">=1.13.0"
+azure-cognitiveservices-speech = ">=1.36.0"
+azureml-mlflow = ">=1.57.0"
+flask = ">=3.1.0"
+ipykernel = ">=6.29.4"
+jupyter = ">=1.0.0"
+gradio = ">=5.16.0"
+mlflow = ">=2.16.2"
+ml-collections = ">=0.1.1"
+ollama = ">=0.4.4"
+opencv-python = ">=4.11.0.86"
+playwright = ">=1.49.0"
+pywebview = ">=5.4"
+rpyc = ">=6.0.1"
+torch = ">=2.3.0"
+types-PyYAML = ">=6.0.12.9"
+
+[tool.poetry.scripts]
 pyrit_scan = "pyrit.cli.__main__:main"
 
 [tool.pytest.ini_options]
@@ -159,11 +151,8 @@ target-version = ["py310"]
 line-length = 120
 
 [build-system]
-requires = ["setuptools>=64.0.0", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[tool.setuptools.packages.find]
-include = ["pyrit", "pyrit.*"]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
 
 [tool.jupytext]
 formats = "ipynb,py:percent"
@@ -215,3 +204,4 @@ fixable = [
     "UP",
     "YTT",
 ]
+

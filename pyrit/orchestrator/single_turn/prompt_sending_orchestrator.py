@@ -4,10 +4,11 @@
 import asyncio
 import logging
 import uuid
-from typing import Any, Optional, Sequence
+from typing import Any, Optional, Sequence, Union
 
 from pyrit.common.utils import combine_dict
 from pyrit.models import (
+    PromptRequestPiece,
     PromptRequestResponse,
     SeedPrompt,
     SeedPromptGroup,
@@ -186,7 +187,7 @@ class PromptSendingOrchestrator(Orchestrator):
         seed_prompt: SeedPromptGroup = None,
         prepended_conversation: Optional[list[PromptRequestResponse]] = None,
         memory_labels: Optional[dict[str, str]] = None,
-    ) -> OrchestratorResult:
+    ) -> Optional[tuple[OrchestratorResult, Sequence[PromptRequestPiece]]]:
         """
         Runs the attack.
 
