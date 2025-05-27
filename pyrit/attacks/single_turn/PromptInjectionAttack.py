@@ -3,7 +3,7 @@
 
 import asyncio
 import logging
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 from pyrit.attacks.base.attack_strategy import AttackStrategy
 from pyrit.attacks.base.backtracking_strategy import BacktrackingStrategy
@@ -17,7 +17,6 @@ from pyrit.models import (
     SeedPrompt,
     SeedPromptGroup,
 )
-from pyrit.orchestrator.models.orchestrator_result import OrchestratorResultStatus
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import Scorer
@@ -76,13 +75,36 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
 
         self._should_convert_prepended_conversation = should_convert_prepended_conversation
 
-    async def _setup(self, *, context: SingleTurnAttackContext) -> None:
+    def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
+        """
+        Validate the context before executing the attack.
+
+        Args:
+            context: The attack context containing parameters and objective
+
+        Raises:
+            ValueError: If the context is invalid
+        """
+        if not isinstance(self._objective_target, PromptChatTarget):
+            raise ValueError("Objective target must be a PromptChatTarget for prompt injection attacks")
+
+        if not context.objective:
+            raise ValueError("Attack objective must be provided in the context")
+
+        if not context.conversation_id:
+            raise ValueError("Conversation ID must be provided in the context")
+
+    async def _setup_async(self, *, context: SingleTurnAttackContext) -> None:
         """
         Set up the attack by preparing conversation context.
 
         Args:
             context: The attack context containing attack parameters
         """
+
+        # Combine memory labels from context and attack strategy
+        context.memory_labels = combine_dict(self._memory_labels, context.memory_labels)
+
         # Process prepended conversation if provided
         if context.prepended_conversation:
             if not isinstance(self._objective_target, PromptChatTarget):
@@ -96,7 +118,7 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
                 orchestrator_identifier=self.get_identifier(),
             )
 
-    async def _perform_attack(self, *, context: SingleTurnAttackContext) -> AttackResult:
+    async def _perform_attack_async(self, *, context: SingleTurnAttackContext) -> AttackResult:
         """
         Perform the prompt injection attack.
 
@@ -106,55 +128,27 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
         Returns:
             AttackResult containing the outcome of the attack
         """
-        # Create seed prompt from context if not provided
-        seed_prompt = context.seed_prompt_group
-        if not seed_prompt:
-            seed_prompt = SeedPromptGroup(
-                prompts=[
-                    SeedPrompt(
-                        value=context.objective,
-                        data_type="text",
-                        metadata={"response_format": context.response_format} if context.response_format else {},
-                    )
-                ]
-            )
-
-        status: OrchestratorResultStatus = "unknown"
-        objective_score = None
-        last_response_piece = None
-
-        # Retry logic - attempt multiple times if objective isn't met
-        for _ in range(context.num_retries_on_failure + 1):
-            result = await self._prompt_normalizer.send_prompt_async(
-                seed_prompt_group=seed_prompt,
-                target=self._objective_target,
-                conversation_id=context.conversation_id,
-                request_converter_configurations=self._request_converter_configurations,
-                response_converter_configurations=self._response_converter_configurations,
-                labels=combine_dict(existing_dict=self._memory_labels, new_dict=context.memory_labels),
-                orchestrator_identifier=self.get_identifier(),
-            )
-
-            if not result:
-                # This can happen if we skipped the prompts based on skip criteria
-                continue
-
-            # Score with auxiliary scorers
-            await self._score_auxiliary_async(result)
-
-            # Score against objective
-            status, objective_score = await self._score_objective_async(result, context.objective)
-            last_response_piece = result.get_piece()
-
-            if status == "success":
-                break
-
-        # Create and return the attack result
-        return self._create_result(
-            context=context, status=status, objective_score=objective_score, last_response=last_response_piece
+       # Prepare the prompt
+        seed_prompt = self._prepare_seed_prompt(context)
+        
+        # Execute with retries
+        response, score = await self._execute_with_retries_async(
+            seed_prompt=seed_prompt,
+            context=context
+        )
+        
+        # Build and return result
+        return AttackResult(
+            conversation_id=context.conversation_id,
+            objective=context.objective,
+            orchestrator_identifier=self.get_identifier(),
+            last_response=response.get_piece() if response else None,
+            last_score=score,
+            achieved_objective=bool(score and score.get_value()),
+            executed_turns=1,
         )
 
-    async def _teardown(self, *, context: SingleTurnAttackContext) -> None:
+    async def _teardown_async(self, *, context: SingleTurnAttackContext) -> None:
         """
         Clean up after attack execution.
 
@@ -163,96 +157,174 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
         """
         pass
 
-    async def _score_auxiliary_async(self, result: PromptRequestResponse) -> None:
+    def _prepare_seed_prompt(self, context: SingleTurnAttackContext) -> SeedPromptGroup:
         """
-        Score the response using auxiliary scorers.
+        Prepare the seed prompt group based on the context.
+        
+        Args:
+            context: The attack context containing the objective
+        
+        Returns:
+            SeedPromptGroup containing the seed prompt
+        """
+        if context.seed_prompt_group:
+            return context.seed_prompt_group
+            
+        return SeedPromptGroup(
+            prompts=[
+                SeedPrompt(
+                    value=context.objective,
+                    data_type="text"
+                )
+            ]
+        )
+    
+    async def _execute_with_retries_async(
+        self,
+        *,
+        seed_prompt: SeedPromptGroup,
+        context: SingleTurnAttackContext
+    ) -> Tuple[Optional[PromptRequestResponse], Optional[Score]]:
+        """
+        Execute the prompt injection attack with retries
+        Args:
+            seed_prompt: The seed prompt group to use for the attack
+            context: The attack context containing parameters and objective
+        Returns:
+            Tuple containing the response and score, or None if no valid response was obtained
+        """
+        
+        for attempt in range(context.num_retries_on_failure + 1):
+            self._logger.debug(f"Attempt {attempt+1}/{context.num_retries_on_failure+1}")
+
+            # Send the prompt
+            response = await self._send_prompt_async(seed_prompt=seed_prompt, context=context)
+            
+            if not response:
+                continue  # Skip if filtered
+                
+            # Score the response
+            score = await self._evaluate_response_async(response=response, objective=context.objective)
+            
+            # Success - return immediately
+            success = score is not None and score.get_value()
+            if success:
+                return response, score
+                
+            # Last attempt - return what we have
+            if attempt == context.num_retries_on_failure:
+                return response, score
+        
+        return None, None
+    
+    async def _send_prompt_async(
+        self,
+        *,
+        seed_prompt: SeedPromptGroup,
+        context: SingleTurnAttackContext
+    ) -> Optional[PromptRequestResponse]:
+        """
+        Send the prompt to the target and return the response.
 
         Args:
-            result: The response to score
+            seed_prompt: The seed prompt group to send
+            context: The attack context containing parameters and labels
+
+        Returns:
+            PromptRequestResponse containing the model's response, or None if filtered out
+        """
+        
+        return await self._prompt_normalizer.send_prompt_async(
+            seed_prompt_group=seed_prompt,
+            target=self._objective_target,
+            conversation_id=context.conversation_id,
+            request_converter_configurations=self._request_converter_configurations,
+            response_converter_configurations=self._response_converter_configurations,
+            labels=context.memory_labels, # combined with strategy labels at _setup()
+            orchestrator_identifier=self.get_identifier(),
+        )
+    
+    async def _evaluate_response_async(
+        self, 
+        *,
+        response: PromptRequestResponse, 
+        objective: str
+    ) -> Optional[Score]:
+        """
+        Evaluate the response against the objective using the configured scorers.
+        
+        Args:
+            response: The response from the model
+            objective: The natural-language description of the attack's objective
+        
+        Returns:
+            Score: The score assigned to the response, or None if no scoring was performed
+        """
+
+        # Only score assistant responses
+        assistant_responses = list(response.filter_by_role(role="assistant"))
+        
+        # Run auxiliary scorers (no return value needed)
+        await self._run_auxiliary_scorers_async(assistant_responses=assistant_responses)
+        
+        # Run objective scorer
+        return await self._run_objective_scorer_async(assistant_responses=assistant_responses, objective=objective)
+    
+    async def _run_auxiliary_scorers_async(self, *, assistant_responses: List[PromptRequestPiece]) -> None:
+        """
+        Run all auxiliary scorers on the assistant responses.
+
+        Args:
+            assistant_responses: List of PromptRequestPiece objects representing the assistant's responses
+        
+        Returns:
+            None: This method does not return a value, it runs scorers asynchronously
         """
         if not self._auxiliary_scorers:
             return
-
-        tasks = []
-        for piece in result.request_pieces:
-            if piece.role == "assistant":
-                for scorer in self._auxiliary_scorers:
-                    tasks.append(scorer.score_async(request_response=piece))
-
+        
+        tasks = [
+            scorer.score_async(request_response=piece)
+            for piece in assistant_responses
+            for scorer in self._auxiliary_scorers
+        ]
+        
         if tasks:
             await asyncio.gather(*tasks)
 
-    async def _score_objective_async(
-        self, result: PromptRequestResponse, objective: str
-    ) -> Tuple[OrchestratorResultStatus, Optional[Score]]:
-        """
-        Score the response against the objective.
-
-        Args:
-            result: The response to score
-            objective: The objective to score against
-
-        Returns:
-            A tuple of (status, score) where status is success, failure, or unknown
-        """
-        if not self._objective_scorer:
-            return "unknown", None
-
-        status: OrchestratorResultStatus = "failure"
-        objective_score = None
-        first_failure_score = None
-
-        for piece in result.request_pieces:
-            if piece.role == "assistant":
-                objective_score_list = await self._objective_scorer.score_async(
-                    request_response=piece,
-                    task=objective,
-                )
-
-                # Find and save the first score that is true
-                for score in objective_score_list:
-                    if score.get_value():
-                        objective_score = score
-                        status = "success"
-                        break
-                    elif first_failure_score is None:
-                        first_failure_score = score
-
-                if status == "success":
-                    break
-
-        # If no success was found, use the first failure score
-        if status == "failure" and first_failure_score is not None:
-            objective_score = first_failure_score
-
-        return status, objective_score
-
-    def _create_result(
-        self,
+    async def _run_objective_scorer_async(
+        self, 
         *,
-        context: SingleTurnAttackContext,
-        status: OrchestratorResultStatus = "unknown",
-        objective_score: Optional[Score] = None,
-        last_response: Optional[PromptRequestPiece] = None,
-    ) -> AttackResult:
+        assistant_responses: List[PromptRequestPiece], 
+        objective: str
+    ) -> Optional[Score]:
         """
-        Create an attack result from the context and outcome.
+        Run the objective scorer on the assistant responses.
 
         Args:
-            context: The attack context
-            status: The status of the attack (success, failure, unknown)
-            objective_score: Score assigned by the objective scorer
-            last_response: The last response from the target
+            assistant_responses: List of PromptRequestPiece objects representing the assistant's responses
+            objective: The natural-language description of the attack's objective
 
         Returns:
-            An AttackResult representing the attack outcome
+            Score: The score assigned to the response, or None if no scoring was performed
         """
-        return AttackResult(
-            conversation_id=context.conversation_id,
-            objective=context.objective,
-            orchestrator_identifier=self.get_identifier(),
-            last_response=last_response,
-            last_score=objective_score,
-            achieved_objective=(status == "success"),
-            executed_turns=1,  # Single-turn attack always executes 1 turn
-        )
+
+        if not self._objective_scorer or not assistant_responses:
+            return None
+        
+        for piece in assistant_responses:
+            scores = await self._objective_scorer.score_async(
+                request_response=piece,
+                task=objective
+            )
+            
+            # Return first successful score
+            for score in scores:
+                if score.get_value():
+                    return score
+            
+            # No success - return first score as failure indicator
+            if scores:
+                return scores[0]
+        
+        return None

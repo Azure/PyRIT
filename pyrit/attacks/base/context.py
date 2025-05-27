@@ -99,9 +99,6 @@ class SingleTurnAttackContext(AttackContext):
     # Conversation that is automatically prepended to each single-turn prompt
     prepended_conversation: List[PromptRequestResponse] = field(default_factory=list)
 
-    # Response format to request (e.g., "json")
-    response_format: Optional[str] = None
-
     # System prompt for chat-based targets
     system_prompt: Optional[str] = None
 

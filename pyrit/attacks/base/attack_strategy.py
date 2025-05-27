@@ -13,7 +13,6 @@ from pyrit.attacks.base.result import ResultT
 from pyrit.common import default_values
 from pyrit.common.logger import logger
 from pyrit.memory.central_memory import CentralMemory
-from pyrit.models import PromptRequestPiece, Score
 from pyrit.models.identifiers import Identifier
 
 
@@ -44,40 +43,81 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
             "__module__": self.__class__.__module__,
             "id": str(self._id),
         }
-
+    
     @abstractmethod
-    async def _setup(self, *, context: ContextT) -> None:
-        """Prepare the attack strategy"""
+    def _validate_context(self, *, context: ContextT) -> None:
+        """
+        Validate the context before executing the attack
+        This method should be implemented by subclasses to ensure the context is suitable for the attack
+
+        Args:
+            context (ContextT): The context to validate
+        """
         pass
 
     @abstractmethod
-    async def _perform_attack(self, *, context: ContextT) -> ResultT:
+    async def _setup_async(self, *, context: ContextT) -> None:
+        """
+        Setup phase before executing the attack
+        This method should be implemented by subclasses to prepare any necessary state or resources
+        This method is called before the actual attack logic in execute()
+
+        Args:
+            context (ContextT): The context for the attack
+        """
+        pass
+
+    @abstractmethod
+    async def _perform_attack_async(self, *, context: ContextT) -> ResultT:
         """
         Core attack implementation to be defined by subclasses
         This contains the actual attack logic that subclasses must implement
+
+        Args:
+            context (ContextT): The context for the attack
+
+        Returns:
+            ResultT: The result of the attack execution
         """
         pass
 
     @abstractmethod
-    async def _teardown(self, *, context: ContextT) -> None:
-        """Clean up after attack execution"""
+    async def _teardown_async(self, *, context: ContextT) -> None:
+        """
+        Teardown phase after executing the attack
+        This method should be implemented by subclasses to clean up any resources or state
+        This method is guaranteed to be called even if exceptions occur during execution
+
+        Args:
+            context (ContextT): The context for the attack
+        """
         pass
 
-    async def execute(self, *, context: ContextT) -> ResultT:
+    async def execute_async(self, *, context: ContextT) -> ResultT:
         """
         Execute the attack strategy with complete lifecycle management
-        This method enforces the setup -> execute -> teardown lifecycle
+        This method enforces the validate -> setup -> execute -> teardown lifecycle
+
+        Args:
+            context (ContextT): The context for the attack
+        
+        Returns:
+            ResultT: The result of the attack execution
         """
+
+        # Validating context before proceeding
+        self._logger.debug("Validating context before attack execution")
+        self._validate_context(context=context)
 
         result = None
         try:
             # Setup phase
             self._logger.debug("Setting up attack strategy")
-            await self._setup(context=context)
+            await self._setup_async(context=context)
 
             # Execution phase
             self._logger.debug("Executing attack strategy")
-            result = await self._perform_attack(context=context)
+            result = await self._perform_attack_async(context=context)
             return result
 
         except Exception as e:
@@ -86,16 +126,4 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
         finally:
             # Teardown phase - guaranteed to run
             self._logger.debug("Tearing down attack strategy")
-            await self._teardown(context=context)
-
-    async def check_backtracking(self, context: ContextT, response: PromptRequestPiece, score: Optional[Score]) -> bool:
-        """Check if backtracking should be applied and apply it if needed"""
-        if not self._backtracking_strategy:
-            return False
-
-        should_backtrack = await self._backtracking_strategy.should_backtrack(context, response, score)
-        if should_backtrack:
-            self._logger.info(f"Applying backtracking with strategy {type(self._backtracking_strategy).__name__}")
-            await self._backtracking_strategy.apply_backtracking(context)
-            return True
-        return False
+            await self._teardown_async(context=context)
