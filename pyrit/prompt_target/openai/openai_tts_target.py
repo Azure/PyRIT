@@ -36,7 +36,7 @@ class OpenAITTSTarget(OpenAITarget):
         response_format: TTSResponseFormat = "mp3",
         language: str = "en",
         speed: Optional[float] = None,
-        api_version: str = "2025-02-01-preview",
+        api_version: Optional[str] = "2025-02-01-preview",
         **kwargs,
     ):
         """
