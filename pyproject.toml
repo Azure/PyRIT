@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyrit-sqlalchemy14"
-version = "0.9.6"
+version = "0.9.7"
 description = "SQLAlchemy 1.4 compatible version of PyRIT (Python Risk Identification Tool for LLMs)"
 authors = ["Microsoft AI Red Team <airedteam@microsoft.com>"]
 readme = "README.sqlalchemy14.md"
@@ -41,7 +41,7 @@ datasets = ">=3.0.0"
 duckdb = ">=1.1.0"
 duckdb-engine = ">=0.15.0"
 fpdf2 = ">=2.8.2"
-httpx = {extras = ["http2"], version = "0.9.6"}
+httpx = {extras = ["http2"], version = ">=0.27.0"}
 jinja2 = ">=3.1.4"
 numpy = ">=1.26.4"
 openai = ">=1.58.1"
