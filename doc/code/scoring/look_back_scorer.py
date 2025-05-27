@@ -6,10 +6,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.16.7
-#   kernelspec:
-#     display_name: Python 3
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -93,13 +89,13 @@ await result.print_conversation_async()  # type: ignore
 
 # Retrieve the completed conversation and hand to LookBackScorer
 conversation_history = red_teaming_orchestrator._memory.get_conversation(conversation_id=result.conversation_id)
-score_conversation = LookBackScorer(chat_target=adversarial_chat)
+
+# Exclude the instruction prompts from the scoring process by setting exclude_instruction_prompts to True
+score_conversation = LookBackScorer(exclude_instruction_prompts=True, chat_target=adversarial_chat)
+
 # Score requires a PromptRequestPiece
 request_response = red_teaming_orchestrator._memory.get_prompt_request_pieces(conversation_id=result.conversation_id)
 request_piece = request_response[0]
 
-# This will exclude the instruction prompts from the scoring process
-exclude_instruction_prompts = True
-
 # Returns a score using entire conversation as context
-score = (await score_conversation.score_async(exclude_instruction_prompts, request_piece))[0]  # type: ignore
+score = (await score_conversation.score_async(request_piece))[0]  # type: ignore
