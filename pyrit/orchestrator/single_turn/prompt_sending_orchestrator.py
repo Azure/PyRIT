@@ -232,12 +232,13 @@ class PromptSendingOrchestrator(Orchestrator):
             if status == "success":
                 break
 
-        return OrchestratorResult(
+        orchestrator_result = OrchestratorResult(
             conversation_id=conversation_id,
             objective=objective,
             status=status,
             objective_score=objective_score,
         )
+        return orchestrator_result, result.request_pieces
 
     async def run_attacks_async(
         self,
