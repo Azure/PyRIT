@@ -17,7 +17,7 @@ def fetch_babelscape_alert_dataset(
 
     Args:
         category (str, Optional): The dataset category, "alert" or "alert_adversarial".
-            If omitted, both categories will be loaded. Defaults to "alert_adversarial".
+            If None, both categories will be loaded. Defaults to "alert_adversarial".
 
     Returns:
         SeedPromptDataset: A SeedPromptDataset containing the examples.
