@@ -4,7 +4,7 @@
 import asyncio
 import logging
 import uuid
-from typing import Any, Optional, Sequence
+from typing import Any, List, Optional, Sequence
 
 from pyrit.common.utils import combine_dict
 from pyrit.models import (
@@ -90,7 +90,7 @@ class PromptSendingOrchestrator(Orchestrator):
     async def _add_prepended_conversation_to_memory(
         self,
         conversation_id: str,
-        prepended_conversation: Optional[list[PromptRequestResponse]] = None,
+        prepended_conversation: Optional[List[PromptRequestResponse]] = None,
     ):
         """
         Processes the prepended conversation by converting it if needed and adding it to memory.

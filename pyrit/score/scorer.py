@@ -5,7 +5,7 @@ import abc
 import json
 import uuid
 from abc import abstractmethod
-from typing import Optional, Sequence
+from typing import Dict, Optional, Sequence
 
 from pyrit.exceptions import (
     InvalidJsonException,
@@ -223,7 +223,7 @@ class Scorer(abc.ABC):
         description_output_key: str = "description",
         metadata_output_key: str = "metadata",
         category_output_key: str = "category",
-        orchestrator_identifier: Optional[dict[str, str]] = None,
+        orchestrator_identifier: Optional[Dict[str, str]] = None,
     ) -> UnvalidatedScore:
         """
         Sends a request to a target, and takes care of retries.

@@ -5,7 +5,7 @@ import logging
 import struct
 from contextlib import closing
 from datetime import datetime, timedelta, timezone
-from typing import MutableSequence, Optional, Sequence, TypeVar, Union
+from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
 
 from azure.core.credentials import AccessToken
 from azure.identity import DefaultAzureCredential
@@ -286,7 +286,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         self,
         Model,
         *,
-        conditions: Optional = None,  # type: ignore
+        conditions: Optional[Any] = None,  # type: ignore
         distinct: bool = False,
         join_scores: bool = False,
     ) -> MutableSequence[Model]:
