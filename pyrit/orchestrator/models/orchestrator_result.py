@@ -89,6 +89,7 @@ class OrchestratorResult:
                     print(f"{Style.NORMAL}{Fore.YELLOW}{piece.role}: {piece.converted_value}")
 
                 await display_image_response(piece)
+
                 if include_auxiliary_scores:
                     auxiliary_scores = (
                         self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(piece.id)]) or []
