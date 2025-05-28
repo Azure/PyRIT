@@ -18,11 +18,12 @@ class LookBackScorer(Scorer):
     Create a score from analyzing the entire conversation and adds them to the database.
 
     Parameters:
-        exclude_instruction_prompts (bool): If True, excludes instruction prompts from the conversation.
         chat_target (PromptChatTarget): The chat target to use for scoring.
+        exclude_instruction_prompts (bool): If True, excludes instruction prompts from the conversation.
+            Must be passed as a keyword argument.
     """
 
-    def __init__(self, exclude_instruction_prompts: bool, chat_target: PromptChatTarget) -> None:
+    def __init__(self, chat_target: PromptChatTarget, *, exclude_instruction_prompts: bool) -> None:
         self._prompt_target = chat_target
         self.scorer_type = "float_scale"
         self.exclude_instruction_prompts = exclude_instruction_prompts
@@ -44,7 +45,6 @@ class LookBackScorer(Scorer):
         Scores the entire conversation based on detected behavior change.
 
         Args:
-            exclude_instruction_prompts (bool): If True, excludes instruction prompts from the conversation.
             request_piece (PromptRequestPiece): A piece of the conversation to be scored.
                 The converation ID is used to retrieve the full conversation from memory.
             task (str): The task based on which the text should be scored (the original attacker model's objective).

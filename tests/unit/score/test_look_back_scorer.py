@@ -40,7 +40,7 @@ async def test_score_async_success(patch_central_database):
         task="test_task",
     )
 
-    scorer = LookBackScorer(chat_target=mock_prompt_target)
+    scorer = LookBackScorer(chat_target=mock_prompt_target, exclude_instruction_prompts=True)
     scorer._score_value_with_llm = AsyncMock(return_value=unvalidated_score)
 
     # Act
@@ -59,7 +59,7 @@ async def test_score_async_conversation_not_found(patch_central_database):
     # Arrange
     mock_prompt_target = MagicMock()
 
-    scorer = LookBackScorer(chat_target=mock_prompt_target)
+    scorer = LookBackScorer(chat_target=mock_prompt_target, exlude_instruction_prompts=True)
 
     nonexistent_conversation_id = str(uuid.uuid4())
     request_piece = PromptRequestPiece(
@@ -122,7 +122,7 @@ async def test_score_async_handles_persuasion_conversation(patch_central_databas
         task="test_task",
     )
 
-    scorer = LookBackScorer(chat_target=mock_prompt_target)
+    scorer = LookBackScorer(chat_target=mock_prompt_target, exclude_instruction_prompts=True)
     scorer._score_value_with_llm = AsyncMock(return_value=unvalidated_score)
 
     # Act
