@@ -23,11 +23,11 @@ class AddImageTextConverter(PromptConverter):
 
     Args:
         img_to_add (str): File path of image to add text to
-        font_name (str, Optional): Path of font to use. Must be a TrueType font (.ttf). Defaults to "helvetica.ttf".
-        color (tuple, Optional): Color to print text in, using RGB values. Defaults to (0, 0, 0).
-        font_size (float, Optional): Size of font to use. Defaults to 15.
-        x_pos (int, Optional): X coordinate to place text in (0 is left most). Defaults to 10.
-        y_pos (int, Optional): Y coordinate to place text in (0 is upper most). Defaults to 10.
+        font_name (str): Path of font to use. Must be a TrueType font (.ttf). Defaults to "helvetica.ttf".
+        color (tuple): Color to print text in, using RGB values. Defaults to (0, 0, 0).
+        font_size (float): Size of font to use. Defaults to 15.
+        x_pos (int): X coordinate to place text in (0 is left most). Defaults to 10.
+        y_pos (int): Y coordinate to place text in (0 is upper most). Defaults to 10.
     """
 
     def __init__(

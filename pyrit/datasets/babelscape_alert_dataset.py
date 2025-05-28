@@ -16,7 +16,7 @@ def fetch_babelscape_alert_dataset(
     Fetch the Babelscape/ALERT dataset and create a SeedPromptDataset.
 
     Args:
-        category (str): The dataset category, "alert" or "alert_adversarial".
+        category (str, Optional): The dataset category, "alert" or "alert_adversarial".
             If omitted, both categories will be loaded. Defaults to "alert_adversarial".
 
     Returns:

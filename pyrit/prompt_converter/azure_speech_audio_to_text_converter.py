@@ -22,8 +22,8 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
     https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-to-text
 
     Args:
-        azure_speech_region (str): The name of the Azure region.
-        azure_speech_key (str): The API key for accessing the service.
+        azure_speech_region (str, Optional): The name of the Azure region.
+        azure_speech_key (str, Optional): The API key for accessing the service.
         recognition_language (str): Recognition voice language. Defaults to "en-US".
             For more on supported languages, see the following link
             https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support

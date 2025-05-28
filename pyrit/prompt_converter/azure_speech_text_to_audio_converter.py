@@ -19,8 +19,8 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
     The AzureSpeechTextToAudio takes a prompt and generates a wave file.
     https://learn.microsoft.com/en-us/azure/ai-services/speech-service/text-to-speech
     Args:
-        azure_speech_region (str): The name of the Azure region.
-        azure_speech_key (str): The API key for accessing the service.
+        azure_speech_region (str, Optional): The name of the Azure region.
+        azure_speech_key (str, Optional): The API key for accessing the service.
         synthesis_language (str): Synthesis voice language
         synthesis_voice_name (str): Synthesis voice name, see URL
         For more details see the following link for synthesis language and synthesis voice:

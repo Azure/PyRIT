@@ -5,7 +5,7 @@ import abc
 import ast
 import logging
 import uuid
-from typing import Optional
+from typing import Dict, Optional, Union
 
 from pyrit.common import default_values
 from pyrit.memory import CentralMemory, MemoryInterface
@@ -55,8 +55,8 @@ class Orchestrator(abc.ABC, Identifier):
         prompt_text: str,
         prompt_type: PromptDataType = "text",
         conversation_id: Optional[str] = None,
-        converters=Optional[None],
-        metadata=Optional[None],
+        converters: Optional[list[PromptConverter]] = None,
+        metadata: Optional[Dict[str, Union[str, int]]] = None,
     ) -> NormalizerRequest:
 
         if converters is None:

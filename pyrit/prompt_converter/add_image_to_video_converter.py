@@ -32,8 +32,8 @@ class AddImageVideoConverter(PromptConverter):
     Args:
         video_path (str): File path of video to add image to
         output_path (str, Optional): File path of output video. Defaults to None.
-        img_position (tuple, Optional): Position to place image in video. Defaults to (10, 10).
-        img_resize_size (tuple, Optional): Size to resize image to. Defaults to (500, 500).
+        img_position (tuple): Position to place image in video. Defaults to (10, 10).
+        img_resize_size (tuple): Size to resize image to. Defaults to (500, 500).
     """
 
     def __init__(
