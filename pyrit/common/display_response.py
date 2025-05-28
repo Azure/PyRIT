@@ -19,8 +19,9 @@ async def display_image_response(response_piece: PromptRequestPiece) -> None:
         response_piece (PromptRequestPiece): The response piece to display.
     """
     from pyrit.memory import CentralMemory
-
     memory = CentralMemory.get_memory_instance()
+    print(memory)
+    print(f"---\nDisplaying response image: {response_piece.converted_value_data_type}\n---")
     if (
         response_piece.response_error == "none"
         and response_piece.converted_value_data_type == "image_path"
