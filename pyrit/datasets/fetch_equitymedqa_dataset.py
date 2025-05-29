@@ -62,7 +62,7 @@ def fetch_equitymedqa_dataset_unique_values(subset_name: str | list = "all") -> 
     """
     prompts = []
 
-    if subset_name == "all":
+    if subset_name == "all": # get all subsets
         for subset in datasubsets:
             prompts += get_sub_dataset(subset)
 
