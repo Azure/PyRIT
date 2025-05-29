@@ -56,15 +56,15 @@ class SeedPrompt(YamlLoadable):
     id: Optional[uuid.UUID] = field(default_factory=lambda: uuid.uuid4())
     name: Optional[str] = None
     dataset_name: Optional[str] = None
-    harm_categories: Optional[Sequence[str]] = field(default_factory=Sequence)
+    harm_categories: Optional[Sequence[str]] = field(default_factory=lambda: [])
     description: Optional[str] = None
-    authors: Optional[Sequence[str]] = field(default_factory=Sequence)
-    groups: Optional[Sequence[str]] = field(default_factory=Sequence)
+    authors: Optional[Sequence[str]] = field(default_factory=lambda: [])
+    groups: Optional[Sequence[str]] = field(default_factory=lambda: [])
     source: Optional[str] = None
     date_added: Optional[datetime] = field(default_factory=lambda: datetime.now())
     added_by: Optional[str] = None
-    metadata: Optional[Dict[str, Union[str, int]]] = field(default_factory=Dict)
-    parameters: Optional[Sequence[str]] = field(default_factory=Sequence)
+    metadata: Optional[Dict[str, Union[str, int]]] = field(default_factory=lambda: {})
+    parameters: Optional[Sequence[str]] = field(default_factory=lambda: [])
     prompt_group_id: Optional[uuid.UUID] = None
     prompt_group_alias: Optional[str] = None
     sequence: Optional[int] = 0
@@ -80,7 +80,6 @@ class SeedPrompt(YamlLoadable):
 
     def __post__init__(self) -> None:
         """Post-initialization to render the template to replace existing values"""
-
         self.value = self.render_template_value_silent(**self.TEMPLATE_PATHS)
 
     def render_template_value(self, **kwargs) -> str:
