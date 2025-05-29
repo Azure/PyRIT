@@ -98,6 +98,7 @@ API Reference
     is_in_ipython_session
     make_request_and_raise_if_error_async
     print_chat_messages_with_color
+    select_word_indices
     Singleton
     YamlLoadable
 

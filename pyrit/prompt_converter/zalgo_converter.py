@@ -17,14 +17,14 @@ logger = logging.getLogger(__name__)
 class ZalgoConverter(WordLevelConverter):
     """Converts text into cursed Zalgo text using combining Unicode marks."""
 
-    def __init__(self, *, intensity: int = 10, seed: Optional[int] = None) -> None:
+    def __init__(self, *, intensity: int = 10, seed: Optional[int] = None, mode: str = "all", **mode_kwargs) -> None:
         """
         Initializes the Zalgo converter.
         Args:
             intensity (int): Number of combining marks per character (higher = more cursed). Default is 10.
             seed (Optional[int]): Optional seed for reproducible output.
         """
-        super().__init__()
+        super().__init__(mode=mode, **mode_kwargs)
         self._intensity = self._normalize_intensity(intensity)
         self._seed = seed
 
