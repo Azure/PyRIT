@@ -2,6 +2,14 @@
 
 Our memory contains multiple components. This diagram  shows a mapping of our database schema and how our components map together! The arrows indicate the values that map one database to another.
 
+```mermaid
+flowchart LR
+ subgraph EmbeddingData["EmbeddingData"]
+        E_id["id (UUID)"]
+        E_embedding["embedding (NULL)"]
+        E_embedding_type_name["embedding_type_name (VARCHAR)"]
+  end
+ subgraph SeedPromptEntries["SeedPromptEntries"]
 ```{mermaid}
 flowchart LR
  subgraph EmbeddingData["EmbeddingData"]
