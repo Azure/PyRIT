@@ -8,29 +8,29 @@ scenarios:
 objective_target:
   type: "OpenAIChatTarget"
 converters:
-  - type: "AnsiAttackConverter" # not in the api docs
+  - type: "AnsiAttackConverter"
   - type: "AddImageTextConverter"
     img_to_add: "https://example.com/image.png"
-  - type: "AddImageVideoConverter" # not in the api docs
+  - type: "AddImageVideoConverter"
     video_path: "https://example.com/video.mp4"
   - type: "AddTextImageConverter"
     text_to_add: "test"
   - type: "AsciiArtConverter"
-  - type: "AsciiSmugglerConverter" # not in the api docs
+  - type: "AsciiSmugglerConverter"
   - type: "AtbashConverter"
   - type: "AudioFrequencyConverter"
   - type: "AzureSpeechAudioToTextConverter"
   - type: "AzureSpeechTextToAudioConverter"
   - type: "Base64Converter"
-  - type: "BinaryConverter" # not in the api docs
+  - type: "BinaryConverter"
   - type: "CaesarConverter"
     caesar_offset: 3
   - type: "CharacterSpaceConverter"
-  - type: "CharSwapGenerator" # not in the api docs
+  - type: "CharSwapGenerator"
   - type: "CodeChameleonConverter"
     encrypt_type: "reverse"
-  - type: "ColloquialWordswapConverter" # not in the api docs
-  - type: "DiacriticConverter" # not in the api docs
+  - type: "ColloquialWordswapConverter"
+  - type: "DiacriticConverter"
   - type: "EmojiConverter"
   - type: "FlipConverter"
   - type: "FuzzerCrossOverConverter"
@@ -45,7 +45,7 @@ converters:
   - type: "MathPromptConverter"
   - type: "MorseConverter"
   - type: "NoiseConverter"
-  - type: "PDFConverter" # not in the api docs
+  - type: "PDFConverter"
   - type: "PersuasionConverter"
     persuasion_technique: "misrepresentation"
   - type: "QRCodeConverter"
@@ -62,14 +62,14 @@ converters:
     suffix: "!!!"
   - type: "TenseConverter"
     tense: "past"
-  - type: "TextToHexConverter" # not in the api docs
+  - type: "TextToHexConverter"
   - type: "ToneConverter"
     tone: "sarcastic"
   - type: "ToxicSentenceGeneratorConverter"
   - type: "TranslationConverter"
     language: "spanish"
   - type: "UnicodeConfusableConverter"
-  - type: "UnicodeReplacementConverter" # not in the api docs
+  - type: "UnicodeReplacementConverter"
   - type: "UnicodeSubstitutionConverter"
   - type: "UrlConverter"
   - type: "VariationConverter"

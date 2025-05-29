@@ -274,17 +274,24 @@ API Reference
     :toctree: _autosummary/
 
     AddImageTextConverter
+    AddImageVideoConverter
     AddTextImageConverter
+    AnsiAttackConverter
     AsciiArtConverter
+    AsciiSmugglerConverter
     AtbashConverter
     AudioFrequencyConverter
     AzureSpeechAudioToTextConverter
     AzureSpeechTextToAudioConverter
     Base64Converter
+    BinaryConverter
     CaesarConverter
     CharacterSpaceConverter
+    CharSwapGenerator
     CodeChameleonConverter
+    ColloquialWordswapConverter
     ConverterResult
+    DiacriticConverter
     EmojiConverter
     FlipConverter
     FuzzerCrossOverConverter
@@ -300,6 +307,7 @@ API Reference
     MathPromptConverter
     MorseConverter
     NoiseConverter
+    PDFConverter
     PersuasionConverter
     PromptConverter
     QRCodeConverter
@@ -310,10 +318,12 @@ API Reference
     StringJoinConverter
     SuffixAppendConverter
     TenseConverter
+    TextToHexConverter
     ToneConverter
     ToxicSentenceGeneratorConverter
     TranslationConverter
     UnicodeConfusableConverter
+    UnicodeReplacementConverter
     UnicodeSubstitutionConverter
     UrlConverter
     VariationConverter

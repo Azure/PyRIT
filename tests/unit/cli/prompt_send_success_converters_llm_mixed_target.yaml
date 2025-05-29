@@ -9,14 +9,6 @@ converters:
   - type: "AnsiAttackConverter"
     converter_target:
       type: "AzureMLChatTarget"
-  - type: "FuzzerCrossOverConverter"
-  - type: "FuzzerExpandConverter"
-  - type: "FuzzerRephraseConverter"
-  - type: "FuzzerShortenConverter"
-    converter_target:
-      type: "AzureMLChatTarget"
-  - type: "FuzzerShortenConverter"
-  - type: "FuzzerSimilarConverter"
   - type: "MaliciousQuestionGeneratorConverter"
     converter_target:
       type: "AzureMLChatTarget"

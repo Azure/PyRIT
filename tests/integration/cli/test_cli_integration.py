@@ -95,31 +95,6 @@ converters = [
     ),
     (
         "text",
-        {
-            "type": "FuzzerCrossOverConverter",
-            "prompt_templates": [
-                str(pathlib.Path(DATASETS_PATH, "prompt_converters", "fuzzer_converters", "expand_converter.yaml"))
-            ],
-        },
-    ),
-    (
-        "text",
-        {"type": "FuzzerExpandConverter"},
-    ),
-    (
-        "text",
-        {"type": "FuzzerRephraseConverter"},
-    ),
-    (
-        "text",
-        {"type": "FuzzerShortenConverter"},
-    ),
-    (
-        "text",
-        {"type": "FuzzerSimilarConverter"},
-    ),
-    (
-        "text",
         {"type": "InsertPunctuationConverter"},
     ),
     (
