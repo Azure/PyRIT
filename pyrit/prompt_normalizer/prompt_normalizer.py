@@ -93,7 +93,9 @@ class PromptNormalizer(abc.ABC):
         response = None
 
         try:
+            logger.info("request {}".format(request))
             response = await target.send_prompt_async(prompt_request=request)
+            logger.info("response {}".format(response))
             self._memory.add_request_response_to_memory(request=request)
         except EmptyResponseException:
             # Empty responses are retried, but we don't want them to stop execution
