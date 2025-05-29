@@ -100,6 +100,7 @@ chapters:
       - file: code/memory/7_azure_sql_memory_orchestrators
       - file: code/memory/8_seed_prompt_database
       - file: code/memory/9_exporting_data
+      - file: code/memory/10_schema_diagram.md
       - file: code/memory/azure_embeddings
       - file: code/memory/chat_message
     - file: code/auxiliary_attacks/0_auxiliary_attacks
