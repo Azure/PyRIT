@@ -301,7 +301,7 @@ async def test_print_conversation_with_messages(include_auxiliary_scores, get_sc
                 objective_score=score,
             )
 
-            await result.print_conversation_async(include_auxiliary_scores)
+            await result.print_conversation_async(include_auxiliary_scores=include_auxiliary_scores)
 
             mock_memory.get_conversation.assert_called_once_with(conversation_id="conversation_id_123")
             assert mock_display_image_response.call_count == 2
