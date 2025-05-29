@@ -190,7 +190,8 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
         Returns:
             list[OrchestratorResult]: List of results from each attack.
         """
-
+        if question_repeat_count < 1:
+            raise ValueError("question_repeat_count must be greater than 0")
         question_answering_entries = [
             entry for entry in question_answering_entries for _ in range(question_repeat_count)
         ]
