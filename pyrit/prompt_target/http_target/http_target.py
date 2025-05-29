@@ -82,7 +82,9 @@ class HTTPTarget(PromptTarget):
             http2_version = True
 
         async with httpx.AsyncClient(http2=http2_version, **self.httpx_client_kwargs) as client:
+            logger.info("http_body {}".format(http_body))
             match http_body:
+
                 case dict():
                     response = await client.request(
                         method=http_method,
@@ -99,6 +101,7 @@ class HTTPTarget(PromptTarget):
                         content=http_body,
                         follow_redirects=True,
                     )
+        logger.info("response {}".format(response.content))
         response_content = response.content
 
         if self.callback_function:

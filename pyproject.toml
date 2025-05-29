@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyrit-sqlalchemy14"
-version = "0.9.7"
+version = "0.9.10"
 description = "SQLAlchemy 1.4 compatible version of PyRIT (Python Risk Identification Tool for LLMs)"
 authors = ["Microsoft AI Red Team <airedteam@microsoft.com>"]
 readme = "README.sqlalchemy14.md"
