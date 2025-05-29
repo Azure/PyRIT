@@ -291,6 +291,7 @@ API Reference
     CodeChameleonConverter
     ColloquialWordswapConverter
     ConverterResult
+    DenylistConverter
     DiacriticConverter
     EmojiConverter
     FlipConverter
