@@ -1,8 +1,15 @@
+# Memory Schema Diagram
+
 Our memory contains multiple components. This diagram  shows a mapping of our database schema and how our components map together! The arrows indicate the values that map one database to another.
 
 ```mermaid
-graph LR
-    subgraph SeedPromptEntries
+flowchart LR
+ subgraph EmbeddingData["EmbeddingData"]
+        E_id["id (UUID)"]
+        E_embedding["embedding (NULL)"]
+        E_embedding_type_name["embedding_type_name (VARCHAR)"]
+  end
+ subgraph SeedPromptEntries["SeedPromptEntries"]
         S_id["id (UUID)"]
         S_value["value (VARCHAR)"]
         S_value_sha256["value_sha256 (VARCHAR)"]
@@ -20,11 +27,10 @@ graph LR
         S_parameters["parameters (VARCHAR)"]
         S_prompt_group_id["prompt_group_id (UUID)"]
         S_sequence["sequence (INTEGER)"]
-    end
-
-    subgraph PromptMemoryEntries
-        P_id["id (UUID)"]
+  end
+ subgraph PromptMemoryEntries["PromptMemoryEntries"]
         P_role["role (VARCHAR)"]
+        P_id["id (UUID)"]
         P_original_value["original_value (VARCHAR)"]
         P_original_value_sha256["original_value_sha256 (VARCHAR)"]
         P_original_value_data_type["original_value_data_type (VARCHAR)"]
@@ -41,9 +47,8 @@ graph LR
         P_converted_value["converted_value (VARCHAR)"]
         P_converted_value_sha256["converted_value_sha256 (VARCHAR)"]
         P_original_prompt_id["original_prompt_id (UUID)"]
-    end
-
-    subgraph ScoreEntries
+  end
+ subgraph ScoreEntries["ScoreEntries"]
         Sc_id["id (UUID)"]
         Sc_prompt_request_response_id["prompt_request_response_id (VARCHAR)"]
         Sc_score_value["score_value (VARCHAR)"]
@@ -55,17 +60,14 @@ graph LR
         Sc_scorer_class_identifier["scorer_class_identifier (VARCHAR)"]
         Sc_timestamp["timestamp (TIMESTAMP)"]
         Sc_task["task (VARCHAR)"]
-    end
+  end
+    S_value_sha256 -- N:N relationship to query --> P_original_value_sha256
+    P_id -- 1:N relationship to query --> Sc_prompt_request_response_id
 
-    subgraph EmbeddingData
-        E_id["id (UUID)"]
-        E_embedding["embedding (NULL)"]
-        E_embedding_type_name["embedding_type_name (VARCHAR)"]
-    end
-
-    %% Relationship arrow
-    S_value_sha256 --> |N:N relationship to query| P_original_value_sha256
-    P_id --> |1:N relationship to query| Sc_prompt_request_response_id
-
-
+    style S_value_sha256 fill:#E1BEE7
+    style P_id fill:#C8E6C9
+    style P_original_value_sha256 fill:#E1BEE7
+    style Sc_prompt_request_response_id fill:#C8E6C9
+    linkStyle 0 stroke:#E1BEE7,fill:none
+    linkStyle 1 stroke:#C8E6C9
 ```
