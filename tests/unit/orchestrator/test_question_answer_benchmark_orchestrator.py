@@ -169,9 +169,9 @@ async def test_run_attacks_async(question_answer_orchestrator, mock_question_ans
 
         if repeat_count < 1:
             with pytest.raises(ValueError):
-                        await question_answer_orchestrator.run_attacks_async(
-                            question_answering_entries=entries, question_repeat_count=repeat_count
-                        )
+                await question_answer_orchestrator.run_attacks_async(
+                    question_answering_entries=entries, question_repeat_count=repeat_count
+                )
 
         else:
             results = await question_answer_orchestrator.run_attacks_async(

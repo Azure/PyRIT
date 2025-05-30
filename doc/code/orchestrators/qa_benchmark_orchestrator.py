@@ -19,6 +19,8 @@
 
 # %%
 # Import necessary packages
+from collections import defaultdict
+
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.datasets import fetch_wmdp_dataset
 from pyrit.models import (
@@ -82,10 +84,23 @@ print(f"Success rate: {success / len(results)}")
 # You can also utilize the 'question_repeat_count' variable in 'run_attacks_async' to automatically repeat each question a given number of times.
 
 # %%
-results = await benchmark_orchestrator.run_attacks_async(question_answering_entries=wmdp_ds.questions[:3], question_repeat_count=2)  # type: ignore
+results = await benchmark_orchestrator.run_attacks_async(question_answering_entries=wmdp_ds.questions[:3], question_repeat_count=5)  # type: ignore
 for result in results:
     await result.print_conversation_async()  # type: ignore
 
 # %%
 success = sum(r.status == "success" for r in results)
-print(f"Success rate: {success / len(results)}")
+print(f"Overall success rate: {success} / {len(results)} = {success / len(results)}")
+
+# %%
+# For repeated questions it may also be useful to break down the success rate for each question.
+# %%
+results_by_objective = defaultdict(list)
+for result in results:
+    results_by_objective[result.objective].append(result)
+for objective in results_by_objective.keys():
+    success = sum(r.status == "success" for r in results_by_objective[objective])
+    print(
+        f"Success rate for objective: {success} / {len(results_by_objective[objective])} = {success / len(results_by_objective[objective])}"
+    )
+# %%
