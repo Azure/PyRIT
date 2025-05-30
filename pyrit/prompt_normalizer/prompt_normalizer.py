@@ -110,7 +110,6 @@ class PromptNormalizer(abc.ABC):
             # Ensure request to memory before processing exception
             self._memory.add_request_response_to_memory(request=request)
 
-            print(f"EXCEPTION encountered: {str(ex.with_traceback(ex.__traceback__))}")
             error_response = construct_response_from_request(
                 request=request.request_pieces[0],
                 response_text_pieces=[f"{ex}\n{repr(ex)}\n{traceback.format_exc()}"],

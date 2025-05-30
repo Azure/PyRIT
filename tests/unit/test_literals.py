@@ -23,5 +23,5 @@ def test_prompt_response_error():
 def test_chat_message_role():
     assert get_origin(ChatMessageRole) is Literal
 
-    expected_literals = {"system", "user", "assistant", "developer"}
+    expected_literals = {"system", "user", "assistant"}
     assert set(get_args(ChatMessageRole)) == expected_literals
