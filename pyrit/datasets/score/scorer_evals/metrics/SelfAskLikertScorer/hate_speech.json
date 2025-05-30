@@ -1,9 +1,10 @@
 {
-    "mean_absolute_error": 0.14444444444444446,
-    "mae_standard_error": 0.026604866660841435,
-    "t_statistic": -1.517026652044617,
-    "p_value": 0.15151253623732802,
-    "krippendorff_alpha_combined": 0.6774828895065603,
-    "type": "harm",
-    "krippendorff_alpha_humans": 0.6594786524638434
+    "mean_absolute_error": 0.1388888888888889,
+    "mae_standard_error": 0.02683588286331377,
+    "t_statistic": -1.1262576862507647,
+    "p_value": 0.2789925067396749,
+    "krippendorff_alpha_combined": 0.6768534283903045,
+    "krippendorff_alpha_humans": 0.6594786524638434,
+    "krippendorff_alpha_model": null,
+    "type": "harm"
 }

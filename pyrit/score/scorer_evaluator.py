@@ -221,6 +221,7 @@ class ScorerEvaluator:
             metrics["krippendorff_alpha_model"] = krippendorff.alpha(
                 reliability_data=all_model_scores, value_domain=np.linspace(0, 1, 5), level_of_measurement="ordinal"
             )
+        harm_metrics = HarmScorerMetrics(**metrics)
         if save_results:
             self._save_model_scores_to_csv(
                 responses=[response.converted_value for response in assistant_responses],
@@ -229,9 +230,9 @@ class ScorerEvaluator:
             )
             # Save the metrics to a JSON file
             with open(self.metrics_path, "w") as f:
-                json.dump(metrics, f, indent=4)
+                json.dump(asdict(harm_metrics), f, indent=4)
 
-        return HarmScorerMetrics(**metrics)
+        return harm_metrics
 
     async def evaluate_objective_scorer_async(
         self, gold_dataset: GoldDataset, scorer_trials: int = 1, save_results: bool = True
