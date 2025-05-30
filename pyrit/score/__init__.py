@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.score.scorer import Scorer
+from pyrit.score.scorer import Scorer, ScorerEvalConfig
 
 from pyrit.score.azure_content_filter_scorer import AzureContentFilterScorer
 from pyrit.score.composite_scorer import CompositeScorer
@@ -45,6 +45,7 @@ __all__ = [
     "QuestionAnswerScorer",
     "Scorer",
     "ScoreAggregator",
+    "ScorerEvalConfig",
     "SelfAskCategoryScorer",
     "SelfAskLikertScorer",
     "SelfAskRefusalScorer",
