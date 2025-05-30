@@ -59,7 +59,7 @@ async def test_score_async_conversation_not_found(patch_central_database):
     # Arrange
     mock_prompt_target = MagicMock()
 
-    scorer = LookBackScorer(chat_target=mock_prompt_target, exlude_instruction_prompts=True)
+    scorer = LookBackScorer(chat_target=mock_prompt_target, exclude_instruction_prompts=True)
 
     nonexistent_conversation_id = str(uuid.uuid4())
     request_piece = PromptRequestPiece(
