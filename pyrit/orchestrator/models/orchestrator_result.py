@@ -53,7 +53,7 @@ class OrchestratorResult:
 
         self._memory = CentralMemory.get_memory_instance()
 
-    async def print_conversation_async(self, include_auxiliary_scores: bool = False):
+    async def print_conversation_async(self, *, include_auxiliary_scores: bool = False):
         """Prints the conversation between the objective target and the adversarial chat, including the scores.
 
         Args:

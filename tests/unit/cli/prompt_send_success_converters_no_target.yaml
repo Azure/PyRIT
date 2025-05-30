@@ -1,0 +1,11 @@
+# test case: converter that does not require a llm converter_target
+datasets:
+  - ./pyrit/datasets/seed_prompts/illegal.prompt
+scenarios:
+  - type: "PromptSendingOrchestrator"
+objective_target:
+  type: "OpenAIChatTarget"
+converters:
+  - type: "Base64Converter"
+database:
+  type: "DuckDB"
