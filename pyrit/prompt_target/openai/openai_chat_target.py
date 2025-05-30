@@ -7,7 +7,7 @@ from typing import Any, MutableSequence, Optional
 
 import httpx
 
-from pyrit.common import net_utility, convert_local_image_to_data_url
+from pyrit.common import convert_local_image_to_data_url, net_utility
 from pyrit.exceptions import (
     EmptyResponseException,
     PyritException,

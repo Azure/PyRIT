@@ -25,12 +25,6 @@ from pyrit.memory.duckdb_memory import DuckDBMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import OpenAIChatTarget
-import pytest
-import json
-from unittest.mock import AsyncMock, MagicMock, patch
-import httpx
-from pyrit.prompt_target.openai.openai_chat_target import OpenAIChatTarget
-from pyrit.exceptions.exception_classes import RateLimitException, EmptyResponseException, PyritException
 
 
 def fake_construct_response_from_request(request, response_text_pieces):
@@ -718,6 +712,7 @@ async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIChatTa
             await target.send_prompt_async(prompt_request=prompt_request)
             mock_refresh.assert_called_once()
 
+
 @pytest.mark.asyncio
 async def test_send_prompt_async_content_filter_400(target: OpenAIChatTarget):
     mock_memory = MagicMock(spec=MemoryInterface)
@@ -726,9 +721,8 @@ async def test_send_prompt_async_content_filter_400(target: OpenAIChatTarget):
     target._azure_auth = MagicMock()
     target._memory = mock_memory
 
-
     with (
-        patch.object(target, "refresh_auth_headers") as mock_refresh,
+        patch.object(target, "refresh_auth_headers"),
         patch.object(target, "_validate_request"),
         patch.object(target, "_construct_request_body", new_callable=AsyncMock) as mock_construct,
     ):
@@ -751,12 +745,15 @@ async def test_send_prompt_async_content_filter_400(target: OpenAIChatTarget):
         )
         prompt_request = PromptRequestResponse(request_pieces=[prompt_piece])
 
-        with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", AsyncMock(side_effect=status_error)) as mock_make_request:
+        with patch(
+            "pyrit.common.net_utility.make_request_and_raise_if_error_async", AsyncMock(side_effect=status_error)
+        ) as mock_make_request:
             result = await target.send_prompt_async(prompt_request=prompt_request)
 
             assert mock_make_request.call_count == 1
             assert result.request_pieces[0].converted_value_data_type == "error"
             assert result.request_pieces[0].response_error == "blocked"
+
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_other_http_error(monkeypatch):
@@ -784,8 +781,7 @@ async def test_send_prompt_async_other_http_error(monkeypatch):
     status_error = httpx.HTTPStatusError("Internal Server Error", request=MagicMock(), response=response)
 
     monkeypatch.setattr(
-        "pyrit.common.net_utility.make_request_and_raise_if_error_async",
-        AsyncMock(side_effect=status_error)
+        "pyrit.common.net_utility.make_request_and_raise_if_error_async", AsyncMock(side_effect=status_error)
     )
 
     with pytest.raises(httpx.HTTPStatusError):

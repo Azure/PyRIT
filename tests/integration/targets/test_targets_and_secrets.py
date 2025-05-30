@@ -96,9 +96,7 @@ async def test_connect_required_openai_text_targets(
         ("AZURE_OPENAI_RESPONSES_ENDPOINT", "AZURE_OPENAI_RESPONSES_KEY", "AZURE_OPENAI_RESPONSES_MODEL", False),
     ],
 )
-async def test_connect_required_openai_response_targets(
-    duckdb_instance, endpoint, api_key, model_name, no_api_version
-):
+async def test_connect_required_openai_response_targets(duckdb_instance, endpoint, api_key, model_name, no_api_version):
     args = {
         "endpoint": os.getenv(endpoint),
         "api_key": os.getenv(api_key),

@@ -7,7 +7,7 @@ from typing import Any, MutableSequence, Optional
 
 import httpx
 
-from pyrit.common import net_utility, convert_local_image_to_data_url
+from pyrit.common import convert_local_image_to_data_url, net_utility
 from pyrit.exceptions import (
     EmptyResponseException,
     PyritException,
@@ -189,10 +189,7 @@ class OpenAIResponseTarget(OpenAITarget):
                         "Multiple system messages are not supported."
                     )
                 full_request.append(
-                    ChatMessage(
-                        role="developer",
-                        content=first_piece.converted_value
-                    ).model_dump(exclude_none=True)
+                    ChatMessage(role="developer", content=first_piece.converted_value).model_dump(exclude_none=True)
                 )
                 continue
 
@@ -224,7 +221,7 @@ class OpenAIResponseTarget(OpenAITarget):
             full_request.append(
                 ChatMessageListDictContent(role=role, content=content).model_dump(exclude_none=True)  # type: ignore
             )
-        
+
         return full_request
 
     async def _construct_request_body(
@@ -246,7 +243,7 @@ class OpenAIResponseTarget(OpenAITarget):
         if self._extra_body_parameters:
             for key, value in self._extra_body_parameters.items():
                 body_parameters[key] = value
-        
+
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
 

@@ -14,7 +14,6 @@ from unit.mocks import (
     get_image_request_piece,
     get_sample_conversations,
     openai_response_json_dict,
-    openai_failed_response_json_dict
 )
 
 from pyrit.exceptions.exception_classes import (
@@ -84,7 +83,9 @@ def test_init_with_no_endpoint_uri_var_raises():
 def test_init_with_no_additional_request_headers_var_raises():
     with patch.dict(os.environ, {}, clear=True):
         with pytest.raises(ValueError):
-            OpenAIResponseTarget(model_name="gpt-4", endpoint="", api_key="xxxxx", api_version="some_version", headers="")
+            OpenAIResponseTarget(
+                model_name="gpt-4", endpoint="", api_key="xxxxx", api_version="some_version", headers=""
+            )
 
 
 @pytest.mark.asyncio()
@@ -170,7 +171,7 @@ async def test_build_input_for_multi_modal(target: OpenAIResponseTarget):
                 ),
                 image_request,
             ]
-        )
+        ),
     ]
     with patch.object(
         target,
@@ -274,7 +275,9 @@ async def test_construct_request_body_serializes_complex_message(
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_empty_response_adds_to_memory(openai_response_json: dict, target: OpenAIResponseTarget):
+async def test_send_prompt_async_empty_response_adds_to_memory(
+    openai_response_json: dict, target: OpenAIResponseTarget
+):
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
     mock_memory.add_request_response_to_memory = AsyncMock()
@@ -538,13 +541,8 @@ async def test_send_prompt_async_content_filter(target: OpenAIResponseTarget):
                 "code": "content_filter",
                 "innererror": {
                     "code": "ResponsibleAIPolicyViolation",
-                    "content_filter_result": {
-                        "violence": {
-                            "filtered": True,
-                            "severity": "medium"
-                        }
-                    }
-                }
+                    "content_filter_result": {"violence": {"filtered": True, "severity": "medium"}},
+                },
             }
         }
     )
@@ -627,7 +625,9 @@ def test_is_response_format_json_no_metadata(target: OpenAIResponseTarget):
     assert result is False
 
 
-@pytest.mark.parametrize("status", ["failed", "in_progress", "cancelled", "queued", "incomplete", "some_unexpected_status"])
+@pytest.mark.parametrize(
+    "status", ["failed", "in_progress", "cancelled", "queued", "incomplete", "some_unexpected_status"]
+)
 def test_construct_prompt_response_not_completed_status(
     status: str, target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece
 ):
@@ -635,9 +635,10 @@ def test_construct_prompt_response_not_completed_status(
     response_str = json.dumps(response_dict)
 
     with pytest.raises(PyritException) as excinfo:
-        result = target._construct_prompt_response_from_openai_json(
+        target._construct_prompt_response_from_openai_json(
             open_ai_str_response=response_str, request_piece=dummy_text_request_piece
         )
+    assert "The chat did not complete successfully." in str(excinfo.value)
 
 
 def test_construct_prompt_response_empty_response(
@@ -654,7 +655,9 @@ def test_construct_prompt_response_empty_response(
 
 
 @pytest.mark.asyncio
-async def test_openai_response_target_no_api_version(sample_conversations: MutableSequence[PromptRequestPiece], openai_response_json: dict):
+async def test_openai_response_target_no_api_version(
+    sample_conversations: MutableSequence[PromptRequestPiece], openai_response_json: dict
+):
     target = OpenAIResponseTarget(
         api_key="test_key", endpoint="https://mock.azure.com", model_name="gpt-35-turbo", api_version=None
     )
@@ -673,7 +676,9 @@ async def test_openai_response_target_no_api_version(sample_conversations: Mutab
 
 
 @pytest.mark.asyncio
-async def test_openai_response_target_default_api_version(sample_conversations: MutableSequence[PromptRequestPiece], openai_response_json: dict):
+async def test_openai_response_target_default_api_version(
+    sample_conversations: MutableSequence[PromptRequestPiece], openai_response_json: dict
+):
     target = OpenAIResponseTarget(api_key="test_key", endpoint="https://mock.azure.com", model_name="gpt-35-turbo")
     request_piece = sample_conversations[0]
     request = PromptRequestResponse(request_pieces=[request_piece])
@@ -708,9 +713,7 @@ async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIRespon
         mock_construct.return_value = {}
 
         with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock_make_request:
-            mock_make_request.return_value = MagicMock(
-                text=json.dumps(openai_response_json)
-            )
+            mock_make_request.return_value = MagicMock(text=json.dumps(openai_response_json))
 
             prompt_request = PromptRequestResponse(
                 request_pieces=[
@@ -738,81 +741,92 @@ async def test_convert_local_image_to_data_url_unsupported_format(target: OpenAI
     finally:
         os.remove(tmp_file_name)
 
+
 @pytest.mark.asyncio
 async def test_convert_local_image_to_data_url_missing_file(target: OpenAIResponseTarget):
     # Should raise FileNotFoundError for missing file
     with pytest.raises(FileNotFoundError):
         await target._convert_local_image_to_data_url("not_a_real_file.jpg")
 
-def test_construct_prompt_response_from_openai_json_invalid_json(target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece):
+
+def test_construct_prompt_response_from_openai_json_invalid_json(
+    target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece
+):
     # Should raise PyritException for invalid JSON
     with pytest.raises(PyritException) as excinfo:
-        target._construct_prompt_response_from_openai_json(open_ai_str_response="{invalid_json", request_piece=dummy_text_request_piece)
+        target._construct_prompt_response_from_openai_json(
+            open_ai_str_response="{invalid_json", request_piece=dummy_text_request_piece
+        )
     assert "Failed to parse JSON response" in str(excinfo.value)
 
-def test_construct_prompt_response_from_openai_json_no_status(target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece):
+
+def test_construct_prompt_response_from_openai_json_no_status(
+    target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece
+):
     # Should raise PyritException for missing status and no content_filter error
     bad_json = json.dumps({"output": [{"type": "message", "content": [{"text": "hi"}]}]})
     with pytest.raises(PyritException) as excinfo:
-        target._construct_prompt_response_from_openai_json(open_ai_str_response=bad_json, request_piece=dummy_text_request_piece)
+        target._construct_prompt_response_from_openai_json(
+            open_ai_str_response=bad_json, request_piece=dummy_text_request_piece
+        )
     assert "Unexpected response format" in str(excinfo.value)
 
-def test_construct_prompt_response_from_openai_json_reasoning(target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece):
+
+def test_construct_prompt_response_from_openai_json_reasoning(
+    target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece
+):
     # Should handle reasoning type and skip empty summaries
     reasoning_json = {
         "status": "completed",
-        "output": [
-            {
-                "type": "reasoning",
-                "summary": [
-                    {"type": "summary_text", "text": "Reasoning summary."}
-                ] 
-            }
-        ]
+        "output": [{"type": "reasoning", "summary": [{"type": "summary_text", "text": "Reasoning summary."}]}],
     }
     response = target._construct_prompt_response_from_openai_json(
-        open_ai_str_response=json.dumps(reasoning_json),
-        request_piece=dummy_text_request_piece
+        open_ai_str_response=json.dumps(reasoning_json), request_piece=dummy_text_request_piece
     )
     assert response.request_pieces[0].original_value == "Reasoning summary."
     assert response.request_pieces[0].original_value_data_type == "reasoning"
 
-def test_construct_prompt_response_from_openai_json_unsupported_type(target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece):
+
+def test_construct_prompt_response_from_openai_json_unsupported_type(
+    target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece
+):
     # Should raise ValueError for unsupported response type
     bad_type_json = {
         "status": "completed",
-        "output": [
-            {
-                "type": "function_call",
-                "content": [{"text": "some function call"}]
-            }
-        ]
+        "output": [{"type": "function_call", "content": [{"text": "some function call"}]}],
     }
     with pytest.raises(ValueError) as excinfo:
         target._construct_prompt_response_from_openai_json(
-            open_ai_str_response=json.dumps(bad_type_json),
-            request_piece=dummy_text_request_piece
+            open_ai_str_response=json.dumps(bad_type_json), request_piece=dummy_text_request_piece
         )
     assert "Unsupported response type" in str(excinfo.value)
 
+
 def test_validate_request_allows_text_and_image(target: OpenAIResponseTarget):
     # Should not raise for valid types
-    req = PromptRequestResponse(request_pieces=[
-        PromptRequestPiece(role="user", original_value_data_type="text", original_value="Hello"),
-        PromptRequestPiece(role="user", original_value_data_type="image_path", original_value="fake.jpg"),
-    ])
+    req = PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(role="user", original_value_data_type="text", original_value="Hello"),
+            PromptRequestPiece(role="user", original_value_data_type="image_path", original_value="fake.jpg"),
+        ]
+    )
     target._validate_request(prompt_request=req)
 
+
 def test_validate_request_raises_for_invalid_type(target: OpenAIResponseTarget):
-    req = PromptRequestResponse(request_pieces=[
-        PromptRequestPiece(role="user", original_value_data_type="audio_path", original_value="fake.mp3"),
-    ])
+    req = PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(role="user", original_value_data_type="audio_path", original_value="fake.mp3"),
+        ]
+    )
     with pytest.raises(ValueError) as excinfo:
         target._validate_request(prompt_request=req)
     assert "only supports text and image_path" in str(excinfo.value)
 
+
 def test_is_json_response_supported_returns_true(target: OpenAIResponseTarget):
     assert target.is_json_response_supported() is True
+
 
 @pytest.mark.asyncio
 async def test_build_input_for_multi_modal_async_empty_conversation(target: OpenAIResponseTarget):
@@ -821,6 +835,7 @@ async def test_build_input_for_multi_modal_async_empty_conversation(target: Open
     with pytest.raises(ValueError) as excinfo:
         await target._build_input_for_multi_modal_async([req])
     assert "No prompt request pieces found" in str(excinfo.value)
+
 
 @pytest.mark.asyncio
 async def test_build_input_for_multi_modal_async_image_and_text(target: OpenAIResponseTarget):
@@ -835,13 +850,17 @@ async def test_build_input_for_multi_modal_async_image_and_text(target: OpenAIRe
     assert result[0]["content"][1]["type"] == "input_image"
     assert result[0]["content"][1]["image_url"]["url"].startswith("data:image/jpeg;base64,")
 
+
 @pytest.mark.asyncio
-async def test_construct_request_body_filters_none(target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece):
+async def test_construct_request_body_filters_none(
+    target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece
+):
     req = PromptRequestResponse(request_pieces=[dummy_text_request_piece])
     body = await target._construct_request_body([req], is_json_response=False)
     assert "max_output_tokens" not in body or body["max_output_tokens"] is None
     assert "temperature" not in body or body["temperature"] is None
     assert "top_p" not in body or body["top_p"] is None
+
 
 def test_set_openai_env_configuration_vars_sets_vars():
     target = OpenAIResponseTarget(model_name="gpt", endpoint="http://test", api_key="key")
@@ -849,6 +868,7 @@ def test_set_openai_env_configuration_vars_sets_vars():
     assert target.model_name_environment_variable == "OPENAI_RESPONSES_MODEL"
     assert target.endpoint_environment_variable == "OPENAI_RESPONSES_ENDPOINT"
     assert target.api_key_environment_variable == "OPENAI_RESPONSES_KEY"
+
 
 @pytest.mark.asyncio
 async def test_build_input_for_multi_modal_async_filters_reasoning(target: OpenAIResponseTarget):
