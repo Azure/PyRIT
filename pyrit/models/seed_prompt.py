@@ -78,7 +78,7 @@ class SeedPrompt(YamlLoadable):
         "docs_code_path": DOCS_CODE_PATH,
     }
 
-    def __post__init__(self) -> None:
+    def __post_init__(self) -> None:
         """Post-initialization to render the template to replace existing values"""
         self.value = self.render_template_value_silent(**self.TEMPLATE_PATHS)
 
