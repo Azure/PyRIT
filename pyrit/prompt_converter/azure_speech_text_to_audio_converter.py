@@ -86,6 +86,8 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
                 subscription=self._azure_speech_key,
                 region=self._azure_speech_region,
             )
+            pull_stream = speechsdk.audio.PullAudioOutputStream()
+            audio_cfg = speechsdk.audio.AudioOutputConfig(stream=pull_stream)
             speech_config.speech_synthesis_language = self._synthesis_language
             speech_config.speech_synthesis_voice_name = self._synthesis_voice_name
 
@@ -94,7 +96,7 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
                     speechsdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3
                 )
 
-            speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config)
+            speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_cfg)
 
             result = speech_synthesizer.speak_text_async(prompt).get()
             if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:

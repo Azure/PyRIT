@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -50,9 +51,9 @@ class PartialUndefined(Undefined):
 class SeedPrompt(YamlLoadable):
     """Represents a seed prompt with various attributes and metadata."""
 
-    data_type: PromptDataType
     value: str
     value_sha256: Optional[str] = None
+    data_type: Optional[PromptDataType] = None
     id: Optional[uuid.UUID] = field(default_factory=lambda: uuid.uuid4())
     name: Optional[str] = None
     dataset_name: Optional[str] = None
@@ -81,6 +82,23 @@ class SeedPrompt(YamlLoadable):
     def __post_init__(self) -> None:
         """Post-initialization to render the template to replace existing values"""
         self.value = self.render_template_value_silent(**self.TEMPLATE_PATHS)
+
+        if not self.data_type:
+            # If data_type is not provided, infer it from the value
+            # Note: Does not assign 'error' or 'url' implicitly
+            if os.path.isfile(self.value):
+                _, ext = os.path.splitext(self.value)
+                ext = ext.lstrip(".")
+                if ext in ["mp4", "avi", "mov", "mkv", "ogv", "flv", "wmv", "webm"]:
+                    self.data_type = "video_path"
+                elif ext in ["flac", "mp3", "mpeg", "mpga", "m4a", "ogg", "wav"]:
+                    self.data_type = "audio_path"
+                elif ext in ["jpg", "jpeg", "png", "gif", "bmp", "tiff", "tif"]:
+                    self.data_type = "image_path"
+                else:
+                    raise ValueError(f"Unable to infer data_type from file extension: {ext}")
+            else:
+                self.data_type = "text"
 
     def render_template_value(self, **kwargs) -> str:
         """Renders self.value as a template, applying provided parameters in kwargs
