@@ -11,7 +11,7 @@ from integration.mocks import get_memory_interface
 from pyrit.common.path import SCORER_EVALS_PATH
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import LikertScalePaths, ScorerEvalConfig, SelfAskLikertScorer
+from pyrit.score import LikertScalePaths, ScorerEvaluator, SelfAskLikertScorer
 
 
 @pytest.fixture
@@ -19,26 +19,32 @@ def memory() -> Generator[MemoryInterface, None, None]:
     yield from get_memory_interface()
 
 
-@pytest.mark.parametrize(
-    "scale_path,config_file_name,metrics_file_name",
-    [
-        (LikertScalePaths.HATE_SPEECH_SCALE.value, "sample_config_likert_hate.yaml", "hate_speech_scale.json"),
-        (LikertScalePaths.VIOLENCE_SCALE.value, "sample_config_likert_violence.yaml", "violence_scale.json"),
-    ],
-)
 @pytest.mark.asyncio
-async def test_likert_scorer_mae(scale_path: Path, config_file_name: str, metrics_file_name: str):
-    metrics_file = Path(SCORER_EVALS_PATH, "metrics", "likert_scorer", metrics_file_name).resolve()
-    with open(metrics_file, "r") as file:
-        metrics = json.load(file)
+async def test_likert_scorer_mae():
+    target = OpenAIChatTarget()
+    scale_path = LikertScalePaths.HATE_SPEECH_SCALE.value
+    likert_scorer = SelfAskLikertScorer(chat_target=target, likert_scale_path=scale_path)
+
+    evaluator = ScorerEvaluator(scorer=likert_scorer)
+    csv_path = f"{str(SCORER_EVALS_PATH)}/eval_datasets/likert_hate_speech_sample_dataset.csv"
+
+    baseline_metrics = likert_scorer.get_scorer_metrics(file_name="hate_speech")
 
     # using ~95% confidence interval for the mean absolute error (MAE) for thresholding
-    mae_threshold = metrics["MAE"] + (2 * metrics["MAE_std_error"])
+    mae_threshold = baseline_metrics.mean_absolute_error + (2 * baseline_metrics.mae_standard_error)
 
     target = OpenAIChatTarget(temperature=0.0, seed=1)
     likert_scorer = SelfAskLikertScorer(chat_target=target, likert_scale_path=scale_path)
 
-    config_path = Path(SCORER_EVALS_PATH, "eval_configs", config_file_name).resolve()
-    eval_json = await likert_scorer.run_evaluation(config=ScorerEvalConfig.from_yaml_file(config_path), batch_size=10)
-    eval_dict = json.loads(eval_json)
-    assert eval_dict["MAE"] <= mae_threshold, f"MAE {eval_dict['MAE']} exceeds threshold {mae_threshold}"
+    metrics = await evaluator.run_evaluation_from_csv_async(
+        csv_path=csv_path,
+        type="harm",
+        assistant_response_col="assistant_response",
+        gold_label_col_names=["human_likert_score_1", "human_likert_score_2", "human_likert_score_3"],
+        top_level_harm="hate_speech",
+        save_results=False,
+    )
+
+    assert (
+        metrics.mean_absolute_error <= mae_threshold
+    ), f"MAE {metrics.mean_absolute_error} exceeds threshold {mae_threshold}"

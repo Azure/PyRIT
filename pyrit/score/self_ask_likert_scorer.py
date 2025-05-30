@@ -2,27 +2,16 @@
 # Licensed under the MIT license.
 
 import enum
-import json
 import logging
-from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional
 
-import krippendorff
-import numpy as np
 import yaml
-from scipy.stats import ttest_1samp
 
 from pyrit.common.path import LIKERT_SCALES_PATH, SCORER_EVALS_PATH
-from pyrit.common.scorer_evals_helper import (
-    extract_all_human_scores,
-    load_data_and_validate_cols,
-    save_metrics_json,
-    save_scores_to_csv,
-)
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.score.scorer import Scorer, ScorerEvalConfig
+from pyrit.score.scorer import Scorer
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +40,15 @@ class SelfAskLikertScorer(Scorer):
         self._prompt_target = chat_target
         self.scorer_type = "float_scale"
 
+        self.set_likert_scale_system_prompt(likert_scale_path=likert_scale_path)
+
+    def set_likert_scale_system_prompt(self, likert_scale_path: Path):
+        """
+        Sets the Likert scale to use for scoring.
+
+        Args:
+            likert_scale_path (Path): The path to the YAML file containing the Likert scale description.
+        """
         likert_scale = yaml.safe_load(likert_scale_path.read_text(encoding="utf-8"))
 
         if likert_scale["category"]:
@@ -60,8 +58,11 @@ class SelfAskLikertScorer(Scorer):
 
         likert_scale = self._likert_scale_description_to_string(likert_scale["scale_descriptions"])
 
-        scoring_instructions_template = SeedPrompt.from_yaml_file(LIKERT_SCALES_PATH / "likert_system_prompt.yaml")
-        self._system_prompt = scoring_instructions_template.render_template_value(
+        self._scoring_instructions_template = SeedPrompt.from_yaml_file(
+            LIKERT_SCALES_PATH / "likert_system_prompt.yaml"
+        )
+
+        self._system_prompt = self._scoring_instructions_template.render_template_value(
             likert_scale=likert_scale, category=self._score_category
         )
 
@@ -76,7 +77,7 @@ class SelfAskLikertScorer(Scorer):
             str: The string representation of the Likert scale.
         """
         if not descriptions:
-            raise ValueError("Impropoerly formated Likert scale yaml file. No likert scale_descriptions provided")
+            raise ValueError("Improperly formatted Likert scale yaml file. No likert scale_descriptions provided")
 
         likert_scale_description = ""
 
@@ -86,14 +87,16 @@ class SelfAskLikertScorer(Scorer):
 
             if int(name) < 0 or int(name) > 5:
                 raise ValueError(
-                    "Impropoerly formated Likert scale yaml file. Likert scale values must be between 1 and 5"
+                    "Improperly formatted Likert scale yaml file. Likert scale values must be between 1 and 5"
                 )
 
             likert_scale_description += f"'{name}': {desc}\n"
 
         return likert_scale_description
 
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def score_async(
+        self, request_response: PromptRequestPiece, *, task: Optional[str] = None, harm_category: Optional[str] = None
+    ) -> list[Score]:
         """
         Scores the given request_response using "self-ask" for the chat target and adds score to memory.
 
@@ -108,6 +111,13 @@ class SelfAskLikertScorer(Scorer):
                          The score_value is a value from [0,1] that is scaled from the likert scale.
         """
         self.validate(request_response, task=task)
+        if harm_category:
+            # This will need to change once we support harm categories as an Enum class.
+            scale_path = Path(LIKERT_SCALES_PATH, f"{harm_category.lower()}.yaml").resolve()
+            if not scale_path.exists():
+                raise ValueError(f"Invalid harm category: {harm_category}. No scale found at {scale_path}.")
+
+            self.set_likert_scale_system_prompt(likert_scale_path=scale_path)
 
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
@@ -128,87 +138,9 @@ class SelfAskLikertScorer(Scorer):
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
 
-    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
+    def validate(
+        self, request_response: PromptRequestPiece, *, task: Optional[str] = None, harm_category: Optional[str] = None
+    ):
+        if task and harm_category:
+            raise ValueError("Task and harm_category cannot be both provided. Please provide only one of them.")
         pass
-
-    async def run_evaluation(self, config: ScorerEvalConfig, batch_size: int = 10) -> str:
-        """
-        Run evaluation for the scorer using the provided configuration. The metrics calculated for this scorer include:
-        Mean Absolute Error (MAE), standard error of the MAE, t-statistic and p-value (from 1-sample t-test using
-        model scores - human scores), and Krippendorff's alpha for inter-rater reliability across all model and
-        human scores.
-
-        Args:
-            config (ScorerEvalConfig): The configuration for the evaluation.
-
-        Returns:
-            str: The evaluation results in JSON format.
-        """
-        assistant_responses, all_human_scores, avg_human_scores = self._prepare_eval_data(config=config)
-
-        all_model_scores, avg_model_scores = await self._run_model_trials_async(
-            responses=assistant_responses, num_trials=config.scorer_trials, batch_size=batch_size
-        )
-
-        timestamp = datetime.now().strftime("%Y_%m_%d-%H_%M")
-        file_name = f"{self.__class__.__name__}_eval_{timestamp}"
-        if config.csv_scores_save_dir:
-            save_scores_to_csv(
-                config=config,
-                responses=assistant_responses,
-                all_model_scores=all_model_scores,
-                avg_model_scores=avg_model_scores,
-                avg_human_scores=avg_human_scores,
-                file_name=file_name,
-            )
-
-        reliability_data = np.concatenate((all_human_scores, all_model_scores))
-        eval_dict = self._compute_eval_metrics(avg_human_scores, avg_model_scores, reliability_data)
-
-        if config.json_output_save_dir:
-            save_metrics_json(config=config, eval_dict=eval_dict, file_name=file_name)
-
-        return json.dumps(eval_dict)
-
-    def _prepare_eval_data(self, config: ScorerEvalConfig):
-        if config.tasks_col_name:
-            logger.warning("Task-based scoring is not supported for this scorer. Task column will be ignored.")
-        eval_df = load_data_and_validate_cols(config=config, tasks_accepted=False)
-        assistant_responses = eval_df[config.assistant_response_col_name].to_list()
-        all_human_scores = extract_all_human_scores(eval_df, config)
-        if not config.normalized:
-            all_human_scores = (all_human_scores - 1) / 4
-        average_human_scores = np.mean(all_human_scores, axis=0)
-        return assistant_responses, all_human_scores, average_human_scores
-
-    async def _run_model_trials_async(self, responses: list[str], num_trials: int, batch_size: int):
-        all_model_scores_list = []
-        for trial in range(num_trials):
-            scores = await self.score_text_batch_async(texts=responses, tasks=None, batch_size=batch_size)
-            score_values = [score.get_value() for score in scores]
-            assert len(score_values) == len(
-                responses
-            ), f"Expected {len(responses)} scores in trial {trial} but got {len(score_values)}"
-            assert all(
-                isinstance(value, float) for value in score_values
-            ), f"Expected all scores to be float but got {type(score_values[0])}"
-            all_model_scores_list.append(score_values)
-        all_model_scores = np.array(all_model_scores_list)
-        average_model_scores = np.mean(all_model_scores, axis=0)
-        return all_model_scores, average_model_scores
-
-    def _compute_eval_metrics(self, avg_human_scores, avg_model_scores, all_scores_combined):
-        diff = avg_model_scores - avg_human_scores
-        abs_error = np.abs(diff)
-        eval_dict = {
-            "MAE": np.mean(abs_error),
-            "MAE_std_error": np.std(abs_error) / np.sqrt(len(abs_error)),
-            # t-statistic and p-value via 1-sample t-test for the null hypothesis that the mean difference is 0
-            # High positive t-statistic and low p-value indicate model scores are typically higher than human scores
-            "t-statistic": ttest_1samp(diff, 0).statistic,
-            "p-value": ttest_1samp(diff, 0).pvalue,
-            "Krippendorff Alpha": krippendorff.alpha(
-                reliability_data=all_scores_combined, value_domain=np.linspace(0, 1, 5), level_of_measurement="ordinal"
-            ),
-        }
-        return eval_dict
