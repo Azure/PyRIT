@@ -40,7 +40,7 @@ RUN apt-get update && apt-get install -y \
  && rm -rf /var/lib/apt/lists/*
 
 # audio back-ends needed by Azure Speech SDK
-RUN apt-get update \ 
+RUN apt-get update \
  && DEBIAN_FRONTEND=noninteractive \
  apt-get install -y --no-install-recommends \
       libasound2 \
