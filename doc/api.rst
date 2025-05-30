@@ -276,7 +276,9 @@ API Reference
     AddImageTextConverter
     AddImageVideoConverter
     AddTextImageConverter
+    AnsiAttackConverter
     AsciiArtConverter
+    AsciiSmugglerConverter
     AtbashConverter
     AudioFrequencyConverter
     AzureSpeechAudioToTextConverter
