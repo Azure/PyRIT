@@ -89,56 +89,6 @@ def test_init_with_no_additional_request_headers_var_raises():
 
 
 @pytest.mark.asyncio()
-async def test_convert_image_to_data_url_file_not_found(target: OpenAIResponseTarget):
-    with pytest.raises(FileNotFoundError):
-        await target._convert_local_image_to_data_url("nonexistent.jpg")
-
-
-@pytest.mark.asyncio()
-async def test_convert_image_with_unsupported_extension(target: OpenAIResponseTarget):
-
-    with NamedTemporaryFile(mode="w+", suffix=".txt", delete=False) as tmp_file:
-        tmp_file_name = tmp_file.name
-
-    assert os.path.exists(tmp_file_name)
-
-    with pytest.raises(ValueError) as exc_info:
-        await target._convert_local_image_to_data_url(tmp_file_name)
-
-    assert "Unsupported image format" in str(exc_info.value)
-
-    os.remove(tmp_file_name)
-
-
-@pytest.mark.asyncio()
-@patch("os.path.exists", return_value=True)
-@patch("mimetypes.guess_type", return_value=("image/jpg", None))
-@patch("pyrit.models.data_type_serializer.ImagePathDataTypeSerializer")
-@patch("pyrit.memory.CentralMemory.get_memory_instance", return_value=DuckDBMemory(db_path=":memory:"))
-async def test_convert_image_to_data_url_success(
-    mock_get_memory_instance, mock_serializer_class, mock_guess_type, mock_exists, target: OpenAIResponseTarget
-):
-    with NamedTemporaryFile(suffix=".jpg", delete=False) as tmp_file:
-        tmp_file_name = tmp_file.name
-    mock_serializer_instance = MagicMock()
-    mock_serializer_instance.read_data_base64 = AsyncMock(return_value="encoded_base64_string")
-    mock_serializer_class.return_value = mock_serializer_instance
-
-    assert os.path.exists(tmp_file_name)
-
-    result = await target._convert_local_image_to_data_url(tmp_file_name)
-    assert "data:image/jpeg;base64,encoded_base64_string" in result
-
-    # Assertions for the mocks
-    mock_serializer_class.assert_called_once_with(
-        category="prompt-memory-entries", prompt_text=tmp_file_name, extension=".jpg"
-    )
-    mock_serializer_instance.read_data_base64.assert_called_once()
-
-    os.remove(tmp_file_name)
-
-
-@pytest.mark.asyncio()
 async def test_build_input_for_multi_modal(target: OpenAIResponseTarget):
 
     image_request = get_image_request_piece()
@@ -173,9 +123,8 @@ async def test_build_input_for_multi_modal(target: OpenAIResponseTarget):
             ]
         ),
     ]
-    with patch.object(
-        target,
-        "_convert_local_image_to_data_url",
+    with patch(
+        "pyrit.common.data_url_converter.convert_local_image_to_data_url",
         return_value="data:image/jpeg;base64,encoded_string",
     ):
         messages = await target._build_input_for_multi_modal_async(entries)
@@ -319,9 +268,8 @@ async def test_send_prompt_async_empty_response_adds_to_memory(
     openai_mock_return = MagicMock()
     openai_mock_return.text = json.dumps(openai_response_json)
 
-    with patch.object(
-        target,
-        "_convert_local_image_to_data_url",
+    with patch(
+        "pyrit.common.data_url_converter.convert_local_image_to_data_url",
         return_value="data:image/jpeg;base64,encoded_string",
     ):
         with patch(
@@ -423,9 +371,8 @@ async def test_send_prompt_async(openai_response_json: dict, target: OpenAIRespo
             ),
         ]
     )
-    with patch.object(
-        target,
-        "_convert_local_image_to_data_url",
+    with patch(
+        "pyrit.common.data_url_converter.convert_local_image_to_data_url",
         return_value="data:image/jpeg;base64,encoded_string",
     ):
         with patch(
@@ -473,9 +420,8 @@ async def test_send_prompt_async_empty_response_retries(openai_response_json: di
     )
     # Make assistant response empty
     openai_response_json["output"][0]["content"][0]["text"] = ""
-    with patch.object(
-        target,
-        "_convert_local_image_to_data_url",
+    with patch(
+        "pyrit.common.data_url_converter.convert_local_image_to_data_url",
         return_value="data:image/jpeg;base64,encoded_string",
     ):
         with patch(
@@ -638,7 +584,7 @@ def test_construct_prompt_response_not_completed_status(
         target._construct_prompt_response_from_openai_json(
             open_ai_str_response=response_str, request_piece=dummy_text_request_piece
         )
-    assert "The chat did not complete successfully." in str(excinfo.value)
+    assert f"Message: Status {status} and error {json.dumps(response_dict["error"]).replace("\"", "'")}" in str(excinfo.value)
 
 
 def test_construct_prompt_response_empty_response(
@@ -727,26 +673,6 @@ async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIRespon
             )
             await target.send_prompt_async(prompt_request=prompt_request)
             mock_refresh.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_convert_local_image_to_data_url_unsupported_format(target: OpenAIResponseTarget):
-    # Should raise ValueError for unsupported extension
-    with NamedTemporaryFile(suffix=".webp", delete=False) as tmp_file:
-        tmp_file_name = tmp_file.name
-    try:
-        with pytest.raises(ValueError) as excinfo:
-            await target._convert_local_image_to_data_url(tmp_file_name)
-        assert "Unsupported image format" in str(excinfo.value)
-    finally:
-        os.remove(tmp_file_name)
-
-
-@pytest.mark.asyncio
-async def test_convert_local_image_to_data_url_missing_file(target: OpenAIResponseTarget):
-    # Should raise FileNotFoundError for missing file
-    with pytest.raises(FileNotFoundError):
-        await target._convert_local_image_to_data_url("not_a_real_file.jpg")
 
 
 def test_construct_prompt_response_from_openai_json_invalid_json(
@@ -843,7 +769,7 @@ async def test_build_input_for_multi_modal_async_image_and_text(target: OpenAIRe
     text_piece = PromptRequestPiece(role="user", original_value_data_type="text", original_value="hello")
     image_piece = PromptRequestPiece(role="user", original_value_data_type="image_path", original_value="fake.jpg")
     req = PromptRequestResponse(request_pieces=[text_piece, image_piece])
-    with patch.object(target, "_convert_local_image_to_data_url", return_value="data:image/jpeg;base64,abc"):
+    with patch("pyrit.prompt_target.openai.openai_response_target.convert_local_image_to_data_url", return_value="data:image/jpeg;base64,abc"):
         result = await target._build_input_for_multi_modal_async([req])
     assert result[0]["role"] == "user"
     assert result[0]["content"][0]["type"] == "input_text"
@@ -908,7 +834,7 @@ async def test_build_input_for_multi_modal_async_filters_reasoning(target: OpenA
     ]
 
     # Patch image conversion (should not be called)
-    with patch.object(target, "_convert_local_image_to_data_url", new_callable=AsyncMock):
+    with patch("pyrit.common.data_url_converter.convert_local_image_to_data_url", new_callable=AsyncMock):
         result = await target._build_input_for_multi_modal_async(conversation)
 
     # Only the text piece should be present, reasoning should be filtered out
