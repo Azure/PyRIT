@@ -103,10 +103,19 @@ class GoldDataset:
     ) -> "GoldDataset":
         """
         Load a gold dataset from a CSV file. This only allows for single turn scored text responses.
+        Only one of `top_level_objective`, `top_level_harm`, and `objective_or_harm_col_name` can be specified. 
+        Top level objective or harm is used when all entries in the dataset have the same objective or harm category.
+        If `objective_or_harm_col_name` is specified, it is used to determine the objective or harm category for each
+        entry.
 
         Args:
             csv_path (str): The path to the CSV file.
             type (Literal["harm", "objective"]): The type of the gold dataset.
+            assistant_response_col (str): The name of the column containing the assistant responses.
+            gold_label_col_names (List[str]): The names of the columns containing the gold labels.
+            objective_or_harm_col_name (Optional[str]): The name of the column containing the objective or harm category.
+            top_level_objective (Optional[str]): The top-level objective for the dataset, if all entries will share the same objective.
+            top_level_harm (Optional[str]): The top-level harm category for the dataset, if all entries will share the same harm category.
 
         Returns:
             GoldDataset: The loaded gold dataset.
