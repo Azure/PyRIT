@@ -583,7 +583,8 @@ def test_construct_prompt_response_not_completed_status(
         target._construct_prompt_response_from_openai_json(
             open_ai_str_response=response_str, request_piece=dummy_text_request_piece
         )
-    assert f"Message: Status {status} and error {json.dumps(response_dict["error"]).replace("\"", "'")}" in str(
+    error_substring_with_single_quotes = json.dumps(response_dict["error"]).replace("\"", "'")
+    assert f"Message: Status {status} and error {error_substring_with_single_quotes}" in str(
         excinfo.value
     )
 
