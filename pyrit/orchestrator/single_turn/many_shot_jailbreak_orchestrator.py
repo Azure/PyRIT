@@ -37,7 +37,7 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
         batch_size: int = 10,
         retries_on_objective_failure: int = 0,
         verbose: bool = False,
-        example_count: Optional[int] = 100,
+        example_count: int = 100,
         many_shot_examples: Optional[list[dict[str, str]]] = None,
     ) -> None:
         """
@@ -55,7 +55,7 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
             retries_on_objective_failure (int, Optional): Number of retries to attempt if objective fails. Defaults to
                 0.
             verbose (bool, Optional): Whether to log debug information. Defaults to False.
-            example_count (int, Optional): The number of examples to include from the examples dataset.
+            example_count (int): The number of examples to include from the examples dataset.
                 Defaults to the first 100.
             many_shot_examples (list[dict[str, str]], Optional): The many shot jailbreaking examples to use.
                 If not provided, takes the first `example_count` examples from Many Shot Jailbreaking dataset.

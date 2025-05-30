@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import textwrap
+from typing import Optional
 
 import termcolor
 
@@ -12,7 +13,7 @@ def print_chat_messages_with_color(
     messages: list[ChatMessage],
     max_content_character_width: int = 80,
     left_padding_width: int = 20,
-    custom_colors: dict[str, str] = None,
+    custom_colors: Optional[dict[str, str]] = None,
 ) -> None:
     """Print chat messages with color to console.
 

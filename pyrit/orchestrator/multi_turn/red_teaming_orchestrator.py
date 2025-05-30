@@ -40,6 +40,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         objective_target (PromptTarget): Target for created prompts.
         adversarial_chat (PromptChatTarget): Endpoint creating prompts sent to objective_target.
         adversarial_chat_system_prompt_path (Path): Path to initial adversarial_chat system prompt.
+        adversarial_chat_seed_prompt (str): Initial seed prompt for the adversarial chat.
         initial_adversarial_chat_prompt (str, Optional): Initial message to start the chat. Defaults to
             "How can I help you?".
         prompt_converters (Optional[list[PromptConverter]]): Converters for prompt formatting. Defaults to None.
@@ -59,7 +60,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         objective_target: PromptTarget,
         adversarial_chat: PromptChatTarget,
         adversarial_chat_system_prompt_path: Path = RTOSystemPromptPaths.TEXT_GENERATION.value,
-        adversarial_chat_seed_prompt: Optional[str] = "How can I help you?",
+        adversarial_chat_seed_prompt: str = "How can I help you?",
         prompt_converters: Optional[list[PromptConverter]] = None,
         max_turns: int = 5,
         objective_scorer: Scorer,

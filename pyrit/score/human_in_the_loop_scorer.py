@@ -18,7 +18,7 @@ class HumanInTheLoopScorer(Scorer):
         re_scorers (list[Scorer]): The scorers to use for re-scoring.
     """
 
-    def __init__(self, *, scorer: Scorer = None, re_scorers: list[Scorer] = None) -> None:
+    def __init__(self, *, scorer: Optional[Scorer] = None, re_scorers: Optional[list[Scorer]] = None) -> None:
         self._scorer = scorer
         self._re_scorers = re_scorers
 
@@ -216,7 +216,11 @@ class HumanInTheLoopScorer(Scorer):
         return "float_scale"
 
     def edit_score(
-        self, existing_score: Score, original_prompt: str, request_response: PromptRequestPiece, task: Optional[str]
+        self,
+        existing_score: Score,
+        original_prompt: str,
+        request_response: PromptRequestPiece,
+        task: Optional[str] = None,
     ) -> Score:
         """
         Edit an existing score.

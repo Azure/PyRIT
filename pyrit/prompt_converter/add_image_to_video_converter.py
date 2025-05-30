@@ -4,6 +4,7 @@
 import logging
 import os
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 
@@ -31,14 +32,14 @@ class AddImageVideoConverter(PromptConverter):
     Args:
         video_path (str): File path of video to add image to
         output_path (str, Optional): File path of output video. Defaults to None.
-        img_position (tuple, Optional): Position to place image in video. Defaults to (10, 10).
-        img_resize_size (tuple, Optional): Size to resize image to. Defaults to (500, 500).
+        img_position (tuple): Position to place image in video. Defaults to (10, 10).
+        img_resize_size (tuple): Size to resize image to. Defaults to (500, 500).
     """
 
     def __init__(
         self,
         video_path: str,
-        output_path: str = None,
+        output_path: Optional[str] = None,
         img_position: tuple = (10, 10),
         img_resize_size: tuple = (500, 500),
     ):

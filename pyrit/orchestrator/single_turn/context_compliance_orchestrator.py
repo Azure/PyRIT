@@ -37,7 +37,7 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
         self,
         objective_target: PromptChatTarget,
         adversarial_chat: PromptChatTarget,
-        affirmative_response: Optional[str] = "yes.",
+        affirmative_response: str = "yes.",
         context_description_instructions_path: Optional[pathlib.Path] = None,
         request_converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
         response_converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
