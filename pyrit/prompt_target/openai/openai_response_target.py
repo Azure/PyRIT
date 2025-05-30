@@ -7,7 +7,7 @@ from typing import Any, MutableSequence, Optional
 
 import httpx
 
-from pyrit.common import net_utility
+from pyrit.common import net_utility, convert_local_image_to_data_url
 from pyrit.exceptions import (
     EmptyResponseException,
     PyritException,
@@ -17,32 +17,30 @@ from pyrit.exceptions import (
 from pyrit.exceptions.exception_classes import RateLimitException
 from pyrit.models import (
     ChatMessageListDictContent,
-    DataTypeSerializer,
     PromptRequestPiece,
     PromptRequestResponse,
-    data_serializer_factory,
 )
+from pyrit.models.chat_message import ChatMessage
 from pyrit.models.literals import PromptDataType
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
-# Supported image formats for Azure OpenAI GPT-4o,
-# https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/use-your-image-data
-AZURE_OPENAI_GPT4O_SUPPORTED_IMAGE_FORMATS = [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", "tif"]
-
 
 class OpenAIResponseTarget(OpenAITarget):
     """
-    This class facilitates multimodal (image and text) input and text output generation
+    This class enables communication with endpoints that support the OpenAI Response API.
 
-    This works with GPT3.5, GPT4, GPT4o, GPT-V, and other compatible models
+    This works with models such as o1, o3, and o4-mini.
+    Depending on the endpoint this allows for a variety of inputs, outputs, and tool calls.
+    For more information, see the OpenAI Response API documentation:
+    https://platform.openai.com/docs/api-reference/responses/create
     """
 
     def __init__(
         self,
         *,
-        api_version: Optional[str] = "2025-04-16",
+        api_version: Optional[str] = "2025-03-01-preview",
         max_output_tokens: Optional[int] = None,
         temperature: Optional[float] = None,
         top_p: Optional[float] = None,
@@ -73,6 +71,11 @@ class OpenAIResponseTarget(OpenAITarget):
         self._max_output_tokens = max_output_tokens
         self._temperature = temperature
         self._top_p = top_p
+
+        # Reasoning parameters are not yet supported by PyRIT.
+        # See https://platform.openai.com/docs/api-reference/responses/create#responses-create-reasoning
+        # for more information.
+
         self._extra_body_parameters = extra_body_parameters
 
     def _set_openai_env_configuration_vars(self) -> None:
@@ -121,8 +124,25 @@ class OpenAIResponseTarget(OpenAITarget):
         except httpx.HTTPStatusError as StatusError:
             if StatusError.response.status_code == 400:
                 # Handle Bad Request
+                error_response_text = StatusError.response.text
+                # Content filter errors are handled differently from other 400 errors.
+                # 400 Bad Request with content_filter error code indicates that the input was filtered
+                # https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/content-filter
+                try:
+                    json_error = json.loads(error_response_text)
+                    is_content_filter = json_error.get("error", {}).get("code") == "content_filter"
+                    return handle_bad_request_exception(
+                        response_text=error_response_text,
+                        request=request_piece,
+                        error_code=StatusError.response.status_code,
+                        is_content_filter=is_content_filter,
+                    )
+
+                except json.JSONDecodeError:
+                    # Not valid JSON, proceed without parsing
+                    pass
                 return handle_bad_request_exception(
-                    response_text=StatusError.response.text,
+                    response_text=error_response_text,
                     request=request_piece,
                     error_code=StatusError.response.status_code,
                 )
@@ -137,40 +157,6 @@ class OpenAIResponseTarget(OpenAITarget):
         )
 
         return response
-
-    async def _convert_local_image_to_data_url(self, image_path: str) -> str:
-        """Converts a local image file to a data URL encoded in base64.
-
-        Args:
-            image_path (str): The file system path to the image file.
-
-        Raises:
-            FileNotFoundError: If no file is found at the specified `image_path`.
-            ValueError: If the image file's extension is not in the supported formats list.
-
-        Returns:
-            str: A string containing the MIME type and the base64-encoded data of the image, formatted as a data URL.
-        """
-        ext = DataTypeSerializer.get_extension(image_path)
-        if ext.lower() not in AZURE_OPENAI_GPT4O_SUPPORTED_IMAGE_FORMATS:
-            raise ValueError(
-                f"Unsupported image format: {ext}. Supported formats are: {AZURE_OPENAI_GPT4O_SUPPORTED_IMAGE_FORMATS}"
-            )
-
-        mime_type = DataTypeSerializer.get_mime_type(image_path)
-        if not mime_type:
-            mime_type = "application/octet-stream"
-
-        image_serializer = data_serializer_factory(
-            category="prompt-memory-entries", value=image_path, data_type="image_path", extension=ext
-        )
-        base64_encoded_data = await image_serializer.read_data_base64()
-        # Azure OpenAI GPT-4o documentation doesn't specify the local image upload format for API.
-        # GPT-4o image upload format is determined using "view code" functionality in Azure OpenAI deployments
-        # The image upload format is same as GPT-4 Turbo.
-        # Construct the data URL, as per Azure OpenAI GPT-4 Turbo local image format
-        # https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/gpt-with-vision?tabs=rest%2Csystem-assigned%2Cresource#call-the-chat-completion-apis
-        return f"data:{mime_type};base64,{base64_encoded_data}"
 
     async def _build_input_for_multi_modal_async(
         self, conversation: MutableSequence[PromptRequestResponse]
@@ -192,6 +178,24 @@ class OpenAIResponseTarget(OpenAITarget):
             if len(prompt_request_pieces) == 0:
                 raise ValueError("No prompt request pieces found in the conversation.")
 
+            # System messages are a special case. Instead of the nested formatting with
+            # "type" and "text" at a deeper level, they are just a single content string.
+            # The "system" role is mapped to "developer" in the OpenAI Response API.
+            first_piece = prompt_request_pieces[0]
+            if first_piece.role == "system":
+                if len(prompt_request_pieces) > 1:
+                    raise ValueError(
+                        "System messages should only have a single request piece. "
+                        "Multiple system messages are not supported."
+                    )
+                full_request.append(
+                    ChatMessage(
+                        role="developer",
+                        content=first_piece.converted_value
+                    ).model_dump(exclude_none=True)
+                )
+                continue
+
             content = []
             for prompt_request_piece in prompt_request_pieces:
                 role = prompt_request_piece.role
@@ -203,12 +207,15 @@ class OpenAIResponseTarget(OpenAITarget):
                     entry = {"type": type, "text": prompt_request_piece.converted_value}
                     content.append(entry)
                 elif prompt_request_piece.converted_value_data_type == "image_path":
-                    data_base64_encoded_url = await self._convert_local_image_to_data_url(
+                    data_base64_encoded_url = await convert_local_image_to_data_url(
                         prompt_request_piece.converted_value
                     )
                     image_url_entry = {"url": data_base64_encoded_url}
                     entry = {"type": "input_image", "image_url": image_url_entry}  # type: ignore
                     content.append(entry)
+                elif prompt_request_piece.converted_value_data_type == "reasoning":
+                    # reasoning summaries are not passed back to the target
+                    pass
                 else:
                     raise ValueError(
                         f"Multimodal data type {prompt_request_piece.converted_value_data_type} is not yet supported."
@@ -217,7 +224,7 @@ class OpenAIResponseTarget(OpenAITarget):
             full_request.append(
                 ChatMessageListDictContent(role=role, content=content).model_dump(exclude_none=True)  # type: ignore
             )
-
+        
         return full_request
 
     async def _construct_request_body(
@@ -232,13 +239,14 @@ class OpenAIResponseTarget(OpenAITarget):
             "top_p": self._top_p,
             "stream": False,
             "input": input,
+            # json_schema not yet supported by PyRIT
             "response_format": {"type": "json_object"} if is_json_response else None,
         }
 
         if self._extra_body_parameters:
             for key, value in self._extra_body_parameters.items():
                 body_parameters[key] = value
-
+        
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
 
@@ -260,6 +268,8 @@ class OpenAIResponseTarget(OpenAITarget):
         if status is None:
             if error and "code" in error and error["code"] == "content_filter":
                 # TODO validate that this is correct with AOAI
+                # Content filter with status 200 indicates that the model output was filtered
+                # https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/content-filter
                 return handle_bad_request_exception(
                     response_text=open_ai_str_response, request=request_piece, error_code=400, is_content_filter=True
                 )
@@ -273,11 +283,9 @@ class OpenAIResponseTarget(OpenAITarget):
                 if piece["type"] == "message":
                     piece_value = piece["content"][0]["text"]
                 elif piece["type"] == "reasoning":
-                    # TODO: add option to request reasoning summaries
-                    # TODO: ensure proper serialization of reasoning summaries
                     piece_value = ""
                     piece_type = "reasoning"
-                    for summary_piece in piece["content"][0]["summary"]:
+                    for summary_piece in piece["summary"]:
                         if summary_piece["type"] == "summary_text":
                             piece_value += summary_piece["text"]
                     if not piece_value:
@@ -320,7 +328,6 @@ class OpenAIResponseTarget(OpenAITarget):
             prompt_request (PromptRequestResponse): The prompt request response object.
 
         Raises:
-            ValueError: If more than two request pieces are provided.
             ValueError: If any of the request pieces have a data type other than 'text' or 'image_path'.
         """
 

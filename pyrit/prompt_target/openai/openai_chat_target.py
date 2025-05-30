@@ -7,7 +7,7 @@ from typing import Any, MutableSequence, Optional
 
 import httpx
 
-from pyrit.common import net_utility
+from pyrit.common import net_utility, convert_local_image_to_data_url
 from pyrit.exceptions import (
     EmptyResponseException,
     PyritException,
@@ -17,20 +17,14 @@ from pyrit.exceptions import (
 from pyrit.exceptions.exception_classes import RateLimitException
 from pyrit.models import (
     ChatMessageListDictContent,
-    DataTypeSerializer,
     PromptRequestPiece,
     PromptRequestResponse,
     construct_response_from_request,
-    data_serializer_factory,
 )
 from pyrit.models.chat_message import ChatMessage
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
-
-# Supported image formats for Azure OpenAI GPT-4o,
-# https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/use-your-image-data
-AZURE_OPENAI_GPT4O_SUPPORTED_IMAGE_FORMATS = [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", "tif"]
 
 
 class OpenAIChatTarget(OpenAITarget):
@@ -165,8 +159,25 @@ class OpenAIChatTarget(OpenAITarget):
         except httpx.HTTPStatusError as StatusError:
             if StatusError.response.status_code == 400:
                 # Handle Bad Request
+                error_response_text = StatusError.response.text
+                # Content filter errors are handled differently from other 400 errors.
+                # 400 Bad Request with content_filter error code indicates that the input was filtered
+                # https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/content-filter
+                try:
+                    json_error = json.loads(error_response_text)
+                    is_content_filter = json_error.get("error", {}).get("code") == "content_filter"
+                    return handle_bad_request_exception(
+                        response_text=error_response_text,
+                        request=request_piece,
+                        error_code=StatusError.response.status_code,
+                        is_content_filter=is_content_filter,
+                    )
+
+                except json.JSONDecodeError:
+                    # Not valid JSON, proceed without parsing
+                    pass
                 return handle_bad_request_exception(
-                    response_text=StatusError.response.text,
+                    response_text=error_response_text,
                     request=request_piece,
                     error_code=StatusError.response.status_code,
                 )
@@ -181,40 +192,6 @@ class OpenAIChatTarget(OpenAITarget):
         )
 
         return response
-
-    async def _convert_local_image_to_data_url(self, image_path: str) -> str:
-        """Converts a local image file to a data URL encoded in base64.
-
-        Args:
-            image_path (str): The file system path to the image file.
-
-        Raises:
-            FileNotFoundError: If no file is found at the specified `image_path`.
-            ValueError: If the image file's extension is not in the supported formats list.
-
-        Returns:
-            str: A string containing the MIME type and the base64-encoded data of the image, formatted as a data URL.
-        """
-        ext = DataTypeSerializer.get_extension(image_path)
-        if ext.lower() not in AZURE_OPENAI_GPT4O_SUPPORTED_IMAGE_FORMATS:
-            raise ValueError(
-                f"Unsupported image format: {ext}. Supported formats are: {AZURE_OPENAI_GPT4O_SUPPORTED_IMAGE_FORMATS}"
-            )
-
-        mime_type = DataTypeSerializer.get_mime_type(image_path)
-        if not mime_type:
-            mime_type = "application/octet-stream"
-
-        image_serializer = data_serializer_factory(
-            category="prompt-memory-entries", value=image_path, data_type="image_path", extension=ext
-        )
-        base64_encoded_data = await image_serializer.read_data_base64()
-        # Azure OpenAI GPT-4o documentation doesn't specify the local image upload format for API.
-        # GPT-4o image upload format is determined using "view code" functionality in Azure OpenAI deployments
-        # The image upload format is same as GPT-4 Turbo.
-        # Construct the data URL, as per Azure OpenAI GPT-4 Turbo local image format
-        # https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/gpt-with-vision?tabs=rest%2Csystem-assigned%2Cresource#call-the-chat-completion-apis
-        return f"data:{mime_type};base64,{base64_encoded_data}"
 
     async def _build_chat_messages_async(self, conversation: MutableSequence[PromptRequestResponse]) -> list[dict]:
         """Builds chat messages based on prompt request response entries.
@@ -298,7 +275,7 @@ class OpenAIChatTarget(OpenAITarget):
                     entry = {"type": "text", "text": prompt_request_piece.converted_value}
                     content.append(entry)
                 elif prompt_request_piece.converted_value_data_type == "image_path":
-                    data_base64_encoded_url = await self._convert_local_image_to_data_url(
+                    data_base64_encoded_url = await convert_local_image_to_data_url(
                         prompt_request_piece.converted_value
                     )
                     image_url_entry = {"url": data_base64_encoded_url}
@@ -367,6 +344,8 @@ class OpenAIChatTarget(OpenAITarget):
                 logger.log(logging.ERROR, "The chat returned an empty response.")
                 raise EmptyResponseException(message="The chat returned an empty response.")
         elif finish_reason == "content_filter":
+            # Content filter with status 200 indicates that the model output was filtered
+            # https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/content-filter
             return handle_bad_request_exception(
                 response_text=open_ai_str_response, request=request_piece, error_code=400, is_content_filter=True
             )

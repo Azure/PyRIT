@@ -146,7 +146,7 @@ async def test_build_input_for_multi_modal(target: OpenAIResponseTarget):
             request_pieces=[
                 PromptRequestPiece(
                     role="user",
-                    converted_value_data_type="text",
+                    original_value_data_type="text",
                     original_value="Hello 1",
                 ),
                 image_request,
@@ -156,7 +156,7 @@ async def test_build_input_for_multi_modal(target: OpenAIResponseTarget):
             request_pieces=[
                 PromptRequestPiece(
                     role="assistant",
-                    converted_value_data_type="text",
+                    original_value_data_type="text",
                     original_value="Hello 2",
                 ),
             ]
@@ -165,7 +165,7 @@ async def test_build_input_for_multi_modal(target: OpenAIResponseTarget):
             request_pieces=[
                 PromptRequestPiece(
                     role="user",
-                    converted_value_data_type="text",
+                    original_value_data_type="text",
                     original_value="Hello 3",
                 ),
                 image_request,
@@ -376,6 +376,7 @@ async def test_send_prompt_async_bad_request_error_adds_to_memory(target: OpenAI
 
     response = MagicMock()
     response.status_code = 400
+    response.text = "Some error text"
 
     side_effect = httpx.HTTPStatusError("Bad Request", response=response, request=MagicMock())
 
@@ -686,7 +687,7 @@ async def test_openai_response_target_default_api_version(sample_conversations: 
 
         called_params = mock_request.call_args[1]["params"]
         assert "api-version" in called_params
-        assert called_params["api-version"] == "2025-04-16"
+        assert called_params["api-version"] == "2025-03-01-preview"
 
 
 @pytest.mark.asyncio
@@ -723,3 +724,178 @@ async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIRespon
             )
             await target.send_prompt_async(prompt_request=prompt_request)
             mock_refresh.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_convert_local_image_to_data_url_unsupported_format(target: OpenAIResponseTarget):
+    # Should raise ValueError for unsupported extension
+    with NamedTemporaryFile(suffix=".webp", delete=False) as tmp_file:
+        tmp_file_name = tmp_file.name
+    try:
+        with pytest.raises(ValueError) as excinfo:
+            await target._convert_local_image_to_data_url(tmp_file_name)
+        assert "Unsupported image format" in str(excinfo.value)
+    finally:
+        os.remove(tmp_file_name)
+
+@pytest.mark.asyncio
+async def test_convert_local_image_to_data_url_missing_file(target: OpenAIResponseTarget):
+    # Should raise FileNotFoundError for missing file
+    with pytest.raises(FileNotFoundError):
+        await target._convert_local_image_to_data_url("not_a_real_file.jpg")
+
+def test_construct_prompt_response_from_openai_json_invalid_json(target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece):
+    # Should raise PyritException for invalid JSON
+    with pytest.raises(PyritException) as excinfo:
+        target._construct_prompt_response_from_openai_json(open_ai_str_response="{invalid_json", request_piece=dummy_text_request_piece)
+    assert "Failed to parse JSON response" in str(excinfo.value)
+
+def test_construct_prompt_response_from_openai_json_no_status(target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece):
+    # Should raise PyritException for missing status and no content_filter error
+    bad_json = json.dumps({"output": [{"type": "message", "content": [{"text": "hi"}]}]})
+    with pytest.raises(PyritException) as excinfo:
+        target._construct_prompt_response_from_openai_json(open_ai_str_response=bad_json, request_piece=dummy_text_request_piece)
+    assert "Unexpected response format" in str(excinfo.value)
+
+def test_construct_prompt_response_from_openai_json_reasoning(target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece):
+    # Should handle reasoning type and skip empty summaries
+    reasoning_json = {
+        "status": "completed",
+        "output": [
+            {
+                "type": "reasoning",
+                "summary": [
+                    {"type": "summary_text", "text": "Reasoning summary."}
+                ] 
+            }
+        ]
+    }
+    response = target._construct_prompt_response_from_openai_json(
+        open_ai_str_response=json.dumps(reasoning_json),
+        request_piece=dummy_text_request_piece
+    )
+    assert response.request_pieces[0].original_value == "Reasoning summary."
+    assert response.request_pieces[0].original_value_data_type == "reasoning"
+
+def test_construct_prompt_response_from_openai_json_unsupported_type(target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece):
+    # Should raise ValueError for unsupported response type
+    bad_type_json = {
+        "status": "completed",
+        "output": [
+            {
+                "type": "function_call",
+                "content": [{"text": "some function call"}]
+            }
+        ]
+    }
+    with pytest.raises(ValueError) as excinfo:
+        target._construct_prompt_response_from_openai_json(
+            open_ai_str_response=json.dumps(bad_type_json),
+            request_piece=dummy_text_request_piece
+        )
+    assert "Unsupported response type" in str(excinfo.value)
+
+def test_validate_request_allows_text_and_image(target: OpenAIResponseTarget):
+    # Should not raise for valid types
+    req = PromptRequestResponse(request_pieces=[
+        PromptRequestPiece(role="user", original_value_data_type="text", original_value="Hello"),
+        PromptRequestPiece(role="user", original_value_data_type="image_path", original_value="fake.jpg"),
+    ])
+    target._validate_request(prompt_request=req)
+
+def test_validate_request_raises_for_invalid_type(target: OpenAIResponseTarget):
+    req = PromptRequestResponse(request_pieces=[
+        PromptRequestPiece(role="user", original_value_data_type="audio_path", original_value="fake.mp3"),
+    ])
+    with pytest.raises(ValueError) as excinfo:
+        target._validate_request(prompt_request=req)
+    assert "only supports text and image_path" in str(excinfo.value)
+
+def test_is_json_response_supported_returns_true(target: OpenAIResponseTarget):
+    assert target.is_json_response_supported() is True
+
+@pytest.mark.asyncio
+async def test_build_input_for_multi_modal_async_empty_conversation(target: OpenAIResponseTarget):
+    # Should raise ValueError if no request pieces
+    req = PromptRequestResponse(request_pieces=[])
+    with pytest.raises(ValueError) as excinfo:
+        await target._build_input_for_multi_modal_async([req])
+    assert "No prompt request pieces found" in str(excinfo.value)
+
+@pytest.mark.asyncio
+async def test_build_input_for_multi_modal_async_image_and_text(target: OpenAIResponseTarget):
+    # Should build correct structure for text and image
+    text_piece = PromptRequestPiece(role="user", original_value_data_type="text", original_value="hello")
+    image_piece = PromptRequestPiece(role="user", original_value_data_type="image_path", original_value="fake.jpg")
+    req = PromptRequestResponse(request_pieces=[text_piece, image_piece])
+    with patch.object(target, "_convert_local_image_to_data_url", return_value="data:image/jpeg;base64,abc"):
+        result = await target._build_input_for_multi_modal_async([req])
+    assert result[0]["role"] == "user"
+    assert result[0]["content"][0]["type"] == "input_text"
+    assert result[0]["content"][1]["type"] == "input_image"
+    assert result[0]["content"][1]["image_url"]["url"].startswith("data:image/jpeg;base64,")
+
+@pytest.mark.asyncio
+async def test_construct_request_body_filters_none(target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece):
+    req = PromptRequestResponse(request_pieces=[dummy_text_request_piece])
+    body = await target._construct_request_body([req], is_json_response=False)
+    assert "max_output_tokens" not in body or body["max_output_tokens"] is None
+    assert "temperature" not in body or body["temperature"] is None
+    assert "top_p" not in body or body["top_p"] is None
+
+def test_set_openai_env_configuration_vars_sets_vars():
+    target = OpenAIResponseTarget(model_name="gpt", endpoint="http://test", api_key="key")
+    target._set_openai_env_configuration_vars()
+    assert target.model_name_environment_variable == "OPENAI_RESPONSES_MODEL"
+    assert target.endpoint_environment_variable == "OPENAI_RESPONSES_ENDPOINT"
+    assert target.api_key_environment_variable == "OPENAI_RESPONSES_KEY"
+
+@pytest.mark.asyncio
+async def test_build_input_for_multi_modal_async_filters_reasoning(target: OpenAIResponseTarget):
+    # Prepare a conversation with a reasoning piece and a text piece
+    user_prompt = PromptRequestPiece(
+        role="user",
+        original_value="Hello",
+        converted_value="Hello",
+        original_value_data_type="text",
+        converted_value_data_type="text",
+    )
+    response_reasoning_piece = PromptRequestPiece(
+        role="assistant",
+        original_value="Reasoning summary.",
+        converted_value="Reasoning summary.",
+        original_value_data_type="reasoning",
+        converted_value_data_type="reasoning",
+    )
+    response_text_piece = PromptRequestPiece(
+        role="assistant",
+        original_value="hello there",
+        converted_value="hello there",
+        original_value_data_type="text",
+        converted_value_data_type="text",
+    )
+    user_followup_prompt = PromptRequestPiece(
+        role="user",
+        original_value="Hello indeed",
+        converted_value="Hello indeed",
+        original_value_data_type="text",
+        converted_value_data_type="text",
+    )
+    conversation = [
+        PromptRequestResponse(request_pieces=[user_prompt]),
+        PromptRequestResponse(request_pieces=[response_reasoning_piece, response_text_piece]),
+        PromptRequestResponse(request_pieces=[user_followup_prompt]),
+    ]
+
+    # Patch image conversion (should not be called)
+    with patch.object(target, "_convert_local_image_to_data_url", new_callable=AsyncMock):
+        result = await target._build_input_for_multi_modal_async(conversation)
+
+    # Only the text piece should be present, reasoning should be filtered out
+    assert len(result) == 3
+    assert result[0]["role"] == "user"
+    assert result[0]["content"][0]["type"] == "input_text"
+    assert result[1]["role"] == "assistant"
+    assert result[1]["content"][0]["type"] == "output_text"
+    assert result[2]["role"] == "user"
+    assert result[2]["content"][0]["type"] == "input_text"
