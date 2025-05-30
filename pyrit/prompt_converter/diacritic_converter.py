@@ -24,10 +24,10 @@ class DiacriticConverter(PromptConverter):
             accent (str): Type of diacritic to apply (default is 'acute').
 
              Available options are:
-            - 'acute': ´
-            - 'grave': `
-            - 'tilde': ˜
-            - 'umlaut': ¨
+            - 'acute': "\u0301"
+            - 'grave': "\u0300"
+            - 'tilde': "\u0303"
+            - 'umlaut': "\u0308"
 
         Raises:
             ValueError: If `target_chars` is empty.

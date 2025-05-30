@@ -64,6 +64,7 @@ from pyrit.prompt_converter.variation_converter import VariationConverter
 from pyrit.prompt_converter.zalgo_converter import ZalgoConverter
 from pyrit.prompt_converter.zero_width_converter import ZeroWidthConverter
 from pyrit.prompt_converter.toxic_sentence_generator_converter import ToxicSentenceGeneratorConverter
+from pyrit.prompt_converter.denylist_converter import DenylistConverter
 
 
 __all__ = [
@@ -84,6 +85,7 @@ __all__ = [
     "CharSwapGenerator",
     "CodeChameleonConverter",
     "ColloquialWordswapConverter",
+    "DenylistConverter",
     "DiacriticConverter",
     "ConverterResult",
     "EmojiConverter",
