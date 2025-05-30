@@ -85,9 +85,6 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
         Raises:
             ValueError: If the context is invalid
         """
-        if not isinstance(self._objective_target, PromptChatTarget):
-            raise ValueError("Objective target must be a PromptChatTarget for prompt injection attacks")
-
         if not context.objective:
             raise ValueError("Attack objective must be provided in the context")
 
