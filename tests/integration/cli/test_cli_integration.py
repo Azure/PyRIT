@@ -2,17 +2,15 @@
 # Licensed under the MIT license.
 
 import os
-import pathlib
 import re
 import shlex
 import tempfile
-from typing import Literal
+from typing import Collection, Literal
 
 import pytest
 import yaml
 
 from pyrit.cli.__main__ import main
-from pyrit.common.path import DATASETS_PATH
 
 test_cases_success = [
     "--config-file 'tests/integration/cli/mixed_multiple_orchestrators_args_success.yaml'",
@@ -81,6 +79,7 @@ converters = [
         "text",
         {"type": "ColloquialWordswapConverter"},
     ),
+    ("text", {"type": "DenylistConverter", "denylist": ["Molotov"]}),
     (
         "text",
         {"type": "DiacriticConverter"},
@@ -220,7 +219,7 @@ converters = [
 ]
 
 
-def _create_data(data_type: str) -> dict[str, dict[str, str] | list[dict[str, str]]]:
+def _create_data(data_type: str) -> dict[str, Collection[Collection[str]]]:
     data = {
         "scenarios": [{"type": "PromptSendingOrchestrator"}],
         "adversarial_chat": {"type": "OpenAIChatTarget"},

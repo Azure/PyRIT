@@ -30,6 +30,7 @@ converters:
   - type: "CodeChameleonConverter"
     encrypt_type: "reverse"
   - type: "ColloquialWordswapConverter"
+  - type: "DenylistConverter"
   - type: "DiacriticConverter"
   - type: "EmojiConverter"
   - type: "FlipConverter"
