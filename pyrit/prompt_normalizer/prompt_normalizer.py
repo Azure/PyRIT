@@ -247,12 +247,12 @@ class PromptNormalizer(abc.ABC):
             "converted_value_sha256": self._skip_criteria.converted_value_sha256,
         }
 
-        prompts_to_skip = self._memory.get_prompt_request_pieces(role="user", **skip_args)
+        prompts_to_skip = self._memory.get_prompt_request_pieces(role="user", **skip_args)  # type: ignore
 
         if ensure_response:
             # If a request was sent but we don't have a response we need to retry
             # so remove such requests from the prompts to skip list.
-            responses = self._memory.get_prompt_request_pieces(role="assistant", **skip_args)
+            responses = self._memory.get_prompt_request_pieces(role="assistant", **skip_args)  # type: ignore
             response_conversation_ids = {response.conversation_id for response in responses}
             request_conversation_ids = {prompt.conversation_id for prompt in prompts_to_skip}
             missing_response_conversation_ids = request_conversation_ids - response_conversation_ids
