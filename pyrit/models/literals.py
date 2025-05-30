@@ -14,4 +14,5 @@ unknown: the type of error is unknown
 """
 PromptResponseError = Literal["blocked", "none", "processing", "empty", "unknown"]
 
-ChatMessageRole = Literal["system", "developer", "user", "assistant"]
+
+ChatMessageRole = Literal["system", "user", "assistant"]

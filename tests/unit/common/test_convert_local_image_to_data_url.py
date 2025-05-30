@@ -1,13 +1,15 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from tempfile import NamedTemporaryFile
 import os
+from tempfile import NamedTemporaryFile
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 
 from pyrit.common import convert_local_image_to_data_url
 from pyrit.memory.duckdb_memory import DuckDBMemory
+
 
 @pytest.mark.asyncio()
 async def test_convert_image_to_data_url_file_not_found():
@@ -30,6 +32,7 @@ async def test_convert_image_with_unsupported_extension():
 
     os.remove(tmp_file_name)
 
+
 @pytest.mark.asyncio
 async def test_convert_local_image_to_data_url_unsupported_format():
     # Should raise ValueError for unsupported extension
@@ -48,6 +51,7 @@ async def test_convert_local_image_to_data_url_missing_file():
     # Should raise FileNotFoundError for missing file
     with pytest.raises(FileNotFoundError):
         await convert_local_image_to_data_url("not_a_real_file.jpg")
+
 
 @pytest.mark.asyncio()
 @patch("os.path.exists", return_value=True)

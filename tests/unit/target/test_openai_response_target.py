@@ -21,7 +21,6 @@ from pyrit.exceptions.exception_classes import (
     PyritException,
     RateLimitException,
 )
-from pyrit.memory.duckdb_memory import DuckDBMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import OpenAIResponseTarget
@@ -584,7 +583,9 @@ def test_construct_prompt_response_not_completed_status(
         target._construct_prompt_response_from_openai_json(
             open_ai_str_response=response_str, request_piece=dummy_text_request_piece
         )
-    assert f"Message: Status {status} and error {json.dumps(response_dict["error"]).replace("\"", "'")}" in str(excinfo.value)
+    assert f"Message: Status {status} and error {json.dumps(response_dict["error"]).replace("\"", "'")}" in str(
+        excinfo.value
+    )
 
 
 def test_construct_prompt_response_empty_response(
@@ -769,7 +770,10 @@ async def test_build_input_for_multi_modal_async_image_and_text(target: OpenAIRe
     text_piece = PromptRequestPiece(role="user", original_value_data_type="text", original_value="hello")
     image_piece = PromptRequestPiece(role="user", original_value_data_type="image_path", original_value="fake.jpg")
     req = PromptRequestResponse(request_pieces=[text_piece, image_piece])
-    with patch("pyrit.prompt_target.openai.openai_response_target.convert_local_image_to_data_url", return_value="data:image/jpeg;base64,abc"):
+    with patch(
+        "pyrit.prompt_target.openai.openai_response_target.convert_local_image_to_data_url",
+        return_value="data:image/jpeg;base64,abc",
+    ):
         result = await target._build_input_for_multi_modal_async([req])
     assert result[0]["role"] == "user"
     assert result[0]["content"][0]["type"] == "input_text"
