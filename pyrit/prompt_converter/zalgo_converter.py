@@ -3,7 +3,9 @@
 
 import logging
 import random
-from typing import Optional
+import re
+
+from typing import List, Optional, Union
 
 from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 
@@ -17,14 +19,31 @@ logger = logging.getLogger(__name__)
 class ZalgoConverter(WordLevelConverter):
     """Converts text into cursed Zalgo text using combining Unicode marks."""
 
-    def __init__(self, *, intensity: int = 10, seed: Optional[int] = None, mode: str = "all", **mode_kwargs) -> None:
+    def __init__(
+        self,
+        *,
+        intensity: int = 10,
+        seed: Optional[int] = None,
+        indices: Optional[List[int]] = None,
+        keywords: Optional[List[str]] = None,
+        proportion: Optional[float] = None,
+        regex: Optional[Union[str, re.Pattern]] = None,
+    ):
         """
-        Initializes the Zalgo converter.
+        Initialize the converter.
+        This class allows for selection of words to convert based on various criteria.
+        Only one selection parameter may be provided at a time (indices, keywords, proportion, or regex).
+        If no selection parameter is provided, all words will be converted.
+
         Args:
             intensity (int): Number of combining marks per character (higher = more cursed). Default is 10.
             seed (Optional[int]): Optional seed for reproducible output.
+            indices (Optional[List[int]]): Specific indices of words to convert.
+            keywords (Optional[List[str]]): Keywords to select words for conversion.
+            proportion (Optional[float]): Proportion of randomly selected words to convert [0.0-1.0].
+            regex (Optional[Union[str, re.Pattern]]): Regex pattern to match words for conversion.
         """
-        super().__init__(mode=mode, **mode_kwargs)
+        super().__init__(indices=indices, keywords=keywords, proportion=proportion, regex=regex)
         self._intensity = self._normalize_intensity(intensity)
         self._seed = seed
 

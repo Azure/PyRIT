@@ -22,7 +22,7 @@ from pyrit.common.net_utility import get_httpx_client, make_request_and_raise_if
 from pyrit.common.notebook_utils import is_in_ipython_session
 from pyrit.common.print import print_chat_messages_with_color
 from pyrit.common.singleton import Singleton
-from pyrit.common.utils import combine_dict, combine_list, get_random_indices, select_word_indices
+from pyrit.common.utils import combine_dict, combine_list, get_random_indices
 from pyrit.common.yaml_loadable import YamlLoadable
 
 __all__ = [
@@ -45,7 +45,6 @@ __all__ = [
     "is_in_ipython_session",
     "make_request_and_raise_if_error_async",
     "print_chat_messages_with_color",
-    "select_word_indices",
     "Singleton",
     "YamlLoadable",
 ]

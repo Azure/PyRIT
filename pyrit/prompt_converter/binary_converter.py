@@ -3,7 +3,10 @@
 
 from __future__ import annotations
 
+import re
+
 from enum import Enum
+from typing import List, Optional, Union
 
 from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 
@@ -17,9 +20,29 @@ class BinaryConverter(WordLevelConverter):
         BITS_32 = 32
 
     def __init__(
-        self, bits_per_char: BinaryConverter.BitsPerChar = BitsPerChar.BITS_16, mode: str = "all", **mode_kwargs
+        self,
+        *,
+        bits_per_char: BinaryConverter.BitsPerChar = BitsPerChar.BITS_16,
+        indices: Optional[List[int]] = None,
+        keywords: Optional[List[str]] = None,
+        proportion: Optional[float] = None,
+        regex: Optional[Union[str, re.Pattern]] = None,
     ):
-        super().__init__(mode=mode, **mode_kwargs)
+        """
+        Initialize the converter.
+        This class allows for selection of words to convert based on various criteria.
+        Only one selection parameter may be provided at a time (indices, keywords, proportion, or regex).
+        If no selection parameter is provided, all words will be converted.
+
+        Args:
+            bits_per_char (BinaryConverter.BitsPerChar): Number of bits to use for each character (8, 16, or 32).
+                Default is 16 bits.
+            indices (Optional[List[int]]): Specific indices of words to convert.
+            keywords (Optional[List[str]]): Keywords to select words for conversion.
+            proportion (Optional[float]): Proportion of randomly selected words to convert [0.0-1.0].
+            regex (Optional[Union[str, re.Pattern]]): Regex pattern to match words for conversion.
+        """
+        super().__init__(indices=indices, keywords=keywords, proportion=proportion, regex=regex)
 
         if not isinstance(bits_per_char, BinaryConverter.BitsPerChar):
             raise TypeError("bits_per_char must be an instance of BinaryConverter.BitsPerChar Enum.")
