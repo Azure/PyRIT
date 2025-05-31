@@ -54,7 +54,7 @@ class PromptShieldTarget(PromptTarget):
         self,
         endpoint: str = None,
         api_key: str = None,
-        api_version: Optional[str] = "2024-02-15-preview",
+        api_version: Optional[str] = "2024-09-01",
         field: Optional[PromptShieldEntryField] = None,
         max_requests_per_minute: Optional[int] = None,
     ) -> None:
