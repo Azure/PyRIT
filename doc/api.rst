@@ -129,6 +129,8 @@ API Reference
     fetch_tdc23_redteaming_dataset
     fetch_wmdp_dataset
     fetch_xstest_dataset
+    fetch_equitymedqa_dataset_unique_values
+
 
 :py:mod:`pyrit.embedding`
 =========================
