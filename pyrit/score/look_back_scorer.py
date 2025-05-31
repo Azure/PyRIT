@@ -1,5 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+import re
 from pathlib import Path
 from typing import Optional
 
@@ -10,7 +11,6 @@ from pyrit.models import PromptRequestPiece, SeedPrompt
 from pyrit.models.score import Score, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer import Scorer
-import re
 
 
 class LookBackScorer(Scorer):
