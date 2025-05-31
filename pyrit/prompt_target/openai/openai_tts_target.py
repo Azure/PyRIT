@@ -68,7 +68,7 @@ class OpenAITTSTarget(OpenAITarget):
                 For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
         """
 
-        super().__init__(**kwargs)
+        super().__init__(api_version=api_version, **kwargs)
 
         if not self._model_name:
             self._model_name = "tts-1"
@@ -77,7 +77,6 @@ class OpenAITTSTarget(OpenAITarget):
         self._response_format = response_format
         self._language = language
         self._speed = speed
-        self._api_version = api_version
 
     def _set_openai_env_configuration_vars(self):
         self.model_name_environment_variable = "OPENAI_TTS_MODEL"

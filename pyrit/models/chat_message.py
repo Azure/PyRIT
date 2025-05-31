@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Any, Optional
+from typing import Any, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict
 
@@ -19,7 +19,7 @@ class ToolCall(BaseModel):
 
 class ChatMessage(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    role: ChatMessageRole
+    role: Union[ChatMessageRole, Literal["developer"]]
     content: str
     name: Optional[str] = None
     tool_calls: Optional[list[ToolCall]] = None
@@ -28,7 +28,7 @@ class ChatMessage(BaseModel):
 
 class ChatMessageListDictContent(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    role: ChatMessageRole
+    role: Union[ChatMessageRole, Literal["developer"]]
     content: list[dict[str, Any]]  # type: ignore
     name: Optional[str] = None
     tool_calls: Optional[list[ToolCall]] = None

@@ -10,7 +10,7 @@ from uuid import uuid4
 
 import pytest
 from httpx import Response
-from unit.mocks import openai_response_json_dict
+from unit.mocks import openai_chat_response_json_dict
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.memory import CentralMemory
@@ -37,7 +37,7 @@ def red_team_system_prompt_path() -> pathlib.Path:
 
 @pytest.fixture
 def openai_response_json() -> dict:
-    return openai_response_json_dict()
+    return openai_chat_response_json_dict()
 
 
 def _check_orchestrator_memory(memory, num_turns: int):
