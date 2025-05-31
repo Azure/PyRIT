@@ -60,10 +60,33 @@ async def test_send_prompt_async(mock_request, mock_http_target, mock_http_respo
     mock_request.assert_called_with(
         method="POST",
         url="https://example.com/",
-        headers={"Host": "example.com", "Content-Type": "application/json"},
+        headers={"host": "example.com", "content-type": "application/json"},
         content='{"prompt": "test_prompt"}',
         follow_redirects=True,
     )
+
+
+def test_parse_raw_http_request_ignores_content_length(patch_central_database):
+
+    request = "POST / HTTP/1.1\nHost: example.com\nContent-Type: application/json\nContent-Length: 100\n\n"
+    target = HTTPTarget(http_request=request)
+
+    headers, _, _, _, _ = target.parse_raw_http_request(request)
+    assert headers == {"host": "example.com", "content-type": "application/json"}
+
+
+def test_parse_raw_http_respects_url_path(patch_central_database):
+
+    request1 = (
+        "POST https://diffsite.com/test/ HTTP/1.1\nHost: example.com\nContent-Type: "
+        + "application/json\nContent-Length: 100\n\n"
+    )
+    target = HTTPTarget(http_request=request1)
+    headers, _, url, _, _ = target.parse_raw_http_request(request1)
+    assert url == "https://diffsite.com/test/"
+
+    # The host header should still be example.com
+    assert headers == {"host": "example.com", "content-type": "application/json"}
 
 
 @pytest.mark.asyncio
@@ -117,7 +140,7 @@ async def test_send_prompt_regex_parse_async(mock_request, mock_http_target):
     mock_request.assert_called_with(
         method="POST",
         url="https://example.com/",
-        headers={"Host": "example.com", "Content-Type": "application/json"},
+        headers={"host": "example.com", "content-type": "application/json"},
         content='{"prompt": "test_prompt"}',
         follow_redirects=True,
     )
@@ -142,7 +165,7 @@ async def test_send_prompt_async_keeps_original_template(mock_request, mock_http
     mock_request.assert_called_with(
         method="POST",
         url="https://example.com/",
-        headers={"Host": "example.com", "Content-Type": "application/json"},
+        headers={"host": "example.com", "content-type": "application/json"},
         content='{"prompt": "test_prompt"}',
         follow_redirects=True,
     )
@@ -161,14 +184,14 @@ async def test_send_prompt_async_keeps_original_template(mock_request, mock_http
     mock_request.assert_any_call(
         method="POST",
         url="https://example.com/",
-        headers={"Host": "example.com", "Content-Type": "application/json"},
+        headers={"host": "example.com", "content-type": "application/json"},
         content='{"prompt": "test_prompt"}',
         follow_redirects=True,
     )
     mock_request.assert_any_call(
         method="POST",
         url="https://example.com/",
-        headers={"Host": "example.com", "Content-Type": "application/json"},
+        headers={"host": "example.com", "content-type": "application/json"},
         content='{"prompt": "second_test_prompt"}',
         follow_redirects=True,
     )

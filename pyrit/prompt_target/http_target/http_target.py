@@ -180,7 +180,10 @@ class HTTPTarget(PromptTarget):
         # Loop through each line and split into key-value pairs
         for line in header_lines:
             key, value = line.split(":", 1)
-            headers_dict[key.strip()] = value.strip()
+            headers_dict[key.strip().lower()] = value.strip()
+
+        if "content-length" in headers_dict:
+            del headers_dict["content-length"]
 
         if len(request_parts) > 1:
             # Parse as JSON object if it can be parsed that way
@@ -190,26 +193,35 @@ class HTTPTarget(PromptTarget):
             except json.JSONDecodeError:
                 body = request_parts[1]
 
+        if len(http_req_info_line) != 3:
+            raise ValueError("Invalid HTTP request line")
+
         # Capture info from 1st line of raw request
         http_method = http_req_info_line[0]
 
-        http_url_beg = ""
-        http_version = ""
-        if len(http_req_info_line) > 2:
-            http_version = http_req_info_line[2]
-            if self.use_tls is True:
-                http_url_beg = "https://"
-            else:
-                http_url_beg = "http://"
+        url_path = http_req_info_line[1]
+        full_url = self._infer_full_url_from_host(path=url_path, headers_dict=headers_dict)
 
-        url = ""
-        if http_url_beg and "http" not in http_req_info_line[1]:
-            url = http_url_beg
-        if "Host" in headers_dict.keys():
-            url += headers_dict["Host"]
-        url += http_req_info_line[1]
+        http_version = http_req_info_line[2]
 
-        return headers_dict, body, url, http_method, http_version
+        return headers_dict, body, full_url, http_method, http_version
+
+    def _infer_full_url_from_host(
+        self,
+        path: str,
+        headers_dict: dict[str, str],
+    ) -> str:
+        # If path is already a full URL, return it as is
+        path = path.lower()
+        if path.startswith(("http://", "https://")):
+            return path
+
+        http_protocol = "http://"
+        if self.use_tls is True:
+            http_protocol = "https://"
+
+        host = headers_dict["host"]
+        return f"{http_protocol}{host}{path}"
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         request_pieces: Sequence[PromptRequestPiece] = prompt_request.request_pieces

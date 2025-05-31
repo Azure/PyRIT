@@ -1,7 +1,9 @@
 ---
 name: Hackerman
-description: Prompt obtained from jailbreakchat.com
-source: www.jailbreakchat.com/prompt/588ab0ed-2829-4be8-a3f3-f28e29c06621
+description: Prompt obtained via the site formerly known as jailbreakchat that is now compromised
+authors:
+  - Alex Albert
+source: https://github.com/alexalbertt/jailbreakchat
 parameters:
   - prompt
 data_type: text

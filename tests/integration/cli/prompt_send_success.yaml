@@ -1,0 +1,8 @@
+datasets:
+  - ./tests/integration/cli/illegal_integration_test.prompt
+objective_target:
+  type: "OpenAIChatTarget"
+scenarios:
+  - type: "PromptSendingOrchestrator"
+database:
+  type: "DuckDB"

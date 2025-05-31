@@ -1,0 +1,10 @@
+datasets:
+  - ./pyrit/datasets/seed_prompts/illegal.prompt
+objective_target:
+  type: "OpenAIChatTarget"
+scenarios:
+  - type: "PromptSendingOrchestrator"
+execution_settings:
+  type: "azureml"
+database:
+  type: "DuckDB"

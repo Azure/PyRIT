@@ -63,6 +63,8 @@ class AzureContentFilterScorer(Scorer):
                 azure.ai.contentsafety.models.TextCategory.
         """
 
+        self.scorer_type = "float_scale"
+
         if harm_categories:
             self._score_categories = [category.value for category in harm_categories]
         else:

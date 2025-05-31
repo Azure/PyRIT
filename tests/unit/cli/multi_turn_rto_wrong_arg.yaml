@@ -1,0 +1,14 @@
+datasets:
+  - ./pyrit/datasets/seed_prompts/illegal.prompt
+scenarios:
+  - type: "RedTeamingOrchestrator"
+    wrong_arg: "wrong"
+objective_target:
+  type: "OpenAIChatTarget"
+adversarial_chat:
+  type: "OpenAIChatTarget"
+scoring:
+  objective_scorer:
+    type: "SelfAskRefusalScorer"
+database:
+  type: "DuckDB"

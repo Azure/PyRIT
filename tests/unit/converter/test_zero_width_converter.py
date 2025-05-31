@@ -3,15 +3,14 @@
 
 import pytest
 
-from pyrit.prompt_converter import ConverterResult
-from pyrit.prompt_converter.zero_width_converter import ZeroWidthConverter
+from pyrit.prompt_converter import ConverterResult, ZeroWidthConverter
 
 
 @pytest.mark.asyncio
 async def test_convert_async_injects_zero_width_spaces():
     converter = ZeroWidthConverter()
     text = "Hello"
-    expected_output = "H\u200Be\u200Bl\u200Bl\u200Bo"  # Zero-width spaces between each character
+    expected_output = "H\u200be\u200bl\u200bl\u200bo"  # Zero-width spaces between each character
     result = await converter.convert_async(prompt=text)
     assert isinstance(result, ConverterResult)
     assert result.output_text == expected_output  # Check if output matches expected result with zero-width spaces
@@ -22,7 +21,7 @@ async def test_convert_async_long_text():
     converter = ZeroWidthConverter()
     text = "This is a longer text used to test the ZeroWidthConverter."
     # Expected output has a zero-width space between every character in `text`
-    expected_output = "\u200B".join(text)
+    expected_output = "\u200b".join(text)
 
     result = await converter.convert_async(prompt=text)
 
@@ -74,7 +73,7 @@ async def test_convert_async_multiple_whitespace():
     # Converter Behavior: The ZeroWidthConverter inserts zero-width spaces between each character,
     # resulting in N - 1 zero-width spaces for an input of length N.
     # For three spaces, there will be two zero-width spaces between them.
-    expected_output = " \u200B \u200B "
+    expected_output = " \u200b \u200b "
 
     result = await converter.convert_async(prompt=text)
     assert result.output_text == expected_output, f"Unexpected output: {result.output_text}"

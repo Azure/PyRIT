@@ -3,7 +3,8 @@
 
 from typing import Dict, MutableSequence, Optional, Sequence, Union
 
-from pyrit.models.literals import PromptDataType, PromptResponseError
+from pyrit.common.utils import combine_dict
+from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 
 
@@ -71,6 +72,15 @@ class PromptRequestResponse:
             response_pieces.extend(response.request_pieces)
 
         return response_pieces
+
+    @classmethod
+    def from_prompt(cls, *, prompt: str, role: ChatMessageRole) -> "PromptRequestResponse":
+        piece = PromptRequestPiece(original_value=prompt, role=role)
+        return cls(request_pieces=[piece])
+
+    @classmethod
+    def from_system_prompt(cls, system_prompt: str) -> "PromptRequestResponse":
+        return cls.from_prompt(prompt=system_prompt, role="system")
 
 
 def group_conversation_request_pieces_by_sequence(
@@ -143,6 +153,11 @@ def construct_response_from_request(
     """
     Constructs a response entry from a request.
     """
+
+    # prompt metadat should be combined with the request piece metadata
+    if request.prompt_metadata:
+        prompt_metadata = combine_dict(request.prompt_metadata, prompt_metadata)
+
     return PromptRequestResponse(
         request_pieces=[
             PromptRequestPiece(
