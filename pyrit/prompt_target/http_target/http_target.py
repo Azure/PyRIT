@@ -5,7 +5,7 @@
 import json
 import logging
 import re
-from typing import Any, Callable, Optional, Sequence
+from typing import Any, Callable, Dict, Optional, Sequence
 
 import httpx
 
@@ -55,6 +55,9 @@ class HTTPTarget(PromptTarget):
         self.httpx_client_kwargs = httpx_client_kwargs or {}
         self._client = client
 
+        if client and httpx_client_kwargs:
+            raise ValueError("Cannot provide both a pre-configured client and additional httpx client kwargs.")
+
     @classmethod
     def with_client(
         cls,
@@ -79,7 +82,7 @@ class HTTPTarget(PromptTarget):
             prompt_regex_string=prompt_regex_string,
             callback_function=callback_function,
             max_requests_per_minute=max_requests_per_minute,
-            _client=client,
+            client=client,
         )
         return instance
 
@@ -147,7 +150,7 @@ class HTTPTarget(PromptTarget):
             if cleanup_client:
                 await client.aclose()
 
-    def parse_raw_http_request(self, http_request: str) -> tuple[dict[str, str], RequestBody, str, str, str]:
+    def parse_raw_http_request(self, http_request: str) -> tuple[Dict[str, str], RequestBody, str, str, str]:
         """
         Parses the HTTP request string into a dictionary of headers
 
@@ -163,7 +166,9 @@ class HTTPTarget(PromptTarget):
             http_version (str): HTTP version to use
         """
 
-        headers_dict = {}
+        headers_dict: Dict[str, str] = {}
+        if self._client:
+            headers_dict = dict(self._client.headers.copy())
         if not http_request:
             return {}, "", "", "", ""
 
@@ -209,7 +214,7 @@ class HTTPTarget(PromptTarget):
     def _infer_full_url_from_host(
         self,
         path: str,
-        headers_dict: dict[str, str],
+        headers_dict: Dict[str, str],
     ) -> str:
         # If path is already a full URL, return it as is
         path = path.lower()
