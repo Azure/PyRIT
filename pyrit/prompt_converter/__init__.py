@@ -52,6 +52,7 @@ from pyrit.prompt_converter.rot13_converter import ROT13Converter
 from pyrit.prompt_converter.search_replace_converter import SearchReplaceConverter
 from pyrit.prompt_converter.string_join_converter import StringJoinConverter
 from pyrit.prompt_converter.suffix_append_converter import SuffixAppendConverter
+from pyrit.prompt_converter.superscript_converter import SuperscriptConverter
 from pyrit.prompt_converter.tense_converter import TenseConverter
 from pyrit.prompt_converter.text_to_hex_converter import TextToHexConverter
 from pyrit.prompt_converter.tone_converter import ToneConverter
@@ -115,6 +116,7 @@ __all__ = [
     "SneakyBitsSmugglerConverter",
     "StringJoinConverter",
     "SuffixAppendConverter",
+    "SuperscriptConverter",
     "TextToHexConverter",
     "TenseConverter",
     "ToneConverter",
