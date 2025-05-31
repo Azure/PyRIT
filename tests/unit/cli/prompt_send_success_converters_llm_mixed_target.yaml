@@ -1,0 +1,28 @@
+# Scenario: All converters require a converter_target, some use default adversarial_chat and some define their own
+datasets:
+  - ./pyrit/datasets/seed_prompts/illegal.prompt
+scenarios:
+  - type: "PromptSendingOrchestrator"
+objective_target:
+  type: "OpenAIChatTarget"
+converters:
+  - type: "AnsiAttackConverter"
+    converter_target:
+      type: "AzureMLChatTarget"
+  - type: "MaliciousQuestionGeneratorConverter"
+    converter_target:
+      type: "AzureMLChatTarget"
+  - type: "NoiseConverter"
+  - type: "PersuasionConverter"
+    persuasion_technique: "misrepresentation"
+  - type: "ToneConverter"
+    tone: "sarcastic"
+    converter_target:
+      type: "OpenAIChatTarget"
+  - type: "TranslationConverter"
+    language: "spanish"
+  - type: "VariationConverter"
+adversarial_chat:
+  type: "OpenAIChatTarget"
+database:
+  type: "DuckDB"
