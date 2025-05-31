@@ -6,7 +6,7 @@ from pyrit.common.logger import logger
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.orchestrator.multi_turn.red_teaming_orchestrator import RTOSystemPromptPaths
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.prompt_target.mas_target.mas_chat_target import MASChatTarget
+from pyrit.prompt_target.mas_target.mas_chat_target import MulitAgentSystemChatTarget, AgentEntry
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
 
 # Load environment variables
@@ -35,7 +35,6 @@ Your job is to **plan**, not to execute the objective yourself.  You must output
   "observation": "...",   // 1-2 sentences: what the target's **last** reply did
   "thought":     "...",   // 1-2 sentences: does that move you closer to {objective}?
   "strategy":    "..."    // exactly one concise instruction for the RED-TEAM agent
-  "tool_name": "..." // the name of the tool to use, or "none" if no tool is needed
 }}
 
 **IMPORTANT**
@@ -61,7 +60,7 @@ async def main():
     red_team_agent = OpenAIChatTarget()
 
     # Compose the ordered agent chain (add recon_agent if you wish)
-    agent_chain = [
+    agent_chain: list[AgentEntry] = [
         {"role": "strategy_agent", "agent": strategy_agent},
         {"role": "red_team_agent", "agent": red_team_agent},
     ]
@@ -71,7 +70,7 @@ async def main():
         "red_team_agent": redteam_template,
     }
 
-    msa = MASChatTarget(
+    msa = MulitAgentSystemChatTarget(
         agent_chain=agent_chain,
         objective=objective,
         system_prompts=system_prompts,

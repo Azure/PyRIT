@@ -19,7 +19,7 @@ from pyrit.prompt_target.http_target.http_target_callback_functions import (
 )
 from pyrit.prompt_target.hugging_face.hugging_face_chat_target import HuggingFaceChatTarget
 from pyrit.prompt_target.hugging_face.hugging_face_endpoint_target import HuggingFaceEndpointTarget
-from pyrit.prompt_target.mas_target.mas_chat_target import MASChatTarget
+from pyrit.prompt_target.mas_target.mas_chat_target import MulitAgentSystemChatTarget
 from pyrit.prompt_target.openai.openai_completion_target import OpenAICompletionTarget
 from pyrit.prompt_target.openai.openai_dall_e_target import OpenAIDALLETarget
 from pyrit.prompt_target.openai.openai_realtime_target import RealtimeTarget
@@ -40,7 +40,7 @@ __all__ = [
     "HuggingFaceChatTarget",
     "HuggingFaceEndpointTarget",
     "limit_requests_per_minute",
-    "MASChatTarget",
+    "MulitAgentSystemChatTarget",
     "OpenAICompletionTarget",
     "OpenAIDALLETarget",
     "OpenAIChatTarget",
