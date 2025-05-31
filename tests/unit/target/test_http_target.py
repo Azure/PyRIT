@@ -240,7 +240,7 @@ async def test_http_target_with_injected_client():
         headers = kwargs.get("headers", {})
         assert headers["host"] == "example.com"
         assert headers["content-type"] == "application/json"
-        assert headers["X-Custom-Header"] == "test_value"
+        assert headers["x-custom-header"] == "test_value"
 
     assert not custom_client.is_closed, "Client must not be closed after sending a prompt"
     await custom_client.aclose()
