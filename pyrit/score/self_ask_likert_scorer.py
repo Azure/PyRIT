@@ -2,15 +2,18 @@
 # Licensed under the MIT license.
 
 import enum
+import logging
 from pathlib import Path
 from typing import Dict, Optional
 
 import yaml
 
-from pyrit.common.path import LIKERT_SCALES_PATH
+from pyrit.common.path import LIKERT_SCALES_PATH, SCORER_EVALS_PATH
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer import Scorer
+
+logger = logging.getLogger(__name__)
 
 
 class LikertScalePaths(enum.Enum):
@@ -35,6 +38,15 @@ class SelfAskLikertScorer(Scorer):
         self._prompt_target = chat_target
         self.scorer_type = "float_scale"
 
+        self.set_likert_scale_system_prompt(likert_scale_path=likert_scale_path)
+
+    def set_likert_scale_system_prompt(self, likert_scale_path: Path):
+        """
+        Sets the Likert scale to use for scoring.
+
+        Args:
+            likert_scale_path (Path): The path to the YAML file containing the Likert scale description.
+        """
         likert_scale = yaml.safe_load(likert_scale_path.read_text(encoding="utf-8"))
 
         if likert_scale["category"]:
@@ -44,8 +56,11 @@ class SelfAskLikertScorer(Scorer):
 
         likert_scale = self._likert_scale_description_to_string(likert_scale["scale_descriptions"])
 
-        scoring_instructions_template = SeedPrompt.from_yaml_file(LIKERT_SCALES_PATH / "likert_system_prompt.yaml")
-        self._system_prompt = scoring_instructions_template.render_template_value(
+        self._scoring_instructions_template = SeedPrompt.from_yaml_file(
+            LIKERT_SCALES_PATH / "likert_system_prompt.yaml"
+        )
+
+        self._system_prompt = self._scoring_instructions_template.render_template_value(
             likert_scale=likert_scale, category=self._score_category
         )
 
@@ -60,7 +75,7 @@ class SelfAskLikertScorer(Scorer):
             str: The string representation of the Likert scale.
         """
         if not descriptions:
-            raise ValueError("Impropoerly formated Likert scale yaml file. No likert scale_descriptions provided")
+            raise ValueError("Improperly formatted Likert scale yaml file. No likert scale_descriptions provided")
 
         likert_scale_description = ""
 
@@ -70,14 +85,16 @@ class SelfAskLikertScorer(Scorer):
 
             if int(name) < 0 or int(name) > 5:
                 raise ValueError(
-                    "Impropoerly formated Likert scale yaml file. Likert scale values must be between 1 and 5"
+                    "Improperly formatted Likert scale yaml file. Likert scale values must be between 1 and 5"
                 )
 
             likert_scale_description += f"'{name}': {desc}\n"
 
         return likert_scale_description
 
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def score_async(
+        self, request_response: PromptRequestPiece, *, task: Optional[str] = None, harm_category: Optional[str] = None
+    ) -> list[Score]:
         """
         Scores the given request_response using "self-ask" for the chat target and adds score to memory.
 
@@ -92,6 +109,13 @@ class SelfAskLikertScorer(Scorer):
                          The score_value is a value from [0,1] that is scaled from the likert scale.
         """
         self.validate(request_response, task=task)
+        if harm_category:
+            # This will need to change once we support harm categories as an Enum class.
+            scale_path = Path(LIKERT_SCALES_PATH, f"{harm_category.lower()}.yaml").resolve()
+            if not scale_path.exists():
+                raise ValueError(f"Invalid harm category: {harm_category}. No scale found at {scale_path}.")
+
+            self.set_likert_scale_system_prompt(likert_scale_path=scale_path)
 
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
@@ -112,5 +136,9 @@ class SelfAskLikertScorer(Scorer):
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
 
-    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
+    def validate(
+        self, request_response: PromptRequestPiece, *, task: Optional[str] = None, harm_category: Optional[str] = None
+    ):
+        if task and harm_category:
+            raise ValueError("Task and harm_category cannot be both provided. Please provide only one of them.")
         pass

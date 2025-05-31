@@ -36,8 +36,27 @@ class Scorer(abc.ABC):
     def _memory(self) -> MemoryInterface:
         return CentralMemory.get_memory_instance()
 
+    def get_scorer_metrics(self, file_name: str):
+        """
+        Prints evaluation statistics for the scorer in json format.
+
+        Args:
+            file_name (str): The name of the JSON file containing the evaluation statistics. This is often the name
+                of the harm or objective being evaluated (e.g. 'hate_speech' or 'molotov_cocktail'). It can also be a
+                custom name designated during the evaluation process such as 'custom_eval_1'.
+
+        Returns:
+            ScorerMetrics: A ScorerMetrics object containing the saved evaluation statistics for the scorer.
+        """
+        from pyrit.score.scorer_evaluator import ScorerEvaluator
+
+        scorer_evaluator = ScorerEvaluator(scorer=self)
+        return scorer_evaluator.get_scorer_metrics(file_name=file_name)
+
     @abstractmethod
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def score_async(
+        self, request_response: PromptRequestPiece, *, task: Optional[str] = None, harm_category: Optional[str] = None
+    ) -> list[Score]:
         """
         Score the request_response, add the results to the database
         and return a list of Score objects.
@@ -52,7 +71,9 @@ class Scorer(abc.ABC):
         raise NotImplementedError("score_async method not implemented")
 
     @abstractmethod
-    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
+    def validate(
+        self, request_response: PromptRequestPiece, *, task: Optional[str] = None, harm_category: Optional[str] = None
+    ):
         """
         Validates the request_response piece to score. Because some scorers may require
         specific PromptRequestPiece types or values.
@@ -81,6 +102,28 @@ class Scorer(abc.ABC):
 
         request_piece.id = None
         return await self.score_async(request_piece, task=task)
+
+    async def score_text_batch_async(
+        self,
+        *,
+        texts: Sequence[str],
+        tasks: Optional[Sequence[str]] = None,
+        batch_size: int = 10,
+    ) -> list[Score]:
+        if tasks:
+            if len(tasks) != len(texts):
+                raise ValueError("The number of tasks must match the number of texts.")
+        if len(texts) == 0:
+            return []
+        prompt_target = getattr(self, "_prompt_target")
+        results = await batch_task_async(
+            task_func=self.score_text_async,
+            task_arguments=["text", "task"] if tasks else ["text"],
+            prompt_target=prompt_target,
+            batch_size=batch_size,
+            items_to_batch=[texts, tasks] if tasks else [texts],
+        )
+        return [score for sublist in results for score in sublist]
 
     async def score_responses_inferring_tasks_batch_async(
         self,
@@ -123,6 +166,33 @@ class Scorer(abc.ABC):
             prompt_target=prompt_target,
             batch_size=batch_size,
             items_to_batch=[request_responses, tasks],
+        )
+
+        # results is a list[list[Score]] and needs to be flattened
+        return [score for sublist in results for score in sublist]
+
+    async def score_prompts_with_harm_categories_batch_async(
+        self,
+        *,
+        request_responses: Sequence[PromptRequestPiece],
+        harm_categories: Sequence[str],
+        batch_size: int = 10,
+    ) -> list[Score]:
+        if not harm_categories:
+            raise ValueError("Harm categories must be provided.")
+        if len(harm_categories) != len(request_responses):
+            raise ValueError("The number of harm categories must match the number of request_responses.")
+
+        if len(request_responses) == 0:
+            return []
+
+        prompt_target = getattr(self, "_prompt_target", None)
+        results = await batch_task_async(
+            task_func=self.score_async,
+            task_arguments=["request_response", "harm_category"],
+            prompt_target=prompt_target,
+            batch_size=batch_size,
+            items_to_batch=[request_responses, harm_categories],
         )
 
         # results is a list[list[Score]] and needs to be flattened
