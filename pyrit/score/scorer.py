@@ -1,7 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 import abc
+import asyncio
 import json
 import uuid
 from abc import abstractmethod
@@ -21,6 +24,7 @@ from pyrit.models import (
     ScoreType,
     UnvalidatedScore,
 )
+from pyrit.models.literals import ChatMessageRole
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
 
@@ -321,3 +325,102 @@ class Scorer(abc.ABC):
             )
 
         return score
+
+    @staticmethod
+    async def score_response_async(
+        *,
+        response: PromptRequestResponse,
+        scorers: list[Scorer],
+        role_filter: ChatMessageRole = "assistant",
+        task: Optional[str] = None,
+    ) -> list[Score]:
+        """
+        Score a response using multiple scorers in parallel.
+
+        This method runs all scorers on all filtered response pieces concurrently for maximum performance.
+        Typically used for auxiliary scoring where all results are needed but not returned.
+
+        Args:
+            response: PromptRequestResponse containing pieces to score
+            scorers: List of scorers to apply
+            role_filter: Only score pieces with this role (default: "assistant")
+            task: Optional task description for scoring context
+
+        Returns:
+            List of all scores from all scorers
+        """
+        if not scorers:
+            return []
+
+        # Filter response pieces by role
+        filtered_pieces = list(response.filter_by_role(role=role_filter))
+        if not filtered_pieces:
+            return []
+
+        # Create all scoring tasks
+        tasks = [
+            scorer.score_async(request_response=piece, task=task) for piece in filtered_pieces for scorer in scorers
+        ]
+
+        if not tasks:
+            return []
+
+        # Execute all tasks in parallel
+        score_lists = await asyncio.gather(*tasks)
+
+        # Flatten the list of lists into a single list
+        return [score for scores in score_lists for score in scores]
+
+    @staticmethod
+    async def score_response_until_success_async(
+        *,
+        response: PromptRequestResponse,
+        scorers: list[Scorer],
+        role_filter: ChatMessageRole = "assistant",
+        task: Optional[str] = None,
+    ) -> Optional[Score]:
+        """
+        Score response pieces sequentially until finding a successful score.
+
+        This method processes filtered response pieces one by one. For each piece, it runs all
+        scorers in parallel, then checks the results for a successful score (where score.get_value()
+        is truthy). If no successful score is found, it returns the first score as a failure indicator.
+
+        Args:
+            response: PromptRequestResponse containing pieces to score
+            scorers: List of scorers to use for evaluation
+            role_filter: Only score pieces with this role (default: "assistant")
+            task: Optional task description for scoring context
+
+        Returns:
+            The first successful score, or the first score if no success found, or None if no scores
+        """
+        if not scorers:
+            return None
+
+        # Filter response pieces by role
+        filtered_pieces = list(response.filter_by_role(role=role_filter))
+        if not filtered_pieces:
+            return None
+
+        first_score = None
+
+        for piece in filtered_pieces:
+            # Run all scorers on this piece in parallel
+            tasks = [scorer.score_async(request_response=piece, task=task) for scorer in scorers]
+            score_lists = await asyncio.gather(*tasks)
+
+            # Flatten the results
+            scores = [score for scores in score_lists for score in scores]
+
+            # Remember the first score as potential fallback
+            if scores and first_score is None:
+                first_score = scores[0]
+
+            # Check for successful score
+            for score in scores:
+                if score.get_value():
+                    return score
+
+        # No successful score found - return first score as failure indicator
+        return first_score
