@@ -154,10 +154,10 @@ class DataTypeSerializer(abc.ABC):
     async def save_formatted_audio(
         self,
         data: bytes,
-        output_filename: str = None,
         num_channels: int = 1,
         sample_width: int = 2,
         sample_rate: int = 16000,
+        output_filename: Optional[str] = None,
     ) -> None:
         """
         Saves the PCM16 of other specially formatted audio data to storage.

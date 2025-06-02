@@ -626,12 +626,12 @@ class MemoryInterface(abc.ABC):
         if source:
             conditions.append(SeedPromptEntry.source == source)
 
-        self._add_list_conditions(SeedPromptEntry.harm_categories, harm_categories, conditions)
-        self._add_list_conditions(SeedPromptEntry.authors, authors, conditions)
-        self._add_list_conditions(SeedPromptEntry.groups, groups, conditions)
+        self._add_list_conditions(field=SeedPromptEntry.harm_categories, values=harm_categories, conditions=conditions)
+        self._add_list_conditions(field=SeedPromptEntry.authors, values=authors, conditions=conditions)
+        self._add_list_conditions(field=SeedPromptEntry.groups, values=groups, conditions=conditions)
 
         if parameters:
-            self._add_list_conditions(SeedPromptEntry.parameters, parameters, conditions)
+            self._add_list_conditions(field=SeedPromptEntry.parameters, values=parameters, conditions=conditions)
 
         if metadata:
             conditions.append(self._get_seed_prompts_metadata_conditions(metadata=metadata))
@@ -647,7 +647,7 @@ class MemoryInterface(abc.ABC):
             return []
 
     def _add_list_conditions(
-        self, field: InstrumentedAttribute, values: Optional[Sequence[str]], conditions: list
+        self, field: InstrumentedAttribute, conditions: list, values: Optional[Sequence[str]] = None
     ) -> None:
         if values:
             for value in values:

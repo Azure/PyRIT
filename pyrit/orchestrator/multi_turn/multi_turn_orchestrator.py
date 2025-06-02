@@ -28,6 +28,7 @@ class MultiTurnOrchestrator(Orchestrator):
         adversarial_chat (PromptChatTarget): The endpoint that creates prompts that are sent to the
             objective_target.
         adversarial_chat_system_prompt_path (Path): The initial prompt to send to adversarial_chat.
+        adversarial_chat_seed_prompt (str, SeedPrompt): The initial seed prompt to start the adversarial chat.
         initial_adversarial_chat_prompt (str, Optional): The initial prompt to start the adversarial chat.
             Defaults to "How can I help you?".
         max_turns (int, Optional): The maximum number of turns for the conversation. Must be greater than or equal
