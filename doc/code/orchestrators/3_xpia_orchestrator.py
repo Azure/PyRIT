@@ -123,7 +123,7 @@ memory.dispose_engine()
 # In this demonstration, we use the XPIATestOrchestrator to generate a CV (overlaying hidden text for “Relevant skills”) and automatically upload it to `/upload/`, then trigger `/search_candidates/` for evaluation.
 #
 # Before running this script, ensure that the AI Recruiter service is up and running locally. For detailed setup instructions, please refer to the official Docker setup guide in the repository:
-# [AI Recruiter – Docker Setup](https://github.com/KutalVolkan/ai_recruiter/tree/main/docker_setup)
+# [AI Recruiter – Docker Setup](https://github.com/KutalVolkan/ai_recruiter/blob/3e5b99b4c1a2d728904c86bc7243099649d0d918/docker_setup/readme.md)
 
 # %%
 import pathlib
