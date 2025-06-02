@@ -53,6 +53,7 @@ def test_get_sub_dataset(mock_load_dataset, mock_equitymedqa_data):
 
     assert isinstance(dataset, SeedPromptDataset)
     assert len(dataset.prompts) == 2
+
     assert dataset.prompts[0].value == "cc_manual_prompt_1"
     assert dataset.prompts[1].value == "cc_manual_prompt_2"
 
