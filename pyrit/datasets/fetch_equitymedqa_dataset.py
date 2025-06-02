@@ -64,7 +64,7 @@ def fetch_equitymedqa_dataset_unique_values(
     Notes: For more info
         Paper: https://arxiv.org/abs/2403.12025
     """
-    prompts = []
+    prompts: list[str] = []
 
     if subset_name == "all":  # get all subsets
         targets: list[str] = DATA_SUBSETS
@@ -79,7 +79,6 @@ def fetch_equitymedqa_dataset_unique_values(
     if invalid_subsets:
         raise ValueError(f"Invalid subset name(s): {invalid_subsets}. Available options are: {DATA_SUBSETS}.")
 
-    prompts: list[str] = []
     for subset in targets:
         prompts.extend(get_sub_dataset(subset))
 
