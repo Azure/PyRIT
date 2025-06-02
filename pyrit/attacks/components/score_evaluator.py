@@ -12,13 +12,12 @@ logger = logging.getLogger(__name__)
 
 class ScoreEvaluator:
     """
-    Evaluates scores for orchestrator responses.
+    Evaluates scores from a Scorer to determine objective achievement and provide feedback.
 
-    Responsible for:
-    - Evaluating if objectives are achieved
-    - Checking if responses are refused
-    - Tracking score history
-    - Providing score feedback
+    This component wraps a Scorer and provides logic for:
+    - Determining if an objective is achieved based on score values and thresholds
+    - Extracting feedback from score rationales for use in subsequent prompts
+    - Supporting both true/false and numeric score types
     """
 
     def __init__(
@@ -28,23 +27,34 @@ class ScoreEvaluator:
         Initialize the score evaluator.
 
         Args:
-            scorer: The scorer to use for evaluating responses
-            use_score_as_feedback: Whether to use the score as feedback for future prompts
-            objective_achieved_score_threshold: The score threshold to consider an objective achieved
+            scorer (Scorer): The scorer to use for evaluating responses
+            use_score_as_feedback (bool): Whether to use the score as feedback for future prompts
+            objective_achieved_score_threshold (float): The score threshold to consider an
+                                                        objective achieved (0.0 to 1.0)
+
+        Raises:
+            ValueError: If objective_achieved_score_threshold is not between 0.0 and 1.0
         """
         self._scorer = scorer
         self._use_score_as_feedback = use_score_as_feedback
+
+        if not 0.0 <= objective_achieved_score_threshold <= 1.0:
+            raise ValueError("objective_achieved_score_threshold must be between 0.0 and 1.0")
+
         self._objective_achieved_score_threshold = objective_achieved_score_threshold
 
-    def is_objective_achieved(self, score: Score) -> bool:
+    def is_objective_achieved(self, score: Optional[Score] = None) -> bool:
         """
         Determine if the objective is achieved based on score.
 
         Args:
-            score: The score to check, or the latest score if None
+            score (Optional[Score]): The score to check
 
         Returns:
-            True if the objective is achieved, False otherwise
+            bool: True if the objective is achieved, False otherwise
+
+        Raises:
+            ValueError: If score value cannot be converted to the expected type
         """
         if not score:
             return False
@@ -57,7 +67,7 @@ class ScoreEvaluator:
             return bool(score_value)
 
         # Handle numeric scores
-        if score_type == "numeric":
+        if score_type == "float_scale":
             return float(score_value) >= self._objective_achieved_score_threshold
 
         # For other score types, assume not achieved
@@ -68,10 +78,10 @@ class ScoreEvaluator:
         Get feedback from a score for use in future prompts.
 
         Args:
-            score: The score to get feedback from, or the latest score if None
+            score (Optional[Score]): The score to get feedback from
 
         Returns:
-            Feedback string, or None if no suitable feedback exists
+            Optional[str]: Feedback string, or None if no suitable feedback exists
         """
         if not score or not self._use_score_as_feedback:
             return None
@@ -80,5 +90,10 @@ class ScoreEvaluator:
 
     @property
     def scorer_type(self) -> str:
-        """Get the type of the scorer."""
+        """
+        Get the type of the scorer.
+
+        Returns:
+            str: The type identifier of the scorer
+        """
         return self._scorer.get_identifier()["__type__"]

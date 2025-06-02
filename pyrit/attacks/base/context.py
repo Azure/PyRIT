@@ -24,6 +24,12 @@ class AttackContext:
     # Natural-language description of what the attack tries to achieve
     objective: str
 
+    # Indicates whether the objective has already been fulfilled
+    achieved_objective: bool = False
+
+    # Conversation that is automatically prepended to the target model
+    prepended_conversation: List[PromptRequestResponse] = field(default_factory=list)
+
     # Key–value pairs stored in the model’s memory for this single request
     memory_labels: Dict[str, str] = field(default_factory=dict)
 
@@ -58,9 +64,6 @@ class MultiTurnAttackContext(AttackContext):
     # Hard limit on how many turns the attack is allowed to take
     max_turns: int = 5
 
-    # Indicates whether the objective has already been fulfilled
-    achieved_objective: bool = False
-
     # Counter of turns that have actually been executed so far
     executed_turns: int = 0
 
@@ -75,9 +78,6 @@ class MultiTurnAttackContext(AttackContext):
 
     # Converters applied to transform prompts before they are sent
     prompt_converters: List[PromptConverter] = field(default_factory=list)
-
-    # Conversation exchanged with the model that is always prepended to each turn
-    prepended_conversation: List[PromptRequestResponse] = field(default_factory=list)
 
 
 @dataclass
@@ -95,9 +95,6 @@ class SingleTurnAttackContext(AttackContext):
 
     # Group of seed prompts from which single-turn prompts will be drawn
     seed_prompt_group: Optional[SeedPromptGroup] = None
-
-    # Conversation that is automatically prepended to each single-turn prompt
-    prepended_conversation: List[PromptRequestResponse] = field(default_factory=list)
 
     # System prompt for chat-based targets
     system_prompt: Optional[str] = None

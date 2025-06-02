@@ -43,7 +43,7 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
             "__module__": self.__class__.__module__,
             "id": str(self._id),
         }
-    
+
     @abstractmethod
     def _validate_context(self, *, context: ContextT) -> None:
         """
@@ -100,7 +100,7 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
 
         Args:
             context (ContextT): The context for the attack
-        
+
         Returns:
             ResultT: The result of the attack execution
         """
