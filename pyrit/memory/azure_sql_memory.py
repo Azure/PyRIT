@@ -5,7 +5,7 @@ import logging
 import struct
 from contextlib import closing
 from datetime import datetime, timedelta, timezone
-from typing import MutableSequence, Optional, Sequence, TypeVar, Union
+from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
 
 from azure.core.credentials import AccessToken
 from azure.identity import DefaultAzureCredential
@@ -82,7 +82,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         super(AzureSQLMemory, self).__init__()
 
     @staticmethod
-    def _resolve_sas_token(env_var_name: str, passed_value: Optional[str]) -> Optional[str]:
+    def _resolve_sas_token(env_var_name: str, passed_value: Optional[str] = None) -> Optional[str]:
         """
         Resolve the SAS token value, allowing a fallback to None for delegation SAS.
 
@@ -283,7 +283,12 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         return self.SessionFactory()
 
     def _query_entries(
-        self, Model, *, conditions: Optional = None, distinct: bool = False, join_scores: bool = False  # type: ignore
+        self,
+        Model,
+        *,
+        conditions: Optional[Any] = None,  # type: ignore
+        distinct: bool = False,
+        join_scores: bool = False,
     ) -> MutableSequence[Model]:
         """
         Fetches data from the specified table model with optional conditions.

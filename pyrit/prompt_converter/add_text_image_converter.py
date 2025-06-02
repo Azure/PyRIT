@@ -6,7 +6,6 @@ import logging
 import string
 import textwrap
 from io import BytesIO
-from typing import Optional
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -22,21 +21,21 @@ class AddTextImageConverter(PromptConverter):
 
     Args:
         text_to_add (str): Text to add to an image. Defaults to empty string.
-        font_name (str, Optional): Path of font to use. Must be a TrueType font (.ttf). Defaults to "helvetica.ttf".
-        color (tuple, Optional): Color to print text in, using RGB values. Defaults to (0, 0, 0).
-        font_size (float, Optional): Size of font to use. Defaults to 15.
-        x_pos (int, Optional): X coordinate to place text in (0 is left most). Defaults to 10.
-        y_pos (int, Optional): Y coordinate to place text in (0 is upper most). Defaults to 10.
+        font_name (str): Path of font to use. Must be a TrueType font (.ttf). Defaults to "helvetica.ttf".
+        color (tuple): Color to print text in, using RGB values. Defaults to (0, 0, 0).
+        font_size (float): Size of font to use. Defaults to 15.
+        x_pos (int): X coordinate to place text in (0 is left most). Defaults to 10.
+        y_pos (int): Y coordinate to place text in (0 is upper most). Defaults to 10.
     """
 
     def __init__(
         self,
         text_to_add: str,
-        font_name: Optional[str] = "helvetica.ttf",
-        color: Optional[tuple[int, int, int]] = (0, 0, 0),
-        font_size: Optional[int] = 15,
-        x_pos: Optional[int] = 10,
-        y_pos: Optional[int] = 10,
+        font_name: str = "helvetica.ttf",
+        color: tuple[int, int, int] = (0, 0, 0),
+        font_size: int = 15,
+        x_pos: int = 10,
+        y_pos: int = 10,
     ):
         if text_to_add.strip() == "":
             raise ValueError("Please provide valid text_to_add value")
