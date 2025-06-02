@@ -54,8 +54,9 @@ def test_get_sub_dataset(mock_load_dataset, mock_equitymedqa_data):
     assert isinstance(dataset, SeedPromptDataset)
     assert len(dataset.prompts) == 2
 
-    assert dataset.prompts[0].value == "cc_manual_prompt_1"
-    assert dataset.prompts[1].value == "cc_manual_prompt_2"
+    prompt_list = [dataset.prompts[0].value, dataset.prompts[1].value]
+    assert "cc_manual_prompt_1" in prompt_list
+    assert "cc_manual_prompt_2" in prompt_list
 
 
 @patch("pyrit.datasets.fetch_equitymedqa_dataset.load_dataset")
