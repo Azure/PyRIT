@@ -7,6 +7,7 @@ import shlex
 from unittest.mock import patch
 
 import pytest
+from pydantic import ValidationError
 
 from pyrit.cli.__main__ import main
 from pyrit.orchestrator import (
@@ -20,7 +21,27 @@ test_cases_success = [
     (
         "--config-file 'tests/unit/cli/prompt_send_success.yaml'",
         [PromptSendingOrchestrator],
-        ["send_normalizer_requests_async"],
+        ["run_attack_async"],
+    ),
+    (
+        "--config-file 'tests/unit/cli/prompt_send_success_converters_default.yaml'",
+        [PromptSendingOrchestrator],
+        ["run_attack_async"],
+    ),
+    (
+        "--config-file 'tests/unit/cli/prompt_send_success_converters_custom_target.yaml'",
+        [PromptSendingOrchestrator],
+        ["run_attack_async"],
+    ),
+    (
+        "--config-file 'tests/unit/cli/prompt_send_success_converters_llm_mixed_target.yaml'",
+        [PromptSendingOrchestrator],
+        ["run_attack_async"],
+    ),
+    (
+        "--config-file 'tests/unit/cli/prompt_send_success_converters_no_target.yaml'",
+        [PromptSendingOrchestrator],
+        ["run_attack_async"],
     ),
     ("--config-file 'tests/unit/cli/multi_turn_rto_success.yaml'", [RedTeamingOrchestrator], ["run_attack_async"]),
     ("--config-file 'tests/unit/cli/multi_turn_rto_args_success.yaml'", [RedTeamingOrchestrator], ["run_attack_async"]),
@@ -53,7 +74,7 @@ test_cases_success = [
             CrescendoOrchestrator,
             RedTeamingOrchestrator,
         ],
-        ["send_normalizer_requests_async", "run_attack_async", "run_attack_async", "run_attack_async"],
+        ["run_attacks_async", "run_attack_async", "run_attack_async", "run_attack_async"],
     ),
 ]
 
@@ -72,53 +93,90 @@ test_cases_sys_exit = [
 test_cases_error = [
     (
         "--config-file 'tests/unit/cli/prompt_send_no_objective_target.yaml'",
-        "Configuration file must contain a 'objective_target' key.",
-        KeyError,
+        "objective_target\n  Field required",
+        ValidationError,
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_no_objective_target_type.yaml'",
-        "Target objective_target must contain a 'type' key.",
-        KeyError,
+        "objective_target\n  Value error, Field 'objective_target' must be a dictionary.\n"
+        "Example:\n  objective_target:\n    type: OpenAIChatTarget",
+        ValidationError,
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_no_scenarios.yaml'",
-        "Scenarios list is empty.",
-        ValueError,
+        "scenarios\n  Input should be a valid list",
+        ValidationError,
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_no_scenarios_key.yaml'",
-        "Configuration file must contain a 'scenarios' key.",
-        KeyError,
+        "scenarios\n  Field required",
+        ValidationError,
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_no_scenario_type.yaml'",
-        "Scenario must contain a 'type' key.",
-        KeyError,
+        "scenarios.0.type\n  Field required",
+        ValidationError,
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_no_scoring_target.yaml'",
-        "'Scorer requires a scoring_target to be defined. "
+        "Scorer requires a scoring_target to be defined. "
         "Alternatively, the adversarial_target can be used for scoring purposes, but none was provided.",
         KeyError,
     ),
     (
+        "--config-file 'tests/unit/cli/prompt_send_no_converter_target.yaml'",
+        "Converter requires a converter_target to be defined. "
+        "Alternatively, the adversarial_target can be used for scoring purposes, but none was provided.",
+        KeyError,
+    ),
+    (
+        "--config-file 'tests/unit/cli/prompt_send_converters_wrong_arg.yaml'",
+        "TranslationConverter.__init__() got an unexpected keyword argument 'wrong_arg'",
+        TypeError,
+    ),
+    (
+        "--config-file 'tests/unit/cli/prompt_send_converters_missing_arg.yaml'",
+        "TranslationConverter.__init__() missing 1 required keyword-only argument: 'language'",
+        TypeError,
+    ),
+    (
         "--config-file 'tests/unit/cli/multi_turn_rto_wrong_arg.yaml'",
-        "Failed to validate scenario RedTeamingOrchestrator: RedTeamingOrchestrator.__init__() "
+        "Failed to instantiate scenario 'RedTeamingOrchestrator': RedTeamingOrchestrator.__init__() "
         "got an unexpected keyword argument 'wrong_arg'",
         ValueError,
     ),
     (
         "--config-file 'tests/unit/cli/multi_turn_crescendo_wrong_arg.yaml'",
-        "Failed to validate scenario CrescendoOrchestrator: CrescendoOrchestrator.__init__() "
+        "Failed to instantiate scenario 'CrescendoOrchestrator': CrescendoOrchestrator.__init__() "
         "got an unexpected keyword argument 'wrong_arg'",
         ValueError,
     ),
     (
         "--config-file 'tests/unit/cli/multi_turn_tap_wrong_arg.yaml'",
-        "Failed to validate scenario TreeOfAttacksWithPruningOrchestrator: "
+        "Failed to instantiate scenario 'TreeOfAttacksWithPruningOrchestrator': "
         "TreeOfAttacksWithPruningOrchestrator.__init__() "
         "got an unexpected keyword argument 'wrong_arg'",
         ValueError,
+    ),
+    (
+        "--config-file 'tests/unit/cli/prompt_send_success_invalid_exec.yaml'",
+        "execution_settings.type\n  Input should be 'local' ",
+        ValidationError,
+    ),
+    (
+        "--config-file 'tests/unit/cli/prompt_send_bad_db_type.yaml'",
+        "database.type\n  Input should be 'InMemory', 'DuckDB' or 'AzureSQL' ",
+        ValidationError,
+    ),
+    (
+        "--config-file 'tests/unit/cli/prompt_send_db_with_no_type.yaml'",
+        "database.type\n  Field required",
+        ValidationError,
+    ),
+    (
+        "--config-file 'tests/unit/cli/prompt_send_no_db.yaml'",
+        "database\n  Field required",
+        ValidationError,
     ),
 ]
 

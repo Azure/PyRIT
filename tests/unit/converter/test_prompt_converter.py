@@ -73,7 +73,7 @@ async def test_convert_tokens_entire_string_async() -> None:
 
 
 @pytest.mark.asyncio
-async def test_test_convert_tokens_raises_with_non_text_input_type():
+async def test_convert_tokens_raises_with_non_text_input_type():
     prompt = "This is a test ⟪to convert⟪ and ⟫another part⟫."
     converter = Base64Converter()
     with pytest.raises(ValueError, match="Input type must be text when start or end tokens are present."):
@@ -81,7 +81,7 @@ async def test_test_convert_tokens_raises_with_non_text_input_type():
 
 
 @pytest.mark.asyncio
-async def test_test_convert_tokens_raises_uneven_tokens():
+async def test_convert_tokens_raises_uneven_tokens():
     converter = Base64Converter()
     prompt = "This is a test ⟪to convert⟫ and ⟪another part."
     with pytest.raises(ValueError, match="Uneven number of start tokens and end tokens."):
@@ -463,6 +463,15 @@ def setup_memory():
     CentralMemory.set_memory_instance(None)
 
 
+def is_speechsdk_installed():
+    try:
+        import azure.cognitiveservices.speech  # noqa: F401
+
+        return True
+    except ModuleNotFoundError:
+        return False
+
+
 @pytest.mark.parametrize(
     "converter, expected_input_types, expected_output_types",
     [
@@ -473,15 +482,17 @@ def setup_memory():
         (AsciiSmugglerConverter(), ["text"], ["text"]),
         (AtbashConverter(), ["text"], ["text"]),
         (AudioFrequencyConverter(), ["audio_path"], ["audio_path"]),
-        (
+        pytest.param(
             AzureSpeechAudioToTextConverter(azure_speech_region="region", azure_speech_key="key"),
             ["audio_path"],
             ["text"],
+            marks=pytest.mark.skipif(not is_speechsdk_installed(), reason="Azure Speech SDK is not installed."),
         ),
-        (
+        pytest.param(
             AzureSpeechTextToAudioConverter(azure_speech_region="region", azure_speech_key="key"),
             ["text"],
             ["audio_path"],
+            marks=pytest.mark.skipif(not is_speechsdk_installed(), reason="Azure Speech SDK is not installed."),
         ),
         (Base64Converter(), ["text"], ["text"]),
         (BinaryConverter(), ["text"], ["text"]),
@@ -499,7 +510,7 @@ def setup_memory():
         (PDFConverter(), ["text"], ["url"]),
         (QRCodeConverter(), ["text"], ["image_path"]),
         (RandomCapitalLettersConverter(), ["text"], ["text"]),
-        (RepeatTokenConverter(token_to_repeat="test"), ["text"], ["text"]),
+        (RepeatTokenConverter(token_to_repeat="test", times_to_repeat=2), ["text"], ["text"]),
         (ROT13Converter(), ["text"], ["text"]),
         (SearchReplaceConverter(pattern=" ", replace="_"), ["text"], ["text"]),
         (StringJoinConverter(), ["text"], ["text"]),

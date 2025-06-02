@@ -1,0 +1,8 @@
+datasets:
+  - ./pyrit/datasets/seed_prompts/illegal.prompt
+objective_target:
+  type: "OpenAIChatTarget"
+scenarios:
+  - type: "PromptSendingOrchestrator"
+database:
+  type: "sqlite"
