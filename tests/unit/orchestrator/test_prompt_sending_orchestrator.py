@@ -422,6 +422,33 @@ async def test_run_attack_with_retries(mock_target: MockPromptTarget):
 
 
 @pytest.mark.asyncio
+async def test_run_attack_with_default_retries(mock_target: MockPromptTarget):
+
+    orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
+
+    # Mock the normalizer to return a simple response
+    conversation_id = str(uuid.uuid4())
+    orchestrator_id = orchestrator.get_identifier()
+    response = PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(
+                role="assistant",
+                original_value="test response",
+                conversation_id=conversation_id,
+                orchestrator_identifier=orchestrator_id,
+            )
+        ]
+    )
+
+    with patch.object(
+        orchestrator._prompt_normalizer, "send_prompt_async", new_callable=AsyncMock, return_value=response
+    ) as mock_send_prompt:
+        result = await orchestrator.run_attack_async(objective="test prompt")
+        assert result.status == "unknown"
+        assert mock_send_prompt.call_count == 1
+
+
+@pytest.mark.asyncio
 async def test_run_attack_with_skip_criteria(mock_target: MockPromptTarget):
     orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
 
