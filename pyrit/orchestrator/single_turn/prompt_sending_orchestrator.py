@@ -231,7 +231,7 @@ class PromptSendingOrchestrator(Orchestrator):
 
             status, objective_score = await self._score_objective_async(result, objective)
 
-            if status == "success":
+            if status == "success" or status == "unknown":
                 break
 
         return OrchestratorResult(
