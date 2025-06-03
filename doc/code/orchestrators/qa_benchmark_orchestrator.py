@@ -81,10 +81,10 @@ success = sum(r.status == "success" for r in results)
 print(f"Success rate: {success / len(results)}")
 
 # %% [markdown]
-# You can also utilize the 'question_repeat_count' variable in 'run_attacks_async' to automatically repeat each question a given number of times.
+# You can also utilize the 'repetitions' variable in 'run_attacks_async' to automatically repeat each question a given number of times.
 
 # %%
-results = await benchmark_orchestrator.run_attacks_async(question_answering_entries=wmdp_ds.questions[:3], question_repeat_count=5)  # type: ignore
+results = await benchmark_orchestrator.run_attacks_async(question_answering_entries=wmdp_ds.questions[:3], repetitions=5)  # type: ignore
 for result in results:
     await result.print_conversation_async()  # type: ignore
 

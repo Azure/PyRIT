@@ -174,7 +174,7 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
         self,
         *,
         question_answering_entries: list[QuestionAnsweringEntry],
-        question_repeat_count: int = 1,
+        repetitions: int = 1,
         prepended_conversations: Optional[list[PromptRequestResponse]] = None,
         memory_labels: Optional[dict[str, str]] = None,
     ) -> list[OrchestratorResult]:
@@ -185,27 +185,25 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
             question_answering_entries (list[QuestionAnsweringEntry]): List of question answering entries to process.
             prepended_conversations (list[PromptRequestResponse], Optional): The conversations to prepend to each
                 attack.
-            question_repeat_count (int): allows for repetition of QuestionAnsweringEntry objects
+            repetitions (int): allows for repetition of QuestionAnsweringEntry objects
             memory_labels (dict[str, str], Optional): The memory labels to use for the attacks.
         Returns:
             list[OrchestratorResult]: List of results from each attack.
         """
-        if question_repeat_count < 1:
-            raise ValueError("question_repeat_count must be greater than 0")
-        question_answering_entries = [
-            entry for entry in question_answering_entries for _ in range(question_repeat_count)
-        ]
-        if prepended_conversations:
-            prepended_conversations = [
-                prepended_conversation
-                for prepended_conversation in prepended_conversations
-                for _ in range(question_repeat_count)
-            ]
+        if repetitions < 1:
+            raise ValueError("repetitions must be at least 1")
 
-        if not prepended_conversations:
+        if prepended_conversations is None:
             prepended_conversations = [None] * len(question_answering_entries)
         elif len(prepended_conversations) != len(question_answering_entries):
             raise ValueError("Number of prepended conversations must match number of question_answering_entries")
+
+        assert prepended_conversations is not None
+
+        question_answering_entries = [entry for entry in question_answering_entries for _ in range(repetitions)]
+        prepended_conversations = [
+            prepended_conversation for prepended_conversation in prepended_conversations for _ in range(repetitions)
+        ]
 
         # Type the batch items as Sequence[Sequence[Any]] to match the expected type
         batch_items: list[Sequence[Any]] = [
