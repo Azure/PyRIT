@@ -247,7 +247,12 @@ def test_cli_integration_success_converters_all(
     data = _create_data(input_type)
     data["converters"] = [converter_data]
 
-    use_text_target_types = ["PDFConverter", "AddImageVideoConverter", "AudioFrequencyConverter"]
+    use_text_target_types = [
+        "PDFConverter",
+        "AddImageVideoConverter",
+        "AudioFrequencyConverter",
+        "AzureSpeechTextToAudioConverter",
+    ]
     if converter_data["type"] in use_text_target_types:
         # OpenAIChatTarget only allows text and image_path data types as input, and these converters
         # output different data types so we need to use TextTarget
