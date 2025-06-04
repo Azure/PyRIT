@@ -142,7 +142,7 @@ class ConversationManager:
         conversation_id: str,
         target: Optional[Union[PromptTarget, PromptChatTarget]] = None,
         prepended_conversation: List[PromptRequestResponse],
-        converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
+        converter_configurations: Optional[List[PromptConverterConfiguration]] = None,
         max_turns: Optional[int] = None,
     ) -> ConversationState:
         """

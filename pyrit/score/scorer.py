@@ -8,7 +8,7 @@ import asyncio
 import json
 import uuid
 from abc import abstractmethod
-from typing import Optional, Sequence
+from typing import List, Optional, Sequence
 
 from pyrit.exceptions import (
     InvalidJsonException,
@@ -330,10 +330,10 @@ class Scorer(abc.ABC):
     async def score_response_async(
         *,
         response: PromptRequestResponse,
-        scorers: list[Scorer],
+        scorers: List[Scorer],
         role_filter: ChatMessageRole = "assistant",
         task: Optional[str] = None,
-    ) -> list[Score]:
+    ) -> List[Score]:
         """
         Score a response using multiple scorers in parallel.
 
@@ -375,7 +375,7 @@ class Scorer(abc.ABC):
     async def score_response_until_success_async(
         *,
         response: PromptRequestResponse,
-        scorers: list[Scorer],
+        scorers: List[Scorer],
         role_filter: ChatMessageRole = "assistant",
         task: Optional[str] = None,
     ) -> Optional[Score]:

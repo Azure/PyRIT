@@ -287,3 +287,255 @@ async def test_scorer_score_responses_batch_async():
 
         assert len(call_kwargs["tasks"]) == 1
         assert results == fake_scores
+
+
+@pytest.mark.asyncio
+async def test_score_response_async_empty_scorers():
+    """Test that score_response_async returns empty list when no scorers provided."""
+    response = PromptRequestResponse(
+        request_pieces=[PromptRequestPiece(role="assistant", original_value="test")]
+    )
+    
+    result = await Scorer.score_response_async(
+        response=response,
+        scorers=[],
+        task="test task"
+    )
+    
+    assert result == []
+
+
+@pytest.mark.asyncio
+async def test_score_response_async_no_matching_role():
+    """Test that score_response_async returns empty list when no pieces match role filter."""
+    response = PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(role="user", original_value="test1"),
+            PromptRequestPiece(role="system", original_value="test2"),
+        ]
+    )
+    
+    scorer = MockScorer()
+    scorer.score_async = AsyncMock(return_value=[MagicMock()])
+    
+    result = await Scorer.score_response_async(
+        response=response,
+        scorers=[scorer],
+        role_filter="assistant",
+        task="test task"
+    )
+    
+    assert result == []
+    scorer.score_async.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_score_response_async_parallel_execution():
+    """Test that score_response_async runs all scorers in parallel on all filtered pieces."""
+    piece1 = PromptRequestPiece(role="assistant", original_value="response1")
+    piece2 = PromptRequestPiece(role="assistant", original_value="response2")
+    piece3 = PromptRequestPiece(role="user", original_value="user input")
+    
+    response = PromptRequestResponse(request_pieces=[piece1, piece2, piece3])
+    
+    # Create mock scores
+    score1_1 = MagicMock(spec=Score)
+    score1_2 = MagicMock(spec=Score)
+    score2_1 = MagicMock(spec=Score)
+    score2_2 = MagicMock(spec=Score)
+    
+    # Create mock scorers
+    scorer1 = MockScorer()
+    scorer1.score_async = AsyncMock(side_effect=[[score1_1], [score1_2]])
+    
+    scorer2 = MockScorer()
+    scorer2.score_async = AsyncMock(side_effect=[[score2_1], [score2_2]])
+    
+    result = await Scorer.score_response_async(
+        response=response,
+        scorers=[scorer1, scorer2],
+        role_filter="assistant",
+        task="test task"
+    )
+    
+    # Should have 4 scores total (2 scorers x 2 assistant pieces)
+    assert len(result) == 4
+    assert score1_1 in result
+    assert score1_2 in result
+    assert score2_1 in result
+    assert score2_2 in result
+    
+    # Verify each scorer was called twice (once per assistant piece)
+    assert scorer1.score_async.call_count == 2
+    assert scorer2.score_async.call_count == 2
+    
+    # Verify the correct pieces were passed
+    scorer1.score_async.assert_any_call(request_response=piece1, task="test task")
+    scorer1.score_async.assert_any_call(request_response=piece2, task="test task")
+    scorer2.score_async.assert_any_call(request_response=piece1, task="test task")
+    scorer2.score_async.assert_any_call(request_response=piece2, task="test task")
+
+
+@pytest.mark.asyncio
+async def test_score_response_until_success_async_empty_scorers():
+    """Test that score_response_until_success_async returns None when no scorers provided."""
+    response = PromptRequestResponse(
+        request_pieces=[PromptRequestPiece(role="assistant", original_value="test")]
+    )
+    
+    result = await Scorer.score_response_until_success_async(
+        response=response,
+        scorers=[],
+        task="test task"
+    )
+    
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_score_response_until_success_async_no_matching_role():
+    """Test that score_response_until_success_async returns None when no pieces match role filter."""
+    response = PromptRequestResponse(
+        request_pieces=[PromptRequestPiece(role="user", original_value="test")]
+    )
+    
+    scorer = MockScorer()
+    scorer.score_async = AsyncMock(return_value=[MagicMock()])
+    
+    result = await Scorer.score_response_until_success_async(
+        response=response,
+        scorers=[scorer],
+        role_filter="assistant",
+        task="test task"
+    )
+    
+    assert result is None
+    scorer.score_async.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_score_response_until_success_async_finds_success():
+    """Test that score_response_until_success_async returns first successful score."""
+    piece1 = PromptRequestPiece(role="assistant", original_value="response1")
+    piece2 = PromptRequestPiece(role="assistant", original_value="response2")
+    
+    response = PromptRequestResponse(request_pieces=[piece1, piece2])
+    
+    # Create mock scores
+    score1 = MagicMock(spec=Score)
+    score1.get_value.return_value = False  # Failure
+    
+    score2 = MagicMock(spec=Score)
+    score2.get_value.return_value = True  # Success
+    
+    score3 = MagicMock(spec=Score)
+    score3.get_value.return_value = True  # Another success (should not be reached)
+    
+    # Create mock scorers
+    scorer1 = MockScorer()
+    scorer1.score_async = AsyncMock(side_effect=[[score1], [score3]])
+    
+    scorer2 = MockScorer()
+    scorer2.score_async = AsyncMock(return_value=[score2])
+    
+    result = await Scorer.score_response_until_success_async(
+        response=response,
+        scorers=[scorer1, scorer2],
+        task="test task"
+    )
+    
+    # Should return the first successful score (score2)
+    assert result == score2
+    
+    # scorer1 should be called only once (for piece1)
+    assert scorer1.score_async.call_count == 1
+    # scorer2 should be called only once (for piece1, returning success)
+    assert scorer2.score_async.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_score_response_until_success_async_no_success_returns_first():
+    """Test that score_response_until_success_async returns first score when no success found."""
+    piece1 = PromptRequestPiece(role="assistant", original_value="response1")
+    piece2 = PromptRequestPiece(role="assistant", original_value="response2")
+    
+    response = PromptRequestResponse(request_pieces=[piece1, piece2])
+    
+    # Create mock scores (all failures)
+    score1 = MagicMock(spec=Score)
+    score1.get_value.return_value = False
+    
+    score2 = MagicMock(spec=Score)
+    score2.get_value.return_value = False
+    
+    score3 = MagicMock(spec=Score)
+    score3.get_value.return_value = False
+    
+    score4 = MagicMock(spec=Score)
+    score4.get_value.return_value = False
+    
+    # Create mock scorers
+    scorer1 = MockScorer()
+    scorer1.score_async = AsyncMock(side_effect=[[score1], [score3]])
+    
+    scorer2 = MockScorer()
+    scorer2.score_async = AsyncMock(side_effect=[[score2], [score4]])
+    
+    result = await Scorer.score_response_until_success_async(
+        response=response,
+        scorers=[scorer1, scorer2],
+        task="test task"
+    )
+    
+    # Should return the first score encountered (score1)
+    assert result == score1
+    
+    # All scorers should be called for all pieces
+    assert scorer1.score_async.call_count == 2
+    assert scorer2.score_async.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_score_response_until_success_async_parallel_scoring_per_piece():
+    """Test that score_response_until_success_async runs scorers in parallel for each piece."""
+    piece1 = PromptRequestPiece(role="assistant", original_value="response1")
+    piece2 = PromptRequestPiece(role="assistant", original_value="response2")
+    
+    response = PromptRequestResponse(request_pieces=[piece1, piece2])
+    
+    # Track call order
+    call_order = []
+    
+    async def mock_score_async_1(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+        call_order.append(("scorer1", request_response.original_value))
+        score = MagicMock(spec=Score)
+        score.get_value.return_value = False
+        return [score]
+    
+    async def mock_score_async_2(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+        call_order.append(("scorer2", request_response.original_value))
+        score = MagicMock(spec=Score)
+        score.get_value.return_value = False
+        return [score]
+    
+    scorer1 = MockScorer()
+    scorer1.score_async = mock_score_async_1
+    
+    scorer2 = MockScorer()
+    scorer2.score_async = mock_score_async_2
+    
+    await Scorer.score_response_until_success_async(
+        response=response,
+        scorers=[scorer1, scorer2],
+        task="test task"
+    )
+    
+    # Verify that for each piece, both scorers are called before moving to next piece
+    # (parallel execution per piece, but sequential piece processing)
+    assert len(call_order) == 4
+    # First piece should be scored by both scorers
+    assert ("scorer1", "response1") in call_order[:2]
+    assert ("scorer2", "response1") in call_order[:2]
+    # Then second piece
+    assert ("scorer1", "response2") in call_order[2:]
+    assert ("scorer2", "response2") in call_order[2:]

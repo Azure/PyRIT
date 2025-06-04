@@ -5,6 +5,7 @@ import logging
 from typing import Optional
 
 from pyrit.attacks.base.attack_strategy import AttackStrategy
+from pyrit.attacks.base.config import AttackConverterConfig, AttackScoringConfig
 from pyrit.attacks.base.context import SingleTurnAttackContext
 from pyrit.attacks.base.result import AttackResult
 from pyrit.attacks.components.conversation_manager import ConversationManager
@@ -16,7 +17,7 @@ from pyrit.models import (
     SeedPromptGroup,
 )
 from pyrit.models.literals import ChatMessageRole
-from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
+from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.score import Scorer
 
@@ -46,39 +47,37 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
         self,
         *,
         objective_target: PromptTarget,
-        request_converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
-        response_converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
         objective_scorer: Optional[Scorer] = None,
-        auxiliary_scorers: Optional[list[Scorer]] = None,
+        attack_converter_cfg: Optional[AttackConverterConfig] = None,
+        attack_scoring_cfg: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
     ) -> None:
         """
         Initialize the prompt injection attack strategy.
 
         Args:
-            objective_target (PromptTarget): The target to send prompts to
-            request_converter_configurations (Optional[list[PromptConverterConfiguration]]):
-                                                        Configurations for request converters
-            response_converter_configurations (Optional[list[PromptConverterConfiguration]]):
-                                                        Configurations for response converters
-            objective_scorer (Optional[Scorer]): Scorer to evaluate if the objective was achieved
-            auxiliary_scorers (Optional[list[Scorer]]): Additional scorers to evaluate the response
-            prompt_normalizer (Optional[PromptNormalizer]): The prompt normalizer to use for sending prompts
+            objective_target (PromptTarget): The target system to attack
+            objective_scorer (Optional[Scorer]): Scorer to evaluate the attack's success
+            attack_converter_cfg (Optional[AttackConverterConfig]): Configuration for prompt converters
+            attack_scoring_cfg (Optional[AttackScoringConfig]): Configuration for scoring components
+            prompt_normalizer (Optional[PromptNormalizer]): Normalizer for handling prompts
+
+        Raises:
+            ValueError: If the objective scorer is not a true/false scorer
         """
         super().__init__(logger=logger)
+
+        self._objective_scorer = objective_scorer
+        self._attack_converter_cfg = attack_converter_cfg or AttackConverterConfig()
+        self._attack_scoring_cfg = attack_scoring_cfg or AttackScoringConfig()
 
         # Skip criteria could be set directly in the injected prompt normalizer
         self._prompt_normalizer = prompt_normalizer or PromptNormalizer()
 
-        if objective_scorer and objective_scorer.scorer_type != "true_false":
+        if self._objective_scorer and self._objective_scorer.scorer_type != "true_false":
             raise ValueError("Objective scorer must be a true/false scorer")
 
         self._objective_target = objective_target
-        self._objective_scorer = objective_scorer
-        self._auxiliary_scorers = auxiliary_scorers or []
-
-        self._request_converter_configurations = request_converter_configurations or []
-        self._response_converter_configurations = response_converter_configurations or []
 
         self._conversation_manager = ConversationManager(
             attack_identifier=self.get_identifier(),
@@ -101,9 +100,6 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
         if not context.conversation_id:
             raise ValueError("Conversation ID must be provided in the context")
 
-        if context.num_retries_on_failure < 0:
-            raise ValueError("Number of retries on failure must be non-negative")
-
     async def _setup_async(self, *, context: SingleTurnAttackContext) -> None:
         """
         Set up the attack by preparing conversation context.
@@ -121,7 +117,7 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
         await self._conversation_manager.update_conversation_state_async(
             conversation_id=context.conversation_id,
             prepended_conversation=context.prepended_conversation,
-            converter_configurations=self._request_converter_configurations,
+            converter_configurations=self._attack_converter_cfg.request_converters,
         )
 
     async def _perform_attack_async(self, *, context: SingleTurnAttackContext) -> AttackResult:
@@ -135,8 +131,8 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
             AttackResult containing the outcome of the attack
         """
         # Log the attack configuration
-        logger.info(f"Starting prompt injection attack with objective: {context.objective}")
-        logger.info(f"Retries on failure: {context.num_retries_on_failure}")
+        self._logger.info(f"Starting prompt injection attack with objective: {context.objective}")
+        self._logger.info(f"Max attempts: {context.max_attempts_on_failure}")
 
         # Execute with retries
         response = None
@@ -155,8 +151,8 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
         prompt_group = self._get_prompt_group(context)
 
         # Execute with retries
-        for attempt in range(context.num_retries_on_failure + 1):
-            self._logger.debug(f"Attempt {attempt+1}/{context.num_retries_on_failure+1}")
+        for attempt in range(context.max_attempts_on_failure + 1):
+            self._logger.debug(f"Attempt {attempt+1}/{context.max_attempts_on_failure + 1}")
 
             # Send the prompt
             response = await self._send_prompt_to_target_async(prompt_group=prompt_group, context=context)
@@ -228,8 +224,8 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
             seed_prompt_group=prompt_group,
             target=self._objective_target,
             conversation_id=context.conversation_id,
-            request_converter_configurations=self._request_converter_configurations,
-            response_converter_configurations=self._response_converter_configurations,
+            request_converter_configurations=self._attack_converter_cfg.request_converters,
+            response_converter_configurations=self._attack_converter_cfg.response_converters,
             labels=context.memory_labels,  # combined with strategy labels at _setup()
             orchestrator_identifier=self.get_identifier(),
         )
@@ -249,8 +245,9 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
         role: ChatMessageRole = "assistant"
 
         # Run auxiliary scorers (no return value needed)
-        if self._auxiliary_scorers:
-            await Scorer.score_response_async(response=response, scorers=self._auxiliary_scorers, role_filter=role)
+        await Scorer.score_response_async(
+            response=response, scorers=self._attack_scoring_cfg.auxiliary_scorers, role_filter=role
+        )
 
         # Run objective scorer
         if self._objective_scorer:
@@ -268,9 +265,6 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
             context (SingleTurnAttackContext): The attack context containing the objective and result
         """
         if context.achieved_objective:
-            logger.info("Prompt injection attack achieved the objective")
+            self._logger.info("Prompt injection attack achieved the objective")
         else:
-            logger.info(
-                f"The prompt injection attack has not achieved the objective after "
-                f"{context.num_retries_on_failure + 1} attempts."
-            )
+            self._logger.info("The prompt injection attack has not achieved the objective")

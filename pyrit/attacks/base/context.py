@@ -12,7 +12,6 @@ from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.models.score import Score
 from pyrit.models.seed_prompt import SeedPromptGroup
-from pyrit.prompt_converter.prompt_converter import PromptConverter
 
 ContextT = TypeVar("ContextT", bound="AttackContext")
 
@@ -61,11 +60,11 @@ class MultiTurnAttackContext(AttackContext):
     # Object holding all conversation-level identifiers for this attack
     session: ConversationSession = field(default_factory=lambda: ConversationSession())
 
-    # Hard limit on how many turns the attack is allowed to take
-    max_turns: int = 5
-
     # Counter of turns that have actually been executed so far
     executed_turns: int = 0
+
+    # Maximum number of turns the attack will run before stopping
+    max_turns: int = 10
 
     # Model response produced in the latest turn
     last_response: Optional[PromptRequestPiece] = None
@@ -76,9 +75,6 @@ class MultiTurnAttackContext(AttackContext):
     # Optional custom prompt that overrides the default one for the next turn
     custom_prompt: Optional[str] = None
 
-    # Converters applied to transform prompts before they are sent
-    prompt_converters: List[PromptConverter] = field(default_factory=list)
-
 
 @dataclass
 class SingleTurnAttackContext(AttackContext):
@@ -87,11 +83,9 @@ class SingleTurnAttackContext(AttackContext):
     # Unique identifier of the main conversation between the attacker and model
     conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
-    # Number of prompts that will be sent in a single batch
-    batch_size: int = 1
-
-    # How many times a failed request should automatically be retried
-    num_retries_on_failure: int = 0
+    # Maximum number of attempts to retry the attack in case of failure
+    # (e.g., if the target model refuses to respond)
+    max_attempts_on_failure: int = 0
 
     # Group of seed prompts from which single-turn prompts will be drawn
     seed_prompt_group: Optional[SeedPromptGroup] = None

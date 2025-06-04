@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Optional, Union
 
 from pyrit.attacks.base.attack_strategy import AttackStrategy
+from pyrit.attacks.base.config import AttackConverterConfig, AttackScoringConfig
 from pyrit.attacks.base.context import ConversationSession, MultiTurnAttackContext
 from pyrit.attacks.base.result import AttackResult
 from pyrit.attacks.components.conversation_manager import (
@@ -22,9 +23,6 @@ from pyrit.models import SeedPrompt
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.score import Score
 from pyrit.models.seed_prompt import SeedPromptGroup
-from pyrit.prompt_normalizer.prompt_converter_configuration import (
-    PromptConverterConfiguration,
-)
 from pyrit.prompt_normalizer.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.prompt_target.common.prompt_target import PromptTarget
@@ -78,8 +76,9 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         adversarial_chat: PromptChatTarget,
         adversarial_chat_system_prompt_path: Union[str, Path] = RTOSystemPromptPaths.TEXT_GENERATION.value,
         adversarial_chat_seed_prompt: Union[str, SeedPrompt] = "How can I help you?",
+        attack_converter_config: Optional[AttackConverterConfig] = None,
+        attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
-        use_score_as_feedback: bool = False,
     ):
         """
         Initialize the red teaming attack strategy
@@ -89,11 +88,15 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             objective_scorer (Scorer): The scorer to evaluate the target's responses
             adversarial_chat (PromptChatTarget): The adversarial chat model to use for generating prompts
             adversarial_chat_system_prompt_path (Union[str, Path]): Path to the YAML file containing
-                                                                    the system prompt template
+                                        the system prompt template
             adversarial_chat_seed_prompt (Union[str, SeedPrompt]): The seed prompt for the adversarial chat
+            attack_converter_config (Optional[AttackConverterConfig]): Configuration for attack converters
+            attack_scoring_config (Optional[AttackScoringConfig]): Configuration for attack scoring
             prompt_normalizer (Optional[PromptNormalizer]): The prompt normalizer to use for sending prompts
-            use_score_as_feedback (bool): Whether to use the score as feedback for generating prompts
         """
+        self._attack_converter_config = attack_converter_config or AttackConverterConfig()
+        self._attack_scoring_config = attack_scoring_config or AttackScoringConfig()
+
         super().__init__(
             logger=logger,
         )
@@ -105,12 +108,13 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             system_prompt_template_path=adversarial_chat_system_prompt_path
         )
         self._set_adversarial_chat_seed_prompt(seed_prompt=adversarial_chat_seed_prompt)
+
         self._prompt_normalizer = prompt_normalizer or PromptNormalizer()
-        self._use_score_as_feedback = use_score_as_feedback
         self._conversation_manager = ConversationManager(attack_identifier=self.get_identifier())
+
         self._score_evaluator = ScoreEvaluator(
-            use_score_as_feedback=use_score_as_feedback,
-            scorer=objective_scorer,
+            use_score_as_feedback=self._attack_scoring_config.use_score_as_feedback,
+            scorer=self._objective_scorer,
         )
 
     def _validate_context(self, *, context: MultiTurnAttackContext) -> None:
@@ -125,9 +129,6 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         """
         if not context.objective:
             raise ValueError("Attack objective must be provided")
-
-        if context.max_turns <= 0:
-            raise ValueError("Max turns must be greater than 0")
 
     async def _setup_async(self, *, context: MultiTurnAttackContext) -> None:
         """
@@ -153,18 +154,13 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         # Explicitly set achieved objective to False
         context.achieved_objective = False
 
-        # Set up prompt converters if provided
-        converter_configurations = (
-            [PromptConverterConfiguration(converters=context.prompt_converters)] if context.prompt_converters else []
-        )
-
         # Update the conversation state with the current context
         conversation_state: ConversationState = await self._conversation_manager.update_conversation_state_async(
             target=self._objective_target,
             max_turns=context.max_turns,
             conversation_id=context.session.conversation_id,
             prepended_conversation=context.prepended_conversation,
-            converter_configurations=converter_configurations,
+            converter_configurations=self._attack_converter_config.request_converters,
         )
 
         # update the turns based on prepend conversation
@@ -382,7 +378,9 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
                 f"{response.response_error}"
             )
 
-        if not self._use_score_as_feedback:
+        if not self._attack_scoring_config.use_score_as_feedback:
+            # If scoring is not used as feedback, we cannot use the score rationale
+            # to provide feedback to the adversarial chat
             raise ValueError(
                 f"{DEFAULT_ERR_MSG_IF_OBJECTIVE_TARGET_HAS_NON_TEXT_RESPONSE}"
                 "However, the use_score_as_feedback flag is set to False so it cannot be utilized."
@@ -411,11 +409,6 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         Returns:
             PromptRequestPiece: The system's response to the prompt
         """
-
-        converter_cfgs = (
-            [PromptConverterConfiguration(converters=context.prompt_converters)] if context.prompt_converters else []
-        )
-
         logger.info(f"Sending prompt to target: {prompt[:50]}...")
 
         # Create a seed prompt group from the prompt
@@ -426,7 +419,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         response = await self._prompt_normalizer.send_prompt_async(
             seed_prompt_group=seed_prompt_group,
             conversation_id=context.session.conversation_id,
-            request_converter_configurations=converter_cfgs,
+            request_converter_configurations=self._attack_converter_config.request_converters,
             target=self._objective_target,
             labels=context.memory_labels,
             orchestrator_identifier=self.get_identifier(),
@@ -560,6 +553,9 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         """
         # Load the system prompt template from the specified YAML file
         sp = SeedPrompt.from_yaml_file(system_prompt_template_path)
+
         if sp.parameters is None or "objective" not in sp.parameters:
             raise ValueError(f"Adversarial seed prompt must have an objective: '{sp}'")
+
+        # Set the system prompt template for the adversarial chat
         self._adversarial_chat_system_prompt_template = sp
