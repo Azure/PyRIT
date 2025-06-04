@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import hashlib
 from pathlib import Path
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -30,7 +29,7 @@ class PromptResponse(BaseModel):
     object: str = ""
     # When the object was created
     created_at: int = 0
-    logprobs: Optional[bool] = False
+    logprobs: bool = False
     index: int = 0
     # Rationale why the model ended (e.g., "stop")
     finish_reason: str = ""

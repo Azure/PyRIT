@@ -42,7 +42,7 @@ class HTTPTarget(PromptTarget):
         http_request: str,
         prompt_regex_string: str = "{PROMPT}",
         use_tls: bool = True,
-        callback_function: Callable | None = None,
+        callback_function: Optional[Callable] = None,
         max_requests_per_minute: Optional[int] = None,
         client: Optional[httpx.AsyncClient] = None,
         **httpx_client_kwargs: Any,
