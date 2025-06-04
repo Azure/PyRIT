@@ -11,8 +11,8 @@ from pyrit.attacks.base.config import AttackConverterConfig, AttackScoringConfig
 from pyrit.attacks.base.context import SingleTurnAttackContext
 from pyrit.attacks.single_turn.prompt_injection import PromptInjectionAttack
 from pyrit.exceptions.exception_classes import (
-    AttackExecutionError,
-    AttackValidationError,
+    AttackExecutionException,
+    AttackValidationException,
 )
 from pyrit.models import (
     PromptRequestPiece,
@@ -107,10 +107,11 @@ def failure_score():
     )
 
 
+@pytest.mark.usefixtures("patch_central_database")
 class TestPromptInjectionAttackInitialization:
     """Tests for PromptInjectionAttack initialization and configuration"""
 
-    def test_init_with_minimal_required_parameters(self, mock_target, patch_central_database):
+    def test_init_with_minimal_required_parameters(self, mock_target):
         attack = PromptInjectionAttack(objective_target=mock_target)
 
         assert attack._objective_target == mock_target
@@ -119,20 +120,16 @@ class TestPromptInjectionAttackInitialization:
         assert isinstance(attack._attack_scoring_cfg, AttackScoringConfig)
         assert isinstance(attack._prompt_normalizer, PromptNormalizer)
 
-    def test_init_with_valid_true_false_scorer(self, mock_target, mock_true_false_scorer, patch_central_database):
+    def test_init_with_valid_true_false_scorer(self, mock_target, mock_true_false_scorer):
         attack = PromptInjectionAttack(objective_target=mock_target, objective_scorer=mock_true_false_scorer)
 
         assert attack._objective_scorer == mock_true_false_scorer
 
-    def test_init_raises_error_for_non_true_false_scorer(
-        self, mock_target, mock_non_true_false_scorer, patch_central_database
-    ):
+    def test_init_raises_error_for_non_true_false_scorer(self, mock_target, mock_non_true_false_scorer):
         with pytest.raises(ValueError, match="Objective scorer must be a true/false scorer"):
             PromptInjectionAttack(objective_target=mock_target, objective_scorer=mock_non_true_false_scorer)
 
-    def test_init_with_all_custom_configurations(
-        self, mock_target, mock_true_false_scorer, mock_prompt_normalizer, patch_central_database
-    ):
+    def test_init_with_all_custom_configurations(self, mock_target, mock_true_false_scorer, mock_prompt_normalizer):
         converter_cfg = AttackConverterConfig()
         scoring_cfg = AttackScoringConfig()
 
@@ -148,13 +145,14 @@ class TestPromptInjectionAttackInitialization:
         assert attack._attack_scoring_cfg == scoring_cfg
         assert attack._prompt_normalizer == mock_prompt_normalizer
 
-    def test_conversation_manager_initialized_correctly(self, mock_target, patch_central_database):
+    def test_conversation_manager_initialized_correctly(self, mock_target):
         attack = PromptInjectionAttack(objective_target=mock_target)
 
         assert attack._conversation_manager is not None
         assert hasattr(attack._conversation_manager, "update_conversation_state_async")
 
 
+@pytest.mark.usefixtures("patch_central_database")
 class TestContextValidation:
     """Tests for context validation logic"""
 
@@ -190,13 +188,12 @@ class TestContextValidation:
         attack._validate_context(context=context)  # Should not raise
 
 
+@pytest.mark.usefixtures("patch_central_database")
 class TestSetupPhase:
     """Tests for the setup phase of the attack"""
 
     @pytest.mark.asyncio
-    async def test_setup_initializes_achieved_objective_to_false(
-        self, mock_target, basic_context, patch_central_database
-    ):
+    async def test_setup_initializes_achieved_objective_to_false(self, mock_target, basic_context):
         attack = PromptInjectionAttack(objective_target=mock_target)
         attack._conversation_manager = MagicMock()
         attack._conversation_manager.update_conversation_state_async = AsyncMock()
@@ -209,7 +206,7 @@ class TestSetupPhase:
         assert basic_context.achieved_objective is False
 
     @pytest.mark.asyncio
-    async def test_setup_merges_memory_labels_correctly(self, mock_target, basic_context, patch_central_database):
+    async def test_setup_merges_memory_labels_correctly(self, mock_target, basic_context):
         attack = PromptInjectionAttack(objective_target=mock_target)
 
         # Add memory labels to both attack and context
@@ -229,9 +226,7 @@ class TestSetupPhase:
         }
 
     @pytest.mark.asyncio
-    async def test_setup_updates_conversation_state_with_converters(
-        self, mock_target, basic_context, patch_central_database
-    ):
+    async def test_setup_updates_conversation_state_with_converters(self, mock_target, basic_context):
         from pyrit.prompt_normalizer.prompt_converter_configuration import (
             PromptConverterConfiguration,
         )
@@ -254,10 +249,11 @@ class TestSetupPhase:
         )
 
 
+@pytest.mark.usefixtures("patch_central_database")
 class TestPromptPreparation:
     """Tests for prompt preparation logic"""
 
-    def test_get_prompt_group_uses_existing_seed_prompt_group(self, mock_target, basic_context, patch_central_database):
+    def test_get_prompt_group_uses_existing_seed_prompt_group(self, mock_target, basic_context):
         existing_group = SeedPromptGroup(prompts=[SeedPrompt(value="Existing prompt", data_type="text")])
         basic_context.seed_prompt_group = existing_group
 
@@ -266,9 +262,7 @@ class TestPromptPreparation:
 
         assert result == existing_group
 
-    def test_get_prompt_group_creates_from_objective_when_no_seed_group(
-        self, mock_target, basic_context, patch_central_database
-    ):
+    def test_get_prompt_group_creates_from_objective_when_no_seed_group(self, mock_target, basic_context):
         basic_context.seed_prompt_group = None
         basic_context.objective = "Custom objective text"
 
@@ -281,12 +275,13 @@ class TestPromptPreparation:
         assert result.prompts[0].data_type == "text"
 
 
+@pytest.mark.usefixtures("patch_central_database")
 class TestPromptSending:
     """Tests for sending prompts to target"""
 
     @pytest.mark.asyncio
     async def test_send_prompt_to_target_with_all_configurations(
-        self, mock_target, mock_prompt_normalizer, basic_context, patch_central_database
+        self, mock_target, mock_prompt_normalizer, basic_context
     ):
         from pyrit.prompt_normalizer.prompt_converter_configuration import (
             PromptConverterConfiguration,
@@ -323,9 +318,7 @@ class TestPromptSending:
         assert "orchestrator_identifier" in call_args.kwargs
 
     @pytest.mark.asyncio
-    async def test_send_prompt_handles_none_response(
-        self, mock_target, mock_prompt_normalizer, basic_context, patch_central_database
-    ):
+    async def test_send_prompt_handles_none_response(self, mock_target, mock_prompt_normalizer, basic_context):
         attack = PromptInjectionAttack(objective_target=mock_target, prompt_normalizer=mock_prompt_normalizer)
 
         prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value="Test prompt", data_type="text")])
@@ -336,12 +329,13 @@ class TestPromptSending:
         assert result is None
 
 
+@pytest.mark.usefixtures("patch_central_database")
 class TestResponseEvaluation:
     """Tests for response evaluation logic"""
 
     @pytest.mark.asyncio
     async def test_evaluate_response_with_objective_scorer_returns_score(
-        self, mock_target, mock_true_false_scorer, sample_response, success_score, patch_central_database
+        self, mock_target, mock_true_false_scorer, sample_response, success_score
     ):
         attack = PromptInjectionAttack(objective_target=mock_target, objective_scorer=mock_true_false_scorer)
 
@@ -411,6 +405,7 @@ class TestResponseEvaluation:
             assert call_args.kwargs["scorers"] == [auxiliary_scorer]
 
 
+@pytest.mark.usefixtures("patch_central_database")
 class TestAttackExecution:
     """Tests for the main attack execution logic"""
 
@@ -436,7 +431,6 @@ class TestAttackExecution:
         sample_response,
         success_score,
         failure_score,
-        patch_central_database,
         attempt_results,
         expected_attempts,
         expected_success,
@@ -485,7 +479,7 @@ class TestAttackExecution:
 
     @pytest.mark.asyncio
     async def test_perform_attack_without_scorer_completes_after_first_response(
-        self, mock_target, basic_context, sample_response, patch_central_database
+        self, mock_target, basic_context, sample_response
     ):
         attack = PromptInjectionAttack(objective_target=mock_target, objective_scorer=None)  # No scorer
 
@@ -515,7 +509,7 @@ class TestAttackExecution:
 
     @pytest.mark.asyncio
     async def test_perform_attack_without_scorer_retries_on_filtered_response(
-        self, mock_target, basic_context, sample_response, patch_central_database
+        self, mock_target, basic_context, sample_response
     ):
         attack = PromptInjectionAttack(objective_target=mock_target, objective_scorer=None)  # No scorer
 
@@ -536,8 +530,9 @@ class TestAttackExecution:
         assert attack._send_prompt_to_target_async.call_count == 2
 
 
+@pytest.mark.usefixtures("patch_central_database")
 class TestConverterIntegration:
-    """Tests for converter integration (inspired by test_prompt_sending_orchestrator.py)"""
+    """Tests for converter integration"""
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -559,7 +554,6 @@ class TestConverterIntegration:
         mock_prompt_normalizer,
         basic_context,
         sample_response,
-        patch_central_database,
         converters,
         input_text,
         expected_pattern,
@@ -584,7 +578,7 @@ class TestConverterIntegration:
 
     @pytest.mark.asyncio
     async def test_perform_attack_with_response_converters(
-        self, mock_target, mock_prompt_normalizer, basic_context, sample_response, patch_central_database
+        self, mock_target, mock_prompt_normalizer, basic_context, sample_response
     ):
         response_converter = Base64Converter()
         converter_config = PromptConverterConfiguration.from_converters(converters=[response_converter])
@@ -605,6 +599,7 @@ class TestConverterIntegration:
         assert call_args.kwargs["response_converter_configurations"] == converter_config
 
 
+@pytest.mark.usefixtures("patch_central_database")
 class TestLogging:
     """Tests for logging functionality"""
 
@@ -615,9 +610,7 @@ class TestLogging:
             (False, "has not achieved the objective"),
         ],
     )
-    def test_log_objective_status(
-        self, mock_target, basic_context, caplog, patch_central_database, achieved_objective, expected_log
-    ):
+    def test_log_objective_status(self, mock_target, basic_context, caplog, achieved_objective, expected_log):
         attack = PromptInjectionAttack(objective_target=mock_target)
         basic_context.achieved_objective = achieved_objective
 
@@ -627,11 +620,12 @@ class TestLogging:
         assert expected_log in caplog.text.lower()
 
 
+@pytest.mark.usefixtures("patch_central_database")
 class TestAttackLifecycle:
     """Tests for the complete attack lifecycle (execute_async)"""
 
     @pytest.mark.asyncio
-    async def test_execute_async_successful_lifecycle(self, mock_target, basic_context, patch_central_database):
+    async def test_execute_async_successful_lifecycle(self, mock_target, basic_context):
         attack = PromptInjectionAttack(objective_target=mock_target)
 
         # Mock all lifecycle methods
@@ -651,9 +645,7 @@ class TestAttackLifecycle:
         attack._teardown_async.assert_called_once_with(context=basic_context)
 
     @pytest.mark.asyncio
-    async def test_execute_async_validation_failure_prevents_execution(
-        self, mock_target, basic_context, patch_central_database
-    ):
+    async def test_execute_async_validation_failure_prevents_execution(self, mock_target, basic_context):
         attack = PromptInjectionAttack(objective_target=mock_target)
 
         # Mock validation to fail
@@ -662,8 +654,8 @@ class TestAttackLifecycle:
         attack._perform_attack_async = AsyncMock()
         attack._teardown_async = AsyncMock()
 
-        # Should raise AttackValidationError
-        with pytest.raises(AttackValidationError) as exc_info:
+        # Should raise AttackValidationException
+        with pytest.raises(AttackValidationException) as exc_info:
             await attack.execute_async(context=basic_context)
 
         # Verify error details
@@ -676,9 +668,7 @@ class TestAttackLifecycle:
         attack._teardown_async.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_execute_async_execution_error_still_calls_teardown(
-        self, mock_target, basic_context, patch_central_database
-    ):
+    async def test_execute_async_execution_error_still_calls_teardown(self, mock_target, basic_context):
         attack = PromptInjectionAttack(objective_target=mock_target)
 
         # Mock successful validation/setup but failed execution
@@ -687,8 +677,8 @@ class TestAttackLifecycle:
         attack._perform_attack_async = AsyncMock(side_effect=RuntimeError("Attack failed"))
         attack._teardown_async = AsyncMock()
 
-        # Should raise AttackExecutionError
-        with pytest.raises(AttackExecutionError) as exc_info:
+        # Should raise AttackExecutionException
+        with pytest.raises(AttackExecutionException) as exc_info:
             await attack.execute_async(context=basic_context)
 
         # Verify error details
@@ -701,15 +691,15 @@ class TestAttackLifecycle:
         attack._teardown_async.assert_called_once_with(context=basic_context)
 
     @pytest.mark.asyncio
-    async def test_teardown_async_is_noop(self, mock_target, basic_context, patch_central_database):
+    async def test_teardown_async_is_noop(self, mock_target, basic_context):
         attack = PromptInjectionAttack(objective_target=mock_target)
 
         # Should complete without error
         await attack._teardown_async(context=basic_context)
+        # No assertions needed - we just want to ensure it runs without raising
 
-        # No assertions needed - just verify it doesn't raise
 
-
+@pytest.mark.usefixtures("patch_central_database")
 class TestEdgeCasesAndErrorHandling:
     """Tests for edge cases and error handling scenarios"""
 
@@ -722,7 +712,6 @@ class TestEdgeCasesAndErrorHandling:
         basic_context,
         sample_response,
         success_score,
-        patch_central_database,
         max_attempts,
     ):
         attack = PromptInjectionAttack(objective_target=mock_target, objective_scorer=mock_true_false_scorer)
@@ -745,9 +734,7 @@ class TestEdgeCasesAndErrorHandling:
         attack._send_prompt_to_target_async.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_perform_attack_with_minimal_prompt_group(
-        self, mock_target, basic_context, sample_response, patch_central_database
-    ):
+    async def test_perform_attack_with_minimal_prompt_group(self, mock_target, basic_context, sample_response):
         attack = PromptInjectionAttack(objective_target=mock_target)
 
         # Set minimal prompt group with a single empty prompt
@@ -767,7 +754,7 @@ class TestEdgeCasesAndErrorHandling:
 
     @pytest.mark.asyncio
     async def test_evaluate_response_handles_scorer_exception(
-        self, mock_target, mock_true_false_scorer, sample_response, patch_central_database
+        self, mock_target, mock_true_false_scorer, sample_response
     ):
         attack = PromptInjectionAttack(objective_target=mock_target, objective_scorer=mock_true_false_scorer)
 
@@ -783,7 +770,7 @@ class TestEdgeCasesAndErrorHandling:
             with pytest.raises(RuntimeError, match="Scorer error"):
                 await attack._evaluate_response_async(response=sample_response, objective="Test")
 
-    def test_attack_has_unique_identifier(self, mock_target, patch_central_database):
+    def test_attack_has_unique_identifier(self, mock_target):
         attack1 = PromptInjectionAttack(objective_target=mock_target)
         attack2 = PromptInjectionAttack(objective_target=mock_target)
 

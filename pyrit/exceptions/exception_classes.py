@@ -92,7 +92,7 @@ class MissingPromptPlaceholderException(PyritException):
         super().__init__(message=message)
 
 
-class AttackValidationError(PyritException):
+class AttackValidationException(PyritException):
     """Raised when attack context validation fails"""
 
     def __init__(self, *, message: str = "Attack context validation failed", context_info: Optional[dict] = None):
@@ -113,7 +113,7 @@ class AttackValidationError(PyritException):
         return json.dumps({"status_code": self.status_code, "message": self.message, "context_info": self.context_info})
 
 
-class AttackExecutionError(PyritException):
+class AttackExecutionException(PyritException):
     """Raised when attack execution fails"""
 
     def __init__(

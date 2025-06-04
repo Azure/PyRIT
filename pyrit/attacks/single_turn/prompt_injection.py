@@ -193,13 +193,17 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
 
     def _get_prompt_group(self, context: SingleTurnAttackContext) -> SeedPromptGroup:
         """
-        Prepare the seed prompt group based on the context.
+        Prepare the seed prompt group for the attack.
+        
+        If a seed_prompt_group is provided in the context, it will be used directly.
+        Otherwise, creates a new SeedPromptGroup with the objective as a text prompt.
 
         Args:
             context (SingleTurnAttackContext): The attack context containing the objective
+                and optionally a pre-configured seed_prompt_group
 
         Returns:
-            SeedPromptGroup: The seed prompt group containing the seed prompt
+            SeedPromptGroup: The seed prompt group to be used in the attack
         """
         if context.seed_prompt_group:
             return context.seed_prompt_group
@@ -217,7 +221,8 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
             context (SingleTurnAttackContext): The attack context containing parameters and labels
 
         Returns:
-            Optional[PromptRequestResponse]: The model's response, or None if filtered out
+            Optional[PromptRequestResponse]: The model's response if successful, or None if 
+                the request was filtered, blocked, or encountered an error
         """
 
         return await self._prompt_normalizer.send_prompt_async(
@@ -233,13 +238,18 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
     async def _evaluate_response_async(self, *, response: PromptRequestResponse, objective: str) -> Optional[Score]:
         """
         Evaluate the response against the objective using the configured scorers.
+        
+        This method first runs all auxiliary scorers (if configured) to collect additional
+        metrics, then runs the objective scorer to determine if the attack succeeded.
 
         Args:
             response (PromptRequestResponse): The response from the model
             objective (str): The natural-language description of the attack's objective
 
         Returns:
-            Optional[Score]: The score assigned to the response, or None if no scoring was performed
+            Optional[Score]: The score from the objective scorer if configured, or None if 
+                no objective scorer is set. Note that auxiliary scorer results are not returned
+                but are still executed and stored.
         """
 
         role: ChatMessageRole = "assistant"

@@ -10,8 +10,8 @@ import pytest
 
 from pyrit.attacks.base.attack_strategy import AttackStrategy, AttackStrategyLogAdapter
 from pyrit.exceptions.exception_classes import (
-    AttackExecutionError,
-    AttackValidationError,
+    AttackExecutionException,
+    AttackValidationException,
 )
 
 
@@ -145,7 +145,7 @@ class TestAttackExecution:
     async def test_execute_async_validation_failure(self, mock_attack_strategy, basic_context):
         mock_attack_strategy._validate_context.side_effect = ValueError("Validation failed")
 
-        with pytest.raises(AttackValidationError) as exc_info:
+        with pytest.raises(AttackValidationException) as exc_info:
             await mock_attack_strategy.execute_async(context=basic_context)
 
         # Verify error details
@@ -163,7 +163,7 @@ class TestAttackExecution:
     async def test_execute_async_setup_failure_calls_teardown(self, mock_attack_strategy, basic_context):
         mock_attack_strategy._setup_async.side_effect = RuntimeError("Setup failed")
 
-        with pytest.raises(AttackExecutionError) as exc_info:
+        with pytest.raises(AttackExecutionException) as exc_info:
             await mock_attack_strategy.execute_async(context=basic_context)
 
         # Verify error details
@@ -181,7 +181,7 @@ class TestAttackExecution:
     async def test_execute_async_perform_failure_calls_teardown(self, mock_attack_strategy, basic_context):
         mock_attack_strategy._perform_attack_async.side_effect = RuntimeError("Attack failed")
 
-        with pytest.raises(AttackExecutionError):
+        with pytest.raises(AttackExecutionException):
             await mock_attack_strategy.execute_async(context=basic_context)
 
         # Verify lifecycle - teardown should still be called
@@ -195,7 +195,7 @@ class TestAttackExecution:
         mock_attack_strategy._teardown_async.side_effect = RuntimeError("Teardown failed")
 
         # Teardown failures should still propagate but after being called
-        with pytest.raises(AttackExecutionError):
+        with pytest.raises(AttackExecutionException):
             await mock_attack_strategy.execute_async(context=basic_context)
 
         # All methods should have been called
@@ -208,8 +208,8 @@ class TestAttackExecution:
     @pytest.mark.parametrize(
         "existing_exception",
         [
-            AttackValidationError(message="Existing validation error"),
-            AttackExecutionError(message="Existing execution error"),
+            AttackValidationException(message="Existing validation error"),
+            AttackExecutionException(message="Existing execution error"),
         ],
     )
     async def test_execute_async_preserves_specific_exceptions(

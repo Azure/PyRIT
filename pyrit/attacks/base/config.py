@@ -25,6 +25,18 @@ class AttackScoringConfig:
     # Whether to use scoring results as feedback for iterative attacks
     use_score_as_feedback: bool = False
 
+    # Threshold for considering an objective achieved (0.0 to 1.0)
+    # Only applies to float_scale scorers
+    objective_achieved_score_threshold: float = 0.8
+    
+    def __post_init__(self):
+        """Validate configuration values."""
+        if not 0.0 <= self.objective_achieved_score_threshold <= 1.0:
+            raise ValueError(
+                f"objective_achieved_score_threshold must be between 0.0 and 1.0, "
+                f"got {self.objective_achieved_score_threshold}"
+            )
+
 
 @dataclass
 class AttackConverterConfig:

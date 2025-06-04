@@ -30,16 +30,6 @@ from pyrit.score.scorer import Scorer
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_ADVERSARIAL_PROMPT_IF_OBJECTIVE_TARGET_IS_BLOCKED = (
-    "Request to target failed: blocked. Please rewrite your prompt to avoid getting blocked next time."
-)
-
-DEFAULT_ERR_MSG_IF_OBJECTIVE_TARGET_HAS_NON_TEXT_RESPONSE = (
-    "The attack target does not respond with text output, "
-    "so the scoring rationale is the only textual feedback "
-    "that can be passed to the red teaming chat. "
-)
-
 
 class RTOSystemPromptPaths(enum.Enum):
     TEXT_GENERATION = Path(RED_TEAM_ORCHESTRATOR_PATH, "text_generation.yaml").resolve()
@@ -67,6 +57,16 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
     The strategy supports customization through system prompts, seed prompts, and prompt converters,
     allowing for various attack techniques and scenarios.
     """
+
+    DEFAULT_ADVERSARIAL_PROMPT_IF_OBJECTIVE_TARGET_IS_BLOCKED = (
+        "Request to target failed: blocked. Please rewrite your prompt to avoid getting blocked next time."
+    )
+
+    DEFAULT_ERR_MSG_IF_OBJECTIVE_TARGET_HAS_NON_TEXT_RESPONSE = (
+        "The attack target does not respond with text output, "
+        "so the scoring rationale is the only textual feedback "
+        "that can be passed to the red teaming chat. "
+    )
 
     def __init__(
         self,
@@ -115,6 +115,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         self._score_evaluator = ScoreEvaluator(
             use_score_as_feedback=self._attack_scoring_config.use_score_as_feedback,
             scorer=self._objective_scorer,
+            objective_achieved_score_threshold=self._attack_scoring_config.objective_achieved_score_threshold,
         )
 
     def _validate_context(self, *, context: MultiTurnAttackContext) -> None:
@@ -127,8 +128,16 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         Raises:
             ValueError: If the context is invalid
         """
-        if not context.objective:
-            raise ValueError("Attack objective must be provided")
+        validators = [
+            # conditions that must be met for the attack to proceed
+            (lambda: bool(context.objective), "Attack objective must be provided"),
+            (lambda: context.max_turns > 0, "Max turns must be positive"),
+            (lambda: context.executed_turns < context.max_turns, "Already exceeded max turns"),
+        ]
+        
+        for validator, error_msg in validators:
+            if not validator():
+                raise ValueError(error_msg)
 
     async def _setup_async(self, *, context: MultiTurnAttackContext) -> None:
         """
@@ -146,8 +155,10 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         Raises:
             ValueError: If the system prompt is not defined
         """
-        # Initialize the conversation session if not already set
-        context.session = context.session or ConversationSession()
+        # Ensure session exists (though default factory should handle this)
+        if not context.session:
+            context.session = ConversationSession()
+            
         logger.debug(f"Conversation session ID: {context.session.conversation_id}")
         logger.debug(f"Adversarial chat conversation ID: {context.session.adversarial_chat_conversation_id}")
 
@@ -311,15 +322,25 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         """
         # Get the last assistant message from the conversation manager
         response = self._conversation_manager.get_last_message(
-            conversation_id=context.session.conversation_id, role="assistant"
+            conversation_id=context.session.conversation_id, 
+            role="assistant"
         )
+        
         if not response:
             return self._adversarial_chat_seed_prompt.value
-
-        # Build the prompt based on the last response from the target
-        if response.converted_value_data_type in ["text", "error"]:
-            return self._handle_adversarial_text_response(response=response, context=context)
-        return self._handle_adversarial_file_response(response=response, context=context)
+        
+        # Delegate to appropriate handler based on data type
+        handlers = {
+            "text": self._handle_adversarial_text_response,
+            "error": self._handle_adversarial_text_response,
+        }
+        
+        handler = handlers.get(
+            response.converted_value_data_type, 
+            self._handle_adversarial_file_response
+        )
+        
+        return handler(response=response, context=context)
 
     def _handle_adversarial_text_response(
         self, *, response: PromptRequestPiece, context: MultiTurnAttackContext
@@ -351,7 +372,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             return prompt_text
 
         elif response.is_blocked():
-            return DEFAULT_ADVERSARIAL_PROMPT_IF_OBJECTIVE_TARGET_IS_BLOCKED
+            return RedTeamingAttack.DEFAULT_ADVERSARIAL_PROMPT_IF_OBJECTIVE_TARGET_IS_BLOCKED
 
         return f"Request to target failed: {response.response_error}"
 
@@ -382,14 +403,14 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             # If scoring is not used as feedback, we cannot use the score rationale
             # to provide feedback to the adversarial chat
             raise ValueError(
-                f"{DEFAULT_ERR_MSG_IF_OBJECTIVE_TARGET_HAS_NON_TEXT_RESPONSE}"
+                f"{RedTeamingAttack.DEFAULT_ERR_MSG_IF_OBJECTIVE_TARGET_HAS_NON_TEXT_RESPONSE}"
                 "However, the use_score_as_feedback flag is set to False so it cannot be utilized."
             )
 
         feedback = self._score_evaluator.get_feedback(context.last_score) if context.last_score else None
         if not feedback:
             raise ValueError(
-                f"{DEFAULT_ERR_MSG_IF_OBJECTIVE_TARGET_HAS_NON_TEXT_RESPONSE}"
+                f"{RedTeamingAttack.DEFAULT_ERR_MSG_IF_OBJECTIVE_TARGET_HAS_NON_TEXT_RESPONSE}"
                 "However, no scoring rationale was provided by the scorer."
             )
 

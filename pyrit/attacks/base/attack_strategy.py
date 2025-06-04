@@ -13,8 +13,8 @@ from pyrit.attacks.base.result import ResultT
 from pyrit.common import default_values
 from pyrit.common.logger import logger
 from pyrit.exceptions.exception_classes import (
-    AttackExecutionError,
-    AttackValidationError,
+    AttackExecutionException,
+    AttackValidationException,
 )
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models.identifiers import Identifier
@@ -168,7 +168,7 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
         try:
             self._validate_context(context=context)
         except Exception as e:
-            error = AttackValidationError(
+            error = AttackValidationException(
                 message=f"Context validation failed: {str(e)}",
                 context_info={
                     "attack_type": self.__class__.__name__,
@@ -185,12 +185,12 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
             async with self._execution_context(context):
                 self._logger.debug(f"Performing attack: {self.__class__.__name__}")
                 return await self._perform_attack_async(context=context)
-        except (AttackExecutionError, AttackValidationError):
+        except (AttackExecutionException, AttackValidationException):
             raise  # Re-raise
         except Exception as e:
             # Create proper execution error with attack details
             objective = context.objective
-            exec_error = AttackExecutionError(
+            exec_error = AttackExecutionException(
                 message=f"Unexpected error during attack execution: {str(e)}",
                 attack_name=self.__class__.__name__,
                 objective=objective,

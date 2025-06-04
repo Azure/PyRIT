@@ -205,22 +205,32 @@ class ConversationManager:
             logger.debug(f"No history provided for conversation initialization: {conversation_id}")
             return state
 
+        # Filter out None values and empty requests
+        valid_requests = [
+            req for req in prepended_conversation 
+            if req is not None and req.request_pieces
+        ]
+        
+        if not valid_requests:
+            logger.debug(f"No valid requests in prepended conversation for: {conversation_id}")
+            return state
+
         # Determine if we should exclude the last message (if it's a user message in multi-turn context)
-        last_message = prepended_conversation[-1].request_pieces[0]
+        last_message = valid_requests[-1].request_pieces[0]
         is_multi_turn = max_turns is not None
         should_exclude_last = is_multi_turn and last_message.role == "user"
 
         # Process all messages except potentially the last one
-        for i, request in enumerate(prepended_conversation):
+        for i, request in enumerate(valid_requests):
             # Skip the last message if it's a user message in multi-turn context
-            if should_exclude_last and i == len(prepended_conversation) - 1:
+            if should_exclude_last and i == len(valid_requests) - 1:
                 logger.debug("Skipping last user message (will be added by orchestrator)")
                 continue
 
             # Apply converters if needed
             if converter_configurations:
                 logger.debug(
-                    f"Converting request {i + 1}/{len(prepended_conversation)} in conversation {conversation_id}"
+                    f"Converting request {i + 1}/{len(valid_requests)} in conversation {conversation_id}"
                 )
                 # Convert the request values using the provided configurations
                 await self._prompt_normalizer.convert_values(
@@ -229,7 +239,7 @@ class ConversationManager:
                 )
 
             # Process the request piece
-            logger.debug(f"Processing message {i + 1}/{len(prepended_conversation)} in conversation {conversation_id}")
+            logger.debug(f"Processing message {i + 1}/{len(valid_requests)} in conversation {conversation_id}")
             await self._process_prepended_message_async(
                 request=request,
                 conversation_id=conversation_id,
@@ -242,7 +252,7 @@ class ConversationManager:
         if is_multi_turn:
             await self._populate_conversation_state_async(
                 last_message=last_message,
-                prepended_conversation=prepended_conversation,
+                prepended_conversation=valid_requests,
                 conversation_state=state,
             )
 
