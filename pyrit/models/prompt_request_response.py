@@ -69,7 +69,7 @@ class PromptRequestResponse:
         for request_piece in self.request_pieces:
             ret += str(request_piece) + "\n"
         return "\n".join([str(request_piece) for request_piece in self.request_pieces])
-    
+
     def filter_by_role(self, *, role: ChatMessageRole) -> Sequence[PromptRequestPiece]:
         """
         Filters the request pieces by role.
@@ -80,10 +80,7 @@ class PromptRequestResponse:
         Returns:
             Sequence[PromptRequestPiece]: A sequence of request pieces that match the specified role.
         """
-        return [
-            piece for piece in self.request_pieces 
-            if piece.role == role
-        ]
+        return [piece for piece in self.request_pieces if piece.role == role]
 
     @staticmethod
     def flatten_to_prompt_request_pieces(

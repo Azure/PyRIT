@@ -2,8 +2,8 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Optional
 import uuid
+from typing import Optional
 
 from pyrit.attacks.base.attack_strategy import AttackStrategy
 from pyrit.attacks.base.config import AttackConverterConfig, AttackScoringConfig
@@ -198,7 +198,7 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
     def _get_prompt_group(self, context: SingleTurnAttackContext) -> SeedPromptGroup:
         """
         Prepare the seed prompt group for the attack.
-        
+
         If a seed_prompt_group is provided in the context, it will be used directly.
         Otherwise, creates a new SeedPromptGroup with the objective as a text prompt.
 
@@ -225,7 +225,7 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
             context (SingleTurnAttackContext): The attack context containing parameters and labels
 
         Returns:
-            Optional[PromptRequestResponse]: The model's response if successful, or None if 
+            Optional[PromptRequestResponse]: The model's response if successful, or None if
                 the request was filtered, blocked, or encountered an error
         """
 
@@ -242,7 +242,7 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
     async def _evaluate_response_async(self, *, response: PromptRequestResponse, objective: str) -> Optional[Score]:
         """
         Evaluate the response against the objective using the configured scorers.
-        
+
         This method first runs all auxiliary scorers (if configured) to collect additional
         metrics, then runs the objective scorer to determine if the attack succeeded.
 
@@ -251,7 +251,7 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
             objective (str): The natural-language description of the attack's objective
 
         Returns:
-            Optional[Score]: The score from the objective scorer if configured, or None if 
+            Optional[Score]: The score from the objective scorer if configured, or None if
                 no objective scorer is set. Note that auxiliary scorer results are not returned
                 but are still executed and stored.
         """

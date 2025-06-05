@@ -12,7 +12,7 @@ from pyrit.attacks.base.result import ResultT
 class AttackExecutor:
     """
     Manages the execution of attack strategies with support for different execution patterns.
-    
+
     The AttackExecutor provides controlled execution of attack strategies with features like
     concurrency limiting and parallel execution. It can handle multiple objectives against
     the same target or execute different strategies concurrently.
@@ -26,7 +26,7 @@ class AttackExecutor:
             max_concurrency (int): Maximum number of concurrent attack executions allowed.
                 Must be a positive integer. Defaults to 5 to balance performance and
                 resource usage.
-        
+
         Raises:
             ValueError: If max_concurrency is not a positive integer.
         """
@@ -35,10 +35,7 @@ class AttackExecutor:
         self._max_concurrency = max_concurrency
 
     async def execute_multi_objective_attack(
-        self,
-        attack: AttackStrategy[ContextT, ResultT],
-        context_template: ContextT,
-        objectives: List[str]
+        self, attack: AttackStrategy[ContextT, ResultT], context_template: ContextT, objectives: List[str]
     ) -> List[ResultT]:
         """
         Execute the same attack strategy with multiple objectives against the same target in parallel.
@@ -117,5 +114,3 @@ class AttackExecutor:
         tasks = [execute_with_semaphore(attack, ctx) for ctx in contexts]
 
         return await asyncio.gather(*tasks)
-
-    

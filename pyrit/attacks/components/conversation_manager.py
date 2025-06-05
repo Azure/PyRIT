@@ -206,11 +206,8 @@ class ConversationManager:
             return state
 
         # Filter out None values and empty requests
-        valid_requests = [
-            req for req in prepended_conversation 
-            if req is not None and req.request_pieces
-        ]
-        
+        valid_requests = [req for req in prepended_conversation if req is not None and req.request_pieces]
+
         if not valid_requests:
             logger.debug(f"No valid requests in prepended conversation for: {conversation_id}")
             return state
@@ -229,9 +226,7 @@ class ConversationManager:
 
             # Apply converters if needed
             if converter_configurations:
-                logger.debug(
-                    f"Converting request {i + 1}/{len(valid_requests)} in conversation {conversation_id}"
-                )
+                logger.debug(f"Converting request {i + 1}/{len(valid_requests)} in conversation {conversation_id}")
                 # Convert the request values using the provided configurations
                 await self._prompt_normalizer.convert_values(
                     request_response=request,

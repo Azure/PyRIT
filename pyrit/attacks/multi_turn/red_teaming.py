@@ -134,7 +134,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             (lambda: context.max_turns > 0, "Max turns must be positive"),
             (lambda: context.executed_turns < context.max_turns, "Already exceeded max turns"),
         ]
-        
+
         for validator, error_msg in validators:
             if not validator():
                 raise ValueError(error_msg)
@@ -157,7 +157,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         """
         # Ensuring the context has a session
         context.session = ConversationSession()
-            
+
         logger.debug(f"Conversation session ID: {context.session.conversation_id}")
         logger.debug(f"Adversarial chat conversation ID: {context.session.adversarial_chat_conversation_id}")
 
@@ -321,24 +321,20 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         """
         # Get the last assistant message from the conversation manager
         response = self._conversation_manager.get_last_message(
-            conversation_id=context.session.conversation_id, 
-            role="assistant"
+            conversation_id=context.session.conversation_id, role="assistant"
         )
-        
+
         if not response:
             return self._adversarial_chat_seed_prompt.value
-        
+
         # Delegate to appropriate handler based on data type
         handlers = {
             "text": self._handle_adversarial_text_response,
             "error": self._handle_adversarial_text_response,
         }
-        
-        handler = handlers.get(
-            response.converted_value_data_type, 
-            self._handle_adversarial_file_response
-        )
-        
+
+        handler = handlers.get(response.converted_value_data_type, self._handle_adversarial_file_response)
+
         return handler(response=response, context=context)
 
     def _handle_adversarial_text_response(

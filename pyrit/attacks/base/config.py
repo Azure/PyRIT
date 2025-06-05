@@ -28,7 +28,7 @@ class AttackScoringConfig:
     # Threshold for considering an objective achieved (0.0 to 1.0)
     # Only applies to float_scale scorers
     objective_achieved_score_threshold: float = 0.8
-    
+
     def __post_init__(self):
         """Validate configuration values."""
         if not 0.0 <= self.objective_achieved_score_threshold <= 1.0:
