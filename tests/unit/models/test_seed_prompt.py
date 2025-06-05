@@ -179,7 +179,7 @@ async def test_group_seed_prompt_groups_from_yaml(duckdb_instance):
     await duckdb_instance.add_seed_prompts_to_memory_async(prompts=prompts.prompts, added_by="rlundeen")
 
     groups = duckdb_instance.get_seed_prompt_groups()
-    # there are 8 seedPrompts, 6 groups
+    # there are 8 SeedPrompts, 6 SeedPromptGroups
     assert len(groups) == 6
 
 
@@ -191,7 +191,7 @@ async def test_group_seed_prompt_alias_sets_group_id(duckdb_instance):
     await duckdb_instance.add_seed_prompts_to_memory_async(prompts=prompts.prompts, added_by="rlundeen")
 
     groups = duckdb_instance.get_seed_prompt_groups()
-    # there are 8 seedPrompts, 6 groups
+    # there are 8 SeedPrompts, 6 SeedPromptGroups
     assert len(groups) == 6
 
     group = [group for group in groups if len(group.prompts) == 2][0]

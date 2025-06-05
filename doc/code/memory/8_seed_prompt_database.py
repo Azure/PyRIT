@@ -55,11 +55,11 @@ await memory.add_seed_prompts_to_memory_async(prompts=seed_prompt_dataset.prompt
 memory.get_seed_prompt_dataset_names()
 
 # %% [markdown]
-# The dataset we just uploaded (called "2025_06_pyrit_illegal_example") is also represented.
+# The dataset we just uploaded (called "2025_06_pyrit_illegal_multimodal_example") is also represented.
 # To get all seed prompts from that dataset, we can query as follows:
 
 # %%
-dataset_name = "2025_06_pyrit_illegal_example"
+dataset_name = "2025_06_pyrit_illegal_multimodal_example"
 prompts = memory.get_seed_prompts(dataset_name=dataset_name)
 print(f"Total number of the prompts with dataset name '{dataset_name}':", len(prompts))
 for prompt in prompts:
