@@ -3,6 +3,7 @@
 
 import logging
 from typing import Optional
+import uuid
 
 from pyrit.attacks.base.attack_strategy import AttackStrategy
 from pyrit.attacks.base.config import AttackConverterConfig, AttackScoringConfig
@@ -107,6 +108,9 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
         Args:
             context (SingleTurnAttackContext): The attack context containing attack parameters
         """
+        # Ensure the context has a conversation ID
+        context.conversation_id = str(uuid.uuid4())
+
         # Initialize achieved_objective to False
         context.achieved_objective = False
 
@@ -179,7 +183,7 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
         return AttackResult(
             conversation_id=context.conversation_id,
             objective=context.objective,
-            orchestrator_identifier=self.get_identifier(),
+            attack_identifier=self.get_identifier(),
             last_response=response.get_piece() if response else None,
             last_score=score,
             achieved_objective=context.achieved_objective,

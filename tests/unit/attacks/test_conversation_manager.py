@@ -48,9 +48,9 @@ def mock_prompt_target():
 def attack_identifier():
     """Create a sample attack identifier"""
     return {
-            "__type__": "TestAttack",
-            "__module__": "pyrit.attacks.test_attack",
-            "id":  str(uuid.uuid4()),
+        "__type__": "TestAttack",
+        "__module__": "pyrit.attacks.test_attack",
+        "id": str(uuid.uuid4()),
     }
 
 
@@ -121,7 +121,9 @@ class TestConversationManagerInitialization:
         assert isinstance(manager._prompt_normalizer, PromptNormalizer)
         assert manager._memory is not None
 
-    def test_init_with_custom_prompt_normalizer(self, attack_identifier: dict[str, str], mock_prompt_normalizer: MagicMock):
+    def test_init_with_custom_prompt_normalizer(
+        self, attack_identifier: dict[str, str], mock_prompt_normalizer: MagicMock
+    ):
         manager = ConversationManager(attack_identifier=attack_identifier, prompt_normalizer=mock_prompt_normalizer)
 
         assert manager._prompt_normalizer == mock_prompt_normalizer
@@ -139,10 +141,12 @@ class TestConversationRetrieval:
 
         assert result == []
 
-    def test_get_conversation_returns_messages_in_order(self, attack_identifier: dict[str, str], sample_conversation: list[PromptRequestResponse]):
+    def test_get_conversation_returns_messages_in_order(
+        self, attack_identifier: dict[str, str], sample_conversation: list[PromptRequestResponse]
+    ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
-        
+
         # Add messages to the database
         for response in sample_conversation:
             for piece in response.request_pieces:
@@ -163,10 +167,12 @@ class TestConversationRetrieval:
 
         assert result is None
 
-    def test_get_last_message_returns_last_piece(self, attack_identifier: dict[str, str], sample_conversation: list[PromptRequestResponse]):
+    def test_get_last_message_returns_last_piece(
+        self, attack_identifier: dict[str, str], sample_conversation: list[PromptRequestResponse]
+    ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
-        
+
         # Add messages to the database
         for response in sample_conversation:
             for piece in response.request_pieces:
@@ -178,10 +184,12 @@ class TestConversationRetrieval:
         assert result is not None
         assert result.role == "assistant"
 
-    def test_get_last_message_with_role_filter(self, attack_identifier: dict[str, str], sample_conversation: list[PromptRequestResponse]):
+    def test_get_last_message_with_role_filter(
+        self, attack_identifier: dict[str, str], sample_conversation: list[PromptRequestResponse]
+    ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
-        
+
         # Add messages to the database
         for response in sample_conversation:
             for piece in response.request_pieces:
@@ -199,7 +207,7 @@ class TestConversationRetrieval:
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
-        
+
         # Add messages to the database
         for response in sample_conversation:
             for piece in response.request_pieces:
@@ -249,9 +257,7 @@ class TestSystemPromptHandling:
         conversation_id = str(uuid.uuid4())
         system_prompt = "You are a helpful assistant"
 
-        manager.add_system_prompt(
-            target=mock_chat_target, conversation_id=conversation_id, system_prompt=system_prompt
-        )
+        manager.add_system_prompt(target=mock_chat_target, conversation_id=conversation_id, system_prompt=system_prompt)
 
         mock_chat_target.set_system_prompt.assert_called_once()
         call_args = mock_chat_target.set_system_prompt.call_args
@@ -330,7 +336,10 @@ class TestConversationStateUpdate:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_with_converters(
-        self, attack_identifier: dict[str, str], mock_prompt_normalizer: MagicMock, sample_conversation: list[PromptRequestResponse]
+        self,
+        attack_identifier: dict[str, str],
+        mock_prompt_normalizer: MagicMock,
+        sample_conversation: list[PromptRequestResponse],
     ):
         manager = ConversationManager(attack_identifier=attack_identifier, prompt_normalizer=mock_prompt_normalizer)
         conversation_id = str(uuid.uuid4())
@@ -373,7 +382,10 @@ class TestConversationStateUpdate:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_counts_turns_correctly(
-        self, attack_identifier: dict[str, str], sample_user_piece: PromptRequestPiece, sample_assistant_piece: PromptRequestPiece
+        self,
+        attack_identifier: dict[str, str],
+        sample_user_piece: PromptRequestPiece,
+        sample_assistant_piece: PromptRequestPiece,
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
@@ -395,7 +407,10 @@ class TestConversationStateUpdate:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_exceeds_max_turns_raises_error(
-        self, attack_identifier: dict[str, str], sample_user_piece: PromptRequestPiece, sample_assistant_piece: PromptRequestPiece
+        self,
+        attack_identifier: dict[str, str],
+        sample_user_piece: PromptRequestPiece,
+        sample_assistant_piece: PromptRequestPiece,
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
@@ -417,7 +432,11 @@ class TestConversationStateUpdate:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_extracts_assistant_scores(
-        self, attack_identifier: dict[str, str], sample_user_piece: PromptRequestPiece, sample_assistant_piece: PromptRequestPiece, sample_score: Score
+        self,
+        attack_identifier: dict[str, str],
+        sample_user_piece: PromptRequestPiece,
+        sample_assistant_piece: PromptRequestPiece,
+        sample_score: Score,
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
@@ -425,16 +444,16 @@ class TestConversationStateUpdate:
         # First add the conversation to memory
         user_response = PromptRequestResponse(request_pieces=[sample_user_piece])
         assistant_response = PromptRequestResponse(request_pieces=[sample_assistant_piece])
-        
+
         # Manually add to memory to establish the original_prompt_id
         for piece in user_response.request_pieces:
             piece.conversation_id = conversation_id
         for piece in assistant_response.request_pieces:
             piece.conversation_id = conversation_id
-        
+
         manager._memory.add_request_response_to_memory(request=user_response)
         manager._memory.add_request_response_to_memory(request=assistant_response)
-        
+
         # Add score to memory
         sample_score.prompt_request_response_id = str(sample_assistant_piece.original_prompt_id)
         manager._memory.add_scores_to_memory(scores=[sample_score])
@@ -485,7 +504,7 @@ class TestConversationStateUpdate:
         for piece in assistant_response.request_pieces:
             piece.conversation_id = conversation_id
         manager._memory.add_request_response_to_memory(request=assistant_response)
-        
+
         sample_score.prompt_request_response_id = str(sample_assistant_piece.original_prompt_id)
         manager._memory.add_scores_to_memory(scores=[sample_score])
 

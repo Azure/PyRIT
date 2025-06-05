@@ -155,9 +155,8 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         Raises:
             ValueError: If the system prompt is not defined
         """
-        # Ensure session exists (though default factory should handle this)
-        if not context.session:
-            context.session = ConversationSession()
+        # Ensuring the context has a session
+        context.session = ConversationSession()
             
         logger.debug(f"Conversation session ID: {context.session.conversation_id}")
         logger.debug(f"Adversarial chat conversation ID: {context.session.adversarial_chat_conversation_id}")
@@ -250,7 +249,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
 
         # Prepare the result
         return AttackResult(
-            orchestrator_identifier=self.get_identifier(),
+            attack_identifier=self.get_identifier(),
             conversation_id=context.session.conversation_id,
             objective=context.objective,
             achieved_objective=context.achieved_objective,

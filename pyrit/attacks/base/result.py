@@ -22,8 +22,8 @@ class AttackResult:
     # Natural-language description of the attacker’s objective
     objective: str
 
-    # Identifiers of the orchestrator that executed the attack (e.g., name, version)
-    orchestrator_identifier: dict[str, str]
+    # Identifier of the attack (e.g., name, version)
+    attack_identifier: dict[str, str]
 
     # Model response generated in the final turn of the attack
     last_response: Optional[PromptRequestPiece] = None
