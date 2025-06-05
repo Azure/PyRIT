@@ -173,7 +173,9 @@ def test_prompt_dataset_from_yaml_defaults():
 
 @pytest.mark.asyncio
 async def test_group_seed_prompt_groups_from_yaml(duckdb_instance):
-    prompts = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal-dataset.prompt")
+    prompts = SeedPromptDataset.from_yaml_file(
+        pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal-dataset.prompt"
+    )
     await duckdb_instance.add_seed_prompts_to_memory_async(prompts=prompts.prompts, added_by="rlundeen")
 
     groups = duckdb_instance.get_seed_prompt_groups()
@@ -183,7 +185,9 @@ async def test_group_seed_prompt_groups_from_yaml(duckdb_instance):
 
 @pytest.mark.asyncio
 async def test_group_seed_prompt_alias_sets_group_id(duckdb_instance):
-    prompts = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal-dataset.prompt")
+    prompts = SeedPromptDataset.from_yaml_file(
+        pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal-dataset.prompt"
+    )
     await duckdb_instance.add_seed_prompts_to_memory_async(prompts=prompts.prompts, added_by="rlundeen")
 
     groups = duckdb_instance.get_seed_prompt_groups()
