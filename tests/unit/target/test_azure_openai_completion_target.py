@@ -155,7 +155,7 @@ async def test_openai_completion_target_default_api_version(sample_conversations
 
         called_params = mock_request.call_args[1]["params"]
         assert "api-version" in called_params
-        assert called_params["api-version"] == "2024-06-01"
+        assert called_params["api-version"] == "2024-10-21"
 
 
 @pytest.mark.asyncio

@@ -119,10 +119,32 @@ memory = CentralMemory.get_memory_instance()
 memory.dispose_engine()
 
 # %% [markdown]
-# ## RAG Vulnerability Demonstration.
-# In this demonstration, we use the XPIATestOrchestrator to generate a CV (overlaying hidden text for “Relevant skills”) and automatically upload it to `/upload/`, then trigger `/search_candidates/` for evaluation.
+# ## RAG Vulnerability Demonstration
 #
-# Before running this script, ensure that the AI Recruiter service is up and running locally. For detailed setup instructions, please refer to the official Docker setup guide in the repository:
+# In this demonstration, we show a potential security weakness in Retrieval-Augmented Generation (RAG) systems using an example involving an AI-powered job application screener, referred to here as the "AI Recruiter".
+#
+# ### What is an AI Recruiter?
+# An AI Recruiter is an automated system that evaluates job applicants by analyzing their resumes (CVs) and comparing them to job requirements using natural language processing and semantic similarity scoring. These systems often rely on RAG techniques to enhance performance by retrieving relevant context before generating a response or decision.
+#
+# ### What is Being Demonstrated?
+# This demonstration illustrates how an attacker could exploit prompt injection to influence the AI Recruiter's decision. Specifically, we show how a candidate—*Jonathon Sanchez*—can use hidden injected text in their resume to appear highly qualified for a role they are not suited for.
+#
+# We use the `XPIATestOrchestrator` to:
+# - Generate a resume that contains hidden "Relevant skills" text intended to mislead the ranking algorithm.
+# - Automatically upload this resume to the `/upload/` endpoint of the AI Recruiter.
+# - Trigger the `/search_candidates/` endpoint to simulate a hiring query.
+#
+# ### What to Expect from the Output
+# - The system returns a ranked list of candidates based on semantic similarity scores and vector distances.
+# - Normally, high scores and low distances would indicate a well-matched candidate.
+# - However, due to the prompt injection, *Jonathon Sanchez* may appear at or near the top of the list, despite lacking actual qualifications.
+#
+# ### Interpreting the Results
+# - This result demonstrates how RAG-based decision systems can be manipulated through unsanitized input.
+# - It also underscores the importance of robust input validation and prompt hardening in AI applications.
+#
+# ### Prerequisite
+# Before running this demonstration, ensure the AI Recruiter service is up and running locally. For detailed setup instructions, please refer to the official Docker setup guide in the repository:
 # [AI Recruiter – Docker Setup](https://github.com/KutalVolkan/ai_recruiter/blob/3e5b99b4c1a2d728904c86bc7243099649d0d918/docker_setup/readme.md)
 
 # %%
