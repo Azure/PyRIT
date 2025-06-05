@@ -51,7 +51,7 @@ class RealtimeTarget(OpenAITarget):
     def __init__(
         self,
         *,
-        api_version: str = "2024-10-01-preview",
+        api_version: str = "2024-12-17",
         system_prompt: Optional[str] = None,
         voice: Optional[RealTimeVoice] = None,
         existing_convo: Optional[dict] = None,

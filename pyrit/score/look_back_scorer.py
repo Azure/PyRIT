@@ -1,5 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+import re
 from pathlib import Path
 from typing import Optional
 
@@ -18,11 +19,14 @@ class LookBackScorer(Scorer):
 
     Parameters:
         chat_target (PromptChatTarget): The chat target to use for scoring.
+        exclude_instruction_prompts (bool): If True, excludes instruction prompts from the conversation.
+            Must be passed as a keyword argument.
     """
 
-    def __init__(self, chat_target: PromptChatTarget) -> None:
+    def __init__(self, chat_target: PromptChatTarget, *, exclude_instruction_prompts: bool) -> None:
         self._prompt_target = chat_target
         self.scorer_type = "float_scale"
+        self.exclude_instruction_prompts = exclude_instruction_prompts
 
         behavior_change_prompt_path = Path(
             DATASETS_PATH, "score", "scales", "behavior_change_system_prompt.yaml"
@@ -59,7 +63,13 @@ class LookBackScorer(Scorer):
         # Loop through each request to create a single string containing the conversation text
         conversation_as_text = ""
         for request in conversation:
-            # If the request contains a system or user prompt, ignore
+            # Check exclude_instruction_prompts flag
+            if self.exclude_instruction_prompts:
+                # Skip instruction prompts
+                if re.search(r"#\s*Instructions", request.request_pieces[0].original_value, re.IGNORECASE):
+                    continue
+            # Append the request text to the conversation string
+            # Only append user and assistant roles to the conversation string
             if request.request_pieces[0].role in ["user", "assistant"]:
                 conversation_as_text += (
                     f"{request.request_pieces[0].role}: {request.request_pieces[0].original_value}\n"
