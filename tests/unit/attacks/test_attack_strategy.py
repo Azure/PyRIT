@@ -25,15 +25,6 @@ def basic_context():
 
 
 @pytest.fixture
-def mock_memory():
-    """Mock the CentralMemory instance"""
-    with patch("pyrit.attacks.base.attack_strategy.CentralMemory") as mock:
-        memory_instance = MagicMock()
-        mock.get_memory_instance.return_value = memory_instance
-        yield memory_instance
-
-
-@pytest.fixture
 def mock_default_values():
     """Mock default values for memory labels"""
     with patch("pyrit.attacks.base.attack_strategy.default_values") as mock:
@@ -42,7 +33,7 @@ def mock_default_values():
 
 
 @pytest.fixture
-def mock_attack_strategy(mock_memory, mock_default_values):
+def mock_attack_strategy(mock_default_values):
     """Create a mock attack strategy with all abstract methods mocked"""
 
     # Create a concrete subclass with mocked abstract methods
@@ -60,10 +51,11 @@ def mock_attack_strategy(mock_memory, mock_default_values):
     return TestableAttackStrategy()
 
 
+@pytest.mark.usefixtures("patch_central_database")
 class TestAttackStrategyInitialization:
     """Tests for AttackStrategy initialization"""
 
-    def test_init_with_default_parameters(self, mock_memory, mock_default_values):
+    def test_init_with_default_parameters(self, mock_default_values):
         class ConcreteStrategy(AttackStrategy):
             _validate_context = MagicMock()
             _setup_async = AsyncMock()
@@ -74,11 +66,11 @@ class TestAttackStrategyInitialization:
 
         assert strategy._id is not None
         assert isinstance(strategy._id, uuid.UUID)
-        assert strategy._memory == mock_memory
+        assert strategy._memory is not None
         assert strategy._memory_labels == {"test_label": "test_value"}
         assert isinstance(strategy._logger, AttackStrategyLogAdapter)
 
-    def test_init_with_custom_logger(self, mock_memory, mock_default_values):
+    def test_init_with_custom_logger(self, mock_default_values):
         class ConcreteStrategy(AttackStrategy):
             _validate_context = MagicMock()
             _setup_async = AsyncMock()
@@ -99,7 +91,7 @@ class TestAttackStrategyInitialization:
             (None, {}),
         ],
     )
-    def test_init_with_various_memory_labels(self, mock_memory, memory_labels_str, expected):
+    def test_init_with_various_memory_labels(self, memory_labels_str, expected):
         with patch("pyrit.attacks.base.attack_strategy.default_values") as mock:
             mock.get_non_required_value.return_value = memory_labels_str
 
@@ -122,6 +114,7 @@ class TestAttackStrategyInitialization:
         assert identifier["id"] == str(mock_attack_strategy._id)
 
 
+@pytest.mark.usefixtures("patch_central_database")
 class TestAttackExecution:
     """Tests for the main attack execution logic (execute_async)"""
 
@@ -224,6 +217,7 @@ class TestAttackExecution:
         assert exc_info.value is existing_exception
 
 
+@pytest.mark.usefixtures("patch_central_database")
 class TestLogging:
     """Tests for logging functionality"""
 
@@ -273,11 +267,12 @@ class TestLogging:
         assert kwargs == {}
 
 
+@pytest.mark.usefixtures("patch_central_database")
 class TestConcurrency:
     """Tests for concurrent execution scenarios"""
 
     @pytest.mark.asyncio
-    async def test_multiple_concurrent_executions(self, mock_memory, mock_default_values):
+    async def test_multiple_concurrent_executions(self, mock_default_values):
         # Create multiple independent strategy instances
         strategies = []
         for _ in range(5):
@@ -324,6 +319,7 @@ class TestConcurrency:
         assert results[1].id == "result2"
 
 
+@pytest.mark.usefixtures("patch_central_database")
 class TestEdgeCasesAndErrorHandling:
     """Tests for edge cases and error handling"""
 
@@ -335,7 +331,7 @@ class TestEdgeCasesAndErrorHandling:
         error_msg = str(exc_info.value)
         assert "_validate_context" in error_msg or "abstract" in error_msg
 
-    def test_memory_labels_invalid_format(self, mock_memory):
+    def test_memory_labels_invalid_format(self):
         with patch("pyrit.attacks.base.attack_strategy.default_values") as mock:
             mock.get_non_required_value.return_value = "invalid json"
 
@@ -350,7 +346,7 @@ class TestEdgeCasesAndErrorHandling:
 
                 ConcreteStrategy()
 
-    def test_multiple_instances_have_unique_ids(self, mock_memory, mock_default_values):
+    def test_multiple_instances_have_unique_ids(self, mock_default_values):
         class ConcreteStrategy(AttackStrategy):
             _validate_context = MagicMock()
             _setup_async = AsyncMock()
