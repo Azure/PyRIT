@@ -6,7 +6,7 @@ from __future__ import annotations
 import uuid
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Self, TypeVar, Union
+from typing import Dict, List, Optional, TypeVar, Union
 
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
@@ -29,10 +29,10 @@ class AttackContext:
     # Conversation that is automatically prepended to the target model
     prepended_conversation: List[PromptRequestResponse] = field(default_factory=list)
 
-    # Key–value pairs stored in the model’s memory for this single request
+    # Key–value pairs stored in the model's memory for this single request
     memory_labels: Dict[str, str] = field(default_factory=dict)
 
-    def duplicate(self) -> Self:
+    def duplicate(self: ContextT) -> ContextT:
         """
         Create a deep copy of the context to avoid concurrency issues
 
