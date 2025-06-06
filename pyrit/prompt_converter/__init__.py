@@ -65,6 +65,7 @@ from pyrit.prompt_converter.zalgo_converter import ZalgoConverter
 from pyrit.prompt_converter.zero_width_converter import ZeroWidthConverter
 from pyrit.prompt_converter.toxic_sentence_generator_converter import ToxicSentenceGeneratorConverter
 from pyrit.prompt_converter.denylist_converter import DenylistConverter
+from pyrit.prompt_converter.text_jailbreak_converter import TextJailBreakConverter
 
 
 __all__ = [
@@ -98,6 +99,7 @@ __all__ = [
     "FuzzerSimilarConverter",
     "HumanInTheLoopConverter",
     "InsertPunctuationConverter",
+    "TextJailBreakConverter",
     "LeetspeakConverter",
     "LLMGenericTextConverter",
     "MaliciousQuestionGeneratorConverter",
