@@ -118,6 +118,7 @@ def ensure_ai_recruiter_running():
         subprocess.run(["docker-compose", "down"], cwd=CLONE_DIR, check=True)
 
 
+@pytest.mark.run_only_if_all_tests
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_ai_recruiter_workflow():
