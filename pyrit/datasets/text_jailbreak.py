@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.models import PromptDataType
-from pyrit.prompt_converter import ConverterResult, PromptConverter
 import pathlib
 import random
 from pyrit.common.path import DATASETS_PATH
@@ -10,7 +8,7 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt
 
 
-class JailbreakText():
+class TextJailBreak():
     """
     A class that manages jailbreak datasets (like DAN, etc.)
     """
