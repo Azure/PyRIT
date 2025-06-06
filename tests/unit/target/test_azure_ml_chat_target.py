@@ -26,7 +26,7 @@ def sample_conversations() -> MutableSequence[PromptRequestPiece]:
 
 
 @pytest.fixture
-def aml_online_chat() -> AzureMLChatTarget:
+def aml_online_chat(patch_central_database) -> AzureMLChatTarget:
     aml_online_chat = AzureMLChatTarget(
         endpoint="http://aml-test-endpoint.com",
         api_key="valid_api_key",

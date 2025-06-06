@@ -55,7 +55,8 @@ async def test_xpia_orchestrator_execute_no_scorer(attack_setup_target):
     )
 
     xpia_operation = await xpia_orchestrator.execute_async()
-    assert xpia_operation is None
+    assert hasattr(xpia_operation, "request_pieces")
+    assert xpia_operation.request_pieces[0].converted_prompt_text == "test_converted_text"
 
 
 @pytest.mark.asyncio

@@ -319,7 +319,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         refused_text: str,
         turn_num: int,
         max_turns: int,
-        objective_score: Score = None,
+        objective_score: Optional[Score] = None,
         memory_labels: Optional[dict[str, str]] = None,
     ) -> str:
 

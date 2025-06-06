@@ -141,7 +141,7 @@ class AzureBlobStorageIO(StorageIO):
     def __init__(
         self,
         *,
-        container_url: str = None,
+        container_url: Optional[str] = None,
         sas_token: Optional[str] = None,
         blob_content_type: SupportedContentType = SupportedContentType.PLAIN_TEXT,
     ) -> None:

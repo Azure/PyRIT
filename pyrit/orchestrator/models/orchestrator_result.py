@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Optional
 
 from colorama import Fore, Style
 
@@ -42,8 +42,8 @@ class OrchestratorResult:
         conversation_id: str,
         objective: str,
         status: OrchestratorResultStatus = "in_progress",
-        objective_score: Score = None,
         confidence: float = 0.1,
+        objective_score: Optional[Score] = None,
     ):
         self.conversation_id = conversation_id
         self.objective = objective
@@ -53,7 +53,7 @@ class OrchestratorResult:
 
         self._memory = CentralMemory.get_memory_instance()
 
-    async def print_conversation_async(self, include_auxiliary_scores: bool = False):
+    async def print_conversation_async(self, *, include_auxiliary_scores: bool = False):
         """Prints the conversation between the objective target and the adversarial chat, including the scores.
 
         Args:
