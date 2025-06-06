@@ -5,6 +5,8 @@ import json
 import logging
 
 from pyrit.exceptions import (
+    AttackExecutionException,
+    AttackValidationException,
     BadRequestException,
     EmptyResponseException,
     InvalidJsonException,
@@ -97,3 +99,81 @@ def test_remove_markdown_json_exception(caplog):
         result = ex.process_exception()
     assert json.loads(result) == {"status_code": 500, "message": "Invalid JSON Response"}
     assert "InvalidJsonException encountered: Status Code: 500, Message: Invalid JSON Response" in caplog.text
+
+
+def test_attack_validation_exception_initialization():
+    ex = AttackValidationException()
+    assert ex.status_code == 400
+    assert ex.message == "Attack context validation failed"
+    assert ex.context_info == {}
+    assert str(ex) == "Status Code: 400, Message: Attack context validation failed"
+
+
+def test_attack_validation_exception_with_context():
+    context_info = {"attack_type": "SampleAttack", "error_type": "ValueError"}
+    ex = AttackValidationException(message="Custom validation error", context_info=context_info)
+    assert ex.status_code == 400
+    assert ex.message == "Custom validation error"
+    assert ex.context_info == context_info
+
+
+def test_attack_validation_exception_process_exception(caplog):
+    context_info = {"attack_type": "SampleAttack", "original_error": "Missing objective"}
+    ex = AttackValidationException(message="Validation failed", context_info=context_info)
+    with caplog.at_level(logging.ERROR):
+        result = ex.process_exception()
+
+    expected_result = {
+        "status_code": 400,
+        "message": "Validation failed",
+        "context_info": context_info,
+    }
+    assert json.loads(result) == expected_result
+    assert "AttackValidationException encountered:" in caplog.text
+    assert "Status Code: 400" in caplog.text
+    assert "Message: Validation failed" in caplog.text
+    assert "Context: {'attack_type': 'SampleAttack', 'original_error': 'Missing objective'}" in caplog.text
+
+
+def test_attack_execution_exception_initialization():
+    ex = AttackExecutionException()
+    assert ex.status_code == 500
+    assert ex.message == "Attack execution failed"
+    assert ex.attack_name is None
+    assert ex.objective is None
+    assert str(ex) == "Status Code: 500, Message: Attack execution failed"
+
+
+def test_attack_execution_exception_with_details():
+    ex = AttackExecutionException(
+        message="Custom execution error",
+        attack_name="SampleAttack",
+        objective="sample objective",
+    )
+    assert ex.status_code == 500
+    assert ex.message == "Custom execution error"
+    assert ex.attack_name == "SampleAttack"
+    assert ex.objective == "sample objective"
+
+
+def test_attack_execution_exception_process_exception(caplog):
+    ex = AttackExecutionException(
+        message="Attack failed unexpectedly",
+        attack_name="SampleAttack",
+        objective="sample objective",
+    )
+    with caplog.at_level(logging.ERROR):
+        result = ex.process_exception()
+
+    expected_result = {
+        "status_code": 500,
+        "message": "Attack failed unexpectedly",
+        "attack_name": "SampleAttack",
+        "objective": "sample objective",
+    }
+    assert json.loads(result) == expected_result
+    assert "AttackExecutionException encountered:" in caplog.text
+    assert "Status Code: 500" in caplog.text
+    assert "Message: Attack failed unexpectedly" in caplog.text
+    assert "Attack: SampleAttack" in caplog.text
+    assert "Objective: sample objective" in caplog.text
