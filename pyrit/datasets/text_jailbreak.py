@@ -3,24 +3,24 @@
 
 import pathlib
 import random
-from pyrit.common.path import DATASETS_PATH
 
+from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt
 
 
-class TextJailBreak():
+class TextJailBreak:
     """
     A class that manages jailbreak datasets (like DAN, etc.)
     """
 
     def __init__(
-            self,
-            *,
-            template_path=None,
-            template_file_name=None,
-            string_template=None,
-            random_template=False,
-        ):
+        self,
+        *,
+        template_path=None,
+        template_file_name=None,
+        string_template=None,
+        random_template=False,
+    ):
         """
         Initialize a Jailbreak instance with exactly one template source.
 
@@ -36,9 +36,11 @@ class TextJailBreak():
         # Count how many template sources are provided
         template_sources = [template_path, template_file_name, string_template, random_template]
         provided_sources = [source for source in template_sources if source]
-        
+
         if len(provided_sources) != 1:
-            raise ValueError("Exactly one of template_path, template_file_name, string_template, or random_template must be provided")
+            raise ValueError(
+                "Exactly one of template_path, template_file_name, string_template, or random_template must be provided"
+            )
 
         if template_path:
             self.template = SeedPrompt.from_yaml_file(template_path)
@@ -50,11 +52,13 @@ class TextJailBreak():
             yaml_files = list(jailbreak_dir.rglob("*.yaml"))
             if not yaml_files:
                 raise ValueError("No YAML templates found in jailbreak directory or its subdirectories")
-            
+
             if template_file_name:
                 matching_files = [f for f in yaml_files if f.name == template_file_name]
                 if not matching_files:
-                    raise ValueError(f"Template file '{template_file_name}' not found in jailbreak directory or its subdirectories")
+                    raise ValueError(
+                        f"Template file '{template_file_name}' not found in jailbreak directory or its subdirectories"
+                    )
                 if len(matching_files) > 1:
                     raise ValueError(f"Multiple files named '{template_file_name}' found in jailbreak directory")
                 self.template = SeedPrompt.from_yaml_file(matching_files[0])

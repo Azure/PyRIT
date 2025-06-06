@@ -1,11 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from unittest.mock import Mock
+
 import pytest
-from unittest.mock import Mock, patch
 
 from pyrit.datasets import TextJailBreak
-from pyrit.models import PromptDataType
 from pyrit.prompt_converter import TextJailBreakConverter
 
 
@@ -26,7 +26,7 @@ async def test_convert_async_basic(converter, mock_jailbreak):
     """Test basic conversion functionality"""
     prompt = "test prompt"
     result = await converter.convert_async(prompt=prompt, input_type="text")
-    
+
     mock_jailbreak.get_jailbreak.assert_called_once_with(prompt=prompt)
     assert result.output_text == "Modified prompt: {prompt}"
     assert result.output_type == "text"
@@ -58,11 +58,10 @@ async def test_convert_async_with_empty_prompt(converter, mock_jailbreak):
     """Test conversion with empty prompt"""
     prompt = ""
     result = await converter.convert_async(prompt=prompt, input_type="text")
-    
+
     mock_jailbreak.get_jailbreak.assert_called_once_with(prompt=prompt)
     assert result.output_text == "Modified prompt: {prompt}"
     assert result.output_type == "text"
-
 
 
 def test_init_with_none_jailbreak():
