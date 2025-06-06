@@ -218,7 +218,7 @@ def get_sample_conversation_entries() -> Sequence[PromptMemoryEntry]:
     return [PromptMemoryEntry(entry=conversation) for conversation in conversations]
 
 
-def openai_response_json_dict() -> dict:
+def openai_chat_response_json_dict() -> dict:
     return {
         "id": "12345678-1a2b-3c4e5f-a123-12345678abcd",
         "object": "chat.completion",
@@ -229,5 +229,35 @@ def openai_response_json_dict() -> dict:
                 "finish_reason": "stop",
             }
         ],
-        "model": "gpt-4-v",
+        "model": "o4-mini",
+    }
+
+
+def openai_response_json_dict() -> dict:
+    return {
+        "id": "resp_12345678-1a2b-3c4e5f-a123-12345678abcd",
+        "object": "response",
+        "status": "completed",
+        "error": None,
+        "output": [
+            {
+                "id": "msg_12428471298473947293847293847",
+                "role": "assistant",
+                "type": "message",
+                "content": [
+                    {"type": "output_text", "text": "hi"},
+                ],
+            }
+        ],
+        "model": "o4-mini",
+    }
+
+
+def openai_failed_response_json_dict() -> dict:
+    return {
+        "id": "resp_12345678-1a2b-3c4e5f-a123-12345678abcd",
+        "object": "response",
+        "status": "failed",
+        "error": {"code": "invalid_request", "message": "Invalid request"},
+        "model": "o4-mini",
     }

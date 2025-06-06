@@ -19,33 +19,31 @@ from pyrit.models import (
     ChatMessageListDictContent,
     PromptRequestPiece,
     PromptRequestResponse,
-    construct_response_from_request,
 )
 from pyrit.models.chat_message import ChatMessage
+from pyrit.models.literals import PromptDataType
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
 
-class OpenAIChatTarget(OpenAITarget):
+class OpenAIResponseTarget(OpenAITarget):
     """
-    This class facilitates multimodal (image and text) input and text output generation
+    This class enables communication with endpoints that support the OpenAI Response API.
 
-    This works with GPT3.5, GPT4, GPT4o, GPT-V, and other compatible models
+    This works with models such as o1, o3, and o4-mini.
+    Depending on the endpoint this allows for a variety of inputs, outputs, and tool calls.
+    For more information, see the OpenAI Response API documentation:
+    https://platform.openai.com/docs/api-reference/responses/create
     """
 
     def __init__(
         self,
         *,
-        max_completion_tokens: Optional[int] = None,
-        max_tokens: Optional[int] = None,
+        api_version: Optional[str] = "2025-03-01-preview",
+        max_output_tokens: Optional[int] = None,
         temperature: Optional[float] = None,
         top_p: Optional[float] = None,
-        frequency_penalty: Optional[float] = None,
-        presence_penalty: Optional[float] = None,
-        seed: Optional[int] = None,
-        n: Optional[int] = None,
-        is_json_supported: bool = True,
         extra_body_parameters: Optional[dict[str, Any]] = None,
         **kwargs,
     ):
@@ -54,68 +52,36 @@ class OpenAIChatTarget(OpenAITarget):
             model_name (str, Optional): The name of the model.
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-                Defaults to the OPENAI_CHAT_KEY environment variable.
+                Defaults to the OPENAI_RESPONSES_KEY environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
-            use_aad_auth (bool, Optional): When set to True, user authentication is used
-                instead of API Key. DefaultAzureCredential is taken for
-                https://cognitiveservices.azure.com/.default . Please run `az login` locally
-                to leverage user AuthN.
-            api_version (str, Optional): The version of the Azure OpenAI API. Defaults to
-                "2024-06-01".
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
-            max_completion_tokens (int, Optional): An upper bound for the number of tokens that
-                can be generated for a completion, including visible output tokens and
-                reasoning tokens.
-
-                NOTE: Specify this value when using an o1 series model.
-            max_tokens (int, Optional): The maximum number of tokens that can be
-                generated in the chat completion. This value can be used to control
+            max_output_tokens (int, Optional): The maximum number of tokens that can be
+                generated in the response. This value can be used to control
                 costs for text generated via API.
-
-                This value is now deprecated in favor of `max_completion_tokens`, and IS NOT
-                COMPATIBLE with o1 series models.
             temperature (float, Optional): The temperature parameter for controlling the
                 randomness of the response.
             top_p (float, Optional): The top-p parameter for controlling the diversity of the
                 response.
-            frequency_penalty (float, Optional): The frequency penalty parameter for penalizing
-                frequently generated tokens.
-            presence_penalty (float, Optional): The presence penalty parameter for penalizing
-                tokens that are already present in the conversation history.
-            seed (int, Optional): If specified, openAI will make a best effort to sample deterministically,
-                such that repeated requests with the same seed and parameters should return the same result.
-            n (int, Optional): The number of completions to generate for each prompt.
-            is_json_supported (bool, Optional): If True, the target will supports formatting responses as JSON by
-                setting the response_format header. Official OpenAI models all support this, but if you are using
-                this target with different models, is_json_supported should be set correctly to avoid issues when
-                using adversarial infrastructure (e.g. Crescendo scorers will set this flag).
             extra_body_parameters (dict, Optional): Additional parameters to be included in the request body.
-            httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
-                httpx.AsyncClient() constructor.
-                For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
         """
-        super().__init__(**kwargs)
+        super().__init__(api_version=api_version, **kwargs)
 
-        if max_completion_tokens and max_tokens:
-            raise ValueError("Cannot provide both max_tokens and max_completion_tokens.")
-
-        self._max_completion_tokens = max_completion_tokens
-        self._max_tokens = max_tokens
+        self._max_output_tokens = max_output_tokens
         self._temperature = temperature
         self._top_p = top_p
-        self._frequency_penalty = frequency_penalty
-        self._presence_penalty = presence_penalty
-        self._seed = seed
-        self._n = n
-        self._is_json_supported = is_json_supported
+
+        # Reasoning parameters are not yet supported by PyRIT.
+        # See https://platform.openai.com/docs/api-reference/responses/create#responses-create-reasoning
+        # for more information.
+
         self._extra_body_parameters = extra_body_parameters
 
     def _set_openai_env_configuration_vars(self) -> None:
-        self.model_name_environment_variable = "OPENAI_CHAT_MODEL"
-        self.endpoint_environment_variable = "OPENAI_CHAT_ENDPOINT"
-        self.api_key_environment_variable = "OPENAI_CHAT_KEY"
+        self.model_name_environment_variable = "OPENAI_RESPONSES_MODEL"
+        self.endpoint_environment_variable = "OPENAI_RESPONSES_ENDPOINT"
+        self.api_key_environment_variable = "OPENAI_RESPONSES_KEY"
 
     @limit_requests_per_minute
     @pyrit_target_retry
@@ -154,7 +120,6 @@ class OpenAIChatTarget(OpenAITarget):
                 headers=self._headers,
                 request_body=body,
                 params=params,
-                **self._httpx_client_kwargs,
             )
         except httpx.HTTPStatusError as StatusError:
             if StatusError.response.status_code == 400:
@@ -193,65 +158,7 @@ class OpenAIChatTarget(OpenAITarget):
 
         return response
 
-    async def _build_chat_messages_async(self, conversation: MutableSequence[PromptRequestResponse]) -> list[dict]:
-        """Builds chat messages based on prompt request response entries.
-
-        Args:
-            conversation (list[PromptRequestResponse]): A list of PromptRequestResponse objects.
-
-        Returns:
-            list[dict]: The list of constructed chat messages.
-        """
-        if self._is_text_message_format(conversation):
-            return self._build_chat_messages_for_text(conversation)
-        else:
-            return await self._build_chat_messages_for_multi_modal_async(conversation)
-
-    def _is_text_message_format(self, conversation: MutableSequence[PromptRequestResponse]) -> bool:
-        """Checks if the request piece is in text message format.
-
-        Args:
-            conversation list[PromptRequestResponse]: The conversation
-
-        Returns:
-            bool: True if the request piece is in text message format, False otherwise.
-        """
-        for turn in conversation:
-            if len(turn.request_pieces) != 1:
-                return False
-            if turn.request_pieces[0].converted_value_data_type != "text":
-                return False
-        return True
-
-    def _build_chat_messages_for_text(self, conversation: MutableSequence[PromptRequestResponse]) -> list[dict]:
-        """
-        Builds chat messages based on prompt request response entries. This is needed because many
-        openai "compatible" models don't support ChatMessageListDictContent format (this is more univerally accepted)
-
-        Args:
-            conversation (list[PromptRequestResponse]): A list of PromptRequestResponse objects.
-
-        Returns:
-            list[dict]: The list of constructed chat messages.
-        """
-        chat_messages: list[dict] = []
-        for prompt_req_resp_entry in conversation:
-            # validated to only have one text entry
-
-            if len(prompt_req_resp_entry.request_pieces) != 1:
-                raise ValueError("_build_chat_messages_for_text only supports a single prompt request piece.")
-
-            prompt_request_piece = prompt_req_resp_entry.request_pieces[0]
-
-            if prompt_request_piece.converted_value_data_type != "text":
-                raise ValueError("_build_chat_messages_for_text only supports text.")
-
-            message = ChatMessage(role=prompt_request_piece.role, content=prompt_request_piece.converted_value)
-            chat_messages.append(message.model_dump(exclude_none=True))
-
-        return chat_messages
-
-    async def _build_chat_messages_for_multi_modal_async(
+    async def _build_input_for_multi_modal_async(
         self, conversation: MutableSequence[PromptRequestResponse]
     ) -> list[dict]:
         """
@@ -263,53 +170,73 @@ class OpenAIChatTarget(OpenAITarget):
         Returns:
             list[dict]: The list of constructed chat messages.
         """
-        chat_messages: list[dict] = []
-        for prompt_req_resp_entry in conversation:
-            prompt_request_pieces = prompt_req_resp_entry.request_pieces
+        full_request = []
+        for message in conversation:
+
+            prompt_request_pieces = message.request_pieces
+
+            if len(prompt_request_pieces) == 0:
+                raise ValueError("No prompt request pieces found in the conversation.")
+
+            # System messages are a special case. Instead of the nested formatting with
+            # "type" and "text" at a deeper level, they are just a single content string.
+            # The "system" role is mapped to "developer" in the OpenAI Response API.
+            first_piece = prompt_request_pieces[0]
+            if first_piece.role == "system":
+                if len(prompt_request_pieces) > 1:
+                    raise ValueError(
+                        "System messages should only have a single request piece. "
+                        "Multiple system messages are not supported."
+                    )
+                full_request.append(
+                    ChatMessage(role="developer", content=first_piece.converted_value).model_dump(exclude_none=True)
+                )
+                continue
 
             content = []
-            role = None
             for prompt_request_piece in prompt_request_pieces:
                 role = prompt_request_piece.role
                 if prompt_request_piece.converted_value_data_type == "text":
-                    entry = {"type": "text", "text": prompt_request_piece.converted_value}
+                    if role == "user":
+                        type = "input_text"
+                    else:
+                        type = "output_text"
+                    entry = {"type": type, "text": prompt_request_piece.converted_value}
                     content.append(entry)
                 elif prompt_request_piece.converted_value_data_type == "image_path":
                     data_base64_encoded_url = await convert_local_image_to_data_url(
                         prompt_request_piece.converted_value
                     )
                     image_url_entry = {"url": data_base64_encoded_url}
-                    entry = {"type": "image_url", "image_url": image_url_entry}  # type: ignore
+                    entry = {"type": "input_image", "image_url": image_url_entry}  # type: ignore
                     content.append(entry)
+                elif prompt_request_piece.converted_value_data_type == "reasoning":
+                    # reasoning summaries are not passed back to the target
+                    pass
                 else:
                     raise ValueError(
                         f"Multimodal data type {prompt_request_piece.converted_value_data_type} is not yet supported."
                     )
 
-            if not role:
-                raise ValueError("No role could be determined from the prompt request pieces.")
+            full_request.append(
+                ChatMessageListDictContent(role=role, content=content).model_dump(exclude_none=True)  # type: ignore
+            )
 
-            chat_message = ChatMessageListDictContent(role=role, content=content)  # type: ignore
-            chat_messages.append(chat_message.model_dump(exclude_none=True))
-        return chat_messages
+        return full_request
 
     async def _construct_request_body(
         self, conversation: MutableSequence[PromptRequestResponse], is_json_response: bool
     ) -> dict:
-        messages = await self._build_chat_messages_async(conversation)
+        input = await self._build_input_for_multi_modal_async(conversation)
 
         body_parameters = {
             "model": self._model_name,
-            "max_completion_tokens": self._max_completion_tokens,
-            "max_tokens": self._max_tokens,
+            "max_output_tokens": self._max_output_tokens,
             "temperature": self._temperature,
             "top_p": self._top_p,
-            "frequency_penalty": self._frequency_penalty,
-            "presence_penalty": self._presence_penalty,
             "stream": False,
-            "seed": self._seed,
-            "n": self._n,
-            "messages": messages,
+            "input": input,
+            # json_schema not yet supported by PyRIT
             "response_format": {"type": "json_object"} if is_json_response else None,
         }
 
@@ -332,27 +259,64 @@ class OpenAIChatTarget(OpenAITarget):
         except json.JSONDecodeError as e:
             raise PyritException(message=f"Failed to parse JSON response. Please check your endpoint: {e}")
 
-        finish_reason = response["choices"][0]["finish_reason"]
-        extracted_response: str = ""
-        # finish_reason="stop" means API returned complete message and
-        # "length" means API returned incomplete message due to max_tokens limit.
-        if finish_reason in ["stop", "length"]:
-            extracted_response = response["choices"][0]["message"]["content"]
-
-            # Handle empty response
-            if not extracted_response:
-                logger.log(logging.ERROR, "The chat returned an empty response.")
-                raise EmptyResponseException(message="The chat returned an empty response.")
-        elif finish_reason == "content_filter":
-            # Content filter with status 200 indicates that the model output was filtered
-            # https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/content-filter
-            return handle_bad_request_exception(
-                response_text=open_ai_str_response, request=request_piece, error_code=400, is_content_filter=True
-            )
+        status = response.get("status")
+        error = response.get("error")
+        extracted_response_pieces = []
+        if status is None:
+            if error and "code" in error and error["code"] == "content_filter":
+                # TODO validate that this is correct with AOAI
+                # Content filter with status 200 indicates that the model output was filtered
+                # https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/content-filter
+                return handle_bad_request_exception(
+                    response_text=open_ai_str_response, request=request_piece, error_code=400, is_content_filter=True
+                )
+            else:
+                raise PyritException(message=f"Unexpected response format: {response}. Expected 'status' key.")
+        elif status != "completed" or error is not None:
+            raise PyritException(message=f"Status {status} and error {error} from response: {response}")
         else:
-            raise PyritException(message=f"Unknown finish_reason {finish_reason} from response: {response}")
+            for piece in response["output"]:
+                piece_type: PromptDataType = "text"
+                if piece["type"] == "message":
+                    piece_value = piece["content"][0]["text"]
+                elif piece["type"] == "reasoning":
+                    piece_value = ""
+                    piece_type = "reasoning"
+                    for summary_piece in piece["summary"]:
+                        if summary_piece["type"] == "summary_text":
+                            piece_value += summary_piece["text"]
+                    if not piece_value:
+                        continue  # Skip empty reasoning summaries
+                else:
+                    # other options include "image_generation_call", "file_search_call", "function_call",
+                    # "web_search_call", "computer_call", "code_interpreter_call", "local_shell_call",
+                    # "mcp_call", "mcp_list_tools", "mcp_approval_request"
+                    raise ValueError(
+                        f"Unsupported response type: {piece['type']}. PyRIT does not yet support this response type."
+                    )
 
-        return construct_response_from_request(request=request_piece, response_text_pieces=[extracted_response])
+                # Handle empty response
+                if not piece_value:
+                    logger.log(logging.ERROR, "The chat returned an empty response.")
+                    raise EmptyResponseException(message="The chat returned an empty response.")
+
+                extracted_response_pieces.append(
+                    PromptRequestPiece(
+                        role="assistant",
+                        original_value=piece_value,
+                        conversation_id=request_piece.conversation_id,
+                        labels=request_piece.labels,
+                        prompt_target_identifier=request_piece.prompt_target_identifier,
+                        orchestrator_identifier=request_piece.orchestrator_identifier,
+                        original_value_data_type=piece_type,
+                        response_error=error or "none",
+                    )
+                )
+
+        if not extracted_response_pieces:
+            raise PyritException(message="No valid response pieces found in the response.")
+
+        return PromptRequestResponse(request_pieces=extracted_response_pieces)
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         """Validates the structure and content of a prompt request for compatibility of this target.
@@ -361,7 +325,6 @@ class OpenAIChatTarget(OpenAITarget):
             prompt_request (PromptRequestResponse): The prompt request response object.
 
         Raises:
-            ValueError: If more than two request pieces are provided.
             ValueError: If any of the request pieces have a data type other than 'text' or 'image_path'.
         """
 
@@ -376,4 +339,4 @@ class OpenAIChatTarget(OpenAITarget):
 
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""
-        return self._is_json_supported
+        return True
