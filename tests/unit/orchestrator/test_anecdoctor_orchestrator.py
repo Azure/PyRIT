@@ -53,8 +53,8 @@ def test_init(orchestrator, example_data):
 
 
 @pytest.mark.asyncio
-async def test_evaluate_fewshot(monkeypatch, orchestrator):
-    """The evaluate() path without a KG should succeed and leave _kg_result None."""
+async def test_generate_attack_fewshot(monkeypatch, orchestrator):
+    """The generate_attack() path without a KG should succeed and leave _kg_result None."""
     orchestrator._use_knowledge_graph = False
 
     # Patch YAML‑loader so no file access is required
@@ -69,13 +69,14 @@ async def test_evaluate_fewshot(monkeypatch, orchestrator):
     mock_response.get_value.return_value = "Final output"
     orchestrator._normalizer.send_prompt_async = AsyncMock(return_value=mock_response)
 
-    await orchestrator.evaluate()
+    result = await orchestrator.generate_attack()
     assert orchestrator._kg_result is None
+    assert result == "Final output"  # Validate the returned value
 
 
 @pytest.mark.asyncio
-async def test_evaluate_with_kg(monkeypatch, orchestrator):
-    """The evaluate() flow with KG should call KG extraction and store the result."""
+async def test_generate_attack_with_kg(monkeypatch, orchestrator):
+    """The generate_attack() flow with KG should call KG extraction and store the result."""
     orchestrator._use_knowledge_graph = True
 
     monkeypatch.setattr(
@@ -89,8 +90,9 @@ async def test_evaluate_with_kg(monkeypatch, orchestrator):
     mock_response.get_value.return_value = "Final with KG"
     orchestrator._normalizer.send_prompt_async = AsyncMock(return_value=mock_response)
 
-    await orchestrator.evaluate()
+    result = await orchestrator.generate_attack()
     assert orchestrator._kg_result == "Extracted KG"
+    assert result == "Final with KG"  # Validate the returned value
 
 
 @pytest.mark.asyncio
@@ -106,7 +108,7 @@ async def test_missing_evaluation_data(mock_chat_model, mock_processing_model):
     )
 
     with pytest.raises(ValueError, match="No example data provided for evaluation."):
-        await orchestrator.evaluate()
+        await orchestrator.generate_attack()
 
 
 @pytest.mark.asyncio
@@ -123,4 +125,4 @@ async def test_missing_processing_model(mock_chat_model, example_data):
 
     with pytest.raises(ValueError,
                        match="Processing model is not set. Cannot extract knowledge graph."):
-        await orchestrator.evaluate()
+        await orchestrator.generate_attack()

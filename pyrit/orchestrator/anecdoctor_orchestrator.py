@@ -129,7 +129,7 @@ class AnecdoctorOrchestrator(Orchestrator):
         kg_output = response.get_value()
         return kg_output
 
-    async def evaluate(self) -> None:
+    async def generate_attack(self) -> str:
         """
         Runs the orchestrator, possibly extracting a knowledge graph first,
         then generating the final content. Returns the final model output (answer).
@@ -146,7 +146,7 @@ class AnecdoctorOrchestrator(Orchestrator):
             system_prompt = self._load_prompt_from_yaml("anecdoctor_use_knowledge_graph.yaml")
             # 1b. run the knowledge graph extraction
             self._kg_result = await self._extract_knowledge_graph()
-            # 1c. set examples to knowldge graph format
+            # 1c. set examples to knowledge graph format
             formatted_examples = self._kg_result
         else:
             # If not using the knowledge graph, load the default few-shot prompt
@@ -189,11 +189,14 @@ class AnecdoctorOrchestrator(Orchestrator):
 
         # 7. If verbose, print a nicely formatted message
         if self._verbose:
-            # uncomment the following lines to print the examples or knowledge graph
-            # print(f"{Style.BRIGHT}{Fore.BLUE}user:{Style.RESET_ALL}")
-            # wrapped_user_text = textwrap.fill(formatted_examples, width=100)
-            # print(f"{Style.BRIGHT}{Fore.BLUE}{wrapped_user_text}{Style.RESET_ALL}")
+            # print the examples or knowledge graph
+            print(f"{Style.BRIGHT}{Fore.BLUE}user:{Style.RESET_ALL}")
+            wrapped_user_text = textwrap.fill(formatted_examples, width=100)
+            print(f"{Style.BRIGHT}{Fore.BLUE}{wrapped_user_text}{Style.RESET_ALL}")
 
             print(f"{Style.NORMAL}{Fore.YELLOW}assistant:{Style.RESET_ALL}")
             wrapped_answer = textwrap.fill(final_answer, width=100)
             print(f"{Style.NORMAL}{Fore.YELLOW}{wrapped_answer}{Style.RESET_ALL}")
+
+        # 8. Return the final answer
+        return final_answer
