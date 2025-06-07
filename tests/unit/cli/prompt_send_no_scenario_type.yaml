@@ -4,3 +4,5 @@ objective_target:
   type: "OpenAIChatTarget"
 scenarios:
   - test: test-name
+database:
+  type: "DuckDB"

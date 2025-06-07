@@ -6,6 +6,7 @@ import tempfile
 import time
 import uuid
 from datetime import datetime, timedelta
+from typing import MutableSequence
 from unittest.mock import MagicMock
 
 import pytest
@@ -15,6 +16,7 @@ from pyrit.models import (
     PromptRequestPiece,
     PromptRequestResponse,
     Score,
+    construct_response_from_request,
     group_conversation_request_pieces_by_sequence,
 )
 from pyrit.models.prompt_request_piece import sort_request_pieces
@@ -23,7 +25,7 @@ from pyrit.prompt_converter import Base64Converter
 
 
 @pytest.fixture
-def sample_conversations() -> list[PromptRequestPiece]:
+def sample_conversations() -> MutableSequence[PromptRequestPiece]:
     return get_sample_conversations()
 
 
@@ -154,7 +156,21 @@ def test_hashes_generated_files_unknown_type():
         )
 
 
-def test_prompt_response_validate(sample_conversations: list[PromptRequestPiece]):
+def test_prompt_response_get_value(sample_conversations: MutableSequence[PromptRequestPiece]):
+    request_response = PromptRequestResponse(request_pieces=sample_conversations)
+    assert request_response.get_value() == "Hello, how are you?"
+    assert request_response.get_value(1) == "I'm fine, thank you!"
+
+    with pytest.raises(IndexError):
+        request_response.get_value(3)
+
+
+def test_prompt_response_get_values(sample_conversations: MutableSequence[PromptRequestPiece]):
+    request_response = PromptRequestResponse(request_pieces=sample_conversations)
+    assert request_response.get_values() == ["Hello, how are you?", "I'm fine, thank you!", "I'm fine, thank you!"]
+
+
+def test_prompt_response_validate(sample_conversations: MutableSequence[PromptRequestPiece]):
     for c in sample_conversations:
         c.conversation_id = sample_conversations[0].conversation_id
         c.role = sample_conversations[0].role
@@ -169,7 +185,7 @@ def test_prompt_response_empty_throws():
         request_response.validate()
 
 
-def test_prompt_response_validate_conversation_id_throws(sample_conversations: list[PromptRequestPiece]):
+def test_prompt_response_validate_conversation_id_throws(sample_conversations: MutableSequence[PromptRequestPiece]):
     for c in sample_conversations:
         c.role = "user"
         c.conversation_id = str(uuid.uuid4())
@@ -179,7 +195,7 @@ def test_prompt_response_validate_conversation_id_throws(sample_conversations: l
         request_response.validate()
 
 
-def test_prompt_request_response_inconsistent_roles_throws(sample_conversations: list[PromptRequestPiece]):
+def test_prompt_request_response_inconsistent_roles_throws(sample_conversations: MutableSequence[PromptRequestPiece]):
     for c in sample_conversations:
         c.conversation_id = sample_conversations[0].conversation_id
 
@@ -188,12 +204,12 @@ def test_prompt_request_response_inconsistent_roles_throws(sample_conversations:
         request_response.validate()
 
 
-def test_group_conversation_request_pieces_throws(sample_conversations: list[PromptRequestPiece]):
+def test_group_conversation_request_pieces_throws(sample_conversations: MutableSequence[PromptRequestPiece]):
     with pytest.raises(ValueError, match="Conversation ID must match."):
         group_conversation_request_pieces_by_sequence(sample_conversations)
 
 
-def test_group_conversation_request_pieces(sample_conversations: list[PromptRequestPiece]):
+def test_group_conversation_request_pieces(sample_conversations: MutableSequence[PromptRequestPiece]):
     convo_group = [
         entry for entry in sample_conversations if entry.conversation_id == sample_conversations[0].conversation_id
     ]
@@ -203,7 +219,7 @@ def test_group_conversation_request_pieces(sample_conversations: list[PromptRequ
     assert groups[0].request_pieces[0].sequence == 0
 
 
-def test_group_conversation_request_pieces_multiple_groups(sample_conversations: list[PromptRequestPiece]):
+def test_group_conversation_request_pieces_multiple_groups(sample_conversations: MutableSequence[PromptRequestPiece]):
     convo_group = [
         entry for entry in sample_conversations if entry.conversation_id == sample_conversations[0].conversation_id
     ]
@@ -609,3 +625,48 @@ def test_prompt_request_piece_to_dict():
     assert result["originator"] == entry.originator
     assert result["original_prompt_id"] == str(entry.original_prompt_id)
     assert result["scores"] == [score.to_dict() for score in entry.scores]
+
+
+def test_construct_response_from_request_combines_metadata():
+    # Create a request piece with metadata
+    request = PromptRequestPiece(
+        role="user", original_value="test prompt", conversation_id="123", prompt_metadata={"key1": "value1", "key2": 2}
+    )
+
+    additional_metadata = {"key2": 3, "key3": "value3"}
+
+    response = construct_response_from_request(
+        request=request, response_text_pieces=["test response"], prompt_metadata=additional_metadata
+    )
+
+    assert len(response.request_pieces) == 1
+    response_piece = response.request_pieces[0]
+
+    assert response_piece.prompt_metadata["key1"] == "value1"  # Original value preserved
+    assert response_piece.prompt_metadata["key2"] == 3  # Overridden by additional metadata
+    assert response_piece.prompt_metadata["key3"] == "value3"  # Added from additional metadata
+
+    assert response_piece.role == "assistant"
+    assert response_piece.original_value == "test response"
+    assert response_piece.conversation_id == "123"
+    assert response_piece.original_value_data_type == "text"
+    assert response_piece.converted_value_data_type == "text"
+    assert response_piece.response_error == "none"
+
+
+def test_construct_response_from_request_no_metadata():
+    request = PromptRequestPiece(role="user", original_value="test prompt", conversation_id="123")
+
+    response = construct_response_from_request(request=request, response_text_pieces=["test response"])
+
+    assert len(response.request_pieces) == 1
+    response_piece = response.request_pieces[0]
+
+    assert not response_piece.prompt_metadata
+
+    assert response_piece.role == "assistant"
+    assert response_piece.original_value == "test response"
+    assert response_piece.conversation_id == "123"
+    assert response_piece.original_value_data_type == "text"
+    assert response_piece.converted_value_data_type == "text"
+    assert response_piece.response_error == "none"

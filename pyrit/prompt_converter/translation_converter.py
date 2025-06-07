@@ -1,18 +1,20 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import json
 import logging
 import pathlib
 import uuid
 from textwrap import dedent
+from typing import Optional
+
+from tenacity import (
+    AsyncRetrying,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.exceptions import (
-    InvalidJsonException,
-    pyrit_json_retry,
-    remove_markdown_json,
-)
 from pyrit.models import (
     PromptDataType,
     PromptRequestPiece,
@@ -26,7 +28,15 @@ logger = logging.getLogger(__name__)
 
 
 class TranslationConverter(PromptConverter):
-    def __init__(self, *, converter_target: PromptChatTarget, language: str, prompt_template: SeedPrompt = None):
+    def __init__(
+        self,
+        *,
+        converter_target: PromptChatTarget,
+        language: str,
+        prompt_template: Optional[SeedPrompt] = None,
+        max_retries: int = 3,
+        max_wait_time_in_seconds: int = 60,
+    ):
         """
         Initializes a TranslationConverter object.
 
@@ -39,6 +49,10 @@ class TranslationConverter(PromptConverter):
             ValueError: If the language is not provided.
         """
         self.converter_target = converter_target
+
+        # Retry strategy for the conversion
+        self._max_retries = max_retries
+        self._max_wait_time_in_seconds = max_wait_time_in_seconds
 
         # set to default strategy if not provided
         prompt_template = (
@@ -67,28 +81,26 @@ class TranslationConverter(PromptConverter):
 
         conversation_id = str(uuid.uuid4())
 
-        self.converter_target.set_system_prompt(
-            system_prompt=self.system_prompt,
-            conversation_id=conversation_id,
-            orchestrator_identifier=None,
-        )
+        self.converter_target.set_system_prompt(system_prompt=self.system_prompt, conversation_id=conversation_id)
 
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
-        prompt = dedent(
-            f"Translate the following text between the begin and end tags to {self.language}"
-            "=== begin ==="
-            f"{prompt}"
-            "=== end ==="
+        formatted_prompt = dedent(
+            f"Translate the following to {self.language} between the begin and end tags:"
+            "=== begin ===\n"
+            f"{prompt}\n"
+            "=== end ===\n"
         )
+
+        logger.debug(f"Formatted Prompt: {formatted_prompt}")
 
         request = PromptRequestResponse(
             [
                 PromptRequestPiece(
                     role="user",
                     original_value=prompt,
-                    converted_value=prompt,
+                    converted_value=formatted_prompt,
                     conversation_id=conversation_id,
                     sequence=1,
                     prompt_target_identifier=self.converter_target.get_identifier(),
@@ -99,29 +111,23 @@ class TranslationConverter(PromptConverter):
             ]
         )
 
-        response = await self.send_translation_prompt_async(request)
-        translation = None
-        for key in response.keys():
-            if key.lower() == self.language:
-                translation = response[key]
-
+        translation = await self._send_translation_prompt_async(request)
         return ConverterResult(output_text=translation, output_type="text")
 
-    @pyrit_json_retry
-    async def send_translation_prompt_async(self, request) -> str:
-        response = await self.converter_target.send_prompt_async(prompt_request=request)
+    async def _send_translation_prompt_async(self, request) -> str:
+        async for attempt in AsyncRetrying(
+            stop=stop_after_attempt(self._max_retries),
+            wait=wait_exponential(multiplier=1, min=1, max=self._max_wait_time_in_seconds),
+            retry=retry_if_exception_type(Exception),  # covers all exceptions
+        ):
+            with attempt:
+                logger.debug(f"Attempt {attempt.retry_state.attempt_number} for translation")
+                response = await self.converter_target.send_prompt_async(prompt_request=request)
+                response_msg = response.get_value()
+                return response_msg.strip()
 
-        response_msg = response.request_pieces[0].converted_value
-        response_msg = remove_markdown_json(response_msg)
-
-        try:
-            llm_response: dict[str, str] = json.loads(response_msg)
-            if "output" not in llm_response:
-                raise InvalidJsonException(message=f"Invalid JSON encountered; missing 'output' key: {response_msg}")
-            return llm_response["output"]
-
-        except json.JSONDecodeError:
-            raise InvalidJsonException(message=f"Invalid JSON encountered: {response_msg}")
+        # when we exhaust all retries without success, raise an exception
+        raise Exception(f"Failed to translate after {self._max_retries} attempts")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"

@@ -16,6 +16,8 @@ skipped_urls = [
     "https://code.visualstudio.com/Download",  # This will block python requests
     "https://platform.openai.com/docs/api-reference/introduction",  # blocks python requests
     "https://www.anthropic.com/research/many-shot-jailbreaking",  # blocks python requests
+    "https://code.visualstudio.com/docs/devcontainers/containers",
+    "https://stackoverflow.com/questions/77134272/pip-install-dev-with-pyproject-toml-not-working",
 ]
 
 custom_myst_references = ["notebook_tests"]
@@ -25,7 +27,7 @@ URL_PATTERN = re.compile(r'\[.*?\]\((.*?)\)|href="([^"]+)"|src="([^"]+)"')
 
 
 def extract_urls(file_path):
-    with open(file_path, "r") as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         content = file.read()
     matches = URL_PATTERN.findall(content)
     # Flatten the list of tuples and filter out empty strings

@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.17.0
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
@@ -31,8 +31,5 @@ initialize_pyrit(memory_db_type=IN_MEMORY)
 target = OpenAICompletionTarget(max_tokens=2048)
 
 orchestrator = PromptSendingOrchestrator(objective_target=target)
-response = await orchestrator.send_prompts_async(prompt_list=["Hello! Who are you?"])  # type: ignore
-await orchestrator.print_conversations_async()  # type: ignore
-
-# %%
-target.dispose_db_engine()
+response = await orchestrator.run_attack_async(objective="Hello! Who are you?")  # type: ignore
+await response.print_conversation_async()  # type: ignore

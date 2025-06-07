@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.17.0
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
@@ -16,7 +16,7 @@
 # # Fetching dataset examples
 #
 # This notebook demonstrates how to load datasets as a `SeedPromptDataset` to perform red teaming on a target.
-# There are several datasets which can be found in the `fetch_example_datasets.py` file.
+# There are several datasets which can be found in the `pyrit.datasets` module.
 # Three example datasets are shown in this notebook and can be used with orchestrators such as the Prompt Sending Orchestrator.
 # The example below demonstrates loading a HuggingFace dataset as a `SeedPromptDataset`.
 
@@ -41,7 +41,7 @@ prompt_list = prompt_dataset.get_values(first=8)
 
 # Send prompts using the orchestrator and capture responses
 orchestrator = PromptSendingOrchestrator(objective_target=prompt_target)
-responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
+responses = await orchestrator.run_attacks_async(objectives=prompt_list)  # type: ignore
 
 # %% [markdown]
 # # Example dataset from public URL
@@ -72,18 +72,4 @@ prompt_dataset = fetch_decoding_trust_stereotypes_dataset(
 # Use the first 4 examples
 prompt_list = prompt_dataset.get_values(first=4)
 
-# Send prompts using the orchestrator and capture responses
-try:
-    responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
-    if responses:
-        await orchestrator.print_conversations_async()  # type: ignore
-    else:
-        print("No valid responses were received from the orchestrator.")
-except Exception as e:
-    print(f"An error occurred while sending prompts: {e}")
-
-# %%
-from pyrit.memory import CentralMemory
-
-memory = CentralMemory.get_memory_instance()
-memory.dispose_engine()
+responses = await orchestrator.run_attacks_async(objectives=prompt_list)  # type: ignore

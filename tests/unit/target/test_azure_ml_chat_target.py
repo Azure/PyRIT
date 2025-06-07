@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import os
+from typing import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -20,12 +21,12 @@ from pyrit.prompt_target import AzureMLChatTarget
 
 
 @pytest.fixture
-def sample_conversations() -> list[PromptRequestPiece]:
+def sample_conversations() -> MutableSequence[PromptRequestPiece]:
     return get_sample_conversations()
 
 
 @pytest.fixture
-def aml_online_chat() -> AzureMLChatTarget:
+def aml_online_chat(patch_central_database) -> AzureMLChatTarget:
     aml_online_chat = AzureMLChatTarget(
         endpoint="http://aml-test-endpoint.com",
         api_key="valid_api_key",
@@ -195,7 +196,7 @@ async def test_complete_chat_async_bad_json_response(aml_online_chat: AzureMLCha
 
 @pytest.mark.asyncio
 async def test_azure_ml_validate_request_length(
-    aml_online_chat: AzureMLChatTarget, sample_conversations: list[PromptRequestPiece]
+    aml_online_chat: AzureMLChatTarget, sample_conversations: MutableSequence[PromptRequestPiece]
 ):
     request = PromptRequestResponse(request_pieces=sample_conversations)
     with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
@@ -204,7 +205,7 @@ async def test_azure_ml_validate_request_length(
 
 @pytest.mark.asyncio
 async def test_azure_ml_validate_prompt_type(
-    aml_online_chat: AzureMLChatTarget, sample_conversations: list[PromptRequestPiece]
+    aml_online_chat: AzureMLChatTarget, sample_conversations: MutableSequence[PromptRequestPiece]
 ):
     request_piece = sample_conversations[0]
     request_piece.converted_value_data_type = "image_path"

@@ -5,11 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.0
 # ---
 
 # %% [markdown]
@@ -50,7 +46,7 @@ from urllib.error import URLError
 from urllib.request import urlopen
 
 
-def start_flask_app():
+def start_flask_app() -> subprocess.Popen:
     # Get the notebook's directory
     notebook_dir = os.getcwd()
 
@@ -144,21 +140,18 @@ if sys.platform == "win32":
 
 
 # Using PlaywrightTarget with the interaction function and scorer
-async def main(page: Page):
+async def main(page: Page) -> None:
     target = PlaywrightTarget(interaction_func=interact_with_my_app, page=page)
 
-    with PromptSendingOrchestrator(
-        objective_target=target,
-    ) as orchestrator:
-        all_prompts = [
-            "Tell me a joke about computer programming.",
-        ]
+    orchestrator = PromptSendingOrchestrator(objective_target=target)
 
-        await orchestrator.send_prompts_async(prompt_list=all_prompts)
-        await orchestrator.print_conversations_async()  # type: ignore
+    objective = "Tell me a joke about computer programming."
+
+    result = await orchestrator.run_attack_async(objective=objective)  # type: ignore
+    await result.print_conversation_async()  # type: ignore
 
 
-async def run():
+async def run() -> None:
     async with async_playwright() as playwright:
         browser = await playwright.chromium.launch(headless=False)
         context = await browser.new_context()

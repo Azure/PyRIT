@@ -2,10 +2,10 @@
 # Licensed under the MIT license.
 
 
-from typing import List, Union
+from typing import List, Optional, Union
 
 
-def combine_dict(existing_dict: dict = None, new_dict: dict = None) -> dict:
+def combine_dict(existing_dict: Optional[dict] = None, new_dict: Optional[dict] = None) -> dict:
     """
     Combines two dictionaries containing string keys and values into one.
 

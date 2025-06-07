@@ -8,7 +8,6 @@ from uuid import uuid4
 
 from colorama import Fore, Style
 
-from pyrit.common.batch_helper import batch_task_async
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import (
     PromptRequestResponse,
@@ -23,6 +22,7 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
 )
 from pyrit.prompt_target import PromptTarget
+from pyrit.prompt_target.batch_helper import batch_task_async
 
 logger = logging.getLogger(__name__)
 

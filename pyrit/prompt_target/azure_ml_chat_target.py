@@ -32,8 +32,8 @@ class AzureMLChatTarget(PromptChatTarget):
     def __init__(
         self,
         *,
-        endpoint: str = None,
-        api_key: str = None,
+        endpoint: Optional[str] = None,
+        api_key: Optional[str] = None,
         chat_message_normalizer: ChatMessageNormalizer = ChatMessageNop(),
         max_new_tokens: int = 400,
         temperature: float = 1.0,
@@ -89,7 +89,9 @@ class AzureMLChatTarget(PromptChatTarget):
         self._extra_parameters = param_kwargs
 
     def _set_env_configuration_vars(
-        self, endpoint_uri_environment_variable: str = None, api_key_environment_variable: str = None
+        self,
+        endpoint_uri_environment_variable: Optional[str] = None,
+        api_key_environment_variable: Optional[str] = None,
     ) -> None:
         """
         Sets the environment configuration variable names from which to pull the endpoint uri and the api key
@@ -99,8 +101,8 @@ class AzureMLChatTarget(PromptChatTarget):
         Defaults to "AZURE_ML_MANAGED_ENDPOINT" and "AZURE_ML_KEY".
 
         Args:
-            endpoint_uri_environment_variable (str): The environment variable name for the endpoint uri.
-            api_key_environment_variable (str): The environment variable name for the api key.
+            endpoint_uri_environment_variable (str, optional): The environment variable name for the endpoint uri.
+            api_key_environment_variable (str, optional): The environment variable name for the api key.
 
         Returns:
             None
@@ -109,7 +111,7 @@ class AzureMLChatTarget(PromptChatTarget):
         self.api_key_environment_variable = api_key_environment_variable or "AZURE_ML_KEY"
         self._initialize_vars()
 
-    def _initialize_vars(self, endpoint: str = None, api_key: str = None) -> None:
+    def _initialize_vars(self, endpoint: Optional[str] = None, api_key: Optional[str] = None) -> None:
         """
         Sets the endpoint and key for accessing the Azure ML model. Use this function to manually
         pass in your own endpoint uri and api key. Defaults to the values in the .env file for the variables
@@ -119,8 +121,8 @@ class AzureMLChatTarget(PromptChatTarget):
         this function or the target constructor.
 
         Args:
-            endpoint (str): The endpoint uri for the deployed Azure ML model.
-            api_key (str): The API key for accessing the Azure ML endpoint.
+            endpoint (str, optional): The endpoint uri for the deployed Azure ML model.
+            api_key (str, optional): The API key for accessing the Azure ML endpoint.
 
         Returns:
             None
@@ -134,10 +136,10 @@ class AzureMLChatTarget(PromptChatTarget):
 
     def _set_model_parameters(
         self,
-        max_new_tokens: int = None,
-        temperature: float = None,
-        top_p: float = None,
-        repetition_penalty: float = None,
+        max_new_tokens: Optional[int] = None,
+        temperature: Optional[float] = None,
+        top_p: Optional[float] = None,
+        repetition_penalty: Optional[float] = None,
         **param_kwargs,
     ) -> None:
         """
@@ -157,7 +159,7 @@ class AzureMLChatTarget(PromptChatTarget):
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
 
-        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
+        messages = list(self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id))
 
         messages.append(request.to_chat_message())
 
@@ -181,10 +183,7 @@ class AzureMLChatTarget(PromptChatTarget):
             else:
                 raise hse
 
-        logger.info(
-            "Received the following response from the prompt target"
-            + f"{response_entry.request_pieces[0].converted_value}"
-        )
+        logger.info("Received the following response from the prompt target" + f"{response_entry.get_value()}")
         return response_entry
 
     @pyrit_target_retry

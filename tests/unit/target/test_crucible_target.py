@@ -2,6 +2,8 @@
 # Licensed under the MIT license.
 
 
+from typing import MutableSequence
+
 import pytest
 from unit.mocks import get_sample_conversations
 
@@ -10,7 +12,7 @@ from pyrit.prompt_target import CrucibleTarget
 
 
 @pytest.fixture
-def sample_conversations() -> list[PromptRequestPiece]:
+def sample_conversations() -> MutableSequence[PromptRequestPiece]:
     return get_sample_conversations()
 
 
@@ -25,7 +27,7 @@ def test_crucible_initializes(crucible_target: CrucibleTarget):
 
 @pytest.mark.asyncio
 async def test_crucible_validate_request_length(
-    crucible_target: CrucibleTarget, sample_conversations: list[PromptRequestPiece]
+    crucible_target: CrucibleTarget, sample_conversations: MutableSequence[PromptRequestPiece]
 ):
     request = PromptRequestResponse(request_pieces=sample_conversations)
     with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
@@ -34,7 +36,7 @@ async def test_crucible_validate_request_length(
 
 @pytest.mark.asyncio
 async def test_crucible_validate_prompt_type(
-    crucible_target: CrucibleTarget, sample_conversations: list[PromptRequestPiece]
+    crucible_target: CrucibleTarget, sample_conversations: MutableSequence[PromptRequestPiece]
 ):
     request_piece = sample_conversations[0]
     request_piece.converted_value_data_type = "image_path"

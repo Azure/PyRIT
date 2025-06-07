@@ -1,0 +1,29 @@
+datasets:
+  - ./pyrit/datasets/seed_prompts/illegal.prompt
+scenarios:
+  - type: "RedTeamingOrchestrator"
+  - type: "CrescendoOrchestrator"
+    max_turns: 5
+    max_backtracks: 3
+  - type: "CrescendoOrchestrator"
+    max_turns: 10
+    max_backtracks: 10
+  - type: "TreeOfAttacksWithPruningOrchestrator"
+    depth: 10
+    width: 7
+    branching_factor: 8
+  - type: "TreeOfAttacksWithPruningOrchestrator"
+    depth: 5
+    width: 3
+    branching_factor: 6
+objective_target:
+  type: "OpenAIChatTarget"
+adversarial_chat:
+  type: "OpenAIChatTarget"
+scoring:
+  scoring_target:
+    type: "OpenAIChatTarget"
+  objective_scorer:
+    type: "SelfAskRefusalScorer"
+database:
+  type: "DuckDB"

@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.6
 #   kernelspec:
-#     display_name: pyrit-dev
+#     display_name: pyrit-312
 #     language: python
 #     name: python3
 # ---
@@ -16,7 +16,7 @@
 # %% [markdown]
 # # Azure OpenAI Embeddings - optional
 #
-# Similar to the [OpenAI Completions](../targets/open_ai_completions.ipynb) endpoint, PyRIT also allows to get embeddings. The embedding response is a wrapper for the OpenAI embedding API.
+# PyRIT also allows to get embeddings. The embedding response is a wrapper for the OpenAI embedding API.
 
 # %%
 from pprint import pprint
@@ -64,9 +64,3 @@ from pyrit.common.path import DB_DATA_PATH
 
 saved_embedding_path = embedding_response.save_to_file(directory_path=DB_DATA_PATH)
 saved_embedding_path
-
-# %%
-from pyrit.memory import CentralMemory
-
-memory = CentralMemory.get_memory_instance()
-memory.dispose_engine()

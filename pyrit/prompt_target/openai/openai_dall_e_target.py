@@ -4,13 +4,15 @@ import json
 import logging
 from typing import Any, Dict, Literal
 
-from openai import BadRequestError
+import httpx
 
+from pyrit.common import net_utility
 from pyrit.exceptions import (
     EmptyResponseException,
     handle_bad_request_exception,
     pyrit_target_retry,
 )
+from pyrit.exceptions.exception_classes import RateLimitException
 from pyrit.models import (
     PromptDataType,
     PromptRequestResponse,
@@ -42,6 +44,20 @@ class OpenAIDALLETarget(OpenAITarget):
         Initialize the DALL-E target with specified parameters.
 
         Args:
+            model_name (str, Optional): The name of the model.
+            endpoint (str, Optional): The target URL for the OpenAI service.
+            api_key (str, Optional): The API key for accessing the Azure OpenAI service.
+                Defaults to the OPENAI_DALLE_API_KEY environment variable.
+            headers (str, Optional): Headers of the endpoint (JSON).
+            use_aad_auth (bool, Optional): When set to True, user authentication is used
+                instead of API Key. DefaultAzureCredential is taken for
+                https://cognitiveservices.azure.com/.default . Please run `az login` locally
+                to leverage user AuthN.
+            api_version (str, Optional): The version of the Azure OpenAI API. Defaults to
+                "2024-06-01".
+            max_requests_per_minute (int, Optional): Number of requests the target can handle per
+                minute before hitting a rate limit. The number of requests sent to the target
+                will be capped at the value provided.
             image_size (Literal["256x256", "512x512", "1024x1024"], Optional): The size of the generated images.
                 Defaults to "1024x1024".
             num_images (int, Optional): The number of images to generate. Defaults to 1. For DALL-E-2, this can be
@@ -54,6 +70,9 @@ class OpenAIDALLETarget(OpenAITarget):
                 DALL-E-3. Defaults to "natural".
             *args: Additional positional arguments to be passed to AzureOpenAITarget.
             **kwargs: Additional keyword arguments to be passed to AzureOpenAITarget.
+            httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
+                httpx.AsyncClient() constructor.
+                For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
 
         Raises:
             ValueError: If `num_images` is not 1 for DALL-E-3.
@@ -75,32 +94,80 @@ class OpenAIDALLETarget(OpenAITarget):
 
         super().__init__(*args, **kwargs)
 
-    def _set_azure_openai_env_configuration_vars(self):
-        self.deployment_environment_variable = "AZURE_OPENAI_DALLE_DEPLOYMENT"
-        self.endpoint_uri_environment_variable = "AZURE_OPENAI_DALLE_ENDPOINT"
-        self.api_key_environment_variable = "AZURE_OPENAI_DALLE_API_KEY"
+    def _set_openai_env_configuration_vars(self):
+        self.model_name_environment_variable = "OPENAI_DALLE_MODEL"
+        self.endpoint_environment_variable = "OPENAI_DALLE_ENDPOINT"
+        self.api_key_environment_variable = "OPENAI_DALLE_API_KEY"
 
     @limit_requests_per_minute
+    @pyrit_target_retry
     async def send_prompt_async(
         self,
         *,
         prompt_request: PromptRequestResponse,
     ) -> PromptRequestResponse:
         """
-        (Async) Sends prompt to image target and returns response
+        Send a prompt to the DALL-E target and return the response.
 
         Args:
-            prompt_request (PromptRequestResponse): the prompt to send formatted as an object
+            prompt_request (PromptRequestResponse): The prompt request to send.
 
-        Returns: response from target model formatted as an object
+        Returns:
+            PromptRequestResponse: The response from the DALL-E target.
         """
-
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
-        prompt = request.converted_value
 
+        logger.info(f"Sending the following prompt to the prompt target: {request}")
+
+        # Refresh auth headers if using AAD
+        self.refresh_auth_headers()
+
+        body = self._construct_request_body(prompt=request.converted_value)
+
+        params = {}
+        if self._api_version is not None:
+            params["api-version"] = self._api_version
+
+        try:
+            http_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(
+                endpoint_uri=self._endpoint,
+                method="POST",
+                headers=self._headers,
+                request_body=body,
+                params=params,
+                **self._httpx_client_kwargs,
+            )
+        except httpx.HTTPStatusError as StatusError:
+            if StatusError.response.status_code == 400:
+                # Handle Bad Request
+                return handle_bad_request_exception(response_text=StatusError.response.text, request=request)
+            elif StatusError.response.status_code == 429:
+                raise RateLimitException()
+            else:
+                raise
+
+        json_response = json.loads(http_response.text)
+        b64_data = json_response["data"][0]["b64_json"]
+
+        # Handle empty response using retry
+        if not b64_data:
+            raise EmptyResponseException(message="The chat returned an empty response.")
+
+        data = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
+        await data.save_b64_image(data=b64_data)
+        resp_text = data.value
+        response_type: PromptDataType = "image_path"
+
+        response_entry = construct_response_from_request(
+            request=request, response_text_pieces=[resp_text], response_type=response_type
+        )
+
+        return response_entry
+
+    def _construct_request_body(self, prompt: str):
         image_generation_args: Dict[str, Any] = {
-            "model": self._deployment_name,
+            "model": self._model_name,
             "prompt": prompt,
             "n": self.num_images,
             "size": self.image_size,
@@ -110,48 +177,7 @@ class OpenAIDALLETarget(OpenAITarget):
             image_generation_args["quality"] = self.quality
             image_generation_args["style"] = self.style
 
-        try:
-            b64_data = await self._generate_image_response_async(image_generation_args)
-            data = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
-            await data.save_b64_image(data=b64_data)
-            resp_text = data.value
-            response_type: PromptDataType = "image_path"
-
-            response_entry = construct_response_from_request(
-                request=request, response_text_pieces=[resp_text], response_type=response_type
-            )
-
-        except BadRequestError as bre:
-            response_entry = handle_bad_request_exception(response_text=bre.message, request=request)
-
-        return response_entry
-
-    @pyrit_target_retry
-    async def _generate_image_response_async(self, image_generation_args):
-        """
-        Asynchronously generates an image using the provided generation arguments.
-
-        Retries the function if it raises RateLimitError (HTTP 429) or EmptyResponseException,
-        with a wait time between retries that follows an exponential backoff strategy.
-        Logs retry attempts at the INFO level and stops after a maximum number of attempts.
-
-        Args:
-            image_generation_args (dict): The arguments required for image generation.
-
-        Returns:
-            The generated image  in base64 format.
-
-        Raises:
-            RateLimitError: If the rate limit is exceeded and the maximum number of retries is exhausted.
-            EmptyResponseException: If the response is empty after exhausting the maximum number of retries.
-        """
-        result = await self._async_client.images.generate(**image_generation_args)
-        json_response = json.loads(result.model_dump_json())
-        b64_data = json_response["data"][0]["b64_json"]
-        # Handle empty response using retry
-        if not b64_data:
-            raise EmptyResponseException(message="The chat returned an empty response.")
-        return b64_data
+        return image_generation_args
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         if len(prompt_request.request_pieces) != 1:

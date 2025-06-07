@@ -20,8 +20,8 @@ class NoiseConverter(LLMGenericTextConverter):
         *,
         converter_target: PromptChatTarget,
         noise: Optional[str] = None,
-        number_errors: Optional[int] = 5,
-        prompt_template: SeedPrompt = None,
+        number_errors: int = 5,
+        prompt_template: Optional[SeedPrompt] = None,
     ):
         """
         Injects noise errors into a conversation
@@ -48,7 +48,7 @@ class NoiseConverter(LLMGenericTextConverter):
 
         super().__init__(
             converter_target=converter_target,
-            prompt_template=prompt_template,
+            system_prompt_template=prompt_template,
             noise=noise,
             number_errors=str(number_errors),
         )

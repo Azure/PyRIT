@@ -4,11 +4,12 @@
 from __future__ import annotations
 
 import logging
+import os
 import uuid
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional, Sequence, Union
 
 from jinja2 import BaseLoader, Environment, StrictUndefined, Template, Undefined
 from pydantic.types import PositiveInt
@@ -50,24 +51,24 @@ class PartialUndefined(Undefined):
 class SeedPrompt(YamlLoadable):
     """Represents a seed prompt with various attributes and metadata."""
 
-    id: Optional[uuid.UUID]
     value: str
-    value_sha256: str
-    data_type: PromptDataType
-    name: Optional[str]
-    dataset_name: Optional[str]
-    harm_categories: Optional[List[str]]
-    description: Optional[str]
-    authors: Optional[List[str]]
-    groups: Optional[List[str]]
-    source: Optional[str]
-    date_added: Optional[datetime]
-    added_by: Optional[str]
-    metadata: Optional[Dict[str, Union[str, int]]]
-    parameters: Optional[List[str]]
-    prompt_group_id: Optional[uuid.UUID]
-    prompt_group_alias: Optional[str]
-    sequence: Optional[int]
+    value_sha256: Optional[str] = None
+    data_type: Optional[PromptDataType] = None
+    id: Optional[uuid.UUID] = field(default_factory=lambda: uuid.uuid4())
+    name: Optional[str] = None
+    dataset_name: Optional[str] = None
+    harm_categories: Optional[Sequence[str]] = field(default_factory=lambda: [])
+    description: Optional[str] = None
+    authors: Optional[Sequence[str]] = field(default_factory=lambda: [])
+    groups: Optional[Sequence[str]] = field(default_factory=lambda: [])
+    source: Optional[str] = None
+    date_added: Optional[datetime] = field(default_factory=lambda: datetime.now())
+    added_by: Optional[str] = None
+    metadata: Optional[Dict[str, Union[str, int]]] = field(default_factory=lambda: {})
+    parameters: Optional[Sequence[str]] = field(default_factory=lambda: [])
+    prompt_group_id: Optional[uuid.UUID] = None
+    prompt_group_alias: Optional[str] = None
+    sequence: Optional[int] = 0
 
     TEMPLATE_PATHS = {
         "datasets_path": DATASETS_PATH,
@@ -78,49 +79,26 @@ class SeedPrompt(YamlLoadable):
         "docs_code_path": DOCS_CODE_PATH,
     }
 
-    def __init__(
-        self,
-        *,
-        id: Optional[uuid.UUID] = None,
-        value: str,
-        value_sha256: Optional[str] = None,
-        data_type: PromptDataType,
-        name: Optional[str] = None,
-        dataset_name: Optional[str] = None,
-        harm_categories: Optional[List[str]] = None,
-        description: Optional[str] = None,
-        authors: Optional[List[str]] = None,
-        groups: Optional[List[str]] = None,
-        source: Optional[str] = None,
-        date_added: Optional[datetime] = datetime.now(),
-        added_by: Optional[str] = None,
-        metadata: Optional[Dict[str, Union[str, int]]] = None,
-        parameters: Optional[List[str]] = None,
-        prompt_group_id: Optional[uuid.UUID] = None,
-        prompt_group_alias: Optional[str] = None,
-        sequence: Optional[int] = 0,
-    ):
-        self.id = id if id else uuid.uuid4()
-        self.value = value
-        self.value_sha256 = value_sha256
-        self.data_type = data_type
-        self.name = name
-        self.dataset_name = dataset_name
-        self.harm_categories = harm_categories or []
-        self.description = description
-        self.authors = authors or []
-        self.groups = groups or []
-        self.source = source
-        self.date_added = date_added
-        self.added_by = added_by
-        self.metadata = metadata or {}
-        self.parameters = parameters or []
-        self.prompt_group_id = prompt_group_id
-        self.prompt_group_alias = prompt_group_alias
-        self.sequence = sequence
-
-        # Render the template to replace existing values
+    def __post_init__(self) -> None:
+        """Post-initialization to render the template to replace existing values"""
         self.value = self.render_template_value_silent(**self.TEMPLATE_PATHS)
+
+        if not self.data_type:
+            # If data_type is not provided, infer it from the value
+            # Note: Does not assign 'error' or 'url' implicitly
+            if os.path.isfile(self.value):
+                _, ext = os.path.splitext(self.value)
+                ext = ext.lstrip(".")
+                if ext in ["mp4", "avi", "mov", "mkv", "ogv", "flv", "wmv", "webm"]:
+                    self.data_type = "video_path"
+                elif ext in ["flac", "mp3", "mpeg", "mpga", "m4a", "ogg", "wav"]:
+                    self.data_type = "audio_path"
+                elif ext in ["jpg", "jpeg", "png", "gif", "bmp", "tiff", "tif"]:
+                    self.data_type = "image_path"
+                else:
+                    raise ValueError(f"Unable to infer data_type from file extension: {ext}")
+            else:
+                self.data_type = "text"
 
     def render_template_value(self, **kwargs) -> str:
         """Renders self.value as a template, applying provided parameters in kwargs
@@ -220,18 +198,18 @@ class SeedPrompt(YamlLoadable):
 
 class SeedPromptGroup(YamlLoadable):
     """
-    A group of prompts that need to be sent together.
+    A group of prompts that need to be sent together, along with an objective.
 
     This class is useful when a target requires multiple (multimodal) prompt pieces to be grouped
     and sent together. All prompts in the group should share the same `prompt_group_id`.
     """
 
-    prompts: List[SeedPrompt]
+    prompts: Sequence[SeedPrompt]
 
     def __init__(
         self,
         *,
-        prompts: Union[List[SeedPrompt], List[Dict[str, Any]]],
+        prompts: Union[Sequence[SeedPrompt], Sequence[Dict[str, Any]]],
     ):
         if not prompts:
             raise ValueError("SeedPromptGroup cannot be empty.")
@@ -293,6 +271,9 @@ class SeedPromptGroup(YamlLoadable):
         unique_sequences = {prompt.sequence for prompt in self.prompts}
         return len(unique_sequences) <= 1
 
+    def is_single_part_single_text_request(self) -> bool:
+        return len(self.prompts) == 1 and self.prompts[0].data_type == "text"
+
     def __repr__(self):
         return f"<SeedPromptGroup(prompts={len(self.prompts)} prompts)>"
 
@@ -300,35 +281,35 @@ class SeedPromptGroup(YamlLoadable):
 class SeedPromptDataset(YamlLoadable):
     """
     SeedPromptDataset manages seed prompts plus optional top-level defaults.
-    Prompts are stored as a List[SeedPrompt], so references to prompt properties
+    Prompts are stored as a Sequence[SeedPrompt], so references to prompt properties
     are straightforward (e.g. ds.prompts[0].value).
     """
 
     data_type: Optional[str]
     name: Optional[str]
     dataset_name: Optional[str]
-    harm_categories: Optional[List[str]]
+    harm_categories: Optional[Sequence[str]]
     description: Optional[str]
-    authors: Optional[List[str]]
-    groups: Optional[List[str]]
+    authors: Optional[Sequence[str]]
+    groups: Optional[Sequence[str]]
     source: Optional[str]
     date_added: Optional[datetime]
     added_by: Optional[str]
 
     # Now the actual prompts
-    prompts: List["SeedPrompt"]
+    prompts: Sequence["SeedPrompt"]
 
     def __init__(
         self,
         *,
-        prompts: Union[List[Dict[str, Any]], List[SeedPrompt]] = None,
+        prompts: Union[Sequence[Dict[str, Any]], Sequence[SeedPrompt]] = None,
         data_type: Optional[PromptDataType] = "text",
         name: Optional[str] = None,
         dataset_name: Optional[str] = None,
-        harm_categories: Optional[List[str]] = None,
+        harm_categories: Optional[Sequence[str]] = None,
         description: Optional[str] = None,
-        authors: Optional[List[str]] = None,
-        groups: Optional[List[str]] = None,
+        authors: Optional[Sequence[str]] = None,
+        groups: Optional[Sequence[str]] = None,
         source: Optional[str] = None,
         date_added: Optional[datetime] = None,
         added_by: Optional[str] = None,
@@ -368,7 +349,7 @@ class SeedPromptDataset(YamlLoadable):
             else:
                 raise ValueError("Prompts should be either dicts or SeedPrompt objects. Got something else.")
 
-    def get_values(self, first: Optional[PositiveInt] = None, last: Optional[PositiveInt] = None) -> List[str]:
+    def get_values(self, first: Optional[PositiveInt] = None, last: Optional[PositiveInt] = None) -> Sequence[str]:
         """
         Extracts and returns a list of prompt values from the dataset. By default, returns all of them.
 
@@ -377,7 +358,7 @@ class SeedPromptDataset(YamlLoadable):
             last (Optional[int]): If provided, values from the last N prompts are included.
 
         Returns:
-            List[str]: A list of prompt values.
+            Sequence[str]: A list of prompt values.
         """
         values = [prompt.value for prompt in self.prompts]
 
@@ -451,7 +432,7 @@ class SeedPromptDataset(YamlLoadable):
             prompt.value = prompt.render_template_value(**kwargs)
 
     @staticmethod
-    def _set_seed_prompt_group_id_by_alias(seed_prompts: List[dict]):
+    def _set_seed_prompt_group_id_by_alias(seed_prompts: Sequence[dict]):
         """
         Sets all seed_prompt_group_ids based on prompt_group_id_alias matches
 
@@ -469,7 +450,7 @@ class SeedPromptDataset(YamlLoadable):
                 prompt["prompt_group_id"] = uuid.uuid4()
 
     @staticmethod
-    def group_seed_prompts_by_prompt_group_id(seed_prompts: List[SeedPrompt]) -> List[SeedPromptGroup]:
+    def group_seed_prompts_by_prompt_group_id(seed_prompts: Sequence[SeedPrompt]) -> Sequence[SeedPromptGroup]:
         """
         Groups the given list of SeedPrompts by their prompt_group_id and creates
         SeedPromptGroup instances.

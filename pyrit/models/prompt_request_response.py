@@ -3,7 +3,8 @@
 
 from typing import Dict, MutableSequence, Optional, Sequence, Union
 
-from pyrit.models.literals import PromptDataType, PromptResponseError
+from pyrit.common.utils import combine_dict
+from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 
 
@@ -14,11 +15,21 @@ class PromptRequestResponse:
     This is a single request to a target. It can contain multiple prompt request pieces.
 
     Parameters:
-        request_pieces (list[PromptRequestPiece]): The list of prompt request pieces.
+        request_pieces (Sequence[PromptRequestPiece]): The list of prompt request pieces.
     """
 
-    def __init__(self, request_pieces: list[PromptRequestPiece]):
+    def __init__(self, request_pieces: Sequence[PromptRequestPiece]):
         self.request_pieces = request_pieces
+
+    def get_value(self, n: int = 0) -> str:
+        """Return the converted value of the nth request piece."""
+        if n >= len(self.request_pieces):
+            raise IndexError(f"No request piece at index {n}.")
+        return self.request_pieces[n].converted_value
+
+    def get_values(self) -> list[str]:
+        """Return the converted values of all request pieces."""
+        return [request_piece.converted_value for request_piece in self.request_pieces]
 
     def validate(self):
         """
@@ -52,15 +63,24 @@ class PromptRequestResponse:
     @staticmethod
     def flatten_to_prompt_request_pieces(
         request_responses: Sequence["PromptRequestResponse"],
-    ) -> list[PromptRequestPiece]:
+    ) -> MutableSequence[PromptRequestPiece]:
         if not request_responses:
             return []
-        response_pieces = []
+        response_pieces: MutableSequence[PromptRequestPiece] = []
 
         for response in request_responses:
             response_pieces.extend(response.request_pieces)
 
         return response_pieces
+
+    @classmethod
+    def from_prompt(cls, *, prompt: str, role: ChatMessageRole) -> "PromptRequestResponse":
+        piece = PromptRequestPiece(original_value=prompt, role=role)
+        return cls(request_pieces=[piece])
+
+    @classmethod
+    def from_system_prompt(cls, system_prompt: str) -> "PromptRequestResponse":
+        return cls.from_prompt(prompt=system_prompt, role="system")
 
 
 def group_conversation_request_pieces_by_sequence(
@@ -133,6 +153,11 @@ def construct_response_from_request(
     """
     Constructs a response entry from a request.
     """
+
+    # prompt metadat should be combined with the request piece metadata
+    if request.prompt_metadata:
+        prompt_metadata = combine_dict(request.prompt_metadata, prompt_metadata)
+
     return PromptRequestResponse(
         request_pieces=[
             PromptRequestPiece(

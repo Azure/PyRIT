@@ -5,9 +5,8 @@ import abc
 import json
 import uuid
 from abc import abstractmethod
-from typing import Optional, Sequence
+from typing import Dict, Optional, Sequence
 
-from pyrit.common.batch_helper import batch_task_async
 from pyrit.exceptions import (
     InvalidJsonException,
     pyrit_json_retry,
@@ -23,6 +22,7 @@ from pyrit.models import (
     UnvalidatedScore,
 )
 from pyrit.prompt_target import PromptChatTarget
+from pyrit.prompt_target.batch_helper import batch_task_async
 
 
 class Scorer(abc.ABC):
@@ -216,14 +216,20 @@ class Scorer(abc.ABC):
         prompt_request_value: str,
         prompt_request_data_type: PromptDataType,
         scored_prompt_id: str,
-        category: str = None,
-        task: str = None,
-        orchestrator_identifier: dict[str, str] = None,
+        category: Optional[str] = None,
+        task: Optional[str] = None,
+        score_value_output_key: str = "score_value",
+        rationale_output_key: str = "rationale",
+        description_output_key: str = "description",
+        metadata_output_key: str = "metadata",
+        category_output_key: str = "category",
+        orchestrator_identifier: Optional[Dict[str, str]] = None,
     ) -> UnvalidatedScore:
         """
         Sends a request to a target, and takes care of retries.
 
-        The scorer target response should be JSON with value, rationale, and optional metadata and description fields.
+        The scorer target response should be JSON with value, rationale, and optional metadata and
+        description fields.
 
         Args:
             prompt_target (PromptChatTarget): The target LLM to send the prompt request to.
@@ -231,10 +237,16 @@ class Scorer(abc.ABC):
             prompt_request_value (str): The actual value or content to be scored by the LLM.
             prompt_request_data_type (PromptDataType): The type of the data being sent in the prompt request.
             scored_prompt_id (str): The ID of the scored prompt.
-            category (str, Optional): The category of the score. Can also be parsed from the JSON response if not
-                provided.
-            task (str, Optional): A description of the task that is associated with the score, used for contextualizing
-                the result.
+            category (str, Optional): The category of the score. Can also be parsed from the JSON response if
+                not provided.
+            task (str, Optional): A description of the task that is associated with the score, used for
+                contextualizing the result.
+            score_value_output_key (str): The key in the JSON response that contains the score value.
+            rationale_output_key (str): The key in the JSON response that contains the rationale.
+            description_output_key (str): The key in the JSON response that contains the description.
+            category_output_key (str): The key in the JSON response that contains the category.
+            orchestrator_identifier (dict[str, str], Optional): A dictionary containing orchestrator-specific
+                identifiers.
 
         Returns:
             UnvalidatedScore: The score object containing the response from the target LLM.
@@ -271,12 +283,11 @@ class Scorer(abc.ABC):
             raise Exception(f"Error scoring prompt with original prompt ID: {scored_prompt_id}") from ex
 
         try:
-            response_json = response.request_pieces[0].converted_value
+            response_json = response.get_value()
 
             response_json = remove_markdown_json(response_json)
             parsed_response = json.loads(response_json)
-
-            category_response = parsed_response.get("category")
+            category_response = parsed_response.get(category_output_key)
 
             if category_response and category:
                 raise ValueError("Category is present in the response and an argument")
@@ -284,13 +295,13 @@ class Scorer(abc.ABC):
             category = category_response if category_response else category
 
             score = UnvalidatedScore(
-                raw_score_value=str(parsed_response["score_value"]),
-                score_value_description=parsed_response.get("description"),
+                raw_score_value=str(parsed_response[score_value_output_key]),
+                score_value_description=parsed_response.get(description_output_key),
                 score_type=self.scorer_type,
                 score_category=category,
-                score_rationale=parsed_response["rationale"],
+                score_rationale=parsed_response[rationale_output_key],
                 scorer_class_identifier=self.get_identifier(),
-                score_metadata=parsed_response.get("metadata"),
+                score_metadata=parsed_response.get(metadata_output_key),
                 prompt_request_response_id=scored_prompt_id,
                 task=task,
             )

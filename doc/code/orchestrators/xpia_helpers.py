@@ -48,16 +48,16 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
             randomness of the response. Defaults to 0.7.
     """
 
-    API_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_CHAT_KEY"
-    ENDPOINT_URI_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_CHAT_ENDPOINT"
-    DEPLOYMENT_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_CHAT_DEPLOYMENT"
+    API_KEY_ENVIRONMENT_VARIABLE: str = "OPENAI_CHAT_KEY"
+    ENDPOINT_URI_ENVIRONMENT_VARIABLE: str = "OPENAI_CHAT_ENDPOINT"
+    DEPLOYMENT_ENVIRONMENT_VARIABLE: str = "OPENAI_CHAT_MODEL"
 
     def __init__(
         self,
         *,
-        deployment_name: str = None,
-        endpoint: str = None,
-        api_key: str = None,
+        deployment_name: Optional[str] = None,
+        endpoint: Optional[str] = None,
+        api_key: Optional[str] = None,
         api_version: str = "2024-02-15-preview",
         plugin: Any,
         plugin_name: str,
@@ -191,7 +191,7 @@ class AzureStoragePlugin:
     AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE: str = "AZURE_STORAGE_ACCOUNT_CONTAINER_URL"
     SAS_TOKEN_ENVIRONMENT_VARIABLE: str = "AZURE_STORAGE_ACCOUNT_SAS_TOKEN"
 
-    def __init__(self, *, container_url: str | None = None, sas_token: Optional[str] = None) -> None:
+    def __init__(self, *, container_url: Optional[str] = None, sas_token: Optional[str] = None) -> None:
 
         self._container_url: str = default_values.get_required_value(
             env_var_name=self.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE, passed_value=container_url

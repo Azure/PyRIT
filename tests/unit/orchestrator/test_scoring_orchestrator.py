@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import uuid
+from typing import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -14,12 +15,12 @@ from pyrit.score import SubStringScorer
 
 
 @pytest.fixture
-def sample_conversations() -> list[PromptRequestPiece]:
+def sample_conversations() -> MutableSequence[PromptRequestPiece]:
     return get_sample_conversations()
 
 
 @pytest.mark.asyncio
-async def test_score_prompts_by_request_id_async(sample_conversations: list[PromptRequestPiece]):
+async def test_score_prompts_by_request_id_async(sample_conversations: MutableSequence[PromptRequestPiece]):
 
     memory = MagicMock()
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
@@ -36,7 +37,7 @@ async def test_score_prompts_by_request_id_async(sample_conversations: list[Prom
 
 
 @pytest.mark.asyncio
-async def test_score_prompts_by_filters_async(sample_conversations: list[PromptRequestPiece]):
+async def test_score_prompts_by_filters_async(sample_conversations: MutableSequence[PromptRequestPiece]):
 
     memory = MagicMock()
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):

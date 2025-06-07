@@ -2,19 +2,14 @@
 # Licensed under the MIT license.
 
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from pyrit.models import (
-    PromptRequestPiece,
-    PromptRequestResponse,
-    SeedPrompt,
-    SeedPromptDataset,
-)
+from pyrit.models import SeedPrompt, SeedPromptDataset
 from pyrit.orchestrator import RolePlayOrchestrator
 from pyrit.orchestrator.single_turn.role_play_orchestrator import RolePlayPaths
-from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
+from pyrit.prompt_converter import LLMGenericTextConverter
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.score import Scorer
 
@@ -38,7 +33,9 @@ def mock_prompt_converter():
 @pytest.fixture
 def mock_scorer():
     # Example scorer mock if needed
-    return MagicMock(spec=Scorer)
+    scorer = MagicMock(spec=Scorer)
+    scorer.scorer_type = "true_false"  # Add the required scorer_type attribute
+    return scorer
 
 
 @pytest.fixture
@@ -49,6 +46,7 @@ def mock_seed_prompt_dataset():
     """
     rephrase_mock = MagicMock(spec=SeedPrompt)
     # Pretend the template returns the objective with some special text
+    rephrase_mock.parameters = {"objective": "Objective 1"}
     rephrase_mock.render_template_value.return_value = "Rephrased objective"
 
     user_start_mock = MagicMock(spec=SeedPrompt)
@@ -84,8 +82,8 @@ def role_play_orchestrator(
             objective_target=mock_objective_target,
             adversarial_chat=mock_adversarial_chat,
             role_play_definition_path="fake/path/role_play.yaml",
-            prompt_converters=[mock_prompt_converter],
-            scorers=[mock_scorer],
+            request_converter_configurations=[mock_prompt_converter],
+            objective_scorer=mock_scorer,
             batch_size=3,
             verbose=True,
         )
@@ -107,53 +105,39 @@ def test_init(role_play_orchestrator, mock_seed_prompt_dataset):
     assert role_play_orchestrator._verbose is True
 
 
-def test_default_conversation_start(role_play_orchestrator):
+@pytest.mark.asyncio
+async def test_get_conversation_start(role_play_orchestrator):
     """
-    Ensures that the default conversation start is prepended to the conversation list.
+    Ensures that the conversation start is correctly formatted with user and assistant messages.
     """
-    prepended = role_play_orchestrator._prepended_conversation
-    assert len(prepended) == 2, "Should have user and assistant start turns"
-    assert prepended[0].request_pieces[0].role == "user"
-    assert prepended[0].request_pieces[0].original_value == "User start message"
-    assert prepended[1].request_pieces[0].role == "assistant"
-    assert prepended[1].request_pieces[0].original_value == "Assistant start message"
+    conversation_start = await role_play_orchestrator._get_conversation_start()
+
+    assert len(conversation_start) == 2, "Should have user and assistant start turns"
+    assert conversation_start[0].request_pieces[0].role == "user"
+    assert conversation_start[0].request_pieces[0].original_value == "User start message"
+    assert conversation_start[1].request_pieces[0].role == "assistant"
+    assert conversation_start[1].request_pieces[0].original_value == "Assistant start message"
 
 
 @pytest.mark.asyncio
-async def test_get_role_playing_prompts_async(role_play_orchestrator):
+async def test_get_role_playing_sets_default_converter(role_play_orchestrator):
     """
-    Calls the internal method directly to ensure it transforms inputs
-    by calling the normalizer with the rephrased instructions.
+    Ensures role playing orchestrator sets the default converter
     """
-    role_play_orchestrator._prompt_normalizer = MagicMock()
-    role_play_orchestrator._prompt_normalizer.send_prompt_batch_to_target_async = AsyncMock(
-        return_value=[
-            PromptRequestResponse(
-                request_pieces=[PromptRequestPiece(role="assistant", original_value="role-played 1")]
-            ),
-            PromptRequestResponse(
-                request_pieces=[PromptRequestPiece(role="assistant", original_value="role-played 2")]
-            ),
-        ]
+    assert len(role_play_orchestrator._request_converter_configurations) == 2
+    assert isinstance(
+        role_play_orchestrator._request_converter_configurations[0].converters[0], LLMGenericTextConverter
     )
-
-    objectives = ["Objective 1", "Objective 2"]
-    prompts = await role_play_orchestrator._get_role_playing_prompts_async(objectives)
-
-    assert prompts == ["role-played 1", "role-played 2"]
-
-    role_play_orchestrator._prompt_normalizer.send_prompt_batch_to_target_async.assert_called_once()
-    normalizer_call_args = role_play_orchestrator._prompt_normalizer.send_prompt_batch_to_target_async.call_args
-    requests_sent = normalizer_call_args.kwargs["requests"]
-
-    assert len(requests_sent) == 2
-    assert isinstance(requests_sent[0], NormalizerRequest)
-    assert requests_sent[0].seed_prompt_group.prompts[0].value == "Rephrased objective"
-    assert isinstance(requests_sent[1], NormalizerRequest)
+    instructions = (
+        role_play_orchestrator._request_converter_configurations[0]
+        .converters[0]
+        ._user_prompt_template_with_objective.render_template_value()
+    )
+    assert instructions == "Rephrased objective"
 
 
 @pytest.mark.parametrize("role_play_path", list(RolePlayPaths))
-def test_role_play_paths(role_play_path):
+def test_role_play_paths(role_play_path) -> None:
     """
     For each path in RolePlayPaths, verify that:
       1) The file actually exists on disk.

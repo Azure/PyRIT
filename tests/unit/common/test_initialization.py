@@ -27,7 +27,7 @@ def test_load_environment_files_base_only(mock_logger, mock_exists, mock_load_do
 
     _load_environment_files()
 
-    assert mock_load_dotenv.call_count == 1
+    assert mock_load_dotenv.call_count == 2
 
 
 @mock.patch("dotenv.load_dotenv")
@@ -55,7 +55,7 @@ def test_load_environment_files_no_base_no_local(mock_logger, mock_exists, mock_
 
     _load_environment_files()
 
-    mock_load_dotenv.assert_called_once()
+    mock_load_dotenv.call_count == 2
     mock_logger.return_value.info.assert_not_called()
 
 
@@ -70,7 +70,7 @@ def test_load_environment_files_override(mock_exists, mock_load_dotenv):
     mock_exists.side_effect = [True, True]
 
     # Simulate environment variables in base .env and .env.local
-    mock_load_dotenv.side_effect = lambda path, override: os.environ.update(
+    mock_load_dotenv.side_effect = lambda path, override, interpolate=True: os.environ.update(
         {
             "TEST_VAR": "base_value" if path == base_file_path else "local_value",
             "COMMON_VAR": "base_common" if path == base_file_path else "local_common",

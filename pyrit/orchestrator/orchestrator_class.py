@@ -5,7 +5,7 @@ import abc
 import ast
 import logging
 import uuid
-from typing import Optional
+from typing import Dict, List, Optional, Union
 
 from pyrit.common import default_values
 from pyrit.memory import CentralMemory, MemoryInterface
@@ -44,14 +44,6 @@ class Orchestrator(abc.ABC, Identifier):
         if self._verbose:
             logging.basicConfig(level=logging.INFO)
 
-    def __enter__(self):
-        """Enter the runtime context related to this object."""
-        return self  # You can return self or another object that should be used in the with-statement.
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Exit the runtime context and perform any cleanup actions."""
-        self.dispose_db_engine()
-
     def dispose_db_engine(self) -> None:
         """
         Dispose database engine to release database connections and resources.
@@ -62,9 +54,9 @@ class Orchestrator(abc.ABC, Identifier):
         self,
         prompt_text: str,
         prompt_type: PromptDataType = "text",
-        conversation_id: str = None,
-        converters=None,
-        metadata=None,
+        conversation_id: Optional[str] = None,
+        converters: Optional[List[PromptConverter]] = None,
+        metadata: Optional[Dict[str, Union[str, int]]] = None,
     ) -> NormalizerRequest:
 
         if converters is None:

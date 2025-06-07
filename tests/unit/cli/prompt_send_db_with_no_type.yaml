@@ -1,0 +1,10 @@
+datasets:
+  - ./pyrit/datasets/seed_prompts/illegal.prompt
+objective_target:
+  type: "OpenAIChatTarget"
+scenarios:
+  - type: "PromptSendingOrchestrator"
+database:
+  memory_labels:
+    operator: roakey
+    operation: op_trash_panda

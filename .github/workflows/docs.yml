@@ -32,6 +32,15 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    # Cache pip packages for faster installs
+    - name: Cache pip packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
     # Install dependencies
     - name: Set up Python 3.11
       uses: actions/setup-python@v5
