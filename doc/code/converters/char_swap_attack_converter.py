@@ -25,7 +25,7 @@
 # %%
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_converter.charswap_attack_converter import CharSwapConverter
+from pyrit.prompt_converter import CharSwapConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import OpenAIChatTarget
 
