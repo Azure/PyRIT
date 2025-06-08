@@ -42,19 +42,25 @@ class WordLevelConverter(PromptConverter):
             regex (Optional[Union[str, re.Pattern]]): Regex pattern to match words for conversion.
         """
         # Make sure at most one selection criteria is provided
-        criteria = [indices, keywords, proportion, regex]
-        provided_criteria = [criterion for criterion in criteria if criterion is not None]
+        criteria_map = {
+            "indices": indices,
+            "keywords": keywords,
+            "proportion": proportion,
+            "regex": regex
+        }
+        provided_criteria = {name: value for name, value in criteria_map.items() if value is not None}
+
         if len(provided_criteria) > 1:
             raise ValueError("Only one selection criteria can be provided at a time")
 
         if provided_criteria:
-            self._mode = provided_criteria[0].__class__.__name__.lower()
+            self._mode = list(provided_criteria.keys())[0]
         else:
             self._mode = "all"
 
         self._keywords = keywords or []
         self._indices = indices or []
-        self._proportion = proportion or 1.0
+        self._proportion = 1.0 if proportion is None else proportion
         self._regex = regex or ".*"
 
     def _select_word_indices(self, words: List[str]) -> List[int]:
@@ -67,11 +73,11 @@ class WordLevelConverter(PromptConverter):
                 return list(range(len(words)))
             case "keywords":
                 return [i for i, word in enumerate(words) if word in self._keywords]
-            case "random":
+            case "proportion":
                 return get_random_indices(start=0, size=len(words), proportion=self._proportion)
             case "regex":
                 return [i for i, word in enumerate(words) if re.search(self._regex, word)]
-            case "custom":
+            case "indices":
                 valid_indices = [i for i in self._indices if 0 <= i < len(words)]
                 invalid_indices = [i for i in self._indices if i < 0 or i >= len(words)]
                 if invalid_indices:

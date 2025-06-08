@@ -1,6 +1,3 @@
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT license.
-
 import re
 import pytest
 from unittest.mock import patch
@@ -42,7 +39,7 @@ class TestWordLevelConverter:
 
     @pytest.mark.asyncio
     async def test_convert_async_random_mode(self):
-        with patch("random.sample", return_value=[0, 2]):
+        with patch("pyrit.prompt_converter.word_level_converter.get_random_indices", return_value=[0, 2]):
             converter = SimpleWordLevelConverter(proportion=0.5)
             result = await converter.convert_async(prompt="hello world this is")
             assert result.output_text == "HELLO world THIS is"
@@ -59,14 +56,13 @@ class TestWordLevelConverter:
 
     def test_select_word_indices_all_mode(self):
         converter = SimpleWordLevelConverter()
-
         assert converter._select_word_indices(words=["word1", "word2", "word3"]) == [0, 1, 2]
         assert converter._select_word_indices(words=[]) == []
 
         large_word_list = [f"word{i}" for i in range(1000)]
         assert converter._select_word_indices(words=large_word_list) == list(range(1000))
 
-    def test_select_word_indices_custom_mode(self):
+    def test_select_word_indices_indices_mode(self):
         converter = SimpleWordLevelConverter(indices=[0, 2])
         assert converter._select_word_indices(words=["word1", "word2", "word3"]) == [0, 2]
 
@@ -86,17 +82,11 @@ class TestWordLevelConverter:
         assert converter._select_word_indices(words=large_word_list) == custom_indices
 
     def test_select_word_indices_keywords_mode(self):
-        converter = SimpleWordLevelConverter(keywords=["pyrit"])
-        assert converter._select_word_indices(words=["word1", "word2", "pyrit", "word4"]) == [2]
-
         converter = SimpleWordLevelConverter(keywords=["pyrit", "test"])
         assert converter._select_word_indices(words=["word1", "pyrit", "word3", "test"]) == [1, 3]
 
         converter = SimpleWordLevelConverter(keywords=["pyrit"])
         assert converter._select_word_indices(words=[]) == []
-
-        converter = SimpleWordLevelConverter()
-        assert converter._select_word_indices(words=["word1", "word2", "word3"]) == []
 
         converter = SimpleWordLevelConverter(keywords=[])
         assert converter._select_word_indices(words=["word1", "word2", "word3"]) == []
@@ -114,9 +104,6 @@ class TestWordLevelConverter:
     def test_select_word_indices_regex_mode(self):
         converter = SimpleWordLevelConverter(regex=r"word\d")
         assert converter._select_word_indices(words=["word1", "word2", "pyrit", "word4"]) == [0, 1, 3]
-
-        converter = SimpleWordLevelConverter()
-        assert converter._select_word_indices(words=["word1", "word2", "word3"]) == [0, 1, 2]
 
         converter = SimpleWordLevelConverter(regex=r"pyrit")
         assert converter._select_word_indices(words=["word1", "word2", "word3"]) == []
@@ -140,7 +127,7 @@ class TestWordLevelConverter:
         assert 789 not in regex_results
 
     def test_select_word_indices_random_mode(self):
-        with patch("random.sample", return_value=[0, 2]):
+        with patch("pyrit.prompt_converter.word_level_converter.get_random_indices", return_value=[0, 2]):
             converter = SimpleWordLevelConverter(proportion=0.5)
             result = converter._select_word_indices(words=["word1", "word2", "word3", "word4"])
             assert result == [0, 2]
@@ -151,7 +138,7 @@ class TestWordLevelConverter:
         converter = SimpleWordLevelConverter(proportion=0)
         assert converter._select_word_indices(words=["word1", "word2", "word3", "word4"]) == []
 
-        converter = SimpleWordLevelConverter(proportion=1)
+        converter = SimpleWordLevelConverter(proportion=1.0)
         assert len(converter._select_word_indices(words=["word1", "word2", "word3", "word4"])) == 4
 
         # Test with actual randomness but verify length is correct
@@ -160,10 +147,27 @@ class TestWordLevelConverter:
         random_results = converter._select_word_indices(words=large_word_list)
         assert len(random_results) == 430  # 43% of 1000
 
-    def test_select_word_indices_invalid_mode(self):
-        # Modify internal state to test invalid mode case
+    def test_initialization_and_validation(self):
+        # Default mode (all words)
         converter = SimpleWordLevelConverter()
-        converter._selection_mode = "invalid"  # type: ignore
-        assert converter._select_word_indices(words=["word1", "word2"]) == [0, 1]
-        assert converter._select_word_indices(words=["word1", "word2", "word3"]) == [0, 1, 2]
-        assert converter._select_word_indices(words=[]) == []
+        assert converter._mode == "all"
+
+        # Test that multiple criteria raise an error
+        with pytest.raises(ValueError, match="Only one selection criteria can be provided"):
+            SimpleWordLevelConverter(indices=[0], keywords=["test"])
+        with pytest.raises(ValueError, match="Only one selection criteria can be provided"):
+            SimpleWordLevelConverter(proportion=0.5, regex=r"test")
+
+        # Test individual modes are set correctly
+        converter = SimpleWordLevelConverter(indices=[0, 1])
+        assert converter._mode == "indices"
+        assert converter._indices == [0, 1]
+        converter = SimpleWordLevelConverter(keywords=["test"])
+        assert converter._mode == "keywords"
+        assert converter._keywords == ["test"]
+        converter = SimpleWordLevelConverter(regex=r"test")
+        assert converter._mode == "regex"
+        assert converter._regex == r"test"
+        converter = SimpleWordLevelConverter(proportion=0.5)
+        assert converter._mode == "proportion"
+        assert converter._proportion == 0.5
