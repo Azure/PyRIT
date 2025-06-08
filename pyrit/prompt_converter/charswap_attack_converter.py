@@ -49,6 +49,7 @@ class CharSwapConverter(WordLevelConverter):
     def _perturb_word(self, word: str) -> str:
         """
         Perturb a word by swapping two adjacent characters.
+
         Args:
             word (str): The word to perturb.
         Returns:

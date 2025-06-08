@@ -73,7 +73,7 @@ async def test_convert_tokens_entire_string_async() -> None:
 
 
 @pytest.mark.asyncio
-async def test_test_convert_tokens_raises_with_non_text_input_type():
+async def test_convert_tokens_raises_with_non_text_input_type():
     prompt = "This is a test ⟪to convert⟪ and ⟫another part⟫."
     converter = Base64Converter()
     with pytest.raises(ValueError, match="Input type must be text when start or end tokens are present."):
@@ -81,7 +81,7 @@ async def test_test_convert_tokens_raises_with_non_text_input_type():
 
 
 @pytest.mark.asyncio
-async def test_test_convert_tokens_raises_uneven_tokens():
+async def test_convert_tokens_raises_uneven_tokens():
     converter = Base64Converter()
     prompt = "This is a test ⟪to convert⟫ and ⟪another part."
     with pytest.raises(ValueError, match="Uneven number of start tokens and end tokens."):
@@ -510,7 +510,7 @@ def is_speechsdk_installed():
         (PDFConverter(), ["text"], ["url"]),
         (QRCodeConverter(), ["text"], ["image_path"]),
         (RandomCapitalLettersConverter(), ["text"], ["text"]),
-        (RepeatTokenConverter(token_to_repeat="test"), ["text"], ["text"]),
+        (RepeatTokenConverter(token_to_repeat="test", times_to_repeat=2), ["text"], ["text"]),
         (ROT13Converter(), ["text"], ["text"]),
         (SearchReplaceConverter(pattern=" ", replace="_"), ["text"], ["text"]),
         (StringJoinConverter(), ["text"], ["text"]),

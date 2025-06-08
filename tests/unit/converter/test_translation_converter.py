@@ -1,13 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import os
 from unittest.mock import AsyncMock, patch
 
 import pytest
 from unit.mocks import MockPromptTarget
 
-from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_converter import TranslationConverter
 
@@ -26,81 +24,11 @@ def test_translator_converter_languages_validation_throws(languages, duckdb_inst
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "converted_value",
-    [
-        "Invalid Json",
-        "{'str' : 'json not formatted correctly'}",
-    ],
-)
-async def test_translation_converter_send_prompt_async_bad_json_exception_retries(converted_value, duckdb_instance):
-
-    prompt_target = MockPromptTarget()
-
-    prompt_variation = TranslationConverter(converter_target=prompt_target, language="en")
-
-    with patch("unit.mocks.MockPromptTarget.send_prompt_async", new_callable=AsyncMock) as mock_create:
-
-        prompt_req_resp = PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(
-                    role="user",
-                    conversation_id="12345679",
-                    original_value="test input",
-                    converted_value="this is not a json",
-                    original_value_data_type="text",
-                    converted_value_data_type="text",
-                    prompt_target_identifier={"target": "target-identifier"},
-                    orchestrator_identifier={"test": "test"},
-                    labels={"test": "test"},
-                )
-            ]
-        )
-        mock_create.return_value = prompt_req_resp
-
-        with pytest.raises(InvalidJsonException):
-            await prompt_variation.convert_async(prompt="testing", input_type="text")
-            assert mock_create.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
-
-
-@pytest.mark.asyncio
-async def test_translation_converter_send_prompt_async_json_bad_format_retries(duckdb_instance):
-    prompt_target = MockPromptTarget()
-
-    prompt_variation = TranslationConverter(converter_target=prompt_target, language="en")
-
-    with patch("unit.mocks.MockPromptTarget.send_prompt_async", new_callable=AsyncMock) as mock_create:
-
-        prompt_req_resp = PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(
-                    role="user",
-                    conversation_id="12345679",
-                    original_value="test input",
-                    converted_value="this is not a json",
-                    original_value_data_type="text",
-                    converted_value_data_type="text",
-                    prompt_target_identifier={"target": "target-identifier"},
-                    orchestrator_identifier={"test": "test"},
-                    labels={"test": "test"},
-                )
-            ]
-        )
-        mock_create.return_value = prompt_req_resp
-
-        with pytest.raises(InvalidJsonException):
-            await prompt_variation.convert_async(prompt="testing", input_type="text")
-            assert mock_create.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
-
-
-@pytest.mark.asyncio
 async def test_translation_converter_convert_async_retrieve_key_capitalization_mismatch(duckdb_instance):
     prompt_target = MockPromptTarget()
 
     translation_converter = TranslationConverter(converter_target=prompt_target, language="spanish")
-    with patch.object(
-        translation_converter, "send_translation_prompt_async", new=AsyncMock(return_value={"Spanish": "hola"})
-    ):
+    with patch.object(translation_converter, "_send_translation_prompt_async", new=AsyncMock(return_value="hola")):
 
         raised = False
         try:
@@ -109,6 +37,58 @@ async def test_translation_converter_convert_async_retrieve_key_capitalization_m
             raised = True  # There should be no KeyError
 
         assert raised is False
+
+
+@pytest.mark.asyncio
+async def test_translation_converter_retries_on_exception(duckdb_instance):
+    prompt_target = MockPromptTarget()
+    max_retries = 3
+    translation_converter = TranslationConverter(
+        converter_target=prompt_target, language="spanish", max_retries=max_retries
+    )
+
+    mock_send_prompt = AsyncMock(side_effect=Exception("Test failure"))
+    with patch.object(prompt_target, "send_prompt_async", mock_send_prompt):
+        with pytest.raises(Exception):
+            await translation_converter.convert_async(prompt="hello")
+
+        assert mock_send_prompt.call_count == max_retries
+
+
+@pytest.mark.asyncio
+async def test_translation_converter_succeeds_after_retries(duckdb_instance):
+    """Test that TranslationConverter succeeds if a retry attempt works."""
+    prompt_target = MockPromptTarget()
+    max_retries = 3
+    translation_converter = TranslationConverter(
+        converter_target=prompt_target, language="spanish", max_retries=max_retries
+    )
+
+    success_response = PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(
+                role="assistant",
+                conversation_id="test-id",
+                original_value="hello",
+                converted_value="hola",
+                original_value_data_type="text",
+                converted_value_data_type="text",
+                prompt_target_identifier={"target": "test-identifier"},
+                sequence=1,
+            )
+        ]
+    )
+
+    # fail twice, then succeed
+    mock_send_prompt = AsyncMock()
+    mock_send_prompt.side_effect = [Exception("First failure"), Exception("Second failure"), success_response]
+
+    with patch.object(prompt_target, "send_prompt_async", mock_send_prompt):
+        result = await translation_converter.convert_async(prompt="hello")
+
+        assert mock_send_prompt.call_count == max_retries
+        assert result.output_text == "hola"
+        assert result.output_type == "text"
 
 
 def test_translation_converter_input_supported(duckdb_instance):

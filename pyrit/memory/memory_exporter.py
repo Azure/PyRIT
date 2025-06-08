@@ -4,6 +4,7 @@
 import csv
 import json
 from pathlib import Path
+from typing import Optional
 
 from pyrit.models import PromptRequestPiece
 
@@ -23,7 +24,7 @@ class MemoryExporter:
         }
 
     def export_data(
-        self, data: list[PromptRequestPiece], *, file_path: Path = None, export_type: str = "json"
+        self, data: list[PromptRequestPiece], *, file_path: Optional[Path] = None, export_type: str = "json"
     ):  # type: ignore
         """
         Exports the provided data to a file in the specified format.

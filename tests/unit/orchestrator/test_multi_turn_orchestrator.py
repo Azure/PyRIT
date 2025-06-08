@@ -244,8 +244,9 @@ async def test_print_conversation_no_messages():
     mock_memory.get_scores_by_prompt_ids.assert_not_called()
 
 
+@pytest.mark.parametrize("include_auxiliary_scores, get_scores_by_prompt_id_call_count", [(False, 0), (True, 2)])
 @pytest.mark.asyncio
-async def test_print_conversation_with_messages():
+async def test_print_conversation_with_messages(include_auxiliary_scores, get_scores_by_prompt_id_call_count):
 
     id_1 = uuid.uuid4()
 
@@ -294,10 +295,14 @@ async def test_print_conversation_with_messages():
             "pyrit.orchestrator.models.orchestrator_result.display_image_response", new_callable=AsyncMock
         ) as mock_display_image_response:
             result = OrchestratorResult(
-                conversation_id="conversation_id_123", objective="Test Objective", status="success", score=score
+                conversation_id="conversation_id_123",
+                objective="Test Objective",
+                status="success",
+                objective_score=score,
             )
 
-            await result.print_conversation_async()
+            await result.print_conversation_async(include_auxiliary_scores=include_auxiliary_scores)
 
             mock_memory.get_conversation.assert_called_once_with(conversation_id="conversation_id_123")
             assert mock_display_image_response.call_count == 2
+            assert mock_memory.get_scores_by_prompt_ids.call_count == get_scores_by_prompt_id_call_count
