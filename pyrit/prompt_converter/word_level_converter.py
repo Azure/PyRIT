@@ -3,7 +3,6 @@
 
 import abc
 import re
-
 from typing import List, Optional, Union
 
 from pyrit.common.utils import get_random_indices
@@ -42,12 +41,7 @@ class WordLevelConverter(PromptConverter):
             regex (Optional[Union[str, re.Pattern]]): Regex pattern to match words for conversion.
         """
         # Make sure at most one selection criteria is provided
-        criteria_map = {
-            "indices": indices,
-            "keywords": keywords,
-            "proportion": proportion,
-            "regex": regex
-        }
+        criteria_map = {"indices": indices, "keywords": keywords, "proportion": proportion, "regex": regex}
         provided_criteria = {name: value for name, value in criteria_map.items() if value is not None}
 
         if len(provided_criteria) > 1:

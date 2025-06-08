@@ -4,7 +4,6 @@
 import logging
 import random
 import re
-
 from typing import List, Optional, Union
 
 from pyrit.prompt_converter.word_level_converter import WordLevelConverter

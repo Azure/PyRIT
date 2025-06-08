@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import re
-
 from typing import List, Optional, Union
 
 from pyrit.prompt_converter.word_level_converter import WordLevelConverter

@@ -1,6 +1,7 @@
 import re
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 

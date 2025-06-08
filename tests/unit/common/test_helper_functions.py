@@ -1,9 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
-
 from unittest.mock import patch
+
+import pytest
 
 from pyrit.common.utils import combine_dict, get_random_indices
 
