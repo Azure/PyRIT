@@ -81,14 +81,56 @@ def test_get_file_name_subdirectory():
 
 def test_all_templates_have_single_prompt_parameter(jailbreak_dir):
     """Test that all jailbreak template files have exactly one prompt parameter in their definition."""
-    yaml_files = list(jailbreak_dir.rglob("*.yaml"))
+    yaml_files = [f for f in jailbreak_dir.rglob("*.yaml") if "multi_parameter" not in f.parts]
     assert len(yaml_files) > 0, "No YAML templates found in jailbreak directory"
 
     for template_file in yaml_files:
-        jailbreak = TextJailBreak(template_path=str(template_file))
-        # Get the raw template parameters from the SeedPrompt
-        template_params = jailbreak.template.parameters
-        
-        # Count how many parameters are named "prompt"
-        prompt_params = [p for p in template_params if p == "prompt"]
-        assert len(prompt_params) == 1, f"Template {template_file.name} has {len(prompt_params)} prompt parameters in definition, expected 1"
+        try:
+            jailbreak = TextJailBreak(template_path=str(template_file))
+            template_params = jailbreak.template.parameters
+            
+            prompt_params = [p for p in template_params if p == "prompt"]
+            assert len(prompt_params) == 1, f"Template {template_file.name} has {len(prompt_params)} prompt parameters in definition, expected 1"
+            assert len(template_params) == 1, f"Template {template_file.name} has {len(template_params)} parameters in definition, expected 1"
+            if len(template_params) > 1:
+                print (f"Template {template_file.name} has {len(template_params)} parameters in definition, expected 1")
+        except Exception as e:
+            pytest.fail(f"Failed processing template file '{template_file.name}': {str(e)}")
+
+
+def test_template_with_multiple_parameters_success(jailbreak_dir):
+    """Test that a template with multiple parameters works when all required parameters are provided."""
+    template_path = jailbreak_dir / "dt_stereotypes_targeted.yaml"
+    jailbreak = TextJailBreak(
+        template_path=str(template_path),
+        target_group="specific_group"
+    )
+    result = jailbreak.get_jailbreak("Tell me a joke")
+    assert "specific_group" in result
+    assert "Tell me a joke" in result
+    assert "{{ prompt }}" not in result
+    assert "{{ target_group }}" not in result
+
+
+def test_template_with_multiple_parameters_missing():
+    """Test that an error is raised when required parameters are missing."""
+    with pytest.raises(ValueError, match="Template requires parameters that were not provided"):
+        TextJailBreak(
+            template_file_name="dt_stereotypes_targeted.yaml",
+        )
+
+
+def test_template_with_multiple_parameters_prompt_ignored(jailbreak_dir):
+    """Test that providing 'prompt' in kwargs is ignored since it's handled separately."""
+    template_path = jailbreak_dir / "dt_stereotypes_targeted.yaml"
+    jailbreak = TextJailBreak(
+        template_path=str(template_path),
+        target_group="specific_group",
+        prompt="This should be ignored"  # This should be ignored in init
+    )
+    result = jailbreak.get_jailbreak("Tell me a joke")
+    assert "specific_group" in result
+    assert "Tell me a joke" in result  # This should be the actual prompt used
+    assert "This should be ignored" not in result  # The prompt from kwargs should not appear
+    assert "{{ prompt }}" not in result
+    assert "{{ target_group }}" not in result
