@@ -29,7 +29,7 @@ from pyrit.orchestrator.single_turn.role_play_orchestrator import (
     RolePlayOrchestrator,
     RolePlayPaths,
 )
-from pyrit.prompt_converter import CharSwapGenerator
+from pyrit.prompt_converter import CharSwapConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score.azure_content_filter_scorer import AzureContentFilterScorer
@@ -39,7 +39,7 @@ initialize_pyrit(memory_db_type=IN_MEMORY)
 objective_target = OpenAIChatTarget()
 adversarial_chat = OpenAIChatTarget()
 
-converters = PromptConverterConfiguration.from_converters(converters=[CharSwapGenerator()])
+converters = PromptConverterConfiguration.from_converters(converters=[CharSwapConverter()])
 
 orchestrator = RolePlayOrchestrator(
     objective_target=objective_target,
