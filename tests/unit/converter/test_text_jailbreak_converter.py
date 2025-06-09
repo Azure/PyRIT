@@ -6,7 +6,7 @@ from unittest.mock import Mock
 import pytest
 
 from pyrit.datasets import TextJailBreak
-from pyrit.prompt_converter import TextJailBreakConverter
+from pyrit.prompt_converter import TextJailbreakConverter
 
 
 @pytest.fixture
@@ -18,7 +18,7 @@ def mock_jailbreak():
 
 @pytest.fixture
 def converter(mock_jailbreak):
-    return TextJailBreakConverter(jail_break=mock_jailbreak)
+    return TextJailbreakConverter(jailbreak_template=mock_jailbreak)
 
 
 @pytest.mark.asyncio
@@ -67,4 +67,4 @@ async def test_convert_async_with_empty_prompt(converter, mock_jailbreak):
 def test_init_with_none_jailbreak():
     """Test initialization with None jailbreak raises TypeError"""
     with pytest.raises(TypeError):
-        TextJailBreakConverter(jail_break=None)  # type: ignore
+        TextJailbreakConverter(jailbreak_template=None)  # type: ignore

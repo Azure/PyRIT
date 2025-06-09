@@ -77,3 +77,18 @@ def test_get_file_name_subdirectory():
     result = jailbreak.get_jailbreak("Tell me a joke")
     assert "Tell me a joke" in result
     assert "{{ prompt }}" not in result
+
+
+def test_all_templates_have_single_prompt_parameter(jailbreak_dir):
+    """Test that all jailbreak template files have exactly one prompt parameter in their definition."""
+    yaml_files = list(jailbreak_dir.rglob("*.yaml"))
+    assert len(yaml_files) > 0, "No YAML templates found in jailbreak directory"
+
+    for template_file in yaml_files:
+        jailbreak = TextJailBreak(template_path=str(template_file))
+        # Get the raw template parameters from the SeedPrompt
+        template_params = jailbreak.template.parameters
+        
+        # Count how many parameters are named "prompt"
+        prompt_params = [p for p in template_params if p == "prompt"]
+        assert len(prompt_params) == 1, f"Template {template_file.name} has {len(prompt_params)} prompt parameters in definition, expected 1"

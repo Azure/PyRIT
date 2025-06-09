@@ -4,7 +4,6 @@ description: A one-shot universal jailbreak discovered by Twitter user elder_pli
 harm_categories:
   - NA
 source: https://x.com/elder_plinius/status/1810185824002007330
-should_be_blocked: true
 parameters:
   - prompt
 data_type: text
