@@ -103,4 +103,3 @@ for objective in results_by_objective.keys():
     print(
         f"Success rate for objective: {success} / {len(results_by_objective[objective])} = {success / len(results_by_objective[objective])}"
     )
-# %%
