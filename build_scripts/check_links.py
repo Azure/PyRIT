@@ -28,7 +28,7 @@ URL_PATTERN = re.compile(r'\[.*?\]\((.*?)\)|href="([^"]+)"|src="([^"]+)"')
 
 
 def extract_urls(file_path):
-    with open(file_path, "r") as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         content = file.read()
     matches = URL_PATTERN.findall(content)
     # Flatten the list of tuples and filter out empty strings

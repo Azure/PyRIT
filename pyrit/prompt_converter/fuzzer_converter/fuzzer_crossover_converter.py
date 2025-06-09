@@ -22,23 +22,18 @@ class FuzzerCrossOverConverter(FuzzerConverter):
     """
     Fuzzer converter that uses multiple prompt templates to generate new prompts.
 
-    Parameters
-
-    converter_target: PromptChatTarget
-        Chat target used to perform fuzzing on user prompt
-
-    prompt_template: SeedPrompt, default=None
-        Template to be used instead of the default system prompt with instructions for the chat target.
-
-    prompt_templates: List[str], default=None
-        List of prompt templates to use in addition to the default template.
+    Args:
+        converter_target (PromptChatTarget): Chat target used to perform fuzzing on user prompt
+        prompt_template (SeedPrompt, Optional): Template to be used instead of the default system prompt with
+            instructions for the chat target.
+        prompt_templates (List[str], Optional): List of prompt templates to use in addition to the default template.
     """
 
     def __init__(
         self,
         *,
         converter_target: PromptChatTarget,
-        prompt_template: SeedPrompt = None,
+        prompt_template: Optional[SeedPrompt] = None,
         prompt_templates: Optional[List[str]] = None,
     ):
         prompt_template = (

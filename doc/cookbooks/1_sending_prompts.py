@@ -72,8 +72,8 @@ from pyrit.score import (
 )
 
 # Configure this to load the prompts loaded in the previous step.
-# In the last section, they were in the illegal.yaml file (which has a configured name of "test illegal")
-prompt_groups = memory.get_seed_prompt_groups(dataset_name="test illegal")
+# In the last section, they were in the illegal.prompt file (which has a configured name of "2025_06_pyrit_illegal_example")
+prompt_groups = memory.get_seed_prompt_groups(dataset_name="2025_06_pyrit_illegal_example")
 
 # Configure the labels you want to send
 # These should be unique to this test to make it easier to retrieve
