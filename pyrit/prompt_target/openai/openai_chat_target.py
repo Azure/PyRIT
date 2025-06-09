@@ -347,7 +347,7 @@ class OpenAIChatTarget(OpenAITarget):
             # Content filter with status 200 indicates that the model output was filtered
             # https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/content-filter
             return handle_bad_request_exception(
-                response_text=open_ai_str_response, request=request_piece, error_code=400, is_content_filter=True
+                response_text=open_ai_str_response, request=request_piece, error_code=200, is_content_filter=True
             )
         else:
             raise PyritException(message=f"Unknown finish_reason {finish_reason} from response: {response}")
