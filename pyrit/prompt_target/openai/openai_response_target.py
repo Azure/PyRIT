@@ -3,7 +3,7 @@
 
 import json
 import logging
-from typing import Any, MutableSequence, Optional
+from typing import Any, Dict, List, MutableSequence, Optional
 
 import httpx
 
@@ -160,7 +160,7 @@ class OpenAIResponseTarget(OpenAITarget):
 
     async def _build_input_for_multi_modal_async(
         self, conversation: MutableSequence[PromptRequestResponse]
-    ) -> list[dict]:
+    ) -> List[Dict[str, Any]]:
         """
         Builds chat messages based on prompt request response entries.
 
@@ -170,7 +170,7 @@ class OpenAIResponseTarget(OpenAITarget):
         Returns:
             list[dict]: The list of constructed chat messages.
         """
-        full_request = []
+        full_request: List[Dict[str, Any]] = []
         for message in conversation:
 
             prompt_request_pieces = message.request_pieces
@@ -180,7 +180,6 @@ class OpenAIResponseTarget(OpenAITarget):
 
             # System messages are a special case. Instead of the nested formatting with
             # "type" and "text" at a deeper level, they are just a single content string.
-            # The "system" role is mapped to "developer" in the OpenAI Response API.
             first_piece = prompt_request_pieces[0]
             if first_piece.role == "system":
                 if len(prompt_request_pieces) > 1:
@@ -189,7 +188,7 @@ class OpenAIResponseTarget(OpenAITarget):
                         "Multiple system messages are not supported."
                     )
                 full_request.append(
-                    ChatMessage(role="developer", content=first_piece.converted_value).model_dump(exclude_none=True)
+                    ChatMessage(role="system", content=first_piece.converted_value).model_dump(exclude_none=True)
                 )
                 continue
 
@@ -221,6 +220,11 @@ class OpenAIResponseTarget(OpenAITarget):
             full_request.append(
                 ChatMessageListDictContent(role=role, content=content).model_dump(exclude_none=True)  # type: ignore
             )
+        
+        # The "system" role is mapped to "developer" in the OpenAI Response API.
+        for request in full_request:
+            if request.get("role") == "system":
+                request["role"] = "developer"
 
         return full_request
 
