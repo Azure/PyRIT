@@ -17,6 +17,30 @@
         "python.linting.mypyArgs": [
           "--cache-dir=.mypy_cache"
         ],
+        "python.analysis.typeCheckingMode": "basic",  // Changed from default "standard"
+        "python.analysis.diagnosticMode": "openFilesOnly",  // Changed from "workspace"
+        "python.analysis.autoSearchPaths": false,  // Changed from true
+        "python.analysis.indexing": false,  // Changed from true
+        "python.analysis.userFileIndexingLimit": 2000,  // Limit indexed files
+        "python.analysis.persistAllIndices": false,  // Don't persist indices
+        "python.analysis.cacheFolderPath": "/home/vscode/.cache/pylance",
+        "python.analysis.nodeArguments": ["--max-old-space-size=8192"],
+        "python.analysis.usePullDiagnostics": true,
+        "python.linting.enabled": true,
+        "python.analysis.include": [
+          "pyrit/**"  // Only analyze pyrit directory
+        ],
+        "python.analysis.exclude": [
+          "/opt/conda/envs/**",
+          "**/.venv/**",
+          "**/site-packages/**",
+          "**/doc/**",  // Exclude documentation
+          "**/tests/**",  // Exclude tests from analysis
+          "**/build/**",
+          "**/dist/**",
+          "**/__pycache__/**",
+          "**/node_modules/**"
+        ],
         "files.watcherExclude": {
           "**/.git/objects/**": true,
           "**/.git/subtree-cache/**": true,
@@ -24,7 +48,9 @@
           "**/.pytest_cache/**": true,
           "**/build/**": true,
           "**/dist/**": true,
-          "**/pyrit/auxiliary_attacks/gcg/attack/**": true
+          "**/pyrit/auxiliary_attacks/gcg/attack/**": true,
+          "**/doc/**": true,
+          "**/.mypy_cache/**": true
         },
         "search.exclude": {
           "**/node_modules": true,
@@ -40,10 +66,6 @@
           "**/build": true,
           "**/__pycache__": true
         },
-        "python.analysis.diagnosticMode": "workspace",
-        "python.analysis.indexing": true,
-        "python.analysis.autoSearchPaths": true,
-        "python.linting.enabled": true,
         "explorer.autoReveal": false,
         "files.maxMemoryForLargeFilesMB": 4096,
         "files.useExperimentalFileWatcher": true,

@@ -224,13 +224,13 @@ class TestConversationRetrieval:
 class TestSystemPromptHandling:
     """Tests for system prompt functionality"""
 
-    def test_add_system_prompt_with_chat_target(self, attack_identifier: dict[str, str], mock_chat_target: MagicMock):
+    def test_set_system_prompt_with_chat_target(self, attack_identifier: dict[str, str], mock_chat_target: MagicMock):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
         system_prompt = "You are a helpful assistant"
         labels = {"type": "system"}
 
-        manager.add_system_prompt(
+        manager.set_system_prompt(
             target=mock_chat_target, conversation_id=conversation_id, system_prompt=system_prompt, labels=labels
         )
 
@@ -241,23 +241,23 @@ class TestSystemPromptHandling:
             labels=labels,
         )
 
-    def test_add_system_prompt_raises_error_for_non_chat_target(
+    def test_set_system_prompt_raises_error_for_non_chat_target(
         self, attack_identifier: dict[str, str], mock_prompt_target: MagicMock
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
-        with pytest.raises(ValueError, match="Objective Target must be a PromptChatTarget"):
-            manager.add_system_prompt(
+        with pytest.raises(AttributeError, match="Mock object has no attribute 'set_system_prompt'"):
+            manager.set_system_prompt(
                 target=mock_prompt_target, conversation_id=conversation_id, system_prompt="System prompt"
             )
 
-    def test_add_system_prompt_without_labels(self, attack_identifier: dict[str, str], mock_chat_target: MagicMock):
+    def test_set_system_prompt_without_labels(self, attack_identifier: dict[str, str], mock_chat_target: MagicMock):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
         system_prompt = "You are a helpful assistant"
 
-        manager.add_system_prompt(target=mock_chat_target, conversation_id=conversation_id, system_prompt=system_prompt)
+        manager.set_system_prompt(target=mock_chat_target, conversation_id=conversation_id, system_prompt=system_prompt)
 
         mock_chat_target.set_system_prompt.assert_called_once()
         call_args = mock_chat_target.set_system_prompt.call_args

@@ -7,10 +7,10 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from pyrit.attacks.base.attack_context import SingleTurnAttackContext
 from pyrit.attacks.base.attack_executor import AttackExecutor
+from pyrit.attacks.base.attack_result import AttackOutcome, AttackResult
 from pyrit.attacks.base.attack_strategy import AttackStrategy
-from pyrit.attacks.base.context import SingleTurnAttackContext
-from pyrit.attacks.base.result import AttackResult
 from pyrit.exceptions.exception_classes import AttackExecutionException
 
 
@@ -46,7 +46,8 @@ def sample_attack_result():
             "__module__": "pyrit.attacks.test_attack",
             "id": str(uuid.uuid4()),
         },
-        achieved_objective=True,
+        outcome=AttackOutcome.SUCCESS,
+        outcome_reason="Objective achieved successfully",
         executed_turns=1,
     )
 
@@ -68,7 +69,7 @@ class TestAttackExecutorInitialization:
     def test_init_with_default_max_concurrency(self):
         executor = AttackExecutor()
 
-        assert executor._max_concurrency == 5
+        assert executor._max_concurrency == 1
 
     def test_init_with_custom_max_concurrency(self):
         executor = AttackExecutor(max_concurrency=10)
@@ -150,7 +151,8 @@ class TestExecuteMultiObjectiveAttack:
                             "__module__": "pyrit.attacks.test_attack",
                             "id": str(uuid.uuid4()),
                         },
-                        achieved_objective=i % 2 == 0,
+                        outcome=AttackOutcome.SUCCESS if i % 2 == 0 else AttackOutcome.FAILURE,
+                        outcome_reason="Success" if i % 2 == 0 else "Failed",
                         executed_turns=i + 1,
                     )
             raise ValueError("Unknown context")
@@ -176,7 +178,7 @@ class TestExecuteMultiObjectiveAttack:
         # Verify results match expected pattern
         for i, result in enumerate(results):
             assert result.objective == multiple_objectives[i]
-            assert result.achieved_objective == (i % 2 == 0)
+            assert result.outcome == (AttackOutcome.SUCCESS if i % 2 == 0 else AttackOutcome.FAILURE)
             assert result.executed_turns == i + 1
 
     @pytest.mark.asyncio
@@ -277,7 +279,7 @@ class TestExecuteMultiObjectiveAttack:
                             "__module__": "pyrit.attacks.test_attack",
                             "id": str(uuid.uuid4()),
                         },
-                        achieved_objective=True,
+                        outcome=AttackOutcome.SUCCESS,
                         executed_turns=1,
                     )
             raise ValueError("Unknown context")
@@ -408,7 +410,7 @@ class TestErrorHandling:
                         "__module__": "pyrit.attacks.test_attack",
                         "id": str(uuid.uuid4()),
                     },
-                    achieved_objective=True,
+                    outcome=AttackOutcome.SUCCESS,
                     executed_turns=1,
                 )
             elif context == contexts[1]:
@@ -422,7 +424,7 @@ class TestErrorHandling:
                         "__module__": "pyrit.attacks.test_attack",
                         "id": str(uuid.uuid4()),
                     },
-                    achieved_objective=True,
+                    outcome=AttackOutcome.SUCCESS,
                     executed_turns=1,
                 )
 
@@ -459,7 +461,7 @@ class TestExecuteParallel:
                     "__module__": "pyrit.attacks.test_attack",
                     "id": str(uuid.uuid4()),
                 },
-                achieved_objective=True,
+                outcome=AttackOutcome.SUCCESS,
                 executed_turns=1,
             )
 
@@ -534,7 +536,7 @@ class TestIntegrationScenarios:
                     "__module__": "pyrit.attacks.test_attack",
                     "id": str(uuid.uuid4()),
                 },
-                achieved_objective=True,
+                outcome=AttackOutcome.SUCCESS,
                 executed_turns=1,
             )
 
@@ -575,7 +577,7 @@ class TestIntegrationScenarios:
                     "__module__": "pyrit.attacks.test_attack",
                     "id": str(uuid.uuid4()),
                 },
-                achieved_objective=idx % 2 == 0,
+                outcome=AttackOutcome.SUCCESS if idx % 2 == 0 else AttackOutcome.FAILURE,
                 executed_turns=idx + 1,
             )
 
@@ -587,7 +589,7 @@ class TestIntegrationScenarios:
 
         # Verify alternating pattern
         for i, result in enumerate(results):
-            assert result.achieved_objective == (i % 2 == 0)
+            assert result.outcome == (AttackOutcome.SUCCESS if i % 2 == 0 else AttackOutcome.FAILURE)
             assert result.executed_turns == i + 1
 
     @pytest.mark.asyncio

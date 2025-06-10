@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from pyrit.attacks.base.attack_result import AttackOutcome
 from pyrit.attacks.base.attack_strategy import AttackStrategy, AttackStrategyLogAdapter
 from pyrit.exceptions.exception_classes import (
     AttackExecutionException,
@@ -48,7 +49,20 @@ def mock_attack_strategy(mock_default_values):
         _perform_attack_async = AsyncMock()
         _teardown_async = AsyncMock()
 
-    return TestableAttackStrategy()
+    strategy = TestableAttackStrategy()
+
+    # Configure default return value for _perform_attack_async with required attributes
+    mock_result = MagicMock()
+    mock_result.outcome = AttackOutcome.SUCCESS
+    mock_result.outcome_reason = "Test successful"
+    mock_result.execution_time_ms = None  # Will be set by execute_async
+
+    # Cast to AsyncMock to satisfy type checker
+    from typing import cast
+
+    cast(AsyncMock, strategy._perform_attack_async).return_value = mock_result
+
+    return strategy
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -120,9 +134,6 @@ class TestAttackExecution:
 
     @pytest.mark.asyncio
     async def test_execute_async_successful_flow(self, mock_attack_strategy, basic_context):
-        mock_result = MagicMock()
-        mock_attack_strategy._perform_attack_async.return_value = mock_result
-
         result = await mock_attack_strategy.execute_async(context=basic_context)
 
         # Verify all lifecycle methods were called
@@ -132,7 +143,10 @@ class TestAttackExecution:
         mock_attack_strategy._teardown_async.assert_called_once_with(context=basic_context)
 
         # Verify result
-        assert result == mock_result
+        assert result.outcome == AttackOutcome.SUCCESS
+        assert result.outcome_reason == "Test successful"
+        assert result.execution_time_ms is not None
+        assert result.execution_time_ms >= 0
 
     @pytest.mark.asyncio
     async def test_execute_async_validation_failure(self, mock_attack_strategy, basic_context):
@@ -216,6 +230,56 @@ class TestAttackExecution:
         # Should preserve the original exception type
         assert exc_info.value is existing_exception
 
+    @pytest.mark.asyncio
+    async def test_execute_async_sets_execution_time(self, mock_attack_strategy, basic_context):
+        """Test that execute_async properly sets execution_time_ms on the result"""
+
+        # Mock the perform_attack_async to take some time
+        async def delayed_attack(context):
+            import asyncio
+
+            await asyncio.sleep(0.01)  # Sleep for 10ms to ensure measurable time
+            mock_result = MagicMock()
+            mock_result.outcome = AttackOutcome.SUCCESS
+            mock_result.outcome_reason = "Test successful"
+            mock_result.execution_time_ms = None  # Should be set by execute_async
+            return mock_result
+
+        mock_attack_strategy._perform_attack_async = delayed_attack
+
+        # Execute the attack
+        result = await mock_attack_strategy.execute_async(context=basic_context)
+
+        # Verify execution time is set and reasonable
+        assert result.execution_time_ms is not None
+        assert isinstance(result.execution_time_ms, int)
+        assert result.execution_time_ms >= 10  # Should be at least 10ms due to sleep
+        assert result.execution_time_ms < 1000  # Should be less than 1 second for this test
+
+        # Verify it overwrites any existing value
+        assert result.execution_time_ms is not None  # Was None before execute_async set it
+
+    @pytest.mark.asyncio
+    async def test_execute_async_overwrites_existing_execution_time(self, mock_attack_strategy, basic_context):
+        """Test that execute_async overwrites any pre-existing execution_time_ms value"""
+        # Configure mock result with a pre-existing execution time
+        mock_result = MagicMock()
+        mock_result.outcome = AttackOutcome.SUCCESS
+        mock_result.outcome_reason = "Test successful"
+        mock_result.execution_time_ms = 999999  # Pre-existing value that should be overwritten
+
+        from typing import cast
+
+        cast(AsyncMock, mock_attack_strategy._perform_attack_async).return_value = mock_result
+
+        # Execute the attack
+        result = await mock_attack_strategy.execute_async(context=basic_context)
+
+        # Verify execution time was overwritten
+        assert result.execution_time_ms is not None
+        assert result.execution_time_ms != 999999  # Should have been overwritten
+        assert result.execution_time_ms >= 0  # Should be a valid time measurement
+
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestLogging:
@@ -235,6 +299,8 @@ class TestLogging:
         assert any("Setting up attack strategy" in msg for msg in log_messages)
         assert any("Performing attack: TestableAttackStrategy" in msg for msg in log_messages)
         assert any("Tearing down attack strategy" in msg for msg in log_messages)
+        assert any("Attack execution completed" in msg for msg in log_messages)
+        assert any("achieved the objective" in msg for msg in log_messages)  # From _log_attack_outcome
 
     def test_logger_adapter_adds_context(self, mock_attack_strategy, caplog):
         # Ensure we're capturing at the root logger level
@@ -280,10 +346,21 @@ class TestConcurrency:
             class ConcreteStrategy(AttackStrategy):
                 _validate_context = MagicMock()
                 _setup_async = AsyncMock()
-                _perform_attack_async = AsyncMock(return_value=MagicMock(success=True))
+                _perform_attack_async = AsyncMock()
                 _teardown_async = AsyncMock()
 
-            strategies.append(ConcreteStrategy())
+            strategy = ConcreteStrategy()
+            # Configure mock result with required attributes
+            mock_result = MagicMock()
+            mock_result.outcome = AttackOutcome.SUCCESS
+            mock_result.outcome_reason = "Test successful"
+            mock_result.execution_time_ms = None
+
+            # Cast to AsyncMock to satisfy type checker
+            from typing import cast
+
+            cast(AsyncMock, strategy._perform_attack_async).return_value = mock_result
+            strategies.append(strategy)
 
         # Create multiple mock contexts
         contexts = [MagicMock(objective=f"Objective {i}") for i in range(5)]
@@ -294,7 +371,8 @@ class TestConcurrency:
 
         # All should complete successfully
         assert len(results) == 5
-        assert all(r.success for r in results)
+        assert all(r.outcome == AttackOutcome.SUCCESS for r in results)
+        assert all(r.execution_time_ms >= 0 for r in results)
 
     @pytest.mark.asyncio
     async def test_concurrent_execution_isolation(self, mock_attack_strategy):
@@ -303,10 +381,21 @@ class TestConcurrency:
         context1 = MagicMock(objective="Objective 1")
         context2 = MagicMock(objective="Objective 2")
 
-        # Configure return values
+        # Configure return values with required attributes
         result1 = MagicMock(id="result1")
+        result1.outcome = AttackOutcome.SUCCESS
+        result1.outcome_reason = "Result 1 successful"
+        result1.execution_time_ms = None
+
         result2 = MagicMock(id="result2")
-        mock_attack_strategy._perform_attack_async.side_effect = [result1, result2]
+        result2.outcome = AttackOutcome.FAILURE
+        result2.outcome_reason = "Result 2 failed"
+        result2.execution_time_ms = None
+
+        # Cast to AsyncMock to satisfy type checker
+        from typing import cast
+
+        cast(AsyncMock, mock_attack_strategy._perform_attack_async).side_effect = [result1, result2]
 
         # Execute concurrently
         results = await asyncio.gather(
@@ -316,7 +405,46 @@ class TestConcurrency:
         # Both should succeed with correct results
         assert len(results) == 2
         assert results[0].id == "result1"
+        assert results[0].outcome == AttackOutcome.SUCCESS
+        assert results[0].execution_time_ms >= 0
         assert results[1].id == "result2"
+        assert results[1].outcome == AttackOutcome.FAILURE
+        assert results[1].execution_time_ms >= 0
+
+    @pytest.mark.asyncio
+    async def test_attack_outcome_logging(self, mock_attack_strategy, basic_context, caplog):
+        """Test that different attack outcomes are logged correctly"""
+        # Test SUCCESS outcome
+        with caplog.at_level(logging.INFO, logger=""):
+            await mock_attack_strategy.execute_async(context=basic_context)
+        assert any("achieved the objective" in record.message for record in caplog.records)
+
+        # Test FAILURE outcome
+        caplog.clear()
+        mock_result = MagicMock()
+        mock_result.outcome = AttackOutcome.FAILURE
+        mock_result.outcome_reason = "Target refused"
+        mock_result.execution_time_ms = None
+
+        # Cast to AsyncMock to satisfy type checker
+        from typing import cast
+
+        cast(AsyncMock, mock_attack_strategy._perform_attack_async).return_value = mock_result
+
+        with caplog.at_level(logging.INFO, logger=""):
+            await mock_attack_strategy.execute_async(context=basic_context)
+        assert any("did not achieve the objective" in record.message for record in caplog.records)
+        assert any("Target refused" in record.message for record in caplog.records)
+
+        # Test UNDETERMINED outcome
+        caplog.clear()
+        mock_result.outcome = AttackOutcome.UNDETERMINED
+        mock_result.outcome_reason = None
+
+        with caplog.at_level(logging.INFO, logger=""):
+            await mock_attack_strategy.execute_async(context=basic_context)
+        assert any("outcome is undetermined" in record.message for record in caplog.records)
+        assert any("Not specified" in record.message for record in caplog.records)
 
 
 @pytest.mark.usefixtures("patch_central_database")

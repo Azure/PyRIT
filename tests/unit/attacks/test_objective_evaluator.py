@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from pyrit.attacks.components.score_evaluator import ScoreEvaluator
+from pyrit.attacks.components.objective_evaluator import ObjectiveEvaluator
 from pyrit.models.score import Score
 from pyrit.score import Scorer
 
@@ -79,34 +79,34 @@ def float_scale_score_low() -> Score:
     )
 
 
-class TestScoreEvaluatorInitialization:
-    """Tests for ScoreEvaluator initialization and configuration."""
+class TestObjectiveEvaluatorInitialization:
+    """Tests for ObjectiveEvaluator initialization and configuration."""
 
     def test_init_with_default_parameters(self, mock_scorer: MagicMock):
-        """Test that ScoreEvaluator initializes correctly with default parameters."""
-        evaluator = ScoreEvaluator(scorer=mock_scorer)
+        """Test that ObjectiveEvaluator initializes correctly with default parameters."""
+        evaluator = ObjectiveEvaluator(scorer=mock_scorer)
 
         assert evaluator._scorer == mock_scorer
         assert evaluator._use_score_as_feedback is True  # Default value
-        assert evaluator._objective_achieved_score_threshold == 0.8  # Default value
+        assert evaluator._successful_objective_threshold == 0.8  # Default value
 
     def test_init_with_custom_parameters(self, mock_scorer: MagicMock):
-        """Test that ScoreEvaluator initializes correctly with custom parameters."""
-        evaluator = ScoreEvaluator(
-            scorer=mock_scorer, use_score_as_feedback=False, objective_achieved_score_threshold=0.6
+        """Test that ObjectiveEvaluator initializes correctly with custom parameters."""
+        evaluator = ObjectiveEvaluator(
+            scorer=mock_scorer, use_score_as_feedback=False, successful_objective_threshold=0.6
         )
 
         assert evaluator._scorer == mock_scorer
         assert evaluator._use_score_as_feedback is False
-        assert evaluator._objective_achieved_score_threshold == 0.6
+        assert evaluator._successful_objective_threshold == 0.6
 
     @pytest.mark.parametrize(
         "threshold,expected_error",
         [
-            (-0.1, "objective_achieved_score_threshold must be between 0.0 and 1.0"),
-            (1.1, "objective_achieved_score_threshold must be between 0.0 and 1.0"),
-            (-1.0, "objective_achieved_score_threshold must be between 0.0 and 1.0"),
-            (2.0, "objective_achieved_score_threshold must be between 0.0 and 1.0"),
+            (-0.1, "successful_objective_threshold must be between 0.0 and 1.0 \\(inclusive\\)"),
+            (1.1, "successful_objective_threshold must be between 0.0 and 1.0 \\(inclusive\\)"),
+            (-1.0, "successful_objective_threshold must be between 0.0 and 1.0 \\(inclusive\\)"),
+            (2.0, "successful_objective_threshold must be between 0.0 and 1.0 \\(inclusive\\)"),
         ],
     )
     def test_init_with_invalid_threshold_raises_error(
@@ -114,7 +114,7 @@ class TestScoreEvaluatorInitialization:
     ):
         """Test that invalid threshold values raise ValueError during initialization."""
         with pytest.raises(ValueError, match=expected_error):
-            ScoreEvaluator(scorer=mock_scorer, objective_achieved_score_threshold=threshold)
+            ObjectiveEvaluator(scorer=mock_scorer, successful_objective_threshold=threshold)
 
     @pytest.mark.parametrize(
         "threshold",
@@ -122,8 +122,8 @@ class TestScoreEvaluatorInitialization:
     )
     def test_init_with_edge_case_thresholds(self, mock_scorer: MagicMock, threshold: float):
         """Test that edge case threshold values are accepted."""
-        evaluator = ScoreEvaluator(scorer=mock_scorer, objective_achieved_score_threshold=threshold)
-        assert evaluator._objective_achieved_score_threshold == threshold
+        evaluator = ObjectiveEvaluator(scorer=mock_scorer, successful_objective_threshold=threshold)
+        assert evaluator._successful_objective_threshold == threshold
 
 
 class TestIsObjectiveAchieved:
@@ -131,7 +131,7 @@ class TestIsObjectiveAchieved:
 
     def test_is_objective_achieved_with_none_score(self, mock_scorer: MagicMock):
         """Test that None score returns False for objective achievement."""
-        evaluator = ScoreEvaluator(scorer=mock_scorer)
+        evaluator = ObjectiveEvaluator(scorer=mock_scorer)
 
         assert evaluator.is_objective_achieved(score=None) is False
 
@@ -150,7 +150,7 @@ class TestIsObjectiveAchieved:
         self, mock_scorer: MagicMock, score_value: str, expected_result: bool
     ):
         """Test objective achievement with various true/false score values."""
-        evaluator = ScoreEvaluator(scorer=mock_scorer)
+        evaluator = ObjectiveEvaluator(scorer=mock_scorer)
 
         score = Score(
             score_type="true_false",
@@ -181,7 +181,7 @@ class TestIsObjectiveAchieved:
         self, mock_scorer: MagicMock, score_value: str, threshold: float, expected_result: bool
     ):
         """Test objective achievement with float scale scores and different thresholds."""
-        evaluator = ScoreEvaluator(scorer=mock_scorer, objective_achieved_score_threshold=threshold)
+        evaluator = ObjectiveEvaluator(scorer=mock_scorer, successful_objective_threshold=threshold)
 
         score = Score(
             score_type="float_scale",
@@ -202,7 +202,7 @@ class TestGetFeedback:
 
     def test_get_feedback_returns_rationale_when_enabled(self, mock_scorer: MagicMock, true_false_score_true: Score):
         """Test that feedback returns score rationale when enabled."""
-        evaluator = ScoreEvaluator(scorer=mock_scorer, use_score_as_feedback=True)
+        evaluator = ObjectiveEvaluator(scorer=mock_scorer, use_score_as_feedback=True)
 
         feedback = evaluator.get_feedback(score=true_false_score_true)
 
@@ -211,7 +211,7 @@ class TestGetFeedback:
 
     def test_get_feedback_returns_none_when_disabled(self, mock_scorer: MagicMock, true_false_score_true: Score):
         """Test that feedback returns None when use_score_as_feedback is False."""
-        evaluator = ScoreEvaluator(scorer=mock_scorer, use_score_as_feedback=False)
+        evaluator = ObjectiveEvaluator(scorer=mock_scorer, use_score_as_feedback=False)
 
         feedback = evaluator.get_feedback(score=true_false_score_true)
 
@@ -231,7 +231,7 @@ class TestGetFeedback:
     ):
         """Test that feedback works correctly with different score types."""
         score = request.getfixturevalue(score_fixture)
-        evaluator = ScoreEvaluator(scorer=mock_scorer, use_score_as_feedback=True)
+        evaluator = ObjectiveEvaluator(scorer=mock_scorer, use_score_as_feedback=True)
 
         feedback = evaluator.get_feedback(score=score)
 
@@ -250,18 +250,18 @@ class TestGetFeedback:
             scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
         )
 
-        evaluator = ScoreEvaluator(scorer=mock_scorer, use_score_as_feedback=True)
+        evaluator = ObjectiveEvaluator(scorer=mock_scorer, use_score_as_feedback=True)
         feedback = evaluator.get_feedback(score=score)
 
         assert feedback == ""  # Should return empty string, not None
 
 
 class TestEdgeCases:
-    """Integration tests combining multiple ScoreEvaluator features."""
+    """Integration tests combining multiple ObjectiveEvaluator features."""
 
     def test_evaluate_true_false_score_with_feedback(self, mock_scorer: MagicMock, true_false_score_true: Score):
         """Test complete evaluation flow for true/false score with feedback enabled."""
-        evaluator = ScoreEvaluator(scorer=mock_scorer, use_score_as_feedback=True)
+        evaluator = ObjectiveEvaluator(scorer=mock_scorer, use_score_as_feedback=True)
 
         # Check if objective is achieved
         is_achieved = evaluator.is_objective_achieved(score=true_false_score_true)
@@ -276,8 +276,8 @@ class TestEdgeCases:
 
     def test_evaluate_float_scale_score_near_threshold(self, mock_scorer: MagicMock):
         """Test evaluation of float scores near the threshold boundary."""
-        evaluator = ScoreEvaluator(
-            scorer=mock_scorer, use_score_as_feedback=True, objective_achieved_score_threshold=0.75
+        evaluator = ObjectiveEvaluator(
+            scorer=mock_scorer, use_score_as_feedback=True, successful_objective_threshold=0.75
         )
 
         # Test score just above threshold
@@ -322,7 +322,7 @@ class TestEdgeCases:
         self, mock_scorer: MagicMock, score_values: list, threshold: float, expected_achievements: list
     ):
         """Test evaluation of a progression of scores simulating an attack improving over time."""
-        evaluator = ScoreEvaluator(scorer=mock_scorer, objective_achieved_score_threshold=threshold)
+        evaluator = ObjectiveEvaluator(scorer=mock_scorer, successful_objective_threshold=threshold)
 
         for score_value, expected_achieved in zip(score_values, expected_achievements):
             score = Score(

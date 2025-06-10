@@ -34,10 +34,10 @@ class AttackContext:
 
     def duplicate(self: ContextT) -> ContextT:
         """
-        Create a deep copy of the context to avoid concurrency issues
+        Create a deep copy of the context to avoid concurrency issues.
 
         Returns:
-            AttackContext: A deep copy of the context
+            AttackContext: A deep copy of the context.
         """
         return deepcopy(self)
 

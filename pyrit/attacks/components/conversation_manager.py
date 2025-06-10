@@ -47,8 +47,9 @@ class ConversationManager:
         Initialize the conversation manager.
 
         Args:
-            memory: The memory interface to use
-            attack_identifier: The identifier of the attack this manager belongs to
+            attack_identifier (dict[str, str]): The identifier of the attack this manager belongs to.
+            prompt_normalizer (Optional[PromptNormalizer]): Optional prompt normalizer to use for converting prompts.
+                If not provided, a default PromptNormalizer instance will be created.
         """
         self._prompt_normalizer = prompt_normalizer or PromptNormalizer()
         self._memory = CentralMemory.get_memory_instance()
@@ -59,11 +60,11 @@ class ConversationManager:
         Retrieve a conversation by its ID.
 
         Args:
-            conversation_id: The ID of the conversation to retrieve.
+            conversation_id (str): The ID of the conversation to retrieve.
 
         Returns:
-            A list of messages in the conversation, ordered by their creation time.
-            If no messages exist, an empty list is returned.
+            List[PromptRequestResponse]: A list of messages in the conversation, ordered by their creation time.
+                If no messages exist, an empty list is returned.
         """
         conversation = self._memory.get_conversation(conversation_id=conversation_id)
         return list(conversation)
@@ -75,12 +76,12 @@ class ConversationManager:
         Retrieve the most recent message from a conversation.
 
         Args:
-            conversation_id: The ID of the conversation to retrieve the last message from.
-            role:
-                If provided, only return the last message that matches this role.
+            conversation_id (str): The ID of the conversation to retrieve the last message from.
+            role (Optional[ChatMessageRole]): If provided, only return the last message that matches this role.
 
         Returns:
-            The last message piece from the conversation, or `None` if no messages exist.
+            Optional[PromptRequestPiece]: The last message piece from the conversation,
+                or `None` if no messages exist.
         """
         conversation = self.get_conversation(conversation_id)
         if not conversation:
@@ -95,40 +96,28 @@ class ConversationManager:
 
         return conversation[-1].get_piece()
 
-    def add_system_prompt(
+    def set_system_prompt(
         self,
         *,
-        target: Union[PromptTarget, PromptChatTarget],
+        target: PromptChatTarget,
         conversation_id: str,
         system_prompt: str,
         labels: Optional[Dict[str, str]] = None,
     ) -> None:
         """
-        Add or update the system-level prompt associated with a conversation.
+        set or update the system-level prompt associated with a conversation.
 
         This helper is intended for conversational (`PromptChatTarget`) goals,
-        where a dedicated system prompt influences the behaviour of the LLM for
+        where a dedicated system prompt influences the behavior of the LLM for
         all subsequent user / assistant messages in the same `conversation_id`.
 
         Args:
-            target:
-                The target to set the system prompt on. Must be an instance of `PromptChatTarget`.
-            conversation_id:
-                Unique identifier for the conversation to set the system prompt on.
-            system_prompt:
-                The system prompt to set for the conversation.
-            labels:
-                Optional labels to associate with the system prompt. These can be used for
-                categorization or filtering purposes.
-
-        Raises:
-            ValueError
-                If the target is not a `PromptChatTarget` or if the system prompt is invalid.
+            target (PromptChatTarget): The target to set the system prompt on.
+            conversation_id (str): Unique identifier for the conversation to set the system prompt on.
+            system_prompt (str): The system prompt to set for the conversation.
+            labels (Optional[Dict[str, str]]): Optional labels to associate with the system prompt.
+                These can be used for categorization or filtering purposes.
         """
-
-        if not isinstance(target, PromptChatTarget):
-            raise ValueError("Objective Target must be a PromptChatTarget to set system prompt.")
-
         target.set_system_prompt(
             system_prompt=system_prompt,
             conversation_id=conversation_id,
@@ -147,51 +136,38 @@ class ConversationManager:
     ) -> ConversationState:
         """
         Prepare a chat conversation by attaching history, enforcing
-        target-specific rules, optionally normalising prompts, and returning a
-        serialisable `ConversationState`.
+        target-specific rules, optionally normalizing prompts, and returning a
+        serializable `ConversationState`.
 
         This helper is designed to support two distinct usage patterns:
 
-        1. Single-turn bootstrap - When `max_turns` is **not** supplied the function simply injects the
-            provided `prepended_conversation` into storage, performs any requested
-            prompt conversions, and exits.
+        Single-turn bootstrap - When `max_turns` is **not** supplied the function simply injects the
+        provided `prepended_conversation` into memory, performs any requested
+        prompt conversions, and exits.
 
-        2. Multi-turn continuation - When `max_turns` **is** supplied the function acts as a state machine:
-            it verifies that the running history does not exceed the allowed turn
-            budget, excludes the most recent user-utterance (so that an orchestrator
-            can re-inject it as the "live" request), and extracts per-session
-            counters such as the current turn index.
+        Multi-turn continuation - When `max_turns` **is** supplied the function acts as a state machine:
+        it verifies that the running history does not exceed the allowed turn budget, excludes
+        the most recent user-utterance (so that an orchestrator can re-inject it as the "live" request),
+        and extracts per-session counters such as the current turn index.
 
         Args:
-            conversation_id:
-                Unique identifier for the conversation to update or create.
-            target:
-                The target to set system prompts on (if applicable).
-            prepended_conversation:
+            conversation_id (str): Unique identifier for the conversation to update or create.
+            target (Optional[Union[PromptTarget, PromptChatTarget]]): The target to set system prompts on (if
+                applicable).
+            prepended_conversation (List[PromptRequestResponse]):
                 List of messages to prepend to the conversation history.
-            converter_configurations:
-                List of configurations for converting prompt values.
-            max_turns:
-                Maximum number of turns allowed in the conversation. If not provided,
+            converter_configurations (Optional[List[PromptConverterConfiguration]]): List of configurations for
+                converting prompt values.
+            max_turns (Optional[int]): Maximum number of turns allowed in the conversation. If not provided,
                 the function assumes a single-turn context.
 
         Returns:
-            A snapshot of the conversation state after processing the prepended
-            messages, including turn count and last user message.
+            ConversationState: A snapshot of the conversation state after processing the prepended
+                messages, including turn count and last user message.
 
         Raises:
-            ValueError
-                If `conversation_id` is empty or if the last message in a multi-turn
+            ValueError: If `conversation_id` is empty or if the last message in a multi-turn
                 context is a user message (which should not be prepended).
-
-        Notes:
-            - This method is designed to be called asynchronously.
-            - It processes each message in `prepended_conversation`, applying any
-              necessary conversions and updating the conversation state.
-            - If `max_turns` is provided, it ensures that the conversation does not
-              exceed the allowed number of turns.
-            - The last user message is excluded from the prepended history in multi-turn
-              contexts to allow for live updates by orchestrators.
         """
         if not conversation_id:
             raise ValueError("conversation_id cannot be empty")
@@ -268,19 +244,15 @@ class ConversationManager:
         and orchestrator identifiers, and processes each piece based on its role.
 
         Args:
-            request: The request containing pieces to process
-            conversation_id: The ID of the conversation to update
-            conversation_state: The current state of the conversation
-            target: The target to set system prompts on (if applicable)
-            max_turns: Maximum allowed turns for the conversation
+            request (PromptRequestResponse): The request containing pieces to process.
+            conversation_id (str): The ID of the conversation to update.
+            conversation_state (ConversationState): The current state of the conversation.
+            target (Optional[Union[PromptTarget, PromptChatTarget]]): The target to set system prompts on (if
+                applicable).
+            max_turns (Optional[int]): Maximum allowed turns for the conversation.
 
         Raises:
-            ValueError: If the request is invalid or if a system prompt is provided but target doesn't support it
-
-        Notes:
-            - This method is designed to be called asynchronously.
-            - It processes each piece in the request, setting the conversation ID and orchestrator identifier.
-            - It validates the request and handles system prompts appropriately.
+            ValueError: If the request is invalid or if a system prompt is provided but target doesn't support it.
         """
         # Validate the request before processing
         if not request or not request.request_pieces:
@@ -321,14 +293,14 @@ class ConversationManager:
         Process a message piece based on its role and update conversation state.
 
         Args:
-            piece: The piece to process
-            conversation_state: The current state of the conversation
-            max_turns: Maximum allowed turns (for validation)
-            target: The target to set system prompts on
+            piece (PromptRequestPiece): The piece to process.
+            conversation_state (ConversationState): The current state of the conversation.
+            max_turns (Optional[int]): Maximum allowed turns (for validation).
+            target (Optional[Union[PromptTarget, PromptChatTarget]]): The target to set system prompts on.
 
         Raises:
-            ValueError: If max_turns would be exceeded by this piece
-            ValueError: If a system prompt is provided but target doesn't support it
+            ValueError: If max_turns would be exceeded by this piece.
+            ValueError: If a system prompt is provided but target doesn't support it.
         """
 
         # Check if multiturn
@@ -348,7 +320,7 @@ class ConversationManager:
                 raise ValueError("Target must be a PromptChatTarget to set system prompts")
 
             # Set system prompt and exclude from memory
-            self.add_system_prompt(
+            self.set_system_prompt(
                 target=target,
                 conversation_id=piece.conversation_id,
                 system_prompt=piece.converted_value,
@@ -384,16 +356,16 @@ class ConversationManager:
         Extract conversation context from the last messages in prepended_conversation.
 
         This extracts:
-        - Last user message for continuing conversations
-        - Scores for the last assistant message for evaluation
+        - Last user message for continuing conversations.
+        - Scores for the last assistant message for evaluation.
 
         Args:
-            prepended_conversation: Complete conversation history
-            last_message: The last message in the history
-            conversation_state: State object to populate
+            prepended_conversation (List[PromptRequestResponse]): Complete conversation history.
+            last_message (PromptRequestPiece): The last message in the history.
+            conversation_state (ConversationState): State object to populate.
 
         Raises:
-            ValueError: If an assistant message doesn't have a preceding user message
+            ValueError: If an assistant message doesn't have a preceding user message.
         """
         if not prepended_conversation:
             return  # Nothing to extract from empty history

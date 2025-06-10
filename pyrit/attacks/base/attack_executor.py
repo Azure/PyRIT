@@ -4,9 +4,9 @@
 import asyncio
 from typing import List
 
+from pyrit.attacks.base.attack_context import ContextT
+from pyrit.attacks.base.attack_result import ResultT
 from pyrit.attacks.base.attack_strategy import AttackStrategy
-from pyrit.attacks.base.context import ContextT
-from pyrit.attacks.base.result import ResultT
 
 
 class AttackExecutor:
@@ -18,14 +18,13 @@ class AttackExecutor:
     the same target or execute different strategies concurrently.
     """
 
-    def __init__(self, *, max_concurrency: int = 5):
+    def __init__(self, *, max_concurrency: int = 1):
         """
         Initialize the attack executor with configurable concurrency control.
 
         Args:
             max_concurrency (int): Maximum number of concurrent attack executions allowed.
-                Must be a positive integer. Defaults to 5 to balance performance and
-                resource usage.
+                Must be a positive integer (defaults to 1).
 
         Raises:
             ValueError: If max_concurrency is not a positive integer.
@@ -88,13 +87,12 @@ class AttackExecutor:
         """
         Execute the same attack strategy against multiple contexts in parallel with concurrency control.
 
-        This method uses asyncio semaphores to limit the number of concurrent executions,
-        preventing resource exhaustion while maintaining parallelism.
+        This method uses asyncio semaphores to limit the number of concurrent executions.
 
         Args:
             attack (AttackStrategy[ContextT, ResultT]): The attack strategy to execute
-                against all contexts
-            contexts (List[ContextT]): List of attack contexts to execute the strategy against
+                against all contexts.
+            contexts (List[ContextT]): List of attack contexts to execute the strategy against.
 
         Returns:
             List[ResultT]: List of attack results in the same order as the input contexts.

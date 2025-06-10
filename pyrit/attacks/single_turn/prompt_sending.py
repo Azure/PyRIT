@@ -6,9 +6,9 @@ import uuid
 from typing import Optional
 
 from pyrit.attacks.base.attack_strategy import AttackStrategy
-from pyrit.attacks.base.config import AttackConverterConfig, AttackScoringConfig
-from pyrit.attacks.base.context import SingleTurnAttackContext
-from pyrit.attacks.base.result import AttackResult
+from pyrit.attacks.base.attack_config import AttackConverterConfig, AttackScoringConfig
+from pyrit.attacks.base.attack_context import SingleTurnAttackContext
+from pyrit.attacks.base.attack_result import AttackResult, AttackOutcome
 from pyrit.attacks.components.conversation_manager import ConversationManager
 from pyrit.common.utils import combine_dict
 from pyrit.models import (
@@ -25,20 +25,20 @@ from pyrit.score import Scorer
 logger = logging.getLogger(__name__)
 
 
-class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult]):
+class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult]):
     """
-    Implementation of single-turn prompt injection attack strategy.
+    Implementation of single-turn prompt sending attack strategy.
 
     This class orchestrates a single-turn attack where malicious prompts are injected
     to try to achieve a specific objective against a target system. The strategy evaluates
     the target response using optional scorers to determine if the objective has been met.
 
     The attack flow consists of:
-    1. Preparing the injection prompt based on the objective
-    2. Sending the prompt to the target system through optional converters
-    3. Evaluating the response with scorers if configured
-    4. Retrying on failure up to the configured number of retries
-    5. Returning the attack result with achievement status
+    1. Preparing the prompt based on the objective.
+    2. Sending the prompt to the target system through optional converters.
+    3. Evaluating the response with scorers if configured.
+    4. Retrying on failure up to the configured number of retries.
+    5. Returning the attack result with achievement status.
 
     The strategy supports customization through prepended conversations, converters,
     and multiple scorer types for comprehensive evaluation.
@@ -48,38 +48,42 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
         self,
         *,
         objective_target: PromptTarget,
-        objective_scorer: Optional[Scorer] = None,
-        attack_converter_cfg: Optional[AttackConverterConfig] = None,
-        attack_scoring_cfg: Optional[AttackScoringConfig] = None,
+        attack_converter_config: Optional[AttackConverterConfig] = None,
+        attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
     ) -> None:
         """
         Initialize the prompt injection attack strategy.
 
         Args:
-            objective_target (PromptTarget): The target system to attack
-            objective_scorer (Optional[Scorer]): Scorer to evaluate the attack's success
-            attack_converter_cfg (Optional[AttackConverterConfig]): Configuration for prompt converters
-            attack_scoring_cfg (Optional[AttackScoringConfig]): Configuration for scoring components
-            prompt_normalizer (Optional[PromptNormalizer]): Normalizer for handling prompts
+            objective_target (PromptTarget): The target system to attack.
+            attack_converter_config (Optional[AttackConverterConfig]): Configuration for prompt converters.
+            attack_scoring_config (Optional[AttackScoringConfig]): Configuration for scoring components.
+            prompt_normalizer (Optional[PromptNormalizer]): Normalizer for handling prompts.
 
         Raises:
-            ValueError: If the objective scorer is not a true/false scorer
+            ValueError: If the objective scorer is not a true/false scorer.
         """
+        # Initialize base class
         super().__init__(logger=logger)
 
-        self._objective_scorer = objective_scorer
-        self._attack_converter_cfg = attack_converter_cfg or AttackConverterConfig()
-        self._attack_scoring_cfg = attack_scoring_cfg or AttackScoringConfig()
+        # Store the objective target
+        self._objective_target = objective_target
 
-        # Skip criteria could be set directly in the injected prompt normalizer
-        self._prompt_normalizer = prompt_normalizer or PromptNormalizer()
+        # Initialize the converter configuration
+        attack_converter_config = attack_converter_config or AttackConverterConfig()
+        self._request_converters = attack_converter_config.request_converters
+        self._response_converters = attack_converter_config.response_converters
 
+        # Initialize scoring configuration
+        attack_scoring_config = attack_scoring_config or AttackScoringConfig()
+        self._auxiliary_scorers = attack_scoring_config.auxiliary_scorers
+        self._objective_scorer = attack_scoring_config.objective_scorer
         if self._objective_scorer and self._objective_scorer.scorer_type != "true_false":
             raise ValueError("Objective scorer must be a true/false scorer")
 
-        self._objective_target = objective_target
-
+        # Skip criteria could be set directly in the injected prompt normalizer
+        self._prompt_normalizer = prompt_normalizer or PromptNormalizer()
         self._conversation_manager = ConversationManager(
             attack_identifier=self.get_identifier(),
             prompt_normalizer=self._prompt_normalizer,
@@ -90,10 +94,10 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
         Validate the context before executing the attack.
 
         Args:
-            context (SingleTurnAttackContext): The attack context containing parameters and objective
+            context (SingleTurnAttackContext): The attack context containing parameters and objective.
 
         Raises:
-            ValueError: If the context is invalid
+            ValueError: If the context is invalid.
         """
         if not context.objective:
             raise ValueError("Attack objective must be provided in the context")
@@ -106,7 +110,7 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
         Set up the attack by preparing conversation context.
 
         Args:
-            context (SingleTurnAttackContext): The attack context containing attack parameters
+            context (SingleTurnAttackContext): The attack context containing attack parameters.
         """
         # Ensure the context has a conversation ID
         context.conversation_id = str(uuid.uuid4())
@@ -121,7 +125,7 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
         await self._conversation_manager.update_conversation_state_async(
             conversation_id=context.conversation_id,
             prepended_conversation=context.prepended_conversation,
-            converter_configurations=self._attack_converter_cfg.request_converters,
+            converter_configurations=self._request_converters,
         )
 
     async def _perform_attack_async(self, *, context: SingleTurnAttackContext) -> AttackResult:
@@ -129,10 +133,10 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
         Perform the prompt injection attack.
 
         Args:
-            context: The attack context with objective and parameters
+            context: The attack context with objective and parameters.
 
         Returns:
-            AttackResult containing the outcome of the attack
+            AttackResult containing the outcome of the attack.
         """
         # Log the attack configuration
         self._logger.info(f"Starting prompt injection attack with objective: {context.objective}")
@@ -159,12 +163,12 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
             self._logger.debug(f"Attempt {attempt+1}/{context.max_attempts_on_failure + 1}")
 
             # Send the prompt
-            response = await self._send_prompt_to_target_async(prompt_group=prompt_group, context=context)
+            response = await self._send_prompt_to_objective_target_async(prompt_group=prompt_group, context=context)
             if not response:
                 self._logger.warning(f"No response received on attempt {attempt+1} (likely filtered)")
                 continue  # Retry if no response (filtered or error)
 
-            # If no objective scorer, we are done after getting a response
+            # If no objective scorer, we have a response but can't determine success
             if not self._objective_scorer:
                 break
 
@@ -172,23 +176,61 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
             score = await self._evaluate_response_async(response=response, objective=context.objective)
 
             # On success, return immediately
-            context.achieved_objective = bool(score and score.get_value())
-            if context.achieved_objective:
+            if bool(score and score.get_value()):
                 break
 
-        # Log the result of the attack
-        self._log_objective_status(context)
+        # Determine the outcome
+        outcome, outcome_reason = self._determine_attack_outcome(
+            response=response,
+            score=score,
+            context=context
+        )
 
-        # Build and return result
-        return AttackResult(
+        result = AttackResult(
             conversation_id=context.conversation_id,
             objective=context.objective,
             attack_identifier=self.get_identifier(),
             last_response=response.get_piece() if response else None,
             last_score=score,
-            achieved_objective=context.achieved_objective,
+            outcome=outcome,
+            outcome_reason=outcome_reason,
             executed_turns=1,
         )
+
+        return result
+
+    def _determine_attack_outcome(
+        self,
+        *,
+        response: Optional[PromptRequestResponse],
+        score: Optional[Score],
+        context: SingleTurnAttackContext
+    ) -> tuple[AttackOutcome, Optional[str]]:
+        """
+        Determine the outcome of the attack based on the response and score.
+
+        Args:
+            response (Optional[PromptRequestResponse]): The last response from the target (if any).
+            score (Optional[Score]): The objective score (if any).
+            context (SingleTurnAttackContext): The attack context containing configuration.
+
+        Returns:
+            tuple[AttackOutcome, Optional[str]]: A tuple of (outcome, outcome_reason).
+        """
+        if not self._objective_scorer:
+            # No scorer means we can't determine success/failure
+            return AttackOutcome.UNDETERMINED, "No objective scorer configured"
+        
+        if score and score.get_value():
+            # We have a positive score, so it's a success
+            return AttackOutcome.SUCCESS, "Objective achieved according to scorer"
+        
+        if response:
+            # We got response(s) but none achieved the objective
+            return AttackOutcome.FAILURE, f"Failed to achieve objective after {context.max_attempts_on_failure + 1} attempts"
+        
+        # No response at all (all attempts filtered/failed)
+        return AttackOutcome.FAILURE, "All attempts were filtered or failed to get a response"
 
     async def _teardown_async(self, *, context: SingleTurnAttackContext) -> None:
         """Clean up after attack execution"""
@@ -204,37 +246,37 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
 
         Args:
             context (SingleTurnAttackContext): The attack context containing the objective
-                and optionally a pre-configured seed_prompt_group
+                and optionally a pre-configured seed_prompt_group.
 
         Returns:
-            SeedPromptGroup: The seed prompt group to be used in the attack
+            SeedPromptGroup: The seed prompt group to be used in the attack.
         """
         if context.seed_prompt_group:
             return context.seed_prompt_group
 
         return SeedPromptGroup(prompts=[SeedPrompt(value=context.objective, data_type="text")])
 
-    async def _send_prompt_to_target_async(
+    async def _send_prompt_to_objective_target_async(
         self, *, prompt_group: SeedPromptGroup, context: SingleTurnAttackContext
     ) -> Optional[PromptRequestResponse]:
         """
         Send the prompt to the target and return the response.
 
         Args:
-            prompt_group (SeedPromptGroup): The seed prompt group to send
-            context (SingleTurnAttackContext): The attack context containing parameters and labels
+            prompt_group (SeedPromptGroup): The seed prompt group to send.
+            context (SingleTurnAttackContext): The attack context containing parameters and labels.
 
         Returns:
             Optional[PromptRequestResponse]: The model's response if successful, or None if
-                the request was filtered, blocked, or encountered an error
+                the request was filtered, blocked, or encountered an error.
         """
 
         return await self._prompt_normalizer.send_prompt_async(
             seed_prompt_group=prompt_group,
             target=self._objective_target,
             conversation_id=context.conversation_id,
-            request_converter_configurations=self._attack_converter_cfg.request_converters,
-            response_converter_configurations=self._attack_converter_cfg.response_converters,
+            request_converter_configurations=self._request_converters,
+            response_converter_configurations=self._response_converters,
             labels=context.memory_labels,  # combined with strategy labels at _setup()
             orchestrator_identifier=self.get_identifier(),
         )
@@ -247,8 +289,8 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
         metrics, then runs the objective scorer to determine if the attack succeeded.
 
         Args:
-            response (PromptRequestResponse): The response from the model
-            objective (str): The natural-language description of the attack's objective
+            response (PromptRequestResponse): The response from the model.
+            objective (str): The natural-language description of the attack's objective.
 
         Returns:
             Optional[Score]: The score from the objective scorer if configured, or None if
@@ -260,25 +302,13 @@ class PromptInjectionAttack(AttackStrategy[SingleTurnAttackContext, AttackResult
 
         # Run auxiliary scorers (no return value needed)
         await Scorer.score_response_async(
-            response=response, scorers=self._attack_scoring_cfg.auxiliary_scorers, role_filter=role
+            response=response, scorers=self._auxiliary_scorers, role_filter=role
         )
 
         # Run objective scorer
         if self._objective_scorer:
-            return await Scorer.score_response_until_success_async(
+            return await Scorer.score_response_select_first_success_async(
                 response=response, scorers=[self._objective_scorer], role_filter=role, task=objective
             )
 
         return None
-
-    def _log_objective_status(self, context: SingleTurnAttackContext) -> None:
-        """
-        Log the status of the objective after the attack execution.
-
-        Args:
-            context (SingleTurnAttackContext): The attack context containing the objective and result
-        """
-        if context.achieved_objective:
-            self._logger.info("Prompt injection attack achieved the objective")
-        else:
-            self._logger.info("The prompt injection attack has not achieved the objective")

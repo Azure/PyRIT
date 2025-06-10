@@ -3,13 +3,14 @@
 
 import ast
 import logging
+import time
 import uuid
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Generic, MutableMapping
+from typing import Any, AsyncIterator, Dict, Generic, MutableMapping
 
-from pyrit.attacks.base.context import ContextT
-from pyrit.attacks.base.result import ResultT
+from pyrit.attacks.base.attack_context import ContextT
+from pyrit.attacks.base.attack_result import AttackOutcome, ResultT
 from pyrit.common import default_values
 from pyrit.common.logger import logger
 from pyrit.exceptions.exception_classes import (
@@ -43,18 +44,22 @@ class AttackStrategyLogAdapter(logging.LoggerAdapter):
 
 class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
     """
-    Base class for attack strategies with enforced lifecycle management
+    Abstract base class for attack strategies with enforced lifecycle management.
 
-    The lifecycle is enforced by the execute method, which ensures:
-    1. setup() is called before the actual attack logic
-    2. perform_attack() contains the core attack implementation
-    3. teardown() is guaranteed to be called even if exceptions occur
+    Ensures a consistent execution flow: validate -> setup -> attack -> teardown.
+    The teardown phase is guaranteed to run even if exceptions occur.
+
+    Subclasses must implement:
+    _validate_context(): Validate attack context
+    _setup_async(): Initialize resources
+    _perform_attack_async(): Execute the attack logic
+    _teardown_async(): Clean up resources
     """
 
     def __init__(self, *, logger: logging.Logger = logger):
         self._id = uuid.uuid4()
         self._memory = CentralMemory.get_memory_instance()
-        self._memory_labels: dict[str, str] = ast.literal_eval(
+        self._memory_labels: Dict[str, str] = ast.literal_eval(
             default_values.get_non_required_value(env_var_name="GLOBAL_MEMORY_LABELS") or "{}"
         )
 
@@ -72,51 +77,73 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
     @abstractmethod
     def _validate_context(self, *, context: ContextT) -> None:
         """
-        Validate the context before executing the attack
-        This method should be implemented by subclasses to ensure the context is suitable for the attack
+        Validate the context before executing the attack.
+        This method should be implemented by subclasses to ensure the context is suitable for the attack.
 
         Args:
-            context (ContextT): The context to validate
+            context (ContextT): The context to validate.
         """
         pass
 
     @abstractmethod
     async def _setup_async(self, *, context: ContextT) -> None:
         """
-        Setup phase before executing the attack
-        This method should be implemented by subclasses to prepare any necessary state or resources
-        This method is called before the actual attack logic in execute()
+        Setup phase before executing the attack.
+        This method should be implemented by subclasses to prepare any necessary state or resources.
+        This method is guaranteed to be called before the attack execution and after context validation.
 
         Args:
-            context (ContextT): The context for the attack
+            context (ContextT): The context for the attack.
         """
         pass
 
     @abstractmethod
     async def _perform_attack_async(self, *, context: ContextT) -> ResultT:
         """
-        Core attack implementation to be defined by subclasses
-        This contains the actual attack logic that subclasses must implement
+        Core attack implementation to be defined by subclasses.
+        This contains the actual attack logic that subclasses must implement.
 
         Args:
-            context (ContextT): The context for the attack
+            context (ContextT): The context for the attack.
 
         Returns:
-            ResultT: The result of the attack execution
+            ResultT: The result of the attack execution.
         """
         pass
 
     @abstractmethod
     async def _teardown_async(self, *, context: ContextT) -> None:
         """
-        Teardown phase after executing the attack
-        This method should be implemented by subclasses to clean up any resources or state
-        This method is guaranteed to be called even if exceptions occur during execution
+        Teardown phase after executing the attack.
+        This method should be implemented by subclasses to clean up any resources or state.
+        This method is guaranteed to be called even if exceptions occur during execution.
 
         Args:
-            context (ContextT): The context for the attack
+            context (ContextT): The context for the attack.
         """
         pass
+
+    def _log_attack_outcome(self, result: ResultT) -> None:
+        """
+        Log the outcome of the attack.
+
+        Args:
+            result (ResultT): The result of the attack containing outcome and reason.
+        """
+        attack_name = self.__class__.__name__
+
+        if result.outcome == AttackOutcome.SUCCESS:
+            self._logger.info(
+                f"{attack_name} achieved the objective. " f"Reason: {result.outcome_reason or 'Not specified'}"
+            )
+        elif result.outcome == AttackOutcome.UNDETERMINED:
+            self._logger.info(
+                f"{attack_name} outcome is undetermined. " f"Reason: {result.outcome_reason or 'Not specified'}"
+            )
+        else:
+            self._logger.info(
+                f"{attack_name} did not achieve the objective. " f"Reason: {result.outcome_reason or 'Not specified'}"
+            )
 
     @asynccontextmanager
     async def _execution_context(self, context: ContextT) -> AsyncIterator[None]:
@@ -132,11 +159,6 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
 
         Yields:
             None: Control is yielded back to the caller after setup is complete.
-
-        Note:
-            - Setup is performed before yielding control
-            - Teardown is guaranteed to run even if an exception occurs
-            - All setup and teardown operations are logged for debugging
         """
         self._logger.debug(f"Setting up attack strategy for objective: '{context.objective}'")
         try:
@@ -150,17 +172,17 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
         """
         Execute attack with complete lifecycle management.
 
-        Enforces: validate -> setup -> execute -> teardown
+        Enforces: validate -> setup -> execute -> teardown.
 
         Args:
-            context: Attack execution context
+            context (ContextT): The context for the attack, containing configuration and state.
 
         Returns:
-            Result of the attack execution
+            ResultT: The result of the attack execution, including outcome and reason.
 
         Raises:
-            AttackValidationError: If context validation fails
-            AttackExecutionError: If attack execution fails
+            AttackValidationError: If context validation fails.
+            AttackExecutionError: If attack execution fails.
         """
         # Validation phase
         # This is a critical step to ensure the context is suitable for the attack
@@ -182,9 +204,27 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
         # Execution with lifecycle management
         # This uses an async context manager to ensure setup and teardown are handled correctly
         try:
+            # Track execution start time
+            start_time = time.perf_counter()
+
             async with self._execution_context(context):
                 self._logger.debug(f"Performing attack: {self.__class__.__name__}")
-                return await self._perform_attack_async(context=context)
+                result = await self._perform_attack_async(context=context)
+
+                # Calculate execution time in milliseconds
+                end_time = time.perf_counter()
+                execution_time_ms = int((end_time - start_time) * 1000)
+
+                # Set the execution time on the result
+                result.execution_time_ms = execution_time_ms
+
+                self._logger.debug(f"Attack execution completed in {execution_time_ms}ms")
+
+                # Log the attack outcome
+                self._log_attack_outcome(result)
+
+                return result
+
         except (AttackExecutionException, AttackValidationException):
             raise  # Re-raise
         except Exception as e:

@@ -373,7 +373,7 @@ class Scorer(abc.ABC):
         return [score for scores in score_lists for score in scores]
 
     @staticmethod
-    async def score_response_until_success_async(
+    async def score_response_select_first_success_async(
         *,
         response: PromptRequestResponse,
         scorers: List[Scorer],

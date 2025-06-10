@@ -1,15 +1,15 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import logging
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from pyrit.attacks.base.config import AttackConverterConfig, AttackScoringConfig
-from pyrit.attacks.base.context import SingleTurnAttackContext
-from pyrit.attacks.single_turn.prompt_injection import PromptInjectionAttack
+from pyrit.attacks.base.attack_config import AttackConverterConfig, AttackScoringConfig
+from pyrit.attacks.base.attack_context import SingleTurnAttackContext
+from pyrit.attacks.base.attack_result import AttackResult, AttackOutcome
+from pyrit.attacks.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.exceptions.exception_classes import (
     AttackExecutionException,
     AttackValidationException,
@@ -108,45 +108,46 @@ def failure_score():
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestPromptInjectionAttackInitialization:
-    """Tests for PromptInjectionAttack initialization and configuration"""
+class TestPromptSendingAttackInitialization:
+    """Tests for PromptSendingAttack initialization and configuration"""
 
     def test_init_with_minimal_required_parameters(self, mock_target):
-        attack = PromptInjectionAttack(objective_target=mock_target)
+        attack = PromptSendingAttack(objective_target=mock_target)
 
         assert attack._objective_target == mock_target
         assert attack._objective_scorer is None
-        assert isinstance(attack._attack_converter_cfg, AttackConverterConfig)
-        assert isinstance(attack._attack_scoring_cfg, AttackScoringConfig)
         assert isinstance(attack._prompt_normalizer, PromptNormalizer)
 
     def test_init_with_valid_true_false_scorer(self, mock_target, mock_true_false_scorer):
-        attack = PromptInjectionAttack(objective_target=mock_target, objective_scorer=mock_true_false_scorer)
+        attack_scoring_config = AttackScoringConfig(objective_scorer=mock_true_false_scorer)
+        attack = PromptSendingAttack(objective_target=mock_target, attack_scoring_config=attack_scoring_config)
 
         assert attack._objective_scorer == mock_true_false_scorer
 
     def test_init_raises_error_for_non_true_false_scorer(self, mock_target, mock_non_true_false_scorer):
+        attack_scoring_config = AttackScoringConfig(objective_scorer=mock_non_true_false_scorer)
         with pytest.raises(ValueError, match="Objective scorer must be a true/false scorer"):
-            PromptInjectionAttack(objective_target=mock_target, objective_scorer=mock_non_true_false_scorer)
+            PromptSendingAttack(objective_target=mock_target, attack_scoring_config=attack_scoring_config)
 
     def test_init_with_all_custom_configurations(self, mock_target, mock_true_false_scorer, mock_prompt_normalizer):
         converter_cfg = AttackConverterConfig()
-        scoring_cfg = AttackScoringConfig()
+        scoring_cfg = AttackScoringConfig(objective_scorer=mock_true_false_scorer)
 
-        attack = PromptInjectionAttack(
+        attack = PromptSendingAttack(
             objective_target=mock_target,
-            objective_scorer=mock_true_false_scorer,
-            attack_converter_cfg=converter_cfg,
-            attack_scoring_cfg=scoring_cfg,
+            attack_converter_config=converter_cfg,
+            attack_scoring_config=scoring_cfg,
             prompt_normalizer=mock_prompt_normalizer,
         )
 
-        assert attack._attack_converter_cfg == converter_cfg
-        assert attack._attack_scoring_cfg == scoring_cfg
+        assert attack._request_converters == converter_cfg.request_converters
+        assert attack._response_converters == converter_cfg.response_converters
+        assert attack._objective_scorer == scoring_cfg.objective_scorer
+        assert attack._auxiliary_scorers == scoring_cfg.auxiliary_scorers
         assert attack._prompt_normalizer == mock_prompt_normalizer
 
     def test_conversation_manager_initialized_correctly(self, mock_target):
-        attack = PromptInjectionAttack(objective_target=mock_target)
+        attack = PromptSendingAttack(objective_target=mock_target)
 
         assert attack._conversation_manager is not None
         assert hasattr(attack._conversation_manager, "update_conversation_state_async")
@@ -164,18 +165,18 @@ class TestContextValidation:
         ],
     )
     def test_validate_context_raises_errors(self, mock_target, objective, conversation_id, expected_error):
-        attack = PromptInjectionAttack(objective_target=mock_target)
+        attack = PromptSendingAttack(objective_target=mock_target)
         context = SingleTurnAttackContext(objective=objective, conversation_id=conversation_id)
 
         with pytest.raises(ValueError, match=expected_error):
             attack._validate_context(context=context)
 
     def test_validate_context_with_complete_valid_context(self, mock_target, basic_context):
-        attack = PromptInjectionAttack(objective_target=mock_target)
+        attack = PromptSendingAttack(objective_target=mock_target)
         attack._validate_context(context=basic_context)  # Should not raise
 
     def test_validate_context_with_additional_optional_fields(self, mock_target):
-        attack = PromptInjectionAttack(objective_target=mock_target)
+        attack = PromptSendingAttack(objective_target=mock_target)
         context = SingleTurnAttackContext(
             objective="Test objective",
             conversation_id=str(uuid.uuid4()),
@@ -194,7 +195,7 @@ class TestSetupPhase:
 
     @pytest.mark.asyncio
     async def test_setup_initializes_achieved_objective_to_false(self, mock_target, basic_context):
-        attack = PromptInjectionAttack(objective_target=mock_target)
+        attack = PromptSendingAttack(objective_target=mock_target)
         attack._conversation_manager = MagicMock()
         attack._conversation_manager.update_conversation_state_async = AsyncMock()
 
@@ -207,7 +208,7 @@ class TestSetupPhase:
 
     @pytest.mark.asyncio
     async def test_setup_merges_memory_labels_correctly(self, mock_target, basic_context):
-        attack = PromptInjectionAttack(objective_target=mock_target)
+        attack = PromptSendingAttack(objective_target=mock_target)
 
         # Add memory labels to both attack and context
         attack._memory_labels = {"strategy_label": "strategy_value", "common": "strategy"}
@@ -232,9 +233,9 @@ class TestSetupPhase:
         )
 
         converter_config = [PromptConverterConfiguration(converters=[])]
-        attack = PromptInjectionAttack(
+        attack = PromptSendingAttack(
             objective_target=mock_target,
-            attack_converter_cfg=AttackConverterConfig(request_converters=converter_config),
+            attack_converter_config=AttackConverterConfig(request_converters=converter_config),
         )
 
         attack._conversation_manager = MagicMock()
@@ -257,7 +258,7 @@ class TestPromptPreparation:
         existing_group = SeedPromptGroup(prompts=[SeedPrompt(value="Existing prompt", data_type="text")])
         basic_context.seed_prompt_group = existing_group
 
-        attack = PromptInjectionAttack(objective_target=mock_target)
+        attack = PromptSendingAttack(objective_target=mock_target)
         result = attack._get_prompt_group(basic_context)
 
         assert result == existing_group
@@ -266,7 +267,7 @@ class TestPromptPreparation:
         basic_context.seed_prompt_group = None
         basic_context.objective = "Custom objective text"
 
-        attack = PromptInjectionAttack(objective_target=mock_target)
+        attack = PromptSendingAttack(objective_target=mock_target)
         result = attack._get_prompt_group(basic_context)
 
         assert isinstance(result, SeedPromptGroup)
@@ -290,10 +291,10 @@ class TestPromptSending:
         request_converters = [PromptConverterConfiguration(converters=[])]
         response_converters = [PromptConverterConfiguration(converters=[])]
 
-        attack = PromptInjectionAttack(
+        attack = PromptSendingAttack(
             objective_target=mock_target,
             prompt_normalizer=mock_prompt_normalizer,
-            attack_converter_cfg=AttackConverterConfig(
+            attack_converter_config=AttackConverterConfig(
                 request_converters=request_converters, response_converters=response_converters
             ),
         )
@@ -303,7 +304,7 @@ class TestPromptSending:
         mock_response = MagicMock()
         mock_prompt_normalizer.send_prompt_async.return_value = mock_response
 
-        result = await attack._send_prompt_to_target_async(prompt_group=prompt_group, context=basic_context)
+        result = await attack._send_prompt_to_objective_target_async(prompt_group=prompt_group, context=basic_context)
 
         assert result == mock_response
 
@@ -319,12 +320,12 @@ class TestPromptSending:
 
     @pytest.mark.asyncio
     async def test_send_prompt_handles_none_response(self, mock_target, mock_prompt_normalizer, basic_context):
-        attack = PromptInjectionAttack(objective_target=mock_target, prompt_normalizer=mock_prompt_normalizer)
+        attack = PromptSendingAttack(objective_target=mock_target, prompt_normalizer=mock_prompt_normalizer)
 
         prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value="Test prompt", data_type="text")])
         mock_prompt_normalizer.send_prompt_async.return_value = None
 
-        result = await attack._send_prompt_to_target_async(prompt_group=prompt_group, context=basic_context)
+        result = await attack._send_prompt_to_objective_target_async(prompt_group=prompt_group, context=basic_context)
 
         assert result is None
 
@@ -337,7 +338,8 @@ class TestResponseEvaluation:
     async def test_evaluate_response_with_objective_scorer_returns_score(
         self, mock_target, mock_true_false_scorer, sample_response, success_score
     ):
-        attack = PromptInjectionAttack(objective_target=mock_target, objective_scorer=mock_true_false_scorer)
+        attack_scoring_config = AttackScoringConfig(objective_scorer=mock_true_false_scorer)
+        attack = PromptSendingAttack(objective_target=mock_target, attack_scoring_config=attack_scoring_config)
 
         with (
             patch("pyrit.score.scorer.Scorer.score_response_async", new=AsyncMock()) as mock_score_resp,
@@ -353,7 +355,7 @@ class TestResponseEvaluation:
 
             # Verify auxiliary scorers were called
             mock_score_resp.assert_called_once_with(
-                response=sample_response, scorers=attack._attack_scoring_cfg.auxiliary_scorers, role_filter="assistant"
+                response=sample_response, scorers=attack._auxiliary_scorers, role_filter="assistant"
             )
 
             # Verify objective scorer was called with task
@@ -366,7 +368,7 @@ class TestResponseEvaluation:
 
     @pytest.mark.asyncio
     async def test_evaluate_response_without_objective_scorer_returns_none(self, mock_target, sample_response):
-        attack = PromptInjectionAttack(objective_target=mock_target, objective_scorer=None)
+        attack = PromptSendingAttack(objective_target=mock_target, attack_scoring_config=None)
 
         with patch("pyrit.score.scorer.Scorer.score_response_async", new=AsyncMock()) as mock_score_resp:
             result = await attack._evaluate_response_async(response=sample_response, objective="Test objective")
@@ -375,7 +377,7 @@ class TestResponseEvaluation:
 
             # Verify auxiliary scorers were still called
             mock_score_resp.assert_called_once_with(
-                response=sample_response, scorers=attack._attack_scoring_cfg.auxiliary_scorers, role_filter="assistant"
+                response=sample_response, scorers=attack._auxiliary_scorers, role_filter="assistant"
             )
 
     @pytest.mark.asyncio
@@ -384,10 +386,11 @@ class TestResponseEvaluation:
     ):
         auxiliary_scorer = MagicMock(spec=Scorer)
 
-        attack = PromptInjectionAttack(
+        attack = PromptSendingAttack(
             objective_target=mock_target,
-            objective_scorer=mock_true_false_scorer,
-            attack_scoring_cfg=AttackScoringConfig(auxiliary_scorers=[auxiliary_scorer]),
+            attack_scoring_config=AttackScoringConfig(
+                objective_scorer=mock_true_false_scorer, auxiliary_scorers=[auxiliary_scorer]
+            ),
         )
 
         with (
@@ -411,16 +414,36 @@ class TestAttackExecution:
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
-        "attempt_results,expected_attempts,expected_success",
+        "attempt_results,expected_attempts,expected_outcome,expected_outcome_reason",
         [
             # Success on first attempt
-            ([("response", "success_score")], 1, True),
+            (
+                [("response", "success_score")],
+                1,
+                AttackOutcome.SUCCESS,
+                "Objective achieved according to scorer",
+            ),
             # Success after 2 failures
-            ([("response", "failure_score"), ("response", "failure_score"), ("response", "success_score")], 3, True),
+            (
+                [("response", "failure_score"), ("response", "failure_score"), ("response", "success_score")],
+                3,
+                AttackOutcome.SUCCESS,
+                "Objective achieved according to scorer",
+            ),
             # All attempts fail
-            ([("response", "failure_score"), ("response", "failure_score"), ("response", "failure_score")], 3, False),
+            (
+                [("response", "failure_score"), ("response", "failure_score"), ("response", "failure_score")],
+                3,
+                AttackOutcome.FAILURE,
+                "Failed to achieve objective after 3 attempts",
+            ),
             # All responses filtered
-            ([(None, None), (None, None), (None, None)], 3, False),
+            (
+                [(None, None), (None, None), (None, None)],
+                3,
+                AttackOutcome.FAILURE,
+                "All attempts were filtered or failed to get a response",
+            ),
         ],
     )
     async def test_perform_attack_with_various_retry_scenarios(
@@ -433,9 +456,11 @@ class TestAttackExecution:
         failure_score,
         attempt_results,
         expected_attempts,
-        expected_success,
+        expected_outcome,
+        expected_outcome_reason,
     ):
-        attack = PromptInjectionAttack(objective_target=mock_target, objective_scorer=mock_true_false_scorer)
+        attack_scoring_config = AttackScoringConfig(objective_scorer=mock_true_false_scorer)
+        attack = PromptSendingAttack(objective_target=mock_target, attack_scoring_config=attack_scoring_config)
 
         # Create a copy of the context to avoid mutation between test runs
         test_context = SingleTurnAttackContext(
@@ -461,17 +486,16 @@ class TestAttackExecution:
             else:
                 scores.append(None)
 
-        attack._send_prompt_to_target_async = AsyncMock(side_effect=responses)
+        attack._send_prompt_to_objective_target_async = AsyncMock(side_effect=responses)
         attack._evaluate_response_async = AsyncMock(side_effect=scores)
-        attack._log_objective_status = MagicMock()
 
         # Execute the attack
         result = await attack._perform_attack_async(context=test_context)
 
         # Verify results
-        assert attack._send_prompt_to_target_async.call_count == expected_attempts
-        assert test_context.achieved_objective == expected_success
-        assert result.achieved_objective == expected_success
+        assert attack._send_prompt_to_objective_target_async.call_count == expected_attempts
+        assert result.outcome == expected_outcome
+        assert result.outcome_reason == expected_outcome_reason
 
         # Verify evaluation count (only called for non-None responses)
         expected_eval_count = sum(1 for resp, _ in attempt_results if resp == "response")
@@ -481,7 +505,7 @@ class TestAttackExecution:
     async def test_perform_attack_without_scorer_completes_after_first_response(
         self, mock_target, basic_context, sample_response
     ):
-        attack = PromptInjectionAttack(objective_target=mock_target, objective_scorer=None)  # No scorer
+        attack = PromptSendingAttack(objective_target=mock_target, attack_scoring_config=None)  # No scorer
 
         basic_context.max_attempts_on_failure = 5  # Many retries available
 
@@ -489,29 +513,28 @@ class TestAttackExecution:
         attack._get_prompt_group = MagicMock(
             return_value=SeedPromptGroup(prompts=[SeedPrompt(value="Test prompt", data_type="text")])
         )
-        attack._send_prompt_to_target_async = AsyncMock(return_value=sample_response)
+        attack._send_prompt_to_objective_target_async = AsyncMock(return_value=sample_response)
         attack._evaluate_response_async = AsyncMock()
-        attack._log_objective_status = MagicMock()
 
         # Execute the attack
         result = await attack._perform_attack_async(context=basic_context)
 
         # Verify completion without scoring
-        assert basic_context.achieved_objective is False  # No scorer to determine success
-        assert result.achieved_objective is False
+        assert result.outcome == AttackOutcome.UNDETERMINED
+        assert result.outcome_reason == "No objective scorer configured"
         assert result.executed_turns == 1
         assert result.last_response == sample_response.get_piece()
         assert result.last_score is None
 
         # Verify only one attempt was made (no retries without scorer)
-        attack._send_prompt_to_target_async.assert_called_once()
+        attack._send_prompt_to_objective_target_async.assert_called_once()
         attack._evaluate_response_async.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_perform_attack_without_scorer_retries_on_filtered_response(
         self, mock_target, basic_context, sample_response
     ):
-        attack = PromptInjectionAttack(objective_target=mock_target, objective_scorer=None)  # No scorer
+        attack = PromptSendingAttack(objective_target=mock_target, attack_scoring_config=None)  # No scorer
 
         basic_context.max_attempts_on_failure = 2
 
@@ -519,15 +542,14 @@ class TestAttackExecution:
         attack._get_prompt_group = MagicMock(
             return_value=SeedPromptGroup(prompts=[SeedPrompt(value="Test prompt", data_type="text")])
         )
-        attack._send_prompt_to_target_async = AsyncMock(side_effect=[None, sample_response])
-        attack._log_objective_status = MagicMock()
+        attack._send_prompt_to_objective_target_async = AsyncMock(side_effect=[None, sample_response])
 
         # Execute the attack
         result = await attack._perform_attack_async(context=basic_context)
 
         # Verify completion after retry
         assert result.last_response == sample_response.get_piece()
-        assert attack._send_prompt_to_target_async.call_count == 2
+        assert attack._send_prompt_to_objective_target_async.call_count == 2
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -560,9 +582,9 @@ class TestConverterIntegration:
     ):
         converter_config = PromptConverterConfiguration.from_converters(converters=converters)
 
-        attack = PromptInjectionAttack(
+        attack = PromptSendingAttack(
             objective_target=mock_target,
-            attack_converter_cfg=AttackConverterConfig(request_converters=converter_config),
+            attack_converter_config=AttackConverterConfig(request_converters=converter_config),
             prompt_normalizer=mock_prompt_normalizer,
         )
 
@@ -583,9 +605,9 @@ class TestConverterIntegration:
         response_converter = Base64Converter()
         converter_config = PromptConverterConfiguration.from_converters(converters=[response_converter])
 
-        attack = PromptInjectionAttack(
+        attack = PromptSendingAttack(
             objective_target=mock_target,
-            attack_converter_cfg=AttackConverterConfig(response_converters=converter_config),
+            attack_converter_config=AttackConverterConfig(response_converters=converter_config),
             prompt_normalizer=mock_prompt_normalizer,
         )
 
@@ -600,24 +622,199 @@ class TestConverterIntegration:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestLogging:
-    """Tests for logging functionality"""
+class TestDetermineAttackOutcome:
+    """Tests for the _determine_attack_outcome method"""
 
-    @pytest.mark.parametrize(
-        "achieved_objective,expected_log",
-        [
-            (True, "achieved the objective"),
-            (False, "has not achieved the objective"),
-        ],
-    )
-    def test_log_objective_status(self, mock_target, basic_context, caplog, achieved_objective, expected_log):
-        attack = PromptInjectionAttack(objective_target=mock_target)
-        basic_context.achieved_objective = achieved_objective
+    def test_determine_attack_outcome_success(self, mock_target, sample_response, success_score, basic_context):
+        attack = PromptSendingAttack(objective_target=mock_target)
+        attack._objective_scorer = MagicMock()
 
-        with caplog.at_level(logging.INFO):
-            attack._log_objective_status(context=basic_context)
+        outcome, reason = attack._determine_attack_outcome(
+            response=sample_response, score=success_score, context=basic_context
+        )
 
-        assert expected_log in caplog.text.lower()
+        assert outcome == AttackOutcome.SUCCESS
+        assert reason == "Objective achieved according to scorer"
+
+    def test_determine_attack_outcome_failure_with_response(
+        self, mock_target, sample_response, failure_score, basic_context
+    ):
+        attack = PromptSendingAttack(objective_target=mock_target)
+        attack._objective_scorer = MagicMock()
+
+        outcome, reason = attack._determine_attack_outcome(
+            response=sample_response, score=failure_score, context=basic_context
+        )
+
+        assert outcome == AttackOutcome.FAILURE
+        assert reason == "Failed to achieve objective after 3 attempts"
+
+    def test_determine_attack_outcome_no_response(self, mock_target, basic_context):
+        attack = PromptSendingAttack(objective_target=mock_target)
+        attack._objective_scorer = MagicMock()
+
+        outcome, reason = attack._determine_attack_outcome(response=None, score=None, context=basic_context)
+
+        assert outcome == AttackOutcome.FAILURE
+        assert reason == "All attempts were filtered or failed to get a response"
+
+    def test_determine_attack_outcome_no_scorer(self, mock_target, sample_response, basic_context):
+        attack = PromptSendingAttack(objective_target=mock_target)
+        attack._objective_scorer = None
+
+        outcome, reason = attack._determine_attack_outcome(response=sample_response, score=None, context=basic_context)
+
+        assert outcome == AttackOutcome.UNDETERMINED
+        assert reason == "No objective scorer configured"
+
+    def test_determine_attack_outcome_no_scorer_no_response(self, mock_target, basic_context):
+        """Test when no scorer is configured and no response is received"""
+        attack = PromptSendingAttack(objective_target=mock_target)
+        attack._objective_scorer = None
+
+        outcome, reason = attack._determine_attack_outcome(response=None, score=None, context=basic_context)
+
+        assert outcome == AttackOutcome.UNDETERMINED
+        assert reason == "No objective scorer configured"
+
+    def test_determine_attack_outcome_with_different_max_attempts(self, mock_target, sample_response, failure_score):
+        """Test that the failure message correctly reflects the max_attempts_on_failure value"""
+        attack = PromptSendingAttack(objective_target=mock_target)
+        attack._objective_scorer = MagicMock()
+
+        # Test with different max_attempts_on_failure values
+        for max_attempts in [0, 1, 5, 10]:
+            context = SingleTurnAttackContext(
+                objective="Test objective",
+                conversation_id=str(uuid.uuid4()),
+                max_attempts_on_failure=max_attempts
+            )
+
+            outcome, reason = attack._determine_attack_outcome(
+                response=sample_response, score=failure_score, context=context
+            )
+
+            assert outcome == AttackOutcome.FAILURE
+            assert reason == f"Failed to achieve objective after {max_attempts + 1} attempts"
+
+    def test_determine_attack_outcome_success_with_true_string_score(self, mock_target, sample_response, basic_context):
+        """Test success detection with score value as string 'true'"""
+        attack = PromptSendingAttack(objective_target=mock_target)
+        attack._objective_scorer = MagicMock()
+
+        # Create a score with string value 'true' (common in true/false scorers)
+        true_score = Score(
+            score_type="true_false",
+            score_value="true",
+            score_category="test",
+            score_value_description="Success",
+            score_rationale="Objective achieved",
+            score_metadata="{}",
+            prompt_request_response_id=str(uuid.uuid4()),
+        )
+
+        outcome, reason = attack._determine_attack_outcome(
+            response=sample_response, score=true_score, context=basic_context
+        )
+
+        assert outcome == AttackOutcome.SUCCESS
+        assert reason == "Objective achieved according to scorer"
+
+    def test_determine_attack_outcome_failure_with_false_string_score(self, mock_target, sample_response, basic_context):
+        """Test failure detection with score value as string 'false'"""
+        attack = PromptSendingAttack(objective_target=mock_target)
+        attack._objective_scorer = MagicMock()
+
+        # Create a score with string value 'false'
+        false_score = Score(
+            score_type="true_false",
+            score_value="false",
+            score_category="test",
+            score_value_description="Failure",
+            score_rationale="Objective not achieved",
+            score_metadata="{}",
+            prompt_request_response_id=str(uuid.uuid4()),
+        )
+
+        outcome, reason = attack._determine_attack_outcome(
+            response=sample_response, score=false_score, context=basic_context
+        )
+
+        assert outcome == AttackOutcome.FAILURE
+        assert reason == "Failed to achieve objective after 3 attempts"
+
+    def test_determine_attack_outcome_success_with_uppercase_true_score(self, mock_target, sample_response, basic_context):
+        """Test success detection with uppercase 'True' score value"""
+        attack = PromptSendingAttack(objective_target=mock_target)
+        attack._objective_scorer = MagicMock()
+
+        # Create a score with string value 'True' (might come from some scorers)
+        true_score = Score(
+            score_type="true_false",
+            score_value="True",
+            score_category="test",
+            score_value_description="Success",
+            score_rationale="Objective achieved",
+            score_metadata="{}",
+            prompt_request_response_id=str(uuid.uuid4()),
+        )
+
+        outcome, reason = attack._determine_attack_outcome(
+            response=sample_response, score=true_score, context=basic_context
+        )
+
+        assert outcome == AttackOutcome.SUCCESS
+        assert reason == "Objective achieved according to scorer"
+
+    def test_determine_attack_outcome_failure_with_uppercase_false_score(self, mock_target, sample_response, basic_context):
+        """Test failure detection with uppercase 'False' score value"""
+        attack = PromptSendingAttack(objective_target=mock_target)
+        attack._objective_scorer = MagicMock()
+
+        # Create a score with string value 'False'
+        false_score = Score(
+            score_type="true_false",
+            score_value="False",
+            score_category="test",
+            score_value_description="Failure",
+            score_rationale="Objective not achieved",
+            score_metadata="{}",
+            prompt_request_response_id=str(uuid.uuid4()),
+        )
+
+        outcome, reason = attack._determine_attack_outcome(
+            response=sample_response, score=false_score, context=basic_context
+        )
+
+        assert outcome == AttackOutcome.FAILURE
+        assert reason == "Failed to achieve objective after 3 attempts"
+
+    def test_determine_attack_outcome_with_scorer_but_no_score(self, mock_target, sample_response, basic_context):
+        """Test when scorer is configured but no score is returned (scorer failed)"""
+        attack = PromptSendingAttack(objective_target=mock_target)
+        attack._objective_scorer = MagicMock()
+
+        outcome, reason = attack._determine_attack_outcome(
+            response=sample_response, score=None, context=basic_context
+        )
+
+        assert outcome == AttackOutcome.FAILURE
+        assert reason == "Failed to achieve objective after 3 attempts"
+
+    def test_determine_attack_outcome_edge_case_empty_response(self, mock_target, basic_context):
+        """Test with an empty response object"""
+        attack = PromptSendingAttack(objective_target=mock_target)
+        attack._objective_scorer = MagicMock()
+
+        # Create an empty response
+        empty_response = PromptRequestResponse(request_pieces=[])
+
+        outcome, reason = attack._determine_attack_outcome(
+            response=empty_response, score=None, context=basic_context
+        )
+
+        assert outcome == AttackOutcome.FAILURE
+        assert reason == "Failed to achieve objective after 3 attempts"
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -626,19 +823,25 @@ class TestAttackLifecycle:
 
     @pytest.mark.asyncio
     async def test_execute_async_successful_lifecycle(self, mock_target, basic_context):
-        attack = PromptInjectionAttack(objective_target=mock_target)
+        attack = PromptSendingAttack(objective_target=mock_target)
 
         # Mock all lifecycle methods
         attack._validate_context = MagicMock()
         attack._setup_async = AsyncMock()
-        attack._perform_attack_async = AsyncMock(return_value="success_result")
+        mock_result = AttackResult(
+            conversation_id=basic_context.conversation_id,
+            objective=basic_context.objective,
+            attack_identifier=attack.get_identifier(),
+            outcome=AttackOutcome.SUCCESS,
+        )
+        attack._perform_attack_async = AsyncMock(return_value=mock_result)
         attack._teardown_async = AsyncMock()
 
         # Execute the complete lifecycle
         result = await attack.execute_async(context=basic_context)
 
         # Verify result and proper execution order
-        assert result == "success_result"
+        assert result == mock_result
         attack._validate_context.assert_called_once_with(context=basic_context)
         attack._setup_async.assert_called_once_with(context=basic_context)
         attack._perform_attack_async.assert_called_once_with(context=basic_context)
@@ -646,7 +849,7 @@ class TestAttackLifecycle:
 
     @pytest.mark.asyncio
     async def test_execute_async_validation_failure_prevents_execution(self, mock_target, basic_context):
-        attack = PromptInjectionAttack(objective_target=mock_target)
+        attack = PromptSendingAttack(objective_target=mock_target)
 
         # Mock validation to fail
         attack._validate_context = MagicMock(side_effect=ValueError("Invalid context"))
@@ -669,7 +872,7 @@ class TestAttackLifecycle:
 
     @pytest.mark.asyncio
     async def test_execute_async_execution_error_still_calls_teardown(self, mock_target, basic_context):
-        attack = PromptInjectionAttack(objective_target=mock_target)
+        attack = PromptSendingAttack(objective_target=mock_target)
 
         # Mock successful validation/setup but failed execution
         attack._validate_context = MagicMock()
@@ -692,7 +895,7 @@ class TestAttackLifecycle:
 
     @pytest.mark.asyncio
     async def test_teardown_async_is_noop(self, mock_target, basic_context):
-        attack = PromptInjectionAttack(objective_target=mock_target)
+        attack = PromptSendingAttack(objective_target=mock_target)
 
         # Should complete without error
         await attack._teardown_async(context=basic_context)
@@ -714,7 +917,8 @@ class TestEdgeCasesAndErrorHandling:
         success_score,
         max_attempts,
     ):
-        attack = PromptInjectionAttack(objective_target=mock_target, objective_scorer=mock_true_false_scorer)
+        attack_scoring_config = AttackScoringConfig(objective_scorer=mock_true_false_scorer)
+        attack = PromptSendingAttack(objective_target=mock_target, attack_scoring_config=attack_scoring_config)
 
         basic_context.max_attempts_on_failure = max_attempts
 
@@ -722,41 +926,40 @@ class TestEdgeCasesAndErrorHandling:
         attack._get_prompt_group = MagicMock(
             return_value=SeedPromptGroup(prompts=[SeedPrompt(value="Test prompt", data_type="text")])
         )
-        attack._send_prompt_to_target_async = AsyncMock(return_value=sample_response)
+        attack._send_prompt_to_objective_target_async = AsyncMock(return_value=sample_response)
         attack._evaluate_response_async = AsyncMock(return_value=success_score)
-        attack._log_objective_status = MagicMock()
 
         # Execute the attack
         result = await attack._perform_attack_async(context=basic_context)
 
         # Verify success with single attempt
-        assert result.achieved_objective is True
-        attack._send_prompt_to_target_async.assert_called_once()
+        assert result.outcome == AttackOutcome.SUCCESS
+        attack._send_prompt_to_objective_target_async.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_perform_attack_with_minimal_prompt_group(self, mock_target, basic_context, sample_response):
-        attack = PromptInjectionAttack(objective_target=mock_target)
+        attack = PromptSendingAttack(objective_target=mock_target)
 
         # Set minimal prompt group with a single empty prompt
         minimal_group = SeedPromptGroup(prompts=[SeedPrompt(value="", data_type="text")])
         basic_context.seed_prompt_group = minimal_group
 
         attack._get_prompt_group = MagicMock(return_value=minimal_group)
-        attack._send_prompt_to_target_async = AsyncMock(return_value=sample_response)
-        attack._log_objective_status = MagicMock()
+        attack._send_prompt_to_objective_target_async = AsyncMock(return_value=sample_response)
 
         # Execute the attack
         result = await attack._perform_attack_async(context=basic_context)
 
         # Verify it still executes
         assert result.executed_turns == 1
-        attack._send_prompt_to_target_async.assert_called_with(prompt_group=minimal_group, context=basic_context)
+        attack._send_prompt_to_objective_target_async.assert_called_with(prompt_group=minimal_group, context=basic_context)
 
     @pytest.mark.asyncio
     async def test_evaluate_response_handles_scorer_exception(
         self, mock_target, mock_true_false_scorer, sample_response
     ):
-        attack = PromptInjectionAttack(objective_target=mock_target, objective_scorer=mock_true_false_scorer)
+        attack_scoring_config = AttackScoringConfig(objective_scorer=mock_true_false_scorer)
+        attack = PromptSendingAttack(objective_target=mock_target, attack_scoring_config=attack_scoring_config)
 
         with (
             patch("pyrit.score.scorer.Scorer.score_response_async", new=AsyncMock()),
@@ -771,8 +974,8 @@ class TestEdgeCasesAndErrorHandling:
                 await attack._evaluate_response_async(response=sample_response, objective="Test")
 
     def test_attack_has_unique_identifier(self, mock_target):
-        attack1 = PromptInjectionAttack(objective_target=mock_target)
-        attack2 = PromptInjectionAttack(objective_target=mock_target)
+        attack1 = PromptSendingAttack(objective_target=mock_target)
+        attack2 = PromptSendingAttack(objective_target=mock_target)
 
         id1 = attack1.get_identifier()
         id2 = attack2.get_identifier()
@@ -784,4 +987,4 @@ class TestEdgeCasesAndErrorHandling:
 
         # Verify uniqueness
         assert id1["id"] != id2["id"]
-        assert id1["__type__"] == id2["__type__"] == "PromptInjectionAttack"
+        assert id1["__type__"] == id2["__type__"] == "PromptSendingAttack"
