@@ -8,7 +8,7 @@ from pyrit.score.composite_scorer import CompositeScorer
 from pyrit.score.float_scale_threshold_scorer import FloatScaleThresholdScorer
 from pyrit.score.general_scorer import SelfAskGeneralScorer
 from pyrit.score.gandalf_scorer import GandalfScorer
-from pyrit.score.gold_dataset import GoldDataset
+from pyrit.score.human_labeled_dataset import HarmHumanLabeledEntry, HumanLabeledDataset, HumanLabeledEntry, ObjectiveHumanLabeledEntry
 from pyrit.score.human_in_the_loop_scorer import HumanInTheLoopScorer
 from pyrit.score.human_in_the_loop_gradio import HumanInTheLoopScorerGradio
 from pyrit.score.insecure_code_scorer import InsecureCodeScorer
@@ -34,7 +34,7 @@ __all__ = [
     "CompositeScorer",
     "FloatScaleThresholdScorer",
     "GandalfScorer",
-    "GoldDataset",
+    "HumanLabeledDataset",
     "SelfAskGeneralScorer",
     "HumanInTheLoopScorer",
     "HumanInTheLoopScorerGradio",

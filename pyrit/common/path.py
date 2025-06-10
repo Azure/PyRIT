@@ -27,20 +27,13 @@ CONTENT_CLASSIFIERS_PATH = pathlib.Path(DATASETS_PATH, "score", "content_classif
 LIKERT_SCALES_PATH = pathlib.Path(DATASETS_PATH, "score", "likert_scales").resolve()
 SCALES_PATH = pathlib.Path(DATASETS_PATH, "score", "scales").resolve()
 SCORER_EVALS_PATH = pathlib.Path(DATASETS_PATH, "score", "scorer_evals").resolve()
+SCORER_EVALS_HARM_PATH = pathlib.Path(SCORER_EVALS_PATH, "harm").resolve()
+SCORER_EVALS_OBJECTIVE_PATH = pathlib.Path(SCORER_EVALS_PATH, "objective").resolve()
 
 RED_TEAM_ORCHESTRATOR_PATH = pathlib.Path(DATASETS_PATH, "orchestrators", "red_teaming").resolve()
 
 # Points to the root of the project
 HOME_PATH = pathlib.Path(PYRIT_PATH, "..").resolve()
-
-SCORER_EVALS_RESULTS_PATH = get_default_data_path("scorer_evals_results")
-SCORER_EVALS_RESULTS_PATH.mkdir(parents=True, exist_ok=True)
-
-SCORER_EVALS_RESULTS_METRICS_PATH = pathlib.Path(SCORER_EVALS_RESULTS_PATH, "metrics").resolve()
-SCORER_EVALS_RESULTS_METRICS_PATH.mkdir(parents=True, exist_ok=True)
-
-SCORER_EVALS_RESULTS_SCORES_CSV_PATH = pathlib.Path(SCORER_EVALS_RESULTS_PATH, "scores_csv").resolve()
-SCORER_EVALS_RESULTS_SCORES_CSV_PATH.mkdir(parents=True, exist_ok=True)
 
 # Path to where all the seed prompt entry and prompt memory entry files and database file will be stored
 DB_DATA_PATH = get_default_data_path("dbdata")
@@ -64,7 +57,6 @@ PATHS_DICT = {
     "red_team_orchestrator_path": RED_TEAM_ORCHESTRATOR_PATH,
     "scales_path": SCALES_PATH,
     "scorer_evals_path": SCORER_EVALS_PATH,
-    "scorer_evals_results_metrics_path": SCORER_EVALS_RESULTS_METRICS_PATH,
-    "scorer_evals_results_path": SCORER_EVALS_RESULTS_PATH,
-    "scorer_evals_results_scores_csv_path": SCORER_EVALS_RESULTS_SCORES_CSV_PATH,
+    "scorer_evals_harm_path": SCORER_EVALS_HARM_PATH,
+    "scorer_evals_objective_path": SCORER_EVALS_OBJECTIVE_PATH,
 }

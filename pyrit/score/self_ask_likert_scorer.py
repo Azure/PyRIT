@@ -93,8 +93,7 @@ class SelfAskLikertScorer(Scorer):
         return likert_scale_description
 
     async def score_async(
-        self, request_response: PromptRequestPiece, *, task: Optional[str] = None, harm_category: Optional[str] = None
-    ) -> list[Score]:
+        self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Scores the given request_response using "self-ask" for the chat target and adds score to memory.
 
@@ -109,14 +108,7 @@ class SelfAskLikertScorer(Scorer):
                          The score_value is a value from [0,1] that is scaled from the likert scale.
         """
         self.validate(request_response, task=task)
-        if harm_category:
-            # This will need to change once we support harm categories as an Enum class.
-            scale_path = Path(LIKERT_SCALES_PATH, f"{harm_category.lower()}.yaml").resolve()
-            if not scale_path.exists():
-                raise ValueError(f"Invalid harm category: {harm_category}. No scale found at {scale_path}.")
-
-            self.set_likert_scale_system_prompt(likert_scale_path=scale_path)
-
+        
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=self._system_prompt,
@@ -137,8 +129,5 @@ class SelfAskLikertScorer(Scorer):
         return [score]
 
     def validate(
-        self, request_response: PromptRequestPiece, *, task: Optional[str] = None, harm_category: Optional[str] = None
-    ):
-        if task and harm_category:
-            raise ValueError("Task and harm_category cannot be both provided. Please provide only one of them.")
+        self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
         pass

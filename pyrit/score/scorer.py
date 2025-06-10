@@ -5,7 +5,7 @@ import abc
 import json
 import uuid
 from abc import abstractmethod
-from typing import Optional, Sequence
+from typing import Literal, Optional, Sequence
 
 from pyrit.exceptions import (
     InvalidJsonException,
@@ -36,27 +36,30 @@ class Scorer(abc.ABC):
     def _memory(self) -> MemoryInterface:
         return CentralMemory.get_memory_instance()
 
-    def get_scorer_metrics(self, file_name: str):
+    def get_scorer_metrics(self, dataset_name: str):
         """
         Prints evaluation statistics for the scorer in json format.
 
         Args:
-            file_name (str): The name of the JSON file containing the evaluation statistics. This is often the name
-                of the harm or objective being evaluated (e.g. 'hate_speech' or 'molotov_cocktail'). It can also be a
-                custom name designated during the evaluation process such as 'custom_eval_1'.
+            dataset_name (str): The name of the dataset on which the scorer evaluation was run. This is used to 
+                inform the name of the metrics file saved in the `scorer_evals` directory and is often a 
+                'harm_category' or 'objective'. For example, to retrieve metrics for the 'hate_speech' harm,
+                you would pass 'harm' as the scorer_type and 'hate_speech' as the dataset_name.
 
         Returns:
             ScorerMetrics: A ScorerMetrics object containing the saved evaluation statistics for the scorer.
         """
+        # Importing ScorerEvaluator here to avoid circular imports
         from pyrit.score.scorer_evaluator import ScorerEvaluator
 
         scorer_evaluator = ScorerEvaluator(scorer=self)
-        return scorer_evaluator.get_scorer_metrics(file_name=file_name)
+        metrics_type = "objective" if self.scorer_type == "true_false" else "harm"
+
+        return scorer_evaluator.get_scorer_metrics(metrics_type=metrics_type, dataset_name=dataset_name)
 
     @abstractmethod
     async def score_async(
-        self, request_response: PromptRequestPiece, *, task: Optional[str] = None, harm_category: Optional[str] = None
-    ) -> list[Score]:
+        self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Score the request_response, add the results to the database
         and return a list of Score objects.
@@ -72,8 +75,7 @@ class Scorer(abc.ABC):
 
     @abstractmethod
     def validate(
-        self, request_response: PromptRequestPiece, *, task: Optional[str] = None, harm_category: Optional[str] = None
-    ):
+        self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
         """
         Validates the request_response piece to score. Because some scorers may require
         specific PromptRequestPiece types or values.
@@ -166,33 +168,6 @@ class Scorer(abc.ABC):
             prompt_target=prompt_target,
             batch_size=batch_size,
             items_to_batch=[request_responses, tasks],
-        )
-
-        # results is a list[list[Score]] and needs to be flattened
-        return [score for sublist in results for score in sublist]
-
-    async def score_prompts_with_harm_categories_batch_async(
-        self,
-        *,
-        request_responses: Sequence[PromptRequestPiece],
-        harm_categories: Sequence[str],
-        batch_size: int = 10,
-    ) -> list[Score]:
-        if not harm_categories:
-            raise ValueError("Harm categories must be provided.")
-        if len(harm_categories) != len(request_responses):
-            raise ValueError("The number of harm categories must match the number of request_responses.")
-
-        if len(request_responses) == 0:
-            return []
-
-        prompt_target = getattr(self, "_prompt_target", None)
-        results = await batch_task_async(
-            task_func=self.score_async,
-            task_arguments=["request_response", "harm_category"],
-            prompt_target=prompt_target,
-            batch_size=batch_size,
-            items_to_batch=[request_responses, harm_categories],
         )
 
         # results is a list[list[Score]] and needs to be flattened
