@@ -39,6 +39,14 @@ RUN apt-get update && apt-get install -y \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
+# audio back-ends needed by Azure Speech SDK
+RUN apt-get update \
+ && DEBIAN_FRONTEND=noninteractive \
+ apt-get install -y --no-install-recommends \
+      libasound2 \
+      libpulse0 \
+ && rm -rf /var/lib/apt/lists/*
+
 # Create conda env and install pyodbc into it
 RUN conda create -n pyrit-dev python=3.11 -y && \
     conda install -n pyrit-dev -c conda-forge pyodbc -y && \

@@ -21,7 +21,7 @@ from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_converter.binary_converter import BinaryConverter
 from pyrit.prompt_converter.caesar_converter import CaesarConverter
 from pyrit.prompt_converter.character_space_converter import CharacterSpaceConverter
-from pyrit.prompt_converter.charswap_attack_converter import CharSwapGenerator
+from pyrit.prompt_converter.charswap_attack_converter import CharSwapConverter
 from pyrit.prompt_converter.codechameleon_converter import CodeChameleonConverter
 from pyrit.prompt_converter.colloquial_wordswap_converter import ColloquialWordswapConverter
 from pyrit.prompt_converter.diacritic_converter import DiacriticConverter
@@ -64,6 +64,7 @@ from pyrit.prompt_converter.variation_converter import VariationConverter
 from pyrit.prompt_converter.zalgo_converter import ZalgoConverter
 from pyrit.prompt_converter.zero_width_converter import ZeroWidthConverter
 from pyrit.prompt_converter.toxic_sentence_generator_converter import ToxicSentenceGeneratorConverter
+from pyrit.prompt_converter.denylist_converter import DenylistConverter
 
 
 __all__ = [
@@ -81,9 +82,10 @@ __all__ = [
     "BinaryConverter",
     "CaesarConverter",
     "CharacterSpaceConverter",
-    "CharSwapGenerator",
+    "CharSwapConverter",
     "CodeChameleonConverter",
     "ColloquialWordswapConverter",
+    "DenylistConverter",
     "DiacriticConverter",
     "ConverterResult",
     "EmojiConverter",

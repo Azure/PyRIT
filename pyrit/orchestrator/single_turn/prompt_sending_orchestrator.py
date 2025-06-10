@@ -4,7 +4,7 @@
 import asyncio
 import logging
 import uuid
-from typing import Any, Optional, Sequence
+from typing import Any, List, Optional, Sequence
 
 from pyrit.common.utils import combine_dict
 from pyrit.models import (
@@ -89,8 +89,8 @@ class PromptSendingOrchestrator(Orchestrator):
 
     async def _add_prepended_conversation_to_memory(
         self,
-        prepended_conversation: Optional[list[PromptRequestResponse]],
         conversation_id: str,
+        prepended_conversation: Optional[List[PromptRequestResponse]] = None,
     ):
         """
         Processes the prepended conversation by converting it if needed and adding it to memory.
@@ -183,7 +183,7 @@ class PromptSendingOrchestrator(Orchestrator):
         self,
         *,
         objective: str,
-        seed_prompt: SeedPromptGroup = None,
+        seed_prompt: Optional[SeedPromptGroup] = None,
         prepended_conversation: Optional[list[PromptRequestResponse]] = None,
         memory_labels: Optional[dict[str, str]] = None,
     ) -> OrchestratorResult:
@@ -202,14 +202,16 @@ class PromptSendingOrchestrator(Orchestrator):
         conversation_id = ""
 
         if not seed_prompt:
-            seed_prompt = SeedPromptGroup(prompts=[SeedPrompt(value=objective, data_type="text")])
+            seed_prompt = SeedPromptGroup(prompts=[SeedPrompt(value=objective)])
 
         status: OrchestratorResultStatus = "unknown"
         objective_score = None
 
         for _ in range(self._retries_on_objective_failure + 1):
             conversation_id = str(uuid.uuid4())
-            await self._add_prepended_conversation_to_memory(prepended_conversation, conversation_id)
+            await self._add_prepended_conversation_to_memory(
+                prepended_conversation=prepended_conversation, conversation_id=conversation_id
+            )
 
             result = await self._prompt_normalizer.send_prompt_async(
                 seed_prompt_group=seed_prompt,
@@ -229,7 +231,7 @@ class PromptSendingOrchestrator(Orchestrator):
 
             status, objective_score = await self._score_objective_async(result, objective)
 
-            if status == "success":
+            if status == "success" or status == "unknown":
                 break
 
         return OrchestratorResult(

@@ -72,7 +72,7 @@ chapters:
         - file: code/converters/6_human_converter
         - file: code/converters/7_video_converters
         - file: code/converters/ansi_attack_converter
-        - file: code/converters/char_swap_attack_generator
+        - file: code/converters/char_swap_attack_converter
         - file: code/converters/pdf_converter
         - file: code/converters/math_prompt_converter
     - file: code/scoring/0_scoring
@@ -100,6 +100,7 @@ chapters:
       - file: code/memory/7_azure_sql_memory_orchestrators
       - file: code/memory/8_seed_prompt_database
       - file: code/memory/9_exporting_data
+      - file: code/memory/10_schema_diagram.md
       - file: code/memory/azure_embeddings
       - file: code/memory/chat_message
     - file: code/auxiliary_attacks/0_auxiliary_attacks
@@ -115,6 +116,7 @@ chapters:
   - file: api.rst
   - file: blog/README
     sections:
+    - file: blog/2025_06_06
     - file: blog/2025_03_03
     - file: blog/2025_02_11
     - file: blog/2025_01_27
