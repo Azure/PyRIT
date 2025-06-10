@@ -2,9 +2,10 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Literal
+from typing import TYPE_CHECKING, Literal, Optional
 
-import azure.cognitiveservices.speech as speechsdk
+if TYPE_CHECKING:
+    import azure.cognitiveservices.speech as speechsdk  # noqa: F401
 
 from pyrit.common import default_values
 from pyrit.models import PromptDataType, data_serializer_factory
@@ -18,8 +19,8 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
     The AzureSpeechTextToAudio takes a prompt and generates a wave file.
     https://learn.microsoft.com/en-us/azure/ai-services/speech-service/text-to-speech
     Args:
-        azure_speech_region (str): The name of the Azure region.
-        azure_speech_key (str): The API key for accessing the service.
+        azure_speech_region (str, Optional): The name of the Azure region.
+        azure_speech_key (str, Optional): The API key for accessing the service.
         synthesis_language (str): Synthesis voice language
         synthesis_voice_name (str): Synthesis voice name, see URL
         For more details see the following link for synthesis language and synthesis voice:
@@ -35,13 +36,12 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
 
     def __init__(
         self,
-        azure_speech_region: str = None,
-        azure_speech_key: str = None,
+        azure_speech_region: Optional[str] = None,
+        azure_speech_key: Optional[str] = None,
         synthesis_language: str = "en_US",
         synthesis_voice_name: str = "en-US-AvaNeural",
         output_format: AzureSpeachAudioFormat = "wav",
     ) -> None:
-
         self._azure_speech_region: str = default_values.get_required_value(
             env_var_name=self.AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE, passed_value=azure_speech_region
         )
@@ -61,6 +61,15 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         return output_type == "audio_path"
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        try:
+            import azure.cognitiveservices.speech as speechsdk  # noqa: F811
+        except ModuleNotFoundError as e:
+            logger.error(
+                "Could not import azure.cognitiveservices.speech. "
+                + "You may need to install it via 'pip install pyrit[speech]'"
+            )
+            raise e
+
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
@@ -77,6 +86,8 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
                 subscription=self._azure_speech_key,
                 region=self._azure_speech_region,
             )
+            pull_stream = speechsdk.audio.PullAudioOutputStream()
+            audio_cfg = speechsdk.audio.AudioOutputConfig(stream=pull_stream)
             speech_config.speech_synthesis_language = self._synthesis_language
             speech_config.speech_synthesis_voice_name = self._synthesis_voice_name
 
@@ -85,7 +96,7 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
                     speechsdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3
                 )
 
-            speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config)
+            speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_cfg)
 
             result = speech_synthesizer.speak_text_async(prompt).get()
             if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:

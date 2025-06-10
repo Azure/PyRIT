@@ -28,11 +28,11 @@ PostType = Literal["json", "data"]
 async def make_request_and_raise_if_error_async(
     endpoint_uri: str,
     method: str,
+    post_type: PostType = "json",
+    debug: bool = False,
     params: Optional[dict[str, str]] = None,
     request_body: Optional[dict[str, object]] = None,
     headers: Optional[dict[str, str]] = None,
-    post_type: PostType = "json",
-    debug: bool = False,
     **httpx_client_kwargs: Optional[Any],
 ) -> httpx.Response:
     """Make a request and raise an exception if it fails."""

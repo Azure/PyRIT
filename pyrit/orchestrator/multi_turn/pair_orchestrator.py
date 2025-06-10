@@ -36,6 +36,7 @@ class PAIROrchestrator(TreeOfAttacksWithPruningOrchestrator):
         prompt_converters: Optional[list[PromptConverter]] = None,
         objective_achieved_score_threshold: float = 0.8,
         desired_response_prefix="Sure, here is",
+        batch_size: int = 1,
         verbose: bool = False,
     ) -> None:
 
@@ -57,6 +58,7 @@ class PAIROrchestrator(TreeOfAttacksWithPruningOrchestrator):
             objective_achieved_score_threshold=objective_achieved_score_threshold,
             desired_response_prefix=desired_response_prefix,
             verbose=verbose,
+            batch_size=batch_size,
         )
 
     def set_prepended_conversation(self, *, prepended_conversation):

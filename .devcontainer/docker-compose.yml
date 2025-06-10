@@ -13,6 +13,8 @@ services:
       - pyrit-env:/opt/conda/envs/pyrit-dev:cached
       - pip-cache:/home/vscode/.cache/pip:cached
       - precommit-cache:/home/vscode/.cache/pre-commit:cached
+      - conda-cache:/home/vscode/.cache/conda:cached
+      - mypy-cache:/workspace/.mypy_cache:cached
     ports:
       - "4213:4213"
       - "8888:8888"
@@ -23,3 +25,5 @@ volumes:
   pyrit-env:
   pip-cache:
   precommit-cache:
+  conda-cache:
+  mypy-cache:

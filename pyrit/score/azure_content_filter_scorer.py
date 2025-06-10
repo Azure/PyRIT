@@ -44,10 +44,10 @@ class AzureContentFilterScorer(Scorer):
     def __init__(
         self,
         *,
-        endpoint: str = None,
-        api_key: str = None,
+        endpoint: Optional[str] = None,
+        api_key: Optional[str] = None,
         use_aad_auth: bool = False,
-        harm_categories: list[TextCategory] = None,
+        harm_categories: Optional[list[TextCategory]] = None,
     ) -> None:
         """
         Class that initializes an Azure Content Filter Scorer
@@ -62,6 +62,8 @@ class AzureContentFilterScorer(Scorer):
             harm_categories: The harm categories you want to query for as per defined in
                 azure.ai.contentsafety.models.TextCategory.
         """
+
+        self.scorer_type = "float_scale"
 
         if harm_categories:
             self._score_categories = [category.value for category in harm_categories]

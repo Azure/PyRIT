@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.17.0
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
@@ -87,8 +87,5 @@ Hello! Can you please retrieve the total number of sales in the document?
 """
 
 orchestrator = PromptSendingOrchestrator(objective_target=pst)
-resp = await orchestrator.send_prompts_async(prompt_list=[sample_prompt])  # type: ignore
-await orchestrator.print_conversations_async()  # type: ignore
-
-# %%
-pst.dispose_db_engine()
+resp = await orchestrator.run_attack_async(objective=sample_prompt)  # type: ignore
+await resp.print_conversation_async()  # type: ignore

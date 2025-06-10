@@ -8,7 +8,7 @@ import pytest
 from unit.mocks import MockPromptTarget
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
 from pyrit.orchestrator import TreeOfAttacksWithPruningOrchestrator
 
 
@@ -49,6 +49,18 @@ def get_prompt_response_with_content(content: str) -> PromptRequestResponse:
                 response_error="none",
             )
         ],
+    )
+
+
+def create_score(score_value: float) -> Score:
+    return Score(
+        prompt_request_response_id="",
+        score_value=str(score_value),
+        score_type="float_scale",
+        score_category="test",
+        score_metadata="",
+        score_value_description="Test score",
+        score_rationale="Test rationale",
     )
 
 
@@ -144,7 +156,7 @@ async def test_run_attack_single_turn_success(
 
         result = await tap_orchestrator.run_attack_async(objective="objective")
 
-        assert result.achieved_objective
+        assert result.status == "success"
         assert result.objective == "objective"
 
         assert "pruned" not in str(result.tree_visualization).lower()
@@ -204,7 +216,7 @@ async def test_run_attack_max_depth_reached(
 
         result = await tap_orchestrator.run_attack_async(objective="objective")
 
-        assert not result.achieved_objective
+        assert result.status == "failure"
         assert result.objective == "objective"
 
         mock_adversarial_chat.assert_called_once()
@@ -239,13 +251,13 @@ async def test_run_attack_multiturn_failure(
         async def side_effect(objective, nodes, tree_visualization):
             for node in nodes:
                 node.completed = True
-                node.score = 0.0
+                node.objective_score = create_score(0.0)
 
         mock_send.side_effect = side_effect
 
         result = await tap_orchestrator.run_attack_async(objective="objective")
 
-        assert not result.achieved_objective
+        assert result.status == "failure"
         assert mock_send.call_count == depth
 
 
@@ -282,13 +294,13 @@ async def test_run_attack_success_in_last_turn(
 
             for node in nodes:
                 node.completed = True
-                node.score = score
+                node.objective_score = create_score(score)
 
         mock_send.side_effect = side_effect
 
         result = await tap_orchestrator.run_attack_async(objective="objective")
 
-        assert result.achieved_objective
+        assert result.status == "success"
         assert mock_send.call_count == depth
 
 
@@ -304,11 +316,11 @@ def test_prune_nodes_over_width():
     )
 
     nodes = [
-        MagicMock(node_id="1", score=0.0, completed=True, off_topic=False),
-        MagicMock(node_id="2", score=1.0, completed=True, off_topic=False),
-        MagicMock(node_id="3", score=0.0, completed=True, off_topic=False),
-        MagicMock(node_id="4", score=0.1, completed=True, off_topic=False),
-        MagicMock(node_id="5", score=0.5, completed=True, off_topic=False),
+        MagicMock(node_id="1", objective_score=create_score(0.0), completed=True, off_topic=False),
+        MagicMock(node_id="2", objective_score=create_score(1.0), completed=True, off_topic=False),
+        MagicMock(node_id="3", objective_score=create_score(0.0), completed=True, off_topic=False),
+        MagicMock(node_id="4", objective_score=create_score(0.1), completed=True, off_topic=False),
+        MagicMock(node_id="5", objective_score=create_score(0.5), completed=True, off_topic=False),
     ]
 
     tree = MagicMock()

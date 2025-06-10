@@ -10,7 +10,7 @@ from uuid import uuid4
 from pyrit.common.path import RED_TEAM_ORCHESTRATOR_PATH
 from pyrit.common.utils import combine_dict
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt, SeedPromptGroup
-from pyrit.orchestrator import MultiTurnAttackResult, MultiTurnOrchestrator
+from pyrit.orchestrator import MultiTurnOrchestrator, OrchestratorResult
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
@@ -40,6 +40,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         objective_target (PromptTarget): Target for created prompts.
         adversarial_chat (PromptChatTarget): Endpoint creating prompts sent to objective_target.
         adversarial_chat_system_prompt_path (Path): Path to initial adversarial_chat system prompt.
+        adversarial_chat_seed_prompt (str): Initial seed prompt for the adversarial chat.
         initial_adversarial_chat_prompt (str, Optional): Initial message to start the chat. Defaults to
             "How can I help you?".
         prompt_converters (Optional[list[PromptConverter]]): Converters for prompt formatting. Defaults to None.
@@ -59,11 +60,12 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         objective_target: PromptTarget,
         adversarial_chat: PromptChatTarget,
         adversarial_chat_system_prompt_path: Path = RTOSystemPromptPaths.TEXT_GENERATION.value,
-        adversarial_chat_seed_prompt: Optional[str] = "How can I help you?",
+        adversarial_chat_seed_prompt: str = "How can I help you?",
         prompt_converters: Optional[list[PromptConverter]] = None,
         max_turns: int = 5,
         objective_scorer: Scorer,
         use_score_as_feedback: bool = True,
+        batch_size: int = 1,
         verbose: bool = False,
     ) -> None:
 
@@ -81,6 +83,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
             prompt_converters=prompt_converters,
             objective_scorer=objective_scorer,
             verbose=verbose,
+            batch_size=batch_size,
         )
 
         self._prompt_normalizer = PromptNormalizer()
@@ -113,7 +116,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
 
     async def run_attack_async(
         self, *, objective: str, memory_labels: Optional[dict[str, str]] = None
-    ) -> MultiTurnAttackResult:
+    ) -> OrchestratorResult:
         """
         Executes a multi-turn red teaming attack asynchronously.
 
@@ -130,10 +133,12 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                 the passed-in labels take precedence. Defaults to None.
 
         Returns:
-            MultiTurnAttackResult: Contains the outcome of the attack, including:
-                - conversation_id (UUID): The ID associated with the final conversation state.
-                - achieved_objective (bool): Indicates whether the orchestrator successfully met the objective.
+            OrchestratorResult: Contains the outcome of the attack, including:
+                - conversation_id (str): The ID associated with the final conversation state.
                 - objective (str): The intended goal of the attack.
+                - status (OrchestratorResultStatus): The status of the attack ("success", "failure", "pruned", etc.)
+                - score (Score): The score evaluating the attack outcome.
+                - confidence (float): The confidence level of the result.
 
         Raises:
             RuntimeError: If the response from the target system contains an unexpected error.
@@ -198,10 +203,12 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                 f"number of turns ({self._max_turns}).",
             )
 
-        return MultiTurnAttackResult(
+        return OrchestratorResult(
             conversation_id=objective_target_conversation_id,
-            achieved_objective=achieved_objective,
             objective=objective,
+            status="success" if achieved_objective else "failure",
+            objective_score=score,
+            confidence=1.0 if achieved_objective else 0.0,
         )
 
     async def _retrieve_and_send_prompt_async(
