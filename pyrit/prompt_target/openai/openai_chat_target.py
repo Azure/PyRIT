@@ -27,7 +27,7 @@ from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 logger = logging.getLogger(__name__)
 
 
-class OpenAIChatTarget(OpenAITarget):
+class OpenAIChatTarget(OpenAIChatTargetBase):
     """
     This class facilitates multimodal (image and text) input and text output generation
 
@@ -61,7 +61,7 @@ class OpenAIChatTarget(OpenAITarget):
                 https://cognitiveservices.azure.com/.default . Please run `az login` locally
                 to leverage user AuthN.
             api_version (str, Optional): The version of the Azure OpenAI API. Defaults to
-                "2024-06-01".
+                "2024-10-21".
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
@@ -96,102 +96,23 @@ class OpenAIChatTarget(OpenAITarget):
                 httpx.AsyncClient() constructor.
                 For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
         """
-        super().__init__(**kwargs)
+        super().__init__(temperature=temperature, top_p=top_p, is_json_supported=is_json_supported, **kwargs)
 
         if max_completion_tokens and max_tokens:
             raise ValueError("Cannot provide both max_tokens and max_completion_tokens.")
 
         self._max_completion_tokens = max_completion_tokens
         self._max_tokens = max_tokens
-        self._temperature = temperature
-        self._top_p = top_p
         self._frequency_penalty = frequency_penalty
         self._presence_penalty = presence_penalty
         self._seed = seed
         self._n = n
-        self._is_json_supported = is_json_supported
         self._extra_body_parameters = extra_body_parameters
 
     def _set_openai_env_configuration_vars(self) -> None:
         self.model_name_environment_variable = "OPENAI_CHAT_MODEL"
         self.endpoint_environment_variable = "OPENAI_CHAT_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_CHAT_KEY"
-
-    @limit_requests_per_minute
-    @pyrit_target_retry
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        """Asynchronously sends a prompt request and handles the response within a managed conversation context.
-
-        Args:
-            prompt_request (PromptRequestResponse): The prompt request response object.
-
-        Returns:
-            PromptRequestResponse: The updated conversation entry with the response from the prompt target.
-        """
-
-        self._validate_request(prompt_request=prompt_request)
-        self.refresh_auth_headers()
-
-        request_piece: PromptRequestPiece = prompt_request.request_pieces[0]
-
-        is_json_response = self.is_response_format_json(request_piece)
-
-        conversation = self._memory.get_conversation(conversation_id=request_piece.conversation_id)
-        conversation.append(prompt_request)
-
-        logger.info(f"Sending the following prompt to the prompt target: {prompt_request}")
-
-        body = await self._construct_request_body(conversation=conversation, is_json_response=is_json_response)
-
-        params = {}
-        if self._api_version is not None:
-            params["api-version"] = self._api_version
-
-        try:
-            str_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(
-                endpoint_uri=self._endpoint,
-                method="POST",
-                headers=self._headers,
-                request_body=body,
-                params=params,
-                **self._httpx_client_kwargs,
-            )
-        except httpx.HTTPStatusError as StatusError:
-            if StatusError.response.status_code == 400:
-                # Handle Bad Request
-                error_response_text = StatusError.response.text
-                # Content filter errors are handled differently from other 400 errors.
-                # 400 Bad Request with content_filter error code indicates that the input was filtered
-                # https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/content-filter
-                try:
-                    json_error = json.loads(error_response_text)
-                    is_content_filter = json_error.get("error", {}).get("code") == "content_filter"
-                    return handle_bad_request_exception(
-                        response_text=error_response_text,
-                        request=request_piece,
-                        error_code=StatusError.response.status_code,
-                        is_content_filter=is_content_filter,
-                    )
-
-                except json.JSONDecodeError:
-                    # Not valid JSON, proceed without parsing
-                    pass
-                return handle_bad_request_exception(
-                    response_text=error_response_text,
-                    request=request_piece,
-                    error_code=StatusError.response.status_code,
-                )
-            elif StatusError.response.status_code == 429:
-                raise RateLimitException()
-            else:
-                raise
-
-        logger.info(f'Received the following response from the prompt target "{str_response.text}"')
-        response: PromptRequestResponse = self._construct_prompt_response_from_openai_json(
-            open_ai_str_response=str_response.text, request_piece=request_piece
-        )
-
-        return response
 
     async def _build_chat_messages_async(self, conversation: MutableSequence[PromptRequestResponse]) -> list[dict]:
         """Builds chat messages based on prompt request response entries.
@@ -373,7 +294,3 @@ class OpenAIChatTarget(OpenAITarget):
         for prompt_data_type in converted_prompt_data_types:
             if prompt_data_type not in ["text", "image_path"]:
                 raise ValueError("This target only supports text and image_path.")
-
-    def is_json_response_supported(self) -> bool:
-        """Indicates that this target supports JSON response format."""
-        return self._is_json_supported
