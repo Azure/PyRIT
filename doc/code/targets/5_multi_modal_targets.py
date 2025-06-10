@@ -27,7 +27,8 @@
 # %%
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_target import OpenAIDALLETarget
+from pyrit.prompt_target import OpenAIChatTarget, OpenAIDALLETarget
+from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -35,7 +36,18 @@ objective = "Give me an image of a raccoon pirate as a Spanish baker in Spain"
 
 img_prompt_target = OpenAIDALLETarget()
 
-orchestrator = PromptSendingOrchestrator(objective_target=img_prompt_target)
+image_scorer = SelfAskTrueFalseScorer(
+    chat_target=OpenAIChatTarget(),
+    true_false_question=TrueFalseQuestion(
+        true_description="The response has an image of a raccoon pirate as a Spanish baker in Spain"
+    ),
+)
+
+orchestrator = PromptSendingOrchestrator(
+    objective_target=img_prompt_target,
+    objective_scorer=image_scorer,
+)
+
 response = await orchestrator.run_attack_async(objective=objective)  # type: ignore
 await response.print_conversation_async()  # type: ignore
 
@@ -87,12 +99,14 @@ orchestrator = PromptSendingOrchestrator(
     objective_target=sora_target,
 )
 
-prompts_to_send = [
+objectives = [
     "Video of a raccoon pirate eating churros con chocolate at a cafe in Spain",
     "Video of a raccoon pirate eating a croissant at a cafe in France",
 ]
-await orchestrator.send_prompts_async(prompt_list=prompts_to_send)  # type: ignore
-await orchestrator.print_conversations_async()  # type: ignore
+responses = await orchestrator.run_attacks_async(objectives=objectives)  # type: ignore
+
+for response in responses:
+    await response.print_conversation_async()  # type: ignore
 
 
 # %% [markdown]
@@ -106,11 +120,19 @@ from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.models import SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
 
 azure_openai_gpt4o_chat_target = OpenAIChatTarget()
+
+scorer = SelfAskTrueFalseScorer(
+    chat_target=OpenAIChatTarget(),
+    true_false_question=TrueFalseQuestion(
+        true_description="The response describes the picture as an overview of PyRIT components."
+    ),
+)
 
 # use the image from our docs
 image_path = str(pathlib.Path(".") / ".." / ".." / ".." / "assets" / "pyrit_architecture.png")
@@ -131,7 +153,10 @@ seed_prompt_group = SeedPromptGroup(
 )
 
 
-orchestrator = PromptSendingOrchestrator(objective_target=azure_openai_gpt4o_chat_target)
+orchestrator = PromptSendingOrchestrator(
+    objective_target=azure_openai_gpt4o_chat_target,
+    objective_scorer=scorer,
+)
 
 result = await orchestrator.run_attack_async(objective="Describe a picture", seed_prompt=seed_prompt_group)  # type: ignore
 

@@ -58,7 +58,7 @@ class OpenAISoraTarget(OpenAITarget):
             https://cognitiveservices.azure.com/.default . Please run `az login` locally
             to leverage user AuthN.
         api_version (str, Optional): The version of the Azure OpenAI API. Defaults to
-            "2025-02-15-preview".
+            "preview".
         max_requests_per_minute (int, Optional): Number of requests the target can handle per
             minute before hitting a rate limit. The number of requests sent to the target
             will be capped at the value provided.
@@ -88,7 +88,7 @@ class OpenAISoraTarget(OpenAITarget):
         )
 
     DEFAULT_RESOLUTION_DIMENSIONS: str = "480x480"
-    DEFAULT_API_VERSION: str = "2025-02-15-preview"
+    DEFAULT_API_VERSION: str = "preview"
     DEFAULT_N_SECONDS: int = 5
     DEFAULT_N_VARIANTS: int = 1
 
@@ -240,7 +240,7 @@ class OpenAISoraTarget(OpenAITarget):
         """
 
         logger.info(f"Downloading video content for generation ID: {gen_id}")
-        uri = f"{self._endpoint}/{gen_id}/video/content"
+        uri = f"{self._endpoint}/{gen_id}/content/video"
 
         response = await self._send_httpx_request_async(
             endpoint_uri=uri,
@@ -388,6 +388,7 @@ class OpenAISoraTarget(OpenAITarget):
             dict: The request body as a dictionary.
         """
         body_parameters: dict[str, object] = {
+            "model": self._model_name,
             "prompt": prompt,
             "height": self._height,
             "width": self._width,

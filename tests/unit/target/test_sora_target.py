@@ -416,7 +416,7 @@ async def test_send_prompt_async_exceptions(
         "pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect
     ) as mock_request:
 
-        with pytest.raises(err_class) as e: # type: ignore
+        with pytest.raises(err_class) as e:  # type: ignore
             await sora_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
             assert str(e.value) == err_msg
 
