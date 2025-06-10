@@ -344,7 +344,7 @@ class TestResponseEvaluation:
         with (
             patch("pyrit.score.scorer.Scorer.score_response_async", new=AsyncMock()) as mock_score_resp,
             patch(
-                "pyrit.score.scorer.Scorer.score_response_until_success_async",
+                "pyrit.score.scorer.Scorer.score_response_select_first_success_async",
                 new=AsyncMock(return_value=success_score),
             ) as mock_score_until,
         ):
@@ -396,7 +396,7 @@ class TestResponseEvaluation:
         with (
             patch("pyrit.score.scorer.Scorer.score_response_async", new=AsyncMock()) as mock_score_resp,
             patch(
-                "pyrit.score.scorer.Scorer.score_response_until_success_async",
+                "pyrit.score.scorer.Scorer.score_response_select_first_success_async",
                 new=AsyncMock(return_value=success_score),
             ),
         ):
@@ -964,7 +964,7 @@ class TestEdgeCasesAndErrorHandling:
         with (
             patch("pyrit.score.scorer.Scorer.score_response_async", new=AsyncMock()),
             patch(
-                "pyrit.score.scorer.Scorer.score_response_until_success_async",
+                "pyrit.score.scorer.Scorer.score_response_select_first_success_async",
                 new=AsyncMock(side_effect=RuntimeError("Scorer error")),
             ),
         ):
