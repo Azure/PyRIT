@@ -41,7 +41,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
     def __init__(
         self,
         *,
-        db_path: Union[Path, str] = None,
+        db_path: Optional[Union[Path, str]] = None,
         verbose: bool = False,
     ):
         super(DuckDBMemory, self).__init__()

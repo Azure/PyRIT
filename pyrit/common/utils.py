@@ -1,13 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import logging
-import math
-import random
-from typing import List, Union
+
+from typing import List, Optional, Union
 
 
-def combine_dict(existing_dict: dict = None, new_dict: dict = None) -> dict:
+def combine_dict(existing_dict: Optional[dict] = None, new_dict: Optional[dict] = None) -> dict:
     """
     Combines two dictionaries containing string keys and values into one.
 
@@ -44,30 +42,3 @@ def combine_list(list1: Union[str, List[str]], list2: Union[str, List[str]]) -> 
     # Merge and keep only unique values
     combined = list(set(list1 + list2))
     return combined
-
-
-def get_random_indices(low: int, high: int, sample_ratio: float) -> list[int]:
-    """
-    Generate a list of random indices within a given range based on a sample ratio.
-
-    Args:
-        low: Lower bound of the range (inclusive).
-        high: Upper bound of the range (exclusive).
-        sample_ratio: Ratio of range to sample (0.0 to 1.0).
-    """
-    # Special case: return empty list
-    if sample_ratio == 0:
-        return []
-
-    result = []
-    n = math.ceil((high - low) * sample_ratio)
-
-    # Ensure at least 1 index for non-zero sample ratio
-    if sample_ratio > 0 and n == 0:
-        n = 1
-
-    try:
-        result = random.sample(range(low, high), n)
-    except ValueError:
-        logging.getLogger(__name__).debug(f"Sample size of {n} exceeds population size of {high - low}")
-    return result

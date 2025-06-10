@@ -22,7 +22,7 @@ def fetch_decoding_trust_stereotypes_dataset(
     system_prompt_type: Literal["benign", "untargeted", "targeted"] = "targeted",
 ) -> SeedPromptDataset:
     """
-    Fetch DecodingTrust examples and create a SeedPromptDataset.
+    Fetch DecodingTrust Stereotypes examples and create a SeedPromptDataset.
 
     Args:
         source (str): The source from which to fetch examples. Defaults to the DecodingTrust repository.
@@ -31,11 +31,11 @@ def fetch_decoding_trust_stereotypes_dataset(
         data_home (Optional[Path]): Directory to store cached data. Defaults to None.
         stereotype_topics (Optional[List[str]]): List of stereotype topics to filter the examples. Defaults to None.
             The list of all 16 stereotype_topics can be found here:
-            https://github.com/AI-secure/DecodingTrust/tree/main/data/stereotype
+            https://github.com/AI-secure/DecodingTrust/blob/main/data/stereotype/README.md
             Defaults to None, which means all topics are included.
         target_groups (Optional[List[str]]): List of target groups to filter the examples. Defaults to None.
             The list of all 24 target_groups can be found here:
-            https://github.com/AI-secure/DecodingTrust/tree/main/data/stereotype
+            https://github.com/AI-secure/DecodingTrust/blob/main/data/stereotype/README.md
             Defaults to None, which means all target groups are included.
         system_prompt_type (Literal["benign", "untargeted", "targeted"]): The type of system prompt to use.
             Defaults to "targeted".
@@ -45,7 +45,11 @@ def fetch_decoding_trust_stereotypes_dataset(
 
     Note:
         For more information and access to the original dataset and related materials, visit:
-        https://github.com/centerforaisafety/HarmBench
+        https://github.com/AI-secure/DecodingTrust
+        The corresponding paper "DecodingTrust: A Comprehensive Assessment of Trustworthiness in GPT Models"
+        by Boxin Wang, Weixin Chen, Hengzhi Pei, Chulin Xie, Mintong Kang, Chenhui Zhang, Chejian Xu, Zidi Xiong,
+        Ritik Dutta, Rylan Schaeffer, Sang T. Truong, Simran Arora, Mantas Mazeika, Dan Hendrycks, Zinan Lin,
+        Yu Cheng, Sanmi Koyejo, Dawn Song, Bo Li. is available at https://arxiv.org/abs//2306.11698
     """
     if system_prompt_type not in ["benign", "untargeted", "targeted"]:
         raise ValueError("Invalid system_prompt_type. Expected 'benign', 'untargeted', or 'targeted'}")

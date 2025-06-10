@@ -4,15 +4,12 @@
 import enum
 import logging
 import pathlib
-import re
 from typing import Optional
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, SeedPromptDataset
 from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
-from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_converter import PromptConverter, SearchReplaceConverter
-from pyrit.prompt_normalizer import NormalizerRequest
+from pyrit.orchestrator import OrchestratorResult, PromptSendingOrchestrator
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
 )
@@ -28,42 +25,51 @@ class ContextDescriptionPaths(enum.Enum):
 
 class ContextComplianceOrchestrator(PromptSendingOrchestrator):
     """
-    This orchestrator implements a context compliance attack
+    This orchestrator implements a context compliance attack that attempts to bypass safety measures by
+    rephrasing the objective into a more benign context. It uses an adversarial chat target to:
+    1. Rephrase the objective as a more benign question
+    2. Generate a response to the benign question
+    3. Rephrase the original objective as a follow-up question
+    This creates a context that makes it harder for the target to detect the true intent.
     """
 
     def __init__(
         self,
         objective_target: PromptChatTarget,
         adversarial_chat: PromptChatTarget,
-        prompt_converters: Optional[list[PromptConverter]] = None,
-        affirmative_response: Optional[str] = "yes.",
+        affirmative_response: str = "yes.",
         context_description_instructions_path: Optional[pathlib.Path] = None,
-        scorers: Optional[list[Scorer]] = None,
+        request_converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
+        response_converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
+        objective_scorer: Optional[Scorer] = None,
+        auxiliary_scorers: Optional[list[Scorer]] = None,
         batch_size: int = 10,
+        retries_on_objective_failure: int = 0,
         verbose: bool = False,
     ) -> None:
         """
         Args:
-            objective_target (PromptTarget): The target for sending prompts.
-            adversarial_chat (PromptTarget): The target for sending prompts.
-            prompt_converters (list[PromptConverter], Optional): List of prompt converters. These are only applied
-                to the conversation history since in this orchestrator, the latest prompt is usually just "yes"
+            objective_target (PromptChatTarget): The target for sending prompts.
+            adversarial_chat (PromptChatTarget): The target used to rephrase objectives into benign contexts.
             affirmative_response (str, Optional): The affirmative response to be used in the conversation history.
-            context_description_instructions_path (pathlib.Path, Optional): Path to the context description instructions
-                YAML file.
-            scorers (list[Scorer], Optional): List of scorers to use for each prompt request response, to be
-                scored immediately after receiving response. Default is None.
+            context_description_instructions_path (pathlib.Path, Optional): Path to the context description
+                instructions YAML file.
+            request_converter_configurations (list[PromptConverterConfiguration], Optional): List of prompt
+                converters.
+            response_converter_configurations (list[PromptConverterConfiguration], Optional): List of response
+                converters.
+            objective_scorer (Scorer, Optional): Scorer to use for evaluating if the objective was achieved.
+            auxiliary_scorers (list[Scorer], Optional): List of additional scorers to use for each prompt request
+                response.
             batch_size (int, Optional): The (max) batch size for sending prompts. Defaults to 10.
                 Note: If providing max requests per minute on the prompt_target, this should be set to 1 to
                 ensure proper rate limit management.
+            retries_on_objective_failure (int, Optional): Number of retries to attempt if objective fails. Defaults to
+                0.
             verbose (bool, Optional): Whether to log debug information. Defaults to False.
         """
 
         self._adversarial_chat = adversarial_chat
-
-        search_replace_converter = SearchReplaceConverter(
-            pattern=r"^.*\Z", replace=affirmative_response, regex_flags=re.DOTALL
-        )
 
         if context_description_instructions_path is None:
             context_description_instructions_path = ContextDescriptionPaths.GENERAL.value
@@ -75,22 +81,54 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
         self._answer_user_turn = context_description_instructions.prompts[1]
         self._rephrase_objective_to_question = context_description_instructions.prompts[2]
 
-        # these are applied to all adversarial chat responses, and ultimately to the objective target requests
-        self._conversation_history_converters = (
-            [PromptConverterConfiguration(converters=prompt_converters)] if prompt_converters else []
+        self._affirmative_seed_prompt = SeedPromptGroup(
+            prompts=[
+                SeedPrompt(
+                    value=affirmative_response,
+                    data_type="text",
+                )
+            ]
         )
 
         super().__init__(
             objective_target=objective_target,
-            prompt_converters=[search_replace_converter],
-            scorers=scorers,
+            request_converter_configurations=request_converter_configurations,
+            response_converter_configurations=response_converter_configurations,
+            objective_scorer=objective_scorer,
+            auxiliary_scorers=auxiliary_scorers,
+            should_convert_prepended_conversation=True,
             batch_size=batch_size,
+            retries_on_objective_failure=retries_on_objective_failure,
             verbose=verbose,
         )
 
-    async def get_prepended_conversation_async(
-        self, normalizer_request: NormalizerRequest
-    ) -> Optional[list[PromptRequestResponse]]:
+    async def run_attack_async(  # type: ignore[override]
+        self,
+        *,
+        objective: str,
+        memory_labels: Optional[dict[str, str]] = None,
+    ) -> OrchestratorResult:
+
+        prepended_conversation = await self._get_conversation_start(objective=objective)
+        return await super().run_attack_async(
+            objective=objective,
+            seed_prompt=self._affirmative_seed_prompt,
+            prepended_conversation=prepended_conversation,
+            memory_labels=memory_labels,
+        )
+
+    async def run_attacks_async(  # type: ignore[override]
+        self,
+        *,
+        objectives: list[str],
+        memory_labels: Optional[dict[str, str]] = None,
+    ) -> list[OrchestratorResult]:
+        return await super()._run_attacks_with_only_objectives_async(
+            objectives=objectives,
+            memory_labels=memory_labels,
+        )
+
+    async def _get_conversation_start(self, objective: str) -> Optional[list[PromptRequestResponse]]:
         """
         Returns the user turn prompts for the given list of prompts.
 
@@ -104,8 +142,6 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
         Returns:
             list[str]: The role playing prompts.
         """
-
-        objective = normalizer_request.seed_prompt_group.prompts[0].value
 
         benign_user_query = await self._get_objective_as_more_benign_question(objective=objective)
         benign_user_query_answer = await self._get_benign_question_answer(benign_user_query=benign_user_query)
@@ -135,16 +171,6 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
             ),
         ]
 
-    def validate_normalizer_requests(self, *, prompt_request_list: list[NormalizerRequest]):
-        if not prompt_request_list:
-            raise ValueError("No normalizer requests provided")
-
-        for request in prompt_request_list:
-            if len(request.seed_prompt_group.prompts) > 1:
-                raise ValueError("Multi-part messages not supported")
-            if request.seed_prompt_group.prompts[0].data_type != "text":
-                raise ValueError("Non text messages not supported")
-
     async def _get_benign_question_answer(self, benign_user_query: str) -> str:
         seed_prompt_to_get_user_turn_answer = SeedPromptGroup(
             prompts=[
@@ -159,7 +185,6 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
             await self._prompt_normalizer.send_prompt_async(
                 seed_prompt_group=seed_prompt_to_get_user_turn_answer,
                 target=self._adversarial_chat,
-                response_converter_configurations=self._conversation_history_converters,
             )
         ).get_value()
 
@@ -179,7 +204,6 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
             await self._prompt_normalizer.send_prompt_async(
                 seed_prompt_group=seed_prompt_to_get_user_turn,
                 target=self._adversarial_chat,
-                response_converter_configurations=self._conversation_history_converters,
             )
         ).get_value()
 
@@ -199,7 +223,6 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
             await self._prompt_normalizer.send_prompt_async(
                 seed_prompt_group=seed_prompt_to_get_objective_as_a_question,
                 target=self._adversarial_chat,
-                response_converter_configurations=self._conversation_history_converters,
             )
         ).get_value()
 

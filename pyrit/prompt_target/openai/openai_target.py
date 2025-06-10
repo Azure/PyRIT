@@ -4,11 +4,11 @@
 import json
 import logging
 from abc import abstractmethod
-from typing import Callable, Optional
+from typing import Optional
 
 from pyrit.auth.azure_auth import (
+    AzureAuth,
     get_default_scope,
-    get_token_provider_from_default_azure_credential,
 )
 from pyrit.common import default_values
 from pyrit.prompt_target import PromptChatTarget
@@ -25,6 +25,7 @@ class OpenAITarget(PromptChatTarget):
     api_key_environment_variable: str
 
     _model_name: Optional[str]
+    _azure_auth: Optional[AzureAuth] = None
 
     def __init__(
         self,
@@ -33,8 +34,8 @@ class OpenAITarget(PromptChatTarget):
         endpoint: Optional[str] = None,
         api_key: Optional[str] = None,
         headers: Optional[str] = None,
-        use_aad_auth: Optional[bool] = False,
-        api_version: Optional[str] = "2024-06-01",
+        use_aad_auth: bool = False,
+        api_version: Optional[str] = "2024-10-21",
         max_requests_per_minute: Optional[int] = None,
         httpx_client_kwargs: Optional[dict] = None,
     ) -> None:
@@ -51,7 +52,7 @@ class OpenAITarget(PromptChatTarget):
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
                 Defaults to the OPENAI_CHAT_KEY environment variable.
             headers (str, Optional): Extra headers of the endpoint (JSON).
-            use_aad_auth (bool, Optional): When set to True, user authentication is used
+            use_aad_auth (bool): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default . Please run `az login` locally
                 to leverage user AuthN.
@@ -87,12 +88,10 @@ class OpenAITarget(PromptChatTarget):
         ).rstrip("/")
 
         self._api_key = api_key
-        self._token_provider: Optional[Callable[[], str]] = None
 
         self._set_auth_headers(use_aad_auth=use_aad_auth, passed_api_key=api_key)
 
     def _set_auth_headers(self, use_aad_auth, passed_api_key) -> None:
-
         self._api_key = default_values.get_non_required_value(
             env_var_name=self.api_key_environment_variable, passed_value=passed_api_key
         )
@@ -105,12 +104,16 @@ class OpenAITarget(PromptChatTarget):
             self._headers["Authorization"] = f"Bearer {self._api_key}"
 
         if use_aad_auth:
-            logger.info("Authenticating with DefaultAzureCredential()")
-
+            logger.info("Authenticating with AzureAuth")
             scope = get_default_scope(self._endpoint)
-            self._token_provider = get_token_provider_from_default_azure_credential(scope=scope)
+            self._azure_auth = AzureAuth(token_scope=scope)
+            self._headers["Authorization"] = f"Bearer {self._azure_auth.get_token()}"
 
-            self._headers["Authorization"] = f"Bearer {self._token_provider()}"
+    def refresh_auth_headers(self) -> None:
+        """Refresh the authentication headers. This is particularly useful for AAD authentication
+        where tokens need to be refreshed periodically."""
+        if self._azure_auth:
+            self._headers["Authorization"] = f"Bearer {self._azure_auth.refresh_token()}"
 
     @abstractmethod
     def _set_openai_env_configuration_vars(self) -> None:

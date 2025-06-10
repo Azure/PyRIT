@@ -34,9 +34,9 @@ class OpenAITTSTarget(OpenAITarget):
         *,
         voice: TTSVoice = "alloy",
         response_format: TTSResponseFormat = "mp3",
-        language: Optional[str] = "en",
+        language: str = "en",
         speed: Optional[float] = None,
-        api_version: str = "2025-02-01-preview",
+        api_version: Optional[str] = "2025-02-01-preview",
         **kwargs,
     ):
         """
@@ -46,7 +46,7 @@ class OpenAITTSTarget(OpenAITarget):
             model_name (str, Optional): The name of the model. Defaults to "tts-1".
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-                Defaults to the OPENAI_CHAT_KEY environment variable.
+                Defaults to the OPENAI_TTS_KEY environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
             use_aad_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
@@ -61,7 +61,7 @@ class OpenAITTSTarget(OpenAITarget):
                 httpx.AsyncClient() constructor.
             voice (str, Optional): The voice to use for TTS. Defaults to "alloy".
             response_format (str, Optional): The format of the audio response. Defaults to "mp3".
-            language (str, Optional): The language for TTS. Defaults to "en".
+            language (str): The language for TTS. Defaults to "en".
             speed (float, Optional): The speed of the TTS. Select a value from 0.25 to 4.0. 1.0 is normal.
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
                 httpx.AsyncClient() constructor.
@@ -91,6 +91,9 @@ class OpenAITTSTarget(OpenAITarget):
         request = prompt_request.request_pieces[0]
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
+
+        # Refresh auth headers if using AAD
+        self.refresh_auth_headers()
 
         body = self._construct_request_body(request=request)
 
@@ -154,7 +157,7 @@ class OpenAITTSTarget(OpenAITarget):
             raise ValueError("This target only supports text prompt input.")
 
         request = prompt_request.request_pieces[0]
-        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
+        messages = self._memory.get_conversation(conversation_id=request.conversation_id)
 
         if len(messages) > 0:
             raise ValueError("This target only supports a single turn conversation.")

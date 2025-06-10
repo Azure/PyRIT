@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.17.0
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
@@ -63,8 +63,8 @@ azure_ml_chat_target._set_model_parameters(temperature=0.9, repetition_penalty=1
 
 orchestrator = PromptSendingOrchestrator(objective_target=azure_ml_chat_target)
 
-response = await orchestrator.send_prompts_async(prompt_list=["Hello! Describe yourself and the company who developed you."])  # type: ignore
-await orchestrator.print_conversations_async()  # type: ignore
+response = await orchestrator.run_attack_async(objective="Hello! Describe yourself and the company who developed you.")  # type: ignore
+await response.print_conversation_async()  # type: ignore
 
 azure_ml_chat_target.dispose_db_engine()
 

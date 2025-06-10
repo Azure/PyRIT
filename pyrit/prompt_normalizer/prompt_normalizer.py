@@ -3,7 +3,9 @@
 
 import abc
 import asyncio
+import copy
 import logging
+import traceback
 from typing import Any, List, Optional
 from uuid import uuid4
 
@@ -43,7 +45,7 @@ class PromptNormalizer(abc.ABC):
         *,
         seed_prompt_group: SeedPromptGroup,
         target: PromptTarget,
-        conversation_id: str = None,
+        conversation_id: Optional[str] = None,
         request_converter_configurations: list[PromptConverterConfiguration] = [],
         response_converter_configurations: list[PromptConverterConfiguration] = [],
         sequence: int = -1,
@@ -110,7 +112,7 @@ class PromptNormalizer(abc.ABC):
 
             error_response = construct_response_from_request(
                 request=request.request_pieces[0],
-                response_text_pieces=[str(ex)],
+                response_text_pieces=[f"{ex}\n{repr(ex)}\n{traceback.format_exc()}"],
                 response_type="error",
                 error="processing",
             )
@@ -288,7 +290,7 @@ class PromptNormalizer(abc.ABC):
         target: PromptTarget,
         sequence: int,
         labels: dict[str, str],
-        orchestrator_identifier: Optional[dict[str, str]],
+        orchestrator_identifier: Optional[dict[str, str]] = None,
     ) -> PromptRequestResponse:
         """
         Builds a prompt request response based on the given parameters.
@@ -333,3 +335,47 @@ class PromptNormalizer(abc.ABC):
 
         await self.convert_values(converter_configurations=request_converter_configurations, request_response=response)
         return response
+
+    async def add_prepended_conversation_to_memory(
+        self,
+        conversation_id: str,
+        should_convert: bool = True,
+        converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
+        orchestrator_identifier: Optional[dict[str, str]] = None,
+        prepended_conversation: Optional[list[PromptRequestResponse]] = None,
+    ) -> Optional[list[PromptRequestResponse]]:
+        """
+        Processes the prepended conversation by converting it if needed and adding it to memory.
+
+        Args:
+            conversation_id (str): The conversation ID to use for the request pieces
+            should_convert (bool): Whether to convert the prepended conversation
+            converter_configurations (Optional[list[PromptConverterConfiguration]]): Configurations for converting the
+                request
+            orchestrator_identifier (Optional[dict[str, str]]): Identifier for the orchestrator
+            prepended_conversation (Optional[list[PromptRequestResponse]]): The conversation to prepend
+
+        Returns:
+            Optional[list[PromptRequestResponse]]: The processed prepended conversation
+        """
+        if not prepended_conversation:
+            return None
+
+        # Create a deep copy of the prepended conversation to avoid modifying the original
+        prepended_conversation = copy.deepcopy(prepended_conversation)
+
+        for request in prepended_conversation:
+            if should_convert and converter_configurations:
+                await self.convert_values(request_response=request, converter_configurations=converter_configurations)
+            for piece in request.request_pieces:
+                piece.conversation_id = conversation_id
+                if orchestrator_identifier:
+                    piece.orchestrator_identifier = orchestrator_identifier
+
+                # if the piece is retrieved from somewhere else, it needs to be unique
+                # and if not, this won't hurt anything
+                piece.id = uuid4()
+
+            self._memory.add_request_response_to_memory(request=request)
+
+        return prepended_conversation
