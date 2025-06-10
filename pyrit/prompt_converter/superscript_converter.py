@@ -6,7 +6,7 @@ from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 
 class SuperscriptConverter(WordLevelConverter):
     """
-    Converts the input text to superscript text.
+    Converts text to superscript.
 
     Note: This converter leaves characters that do not have a superscript equivalent unchanged.
     """
