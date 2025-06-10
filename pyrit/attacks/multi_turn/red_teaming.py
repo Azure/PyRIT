@@ -255,9 +255,6 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             # Increment the executed turns
             context.executed_turns += 1
 
-        # Log the result of the attack
-        self._log_objective_status(context)
-
         # Prepare the result
         return AttackResult(
             attack_identifier=self.get_identifier(),
@@ -493,22 +490,6 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             return None
 
         raise RuntimeError(f"Response error: {response.response_error}")
-
-    def _log_objective_status(self, context: MultiTurnAttackContext) -> None:
-        """
-        Log the status of the objective after the attack execution.
-        This method logs whether the objective was achieved and the number of turns taken.
-
-        Args:
-            context (MultiTurnAttackContext): The attack context containing execution details.
-        """
-        if context.achieved_objective:
-            logger.info(f"Objective achieved on turn {context.executed_turns}")
-        else:
-            logger.info(
-                "The red teaming attack has not achieved the objective after the maximum "
-                f"number of turns ({context.max_turns}).",
-            )
 
     @staticmethod
     def _has_custom_prompt(state: ConversationState) -> bool:
