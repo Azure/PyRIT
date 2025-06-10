@@ -17,25 +17,25 @@
         "python.linting.mypyArgs": [
           "--cache-dir=.mypy_cache"
         ],
-        "python.analysis.typeCheckingMode": "basic",  // Changed from default "standard"
-        "python.analysis.diagnosticMode": "openFilesOnly",  // Changed from "workspace"
-        "python.analysis.autoSearchPaths": false,  // Changed from true
-        "python.analysis.indexing": false,  // Changed from true
-        "python.analysis.userFileIndexingLimit": 2000,  // Limit indexed files
-        "python.analysis.persistAllIndices": false,  // Don't persist indices
+        "python.analysis.typeCheckingMode": "basic",
+        "python.analysis.diagnosticMode": "openFilesOnly",
+        "python.analysis.autoSearchPaths": false,
+        "python.analysis.indexing": false,
+        "python.analysis.userFileIndexingLimit": 2000,
+        "python.analysis.persistAllIndices": false,
         "python.analysis.cacheFolderPath": "/home/vscode/.cache/pylance",
         "python.analysis.nodeArguments": ["--max-old-space-size=8192"],
         "python.analysis.usePullDiagnostics": true,
         "python.linting.enabled": true,
         "python.analysis.include": [
-          "pyrit/**"  // Only analyze pyrit directory
+          "pyrit/**"
         ],
         "python.analysis.exclude": [
           "/opt/conda/envs/**",
           "**/.venv/**",
           "**/site-packages/**",
-          "**/doc/**",  // Exclude documentation
-          "**/tests/**",  // Exclude tests from analysis
+          "**/doc/**",
+          "**/tests/**",
           "**/build/**",
           "**/dist/**",
           "**/__pycache__/**",
