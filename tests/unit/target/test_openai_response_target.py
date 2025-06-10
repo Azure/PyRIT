@@ -179,9 +179,9 @@ async def test_construct_request_body_includes_json(
 
     body = await target._construct_request_body(conversation=[request], is_json_response=is_json)
     if is_json:
-        assert body["response_format"] == {"type": "json_object"}
+        assert body["text"] == {"format": {"type": "json_object"}}
     else:
-        assert "response_format" not in body
+        assert "format" not in body
 
 
 @pytest.mark.asyncio

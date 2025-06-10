@@ -166,7 +166,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             "stream": False,
             "input": input,
             # json_schema not yet supported by PyRIT
-            "response_format": {"type": "json_object"} if is_json_response else None,
+            "text": { "format": {"type": "json_object"} } if is_json_response else None,
         }
 
         if self._extra_body_parameters:
