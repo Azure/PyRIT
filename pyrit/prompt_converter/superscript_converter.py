@@ -8,7 +8,8 @@ class SuperscriptConverter(WordLevelConverter):
     """
     Converts text to superscript.
 
-    Note: This converter leaves characters that do not have a superscript equivalent unchanged.
+    Note:
+        This converter leaves characters that do not have a superscript equivalent unchanged.
     """
 
     _superscript_map = {
