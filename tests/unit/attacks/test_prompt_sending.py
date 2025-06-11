@@ -8,7 +8,7 @@ import pytest
 
 from pyrit.attacks.base.attack_config import AttackConverterConfig, AttackScoringConfig
 from pyrit.attacks.base.attack_context import SingleTurnAttackContext
-from pyrit.attacks.base.attack_result import AttackResult, AttackOutcome
+from pyrit.attacks.base.attack_result import AttackOutcome, AttackResult
 from pyrit.attacks.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.exceptions.exception_classes import (
     AttackExecutionException,
@@ -685,9 +685,7 @@ class TestDetermineAttackOutcome:
         # Test with different max_attempts_on_failure values
         for max_attempts in [0, 1, 5, 10]:
             context = SingleTurnAttackContext(
-                objective="Test objective",
-                conversation_id=str(uuid.uuid4()),
-                max_attempts_on_failure=max_attempts
+                objective="Test objective", conversation_id=str(uuid.uuid4()), max_attempts_on_failure=max_attempts
             )
 
             outcome, reason = attack._determine_attack_outcome(
@@ -720,7 +718,9 @@ class TestDetermineAttackOutcome:
         assert outcome == AttackOutcome.SUCCESS
         assert reason == "Objective achieved according to scorer"
 
-    def test_determine_attack_outcome_failure_with_false_string_score(self, mock_target, sample_response, basic_context):
+    def test_determine_attack_outcome_failure_with_false_string_score(
+        self, mock_target, sample_response, basic_context
+    ):
         """Test failure detection with score value as string 'false'"""
         attack = PromptSendingAttack(objective_target=mock_target)
         attack._objective_scorer = MagicMock()
@@ -743,7 +743,9 @@ class TestDetermineAttackOutcome:
         assert outcome == AttackOutcome.FAILURE
         assert reason == "Failed to achieve objective after 3 attempts"
 
-    def test_determine_attack_outcome_success_with_uppercase_true_score(self, mock_target, sample_response, basic_context):
+    def test_determine_attack_outcome_success_with_uppercase_true_score(
+        self, mock_target, sample_response, basic_context
+    ):
         """Test success detection with uppercase 'True' score value"""
         attack = PromptSendingAttack(objective_target=mock_target)
         attack._objective_scorer = MagicMock()
@@ -766,7 +768,9 @@ class TestDetermineAttackOutcome:
         assert outcome == AttackOutcome.SUCCESS
         assert reason == "Objective achieved according to scorer"
 
-    def test_determine_attack_outcome_failure_with_uppercase_false_score(self, mock_target, sample_response, basic_context):
+    def test_determine_attack_outcome_failure_with_uppercase_false_score(
+        self, mock_target, sample_response, basic_context
+    ):
         """Test failure detection with uppercase 'False' score value"""
         attack = PromptSendingAttack(objective_target=mock_target)
         attack._objective_scorer = MagicMock()
@@ -794,9 +798,7 @@ class TestDetermineAttackOutcome:
         attack = PromptSendingAttack(objective_target=mock_target)
         attack._objective_scorer = MagicMock()
 
-        outcome, reason = attack._determine_attack_outcome(
-            response=sample_response, score=None, context=basic_context
-        )
+        outcome, reason = attack._determine_attack_outcome(response=sample_response, score=None, context=basic_context)
 
         assert outcome == AttackOutcome.FAILURE
         assert reason == "Failed to achieve objective after 3 attempts"
@@ -809,9 +811,7 @@ class TestDetermineAttackOutcome:
         # Create an empty response
         empty_response = PromptRequestResponse(request_pieces=[])
 
-        outcome, reason = attack._determine_attack_outcome(
-            response=empty_response, score=None, context=basic_context
-        )
+        outcome, reason = attack._determine_attack_outcome(response=empty_response, score=None, context=basic_context)
 
         assert outcome == AttackOutcome.FAILURE
         assert reason == "Failed to achieve objective after 3 attempts"
@@ -952,7 +952,9 @@ class TestEdgeCasesAndErrorHandling:
 
         # Verify it still executes
         assert result.executed_turns == 1
-        attack._send_prompt_to_objective_target_async.assert_called_with(prompt_group=minimal_group, context=basic_context)
+        attack._send_prompt_to_objective_target_async.assert_called_with(
+            prompt_group=minimal_group, context=basic_context
+        )
 
     @pytest.mark.asyncio
     async def test_evaluate_response_handles_scorer_exception(

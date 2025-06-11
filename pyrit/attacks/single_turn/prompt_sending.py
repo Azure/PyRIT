@@ -5,10 +5,10 @@ import logging
 import uuid
 from typing import Optional
 
-from pyrit.attacks.base.attack_strategy import AttackStrategy
 from pyrit.attacks.base.attack_config import AttackConverterConfig, AttackScoringConfig
 from pyrit.attacks.base.attack_context import SingleTurnAttackContext
-from pyrit.attacks.base.attack_result import AttackResult, AttackOutcome
+from pyrit.attacks.base.attack_result import AttackOutcome, AttackResult
+from pyrit.attacks.base.attack_strategy import AttackStrategy
 from pyrit.attacks.components.conversation_manager import ConversationManager
 from pyrit.common.utils import combine_dict
 from pyrit.models import (
@@ -180,11 +180,7 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
                 break
 
         # Determine the outcome
-        outcome, outcome_reason = self._determine_attack_outcome(
-            response=response,
-            score=score,
-            context=context
-        )
+        outcome, outcome_reason = self._determine_attack_outcome(response=response, score=score, context=context)
 
         result = AttackResult(
             conversation_id=context.conversation_id,
@@ -200,11 +196,7 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
         return result
 
     def _determine_attack_outcome(
-        self,
-        *,
-        response: Optional[PromptRequestResponse],
-        score: Optional[Score],
-        context: SingleTurnAttackContext
+        self, *, response: Optional[PromptRequestResponse], score: Optional[Score], context: SingleTurnAttackContext
     ) -> tuple[AttackOutcome, Optional[str]]:
         """
         Determine the outcome of the attack based on the response and score.
@@ -220,15 +212,18 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
         if not self._objective_scorer:
             # No scorer means we can't determine success/failure
             return AttackOutcome.UNDETERMINED, "No objective scorer configured"
-        
+
         if score and score.get_value():
             # We have a positive score, so it's a success
             return AttackOutcome.SUCCESS, "Objective achieved according to scorer"
-        
+
         if response:
             # We got response(s) but none achieved the objective
-            return AttackOutcome.FAILURE, f"Failed to achieve objective after {context.max_attempts_on_failure + 1} attempts"
-        
+            return (
+                AttackOutcome.FAILURE,
+                f"Failed to achieve objective after {context.max_attempts_on_failure + 1} attempts",
+            )
+
         # No response at all (all attempts filtered/failed)
         return AttackOutcome.FAILURE, "All attempts were filtered or failed to get a response"
 
@@ -301,9 +296,7 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
         role: ChatMessageRole = "assistant"
 
         # Run auxiliary scorers (no return value needed)
-        await Scorer.score_response_async(
-            response=response, scorers=self._auxiliary_scorers, role_filter=role
-        )
+        await Scorer.score_response_async(response=response, scorers=self._auxiliary_scorers, role_filter=role)
 
         # Run objective scorer
         if self._objective_scorer:

@@ -497,7 +497,9 @@ async def test_score_response_select_first_success_async_parallel_scoring_per_pi
     scorer2 = MockScorer()
     scorer2.score_async = mock_score_async_2
 
-    await Scorer.score_response_select_first_success_async(response=response, scorers=[scorer1, scorer2], task="test task")
+    await Scorer.score_response_select_first_success_async(
+        response=response, scorers=[scorer1, scorer2], task="test task"
+    )
 
     # Verify that for each piece, both scorers are called before moving to next piece
     # (parallel execution per piece, but sequential piece processing)

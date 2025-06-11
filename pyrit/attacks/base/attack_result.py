@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, TypeVar, Dict, Any
+from typing import Any, Dict, Optional, TypeVar
 
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.score import Score
@@ -17,6 +17,7 @@ class AttackOutcome(Enum):
     """
     Enum representing the possible outcomes of an attack.
     """
+
     # The attack was successful in achieving its objective
     SUCCESS = "success"
 
@@ -62,6 +63,6 @@ class AttackResult:
     # Optional reason for the outcome, providing additional context
     outcome_reason: Optional[str] = None
 
-    # Additional information 
+    # Additional information
     # Metadata can be included as key-value pairs to provide extra context
     metadata: Dict[str, Any] = field(default_factory=dict)

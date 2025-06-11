@@ -2,8 +2,8 @@
 # Licensed under the MIT license.
 
 from dataclasses import dataclass, field
-from typing import List, Optional, Union
 from pathlib import Path
+from typing import List, Optional, Union
 
 from pyrit.models.seed_prompt import SeedPrompt
 from pyrit.prompt_normalizer import (
