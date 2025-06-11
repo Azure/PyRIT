@@ -175,6 +175,7 @@ async def test_connect_sora(duckdb_instance):
     target = OpenAISoraTarget(
         endpoint=os.getenv("OPENAI_SORA_ENDPOINT"),
         api_key=os.getenv("OPENAI_SORA_KEY"),
+        model_name=os.getenv("OPENAI_SORA_MODEL"),
     )
 
     await _assert_can_send_prompt(target, check_if_llm_interpreted_request=False)

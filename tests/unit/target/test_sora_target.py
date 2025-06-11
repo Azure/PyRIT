@@ -141,7 +141,7 @@ def test_initialization_with_required_parameters(sora_target: OpenAISoraTarget):
     assert sora_target._n_seconds == 5
     assert sora_target._n_variants == 1
     assert sora_target._output_filename is None
-    assert sora_target._api_version == "2025-02-15-preview"
+    assert sora_target._api_version == "preview"
 
 
 @pytest.mark.parametrize(
