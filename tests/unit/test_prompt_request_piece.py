@@ -670,3 +670,70 @@ def test_construct_response_from_request_no_metadata():
     assert response_piece.original_value_data_type == "text"
     assert response_piece.converted_value_data_type == "text"
     assert response_piece.response_error == "none"
+
+
+@pytest.mark.parametrize(
+    "response_error,expected_has_error",
+    [
+        ("none", False),
+        ("blocked", True),
+        ("processing", True),
+        ("unknown", True),
+        ("empty", True),
+    ],
+)
+def test_prompt_request_piece_has_error(response_error, expected_has_error):
+    entry = PromptRequestPiece(
+        role="assistant",
+        original_value="Test response",
+        response_error=response_error,
+    )
+    assert entry.has_error() == expected_has_error
+
+
+@pytest.mark.parametrize(
+    "response_error,expected_is_blocked",
+    [
+        ("none", False),
+        ("blocked", True),
+        ("processing", False),
+        ("unknown", False),
+        ("empty", False),
+    ],
+)
+def test_prompt_request_piece_is_blocked(response_error, expected_is_blocked):
+    entry = PromptRequestPiece(
+        role="assistant",
+        original_value="Test response",
+        response_error=response_error,
+    )
+    assert entry.is_blocked() == expected_is_blocked
+
+
+def test_prompt_request_piece_has_error_and_is_blocked_consistency():
+    # Test that is_blocked implies has_error
+    blocked_entry = PromptRequestPiece(
+        role="assistant",
+        original_value="Blocked response",
+        response_error="blocked",
+    )
+    assert blocked_entry.is_blocked() is True
+    assert blocked_entry.has_error() is True
+
+    # Test that not all errors are blocks
+    error_entry = PromptRequestPiece(
+        role="assistant",
+        original_value="Error response",
+        response_error="unknown",
+    )
+    assert error_entry.is_blocked() is False
+    assert error_entry.has_error() is True
+
+    # Test that no error means not blocked
+    no_error_entry = PromptRequestPiece(
+        role="assistant",
+        original_value="Success response",
+        response_error="none",
+    )
+    assert no_error_entry.is_blocked() is False
+    assert no_error_entry.has_error() is False

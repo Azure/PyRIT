@@ -57,8 +57,9 @@ RUN mkdir -p /home/vscode/.cache/pre-commit \
  && mkdir -p /home/vscode/.vscode-server \
  && mkdir -p /home/vscode/.cache/pip \
  && mkdir -p /home/vscode/.cache/conda \
+ && mkdir -p /home/vscode/.cache/pylance \
  && chown -R vscode:vscode /home/vscode/.cache /home/vscode/.vscode-server \
- && chmod -R 777 /home/vscode/.cache/conda /home/vscode/.cache/pip \
+ && chmod -R 777 /home/vscode/.cache/conda /home/vscode/.cache/pip /home/vscode/.cache/pylance \
  && chmod -R 755 /home/vscode/.vscode-server
 
 USER vscode
