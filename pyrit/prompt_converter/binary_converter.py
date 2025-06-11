@@ -62,3 +62,8 @@ class BinaryConverter(WordLevelConverter):
         bits = self.bits_per_char.value
         # Convert each character in the word to its binary representation
         return " ".join(format(ord(char), f"0{bits}b") for char in word)
+
+    def join_words(self, words: list[str]) -> str:
+        """Join the converted words with the binary representation of a space."""
+        space_binary = format(ord(" "), f"0{self.bits_per_char.value}b")
+        return f" {space_binary} ".join(words)
