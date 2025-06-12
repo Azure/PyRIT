@@ -74,6 +74,11 @@ class OpenAIChatTargetBase(OpenAITarget):
         """
         super().__init__(**kwargs)
 
+        if temperature is not None and (temperature < 0 or temperature > 2):
+            raise PyritException("temperature must be between 0 and 2 (inclusive).")
+        if top_p is not None and (top_p < 0 or top_p > 1):
+            raise PyritException("top_p must be between 0 and 1 (inclusive).")
+
         self._temperature = temperature
         self._top_p = top_p
         self._is_json_supported = is_json_supported
