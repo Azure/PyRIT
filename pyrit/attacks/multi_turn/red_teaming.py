@@ -172,9 +172,6 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         logger.debug(f"Conversation session ID: {context.session.conversation_id}")
         logger.debug(f"Adversarial chat conversation ID: {context.session.adversarial_chat_conversation_id}")
 
-        # Explicitly set achieved objective to False
-        context.achieved_objective = False
-
         # Update the conversation state with the current context
         conversation_state: ConversationState = await self._conversation_manager.update_conversation_state_async(
             target=self._objective_target,
@@ -234,8 +231,11 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         # 4) Check if the attack objective has been achieved
         # 5) Repeat steps 1-4 until objective is achieved or max turns are reached
 
+        # Track achievement status locally to avoid concurrency issues
+        achieved_objective = False
+
         # Execute conversation turns
-        while context.executed_turns < context.max_turns and not context.achieved_objective:
+        while context.executed_turns < context.max_turns and not achieved_objective:
             logger.info(f"Executing turn {context.executed_turns + 1}/{context.max_turns}")
 
             # Determine what to send next
@@ -250,7 +250,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             context.last_score = score
 
             # Check if objective achieved
-            context.achieved_objective = self._score_evaluator.is_objective_achieved(score=score)
+            achieved_objective = self._score_evaluator.is_objective_achieved(score=score)
 
             # Increment the executed turns
             context.executed_turns += 1
@@ -260,7 +260,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             attack_identifier=self.get_identifier(),
             conversation_id=context.session.conversation_id,
             objective=context.objective,
-            outcome=(AttackOutcome.SUCCESS if context.achieved_objective else AttackOutcome.FAILURE),
+            outcome=(AttackOutcome.SUCCESS if achieved_objective else AttackOutcome.FAILURE),
             executed_turns=context.executed_turns,
             last_response=context.last_response,
             last_score=context.last_score,

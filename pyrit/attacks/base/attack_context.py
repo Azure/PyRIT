@@ -23,9 +23,6 @@ class AttackContext:
     # Natural-language description of what the attack tries to achieve
     objective: str
 
-    # Indicates whether the objective has already been fulfilled
-    achieved_objective: bool = False
-
     # Conversation that is automatically prepended to the target model
     prepended_conversation: List[PromptRequestResponse] = field(default_factory=list)
 

@@ -115,9 +115,6 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
         # Ensure the context has a conversation ID
         context.conversation_id = str(uuid.uuid4())
 
-        # Initialize achieved_objective to False
-        context.achieved_objective = False
-
         # Combine memory labels from context and attack strategy
         context.memory_labels = combine_dict(self._memory_labels, context.memory_labels)
 
