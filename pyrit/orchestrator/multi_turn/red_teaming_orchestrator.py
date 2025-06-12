@@ -7,9 +7,9 @@ import enum
 import logging
 import warnings
 from pathlib import Path
-from typing import LiteralString, Optional, cast
+from typing import Optional, cast
 
-from typing_extensions import deprecated
+from typing_extensions import LiteralString, deprecated
 
 from pyrit.attacks import (
     AttackAdversarialConfig,

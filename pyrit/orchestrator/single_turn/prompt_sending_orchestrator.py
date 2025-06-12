@@ -2,9 +2,9 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Any, LiteralString, Optional, Sequence, cast
+from typing import Any, Optional, Sequence, cast
 
-from typing_extensions import deprecated
+from typing_extensions import LiteralString, deprecated
 
 from pyrit.attacks import (
     AttackConverterConfig,
