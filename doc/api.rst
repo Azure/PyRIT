@@ -93,6 +93,7 @@ API Reference
     get_available_files
     get_httpx_client
     get_non_required_value
+    get_random_indices
     get_required_value
     initialize_pyrit
     is_in_ipython_session
@@ -290,7 +291,7 @@ API Reference
     BinaryConverter
     CaesarConverter
     CharacterSpaceConverter
-    CharSwapGenerator
+    CharSwapConverter
     CodeChameleonConverter
     ColloquialWordswapConverter
     ConverterResult

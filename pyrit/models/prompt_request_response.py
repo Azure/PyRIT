@@ -31,6 +31,16 @@ class PromptRequestResponse:
         """Return the converted values of all request pieces."""
         return [request_piece.converted_value for request_piece in self.request_pieces]
 
+    def get_piece(self, n: int = 0) -> PromptRequestPiece:
+        """Return the nth request piece."""
+        if len(self.request_pieces) == 0:
+            raise ValueError("Empty request pieces.")
+
+        if n >= len(self.request_pieces):
+            raise IndexError(f"No request piece at index {n}.")
+
+        return self.request_pieces[n]
+
     def validate(self):
         """
         Validates the request response.
@@ -59,6 +69,18 @@ class PromptRequestResponse:
         for request_piece in self.request_pieces:
             ret += str(request_piece) + "\n"
         return "\n".join([str(request_piece) for request_piece in self.request_pieces])
+
+    def filter_by_role(self, *, role: ChatMessageRole) -> Sequence[PromptRequestPiece]:
+        """
+        Filters the request pieces by role.
+
+        Args:
+            role (ChatMessageRole): The role to filter by.
+
+        Returns:
+            Sequence[PromptRequestPiece]: A sequence of request pieces that match the specified role.
+        """
+        return [piece for piece in self.request_pieces if piece.role == role]
 
     @staticmethod
     def flatten_to_prompt_request_pieces(
@@ -154,9 +176,8 @@ def construct_response_from_request(
     Constructs a response entry from a request.
     """
 
-    # prompt metadat should be combined with the request piece metadata
     if request.prompt_metadata:
-        prompt_metadata = combine_dict(request.prompt_metadata, prompt_metadata)
+        prompt_metadata = combine_dict(request.prompt_metadata, prompt_metadata or {})
 
     return PromptRequestResponse(
         request_pieces=[
