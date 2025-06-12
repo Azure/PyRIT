@@ -146,12 +146,16 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
                 ChatMessageListDictContent(role=role, content=content).model_dump(exclude_none=True)  # type: ignore
             )
         
+        self._translate_roles(conversation=full_request)
+        
+        return full_request
+    
+    def _translate_roles(self, conversation: List[Dict[str, Any]]) -> None:
         # The "system" role is mapped to "developer" in the OpenAI Response API.
-        for request in full_request:
+        for request in conversation:
             if request.get("role") == "system":
                 request["role"] = "developer"
 
-        return full_request
 
     async def _construct_request_body(
         self, conversation: MutableSequence[PromptRequestResponse], is_json_response: bool
@@ -183,10 +187,13 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         request_piece: PromptRequestPiece,
     ) -> PromptRequestResponse:
 
+        response = ""
         try:
             response = json.loads(open_ai_str_response)
         except json.JSONDecodeError as e:
-            raise PyritException(message=f"Failed to parse JSON response. Please check your endpoint: {e}")
+            response_start = response[:100]
+            raise PyritException(
+                message=f"Failed to parse response from model {self._model_name} at {self._endpoint} as JSON.\nResponse: {response_start}\nFull error: {e}")
 
         status = response.get("status")
         error = response.get("error")
@@ -207,7 +214,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         
         # Extract response pieces from the response object
         extracted_response_pieces = []
-        for section in response["output"]:
+        for section in response.get("output", []):
             piece = self._parse_response_output_section(
                 section=section,
                 request_piece=request_piece,
@@ -228,14 +235,19 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
 
     def _parse_response_output_section(self, *, section: dict, request_piece: PromptRequestPiece, error: Optional[PromptResponseError]) -> PromptRequestPiece | None:
         piece_type: PromptDataType = "text"
-        if section["type"] == "message":
-            piece_value = section["content"][0]["text"]
-        elif section["type"] == "reasoning":
+        section_type = section.get("type", "")
+        if section_type == "message":
+            section_content = section.get("content", [])
+            if len(section_content) == 0:
+                raise EmptyResponseException(message="The chat returned an empty message section.")
+            
+            piece_value = section_content[0].get("text", "")
+        elif section_type == "reasoning":
             piece_value = ""
             piece_type = "reasoning"
-            for summary_piece in section["summary"]:
-                if summary_piece["type"] == "summary_text":
-                    piece_value += summary_piece["text"]
+            for summary_piece in section.get("summary", []):
+                if summary_piece.get("type", "") == "summary_text":
+                    piece_value += summary_piece.get("text", "")
             if not piece_value:
                 return None  # Skip empty reasoning summaries
         else:
@@ -243,12 +255,11 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             # "web_search_call", "computer_call", "code_interpreter_call", "local_shell_call",
             # "mcp_call", "mcp_list_tools", "mcp_approval_request"
             raise ValueError(
-                f"Unsupported response type: {section['type']}. PyRIT does not yet support this response type."
+                f"Unsupported response type: {section_type}. PyRIT does not yet support this response type."
             )
 
         # Handle empty response
         if not piece_value:
-            logger.log(logging.ERROR, "The chat returned an empty response.")
             raise EmptyResponseException(message="The chat returned an empty response.")
 
         return PromptRequestPiece(
