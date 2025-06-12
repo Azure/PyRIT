@@ -202,7 +202,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
 
         # Handle error responses
         if status is None:
-            if error and "code" in error and error["code"] == "content_filter":
+            if error and error.get("code", "") == "content_filter":
                 # TODO validate that this is correct with AOAI
                 # Content filter with status 200 indicates that the model output was filtered
                 # https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/content-filter
