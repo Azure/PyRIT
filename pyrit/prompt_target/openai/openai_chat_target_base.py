@@ -7,21 +7,17 @@ from typing import Any, MutableSequence, Optional
 
 import httpx
 
-from pyrit.common import convert_local_image_to_data_url, net_utility
+from pyrit.common import net_utility
 from pyrit.exceptions import (
-    EmptyResponseException,
     PyritException,
     handle_bad_request_exception,
     pyrit_target_retry,
 )
 from pyrit.exceptions.exception_classes import RateLimitException
 from pyrit.models import (
-    ChatMessageListDictContent,
     PromptRequestPiece,
     PromptRequestResponse,
-    construct_response_from_request,
 )
-from pyrit.models.chat_message import ChatMessage
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
@@ -164,7 +160,7 @@ class OpenAIChatTargetBase(OpenAITarget):
         self, conversation: MutableSequence[PromptRequestResponse], is_json_response: bool
     ) -> dict:
         raise NotImplementedError
-    
+
     def _construct_prompt_response_from_openai_json(
         self,
         *,
@@ -172,7 +168,7 @@ class OpenAIChatTargetBase(OpenAITarget):
         request_piece: PromptRequestPiece,
     ) -> PromptRequestResponse:
         raise NotImplementedError
-    
+
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""
         return self._is_json_supported

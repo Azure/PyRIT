@@ -12,12 +12,12 @@ from pyrit.exceptions import (
     handle_bad_request_exception,
 )
 from pyrit.models import (
+    ChatMessage,
     ChatMessageListDictContent,
+    PromptDataType,
     PromptRequestPiece,
     PromptRequestResponse,
-    ChatMessage,
-    PromptDataType,
-    PromptResponseError
+    PromptResponseError,
 )
 from pyrit.prompt_target.openai.openai_chat_target_base import OpenAIChatTargetBase
 
@@ -68,7 +68,9 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
                 httpx.AsyncClient() constructor.
                 For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
         """
-        super().__init__(api_version=api_version, temperature=temperature, top_p=top_p, is_json_supported=is_json_supported, **kwargs)
+        super().__init__(
+            api_version=api_version, temperature=temperature, top_p=top_p, is_json_supported=is_json_supported, **kwargs
+        )
 
         self._max_output_tokens = max_output_tokens
 
@@ -145,17 +147,16 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             full_request.append(
                 ChatMessageListDictContent(role=role, content=content).model_dump(exclude_none=True)  # type: ignore
             )
-        
+
         self._translate_roles(conversation=full_request)
-        
+
         return full_request
-    
+
     def _translate_roles(self, conversation: List[Dict[str, Any]]) -> None:
         # The "system" role is mapped to "developer" in the OpenAI Response API.
         for request in conversation:
             if request.get("role") == "system":
                 request["role"] = "developer"
-
 
     async def _construct_request_body(
         self, conversation: MutableSequence[PromptRequestResponse], is_json_response: bool
@@ -170,7 +171,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             "stream": False,
             "input": input,
             # json_schema not yet supported by PyRIT
-            "text": { "format": {"type": "json_object"} } if is_json_response else None,
+            "text": {"format": {"type": "json_object"}} if is_json_response else None,
         }
 
         if self._extra_body_parameters:
@@ -193,7 +194,8 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         except json.JSONDecodeError as e:
             response_start = response[:100]
             raise PyritException(
-                message=f"Failed to parse response from model {self._model_name} at {self._endpoint} as JSON.\nResponse: {response_start}\nFull error: {e}")
+                message=f"Failed to parse response from model {self._model_name} at {self._endpoint} as JSON.\nResponse: {response_start}\nFull error: {e}"
+            )
 
         status = response.get("status")
         error = response.get("error")
@@ -211,36 +213,32 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
                 raise PyritException(message=f"Unexpected response format: {response}. Expected 'status' key.")
         elif status != "completed" or error is not None:
             raise PyritException(message=f"Status {status} and error {error} from response: {response}")
-        
+
         # Extract response pieces from the response object
         extracted_response_pieces = []
         for section in response.get("output", []):
-            piece = self._parse_response_output_section(
-                section=section,
-                request_piece=request_piece,
-                error=error
-            )
+            piece = self._parse_response_output_section(section=section, request_piece=request_piece, error=error)
 
             if piece is None:
                 continue
 
-            extracted_response_pieces.append(
-                piece                
-            )
+            extracted_response_pieces.append(piece)
 
         if not extracted_response_pieces:
             raise PyritException(message="No valid response pieces found in the response.")
 
         return PromptRequestResponse(request_pieces=extracted_response_pieces)
 
-    def _parse_response_output_section(self, *, section: dict, request_piece: PromptRequestPiece, error: Optional[PromptResponseError]) -> PromptRequestPiece | None:
+    def _parse_response_output_section(
+        self, *, section: dict, request_piece: PromptRequestPiece, error: Optional[PromptResponseError]
+    ) -> PromptRequestPiece | None:
         piece_type: PromptDataType = "text"
         section_type = section.get("type", "")
         if section_type == "message":
             section_content = section.get("content", [])
             if len(section_content) == 0:
                 raise EmptyResponseException(message="The chat returned an empty message section.")
-            
+
             piece_value = section_content[0].get("text", "")
         elif section_type == "reasoning":
             piece_value = ""

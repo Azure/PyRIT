@@ -5,16 +5,12 @@ import json
 import logging
 from typing import Any, MutableSequence, Optional
 
-import httpx
-
-from pyrit.common import convert_local_image_to_data_url, net_utility
+from pyrit.common import convert_local_image_to_data_url
 from pyrit.exceptions import (
     EmptyResponseException,
     PyritException,
     handle_bad_request_exception,
-    pyrit_target_retry,
 )
-from pyrit.exceptions.exception_classes import RateLimitException
 from pyrit.models import (
     ChatMessageListDictContent,
     PromptRequestPiece,
@@ -22,7 +18,7 @@ from pyrit.models import (
     construct_response_from_request,
 )
 from pyrit.models.chat_message import ChatMessage
-from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
+from pyrit.prompt_target.openai.openai_chat_target_base import OpenAIChatTargetBase
 
 logger = logging.getLogger(__name__)
 
