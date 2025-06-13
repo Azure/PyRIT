@@ -114,9 +114,13 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
 
         # Initialize adversarial configuration
         self._adversarial_chat = attack_adversarial_config.target
-        self._set_adversarial_chat_system_prompt_template(
-            system_prompt_template_path=attack_adversarial_config.system_prompt_path
-            or RTOSystemPromptPaths.TEXT_GENERATION.value
+        system_prompt_template_path = (
+            attack_adversarial_config.system_prompt_path or RTOSystemPromptPaths.TEXT_GENERATION.value
+        )
+        self._adversarial_chat_system_prompt_template = SeedPrompt.from_yaml_with_required_parameters(
+            template_path=system_prompt_template_path,
+            required_parameters=["objective"],
+            error_message="Adversarial seed prompt must have an objective",
         )
         self._set_adversarial_chat_seed_prompt(seed_prompt=attack_adversarial_config.seed_prompt)
 
@@ -239,7 +243,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             logger.info(f"Executing turn {context.executed_turns + 1}/{context.max_turns}")
 
             # Determine what to send next
-            prompt_to_send = await self._generate_next_prompt(context=context)
+            prompt_to_send = await self._generate_next_prompt_async(context=context)
 
             # Send the generated prompt to the objective target
             target_response = await self._send_prompt_to_objective_target_async(context=context, prompt=prompt_to_send)
@@ -271,7 +275,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         # Nothing to be done here, no-op
         pass
 
-    async def _generate_next_prompt(self, context: MultiTurnAttackContext) -> str:
+    async def _generate_next_prompt_async(self, context: MultiTurnAttackContext) -> str:
         """
         Generate the next prompt to be sent to the target during the red teaming attack.
 
@@ -550,23 +554,3 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             self._adversarial_chat_seed_prompt = seed_prompt
         else:
             raise ValueError("Seed prompt must be a string or SeedPrompt object.")
-
-    def _set_adversarial_chat_system_prompt_template(self, *, system_prompt_template_path: Union[str, Path]) -> None:
-        """
-        Set the system prompt template for the adversarial chat.
-        This method loads the system prompt template from a YAML file and checks if it contains an objective.
-
-        Args:
-            system_prompt_template_path (Union[str, Path]): Path to the YAML file containing the system prompt template.
-
-        Raises:
-            ValueError: If the system prompt template does not contain an objective.
-        """
-        # Load the system prompt template from the specified YAML file
-        sp = SeedPrompt.from_yaml_file(system_prompt_template_path)
-
-        if sp.parameters is None or "objective" not in sp.parameters:
-            raise ValueError(f"Adversarial seed prompt must have an objective: '{sp}'")
-
-        # Set the system prompt template for the adversarial chat
-        self._adversarial_chat_system_prompt_template = sp

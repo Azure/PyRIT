@@ -517,7 +517,7 @@ class TestPromptGeneration:
         basic_context.executed_turns = 0
         basic_context.custom_prompt = first_prompt
 
-        result = await attack._generate_next_prompt(context=basic_context)
+        result = await attack._generate_next_prompt_async(context=basic_context)
 
         assert result == first_prompt
         # Should not call adversarial chat
@@ -549,7 +549,7 @@ class TestPromptGeneration:
 
         # Mock build_adversarial_prompt
         with patch.object(attack, "_build_adversarial_prompt", new_callable=AsyncMock, return_value="Built prompt"):
-            result = await attack._generate_next_prompt(context=basic_context)
+            result = await attack._generate_next_prompt_async(context=basic_context)
 
         assert result == sample_response.get_value()
         mock_prompt_normalizer.send_prompt_async.assert_called_once()
@@ -580,7 +580,7 @@ class TestPromptGeneration:
         # Mock build_adversarial_prompt
         with patch.object(attack, "_build_adversarial_prompt", new_callable=AsyncMock, return_value="Built prompt"):
             with pytest.raises(ValueError, match="Received no response from adversarial chat"):
-                await attack._generate_next_prompt(context=basic_context)
+                await attack._generate_next_prompt_async(context=basic_context)
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -916,7 +916,7 @@ class TestAttackExecution:
         )
 
         # Mock methods
-        with patch.object(attack, "_generate_next_prompt", new_callable=AsyncMock, return_value="Attack prompt"):
+        with patch.object(attack, "_generate_next_prompt_async", new_callable=AsyncMock, return_value="Attack prompt"):
             with patch.object(
                 attack,
                 "_send_prompt_to_objective_target_async",
@@ -954,7 +954,7 @@ class TestAttackExecution:
 
         # Mock methods to always fail
         with patch.object(
-            attack, "_generate_next_prompt", new_callable=AsyncMock, return_value="Attack prompt"
+            attack, "_generate_next_prompt_async", new_callable=AsyncMock, return_value="Attack prompt"
         ) as mock_generate:
             with patch.object(
                 attack,

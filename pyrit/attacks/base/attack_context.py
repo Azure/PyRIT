@@ -72,6 +72,12 @@ class MultiTurnAttackContext(AttackContext):
     # Optional custom prompt that overrides the default one for the next turn
     custom_prompt: Optional[str] = None
 
+    # Text that was refused by the target in the previous attempt (used for backtracking)
+    refused_text: Optional[str] = None
+
+    # Counter for number of backtracks performed during the attack
+    backtrack_count: int = 0
+
 
 @dataclass
 class SingleTurnAttackContext(AttackContext):

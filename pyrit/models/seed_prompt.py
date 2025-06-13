@@ -9,6 +9,7 @@ import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, Optional, Sequence, Union
 
 from jinja2 import BaseLoader, Environment, StrictUndefined, Template, Undefined
@@ -194,6 +195,33 @@ class SeedPrompt(YamlLoadable):
                     f"Getting audio/video data via TinyTag is not supported for {self.value}.\
                                 If needed, update metadata manually."
                 )
+
+    @classmethod
+    def from_yaml_with_required_parameters(
+        cls, template_path: Union[str, Path], required_parameters: list[str], error_message: Optional[str] = None
+    ) -> "SeedPrompt":
+        """
+        Load a SeedPrompt from a YAML file and validate that it contains specific parameters.
+
+        Args:
+            template_path: Path to the YAML file containing the template.
+            required_parameters: List of parameter names that must exist in the template.
+            error_message: Custom error message if validation fails. If None, a default message is used.
+
+        Returns:
+            SeedPrompt: The loaded and validated seed prompt.
+
+        Raises:
+            ValueError: If the template doesn't contain all required parameters.
+        """
+        sp = cls.from_yaml_file(template_path)
+
+        if sp.parameters is None or not all(param in sp.parameters for param in required_parameters):
+            if error_message is None:
+                error_message = f"Template must have these parameters: {', '.join(required_parameters)}"
+            raise ValueError(f"{error_message}: '{sp}'")
+
+        return sp
 
 
 class SeedPromptGroup(YamlLoadable):
