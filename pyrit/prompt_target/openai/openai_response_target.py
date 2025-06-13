@@ -72,9 +72,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
                 httpx.AsyncClient() constructor.
                 For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
         """
-        super().__init__(
-            api_version=api_version, temperature=temperature, top_p=top_p, **kwargs
-        )
+        super().__init__(api_version=api_version, temperature=temperature, top_p=top_p, **kwargs)
 
         self._max_output_tokens = max_output_tokens
 
@@ -198,7 +196,8 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         except json.JSONDecodeError as e:
             response_start = response[:100]
             raise PyritException(
-                message=f"Failed to parse response from model {self._model_name} at {self._endpoint} as JSON.\nResponse: {response_start}\nFull error: {e}"
+                message=f"Failed to parse response from model {self._model_name} at {self._endpoint} as JSON.\n"
+                f"Response: {response_start}\nFull error: {e}"
             )
 
         status = response.get("status")
