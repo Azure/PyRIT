@@ -5,7 +5,7 @@ import abc
 import json
 import uuid
 from abc import abstractmethod
-from typing import Dict, Literal, Optional, Sequence
+from typing import Dict, Optional, Sequence
 
 from pyrit.exceptions import (
     InvalidJsonException,
@@ -38,13 +38,19 @@ class Scorer(abc.ABC):
 
     def get_scorer_metrics(self, dataset_name: str):
         """
-        Prints evaluation statistics for the scorer in json format.
+        Returns evaluation statistics for the scorer using the dataset_name of the human labeled dataset that this
+        scorer was run against. If you did not evaluate the scorer against your own human labeled dataset, you can
+        use this method to retrieve metrics based on a pre-existing dataset name, which is often a 'harm_category'
+        or 'objective'. For example, to retrieve metrics for the 'hate_speech' harm, you would pass 'hate_speech' as the
+        the dataset_name.
+
+        The existing metrics can be found in the 'dataset/score/scorer_evals' directory within either
+        the 'harm' or 'objective' subdirectory.
 
         Args:
-            dataset_name (str): The name of the dataset on which the scorer evaluation was run. This is used to 
-                inform the name of the metrics file saved in the `scorer_evals` directory and is often a 
-                'harm_category' or 'objective'. For example, to retrieve metrics for the 'hate_speech' harm,
-                you would pass 'harm' as the scorer_type and 'hate_speech' as the dataset_name.
+            dataset_name (str): The name of the dataset on which the scorer evaluation was run. This is used to
+                inform the name of the metrics file to read in the `scorer_evals` directory and is often a
+                'harm_category' or 'objective'.
 
         Returns:
             ScorerMetrics: A ScorerMetrics object containing the saved evaluation statistics for the scorer.
@@ -58,8 +64,7 @@ class Scorer(abc.ABC):
         return scorer_evaluator.get_scorer_metrics(metrics_type=metrics_type, dataset_name=dataset_name)
 
     @abstractmethod
-    async def score_async(
-        self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Score the request_response, add the results to the database
         and return a list of Score objects.
@@ -74,8 +79,7 @@ class Scorer(abc.ABC):
         raise NotImplementedError("score_async method not implemented")
 
     @abstractmethod
-    def validate(
-        self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
+    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
         """
         Validates the request_response piece to score. Because some scorers may require
         specific PromptRequestPiece types or values.

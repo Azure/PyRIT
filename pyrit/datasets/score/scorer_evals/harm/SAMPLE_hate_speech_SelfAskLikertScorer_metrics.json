@@ -1,0 +1,10 @@
+{
+    "mean_absolute_error": 0.15555555555555556,
+    "mae_standard_error": 0.03226689113277704,
+    "t_statistic": -0.6339667779924166,
+    "p_value": 0.5363239606383386,
+    "krippendorff_alpha_combined": 0.6613005332988628,
+    "krippendorff_alpha_humans": 0.6594786524638434,
+    "krippendorff_alpha_model": null,
+    "type": "harm"
+}
