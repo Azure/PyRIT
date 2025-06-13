@@ -23,9 +23,6 @@ class AttackContext:
     # Natural-language description of what the attack tries to achieve
     objective: str
 
-    # Indicates whether the objective has already been fulfilled
-    achieved_objective: bool = False
-
     # Conversation that is automatically prepended to the target model
     prepended_conversation: List[PromptRequestResponse] = field(default_factory=list)
 
@@ -49,7 +46,7 @@ class ConversationSession:
     # Unique identifier of the main conversation between the attacker and model
     conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
-    # Separate identifier used when the attack leverages an “adversarial chat”
+    # Separate identifier used when the attack leverages an adversarial chat
     adversarial_chat_conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
 

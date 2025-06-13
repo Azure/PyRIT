@@ -25,6 +25,7 @@ from pyrit.common.print import print_chat_messages_with_color
 from pyrit.common.singleton import Singleton
 from pyrit.common.utils import combine_dict, combine_list, get_random_indices
 from pyrit.common.yaml_loadable import YamlLoadable
+from pyrit.common.deprecation import deprecation_message
 
 __all__ = [
     "AZURE_SQL",
@@ -49,4 +50,5 @@ __all__ = [
     "print_chat_messages_with_color",
     "Singleton",
     "YamlLoadable",
+    "deprecation_message",
 ]

@@ -334,24 +334,15 @@ class TestContextValidation:
 class TestSetupPhase:
     """Tests for the setup phase of the attack."""
 
-    @pytest.mark.parametrize(
-        "initial_value,expected_value",
-        [
-            (True, False),  # Test it gets reset
-            (False, False),  # Test it stays false
-        ],
-    )
     @pytest.mark.asyncio
-    async def test_setup_initializes_achieved_objective(
+    async def test_setup_initializes_conversation_session(
         self,
         mock_objective_target: MagicMock,
         mock_objective_scorer: MagicMock,
         mock_adversarial_chat: MagicMock,
         basic_context: MultiTurnAttackContext,
-        initial_value: bool,
-        expected_value: bool,
     ):
-        """Test that setup correctly initializes the achieved_objective flag."""
+        """Test that setup correctly initializes a conversation session."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
         scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
 
@@ -361,14 +352,13 @@ class TestSetupPhase:
             attack_scoring_config=scoring_config,
         )
 
-        basic_context.achieved_objective = initial_value
-
         # Mock conversation manager
         mock_state = ConversationState(turn_count=0)
         with patch.object(attack._conversation_manager, "update_conversation_state_async", return_value=mock_state):
             await attack._setup_async(context=basic_context)
 
-        assert basic_context.achieved_objective == expected_value
+        assert basic_context.session is not None
+        assert isinstance(basic_context.session, ConversationSession)
 
     @pytest.mark.asyncio
     async def test_setup_updates_turn_count_from_prepended_conversation(

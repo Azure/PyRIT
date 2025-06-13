@@ -194,19 +194,6 @@ class TestSetupPhase:
     """Tests for the setup phase of the attack"""
 
     @pytest.mark.asyncio
-    async def test_setup_initializes_achieved_objective_to_false(self, mock_target, basic_context):
-        attack = PromptSendingAttack(objective_target=mock_target)
-        attack._conversation_manager = MagicMock()
-        attack._conversation_manager.update_conversation_state_async = AsyncMock()
-
-        # Set to True to verify it gets reset
-        basic_context.achieved_objective = True
-
-        await attack._setup_async(context=basic_context)
-
-        assert basic_context.achieved_objective is False
-
-    @pytest.mark.asyncio
     async def test_setup_merges_memory_labels_correctly(self, mock_target, basic_context):
         attack = PromptSendingAttack(objective_target=mock_target)
 
