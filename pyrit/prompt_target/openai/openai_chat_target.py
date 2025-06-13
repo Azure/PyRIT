@@ -92,7 +92,7 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
                 httpx.AsyncClient() constructor.
                 For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
         """
-        super().__init__(temperature=temperature, top_p=top_p, is_json_supported=is_json_supported, **kwargs)
+        super().__init__(temperature=temperature, top_p=top_p, **kwargs)
 
         if max_completion_tokens and max_tokens:
             raise ValueError("Cannot provide both max_tokens and max_completion_tokens.")

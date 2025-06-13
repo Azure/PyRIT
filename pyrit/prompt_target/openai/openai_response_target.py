@@ -63,13 +63,17 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
                 randomness of the response.
             top_p (float, Optional): The top-p parameter for controlling the diversity of the
                 response.
+            is_json_supported (bool, Optional): If True, the target will supports formatting responses as JSON by
+                setting the response_format header. Official OpenAI models all support this, but if you are using
+                this target with different models, is_json_supported should be set correctly to avoid issues when
+                using adversarial infrastructure (e.g. Crescendo scorers will set this flag).
             extra_body_parameters (dict, Optional): Additional parameters to be included in the request body.
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
                 httpx.AsyncClient() constructor.
                 For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
         """
         super().__init__(
-            api_version=api_version, temperature=temperature, top_p=top_p, is_json_supported=is_json_supported, **kwargs
+            api_version=api_version, temperature=temperature, top_p=top_p, **kwargs
         )
 
         self._max_output_tokens = max_output_tokens
