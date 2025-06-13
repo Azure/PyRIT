@@ -46,7 +46,7 @@ class ConversationSession:
     # Unique identifier of the main conversation between the attacker and model
     conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
-    # Separate identifier used when the attack leverages an “adversarial chat” - “adversarial chat”
+    # Separate identifier used when the attack leverages an adversarial chat
     adversarial_chat_conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
 
