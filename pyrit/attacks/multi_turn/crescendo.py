@@ -36,6 +36,7 @@ from pyrit.score import (
     FloatScaleThresholdScorer,
     SelfAskRefusalScorer,
     SelfAskScaleScorer,
+    Scorer,
 )
 
 logger = logging.getLogger(__name__)
@@ -65,6 +66,7 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         *,
         objective_target: PromptTarget,
         attack_adversarial_config: AttackAdversarialConfig,
+        scoring_target: Optional[PromptChatTarget] = None,
         attack_converter_config: Optional[AttackConverterConfig] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         max_backtracks: int = 10,
@@ -74,12 +76,13 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         Initialize the Crescendo attack strategy.
 
         Args:
-            objective_target: The target system to attack.
-            attack_adversarial_config: Configuration for the adversarial component.
-            attack_converter_config: Configuration for attack converters. Defaults to None.
-            attack_scoring_config: Configuration for attack scoring. Defaults to None.
-            max_backtracks: Maximum number of times to backtrack during the attack. Must be positive.
-            prompt_normalizer: The prompt normalizer to use for sending prompts. Defaults to None.
+            objective_target (PromptTarget): The target system to attack.
+            attack_adversarial_config (AttackAdversarialConfig): Configuration for the adversarial component.
+            attack_converter_config (Optional[AttackConverterConfig]): Configuration for attack converters. Defaults to None.
+            attack_scoring_config (Optional[AttackScoringConfig]): Configuration for attack scoring. Defaults to None.
+            max_backtracks (int): Maximum number of times to backtrack during the attack. Must be positive.
+            prompt_normalizer (Optional[PromptNormalizer]): The prompt normalizer to use for sending prompts. Defaults to None.
+            scoring_target (Optional[PromptChatTarget]): The target to use for scoring. Defaults to adversarial chat.
 
         Raises:
             ValueError: If max_backtracks is not positive or if objective target is not a PromptChatTarget.
@@ -104,10 +107,11 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         
         # If no objective scorer provided, create the default Crescendo scorer
         if not attack_scoring_config.objective_scorer:
-            scoring_target = attack_adversarial_config.target  # Use adversarial chat as scoring target by default
+            # Use provided scoring target or default to adversarial chat
+            scoring_chat_target = scoring_target or attack_adversarial_config.target
             attack_scoring_config.objective_scorer = FloatScaleThresholdScorer(
                 scorer=SelfAskScaleScorer(
-                    chat_target=scoring_target,
+                    chat_target=scoring_chat_target,
                     scale_arguments_path=SelfAskScaleScorer.ScalePaths.TASK_ACHIEVED_SCALE.value,
                     system_prompt_path=SelfAskScaleScorer.SystemPaths.RED_TEAMER_SYSTEM_PROMPT.value,
                 ),
@@ -117,10 +121,11 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         self._objective_scorer = attack_scoring_config.objective_scorer
         self._use_score_as_feedback = attack_scoring_config.use_score_as_feedback
         self._successful_objective_threshold = attack_scoring_config.successful_objective_threshold
+        self._auxiliary_scorers = attack_scoring_config.auxiliary_scorers
 
-        # Initialize refusal scorer
-        self._refusal_scorer = SelfAskRefusalScorer(
-            chat_target=attack_adversarial_config.target,
+        # Initialize refusal scorer - use the one from config if provided, otherwise create default
+        self._refusal_scorer = attack_scoring_config.refusal_scorer or SelfAskRefusalScorer(
+            chat_target=scoring_target or attack_adversarial_config.target,
         )
 
         # Initialize adversarial configuration
@@ -157,7 +162,7 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         Validate the context before executing the attack.
 
         Args:
-            context: The context to validate.
+            context (MultiTurnAttackContext): The context to validate.
 
         Raises:
             ValueError: If the context is invalid.
@@ -176,7 +181,7 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         Prepare the strategy for execution.
 
         Args:
-            context: Attack context with configuration
+            context (MultiTurnAttackContext): Attack context with configuration
         """
         # Ensure the context has a session
         context.session = ConversationSession()
@@ -230,7 +235,7 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         until the objective is achieved or the maximum turns are reached.
 
         Args:
-            context: The attack context containing configuration and state.
+            context (MultiTurnAttackContext): The attack context containing configuration and state.
 
         Returns:
             AttackResult: The result of the attack execution.
@@ -280,11 +285,10 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
                 continue
 
             # Score the response
-            objective_score = await self._score_response_async(context=context, response=target_response)
-            context.last_score = objective_score
+            context.last_score = await self._score_response_async(context=context, response=target_response)
 
             # Check if objective achieved
-            achieved_objective = self._score_evaluator.is_objective_achieved(score=objective_score)
+            achieved_objective = self._score_evaluator.is_objective_achieved(score=context.last_score)
 
             # Increment the executed turns
             context.executed_turns += 1
@@ -302,7 +306,12 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         )
 
     async def _teardown_async(self, *, context: MultiTurnAttackContext) -> None:
-        """Clean up after attack execution"""
+        """
+        Clean up after attack execution
+
+        Args:
+            context (MultiTurnAttackContext): The attack context.
+        """
         # Nothing to be done here, no-op
         pass
 
@@ -317,8 +326,8 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         Generate the next attack prompt using the adversarial chat.
 
         Args:
-            context: The attack context.
-            refused_text: Text that was refused by the target (if any).
+            context (MultiTurnAttackContext): The attack context.
+            refused_text (str): Text that was refused by the target (if any).
 
         Returns:
             str: The generated attack prompt.
@@ -345,8 +354,8 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         Build the prompt to send to the adversarial chat.
         
         Args:
-            context: The attack context.
-            refused_text: Text that was refused by the target (if any).
+            context (MultiTurnAttackContext): The attack context.
+            refused_text (str): Text that was refused by the target (if any).
             
         Returns:
             str: The prompt text to send to adversarial chat.
@@ -395,8 +404,8 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         Send a prompt to the adversarial chat and get the response.
         
         Args:
-            prompt_text: The prompt text to send.
-            context: The attack context.
+            prompt_text (str): The prompt text to send.
+            context (MultiTurnAttackContext): The attack context.
             
         Returns:
             str: The response text from the adversarial chat.
@@ -426,7 +435,7 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         Parse and validate the JSON response from the adversarial chat.
         
         Args:
-            response_text: The response text to parse.
+            response_text (str): The response text to parse.
             
         Returns:
             str: The generated question from the response.
@@ -468,8 +477,8 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         Send the attack prompt to the objective target.
 
         Args:
-            attack_prompt: The prompt to send.
-            context: The attack context.
+            attack_prompt (str): The prompt to send.
+            context (MultiTurnAttackContext): The attack context.
 
         Returns:
             PromptRequestPiece: The target's response.
@@ -496,8 +505,8 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         Check if the response indicates a refusal.
 
         Args:
-            response: The response to check.
-            task: The task/prompt that was sent.
+            response (PromptRequestPiece): The response to check.
+            task (str): The task/prompt that was sent.
 
         Returns:
             Score: The refusal score.
@@ -512,12 +521,24 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         Score the target's response.
 
         Args:
-            context: The attack context.
-            response: The response to score.
+            context (MultiTurnAttackContext): The attack context.
+            response (PromptRequestPiece): The response to score.
 
         Returns:
             Score: The objective score.
         """
+        # First, run auxiliary scorers if configured
+        if self._auxiliary_scorers:
+            logger.debug(f"Running {len(self._auxiliary_scorers)} auxiliary scorers")
+            # Convert the PromptRequestPiece to a PromptRequestResponse for scoring
+            response_wrapper = PromptRequestResponse(request_pieces=[response])
+            await Scorer.score_response_async(
+                response=response_wrapper,
+                scorers=self._auxiliary_scorers,
+                role_filter="assistant"
+            )
+
+        # Then run the objective scorer
         scores = await self._objective_scorer.score_async(
             request_response=response,
             task=context.objective,
@@ -535,14 +556,13 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         Duplicate the conversation excluding the last turn.
 
         Args:
-            conversation_id: The current conversation ID.
+            conversation_id (str): The current conversation ID.
 
         Returns:
             str: The new conversation ID after backtracking.
         """
-        # Access memory through the conversation manager's prompt normalizer
-        memory = self._prompt_normalizer._memory
-        new_conversation_id = memory.duplicate_conversation_excluding_last_turn(
+        # Access memory through the conversation manager's memory instance
+        new_conversation_id = self._memory.duplicate_conversation_excluding_last_turn(
             new_orchestrator_id=self.get_identifier()["id"],
             conversation_id=conversation_id,
         )
@@ -555,7 +575,7 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         Retrieve refusal text and objective score from the last assistant message in prepended conversation.
 
         Args:
-            state: The conversation state.
+            state (ConversationState): The conversation state.
 
         Returns:
             tuple: (refused_text, objective_score)
@@ -585,7 +605,7 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         assistant message scores (meaning it hasn't been responded to yet).
 
         Args:
-            state: The conversation state.
+            state (ConversationState): The conversation state.
 
         Returns:
             Optional[str]: The custom prompt if applicable.
@@ -600,7 +620,7 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         Set the system prompt template for the adversarial chat.
 
         Args:
-            system_prompt_template_path: Path to the system prompt template.
+            system_prompt_template_path (Union[Path, str]): Path to the system prompt template.
 
         Raises:
             ValueError: If the template doesn't contain required parameters.
@@ -620,7 +640,7 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         generate a new attack prompt using the adversarial chat based on previous feedback.
 
         Args:
-            context: The attack context containing the current state and configuration.
+            context (MultiTurnAttackContext): The attack context containing the current state and configuration.
 
         Returns:
             str: The generated prompt to be sent to the target.
@@ -650,9 +670,9 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         Check if the response indicates a refusal and perform backtracking if needed.
 
         Args:
-            context: The attack context.
-            response: The target's response to check.
-            prompt_sent: The prompt that was sent to the target.
+            context (MultiTurnAttackContext): The attack context.
+            response (PromptRequestPiece): The target's response to check.
+            prompt_sent (str): The prompt that was sent to the target.
 
         Returns:
             bool: True if backtracking was performed, False otherwise.
