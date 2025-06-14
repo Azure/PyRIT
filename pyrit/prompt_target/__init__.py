@@ -23,6 +23,7 @@ from pyrit.prompt_target.hugging_face.hugging_face_endpoint_target import Huggin
 from pyrit.prompt_target.openai.openai_completion_target import OpenAICompletionTarget
 from pyrit.prompt_target.openai.openai_dall_e_target import OpenAIDALLETarget
 from pyrit.prompt_target.openai.openai_realtime_target import RealtimeTarget
+from pyrit.prompt_target.openai.openai_sora_target import OpenAISoraTarget
 from pyrit.prompt_target.openai.openai_tts_target import OpenAITTSTarget
 from pyrit.prompt_target.playwright_target import PlaywrightTarget
 from pyrit.prompt_target.prompt_shield_target import PromptShieldTarget
@@ -44,6 +45,7 @@ __all__ = [
     "OpenAICompletionTarget",
     "OpenAIDALLETarget",
     "OpenAIChatTarget",
+    "OpenAISoraTarget",
     "OpenAITTSTarget",
     "OpenAITarget",
     "PlaywrightTarget",
