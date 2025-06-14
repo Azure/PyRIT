@@ -1,34 +1,39 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.models import PromptDataType
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+import re
+from typing import List, Optional, Union
+
+from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 
 
-class StringJoinConverter(PromptConverter):
+class StringJoinConverter(WordLevelConverter):
+    """Converts text by joining its characters with the specified join value"""
 
-    def __init__(self, *, join_value="-"):
-        self.join_value = join_value
-
-    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+    def __init__(
+        self,
+        *,
+        join_value="-",
+        indices: Optional[List[int]] = None,
+        keywords: Optional[List[str]] = None,
+        proportion: Optional[float] = None,
+        regex: Optional[Union[str, re.Pattern]] = None,
+    ):
         """
-        Simple converter that uses str join for letters between. E.g. with a `-`
-        it converts a prompt of `test` to `t-e-s-t`
-
-        This can sometimes bypass LLM logic
+        Initialize the converter.
+        This class allows for selection of words to convert based on various criteria.
+        Only one selection parameter may be provided at a time (indices, keywords, proportion, or regex).
+        If no selection parameter is provided, all words will be converted.
 
         Args:
-            prompt (str): The prompt to be converted.
-
-        Returns:
-            list[str]: The converted prompts.
+            join_value (str): The string used to join characters of each word.
+            indices (Optional[List[int]]): Specific indices of words to convert.
+            keywords (Optional[List[str]]): Keywords to select words for conversion.
+            proportion (Optional[float]): Proportion of randomly selected words to convert [0.0-1.0].
+            regex (Optional[Union[str, re.Pattern]]): Regex pattern to match words for conversion.
         """
-        if not self.input_supported(input_type):
-            raise ValueError("Input type not supported")
-        return ConverterResult(output_text=self.join_value.join(prompt), output_type="text")
+        super().__init__(indices=indices, keywords=keywords, proportion=proportion, regex=regex)
+        self.join_value = join_value
 
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"
+    async def convert_word_async(self, word: str) -> str:
+        return self.join_value.join(word)

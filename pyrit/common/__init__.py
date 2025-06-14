@@ -22,8 +22,9 @@ from pyrit.common.net_utility import get_httpx_client, make_request_and_raise_if
 from pyrit.common.notebook_utils import is_in_ipython_session
 from pyrit.common.print import print_chat_messages_with_color
 from pyrit.common.singleton import Singleton
-from pyrit.common.utils import combine_dict, combine_list
+from pyrit.common.utils import combine_dict, combine_list, get_random_indices
 from pyrit.common.yaml_loadable import YamlLoadable
+from pyrit.common.deprecation import deprecation_message
 
 __all__ = [
     "AZURE_SQL",
@@ -39,6 +40,7 @@ __all__ = [
     "get_available_files",
     "get_httpx_client",
     "get_non_required_value",
+    "get_random_indices",
     "get_required_value",
     "initialize_pyrit",
     "is_in_ipython_session",
@@ -46,4 +48,5 @@ __all__ = [
     "print_chat_messages_with_color",
     "Singleton",
     "YamlLoadable",
+    "deprecation_message",
 ]

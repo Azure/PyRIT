@@ -69,7 +69,7 @@ converters = [
     ),
     (
         "text",
-        {"type": "CharSwapGenerator"},
+        {"type": "CharSwapConverter"},
     ),
     (
         "text",

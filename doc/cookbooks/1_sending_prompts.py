@@ -57,7 +57,7 @@ print(len(groups))
 # %%
 from pyrit.models import PromptRequestResponse, SeedPromptGroup
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_converter.charswap_attack_converter import CharSwapGenerator
+from pyrit.prompt_converter.charswap_attack_converter import CharSwapConverter
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
 )
@@ -100,8 +100,8 @@ objective_scorer = CompositeScorer(
 
 # Configure any converter configurations you want before you send the prompts
 # These can be applied on selective indexes or datatypes, and will be applied in order
-# E.g. CharSwapGenerator
-converters = PromptConverterConfiguration.from_converters(converters=[CharSwapGenerator()])
+# E.g. CharSwapConverter
+converters = PromptConverterConfiguration.from_converters(converters=[CharSwapConverter()])
 
 
 # Configure the orchestrator you want to use. This is the basis of your attack strategy.
