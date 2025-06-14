@@ -55,7 +55,9 @@ class TextJailBreak:
             # Get all yaml files but exclude those in multi_parameter subdirectory
             yaml_files = [f for f in jailbreak_dir.rglob("*.yaml") if "multi_parameter" not in f.parts]
             if not yaml_files:
-                raise ValueError("No YAML templates found in jailbreak directory (excluding multi_parameter subdirectory)")
+                raise ValueError(
+                    "No YAML templates found in jailbreak directory (excluding multi_parameter subdirectory)"
+                )
 
             if template_file_name:
                 matching_files = [f for f in yaml_files if f.name == template_file_name]
@@ -70,7 +72,7 @@ class TextJailBreak:
                 while True:
                     random_template_path = random.choice(yaml_files)
                     self.template = SeedPrompt.from_yaml_file(random_template_path)
-                    
+
                     if self.template.parameters == ["prompt"]:
                         break
 
@@ -85,7 +87,7 @@ class TextJailBreak:
 
         # Apply any kwargs to the template, preserving the prompt parameter for later use
         if kwargs:
-            kwargs.pop('prompt', None)
+            kwargs.pop("prompt", None)
             # Apply remaining kwargs to the template while preserving template variables
             self.template.value = self.template.render_template_value_silent(**kwargs)
 

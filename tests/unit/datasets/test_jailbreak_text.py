@@ -88,23 +88,24 @@ def test_all_templates_have_single_prompt_parameter(jailbreak_dir):
         try:
             jailbreak = TextJailBreak(template_path=str(template_file))
             template_params = jailbreak.template.parameters
-            
+
             prompt_params = [p for p in template_params if p == "prompt"]
-            assert len(prompt_params) == 1, f"Template {template_file.name} has {len(prompt_params)} prompt parameters in definition, expected 1"
-            assert len(template_params) == 1, f"Template {template_file.name} has {len(template_params)} parameters in definition, expected 1"
+            assert (
+                len(prompt_params) == 1
+            ), f"Template {template_file.name} has {len(prompt_params)} prompt parameters in definition, expected 1"
+            assert (
+                len(template_params) == 1
+            ), f"Template {template_file.name} has {len(template_params)} parameters in definition, expected 1"
             if len(template_params) > 1:
-                print (f"Template {template_file.name} has {len(template_params)} parameters in definition, expected 1")
+                print(f"Template {template_file.name} has {len(template_params)} parameters in definition, expected 1")
         except Exception as e:
             pytest.fail(f"Failed processing template file '{template_file.name}': {str(e)}")
 
 
 def test_template_with_multiple_parameters_success(jailbreak_dir):
     """Test that a template with multiple parameters works when all required parameters are provided."""
-    template_path = jailbreak_dir / "dt_stereotypes_targeted.yaml"
-    jailbreak = TextJailBreak(
-        template_path=str(template_path),
-        target_group="specific_group"
-    )
+    template_path = jailbreak_dir / "multi_parameter" / "dt_stereotypes_targeted.yaml"
+    jailbreak = TextJailBreak(template_path=str(template_path), target_group="specific_group")
     result = jailbreak.get_jailbreak("Tell me a joke")
     assert "specific_group" in result
     assert "Tell me a joke" in result
@@ -112,21 +113,23 @@ def test_template_with_multiple_parameters_success(jailbreak_dir):
     assert "{{ target_group }}" not in result
 
 
-def test_template_with_multiple_parameters_missing():
+def test_template_with_multiple_parameters_missing(jailbreak_dir):
     """Test that an error is raised when required parameters are missing."""
+    template_path = jailbreak_dir / "multi_parameter" / "dt_stereotypes_targeted.yaml"
+
     with pytest.raises(ValueError, match="Template requires parameters that were not provided"):
         TextJailBreak(
-            template_file_name="dt_stereotypes_targeted.yaml",
+            template_path=str(template_path),
         )
 
 
 def test_template_with_multiple_parameters_prompt_ignored(jailbreak_dir):
     """Test that providing 'prompt' in kwargs is ignored since it's handled separately."""
-    template_path = jailbreak_dir / "dt_stereotypes_targeted.yaml"
+    template_path = jailbreak_dir / "multi_parameter" / "dt_stereotypes_targeted.yaml"
     jailbreak = TextJailBreak(
         template_path=str(template_path),
         target_group="specific_group",
-        prompt="This should be ignored"  # This should be ignored in init
+        prompt="This should be ignored",  # This should be ignored in init
     )
     result = jailbreak.get_jailbreak("Tell me a joke")
     assert "specific_group" in result
