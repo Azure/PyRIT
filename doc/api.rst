@@ -321,6 +321,7 @@ API Reference
     SearchReplaceConverter
     StringJoinConverter
     SuffixAppendConverter
+    SuperscriptConverter
     TenseConverter
     TextToHexConverter
     ToneConverter
