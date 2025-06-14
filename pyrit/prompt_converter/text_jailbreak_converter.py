@@ -9,8 +9,6 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 class TextJailbreakConverter(PromptConverter):
 
     def __init__(self, *, jailbreak_template: TextJailBreak):
-        if jailbreak_template is None:
-            raise TypeError("jail_break cannot be None")
         self.jail_break_template = jailbreak_template
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:

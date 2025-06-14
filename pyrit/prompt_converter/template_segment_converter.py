@@ -17,7 +17,7 @@ class TemplateSegmentConverter(PromptConverter):
     """
     A PromptConverter that uses a template to split a prompt into segments defined by the template.
 
-    This is a generalized version of this
+    This converter is a generalized version of this
     https://adversa.ai/blog/universal-llm-jailbreak-chatgpt-gpt-4-bard-bing-anthropic-and-beyond/
     """
 

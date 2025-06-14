@@ -62,9 +62,3 @@ async def test_convert_async_with_empty_prompt(converter, mock_jailbreak):
     mock_jailbreak.get_jailbreak.assert_called_once_with(prompt=prompt)
     assert result.output_text == "Modified prompt: {prompt}"
     assert result.output_type == "text"
-
-
-def test_init_with_none_jailbreak():
-    """Test initialization with None jailbreak raises TypeError"""
-    with pytest.raises(TypeError):
-        TextJailbreakConverter(jailbreak_template=None)  # type: ignore
