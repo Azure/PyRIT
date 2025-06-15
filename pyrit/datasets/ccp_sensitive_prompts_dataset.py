@@ -31,6 +31,8 @@ def fetch_ccp_sensitive_prompts_dataset(
 
     Note:
         For more information, see https://huggingface.co/datasets/promptfoo/CCP-sensitive-prompts
+        Author: promptfoo (Hugging Face user)
+        Purpose: Collection of prompts that cover sensitive topics in China, and are likely to be censored by Chinese models.
     """
     file_type = source.split(".")[-1]
     if file_type not in FILE_TYPE_HANDLERS:
@@ -39,32 +41,26 @@ def fetch_ccp_sensitive_prompts_dataset(
 
     # Required keys 
     required_keys = {"subject", "prompt"}
-    raw_prompts = []
-    subjects = set()
 
     examples = fetch_examples(source, source_type, cache, data_home)
-
-    # collect data
+    seed_prompts = []
     for ex in examples:
         missing = required_keys - ex.keys()
         if missing:
-            raise ValueError(f"Missing keys")
-        raw_prompts.append(ex["prompt"])
-        subjects.add(ex["subject"])
+            raise ValueError(f"Missing keys: {missing} in {ex}")
 
-    # Create SeedPrompt
-    seed_prompts = [
-        SeedPrompt(
-            value=txt,
-            data_type="text",
-            name="CCP Sensitive Prompts",
-            dataset_name="CCP-sensitive-prompts",
-            harm_categories=list(subjects),
-            description=(
-                "These prompts cover sensitive topics in China, and are likely to be censored by Chinese models."
-            ),
+        # Create SeedPrompt
+        seed_prompts.append(
+            SeedPrompt(
+                value=ex["prompt"],
+                data_type="text",
+                name="CCP Sensitive Prompts",
+                dataset_name="CCP-sensitive-prompts",
+                harm_categories=[ex["subject"]],
+                description=(
+                    "Prompts censored by Chinese models, covering topics sensitive to the CCP."
+                ),
+            )
         )
-        for txt in raw_prompts
-    ]
 
     return SeedPromptDataset(prompts=seed_prompts)
