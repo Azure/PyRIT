@@ -29,7 +29,7 @@ from pyrit.exceptions import (
     pyrit_json_retry,
     remove_markdown_json,
 )
-from pyrit.models import PromptRequestPiece, Score, SeedPrompt, SeedPromptGroup
+from pyrit.models import Score, SeedPrompt, SeedPromptGroup, PromptRequestResponse
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import (
@@ -267,16 +267,14 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
 
             # Send the generated prompt to the objective target
             logger.debug(f"Sending prompt to target: {prompt_to_send[:100]}...")
-            target_response = await self._send_prompt_to_objective_target_async(
+            context.last_response = await self._send_prompt_to_objective_target_async(
                 attack_prompt=prompt_to_send,
                 context=context,
             )
-            context.last_response = target_response
 
             # Check for refusal and backtrack if needed
             backtracked = await self._perform_backtrack_if_refused_async(
                 context=context,
-                response=target_response,
                 prompt_sent=prompt_to_send,
             )
             
@@ -285,7 +283,7 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
                 continue
 
             # Score the response
-            context.last_score = await self._score_response_async(context=context, response=target_response)
+            context.last_score = await self._score_response_async(context=context)
 
             # Check if objective achieved
             achieved_objective = self._score_evaluator.is_objective_achieved(score=context.last_score)
@@ -300,7 +298,7 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             objective=context.objective,
             outcome=(AttackOutcome.SUCCESS if achieved_objective else AttackOutcome.FAILURE),
             executed_turns=context.executed_turns + 1,
-            last_response=context.last_response,
+            last_response=context.last_response.get_piece() if context.last_response else None,
             last_score=context.last_score,
             metadata={"backtrack_count": context.backtrack_count},
         )
@@ -472,7 +470,7 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         *,
         attack_prompt: str,
         context: MultiTurnAttackContext,
-    ) -> PromptRequestPiece:
+    ) -> PromptRequestResponse:
         """
         Send the attack prompt to the objective target.
 
@@ -481,7 +479,10 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             context (MultiTurnAttackContext): The attack context.
 
         Returns:
-            PromptRequestPiece: The target's response.
+            PromptRequestResponse: The response from the objective target.
+
+        Raises:
+            ValueError: If no response is received from the objective target.
         """
         seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=attack_prompt, data_type="text")])
 
@@ -498,52 +499,54 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         if not response:
             raise ValueError("No response received from objective target")
 
-        return response.request_pieces[0]
+        return response
 
-    async def _check_refusal_async(self, response: PromptRequestPiece, task: str) -> Score:
+    async def _check_refusal_async(self, context: MultiTurnAttackContext, task: str) -> Score:
         """
         Check if the response indicates a refusal.
 
         Args:
-            response (PromptRequestPiece): The response to check.
+            context (MultiTurnAttackContext): The attack context containing the response to check.
             task (str): The task/prompt that was sent.
 
         Returns:
             Score: The refusal score.
         """
-        scores = await self._refusal_scorer.score_async(request_response=response, task=task)
+        if not context.last_response:
+            raise ValueError("No response available in context to check for refusal")
+            
+        response_piece = context.last_response.get_piece()
+        scores = await self._refusal_scorer.score_async(request_response=response_piece, task=task)
         return scores[0]
 
     async def _score_response_async(
-        self, *, context: MultiTurnAttackContext, response: PromptRequestPiece
+        self, *, context: MultiTurnAttackContext
     ) -> Score:
         """
         Score the target's response.
 
         Args:
-            context (MultiTurnAttackContext): The attack context.
-            response (PromptRequestPiece): The response to score.
+            context (MultiTurnAttackContext): The attack context containing the response to score.
 
         Returns:
             Score: The objective score.
         """
-        # First, run auxiliary scorers if configured
-        if self._auxiliary_scorers:
-            logger.debug(f"Running {len(self._auxiliary_scorers)} auxiliary scorers")
-            # Convert the PromptRequestPiece to a PromptRequestResponse for scoring
-            response_wrapper = PromptRequestResponse(request_pieces=[response])
-            await Scorer.score_response_async(
-                response=response_wrapper,
-                scorers=self._auxiliary_scorers,
-                role_filter="assistant"
-            )
-
-        # Then run the objective scorer
-        scores = await self._objective_scorer.score_async(
-            request_response=response,
+        if not context.last_response:
+            raise ValueError("No response available in context to score")
+            
+        scoring_results = await Scorer.score_response_with_objective_async(
+            response=context.last_response,
+            auxiliary_scorers=self._auxiliary_scorers,
+            objective_scorers=[self._objective_scorer],
+            role_filter="assistant",
             task=context.objective,
         )
-        score = scores[0]
+
+        objective_scores = scoring_results["objective_scores"]
+        if not objective_scores:
+            raise RuntimeError("No objective scores returned from scoring process.")
+        
+        score = objective_scores[0]
         
         logger.debug(
             f"Objective score: {score.get_value():.2f} - {score.score_rationale}"
@@ -663,15 +666,13 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         self,
         *,
         context: MultiTurnAttackContext,
-        response: PromptRequestPiece,
         prompt_sent: str,
     ) -> bool:
         """
         Check if the response indicates a refusal and perform backtracking if needed.
 
         Args:
-            context (MultiTurnAttackContext): The attack context.
-            response (PromptRequestPiece): The target's response to check.
+            context (MultiTurnAttackContext): The attack context containing the response to check.
             prompt_sent (str): The prompt that was sent to the target.
 
         Returns:
@@ -683,7 +684,7 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             return False
 
         # Check for refusal
-        refusal_score = await self._check_refusal_async(response, prompt_sent)
+        refusal_score = await self._check_refusal_async(context, prompt_sent)
         
         logger.debug(
             f"Refusal check: {refusal_score.get_value()} - {refusal_score.score_rationale[:100]}..."

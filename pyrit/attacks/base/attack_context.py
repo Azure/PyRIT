@@ -64,7 +64,7 @@ class MultiTurnAttackContext(AttackContext):
     max_turns: int = 10
 
     # Model response produced in the latest turn
-    last_response: Optional[PromptRequestPiece] = None
+    last_response: Optional[PromptRequestResponse] = None
 
     # Score assigned to the latest response by a scorer component
     last_score: Optional[Score] = None

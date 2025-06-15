@@ -6,9 +6,11 @@ from __future__ import annotations
 import abc
 import asyncio
 import json
+import logging
 import uuid
 from abc import abstractmethod
 from typing import Dict, List, Optional, Sequence
+from collections import defaultdict
 
 from pyrit.exceptions import (
     InvalidJsonException,
@@ -28,6 +30,7 @@ from pyrit.models.literals import ChatMessageRole
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
 
+logger = logging.getLogger(__name__)
 
 class Scorer(abc.ABC):
     """
@@ -334,6 +337,7 @@ class Scorer(abc.ABC):
         scorers: List[Scorer],
         role_filter: ChatMessageRole = "assistant",
         task: Optional[str] = None,
+        skip_on_error: bool = True,
     ) -> List[Score]:
         """
         Score a response using multiple scorers in parallel.
@@ -346,6 +350,7 @@ class Scorer(abc.ABC):
             scorers: List of scorers to apply
             role_filter: Only score pieces with this role (default: "assistant")
             task: Optional task description for scoring context
+            skip_on_error: If True, skip scoring pieces that have errors (default: True)
 
         Returns:
             List of all scores from all scorers
@@ -357,6 +362,13 @@ class Scorer(abc.ABC):
         filtered_pieces = list(response.filter_by_role(role=role_filter))
         if not filtered_pieces:
             return []
+
+        # Further filter out error responses if requested
+        if skip_on_error:
+            filtered_pieces = [p for p in filtered_pieces if not p.has_error()]
+            if not filtered_pieces:
+                logger.debug("All response pieces have errors, skipping scoring")
+                return []
 
         # Create all scoring tasks
         tasks = [
@@ -379,6 +391,7 @@ class Scorer(abc.ABC):
         scorers: List[Scorer],
         role_filter: ChatMessageRole = "assistant",
         task: Optional[str] = None,
+        skip_on_error: bool = True,
     ) -> Optional[Score]:
         """
         Score response pieces sequentially until finding a successful score.
@@ -392,6 +405,7 @@ class Scorer(abc.ABC):
             scorers: List of scorers to use for evaluation
             role_filter: Only score pieces with this role (default: "assistant")
             task: Optional task description for scoring context
+            skip_on_error: If True, skip scoring pieces that have errors (default: True)
 
         Returns:
             The first successful score, or the first score if no success found, or None if no scores
@@ -404,9 +418,18 @@ class Scorer(abc.ABC):
         if not filtered_pieces:
             return None
 
+        # Further filter out error responses if requested
+        if skip_on_error:
+            scorable_pieces = [p for p in filtered_pieces if not p.has_error()]
+            if not scorable_pieces:
+                logger.debug("All response pieces have errors, skipping scoring")
+                return None
+        else:
+            scorable_pieces = filtered_pieces
+
         first_score = None
 
-        for piece in filtered_pieces:
+        for piece in scorable_pieces:
             # Run all scorers on this piece in parallel
             tasks = [scorer.score_async(request_response=piece, task=task) for scorer in scorers]
             score_lists = await asyncio.gather(*tasks)
@@ -425,3 +448,79 @@ class Scorer(abc.ABC):
 
         # No successful score found - return first score as failure indicator
         return first_score
+
+    @staticmethod
+    async def score_response_with_objective_async(
+        *,
+        response: PromptRequestResponse,
+        auxiliary_scorers: Optional[List[Scorer]] = None,
+        objective_scorers: Optional[List[Scorer]] = None,
+        role_filter: ChatMessageRole = "assistant",
+        task: Optional[str] = None,
+        skip_on_error: bool = True,
+    ) -> Dict[str, List[Score]]:
+        """
+        Score a response using both auxiliary and objective scorers.
+
+        This method runs auxiliary scorers for collecting metrics and objective scorers
+        for determining success. All scorers are run asynchronously for performance.
+
+        Args:
+            response: PromptRequestResponse containing pieces to score
+            auxiliary_scorers: Optional list of scorers for auxiliary metrics
+            objective_scorers: Optional list of scorers for objective evaluation (should be true/false type)
+            role_filter: Only score pieces with this role (default: "assistant")
+            task: Optional task description for scoring context
+            skip_on_error: If True, skip scoring pieces that have errors (default: True)
+
+        Returns:
+            Dictionary with:
+                - "auxiliary_scores": List of all auxiliary scores
+                - "objective_scores": List containing at most one objective score (first success or first failure)
+        """
+        result: Dict[str, List[Score]] = defaultdict(list)
+
+        # Early return if no scorers provided
+        if not auxiliary_scorers and not objective_scorers:
+            return dict(result)
+
+        # Build tasks
+        tasks = []
+        task_keys = []
+
+        # Add auxiliary scoring task
+        if auxiliary_scorers:
+            tasks.append(
+                Scorer.score_response_async(
+                    response=response,
+                    scorers=auxiliary_scorers,
+                    role_filter=role_filter,
+                    task=task,
+                    skip_on_error=skip_on_error
+                )
+            )
+            task_keys.append("auxiliary_scores")
+
+        # Add objective scoring task using select_first_success
+        if objective_scorers:
+            tasks.append(
+                Scorer.score_response_select_first_success_async(
+                    response=response,
+                    scorers=objective_scorers,
+                    role_filter=role_filter,
+                    task=task,
+                    skip_on_error=skip_on_error
+                )
+            )
+            task_keys.append("objective_scores")
+
+        # Execute all tasks concurrently
+        if tasks:
+            task_results = await asyncio.gather(*tasks)
+            
+            # Process results
+            for key, result_value in zip(task_keys, task_results):
+                # Convert single score to list format, handling None case
+                result[key] = [result_value] if isinstance(result_value, Score) else (result_value or [])
+
+        return dict(result)

@@ -26,7 +26,8 @@ from pyrit.attacks.components.conversation_manager import (
 from pyrit.attacks.components.objective_evaluator import ObjectiveEvaluator
 from pyrit.common.path import RED_TEAM_ORCHESTRATOR_PATH
 from pyrit.common.utils import combine_dict
-from pyrit.models import PromptRequestPiece, Score, SeedPrompt, SeedPromptGroup
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score, SeedPrompt, SeedPromptGroup
+from pyrit.score import Scorer
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target.common.prompt_target import PromptTarget
 
@@ -246,15 +247,13 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             prompt_to_send = await self._generate_next_prompt_async(context=context)
 
             # Send the generated prompt to the objective target
-            target_response = await self._send_prompt_to_objective_target_async(context=context, prompt=prompt_to_send)
-            context.last_response = target_response
+            context.last_response = await self._send_prompt_to_objective_target_async(context=context, prompt=prompt_to_send)
 
             # Score the response
-            score = await self._score_response_async(context=context, response=target_response)
-            context.last_score = score
+            context.last_score = await self._score_response_async(context=context)
 
             # Check if objective achieved
-            achieved_objective = self._score_evaluator.is_objective_achieved(score=score)
+            achieved_objective = self._score_evaluator.is_objective_achieved(score=context.last_score)
 
             # Increment the executed turns
             context.executed_turns += 1
@@ -266,7 +265,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             objective=context.objective,
             outcome=(AttackOutcome.SUCCESS if achieved_objective else AttackOutcome.FAILURE),
             executed_turns=context.executed_turns,
-            last_response=context.last_response,
+            last_response=context.last_response.get_piece() if context.last_response else None,
             last_score=context.last_score,
         )
 
@@ -425,19 +424,19 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
 
     async def _send_prompt_to_objective_target_async(
         self, *, context: MultiTurnAttackContext, prompt: str
-    ) -> PromptRequestPiece:
+    ) -> PromptRequestResponse:
         """
         Send a prompt to the target system.
 
         Constructs a seed prompt group, sends it to the target via the prompt normalizer,
-        and returns the response as a PromptRequestPiece.
+        and returns the response as a PromptRequestResponse.
 
         Args:
             context (MultiTurnAttackContext): The current attack context.
             prompt (str): The prompt to send to the target.
 
         Returns:
-            PromptRequestPiece: The system's response to the prompt.
+            PromptRequestResponse: The system's response to the prompt.
         """
         logger.info(f"Sending prompt to target: {prompt[:50]}...")
 
@@ -466,34 +465,46 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
                 "Please check the target configuration and ensure it is reachable."
             )
 
-        return response.get_piece()
+        return response
 
     async def _score_response_async(
-        self, *, context: MultiTurnAttackContext, response: PromptRequestPiece
+        self, *, context: MultiTurnAttackContext
     ) -> Optional[Score]:
         """
         Evaluate the target's response with the objective scorer.
 
-        Checks if the response is blocked or has an error before scoring.
+        Checks if the response is blocked before scoring.
         Returns the resulting Score object or None if the response was blocked.
 
         Args:
-            response (PromptRequestPiece): The target system's response.
-            context (MultiTurnAttackContext): The attack context.
+            context (MultiTurnAttackContext): The attack context containing the response to score.
 
         Returns:
             Optional[Score]: The score of the response if available, otherwise None.
         """
-        if not response.has_error():
-            scores = await self._objective_scorer.score_async(
-                request_response=response,
-                task=context.objective,
-            )
-            return scores[0] if scores else None
-        elif response.is_blocked():
+        if not context.last_response:
+            logger.warning("No response available in context to score")
+            return None
+            
+        # Get the first assistant piece to check for blocked status
+        response_piece = context.last_response.get_piece()
+        
+        # Special handling for blocked responses
+        if response_piece.is_blocked():
             return None
 
-        raise RuntimeError(f"Response error: {response.response_error}")
+        # Use the built-in scorer method for objective scoring
+        # This method already handles error responses internally via skip_on_error=True
+        scoring_results = await Scorer.score_response_with_objective_async(
+            response=context.last_response,
+            auxiliary_scorers=None,  # No auxiliary scorers for red teaming by default
+            objective_scorers=[self._objective_scorer],
+            role_filter="assistant",
+            task=context.objective,
+        )
+        
+        objective_scores = scoring_results["objective_scores"]
+        return objective_scores[0] if objective_scores else None
 
     @staticmethod
     def _has_custom_prompt(state: ConversationState) -> bool:

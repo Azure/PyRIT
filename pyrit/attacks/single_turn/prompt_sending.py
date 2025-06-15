@@ -289,16 +289,16 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
                 no objective scorer is set. Note that auxiliary scorer results are not returned
                 but are still executed and stored.
         """
+        scoring_results = await Scorer.score_response_with_objective_async(
+            response=response,
+            auxiliary_scorers=self._auxiliary_scorers,
+            objective_scorers=[self._objective_scorer] if self._objective_scorer else None,
+            role_filter="assistant",
+            task=objective,
+        )
 
-        role: ChatMessageRole = "assistant"
-
-        # Run auxiliary scorers (no return value needed)
-        await Scorer.score_response_async(response=response, scorers=self._auxiliary_scorers, role_filter=role)
-
-        # Run objective scorer
-        if self._objective_scorer:
-            return await Scorer.score_response_select_first_success_async(
-                response=response, scorers=[self._objective_scorer], role_filter=role, task=objective
-            )
-
-        return None
+        objective_scores = scoring_results["objective_scores"]
+        if not objective_scores:
+            return None
+        
+        return objective_scores[0]
