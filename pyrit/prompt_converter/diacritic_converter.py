@@ -12,22 +12,20 @@ logger = logging.getLogger(__name__)
 
 class DiacriticConverter(PromptConverter):
     """
-    A PromptConverter that applies diacritics to specified characters in a string.
+    Applies diacritics to specified characters in a string.
     """
 
     def __init__(self, target_chars: str = "aeiou", accent: str = "acute"):
         """
-        Initializes the DiacriticConverter.
+        Initializes the DiacriticConverter with specified target characters and diacritic accent.
 
         Args:
             target_chars (str): Characters to apply the diacritic to. Defaults to "aeiou".
-            accent (str): Type of diacritic to apply (default is 'acute').
-
-             Available options are:
-            - 'acute': "\u0301"
-            - 'grave': "\u0300"
-            - 'tilde': "\u0303"
-            - 'umlaut': "\u0308"
+            accent (str): Type of diacritic to apply (default is 'acute'). Available options are:\n
+                - `acute`: \u0301\n
+                - `grave`: \u0300\n
+                - `tilde`: \u0303\n
+                - `umlaut`: \u0308
 
         Raises:
             ValueError: If `target_chars` is empty.
@@ -81,15 +79,6 @@ class DiacriticConverter(PromptConverter):
         )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
-        """
-        Converts the given prompt by applying diacritics to target characters.
-
-        Args:
-            prompt (str): The prompt to be converted.
-
-        Returns:
-            ConverterResult: The result containing the modified prompt.
-        """
         if not self.input_supported(input_type):
             raise ValueError("Only 'text' input type is supported.")
 

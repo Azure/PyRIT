@@ -11,7 +11,9 @@ from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 
 
 class BinaryConverter(WordLevelConverter):
-    """Transforms input text into its binary representation with configurable bits per character (8, 16, or 32)"""
+    """
+    Transforms input text into its binary representation with configurable bits per character (8, 16, or 32).
+    """
 
     class BitsPerChar(Enum):
         BITS_8 = 8
@@ -28,7 +30,8 @@ class BinaryConverter(WordLevelConverter):
         regex: Optional[Union[str, re.Pattern]] = None,
     ):
         """
-        Initialize the converter.
+        Initializes the converter with the specified bits per character and selection parameters.
+
         This class allows for selection of words to convert based on various criteria.
         Only one selection parameter may be provided at a time (indices, keywords, proportion, or regex).
         If no selection parameter is provided, all words will be converted.

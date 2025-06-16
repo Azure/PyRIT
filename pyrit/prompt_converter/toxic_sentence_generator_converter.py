@@ -19,8 +19,7 @@ logger = logging.getLogger(__name__)
 
 class ToxicSentenceGeneratorConverter(LLMGenericTextConverter):
     """
-    A PromptConverter that generates toxic sentence starters using an LLM via an
-    existing PromptTarget.
+    Generates toxic sentence starters using an LLM via an existing PromptTarget.
 
     Based on Project Moonshot's attack module that generates toxic sentences to test LLM
     safety guardrails:
@@ -50,41 +49,21 @@ class ToxicSentenceGeneratorConverter(LLMGenericTextConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Converts a seed prompt into a toxic sentence starter.
+        Converts the given prompt into a toxic sentence starter.
 
-        Parameters:
-            prompt (str): The prompt to convert.
-            input_type (PromptDataType, Optional): The data type of the input prompt.
-                Defaults to "text".
+        Args:
+            prompt (str): The input prompt to be converted.
+            input_type (PromptDataType): The type of the input data.
 
         Returns:
-            ConverterResult: The result of the conversion, containing the toxic sentence
-                starter.
+            ConverterResult: The conversion result, containing the toxic sentence starter.
         """
         # Add the prompt to _prompt_kwargs before calling the base method
         self._prompt_kwargs["prompt"] = prompt
         return await super().convert_async(prompt=prompt, input_type=input_type)
 
     def input_supported(self, input_type: PromptDataType) -> bool:
-        """
-        Checks if the input type is supported by this converter.
-
-        Parameters:
-            input_type (PromptDataType): The data type to check.
-
-        Returns:
-            bool: True if the input type is supported, False otherwise.
-        """
         return input_type == "text"
 
     def output_supported(self, output_type: PromptDataType) -> bool:
-        """
-        Checks if the output type is supported by this converter.
-
-        Parameters:
-            output_type (PromptDataType): The data type to check.
-
-        Returns:
-            bool: True if the output type is supported, False otherwise.
-        """
         return output_type == "text"

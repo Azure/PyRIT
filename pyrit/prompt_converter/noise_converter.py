@@ -15,6 +15,9 @@ logger = logging.getLogger(__name__)
 
 
 class NoiseConverter(LLMGenericTextConverter):
+    """
+    Injects noise errors into a conversation.
+    """
     def __init__(
         self,
         *,
@@ -24,14 +27,13 @@ class NoiseConverter(LLMGenericTextConverter):
         prompt_template: Optional[SeedPrompt] = None,
     ):
         """
-        Injects noise errors into a conversation
+        Initializes the converter.
 
         Args:
             converter_target (PromptChatTarget): The endpoint that converts the prompt
             noise (str): The noise to inject. Grammar error, delete random letter, insert random space, etc.
-            number_errors (int): The number of errors to inject
+            number_errors (int): The number of errors to inject.
             prompt_template (SeedPrompt, Optional): The prompt template for the conversion.
-
         """
         # set to default strategy if not provided
         prompt_template = (

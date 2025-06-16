@@ -10,7 +10,9 @@ from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 
 
 class CharSwapConverter(WordLevelConverter):
-    """Applies character swapping to words in the prompt to test adversarial textual robustness."""
+    """
+    Applies character swapping to words in the prompt to test adversarial textual robustness.
+    """
 
     def __init__(
         self,
@@ -22,7 +24,8 @@ class CharSwapConverter(WordLevelConverter):
         regex: Optional[Union[str, re.Pattern]] = None,
     ):
         """
-        Initialize the converter.
+        Initializes the converter with the specified parameters.
+
         This class allows for selection of words to convert based on various criteria.
         Only one selection parameter may be provided at a time (indices, keywords, proportion, or regex).
         By default, proportion is set to 0.2, meaning 20% of randomly selected words will be perturbed.
@@ -48,10 +51,11 @@ class CharSwapConverter(WordLevelConverter):
 
     def _perturb_word(self, word: str) -> str:
         """
-        Perturb a word by swapping two adjacent characters.
+        Perturbs a word by swapping two adjacent characters.
 
         Args:
             word (str): The word to perturb.
+
         Returns:
             str: The perturbed word with swapped characters.
         """

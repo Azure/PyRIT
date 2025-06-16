@@ -28,6 +28,9 @@ logger = logging.getLogger(__name__)
 
 
 class TranslationConverter(PromptConverter):
+    """
+    Uses an LLM to translate prompts into different languages.
+    """
     def __init__(
         self,
         *,

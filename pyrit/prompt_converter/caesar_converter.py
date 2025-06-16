@@ -11,24 +11,25 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 class CaesarConverter(PromptConverter):
     """
-    Converter to encode prompt using caesar cipher.
+    Encodes text using the Caesar cipher.
 
     Encodes by using given offset.
     Using offset=1, 'Hello 123' would encode to 'Ifmmp 234', as each character would shift by 1.
     Shifts for digits 0-9 only work if the offset is less than 10, if the offset is equal to or greather than 10,
     any numeric values will not be shifted.
-
-    Parameters
-    ---
-    caesar_offset: int
-        Offset for caesar cipher, range 0 to 25 (inclusive). Can also be negative for shifting backwards.
-
-    append_description: bool, default=False
-        Append plaintext "expert" text to the prompt. Includes instructions to only communicate
-        using the cipher, a description of the cipher, and an example encoded using cipher.
     """
 
     def __init__(self, *, caesar_offset: int, append_description: bool = False) -> None:
+        """
+        Initializes the converter with a Caesar cipher offset and an option to append a description.
+
+        Args:
+            caesar_offset (int): Offset for caesar cipher, range 0 to 25 (inclusive).
+                Can also be negative for shifting backwards.
+            append_description (bool): If True, appends plaintext "expert" text to the prompt.
+                This includes instructions to only communicate using the cipher,
+                a description of the cipher, and an example encoded using the cipher.
+        """
         if caesar_offset < -25 or caesar_offset > 25:
             raise ValueError("caesar offset value invalid, must be between -25 and 25 inclusive.")
         self.caesar_offset = caesar_offset
@@ -40,9 +41,6 @@ class CaesarConverter(PromptConverter):
         )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
-        """
-        Simple converter that caesar cipher encodes the prompt.
-        """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 

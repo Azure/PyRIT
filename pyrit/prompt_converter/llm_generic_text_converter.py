@@ -18,6 +18,9 @@ logger = logging.getLogger(__name__)
 
 
 class LLMGenericTextConverter(PromptConverter):
+    """
+    Represents a generic LLM converter that expects text to be transformed (e.g. no JSON parsing or format).
+    """
     def __init__(
         self,
         *,
@@ -27,15 +30,14 @@ class LLMGenericTextConverter(PromptConverter):
         **kwargs,
     ):
         """
-        Generic LLM converter that expects text to be transformed (e.g. no JSON parsing or format)
+        Initializes the converter with a target and optional prompt templates.
 
         Args:
-            converter_target (PromptChatTarget): The endpoint that converts the prompt
+            converter_target (PromptChatTarget): The endpoint that converts the prompt.
             system_prompt_template (SeedPrompt, Optional): The prompt template to set as the system prompt.
             user_prompt_template_with_objective (SeedPrompt, Optional): The prompt template to set as the user prompt.
                 expects
             kwargs: Additional parameters for the prompt template.
-
         """
         self._converter_target = converter_target
         self._system_prompt_template = system_prompt_template
@@ -48,17 +50,14 @@ class LLMGenericTextConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Convert a prompt based on the prompt template
+        Converts the given prompt based on the prompt template.
 
         Parameters:
-            prompt (str): The prompt to convert.
-            input_type (PromptDataType, Optional): The data type of the input prompt. Defaults to "text".
+            prompt (str): The input prompt to be converted.
+            input_type (PromptDataType): The type of the input data.
 
         Returns:
-            ConverterResult: The result of the conversion, including the converted output text and output type.
-
-        Raises:
-            ValueError: If the input type is not supported.
+            ConverterResult: The conversion result as a `ConverterResult` object.
         """
 
         conversation_id = str(uuid.uuid4())

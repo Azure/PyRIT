@@ -17,11 +17,8 @@ logger = logging.getLogger(__name__)
 
 class AudioFrequencyConverter(PromptConverter):
     """
-    The AudioFrequencyConverter takes an audio file and shifts its frequency, by default it will shift it above
-    human range (=20kHz).
-    Args:
-        output_format (str): The format of the audio file. Defaults to "wav".
-        shift_value (int): The value by which the frequency will be shifted. Defaults to 20000 Hz.
+    Shifts the frequency of an audio file by a specified value.
+    By default, it will shift it above the human hearing range (=20 kHz).
     """
 
     AcceptedAudioFormats = Literal["wav"]
@@ -32,6 +29,13 @@ class AudioFrequencyConverter(PromptConverter):
         output_format: AcceptedAudioFormats = "wav",
         shift_value: int = 20000,
     ) -> None:
+        """
+        Initializes the converter with the specified output format and shift value.
+
+        Args:
+            output_format (str): The format of the audio file, defaults to "wav".
+            shift_value (int): The value by which the frequency will be shifted, defaults to 20000 Hz.
+        """
         self._output_format = output_format
         self._shift_value = shift_value
 
@@ -42,17 +46,15 @@ class AudioFrequencyConverter(PromptConverter):
         return output_type == "audio_path"
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "audio_path") -> ConverterResult:
-        """Convert an audio file by shifting its frequency.
+        """
+        Converts the given audio file by shifting its frequency.
 
         Args:
-            prompt (str): File path to audio file
-            input_type (PromptDataType): Type of data, defaults to "audio_path"
-
-        Raises:
-            ValueError: If the input type is not supported.
+            prompt (str): File path to the audio file to be converted.
+            input_type (PromptDataType): The type of the input data.
 
         Returns:
-            ConverterResult: The converted audio file as a ConverterResult object.
+            ConverterResult: The converted audio file as a `ConverterResult` object.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")

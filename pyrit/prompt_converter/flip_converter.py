@@ -6,11 +6,11 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 
 class FlipConverter(PromptConverter):
+    """
+    Flips the input text prompt. For example, "hello me" would be converted to "em olleh".
+    """
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
-        """
-        Simple converter that flips the prompt. "hello me" would be "em olleh"
-        """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 

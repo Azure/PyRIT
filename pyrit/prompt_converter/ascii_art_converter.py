@@ -8,21 +8,20 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 
 class AsciiArtConverter(PromptConverter):
-    """Converts a string to ASCII art"""
+    """
+    Uses the `art` package to convert text into ASCII art.
+    """
 
     def __init__(self, font="rand"):
+        """
+        Initializes the converter with a specified font.
+
+        Args:
+            font (str): The font to use for ASCII art. Defaults to "rand" which selects a random font.
+        """
         self.font_value = font
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
-        """
-        Converter that uses art to convert strings to ASCII art.
-        This can sometimes bypass LLM filters
-
-        Args:
-            prompt (str): The prompt to be converted.
-        Returns:
-            str: The converted prompt.
-        """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 

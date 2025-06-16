@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 
 class MathPromptConverter(LLMGenericTextConverter):
     """
-    A PromptConverter that converts natural language instructions into symbolic mathematics problems
-    using an LLM via an existing PromptTarget (like Azure OpenAI or other supported backends).
+    Converts natural language instructions into symbolic mathematics problems using
+    an LLM via an existing PromptTarget (like Azure OpenAI or other supported backends).
     """
 
     def __init__(self, *, converter_target: PromptChatTarget, prompt_template: SeedPrompt = None):
@@ -24,7 +24,7 @@ class MathPromptConverter(LLMGenericTextConverter):
 
         Args:
             converter_target (PromptChatTarget): The endpoint that converts the prompt.
-            prompt_template (SeedPrompt): The prompt template to use.
+            prompt_template (SeedPrompt): The seed prompt template to use.
         """
 
         # Load the template from the YAML file or use a default template if not provided
@@ -40,14 +40,15 @@ class MathPromptConverter(LLMGenericTextConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Convert a prompt into a mathematical problem format.
+        Converts the given prompt into a mathematical problem format.
 
-        Parameters:
-            prompt (str): The prompt to convert.
+        Args:
+            prompt (str): The input prompt to be converted.
+            input_type (PromptDataType): The type of the input data.
 
         Returns:
-            ConverterResult: The result of the conversion,
-            including the mathematical representation and real-world example.
+            ConverterResult: The conversion result, including the mathematical representation
+                and real-world example, as a `ConverterResult` object.
         """
         logger.info(f"Converting prompt: {prompt}")
 

@@ -13,12 +13,15 @@ logger = logging.getLogger(__name__)
 
 
 class ToneConverter(LLMGenericTextConverter):
+    """
+    Converts a conversation to a different tone.
+    """
     def __init__(self, *, converter_target: PromptChatTarget, tone: str, prompt_template: SeedPrompt = None):
         """
-        Converts a conversation to a different tone
+        Initializes the converter.
 
         Args:
-            converter_target (PromptChatTarget): The target chat support for the conversion which will translate
+            converter_target (PromptChatTarget): The target chat support for the conversion which will translate.
             tone (str): The tone for the conversation. E.g. upset, sarcastic, indifferent, etc.
             prompt_template (SeedPrompt, Optional): The prompt template for the conversion.
 

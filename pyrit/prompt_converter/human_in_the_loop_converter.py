@@ -14,29 +14,33 @@ class HumanInTheLoopConverter(PromptConverter):
     """
     Allows review of each prompt sent to a target before sending it. User can choose to send the prompt as is,
     modify the prompt, or run the prompt through one of the passed-in converters before sending it.
-
-    Args:
-        converters: (List[PromptConverter], Optional): List of possible converters to run input through.
     """
 
     def __init__(
         self,
         converters: Optional[list[PromptConverter]] = None,
     ):
+        """
+        Initializes the converter with a list of possible converters to run input through.
+
+        Args:
+            converters (List[PromptConverter], Optional): List of possible converters to run input through.
+        """
         self._converters = converters or []
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Before sending a prompt to a target, user is given three options to choose from:
-        (1) Proceed with sending the prompt as is.
-        (2) Manually modify the prompt.
-        (3) Run the prompt through a converter before sending it.
+            (1) Proceed with sending the prompt as is.
+            (2) Manually modify the prompt.
+            (3) Run the prompt through a converter before sending it.
 
         Args:
             prompt (str): The prompt to be added to the image.
-            input_type (PromptDataType): Type of data
+            input_type (PromptDataType): The type of the input data.
+
         Returns:
-            ConverterResult: The filename of the converted image as a ConverterResult Object
+            ConverterResult: The filename of the converted image as a `ConverterResult` object.
         """
         user_input = ""
         if self._converters:

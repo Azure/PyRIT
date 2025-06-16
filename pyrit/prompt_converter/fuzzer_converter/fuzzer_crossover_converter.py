@@ -21,12 +21,6 @@ from pyrit.prompt_target import PromptChatTarget
 class FuzzerCrossOverConverter(FuzzerConverter):
     """
     Fuzzer converter that uses multiple prompt templates to generate new prompts.
-
-    Args:
-        converter_target (PromptChatTarget): Chat target used to perform fuzzing on user prompt
-        prompt_template (SeedPrompt, Optional): Template to be used instead of the default system prompt with
-            instructions for the chat target.
-        prompt_templates (List[str], Optional): List of prompt templates to use in addition to the default template.
     """
 
     def __init__(
@@ -36,6 +30,15 @@ class FuzzerCrossOverConverter(FuzzerConverter):
         prompt_template: Optional[SeedPrompt] = None,
         prompt_templates: Optional[List[str]] = None,
     ):
+        """
+        Initializes the converter with a specified font.
+
+        Args:
+            converter_target (PromptChatTarget): Chat target used to perform fuzzing on user prompt.
+            prompt_template (SeedPrompt, Optional): Template to be used instead of the default system prompt with
+                instructions for the chat target.
+            prompt_templates (List[str], Optional): List of prompt templates to use in addition to the default one.
+        """
         prompt_template = (
             prompt_template
             if prompt_template

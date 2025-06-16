@@ -18,6 +18,9 @@ from pyrit.prompt_target import PromptChatTarget
 
 
 class FuzzerExpandConverter(FuzzerConverter):
+    """
+    Generates versions of a prompt with new, prepended sentences.
+    """
     def __init__(
         self,
         *,
@@ -34,9 +37,6 @@ class FuzzerExpandConverter(FuzzerConverter):
         super().__init__(converter_target=converter_target, prompt_template=prompt_template)
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
-        """
-        Converter to generate versions of prompt with new, prepended sentences.
-        """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 

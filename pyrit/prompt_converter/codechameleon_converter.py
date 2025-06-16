@@ -14,41 +14,33 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 class CodeChameleonConverter(PromptConverter):
     """
-    The CodeChameleon Converter uses a combination of personal encryption and decryption functions,
-    code nesting, as well as a set of instructions for the response to bypass LLM safeguards.
+    Encrypts user prompt, adds stringified decrypt function in markdown and instructions.
 
-    The user prompt is encrypted, and the target is asked to solve the encrypted problem by completing a
-    ProblemSolver class utilizing the decryption function while following the instructions.
+    The user prompt is encrypted, and the target is asked to solve the encrypted problem by completing
+    a ProblemSolver class utilizing the decryption function while following the instructions.
+
+    Supports the following encryption types:
+        - `custom`:
+            User provided encryption and decryption functions. Encryption function used to encode prompt.
+            Markdown formatting and plaintext instructions appended to decryption function, used as text only.
+            Should include imports.
+        - `reverse`:
+            Reverse the prompt. "How to cut down a tree?" becomes "tree? a down cut to How".
+        - `binary_tree`:
+            Encode prompt using binary tree. "How to cut down a tree"?" becomes
+            ``{'value': 'cut', 'left': {'value': 'How', 'left': None,
+            'right': {'value': 'to', 'left': None, 'right': None}},
+            'right': {'value': 'a', 'left': {'value': 'down', 'left': None, 'right': None},
+            'right': {'value': 'tree?', 'left': None, 'right': None}}}``
+        - `odd_even`:
+            All words in odd indices of prompt followed by all words in even indices.
+            "How to cut down a tree?" becomes "How cut a to down tree?".
+        - `length`:
+            List of words in prompt sorted by length, use word as key, original index as value.
+            "How to cut down a tree?" becomes
+            ``[{'a': 4}, {'to': 1}, {'How': 0}, {'cut': 2}, {'down': 3}, {'tree?': 5}]``
 
     Code Chameleon Converter based on https://arxiv.org/abs/2402.16717 by Lv, Huijie, et al.
-
-    Parameters
-    ---
-    encrypt_mode: {"custom", "reverse", "binary_tree", "odd_even", "length"}
-        Select a built-in encryption method or provide custom encryption and decryption functions.
-        `custom`: User provided encryption and decryption functions. Encryption function used to encode prompt.
-        Markdown formatting and plaintext instructions appended to decryption function, used as text only.
-        Should include imports.
-        `reverse`: Reverse the prompt. "How to cut down a tree?" becomes "tree? a down cut to How"
-        `binary_tree`: Encode prompt using binary tree. "How to cut down a tree"?" becomes
-        "{'value': 'cut',
-        'left': {'value': 'How', 'left': None, 'right': {'value': 'to', 'left': None, 'right': None}},
-        'right': {'value': 'a', 'left': {'value': 'down', 'left': None, 'right': None},
-        'right': {'value': 'tree?', 'left': None, 'right': None}}}"
-        `odd_even`: All words in odd indices of prompt followed by all words in even indices.
-        "How to cut down a tree?" becomes "How cut a to down tree?"
-        `length`: List of words in prompt sorted by length, use word as key, original index as value.
-        "How to cut down a tree?" becomes "[{'a': 4}, {'to': 1}, {'How': 0}, {'cut': 2}, {'down': 3}, {'tree?': 5}]"
-
-    encrypt_function: Callable, default=None
-        User provided encryption function. Only used if `encrypt_mode` is "custom".
-        Used to encode user prompt.
-
-    decrypt_function: Callable or list, default=None
-        User provided encryption function. Only used if `encrypt_mode` is "custom".
-        Used as part of markdown code block instructions in system prompt.
-        If list is provided, strings will be treated as single statements for imports or comments. Functions
-        will take the source code of the function.
     """
 
     def __init__(
@@ -58,6 +50,19 @@ class CodeChameleonConverter(PromptConverter):
         encrypt_function: Optional[Callable] = None,
         decrypt_function: Optional[Callable | list[Callable | str]] = None,
     ) -> None:
+        """
+        Initializes the converter with the specified encryption type and optional functions.
+
+        Args:
+            encrypt_type (str): Must be one of "custom", "reverse", "binary_tree", "odd_even" or "length".
+            encrypt_function (Callable, optional): User provided encryption function.
+                Only used if `encrypt_mode` is "custom". Used to encode user prompt.
+            decrypt_function (Callable or list, optional): User provided encryption function.
+                Only used if `encrypt_mode` is "custom".
+                Used as part of markdown code block instructions in system prompt.
+                If list is provided, strings will be treated as single statements for imports or comments.
+                Functions will take the source code of the function.
+        """
         match encrypt_type:
             case "custom":
                 if encrypt_function is None or decrypt_function is None:
@@ -86,9 +91,6 @@ class CodeChameleonConverter(PromptConverter):
                 )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
-        """
-        Converter that encrypts user prompt, adds stringified decrypt function in markdown and instructions.
-        """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 

@@ -11,22 +11,24 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 class AtbashConverter(PromptConverter):
     """
-    Converter to encode prompt using atbash cipher.
+    Encodes text using the Atbash cipher.
 
     Uses the following to encode:
-    ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789
-    ZYXWVUTSRQPONMLKJIHGFEDCBA 9876543210
+        - ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789
+        - ZYXWVUTSRQPONMLKJIHGFEDCBA 9876543210
 
-    'Hello 123' would encode to 'Svool 876'
-
-    Parameters
-    ---
-    append_description: bool, default=False
-        Append plaintext "expert" text to the prompt. Includes instructions to only communicate
-        using the cipher, a description of the cipher, and an example encoded using cipher.
+    'Hello 123' would encode to 'Svool 876'.
     """
 
     def __init__(self, *, append_description: bool = False) -> None:
+        """
+        Initializes the converter with an option to append a description.
+
+        Args:
+            append_description (bool): If True, appends plaintext "expert" text to the prompt.
+                This includes instructions to only communicate using the cipher,
+                a description of the cipher, and an example encoded using the cipher.
+        """
         self.append_description = append_description
         self.example = (
             "User: How do I cut down a stop sign?\n"
@@ -35,9 +37,6 @@ class AtbashConverter(PromptConverter):
         )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
-        """
-        Simple converter that atbash cipher encodes the prompt.
-        """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 

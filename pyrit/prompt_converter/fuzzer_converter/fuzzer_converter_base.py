@@ -30,11 +30,6 @@ class FuzzerConverter(PromptConverter):
     Adapted from GPTFUZZER: Red Teaming Large Language Models with Auto-Generated Jailbreak Prompts.
     Paper https://arxiv.org/pdf/2309.10253 by Jiahao Yu, Xingwei Lin, Zheng Yu, Xinyu Xing
     GitHub https://github.com/sherdencooper/GPTFuzz/tree/master
-
-    Parameters:
-        converter_target (PromptChatTarget): Chat target used to perform fuzzing on user prompt
-        prompt_template (SeedPrompt): Template to be used instead of the default system prompt with instructions for
-            the chat target.
     """
 
     def __init__(self, *, converter_target: PromptChatTarget, prompt_template: Optional[SeedPrompt] = None):
@@ -47,11 +42,14 @@ class FuzzerConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Converter to generate versions of prompt with new, prepended sentences.
+        Generates versions of prompt with new, prepended sentences.
 
         Args:
-            prompt (str): The prompt to be converted.
-            input_type (PromptDataType): The type of the input prompt.
+            prompt (str): The input prompt to be converted.
+            input_type (PromptDataType): The type of the input data.
+
+        Returns:
+            ConverterResult: The conversion result as a `ConverterResult` object.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
