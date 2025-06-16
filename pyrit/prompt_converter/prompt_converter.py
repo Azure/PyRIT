@@ -44,7 +44,7 @@ class PromptConverter(abc.ABC, Identifier):
             input_type (PromptDataType): The type of the input data.
 
         Returns:
-            ConverterResult: The result of the conversion, including the converted output and its type.
+            ConverterResult: The result containing the converted output and its type.
         """
 
     @abc.abstractmethod
