@@ -7,7 +7,7 @@ services:
       resources:
         limits:
           cpus: "4"
-          memory: "4G"
+          memory: "16G"
     volumes:
       - ..:/workspace:delegated
       - pyrit-env:/opt/conda/envs/pyrit-dev:cached
@@ -15,6 +15,7 @@ services:
       - precommit-cache:/home/vscode/.cache/pre-commit:cached
       - conda-cache:/home/vscode/.cache/conda:cached
       - mypy-cache:/workspace/.mypy_cache:cached
+      - pylance-cache:/home/vscode/.cache/pylance:cached
     ports:
       - "4213:4213"
       - "8888:8888"
@@ -27,3 +28,4 @@ volumes:
   precommit-cache:
   conda-cache:
   mypy-cache:
+  pylance-cache:

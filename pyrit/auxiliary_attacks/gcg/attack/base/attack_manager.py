@@ -3,6 +3,7 @@
 
 import gc
 import json
+import logging
 import math
 import random
 import time
@@ -34,6 +35,8 @@ from pyrit.auxiliary_attacks.gcg.experiments.log import (
     log_loss,
     log_table_summary,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class NpEncoder(json.JSONEncoder):
@@ -270,7 +273,7 @@ class AttackPrompt(object):
             gen_config.max_new_tokens = 16
 
         if gen_config.max_new_tokens > 32:
-            print("WARNING: max_new_tokens > 32 may cause testing to slow down.")
+            logger.warning("max_new_tokens > 32 may cause testing to slow down.")
         input_ids = self.input_ids[: self._assistant_role_slice.stop].to(model.device).unsqueeze(0)
         attn_masks = torch.ones_like(input_ids).to(model.device)
         output_ids = model.generate(
@@ -287,7 +290,7 @@ class AttackPrompt(object):
             gen_config = model.generation_config
             gen_config.max_new_tokens = self.test_new_toks
         gen_str = self.generate_str(model, gen_config).strip()
-        print(gen_str)
+        logger.info(gen_str)
         jailbroken = not any([prefix in gen_str for prefix in self.test_prefixes])
         em = self.target in gen_str
         return jailbroken, int(em)
@@ -664,7 +667,7 @@ class MultiPromptAttack(object):
         cands, count = [], 0
         worker = self.workers[worker_index]
 
-        print("Masking out of range token_id.")
+        logger.info("Masking out of range token_id.")
         vocab_size = worker.tokenizer.vocab_size
         control_cand[control_cand > vocab_size] = worker.tokenizer("!").input_ids[0]
 
@@ -772,7 +775,7 @@ class MultiPromptAttack(object):
             if loss < best_loss:
                 best_loss = loss
                 best_control = control
-            print("Current Loss:", loss, "Best Loss:", best_loss)
+            logger.info(f"Current Loss: {loss}, Best Loss: {best_loss}")
 
             if self.logfile is not None and (i + 1 + anneal_from) % test_steps == 0:
                 last_control = self.control_str
@@ -880,14 +883,12 @@ class MultiPromptAttack(object):
                         f"EM {n_em[i]:>3}/{total_tests[i]:<3} | "
                         f"Loss {n_loss[i]:.4f}\n"
                     )
-            print(
-                (
-                    f"\n====================================================\n"
-                    f"Step {step_num:>4}/{n_steps:>4} ({runtime:.4} s)\n"
-                    f"{output_str}"
-                    f"control='{control}'\n"
-                    f"====================================================\n"
-                )
+            logger.info(
+                f"\n====================================================\n"
+                f"Step {step_num:>4}/{n_steps:>4} ({runtime:.4} s)\n"
+                f"{output_str}"
+                f"control='{control}'\n"
+                f"====================================================\n"
             )
 
         # Log to mlflow
@@ -1140,7 +1141,7 @@ class ProgressiveMultiPromptAttack(object):
                             control_weight += 0.01
                             loss = np.inf
                             if verbose:
-                                print(f"Control weight increased to {control_weight:.5}")
+                                logger.info(f"Control weight increased to {control_weight:.5}")
                         else:
                             stop_inner_on_success = False
 
@@ -1322,7 +1323,7 @@ class IndividualPromptAttack(object):
         stop_inner_on_success = stop_on_success
 
         for i in range(len(self.goals)):
-            print(f"Goal {i+1}/{len(self.goals)}")
+            logger.info(f"Goal {i+1}/{len(self.goals)}")
 
             attack = self.managers["MPA"](
                 self.goals[i : i + 1],
@@ -1545,7 +1546,7 @@ class EvaluateAttack(object):
                     test_total_outputs.append(all_outputs)
 
                 if verbose:
-                    print(
+                    logger.info(
                         f"{mode} Step {step+1}/{len(controls)} | "
                         f"Jailbroken {sum(curr_jb)}/{len(all_outputs)} | "
                         f"EM {sum(curr_em)}/{len(all_outputs)}"
@@ -1599,7 +1600,7 @@ class ModelWorker(object):
     def start(self):
         self.process = mp.Process(target=ModelWorker.run, args=(self.model, self.tasks, self.results))
         self.process.start()
-        print(f"Started worker {self.process.pid} for model {self.model.name_or_path}")
+        logger.info(f"Started worker {self.process.pid} for model {self.model.name_or_path}")
         return self
 
     def stop(self):
@@ -1640,7 +1641,7 @@ def get_workers(params, eval=False):
             tokenizer.pad_token = tokenizer.eos_token
         tokenizers.append(tokenizer)
 
-    print(f"Loaded {len(tokenizers)} tokenizers")
+    logger.info(f"Loaded {len(tokenizers)} tokenizers")
 
     raw_conv_templates = []
     for template in params.conversation_templates:
@@ -1669,7 +1670,7 @@ def get_workers(params, eval=False):
             conv.sep2 = conv.sep2.strip()
         conv_templates.append(conv)
 
-    print(f"Loaded {len(conv_templates)} conversation templates")
+    logger.info(f"Loaded {len(conv_templates)} conversation templates")
     workers = [
         ModelWorker(
             params.model_paths[i],
@@ -1686,8 +1687,8 @@ def get_workers(params, eval=False):
             worker.start()
 
     num_train_models = getattr(params, "num_train_models", len(workers))
-    print("Loaded {} train models".format(num_train_models))
-    print("Loaded {} test models".format(len(workers) - num_train_models))
+    logger.info("Loaded {} train models".format(num_train_models))
+    logger.info("Loaded {} test models".format(len(workers) - num_train_models))
 
     return workers[:num_train_models], workers[num_train_models:]
 
@@ -1727,7 +1728,7 @@ def get_goals_and_targets(params):
 
     assert len(train_goals) == len(train_targets)
     assert len(test_goals) == len(test_targets)
-    print("Loaded {} train goals".format(len(train_goals)))
-    print("Loaded {} test goals".format(len(test_goals)))
+    logger.info("Loaded {} train goals".format(len(train_goals)))
+    logger.info("Loaded {} test goals".format(len(test_goals)))
 
     return train_goals, train_targets, test_goals, test_targets

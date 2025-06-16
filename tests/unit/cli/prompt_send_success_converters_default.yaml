@@ -26,7 +26,7 @@ converters:
   - type: "CaesarConverter"
     caesar_offset: 3
   - type: "CharacterSpaceConverter"
-  - type: "CharSwapGenerator"
+  - type: "CharSwapConverter"
   - type: "CodeChameleonConverter"
     encrypt_type: "reverse"
   - type: "ColloquialWordswapConverter"

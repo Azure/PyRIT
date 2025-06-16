@@ -50,18 +50,10 @@ def simple_templateconverter(scoring_target) -> list[FuzzerConverter]:
 @pytest.fixture
 def simple_prompt_templates():
     """sample prompt templates that can be given as input"""
-    prompt_template1 = SeedPrompt.from_yaml_file(
-        pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml"
-    )
-    prompt_template2 = SeedPrompt.from_yaml_file(
-        pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "aim.yaml"
-    )
-    prompt_template3 = SeedPrompt.from_yaml_file(
-        pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "aligned.yaml"
-    )
-    prompt_template4 = SeedPrompt.from_yaml_file(
-        pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "axies.yaml"
-    )
+    prompt_template1 = SeedPrompt.from_yaml_file(pathlib.Path(DATASETS_PATH) / "jailbreak" / "jailbreak_1.yaml")
+    prompt_template2 = SeedPrompt.from_yaml_file(pathlib.Path(DATASETS_PATH) / "jailbreak" / "aim.yaml")
+    prompt_template3 = SeedPrompt.from_yaml_file(pathlib.Path(DATASETS_PATH) / "jailbreak" / "aligned.yaml")
+    prompt_template4 = SeedPrompt.from_yaml_file(pathlib.Path(DATASETS_PATH) / "jailbreak" / "axies.yaml")
 
     prompt_templates = [
         prompt_template1.value,
@@ -233,9 +225,7 @@ async def test_max_query(simple_prompts: list, simple_prompt_templates: list, sc
 
 @pytest.mark.asyncio
 async def test_apply_template_converter(simple_prompts: list, simple_prompt_templates: list, scoring_target):
-    prompt_template = SeedPrompt.from_yaml_file(
-        pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml"
-    )
+    prompt_template = SeedPrompt.from_yaml_file(pathlib.Path(DATASETS_PATH) / "jailbreak" / "jailbreak_1.yaml")
 
     fuzzer_orchestrator = FuzzerOrchestrator(
         prompts=simple_prompts,
