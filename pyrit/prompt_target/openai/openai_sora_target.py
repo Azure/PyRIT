@@ -1,5 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+from enum import StrEnum
 import json
 import logging
 import os
@@ -25,15 +26,29 @@ from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 logger = logging.getLogger(__name__)
 
 
+class JobStatus(StrEnum):
+    PREPROCESSING = "preprocessing"
+    QUEUED = "queued"
+    PROCESSING = "processing"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+class FailureReason(StrEnum):
+    INPUT_MODERATION = "input_moderation"
+    INTERNAL_ERROR = "internal_error"
+    OUTPUT_MODERATION = "output_moderation"
+
+
 # Functions which define when to retry calls to check status and download video
 def _should_retry_check_task(response: httpx.Response) -> bool:
     """
-    Returns True if the task status is not "succeeded", "failed", or "cancelled".
+    Returns True if the task status is not JobStatus.SUCCEEDED, JobStatus.FAILED, or JobStatus.CANCELLED.
     """
     content = json.loads(response.content)
-    status = content.get("status", None)  # Preprocessing, Queued, Processing, Cancelled, Succeeded, Failed
+    status = content.get("status", None)
 
-    return status not in ["succeeded", "failed", "cancelled"]
+    return status not in [JobStatus.SUCCEEDED.value, JobStatus.FAILED.value, JobStatus.CANCELLED.value]
 
 
 def _should_retry_video_download(response: httpx.Response) -> bool:
@@ -55,7 +70,7 @@ class OpenAISoraTarget(OpenAITarget):
         headers (str, Optional): Extra headers of the endpoint (JSON).
         use_aad_auth (bool, Optional): When set to True, user authentication is used
             instead of API Key. DefaultAzureCredential is taken for
-            https://cognitiveservices.azure.com/.default . Please run `az login` locally
+            https://cognitiveservices.azure.com/.default. Please run `az login` locally
             to leverage user AuthN.
         api_version (str, Optional): The version of the Azure OpenAI API. Defaults to
             "preview".
@@ -67,10 +82,11 @@ class OpenAISoraTarget(OpenAITarget):
         resolution_dimensions (Literal["360x360", "640x360", "480x480", "854x480", "720x720",
             "1280x720", "1080x1080", "1920x1080"], Optional): Resolution dimensions for the video.
             Defaults to "480x480", where the first value is width and the second is height.
-        n_seconds (int, Optional): The number of seconds for the generated video. Defaults to 5.
-            For resolutions of 1080p, max seconds is 10. Otherwise, max seconds is 20.
-        n_variants (int, Optional): The number of variants for the generated video. Defaults to 1.
-            For resolutions of 1080p, max varients is 1. For resolutions of 720p, max varients is 2.
+        n_seconds (int, Optional): The duration of the generated video (in seconds). Defaults to 5.
+            Sora API will support duration up to 20s. For 1080p, maximum duration is 10s.
+        n_variants (int, Optional): The number of generated videos. Defaults to 1.
+            Sora API will support up to 2 variants for resolutions of 720p, but only 1 for resolutions
+            of 1080p.
         output_filename (str, Optional): The name of the output file for the generated video.
             Note: DO NOT SET if using target with PromptSendingOrchestrator. The default filename
             is {task_id}_{gen_id}.mp4 as returned by the model.
@@ -300,13 +316,13 @@ class OpenAISoraTarget(OpenAITarget):
         task_id = content.get("id")
         logger.info(f"Handling response for Task ID: {task_id}")
 
-        # Check status with retry until task is complete (succeeded, failed, or cancelled)
+        # Check status with retry until task is complete
         task_response = await self.check_task_status_async(task_id=task_id)
         task_content = json.loads(task_response.content)
         status = task_content.get("status")
 
         # Handle completed task
-        if status == "succeeded":
+        if status == JobStatus.SUCCESS.value:
             # Download video content
             generations = task_content.get("generations")
             gen_id = generations[0].get("id")
@@ -318,13 +334,12 @@ class OpenAISoraTarget(OpenAITarget):
                 gen_id=gen_id,
                 request=request,
             )
-        elif status in ["failed", "cancelled"]:
-            # Handle failed or cancelled task
+        elif status in [JobStatus.FAILED.value, JobStatus.CANCELLED.value]:
             failure_reason = task_content.get("failure_reason", None)
             failure_message = f"{task_id} {status}, Reason: {failure_reason}"
             logger.error(failure_message)
 
-            if failure_reason in ["input_moderation", "output_moderation"]:
+            if failure_reason in [FailureReason.INPUT_MODERATION.value, FailureReason.OUTPUT_MODERATION.value]:
                 response_entry = handle_bad_request_exception(
                     response_text=failure_message,
                     request=request,
