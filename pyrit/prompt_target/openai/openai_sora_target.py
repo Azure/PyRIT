@@ -1,6 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-from enum import StrEnum
+from enum import Enum
 import json
 import logging
 import os
@@ -26,7 +26,7 @@ from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 logger = logging.getLogger(__name__)
 
 
-class JobStatus(StrEnum):
+class JobStatus(Enum):
     PREPROCESSING = "preprocessing"
     QUEUED = "queued"
     PROCESSING = "processing"
@@ -34,7 +34,7 @@ class JobStatus(StrEnum):
     FAILED = "failed"
     CANCELLED = "cancelled"
 
-class FailureReason(StrEnum):
+class FailureReason(Enum):
     INPUT_MODERATION = "input_moderation"
     INTERNAL_ERROR = "internal_error"
     OUTPUT_MODERATION = "output_moderation"
@@ -322,7 +322,7 @@ class OpenAISoraTarget(OpenAITarget):
         status = task_content.get("status")
 
         # Handle completed task
-        if status == JobStatus.SUCCESS.value:
+        if status == JobStatus.SUCCEEDED.value:
             # Download video content
             generations = task_content.get("generations")
             gen_id = generations[0].get("id")
