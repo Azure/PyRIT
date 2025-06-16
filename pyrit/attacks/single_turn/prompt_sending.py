@@ -17,7 +17,6 @@ from pyrit.models import (
     SeedPrompt,
     SeedPromptGroup,
 )
-from pyrit.models.literals import ChatMessageRole
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.score import Scorer
@@ -300,5 +299,5 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
         objective_scores = scoring_results["objective_scores"]
         if not objective_scores:
             return None
-        
+
         return objective_scores[0]

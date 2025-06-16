@@ -9,8 +9,8 @@ import json
 import logging
 import uuid
 from abc import abstractmethod
-from typing import Dict, List, Optional, Sequence
 from collections import defaultdict
+from typing import Dict, List, Optional, Sequence
 
 from pyrit.exceptions import (
     InvalidJsonException,
@@ -31,6 +31,7 @@ from pyrit.prompt_target import PromptChatTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
 
 logger = logging.getLogger(__name__)
+
 
 class Scorer(abc.ABC):
     """
@@ -496,7 +497,7 @@ class Scorer(abc.ABC):
                     scorers=auxiliary_scorers,
                     role_filter=role_filter,
                     task=task,
-                    skip_on_error=skip_on_error
+                    skip_on_error=skip_on_error,
                 )
             )
             task_keys.append("auxiliary_scores")
@@ -509,7 +510,7 @@ class Scorer(abc.ABC):
                     scorers=objective_scorers,
                     role_filter=role_filter,
                     task=task,
-                    skip_on_error=skip_on_error
+                    skip_on_error=skip_on_error,
                 )
             )
             task_keys.append("objective_scores")
@@ -517,7 +518,7 @@ class Scorer(abc.ABC):
         # Execute all tasks concurrently
         if tasks:
             task_results = await asyncio.gather(*tasks)
-            
+
             # Process results
             for key, result_value in zip(task_keys, task_results):
                 # Convert single score to list format, handling None case

@@ -26,10 +26,15 @@ from pyrit.attacks.components.conversation_manager import (
 from pyrit.attacks.components.objective_evaluator import ObjectiveEvaluator
 from pyrit.common.path import RED_TEAM_ORCHESTRATOR_PATH
 from pyrit.common.utils import combine_dict
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score, SeedPrompt, SeedPromptGroup
-from pyrit.score import Scorer
+from pyrit.models import (
+    PromptRequestResponse,
+    Score,
+    SeedPrompt,
+    SeedPromptGroup,
+)
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target.common.prompt_target import PromptTarget
+from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
 
@@ -247,7 +252,9 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             prompt_to_send = await self._generate_next_prompt_async(context=context)
 
             # Send the generated prompt to the objective target
-            context.last_response = await self._send_prompt_to_objective_target_async(context=context, prompt=prompt_to_send)
+            context.last_response = await self._send_prompt_to_objective_target_async(
+                context=context, prompt=prompt_to_send
+            )
 
             # Score the response
             context.last_score = await self._score_response_async(context=context)
@@ -322,7 +329,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         context: MultiTurnAttackContext,
     ) -> str:
         """
-        Build a prompt for the adversarial chat.
+        Build a prompt for the adversarial chat based on the last response.
 
         Args:
             context (MultiTurnAttackContext): The attack context containing the current state and configuration.
@@ -330,13 +337,12 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         Returns:
             str: The prompt to be sent to the adversarial chat.
         """
-        # Get the last assistant message from the conversation manager
-        response = self._conversation_manager.get_last_message(
-            conversation_id=context.session.conversation_id, role="assistant"
-        )
-
-        if not response:
+        # If no last response, return the seed prompt
+        if not context.last_response:
             return self._adversarial_chat_seed_prompt.value
+
+        # Get the last assistant piece from the response
+        response_piece = context.last_response.get_piece()
 
         # Delegate to appropriate handler based on data type
         handlers = {
@@ -344,29 +350,31 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             "error": self._handle_adversarial_text_response,
         }
 
-        handler = handlers.get(response.converted_value_data_type, self._handle_adversarial_file_response)
+        handler = handlers.get(response_piece.converted_value_data_type, self._handle_adversarial_file_response)
 
-        return handler(response=response, context=context)
+        return handler(context=context)
 
-    def _handle_adversarial_text_response(
-        self, *, response: PromptRequestPiece, context: MultiTurnAttackContext
-    ) -> str:
+    def _handle_adversarial_text_response(self, *, context: MultiTurnAttackContext) -> str:
         """
         Handle the text response from the target by appending any
         available scoring feedback to the returned text. If the response
         indicates a block or error, return a fallback message instead.
 
         Args:
-            response (PromptRequestPiece): The response from the target.
-            context (MultiTurnAttackContext): The attack context.
+            context (MultiTurnAttackContext): The attack context containing the response and score.
 
         Returns:
             str: The text to be sent to the adversarial chat in the next turn.
         """
+        if not context.last_response:
+            return "No response available. Please continue."
+
+        response_piece = context.last_response.get_piece()
         feedback = self._score_evaluator.get_feedback(context.last_score) if context.last_score else None
-        if not response.has_error():
+
+        if not response_piece.has_error():
             # if response has no error, we can use the converted value
-            prompt_text = response.converted_value
+            prompt_text = response_piece.converted_value
             if not prompt_text:
                 logger.warning("Received no converted_value from response")
                 return "The previous response was empty. Please continue."
@@ -377,14 +385,12 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
                 prompt_text += f"\n\n{feedback}"
             return prompt_text
 
-        elif response.is_blocked():
+        elif response_piece.is_blocked():
             return RedTeamingAttack.DEFAULT_ADVERSARIAL_PROMPT_IF_OBJECTIVE_TARGET_IS_BLOCKED
 
-        return f"Request to target failed: {response.response_error}"
+        return f"Request to target failed: {response_piece.response_error}"
 
-    def _handle_adversarial_file_response(
-        self, *, response: PromptRequestPiece, context: MultiTurnAttackContext
-    ) -> str:
+    def _handle_adversarial_file_response(self, *, context: MultiTurnAttackContext) -> str:
         """
         Handle the file response from the target.
 
@@ -392,17 +398,21 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         scoring rationale is provided, raise a ValueError. Otherwise, return the textual feedback as the prompt.
 
         Args:
-            response (PromptRequestPiece): The response from the target containing file or non-text data.
-            context (MultiTurnAttackContext): The attack context.
+            context (MultiTurnAttackContext): The attack context containing the response and score.
 
         Returns:
             str: The suitable feedback or error message to pass back to the adversarial chat.
         """
-        if response.has_error():
+        if not context.last_response:
+            return "No response available. Please continue."
+
+        response_piece = context.last_response.get_piece()
+
+        if response_piece.has_error():
             raise RuntimeError(
                 "Request to target failed despite the returned data type "
-                f"{response.converted_value_data_type}: "
-                f"{response.response_error}"
+                f"{response_piece.converted_value_data_type}: "
+                f"{response_piece.response_error}"
             )
 
         if not self._use_score_as_feedback:
@@ -467,9 +477,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
 
         return response
 
-    async def _score_response_async(
-        self, *, context: MultiTurnAttackContext
-    ) -> Optional[Score]:
+    async def _score_response_async(self, *, context: MultiTurnAttackContext) -> Optional[Score]:
         """
         Evaluate the target's response with the objective scorer.
 
@@ -485,10 +493,10 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         if not context.last_response:
             logger.warning("No response available in context to score")
             return None
-            
+
         # Get the first assistant piece to check for blocked status
         response_piece = context.last_response.get_piece()
-        
+
         # Special handling for blocked responses
         if response_piece.is_blocked():
             return None
@@ -502,7 +510,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             role_filter="assistant",
             task=context.objective,
         )
-        
+
         objective_scores = scoring_results["objective_scores"]
         return objective_scores[0] if objective_scores else None
 
