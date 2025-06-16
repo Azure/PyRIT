@@ -221,7 +221,9 @@ class PromptNormalizer(abc.ABC):
                 piece.converted_value = converted_text
                 piece.converted_value_data_type = converted_text_data_type
 
-    def set_skip_criteria(self, skip_criteria: PromptFilterCriteria, skip_value_type: PromptConverterState) -> None:
+    def set_skip_criteria(
+        self, skip_criteria: PromptFilterCriteria, skip_value_type: PromptConverterState, ensure_response=True
+    ) -> None:
         """
         Sets the skip criteria for the orchestrator.
 
@@ -231,20 +233,32 @@ class PromptNormalizer(abc.ABC):
         """
         self._skip_criteria = skip_criteria
 
-        prompts_to_skip = self._memory.get_prompt_request_pieces(
-            role="user",
-            orchestrator_id=self._skip_criteria.orchestrator_id,
-            conversation_id=self._skip_criteria.conversation_id,
-            prompt_ids=self._skip_criteria.prompt_ids,
-            labels=self._skip_criteria.labels,
-            sent_after=self._skip_criteria.sent_after,
-            sent_before=self._skip_criteria.sent_before,
-            original_values=self._skip_criteria.original_values,
-            converted_values=self._skip_criteria.converted_values,
-            data_type=self._skip_criteria.data_type,
-            not_data_type=self._skip_criteria.not_data_type,
-            converted_value_sha256=self._skip_criteria.converted_value_sha256,
-        )
+        skip_args = {
+            "orchestrator_id": self._skip_criteria.orchestrator_id,
+            "conversation_id": self._skip_criteria.conversation_id,
+            "prompt_ids": self._skip_criteria.prompt_ids,
+            "labels": self._skip_criteria.labels,
+            "sent_after": self._skip_criteria.sent_after,
+            "sent_before": self._skip_criteria.sent_before,
+            "original_values": self._skip_criteria.original_values,
+            "converted_values": self._skip_criteria.converted_values,
+            "data_type": self._skip_criteria.data_type,
+            "not_data_type": self._skip_criteria.not_data_type,
+            "converted_value_sha256": self._skip_criteria.converted_value_sha256,
+        }
+
+        prompts_to_skip = self._memory.get_prompt_request_pieces(role="user", **skip_args)  # type: ignore
+
+        if ensure_response:
+            # If a request was sent but we don't have a response we need to retry
+            # so remove such requests from the prompts to skip list.
+            responses = self._memory.get_prompt_request_pieces(role="assistant", **skip_args)  # type: ignore
+            response_conversation_ids = {response.conversation_id for response in responses}
+            request_conversation_ids = {prompt.conversation_id for prompt in prompts_to_skip}
+            missing_response_conversation_ids = request_conversation_ids - response_conversation_ids
+            prompts_to_skip = [
+                prompt for prompt in prompts_to_skip if prompt.conversation_id not in missing_response_conversation_ids
+            ]
 
         self._original_sha256_prompts_to_skip = [
             prompt.original_value_sha256 for prompt in prompts_to_skip if prompt.original_value_sha256
