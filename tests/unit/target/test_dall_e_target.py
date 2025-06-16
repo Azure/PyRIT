@@ -147,16 +147,17 @@ async def test_send_prompt_async_bad_request_error(
 
     response = MagicMock()
     response.status_code = 400
+    response.text = "Bad Request Error"  # Ensure this does NOT contain 'content_filter'
 
     side_effect = httpx.HTTPStatusError("Bad Request Error", response=response, request=MagicMock())
 
     with patch(
         "pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect
     ) as mock_request:
-        with pytest.raises(httpx.HTTPStatusError) as rle:
+        with pytest.raises(httpx.HTTPStatusError) as exc_info:
             await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
-            assert mock_request.call_count == 1
-            assert str(rle.value) == "Bad Request Error"
+        assert mock_request.call_count == 1
+        assert str(exc_info.value) == "Bad Request Error"
 
 
 @pytest.mark.asyncio
@@ -252,14 +253,17 @@ async def test_send_prompt_async_bad_request_adds_memory(
 
     response = MagicMock()
     response.status_code = 400
+    response.text = '{"error": {"code": "content_filter", "message": "Content filtered"}}'
 
     side_effect = httpx.HTTPStatusError("Bad Request Error", response=response, request=MagicMock())
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect):
-        with pytest.raises(httpx.HTTPStatusError) as rle:
-            await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
-            assert dalle_target._memory.add_request_response_to_memory.assert_called_once()
-            assert str(rle.value) == "Bad Request Error"
+        result = await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+        # For content filter errors, a response should be returned, not an exception raised
+        assert result is not None
+        assert isinstance(result, PromptRequestResponse)
+        # Memory should be added when a response is returned
+        dalle_target._memory.add_request_response_to_memory.assert_called_once()
 
 
 def test_is_json_response_supported(patch_central_database):
