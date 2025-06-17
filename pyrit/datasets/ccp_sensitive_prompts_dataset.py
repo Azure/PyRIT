@@ -4,14 +4,14 @@
 from pathlib import Path
 from typing import Literal, Optional
 
-from .dataset_helper import FILE_TYPE_HANDLERS, fetch_examples
-from ..models import SeedPromptDataset
-from ..models.seed_prompt import SeedPrompt
+from pyrit.datasets.dataset_helper import FILE_TYPE_HANDLERS, fetch_examples
+from pyrit.models import SeedPromptDataset
+from pyrit.models.seed_prompt import SeedPrompt
 
 
 def fetch_ccp_sensitive_prompts_dataset(
     source: str = (
-        "https://huggingface.co/datasets/promptfoo/CCP-sensitive-prompts/resolve/main/ccp-sensitive-prompts.csv"
+        "https://huggingface.co/datasets/" "promptfoo/CCP-sensitive-prompts/resolve/main/" "ccp-sensitive-prompts.csv"
     ),
     source_type: Literal["public_url"] = "public_url",
     cache: bool = True,
@@ -29,17 +29,20 @@ def fetch_ccp_sensitive_prompts_dataset(
     Returns:
         SeedPromptDataset: A dataset of CCP-sensitive prompts.
 
-    Note:
-        For more information, see https://huggingface.co/datasets/promptfoo/CCP-sensitive-prompts
-        Author: promptfoo (Hugging Face user)
-        Purpose: Collection of prompts that cover sensitive topics in China, and are likely to be censored by Chinese models.
+    .. note::
+        For more information, see
+        https://huggingface.co/datasets/promptfoo/CCP-sensitive-prompts
+
+        **Author**: promptfoo (Hugging Face user)
+        **Purpose**: Collection of prompts that cover sensitive topics
+         in China, and are likely to be censored by Chinese models.
     """
     file_type = source.split(".")[-1]
     if file_type not in FILE_TYPE_HANDLERS:
         valid = ", ".join(FILE_TYPE_HANDLERS.keys())
-        raise ValueError(f"Invalid file_type")
+        raise ValueError(f"Invalid file_type {valid}")
 
-    # Required keys 
+    # Required keys
     required_keys = {"subject", "prompt"}
 
     examples = fetch_examples(source, source_type, cache, data_home)
@@ -57,9 +60,7 @@ def fetch_ccp_sensitive_prompts_dataset(
                 name="CCP Sensitive Prompts",
                 dataset_name="CCP-sensitive-prompts",
                 harm_categories=[ex["subject"]],
-                description=(
-                    "Prompts censored by Chinese models, covering topics sensitive to the CCP."
-                ),
+                description=("Prompts censored by Chinese models, covering " "topics sensitive to the CCP."),
             )
         )
 
