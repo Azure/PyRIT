@@ -1,9 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-from enum import Enum
 import json
 import logging
 import os
+from enum import Enum
 from typing import Literal, Optional
 
 import httpx
@@ -34,28 +34,11 @@ class JobStatus(Enum):
     FAILED = "failed"
     CANCELLED = "cancelled"
 
+
 class FailureReason(Enum):
     INPUT_MODERATION = "input_moderation"
     INTERNAL_ERROR = "internal_error"
     OUTPUT_MODERATION = "output_moderation"
-
-
-# Functions which define when to retry calls to check status and download video
-def _should_retry_check_task(response: httpx.Response) -> bool:
-    """
-    Returns True if the task status is not JobStatus.SUCCEEDED, JobStatus.FAILED, or JobStatus.CANCELLED.
-    """
-    content = json.loads(response.content)
-    status = content.get("status", None)
-
-    return status not in [JobStatus.SUCCEEDED.value, JobStatus.FAILED.value, JobStatus.CANCELLED.value]
-
-
-def _should_retry_video_download(response: httpx.Response) -> bool:
-    """
-    Returns True if the video download status is not 200 (success).
-    """
-    return response.status_code != 200
 
 
 class OpenAISoraTarget(OpenAITarget):
@@ -66,7 +49,7 @@ class OpenAISoraTarget(OpenAITarget):
         model_name (str, Optional): The name of the model.
         endpoint (str, Optional): The target URL for the OpenAI service.
         api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-            Defaults to the OPENAI_SORA_KEY environment variable.
+            Defaults to the `OPENAI_SORA_KEY` environment variable.
         headers (str, Optional): Extra headers of the endpoint (JSON).
         use_aad_auth (bool, Optional): When set to True, user authentication is used
             instead of API Key. DefaultAzureCredential is taken for
@@ -78,7 +61,7 @@ class OpenAISoraTarget(OpenAITarget):
             minute before hitting a rate limit. The number of requests sent to the target
             will be capped at the value provided.
         httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
-            httpx.AsyncClient() constructor.
+            `httpx.AsyncClient()` constructor.
         resolution_dimensions (Literal["360x360", "640x360", "480x480", "854x480", "720x720",
             "1280x720", "1080x1080", "1920x1080"], Optional): Resolution dimensions for the video.
             Defaults to "480x480", where the first value is width and the second is height.
@@ -89,24 +72,42 @@ class OpenAISoraTarget(OpenAITarget):
             of 1080p.
         output_filename (str, Optional): The name of the output file for the generated video.
             Note: DO NOT SET if using target with PromptSendingOrchestrator. The default filename
-            is {task_id}_{gen_id}.mp4 as returned by the model.
+            is {job_id}_{generation_id}.mp4 as returned by the model.
     """
 
-    # Maximum number of retries for check_task_status_async()
+    # Maximum number of retries for check_job_status_async()
     # This cannot be set in the constructor as it is used in the decorator, which does not know self.
     try:
-        CHECK_TASK_RETRY_MAX_NUM_ATTEMPTS: int = int(os.getenv("CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS", 25))
+        CHECK_JOB_RETRY_MAX_NUM_ATTEMPTS: int = int(os.getenv("CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS", 25))
     except ValueError:
-        CHECK_TASK_RETRY_MAX_NUM_ATTEMPTS = 25
+        CHECK_JOB_RETRY_MAX_NUM_ATTEMPTS = 25
         logger.warning(
             "Invalid value for CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS. "
-            + f"Using default value of {CHECK_TASK_RETRY_MAX_NUM_ATTEMPTS}."
+            + f"Using default value of {CHECK_JOB_RETRY_MAX_NUM_ATTEMPTS}."
         )
 
     DEFAULT_RESOLUTION_DIMENSIONS: str = "480x480"
     DEFAULT_API_VERSION: str = "preview"
     DEFAULT_N_SECONDS: int = 5
     DEFAULT_N_VARIANTS: int = 1
+
+    # Utility functions which define when to retry calls to check status and download video
+    @staticmethod
+    def _should_retry_check_job(response: httpx.Response) -> bool:
+        """
+        Returns True if the job status is not JobStatus.SUCCEEDED, JobStatus.FAILED, or JobStatus.CANCELLED.
+        """
+        content = json.loads(response.content)
+        status = content.get("status", None)
+
+        return status not in [JobStatus.SUCCEEDED.value, JobStatus.FAILED.value, JobStatus.CANCELLED.value]
+
+    @staticmethod
+    def _should_retry_video_download(response: httpx.Response) -> bool:
+        """
+        Returns True if the video download status is not 200 (success).
+        """
+        return response.status_code != 200
 
     def __init__(
         self,
@@ -190,6 +191,10 @@ class OpenAISoraTarget(OpenAITarget):
 
         Returns:
             PromptRequestResponse: The updated conversation entry with the response from the prompt target.
+
+        Raises:
+            RateLimitException: If the rate limit is exceeded.
+            httpx.HTTPStatusError: If the request fails.
         """
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
@@ -208,19 +213,19 @@ class OpenAISoraTarget(OpenAITarget):
         return await self._handle_response_async(request=request, response=response)
 
     @pyrit_custom_result_retry(
-        retry_function=_should_retry_check_task,
-        retry_max_num_attempts=CHECK_TASK_RETRY_MAX_NUM_ATTEMPTS,
+        retry_function=_should_retry_check_job,
+        retry_max_num_attempts=CHECK_JOB_RETRY_MAX_NUM_ATTEMPTS,
     )
     @pyrit_target_retry
-    async def check_task_status_async(self, task_id: str) -> httpx.Response:
+    async def check_job_status_async(self, job_id: str) -> httpx.Response:
         f"""
-        Asynchronously check status of a submitted task using the task_id.
-        Retries a maxium of {self.CHECK_TASK_RETRY_MAX_NUM_ATTEMPTS} times,
-        until the task is complete (succeeded, failed, or cancelled). Also
+        Asynchronously check status of a submitted video generation job using the job_id.
+        Retries a maxium of {self.CHECK_JOB_RETRY_MAX_NUM_ATTEMPTS} times,
+        until the job is complete (succeeded, failed, or cancelled). Also
         retries upon RateLimitException.
 
         Args:
-            task_id (str): The ID of the task to check.
+            job_id (str): The ID of the job to check.
         Returns:
             httpx.Response: The response from the API.
         Raises:
@@ -228,7 +233,7 @@ class OpenAISoraTarget(OpenAITarget):
             httpx.HTTPStatusError: If the request fails.
         """
 
-        uri = f"{self._endpoint}/jobs/{task_id}"
+        uri = f"{self._endpoint}/jobs/{job_id}"
 
         response = await self._send_httpx_request_async(
             endpoint_uri=uri,
@@ -241,13 +246,13 @@ class OpenAISoraTarget(OpenAITarget):
         retry_function=_should_retry_video_download,
     )
     @pyrit_target_retry
-    async def download_video_content_async(self, gen_id: str) -> httpx.Response:
+    async def download_video_content_async(self, generation_id: str) -> httpx.Response:
         """
-        Asynchronously download the video using the generation ID.
+        Asynchronously download the video using the video generation ID.
         Retries if the response status code is not 200. Also retries upon RateLimitException.
 
         Args:
-            gen_id (str): The ID of the generation to check.
+            generation_id (str): The ID of the video generation to download.
         Returns:
             httpx.Response: The response from the API.
         Raises:
@@ -255,8 +260,8 @@ class OpenAISoraTarget(OpenAITarget):
             httpx.HTTPStatusError: If the request fails.
         """
 
-        logger.info(f"Downloading video content for generation ID: {gen_id}")
-        uri = f"{self._endpoint}/{gen_id}/content/video"
+        logger.info(f"Downloading video content for video generation ID: {generation_id}")
+        uri = f"{self._endpoint}/{generation_id}/content/video"
 
         response = await self._send_httpx_request_async(
             endpoint_uri=uri,
@@ -269,8 +274,8 @@ class OpenAISoraTarget(OpenAITarget):
         self,
         *,
         data: bytes,
-        task_id: str,
-        gen_id: str,
+        job_id: str,
+        generation_id: str,
         request: PromptRequestPiece,
     ) -> PromptRequestResponse:
         """
@@ -278,8 +283,8 @@ class OpenAISoraTarget(OpenAITarget):
         This function is called after the video content is available for download.
         Args:
             data (bytes): The video content to save.
-            task_id (str): The task ID.
-            gen_id (str): The generation ID.
+            job_id (str): The video generation job ID.
+            generation_id (str): The video generation ID.
             request (PromptRequestPiece): The request piece associated with the prompt.
         Returns:
             PromptRequestResponse: The response entry with the saved video path.
@@ -288,7 +293,7 @@ class OpenAISoraTarget(OpenAITarget):
             category="prompt-memory-entries",
             data_type="video_path",
         )
-        file_name = self._output_filename if self._output_filename else f"{task_id}_{gen_id}"
+        file_name = self._output_filename if self._output_filename else f"{job_id}_{generation_id}"
         await serializer.save_data(data=data, output_filename=file_name)
         logger.info(f"Video response saved successfully to {serializer.value}")
 
@@ -303,7 +308,7 @@ class OpenAISoraTarget(OpenAITarget):
     ) -> PromptRequestResponse:
         """
         Asynchronously handle the response to a video generation request.
-        This includes checking the status of the task and downloading the video content if successful.
+        This includes checking the status of the job and downloading the video content if successful.
 
         Args:
             request (PromptRequestPiece): The request piece associated with the prompt.
@@ -313,30 +318,30 @@ class OpenAISoraTarget(OpenAITarget):
         """
         content = json.loads(response.content)
 
-        task_id = content.get("id")
-        logger.info(f"Handling response for Task ID: {task_id}")
+        job_id = content.get("id")
+        logger.info(f"Handling response for Job ID: {job_id}")
 
-        # Check status with retry until task is complete
-        task_response = await self.check_task_status_async(task_id=task_id)
-        task_content = json.loads(task_response.content)
-        status = task_content.get("status")
+        # Check status with retry until job is complete
+        job_response = await self.check_job_status_async(job_id=job_id)
+        job_content = json.loads(job_response.content)
+        status = job_content.get("status")
 
-        # Handle completed task
+        # Handle completed job
         if status == JobStatus.SUCCEEDED.value:
             # Download video content
-            generations = task_content.get("generations")
-            gen_id = generations[0].get("id")
+            generations = job_content.get("generations")
+            generation_id = generations[0].get("id")
 
-            video_response = await self.download_video_content_async(gen_id=gen_id)
+            video_response = await self.download_video_content_async(generation_id=generation_id)
             response_entry = await self._save_video_to_storage_async(
                 data=video_response.content,
-                task_id=task_id,
-                gen_id=gen_id,
+                job_id=job_id,
+                generation_id=generation_id,
                 request=request,
             )
         elif status in [JobStatus.FAILED.value, JobStatus.CANCELLED.value]:
-            failure_reason = task_content.get("failure_reason", None)
-            failure_message = f"{task_id} {status}, Reason: {failure_reason}"
+            failure_reason = job_content.get("failure_reason", None)
+            failure_message = f"{job_id} {status}, Reason: {failure_reason}"
             logger.error(failure_message)
 
             if failure_reason in [FailureReason.INPUT_MODERATION.value, FailureReason.OUTPUT_MODERATION.value]:
@@ -356,24 +361,26 @@ class OpenAISoraTarget(OpenAITarget):
         else:
             # Retry stop condition reached, return result
             logger.info(
-                f"{task_id} is still processing after attempting retries. Consider setting a value > "
-                + f"{self.CHECK_TASK_RETRY_MAX_NUM_ATTEMPTS} for environment variable "
+                f"{job_id} is still processing after attempting retries. Consider setting a value > "
+                + f"{self.CHECK_JOB_RETRY_MAX_NUM_ATTEMPTS} for environment variable "
                 + f"CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS. Status: {status}"
             )
             response_entry = construct_response_from_request(
                 request=request,
-                response_text_pieces=[f"{str(task_content)}"],
+                response_text_pieces=[f"{str(job_content)}"],
             )
 
         return response_entry
 
     def _validate_video_constraints(self, resolution_dimensions: str, n_variants: int, n_seconds: int) -> None:
         """
-        Validate the video constraints based on the resolution dimensions.
+        Validate the video constraints based on the resolution dimensions. This checks both n_seconds and n_variants
+        values, which have different constraints for different resolution dimensions.
         Raises:
             ValueError: If the constraints are not met.
         """
         if resolution_dimensions in ["1080x1080", "1920x1080"]:
+            # Constraints apply to all 1080p dimensions
             if n_seconds > 10:
                 raise ValueError(
                     f"n_seconds must be less than or equal to 10 for resolution dimensions of {resolution_dimensions}."
@@ -384,11 +391,13 @@ class OpenAISoraTarget(OpenAITarget):
                     f"n_variants must be less than or equal to 1 for resolution dimensions of {resolution_dimensions}."
                 )
         elif resolution_dimensions in ["720x720", "1280x720"]:
+            # Constraints apply to all 720p dimensions
             if n_variants > 2:
                 raise ValueError(
                     f"n_variants must be less than or equal to 2 for resolution dimensions of {resolution_dimensions}."
                 )
 
+        # Constraints apply for all dimensions outside of 1080p
         if n_seconds > 20 and resolution_dimensions not in ["1080x1080", "1920x1080"]:
             raise ValueError(
                 f"n_seconds must be less than or equal to 20 for resolution dimensions of {resolution_dimensions}."
@@ -422,14 +431,15 @@ class OpenAISoraTarget(OpenAITarget):
         Raises:
             ValueError: If the request is invalid.
         """
+        request_piece = prompt_request.get_piece()
+
         if len(prompt_request.request_pieces) != 1:
             raise ValueError("This target only supports a single prompt request piece.")
 
-        if prompt_request.request_pieces[0].converted_value_data_type != "text":
+        if request_piece.converted_value_data_type != "text":
             raise ValueError("This target only supports text prompt input.")
 
-        request = prompt_request.request_pieces[0]
-        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
+        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request_piece.conversation_id)
 
         if len(messages) > 0:
             raise ValueError("This target only supports a single turn conversation.")

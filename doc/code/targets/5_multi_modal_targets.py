@@ -100,7 +100,7 @@ orchestrator = PromptSendingOrchestrator(
 )
 
 objectives = [
-    "Video of a raccoon pirate eating churros con chocolate at a cafe in Spain",
+    "Video of a raccoon pirate eating flan at a cafe in Spain",
     "Video of a raccoon pirate eating a croissant at a cafe in France",
 ]
 responses = await orchestrator.run_attacks_async(objectives=objectives)  # type: ignore

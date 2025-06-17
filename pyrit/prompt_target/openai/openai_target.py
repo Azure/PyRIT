@@ -50,7 +50,7 @@ class OpenAITarget(PromptChatTarget):
             model_name (str, Optional): The name of the model.
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-                Defaults to the OPENAI_CHAT_KEY environment variable.
+                Defaults to the `OPENAI_CHAT_KEY` environment variable.
             headers (str, Optional): Extra headers of the endpoint (JSON).
             use_aad_auth (bool): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
@@ -62,7 +62,7 @@ class OpenAITarget(PromptChatTarget):
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
-                httpx.AsyncClient() constructor.
+                `httpx.AsyncClient()` constructor.
         """
         PromptChatTarget.__init__(self, max_requests_per_minute=max_requests_per_minute)
 
