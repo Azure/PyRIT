@@ -237,16 +237,10 @@ async def test_send_prompt_async_rate_limit_adds_memory(
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_bad_request_adds_memory(
+async def test_send_prompt_async_bad_request_content_filter(
     dalle_target: OpenAIDALLETarget,
     sample_conversations: MutableSequence[PromptRequestPiece],
 ) -> None:
-
-    mock_memory = MagicMock()
-    mock_memory.get_conversation.return_value = []
-    mock_memory.add_request_response_to_memory = AsyncMock()
-
-    dalle_target._memory = mock_memory
 
     request = sample_conversations[0]
     request.conversation_id = str(uuid.uuid4())
@@ -262,8 +256,9 @@ async def test_send_prompt_async_bad_request_adds_memory(
         # For content filter errors, a response should be returned, not an exception raised
         assert result is not None
         assert isinstance(result, PromptRequestResponse)
-        # Memory should be added when a response is returned
-        dalle_target._memory.add_request_response_to_memory.assert_called_once()
+        # Check that the response indicates a content filter error
+        assert result.request_pieces[0].response_error == "blocked"
+        assert result.request_pieces[0].converted_value_data_type == "error"
 
 
 def test_is_json_response_supported(patch_central_database):

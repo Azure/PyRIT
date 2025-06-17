@@ -145,10 +145,10 @@ class OpenAIDALLETarget(OpenAITarget):
                 error_response_text = StatusError.response.text
 
                 try:
-                    json_error = json.loads(error_response_text)
+                    json_error = json.loads(error_response_text).get("error", {})
 
-                    is_content_policy_violation = json_error.get("error", {}).get("code") == "content_policy_violation"
-                    is_content_filter = json_error.get("error", {}).get("code") == "content_filter"
+                    is_content_policy_violation = json_error.get("code") == "content_policy_violation"
+                    is_content_filter = json_error.get("code") == "content_filter"
 
                     return handle_bad_request_exception(
                         response_text=error_response_text,
