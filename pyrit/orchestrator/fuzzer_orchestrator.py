@@ -26,18 +26,20 @@ logger = logging.getLogger(__name__)
 
 
 class PromptNode:
-    def __init__(
-        self,
-        template: str,
-        parent: Optional[PromptNode] = None,
-    ):
-        """Class to maintain the tree information for each prompt template
+
+    """Class to maintain the tree information for each prompt template
 
         Args:
             template: Prompt template.
             parent: Parent node.
 
-        """
+    """
+
+    def __init__(
+        self,
+        template: str,
+        parent: Optional[PromptNode] = None,
+    ):
         self.id = uuid.uuid4()
         self.template: str = template
         self.children: list[PromptNode] = []
@@ -115,25 +117,7 @@ class FuzzerResult:
 class FuzzerOrchestrator(Orchestrator):
     _memory: MemoryInterface
 
-    def __init__(
-        self,
-        *,
-        prompts: list[str],
-        prompt_target: PromptTarget,
-        prompt_templates: list[str],
-        prompt_converters: Optional[list[PromptConverter]] = None,
-        template_converters: list[FuzzerConverter],
-        scoring_target: PromptChatTarget,
-        verbose: bool = False,
-        frequency_weight: float = 0.5,
-        reward_penalty: float = 0.1,
-        minimum_reward: float = 0.2,
-        non_leaf_node_probability: float = 0.1,
-        batch_size: int = 10,
-        target_jailbreak_goal_count: int = 1,
-        max_query_limit: Optional[int] = None,
-    ) -> None:
-        """Creates an orchestrator that explores a variety of jailbreak options via fuzzing.
+    """Creates an orchestrator that explores a variety of jailbreak options via fuzzing.
 
         Paper: GPTFUZZER: Red Teaming Large Language Models with Auto-Generated Jailbreak Prompts.
 
@@ -167,8 +151,27 @@ class FuzzerOrchestrator(Orchestrator):
             max_query_limit: Maximum number of times the fuzzer will run. By default, it calculates the product
                 of prompts and prompt templates and multiplies it by 10. Each iteration makes as many calls as
                 the number of prompts.
-        """
+    """
 
+    def __init__(
+        self,
+        *,
+        prompts: list[str],
+        prompt_target: PromptTarget,
+        prompt_templates: list[str],
+        prompt_converters: Optional[list[PromptConverter]] = None,
+        template_converters: list[FuzzerConverter],
+        scoring_target: PromptChatTarget,
+        verbose: bool = False,
+        frequency_weight: float = 0.5,
+        reward_penalty: float = 0.1,
+        minimum_reward: float = 0.2,
+        non_leaf_node_probability: float = 0.1,
+        batch_size: int = 10,
+        target_jailbreak_goal_count: int = 1,
+        max_query_limit: Optional[int] = None,
+    ) -> None:
+        
         super().__init__(prompt_converters=prompt_converters, verbose=verbose)
 
         if not prompt_templates:

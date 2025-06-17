@@ -49,7 +49,9 @@ def resolve_relative_url(base_path, url):
     return url
 
 
-"""
+def check_url(url, retries=2, delay=2):
+
+    """
     Check the validity of a URL, with retries if it fails.
 
     Args:
@@ -58,9 +60,7 @@ def resolve_relative_url(base_path, url):
         delay (int, optional): Delay in seconds between retries. Defaults to 2.
     Returns:
         tuple: A tuple containing the URL and a boolean indicating whether it is valid.
-"""
-
-def check_url(url, retries=2, delay=2):
+    """
 
     if (
         "http://localhost:" in url
