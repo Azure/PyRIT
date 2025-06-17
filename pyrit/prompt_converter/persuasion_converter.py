@@ -31,11 +31,16 @@ class PersuasionConverter(PromptConverter):
     Based on https://arxiv.org/abs/2401.06373 by Zeng et al.
 
     Supported persuasion techniques:
-        - authority_endorsement: Citing authoritative sources in support of a claim.
-        - evidence_based: Using empirical data, statistics, and facts to support a claim or decision.
-        - expert_endorsement: Citing domain experts in support of a claim.
-        - logical_appeal: Using logic or reasoning to support a claim.
-        - misrepresentation: Presenting oneself or an issue in a way that's not genuine or true.
+        - "authority_endorsement":
+            Citing authoritative sources in support of a claim.
+        - "evidence_based":
+            Using empirical data, statistics, and facts to support a claim or decision.
+        - "expert_endorsement":
+            Citing domain experts in support of a claim.
+        - "logical_appeal":
+            Using logic or reasoning to support a claim.
+        - "misrepresentation":
+            Presenting oneself or an issue in a way that's not genuine or true.
     """
 
     def __init__(self, *, converter_target: PromptChatTarget, persuasion_technique: str):

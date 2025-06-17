@@ -21,6 +21,7 @@ class AudioFrequencyConverter(PromptConverter):
     By default, it will shift it above the human hearing range (=20 kHz).
     """
 
+    #: Accepted audio formats for conversion.
     AcceptedAudioFormats = Literal["wav"]
 
     def __init__(

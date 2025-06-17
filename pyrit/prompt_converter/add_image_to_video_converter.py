@@ -27,7 +27,8 @@ video_encoding_map = {
 class AddImageVideoConverter(PromptConverter):
     """
     Adds an image to a video at a specified position.
-    Also, currently the image is placed in the whole video, not at a specific timepoint.
+
+    Currently the image is placed in the whole video, not at a specific timepoint.
     """
 
     def __init__(
@@ -47,7 +48,7 @@ class AddImageVideoConverter(PromptConverter):
             img_resize_size (tuple): Size to resize image to. Defaults to (500, 500).
 
         Raises:
-            ValueError: If `video_path` is empty or invalid.
+            ValueError: If ``video_path`` is empty or invalid.
         """
 
         if not video_path:
@@ -165,10 +166,10 @@ class AddImageVideoConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "image_path") -> ConverterResult:
         """
-        Converts the given prompt (image file path) by adding it to a video.
+        Converts the given prompt (image) by adding it to a video.
 
         Args:
-            prompt (str): The image file name to be added to the video.
+            prompt (str): The image path to be added to the video.
             input_type (PromptDataType): The type of input data.
 
         Returns:

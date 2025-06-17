@@ -19,12 +19,14 @@ class PDFConverter(PromptConverter):
     Converts a text prompt into a PDF file.
 
     Supports various modes:
-        1. Template-Based Generation: If a `SeedPrompt` is provided, dynamic data can be injected into the
-        template using the `SeedPrompt.render_template_value` method, and the resulting content is converted to a PDF.\n
-        2. Direct Text-Based Generation: If no template is provided, the raw string prompt is converted directly
-        into a PDF.\n
-        3. Modify Existing PDFs (Overlay approach): Enables injecting text into existing PDFs at specified
-        coordinates, merging a new "overlay layer" onto the original PDF.
+        - Template-Based Generation:
+            If a ``SeedPrompt`` is provided, dynamic data can be injected into the template using
+            the ``SeedPrompt.render_template_value`` method, and the resulting content is converted to a PDF.
+        - Direct Text-Based Generation:
+            If no template is provided, the raw string prompt is converted directly into a PDF.
+        - Modify Existing PDFs (Overlay approach):
+            Enables injecting text into existing PDFs at specified coordinates, merging a new "overlay layer"
+            onto the original PDF.
     """
 
     def __init__(
@@ -44,7 +46,7 @@ class PDFConverter(PromptConverter):
         Initializes the converter with the specified parameters.
 
         Args:
-            prompt_template (Optional[SeedPrompt], optional): A `SeedPrompt` object representing a template.
+            prompt_template (Optional[SeedPrompt], optional): A ``SeedPrompt`` object representing a template.
             font_type (str): Font type for the PDF. Defaults to "Helvetica".
             font_size (int): Font size for the PDF. Defaults to 12.
             font_color (tuple): Font color for the PDF in RGB format. Defaults to (255, 255, 255).
@@ -102,7 +104,7 @@ class PDFConverter(PromptConverter):
 
         Args:
             prompt (str): The prompt to be embedded in the PDF.
-            input_type (PromptDataType): The type of input data (default: "text").
+            input_type (PromptDataType): The type of input data.
 
         Returns:
             ConverterResult: The result containing the full file path to the generated PDF.

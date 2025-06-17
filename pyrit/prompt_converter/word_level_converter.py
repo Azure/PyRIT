@@ -98,7 +98,7 @@ class WordLevelConverter(PromptConverter):
         pass
 
     def validate_input(self, prompt: str) -> None:
-        """Validates the input before processing (can be overridden by subclasses)"""
+        """Validates the input before processing (can be overridden by subclasses)."""
         pass
 
     def join_words(self, words: list[str]) -> str:

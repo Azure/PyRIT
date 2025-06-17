@@ -45,7 +45,7 @@ class TranslationConverter(PromptConverter):
         Initializes the converter with the target chat support, language, and optional prompt template.
 
         Args:
-            converter_target (PromptChatTarget): The target chat support for the conversion which will translate
+            converter_target (PromptChatTarget): The target chat support for the conversion which will translate.
             language (str): The language for the conversion. E.g. Spanish, French, leetspeak, etc.
             prompt_template (SeedPrompt, Optional): The prompt template for the conversion.
             max_retries (int): Maximum number of retries for the conversion.

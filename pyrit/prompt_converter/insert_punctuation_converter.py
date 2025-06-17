@@ -19,6 +19,7 @@ class InsertPunctuationConverter(PromptConverter):
     "a1b2c3" is a word; "a1 2" are 2 words; "a1,b,3" are 3 words.
     """
 
+    #: Common punctuation characters. Used if no punctuation list is provided.
     default_punctuation_list = [",", ".", "!", "?", ":", ";", "-"]
 
     def __init__(self, word_swap_ratio: float = 0.2, between_words: bool = True) -> None:
@@ -31,7 +32,7 @@ class InsertPunctuationConverter(PromptConverter):
                 If False, insert punctuation within words. Defaults to True.
 
         Raises:
-            ValueError: If word_swap_ratio is not between 0 and 1.
+            ValueError: If ``word_swap_ratio`` is not between 0 and 1.
         """
         # Swap ratio cannot be 0 or larger than 1
         if not 0 < word_swap_ratio <= 1:

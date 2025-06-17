@@ -32,13 +32,16 @@ class UnicodeConfusableConverter(PromptConverter):
 
         Args:
             source_package (Literal["confusable_homoglyphs", "confusables"]):
-                The package to use for homoglyph generation. Can be either "confusable_homoglyphs"
-                which can be found here: https://pypi.org/project/confusable-homoglyphs/ or "confusables" which can be
-                found here: https://pypi.org/project/confusables/. "Confusable_homoglyphs" is used by default as it is
-                more regularly maintained and up to date with the latest Unicode-provided confusables found here:
-                https://www.unicode.org/Public/security/latest/confusables.txt. However, "confusables"
-                provides additional methods of matching characters (not just Unicode list), so each character
-                has more possible substitutions.
+                The package to use for homoglyph generation.
+
+                Can be either:
+                    - "confusable_homoglyphs" (https://pypi.org/project/confusable-homoglyphs/):
+                        Used by default as it is more regularly maintained and up to date with the latest
+                        Unicode-provided confusables found here:
+                        https://www.unicode.org/Public/security/latest/confusables.txt
+                    - "confusables" (https://pypi.org/project/confusables/):
+                        Provides additional methods of matching characters (not just Unicode list),
+                        so each character has more possible substitutions.
             deterministic (bool): This argument is for unittesting only.
         """
         if source_package not in ["confusable_homoglyphs", "confusables"]:

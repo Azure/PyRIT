@@ -64,8 +64,8 @@ class CodeChameleonConverter(PromptConverter):
                 Functions will take the source code of the function.
 
         Raises:
-            ValueError: If `encrypt_type` is not valid or if `encrypt_function` or `decrypt_function` are not provided
-                when `encrypt_type` is "custom".
+            ValueError: If ``encrypt_type`` is not valid or if ``encrypt_function`` or ``decrypt_function`` are not
+                provided when ``encrypt_type`` is "custom".
         """
         match encrypt_type:
             case "custom":

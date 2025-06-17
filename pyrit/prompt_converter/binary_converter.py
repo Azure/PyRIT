@@ -16,9 +16,10 @@ class BinaryConverter(WordLevelConverter):
     """
 
     class BitsPerChar(Enum):
-        BITS_8 = 8
-        BITS_16 = 16
-        BITS_32 = 32
+        """The number of bits per character for binary conversion."""
+        BITS_8 = 8  #: 8 bits per character, suitable for ASCII characters.
+        BITS_16 = 16  #: 16 bits per character, suitable for Unicode characters.
+        BITS_32 = 32  #: 32 bits per character, suitable for extended Unicode characters.
 
     def __init__(
         self,

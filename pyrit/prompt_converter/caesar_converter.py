@@ -13,7 +13,7 @@ class CaesarConverter(PromptConverter):
     """
     Encodes text using the Caesar cipher with a specified offset.
 
-    Using offset=1, 'Hello 123' would encode to 'Ifmmp 234', as each character would shift by 1.
+    Using ``offset=1``, 'Hello 123' would encode to 'Ifmmp 234', as each character would shift by 1.
     Shifts for digits 0-9 only work if the offset is less than 10, if the offset is equal to or greather than 10,
     any numeric values will not be shifted.
     """
@@ -30,7 +30,7 @@ class CaesarConverter(PromptConverter):
                 a description of the cipher, and an example encoded using the cipher.
 
         Raises:
-            ValueError: If `caesar_offset` is not in the range -25 to 25 inclusive.
+            ValueError: If ``caesar_offset`` is not in the range -25 to 25 inclusive.
         """
         if caesar_offset < -25 or caesar_offset > 25:
             raise ValueError("caesar offset value invalid, must be between -25 and 25 inclusive.")

@@ -21,14 +21,16 @@ class DiacriticConverter(PromptConverter):
 
         Args:
             target_chars (str): Characters to apply the diacritic to. Defaults to "aeiou".
-            accent (str): Type of diacritic to apply (default is 'acute'). Available options are:\n
-                - `acute`: \u0301\n
-                - `grave`: \u0300\n
-                - `tilde`: \u0303\n
-                - `umlaut`: \u0308
+            accent (str): Type of diacritic to apply (default is 'acute').
+
+                Available options are:
+                    - `acute`: \u0301
+                    - `grave`: \u0300
+                    - `tilde`: \u0303
+                    - `umlaut`: \u0308
 
         Raises:
-            ValueError: If `target_chars` is empty or if the specified accent is not recognized.
+            ValueError: If ``target_chars`` is empty or if the specified accent is not recognized.
         """
         super().__init__()
 

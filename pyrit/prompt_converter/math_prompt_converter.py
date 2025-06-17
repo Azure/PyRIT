@@ -14,8 +14,9 @@ logger = logging.getLogger(__name__)
 
 class MathPromptConverter(LLMGenericTextConverter):
     """
-    Converts natural language instructions into symbolic mathematics problems using
-    an LLM via an existing PromptTarget (like Azure OpenAI or other supported backends).
+    Converts natural language instructions into symbolic mathematics problems using an LLM.
+
+    An existing ``PromptChatTarget`` is used to perform the conversion (like Azure OpenAI).
     """
 
     def __init__(self, *, converter_target: PromptChatTarget, prompt_template: SeedPrompt = None):

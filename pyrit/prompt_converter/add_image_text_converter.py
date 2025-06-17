@@ -44,7 +44,7 @@ class AddImageTextConverter(PromptConverter):
             y_pos (int): Y coordinate to place text in (0 is upper most). Defaults to 10.
 
         Raises:
-            ValueError: If `img_to_add` is empty or invalid, or if `font_name` does not end with ".ttf".
+            ValueError: If ``img_to_add`` is empty or invalid, or if ``font_name`` does not end with ".ttf".
         """
         if not img_to_add:
             raise ValueError("Please provide valid image path")
@@ -118,7 +118,7 @@ class AddImageTextConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Converts the given prompt by adding it as text to the image specified in the constructor.
+        Converts the given prompt by adding it as text to the image.
 
         Args:
             prompt (str): The text to be added to the image.

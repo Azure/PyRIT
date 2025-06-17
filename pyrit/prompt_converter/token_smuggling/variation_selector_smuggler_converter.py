@@ -17,7 +17,7 @@ class VariationSelectorSmugglerConverter(SmugglerConverter):
         - Bytes 0x00-0x0F are mapped to U+FE00-U+FE0F.
         - Bytes 0x10-0xFF are mapped to U+E0100-U+E01EF.
 
-    If 'embed_in_base' is True, the payload is concatenated with a base character
+    If ``embed_in_base`` is True, the payload is concatenated with a base character
     (default: 😊); otherwise, a space separator is inserted.
 
     Replicates functionality detailed in:
@@ -39,13 +39,13 @@ class VariationSelectorSmugglerConverter(SmugglerConverter):
 
         Args:
             action (Literal["encode", "decode"]): The action to perform.
-            base_char_utf8 (Optional[str]): Base character for variation_selector_smuggler mode (default: 😊).
+            base_char_utf8 (Optional[str]): Base character for ``variation_selector_smuggler`` mode (default: 😊).
             embed_in_base (bool): If True, the hidden payload is embedded directly into the base character.
                                     If False, a visible separator (space) is inserted between the base and payload.
                                     Default is True.
 
         Raises:
-            ValueError: If an unsupported action or encoding_mode is provided.
+            ValueError: If an unsupported action or ``encoding_mode`` is provided.
         """
         super().__init__(action=action)
         self.utf8_base_char = base_char_utf8 if base_char_utf8 is not None else "😊"
@@ -118,7 +118,7 @@ class VariationSelectorSmugglerConverter(SmugglerConverter):
     # Extension of Paul Butler's method
     def encode_visible_hidden(self, visible: str, hidden: str) -> Tuple[str, str]:
         """
-        Combines visible text with hidden text by encoding the hidden text using variation_selector_smuggler mode.
+        Combines visible text with hidden text by encoding the hidden text using ``variation_selector_smuggler`` mode.
 
         The hidden payload is generated as a composite using the current embedding setting and then appended
         to the visible text.

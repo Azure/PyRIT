@@ -14,7 +14,9 @@ logger = logging.getLogger(__name__)
 
 class ToneConverter(LLMGenericTextConverter):
     """
-    Converts a conversation to a different tone.
+    Converts a conversation to a different tone using an LLM.
+
+    An existing ``PromptChatTarget`` is used to perform the conversion (like Azure OpenAI).
     """
 
     def __init__(self, *, converter_target: PromptChatTarget, tone: str, prompt_template: SeedPrompt = None):

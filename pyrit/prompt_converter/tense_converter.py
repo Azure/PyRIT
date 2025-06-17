@@ -14,7 +14,9 @@ logger = logging.getLogger(__name__)
 
 class TenseConverter(LLMGenericTextConverter):
     """
-    Converts a conversation to a different tense.
+    Converts a conversation to a different tense using an LLM.
+
+    An existing ``PromptChatTarget`` is used to perform the conversion (like Azure OpenAI).
     """
 
     def __init__(self, *, converter_target: PromptChatTarget, tense: str, prompt_template: SeedPrompt = None):

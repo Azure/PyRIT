@@ -16,7 +16,7 @@ class ConverterResult:
 
     #: The converted text output. This is the main result of the conversion.
     output_text: str
-    #: The data type of the converted output. Indicates the format/type of the `output_text`.
+    #: The data type of the converted output. Indicates the format/type of the ``output_text``.
     output_type: PromptDataType
 
     def __str__(self):

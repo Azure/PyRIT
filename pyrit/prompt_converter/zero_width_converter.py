@@ -10,6 +10,7 @@ class ZeroWidthConverter(PromptConverter):
     Injects zero-width spaces between characters in the provided text to bypass content safety mechanisms.
     """
 
+    #: Constant for zero-width space character.
     ZERO_WIDTH_SPACE = "\u200b"
 
     def input_supported(self, input_type: PromptDataType) -> bool:

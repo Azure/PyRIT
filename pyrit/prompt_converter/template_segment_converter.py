@@ -31,7 +31,7 @@ class TemplateSegmentConverter(PromptConverter):
 
         Args:
             prompt_template (SeedPrompt, Optional): The prompt template for the conversion. Must have two or more
-                parameters. If not provided, uses the default tom_and_jerry.yaml template.
+                parameters. If not provided, uses the default ``tom_and_jerry.yaml`` template.
 
         Raises:
             ValueError: If the template has fewer than two parameters or if any parameter is missing in the template.

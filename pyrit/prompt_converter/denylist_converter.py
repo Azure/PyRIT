@@ -15,7 +15,9 @@ logger = logging.getLogger(__name__)
 
 class DenylistConverter(LLMGenericTextConverter):
     """
-    Replaces forbidden words or phrases in a prompt with synonyms.
+    Replaces forbidden words or phrases in a prompt with synonyms using an LLM.
+
+    An existing ``PromptChatTarget`` is used to perform the conversion (like Azure OpenAI).
     """
 
     def __init__(

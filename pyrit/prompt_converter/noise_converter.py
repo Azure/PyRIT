@@ -16,7 +16,9 @@ logger = logging.getLogger(__name__)
 
 class NoiseConverter(LLMGenericTextConverter):
     """
-    Injects noise errors into a conversation.
+    Injects noise errors into a conversation using an LLM.
+
+    An existing ``PromptChatTarget`` is used to perform the conversion (like Azure OpenAI).
     """
 
     def __init__(
@@ -31,7 +33,7 @@ class NoiseConverter(LLMGenericTextConverter):
         Initializes the converter with the specified parameters.
 
         Args:
-            converter_target (PromptChatTarget): The endpoint that converts the prompt
+            converter_target (PromptChatTarget): The endpoint that converts the prompt.
             noise (str): The noise to inject. Grammar error, delete random letter, insert random space, etc.
             number_errors (int): The number of errors to inject.
             prompt_template (SeedPrompt, Optional): The prompt template for the conversion.

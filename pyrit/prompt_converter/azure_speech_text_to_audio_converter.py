@@ -21,9 +21,12 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
     https://learn.microsoft.com/en-us/azure/ai-services/speech-service/text-to-speech
     """
 
+    #: The name of the Azure region.
     AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_REGION"
+    #: The API key for accessing the service.
     AZURE_SPEECH_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_KEY"
 
+    #: Supported audio formats for output.
     AzureSpeachAudioFormat = Literal["wav", "mp3"]
 
     def __init__(

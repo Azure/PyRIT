@@ -40,14 +40,14 @@ class QRCodeConverter(PromptConverter):
             light_color (tuple, Optional): Sets color of light modules, using RGB values.
                 Defaults to white: (255, 255, 255).
             data_dark_color (tuple, Optional): Sets color of dark data modules (the modules that actually
-                stores the data), using RGB values. Defaults to dark_color.
+                stores the data), using RGB values. Defaults to ``dark_color``.
             data_light_color (tuple, Optional): Sets color of light data modules, using RGB values.
                 Defaults to light_color.
             finder_dark_color (tuple, Optional): Sets dark module color of finder patterns (squares located in
-                three corners), using RGB values. Defaults to dark_color.
+                three corners), using RGB values. Defaults to ``dark_color``.
             finder_light_color (tuple, Optional): Sets light module color of finder patterns, using RGB values.
                 Defaults to light_color.
-            border_color (tuple, Optional): Sets color of border, using RGB values. Defaults to light_color.
+            border_color (tuple, Optional): Sets color of border, using RGB values. Defaults to ``light_color``.
         """
         self._scale = scale
         self._border = border
