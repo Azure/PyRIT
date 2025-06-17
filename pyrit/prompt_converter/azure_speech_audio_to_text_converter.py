@@ -67,10 +67,13 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
 
         Args:
             prompt (str): File path to the audio file to be transcribed.
-            input_type (PromptDataType): The type of the input data.
+            input_type (PromptDataType): The type of input data.
 
         Returns:
-            ConverterResult: The transcribed text as a `ConverterResult` object.
+            ConverterResult: The result containing the transcribed text.
+
+        Raises:
+            ValueError: If the input type is not supported or if the provided file is not a .wav file.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")

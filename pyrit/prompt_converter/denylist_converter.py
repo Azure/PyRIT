@@ -53,11 +53,11 @@ class DenylistConverter(LLMGenericTextConverter):
         replacing them with synonymous words.
 
         Args:
-            prompt (str): The input prompt to be converted.
-            input_type (PromptDataType): The type of the input data.
+            prompt (str): The prompt to be converted.
+            input_type (PromptDataType): The type of input data.
 
         Returns:
-            ConverterResult: The conversion result as a `ConverterResult` object.
+            ConverterResult: The result containing the modified prompt.
         """
 
         # check if the prompt contains any words from the  denylist and if so,

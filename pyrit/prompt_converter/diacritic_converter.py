@@ -17,7 +17,7 @@ class DiacriticConverter(PromptConverter):
 
     def __init__(self, target_chars: str = "aeiou", accent: str = "acute"):
         """
-        Initializes the DiacriticConverter with specified target characters and diacritic accent.
+        Initializes the converter with specified target characters and diacritic accent.
 
         Args:
             target_chars (str): Characters to apply the diacritic to. Defaults to "aeiou".
@@ -28,7 +28,7 @@ class DiacriticConverter(PromptConverter):
                 - `umlaut`: \u0308
 
         Raises:
-            ValueError: If `target_chars` is empty.
+            ValueError: If `target_chars` is empty or if the specified accent is not recognized.
         """
         super().__init__()
 
@@ -79,6 +79,7 @@ class DiacriticConverter(PromptConverter):
         )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        """Converts the given prompt by applying diacritics to specified characters."""
         if not self.input_supported(input_type):
             raise ValueError("Only 'text' input type is supported.")
 

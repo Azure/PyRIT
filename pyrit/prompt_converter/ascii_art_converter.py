@@ -22,6 +22,7 @@ class AsciiArtConverter(PromptConverter):
         self.font_value = font
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        """Converts the given prompt into ASCII art."""
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 

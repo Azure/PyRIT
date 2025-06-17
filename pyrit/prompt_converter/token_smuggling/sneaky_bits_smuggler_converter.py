@@ -14,11 +14,11 @@ class SneakyBitsSmugglerConverter(SmugglerConverter):
     Encodes and decodes text using a bit-level approach.
 
     Uses two invisible Unicode characters:
-      - `zero_char` (default: U+2062) to represent binary 0.
-      - `one_char` (default: U+2064) to represent binary 1.
+        - `zero_char` (default: U+2062) to represent binary 0.
+        - `one_char` (default: U+2064) to represent binary 1.
 
     Replicates functionality detailed in:
-      - https://embracethered.com/blog/posts/2025/sneaky-bits-and-ascii-smuggler/
+        - https://embracethered.com/blog/posts/2025/sneaky-bits-and-ascii-smuggler/
     """
 
     def __init__(
@@ -28,6 +28,8 @@ class SneakyBitsSmugglerConverter(SmugglerConverter):
         one_char: Optional[str] = None,
     ):
         """
+        Initializes the converter with options for encoding/decoding in Sneaky Bits mode.
+
         Args:
             action (Literal["encode", "decode"]): The action to perform.
             zero_char (Optional[str]): Character to represent binary 0 in sneaky_bits mode (default: U+2062).
@@ -42,7 +44,7 @@ class SneakyBitsSmugglerConverter(SmugglerConverter):
 
     def encode_message(self, message: str) -> Tuple[str, str]:
         """
-        Encode the message using Sneaky Bits mode.
+        Encodes the message using Sneaky Bits mode.
 
         The message is first converted to its UTF-8 byte sequence. Then each byte is represented
         as 8 bits, with each bit replaced by an invisible character (self.zero_char for 0 and
@@ -71,7 +73,7 @@ class SneakyBitsSmugglerConverter(SmugglerConverter):
 
     def decode_message(self, message: str) -> str:
         """
-        Decode the message encoded using Sneaky Bits mode.
+        Decodes the message encoded using Sneaky Bits mode.
 
         The method filters out only the valid invisible characters (self.zero_char and self.one_char),
         groups them into 8-bit chunks, reconstructs each byte, and finally decodes the byte sequence

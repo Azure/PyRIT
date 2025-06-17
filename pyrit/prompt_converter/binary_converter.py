@@ -51,7 +51,7 @@ class BinaryConverter(WordLevelConverter):
         self.bits_per_char = bits_per_char
 
     def validate_input(self, prompt):
-        # Check if bits_per_char is sufficient for the characters in the prompt
+        """Checks if ``bits_per_char`` is sufficient for the characters in the prompt."""
         bits = self.bits_per_char.value
         max_code_point = max((ord(char) for char in prompt), default=0)
         min_bits_required = max_code_point.bit_length()
@@ -62,11 +62,11 @@ class BinaryConverter(WordLevelConverter):
             )
 
     async def convert_word_async(self, word: str) -> str:
+        """Converts each character in the word to its binary representation. """
         bits = self.bits_per_char.value
-        # Convert each character in the word to its binary representation
         return " ".join(format(ord(char), f"0{bits}b") for char in word)
 
     def join_words(self, words: list[str]) -> str:
-        """Join the converted words with the binary representation of a space."""
+        """Joins the converted words with the binary representation of a space."""
         space_binary = format(ord(" "), f"0{self.bits_per_char.value}b")
         return f" {space_binary} ".join(words)

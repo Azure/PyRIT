@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 class AddTextImageConverter(PromptConverter):
     """
     Adds a string to an image and wraps the text into multiple lines if necessary.
+
     This class is similar to :class:`AddImageTextConverter` except
     we pass in text as an argument to the constructor as opposed to an image file path.
     """
@@ -41,6 +42,9 @@ class AddTextImageConverter(PromptConverter):
             font_size (float): Size of font to use. Defaults to 15.
             x_pos (int): X coordinate to place text in (0 is left most). Defaults to 10.
             y_pos (int): Y coordinate to place text in (0 is upper most). Defaults to 10.
+
+        Raises:
+            ValueError: If `text_to_add` is empty, or if `font_name` does not end with ".ttf".
         """
         if text_to_add.strip() == "":
             raise ValueError("Please provide valid text_to_add value")
@@ -110,14 +114,17 @@ class AddTextImageConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "image_path") -> ConverterResult:
         """
-        Converts the given image by adding text specified in the constructor to it.
+        Converts the given prompt (image file path) by adding text to the image.
 
         Args:
             prompt (str): The image file path to which text will be added.
-            input_type (PromptDataType): Type of data, should be "image_path".
+            input_type (PromptDataType): The type of input data.
 
         Returns:
-            ConverterResult: The path to the updated image as a `ConverterResult` object.
+            ConverterResult: The result containing path to the updated image.
+
+        Raises:
+            ValueError: If the input type is not supported.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")

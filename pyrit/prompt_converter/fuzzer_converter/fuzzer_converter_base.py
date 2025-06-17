@@ -28,28 +28,40 @@ class FuzzerConverter(PromptConverter):
     Base class for GPTFUZZER converters.
 
     Adapted from GPTFUZZER: Red Teaming Large Language Models with Auto-Generated Jailbreak Prompts.
-    Paper https://arxiv.org/pdf/2309.10253 by Jiahao Yu, Xingwei Lin, Zheng Yu, Xinyu Xing
-    GitHub https://github.com/sherdencooper/GPTFuzz/tree/master
+    Paper: https://arxiv.org/pdf/2309.10253 by Jiahao Yu, Xingwei Lin, Zheng Yu, Xinyu Xing.
+    GitHub: https://github.com/sherdencooper/GPTFuzz/tree/master
     """
 
     def __init__(self, *, converter_target: PromptChatTarget, prompt_template: Optional[SeedPrompt] = None):
+        """
+        Initializes the converter with the specified chat target and prompt template.
+
+        Args:
+            converter_target (PromptChatTarget): Chat target used to perform fuzzing on user prompt.
+            prompt_template (SeedPrompt, Optional): Template to be used instead of the default system prompt with
+                instructions for the chat target.
+        """
         self.converter_target = converter_target
         self.system_prompt = prompt_template.value
         self.template_label = "TEMPLATE"
 
     def update(self, **kwargs) -> None:
+        """Updates the converter with new parameters."""
         pass
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Generates versions of prompt with new, prepended sentences.
+        Converts the given prompt into the target format supported by the converter.
 
         Args:
-            prompt (str): The input prompt to be converted.
-            input_type (PromptDataType): The type of the input data.
+            prompt (str): The prompt to be converted.
+            input_type (PromptDataType): The type of input data.
 
         Returns:
-            ConverterResult: The conversion result as a `ConverterResult` object.
+            ConverterResult: The result containing the modified prompt.
+
+        Raises:
+            ValueError: If the input type is not supported.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
@@ -87,6 +99,7 @@ class FuzzerConverter(PromptConverter):
 
     @pyrit_json_retry
     async def send_prompt_async(self, request):
+        """Sends the prompt request to the converter target and processes the response."""
         response = await self.converter_target.send_prompt_async(prompt_request=request)
 
         response_msg = response.get_value()

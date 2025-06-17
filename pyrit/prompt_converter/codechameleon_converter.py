@@ -62,6 +62,10 @@ class CodeChameleonConverter(PromptConverter):
                 Used as part of markdown code block instructions in system prompt.
                 If list is provided, strings will be treated as single statements for imports or comments.
                 Functions will take the source code of the function.
+
+        Raises:
+            ValueError: If `encrypt_type` is not valid or if `encrypt_function` or `decrypt_function` are not provided
+                when `encrypt_type` is "custom".
         """
         match encrypt_type:
             case "custom":
@@ -91,6 +95,7 @@ class CodeChameleonConverter(PromptConverter):
                 )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        """Converts the given prompt by applying the specified encryption function."""
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 

@@ -52,11 +52,11 @@ class ToxicSentenceGeneratorConverter(LLMGenericTextConverter):
         Converts the given prompt into a toxic sentence starter.
 
         Args:
-            prompt (str): The input prompt to be converted.
-            input_type (PromptDataType): The type of the input data.
+            prompt (str): The prompt to be converted.
+            input_type (PromptDataType): The type of input data.
 
         Returns:
-            ConverterResult: The conversion result, containing the toxic sentence starter.
+            ConverterResult: The conversion result containing the toxic sentence starter.
         """
         # Add the prompt to _prompt_kwargs before calling the base method
         self._prompt_kwargs["prompt"] = prompt

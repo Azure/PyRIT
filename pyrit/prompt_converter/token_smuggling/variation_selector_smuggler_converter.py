@@ -14,14 +14,14 @@ class VariationSelectorSmugglerConverter(SmugglerConverter):
     Encodes and decodes text using Unicode Variation Selectors.
 
     Each UTF-8 byte is mapped as follows:
-      - Bytes 0x00-0x0F are mapped to U+FE00-U+FE0F.
-      - Bytes 0x10-0xFF are mapped to U+E0100-U+E01EF.
+        - Bytes 0x00-0x0F are mapped to U+FE00-U+FE0F.
+        - Bytes 0x10-0xFF are mapped to U+E0100-U+E01EF.
 
     If 'embed_in_base' is True, the payload is concatenated with a base character
     (default: 😊); otherwise, a space separator is inserted.
 
     Replicates functionality detailed in:
-      - https://paulbutler.org/2025/smuggling-arbitrary-data-through-an-emoji/
+        - https://paulbutler.org/2025/smuggling-arbitrary-data-through-an-emoji/
 
     Extension: In addition to embedding into a base character, we also support
     appending invisible variation selectors directly to visible text—enabling mixed
@@ -35,7 +35,7 @@ class VariationSelectorSmugglerConverter(SmugglerConverter):
         embed_in_base: bool = True,
     ):
         """
-        Initialize the converter with options for encoding/decoding.
+        Initializes the converter with options for encoding/decoding.
 
         Args:
             action (Literal["encode", "decode"]): The action to perform.
@@ -53,11 +53,13 @@ class VariationSelectorSmugglerConverter(SmugglerConverter):
 
     def encode_message(self, message: str) -> Tuple[str, str]:
         """
-        Encode the message using Unicode variation selectors.
+        Encodes the message using Unicode variation selectors.
+
         The message is converted to UTF-8 bytes, and each byte is mapped to a variation selector:
-          - 0x00-0x0F => U+FE00 to U+FE0F.
-          - 0x10-0xFF => U+E0100 to U+E01EF.
-        If embed_in_base is True, the payload is embedded directly into the base character;
+            - 0x00-0x0F => U+FE00 to U+FE0F.
+            - 0x10-0xFF => U+E0100 to U+E01EF.
+
+        If ``embed_in_base`` is True, the payload is embedded directly into the base character;
         otherwise, a visible separator (a space) is inserted between the base and payload.
         """
         payload = ""
@@ -84,7 +86,7 @@ class VariationSelectorSmugglerConverter(SmugglerConverter):
 
     def decode_message(self, message: str) -> str:
         """
-        Decode a message encoded using Unicode variation selectors.
+        Decodes a message encoded using Unicode variation selectors.
         The decoder scans the string for variation selectors, ignoring any visible separator.
         """
         bytes_out = bytearray()
@@ -116,12 +118,15 @@ class VariationSelectorSmugglerConverter(SmugglerConverter):
     # Extension of Paul Butler's method
     def encode_visible_hidden(self, visible: str, hidden: str) -> Tuple[str, str]:
         """
-        Combine visible text with hidden text by encoding the hidden text using variation_selector_smuggler mode.
+        Combines visible text with hidden text by encoding the hidden text using variation_selector_smuggler mode.
+
         The hidden payload is generated as a composite using the current embedding setting and then appended
         to the visible text.
+
         Args:
             visible (str): The visible text.
             hidden (str): The secret/hidden text to encode.
+
         Returns:
             Tuple[str, str]: A tuple containing a summary and the combined text.
         """
@@ -132,11 +137,14 @@ class VariationSelectorSmugglerConverter(SmugglerConverter):
     # Extension of Paul Butler's method
     def decode_visible_hidden(self, combined: str) -> Tuple[str, str]:
         """
-        Extract the visible text and decode the hidden text from a combined string.
-        It searches for the first occurrence of the base character (self.utf8_base_char) and treats everything
+        Extracts the visible text and decodes the hidden text from a combined string.
+
+        It searches for the first occurrence of the base character (``self.utf8_base_char``) and treats everything
         from that point on as the hidden payload.
+
         Args:
             combined (str): The combined text containing visible and hidden parts.
+
         Returns:
             Tuple[str, str]: A tuple with the visible text and the decoded hidden text.
         """

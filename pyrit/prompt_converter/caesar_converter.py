@@ -11,9 +11,8 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 class CaesarConverter(PromptConverter):
     """
-    Encodes text using the Caesar cipher.
+    Encodes text using the Caesar cipher with a specified offset.
 
-    Encodes by using given offset.
     Using offset=1, 'Hello 123' would encode to 'Ifmmp 234', as each character would shift by 1.
     Shifts for digits 0-9 only work if the offset is less than 10, if the offset is equal to or greather than 10,
     any numeric values will not be shifted.
@@ -29,6 +28,9 @@ class CaesarConverter(PromptConverter):
             append_description (bool): If True, appends plaintext "expert" text to the prompt.
                 This includes instructions to only communicate using the cipher,
                 a description of the cipher, and an example encoded using the cipher.
+
+        Raises:
+            ValueError: If `caesar_offset` is not in the range -25 to 25 inclusive.
         """
         if caesar_offset < -25 or caesar_offset > 25:
             raise ValueError("caesar offset value invalid, must be between -25 and 25 inclusive.")
@@ -41,6 +43,7 @@ class CaesarConverter(PromptConverter):
         )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        """Converts the given prompt using the Caesar cipher."""
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 

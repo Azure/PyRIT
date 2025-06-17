@@ -43,12 +43,11 @@ class MathPromptConverter(LLMGenericTextConverter):
         Converts the given prompt into a mathematical problem format.
 
         Args:
-            prompt (str): The input prompt to be converted.
-            input_type (PromptDataType): The type of the input data.
+            prompt (str): The prompt to be converted.
+            input_type (PromptDataType): The type of input data.
 
         Returns:
-            ConverterResult: The conversion result, including the mathematical representation
-                and real-world example, as a `ConverterResult` object.
+            ConverterResult: The result containing the mathematical representation and real-world example.
         """
         logger.info(f"Converting prompt: {prompt}")
 

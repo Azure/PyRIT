@@ -27,7 +27,7 @@ class NoiseConverter(LLMGenericTextConverter):
         prompt_template: Optional[SeedPrompt] = None,
     ):
         """
-        Initializes the converter.
+        Initializes the converter with the specified parameters.
 
         Args:
             converter_target (PromptChatTarget): The endpoint that converts the prompt

@@ -37,6 +37,9 @@ class FuzzerExpandConverter(FuzzerConverter):
         super().__init__(converter_target=converter_target, prompt_template=prompt_template)
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        """
+        Converts the given prompt by generating versions of it with new, prepended sentences.
+        """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 

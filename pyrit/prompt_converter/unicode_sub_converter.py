@@ -8,12 +8,15 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 class UnicodeSubstitutionConverter(PromptConverter):
     """
     Encodes the prompt using any unicode starting point.
-    Default is to use invisible flag emoji characters.
     """
     def __init__(self, *, start_value=0xE0000):
         self.startValue = start_value
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        """
+        Converts the given prompt by encoding it using any unicode starting point.
+        Default is to use invisible flag emoji characters.
+        """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 

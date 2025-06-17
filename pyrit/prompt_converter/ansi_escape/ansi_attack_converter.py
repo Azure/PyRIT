@@ -62,6 +62,7 @@ class AnsiAttackConverter(PromptConverter):
         return output_type == "text"
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        """Converts the given prompt into an ANSI attack scenario."""
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 

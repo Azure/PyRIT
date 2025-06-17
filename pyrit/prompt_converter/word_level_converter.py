@@ -110,11 +110,15 @@ class WordLevelConverter(PromptConverter):
         Converts the given prompt into the target format supported by the converter.
 
         Args:
-            prompt (str): The input prompt to be converted.
-            input_type (PromptDataType): The type of the input data.
+            prompt (str): The prompt to be converted.
+            input_type (PromptDataType): The type of input data.
 
         Returns:
-            ConverterResult: The result of the conversion, including the converted output and its type.
+            ConverterResult: The result containing the converted output and its type.
+
+        Raises:
+            TypeError: If the prompt is None.
+            ValueError: If the input type is not supported.
         """
         if prompt is None:
             raise TypeError("Prompt cannot be None")

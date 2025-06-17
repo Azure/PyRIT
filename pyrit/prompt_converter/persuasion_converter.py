@@ -26,19 +26,11 @@ logger = logging.getLogger(__name__)
 
 class PersuasionConverter(PromptConverter):
     """
-    Converter to rephrase prompts using a variety of persuasion techniques.
+    Rephrases prompts using a variety of persuasion techniques.
 
     Based on https://arxiv.org/abs/2401.06373 by Zeng et al.
 
-    Parameters
-    ---
-    converter_target: PromptChatTarget
-        Chat target used to perform rewriting on user prompt
-
-    persuasion_technique:
-    {"authority_endorsement", "evidence_based", "expert_endorsement", "logical_appeal", "misrepresentation"}
-        Persuasion technique to be used by the converter, determines the system prompt to be used to
-        generate new prompts.
+    Supported persuasion techniques:
         - authority_endorsement: Citing authoritative sources in support of a claim.
         - evidence_based: Using empirical data, statistics, and facts to support a claim or decision.
         - expert_endorsement: Citing domain experts in support of a claim.
@@ -47,6 +39,18 @@ class PersuasionConverter(PromptConverter):
     """
 
     def __init__(self, *, converter_target: PromptChatTarget, persuasion_technique: str):
+        """
+        Initializes the converter with the specified target and prompt template.
+
+        Args:
+            converter_target (PromptChatTarget): The chat target used to perform rewriting on user prompts.
+            persuasion_technique (str): Persuasion technique to be used by the converter, determines the system prompt
+                to be used to generate new prompts. Must be one of "authority_endorsement", "evidence_based",
+                "expert_endorsement", "logical_appeal", "misrepresentation".
+
+        Raises:
+            ValueError: If the persuasion technique is not supported or does not exist.
+        """
         self.converter_target = converter_target
 
         try:
@@ -59,7 +63,7 @@ class PersuasionConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Converter to generate versions of prompt with new, prepended sentences.
+        Converts the given prompt using the persuasion technique specified during initialization.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
@@ -94,6 +98,7 @@ class PersuasionConverter(PromptConverter):
 
     @pyrit_json_retry
     async def send_persuasion_prompt_async(self, request):
+        """Sends the prompt to the converter target and processes the response."""
         response = await self.converter_target.send_prompt_async(prompt_request=request)
 
         response_msg = response.get_value()

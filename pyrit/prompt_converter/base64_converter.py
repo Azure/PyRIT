@@ -13,6 +13,7 @@ class Base64Converter(PromptConverter):
     """
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        """Converts the given prompt into Base64 encoded string."""
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 

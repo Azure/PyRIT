@@ -323,7 +323,9 @@ API Reference
     StringJoinConverter
     SuffixAppendConverter
     SuperscriptConverter
+    TemplateSegmentConverter
     TenseConverter
+    TextJailbreakConverter
     TextToHexConverter
     ToneConverter
     ToxicSentenceGeneratorConverter

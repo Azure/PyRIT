@@ -50,14 +50,14 @@ class LLMGenericTextConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Converts the given prompt based on the prompt template.
+        Converts the given prompt using an LLM via the specified converter target.
 
-        Parameters:
-            prompt (str): The input prompt to be converted.
-            input_type (PromptDataType): The type of the input data.
+        Args:
+            prompt (str): The prompt to be converted.
+            input_type (PromptDataType): The type of input data.
 
         Returns:
-            ConverterResult: The conversion result as a `ConverterResult` object.
+            ConverterResult: The result containing the converted output and its type.
         """
 
         conversation_id = str(uuid.uuid4())

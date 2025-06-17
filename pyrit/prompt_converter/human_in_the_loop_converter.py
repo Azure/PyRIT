@@ -12,8 +12,10 @@ logger = logging.getLogger(__name__)
 
 class HumanInTheLoopConverter(PromptConverter):
     """
-    Allows review of each prompt sent to a target before sending it. User can choose to send the prompt as is,
-    modify the prompt, or run the prompt through one of the passed-in converters before sending it.
+    Allows review of each prompt sent to a target before sending it.
+
+    User can choose to send the prompt as is, modify the prompt,
+    or run the prompt through one of the passed-in converters before sending it.
     """
 
     def __init__(
@@ -30,17 +32,22 @@ class HumanInTheLoopConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Before sending a prompt to a target, user is given three options to choose from:
+        Converts the given prompt by allowing user interaction before sending it to a target.
+
+        User is given three options to choose from:
             (1) Proceed with sending the prompt as is.
             (2) Manually modify the prompt.
             (3) Run the prompt through a converter before sending it.
 
         Args:
-            prompt (str): The prompt to be added to the image.
-            input_type (PromptDataType): The type of the input data.
+            prompt (str): The prompt to be converted.
+            input_type (PromptDataType): The type of input data.
 
         Returns:
-            ConverterResult: The filename of the converted image as a `ConverterResult` object.
+            ConverterResult: The result containing the modified prompt.
+
+        Raises:
+            ValueError: If no converters are provided and the user chooses to run a converter.
         """
         user_input = ""
         if self._converters:

@@ -49,6 +49,7 @@ class ColloquialWordswapConverter(PromptConverter):
         self._deterministic = deterministic
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        """Converts the given prompt by replacing words with colloquial Singaporean terms."""
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 

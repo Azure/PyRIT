@@ -70,11 +70,16 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         Converts the given text prompt into its audio representation.
 
         Args:
-            prompt (str): The input text prompt to be converted.
-            input_type (PromptDataType): The type of the input data.
+            prompt (str): The text prompt to be converted into audio.
+            input_type (PromptDataType): The type of input data.
 
         Returns:
-            ConverterResult: The converted audio file path as a `ConverterResult` object.
+            ConverterResult: The result containing the audio file path.
+
+        Raises:
+            ModuleNotFoundError: If the ``azure.cognitiveservices.speech`` module is not installed.
+            RuntimeError: If there is an error during the speech synthesis process.
+            ValueError: If the input type is not supported or if the prompt is empty.
         """
         try:
             import azure.cognitiveservices.speech as speechsdk  # noqa: F811

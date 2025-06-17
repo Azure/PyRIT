@@ -45,6 +45,9 @@ class AddImageVideoConverter(PromptConverter):
             output_path (str, Optional): File path of output video. Defaults to None.
             img_position (tuple): Position to place image in video. Defaults to (10, 10).
             img_resize_size (tuple): Size to resize image to. Defaults to (500, 500).
+
+        Raises:
+            ValueError: If `video_path` is empty or invalid.
         """
 
         if not video_path:
@@ -162,14 +165,17 @@ class AddImageVideoConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "image_path") -> ConverterResult:
         """
-        Converts the given prompt by adding an image to the video specified in the constructor.
+        Converts the given prompt (image file path) by adding it to a video.
 
         Args:
             prompt (str): The image file name to be added to the video.
             input_type (PromptDataType): The type of input data.
 
         Returns:
-            ConverterResult: The filename of the converted video as a `ConverterResult` object.
+            ConverterResult: The result containing filename of the converted video.
+
+        Raises:
+            ValueError: If the input type is not supported.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")

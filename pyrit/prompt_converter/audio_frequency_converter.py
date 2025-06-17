@@ -51,10 +51,14 @@ class AudioFrequencyConverter(PromptConverter):
 
         Args:
             prompt (str): File path to the audio file to be converted.
-            input_type (PromptDataType): The type of the input data.
+            input_type (PromptDataType): The type of input data.
 
         Returns:
-            ConverterResult: The converted audio file as a `ConverterResult` object.
+            ConverterResult: The result containing the audio file path.
+
+        Raises:
+            ValueError: If the input type is not supported.
+            Exception: If there is an error during the conversion process.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
