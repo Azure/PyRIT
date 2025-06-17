@@ -466,22 +466,20 @@ class Scorer(abc.ABC):
         for determining success. All scorers are run asynchronously for performance.
 
         Args:
-            response: PromptRequestResponse containing pieces to score
-            auxiliary_scorers: Optional list of scorers for auxiliary metrics
-            objective_scorers: Optional list of scorers for objective evaluation (should be true/false type)
-            role_filter: Only score pieces with this role (default: "assistant")
-            task: Optional task description for scoring context
-            skip_on_error: If True, skip scoring pieces that have errors (default: True)
+            response (PromptRequestResponse): Response containing pieces to score
+            auxiliary_scorers (Optional[List[Scorer]]): List of auxiliary scorers to apply
+            objective_scorers (Optional[List[Scorer]]): List of objective scorers to apply
+            role_filter (ChatMessageRole): Only score pieces with this role (default: `assistant`)
+            task (Optional[str]): Optional task description for scoring context
+            skip_on_error (bool): If True, skip scoring pieces that have errors (default: `True`)
 
         Returns:
-            Dictionary with:
-                - "auxiliary_scores": List of all auxiliary scores
-                - "objective_scores": List containing at most one objective score (first success or first failure)
+            Dict[str,List[Score]]: Dictionary with keys `auxiliary_scores` and `objective_scores`
+                containing lists of scores from each type of scorer.
         """
         # Initialize result dictionary
         result: Dict[str, List[Score]] = {"auxiliary_scores": [], "objective_scores": []}
 
-        # Check if we actually have scorers to run (not just non-None but also non-empty)
         has_auxiliary = auxiliary_scorers is not None
         has_objective = objective_scorers is not None
 
@@ -491,7 +489,6 @@ class Scorer(abc.ABC):
 
         # Run both types of scoring concurrently if both are present
         if has_auxiliary and has_objective:
-            # Create both coroutines
             auxiliary_task = Scorer.score_response_async(
                 response=response,
                 scorers=auxiliary_scorers,
