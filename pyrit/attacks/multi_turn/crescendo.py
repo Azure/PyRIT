@@ -277,7 +277,6 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             context.refused_text = None
 
             # Send the generated prompt to the objective target
-            self._logger.debug(f"Sending prompt to target: {prompt_to_send[:100]}...")
             context.last_response = await self._send_prompt_to_objective_target_async(
                 attack_prompt=prompt_to_send,
                 context=context,
@@ -502,6 +501,10 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             ValueError: If no response is received from the objective target.
         """
         seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=attack_prompt, data_type="text")])
+        objective_target_type = self._objective_target.get_identifier()["__type__"]
+
+        # Send the generated prompt to the objective target
+        self._logger.debug(f"Sending prompt to {objective_target_type}: {attack_prompt[:100]}...")
 
         response = await self._prompt_normalizer.send_prompt_async(
             seed_prompt_group=seed_prompt_group,
