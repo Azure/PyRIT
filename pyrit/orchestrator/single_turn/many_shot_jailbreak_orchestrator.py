@@ -74,7 +74,7 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
         )
 
         # Template for the faux dialogue to be prepended
-        template_path = Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "many_shot_template.yaml"
+        template_path = Path(DATASETS_PATH) / "jailbreak" / "multi_parameter" / "many_shot_template.yaml"
         self._template = SeedPrompt.from_yaml_file(template_path)
         # Fetch the Many Shot Jailbreaking example dataset
         self._examples = (

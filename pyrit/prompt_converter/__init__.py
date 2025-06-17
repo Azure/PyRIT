@@ -52,6 +52,7 @@ from pyrit.prompt_converter.rot13_converter import ROT13Converter
 from pyrit.prompt_converter.search_replace_converter import SearchReplaceConverter
 from pyrit.prompt_converter.string_join_converter import StringJoinConverter
 from pyrit.prompt_converter.suffix_append_converter import SuffixAppendConverter
+from pyrit.prompt_converter.superscript_converter import SuperscriptConverter
 from pyrit.prompt_converter.tense_converter import TenseConverter
 from pyrit.prompt_converter.text_to_hex_converter import TextToHexConverter
 from pyrit.prompt_converter.tone_converter import ToneConverter
@@ -65,6 +66,8 @@ from pyrit.prompt_converter.zalgo_converter import ZalgoConverter
 from pyrit.prompt_converter.zero_width_converter import ZeroWidthConverter
 from pyrit.prompt_converter.toxic_sentence_generator_converter import ToxicSentenceGeneratorConverter
 from pyrit.prompt_converter.denylist_converter import DenylistConverter
+from pyrit.prompt_converter.text_jailbreak_converter import TextJailbreakConverter
+from pyrit.prompt_converter.template_segment_converter import TemplateSegmentConverter
 
 
 __all__ = [
@@ -98,6 +101,8 @@ __all__ = [
     "FuzzerSimilarConverter",
     "HumanInTheLoopConverter",
     "InsertPunctuationConverter",
+    "TemplateSegmentConverter",
+    "TextJailbreakConverter",
     "LeetspeakConverter",
     "LLMGenericTextConverter",
     "MaliciousQuestionGeneratorConverter",
@@ -115,6 +120,7 @@ __all__ = [
     "SneakyBitsSmugglerConverter",
     "StringJoinConverter",
     "SuffixAppendConverter",
+    "SuperscriptConverter",
     "TextToHexConverter",
     "TenseConverter",
     "ToneConverter",
