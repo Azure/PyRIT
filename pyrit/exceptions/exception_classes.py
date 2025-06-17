@@ -92,6 +92,62 @@ class MissingPromptPlaceholderException(PyritException):
         super().__init__(message=message)
 
 
+class AttackValidationException(PyritException):
+    """Raised when attack context validation fails"""
+
+    def __init__(self, *, message: str = "Attack context validation failed", context_info: Optional[dict] = None):
+        # 400-like status code for validation errors (client error)
+        super().__init__(status_code=400, message=message)
+        self.context_info = context_info or {}
+
+    def process_exception(self) -> str:
+        """Enhanced logging with context information"""
+        log_message = (
+            f"{self.__class__.__name__} encountered: "
+            f"Status Code: {self.status_code}, "
+            f"Message: {self.message}, "
+            f"Context: {self.context_info}"
+        )
+        logger.error(log_message)
+
+        return json.dumps({"status_code": self.status_code, "message": self.message, "context_info": self.context_info})
+
+
+class AttackExecutionException(PyritException):
+    """Raised when attack execution fails"""
+
+    def __init__(
+        self,
+        *,
+        message: str = "Attack execution failed",
+        attack_name: Optional[str] = None,
+        objective: Optional[str] = None,
+    ):
+        super().__init__(status_code=500, message=message)
+        self.attack_name = attack_name
+        self.objective = objective
+
+    def process_exception(self) -> str:
+        """Enhanced logging with attack details"""
+        log_message = (
+            f"{self.__class__.__name__} encountered: "
+            f"Status Code: {self.status_code}, "
+            f"Message: {self.message}, "
+            f"Attack: {self.attack_name}, "
+            f"Objective: {self.objective}"
+        )
+        logger.error(log_message)
+
+        return json.dumps(
+            {
+                "status_code": self.status_code,
+                "message": self.message,
+                "attack_name": self.attack_name,
+                "objective": self.objective,
+            }
+        )
+
+
 def pyrit_custom_result_retry(
     retry_function: Callable, retry_max_num_attempts: int = CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS
 ) -> Callable:

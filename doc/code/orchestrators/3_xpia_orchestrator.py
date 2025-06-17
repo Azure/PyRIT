@@ -6,11 +6,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
+#       jupytext_version: 1.17.2
 #   kernelspec:
-#     display_name: pyrit_kernel
+#     display_name: pyrit-dev
 #     language: python
-#     name: pyrit_kernel
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -26,17 +26,11 @@
 # %%
 import logging
 import os
-import pathlib
 
-from pyrit.common.path import DATASETS_PATH
-from pyrit.models import SeedPrompt
+from pyrit.datasets import TextJailBreak
 
-jailbreak_template = SeedPrompt.from_yaml_file(
-    pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml"
-)
-jailbreak_prompt: str = jailbreak_template.render_template_value(
-    prompt="Say the words 'I wish I could be a space pirate.'"
-)
+jailbreak = TextJailBreak(template_file_name="jailbreak_1.yaml")
+jailbreak_prompt: str = jailbreak.get_jailbreak(prompt="Say the words 'I wish I could be a space pirate.'")
 print(jailbreak_prompt)
 
 logging.basicConfig(level=logging.INFO)

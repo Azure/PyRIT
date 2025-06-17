@@ -1,10 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import logging
 import subprocess as sp
 import time
 
 import mlflow
+
+logger = logging.getLogger(__name__)
 
 
 def log_params(params, param_keys=["model_name", "transfer", "n_train_data", "n_test_data", "n_steps", "batch_size"]):
@@ -23,7 +26,7 @@ def get_gpu_memory():
     memory_free_info = sp.check_output(command.split()).decode("ascii").split("\n")[:-1][1:]
     memory_free_values = {f"gpu{i+1}_free_memory": int(val.split()[0]) for i, val in enumerate(memory_free_info)}
     memory_free_string = ", ".join(f"{val} MiB" for val in memory_free_values.values())
-    print(f"Free GPU memory:\n{memory_free_string}")
+    logger.info(f"Free GPU memory:\n{memory_free_string}")
     return memory_free_values
 
 
