@@ -478,50 +478,62 @@ class Scorer(abc.ABC):
                 - "auxiliary_scores": List of all auxiliary scores
                 - "objective_scores": List containing at most one objective score (first success or first failure)
         """
-        # Initialize result with both keys
+        # Initialize result dictionary
         result: Dict[str, List[Score]] = {"auxiliary_scores": [], "objective_scores": []}
 
+        # Check if we actually have scorers to run (not just non-None but also non-empty)
+        has_auxiliary = auxiliary_scorers is not None
+        has_objective = objective_scorers is not None
+
         # Early return if no scorers provided
-        if not auxiliary_scorers and not objective_scorers:
+        if not has_auxiliary and not has_objective:
             return result
 
-        # Build tasks
-        tasks = []
-        task_keys = []
-
-        # Add auxiliary scoring task
-        if auxiliary_scorers:
-            tasks.append(
-                Scorer.score_response_async(
-                    response=response,
-                    scorers=auxiliary_scorers,
-                    role_filter=role_filter,
-                    task=task,
-                    skip_on_error=skip_on_error,
-                )
+        # Run both types of scoring concurrently if both are present
+        if has_auxiliary and has_objective:
+            # Create both coroutines
+            auxiliary_task = Scorer.score_response_async(
+                response=response,
+                scorers=auxiliary_scorers,
+                role_filter=role_filter,
+                task=task,
+                skip_on_error=skip_on_error,
             )
-            task_keys.append("auxiliary_scores")
 
-        # Add objective scoring task using select_first_success
-        if objective_scorers:
-            tasks.append(
-                Scorer.score_response_select_first_success_async(
-                    response=response,
-                    scorers=objective_scorers,
-                    role_filter=role_filter,
-                    task=task,
-                    skip_on_error=skip_on_error,
-                )
+            objective_task = Scorer.score_response_select_first_success_async(
+                response=response,
+                scorers=objective_scorers,
+                role_filter=role_filter,
+                task=task,
+                skip_on_error=skip_on_error,
             )
-            task_keys.append("objective_scores")
 
-        # Execute all tasks concurrently
-        if tasks:
-            task_results = await asyncio.gather(*tasks)
+            # Run them in parallel and unpack results
+            auxiliary_scores, objective_score = await asyncio.gather(auxiliary_task, objective_task)
 
-            # Process results
-            for key, result_value in zip(task_keys, task_results):
-                # Convert single score to list format, handling None case
-                result[key] = [result_value] if isinstance(result_value, Score) else (result_value or [])
+            # Store results
+            result["auxiliary_scores"] = auxiliary_scores
+            result["objective_scores"] = [objective_score] if objective_score else []
+
+        # Run only auxiliary scoring
+        elif has_auxiliary:
+            result["auxiliary_scores"] = await Scorer.score_response_async(
+                response=response,
+                scorers=auxiliary_scorers,
+                role_filter=role_filter,
+                task=task,
+                skip_on_error=skip_on_error,
+            )
+
+        # Run only objective scoring
+        elif has_objective:
+            objective_score = await Scorer.score_response_select_first_success_async(
+                response=response,
+                scorers=objective_scorers,
+                role_filter=role_filter,
+                task=task,
+                skip_on_error=skip_on_error,
+            )
+            result["objective_scores"] = [objective_score] if objective_score else []
 
         return result
