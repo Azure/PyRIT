@@ -171,6 +171,8 @@ class SeedPrompt(YamlLoadable):
         """
         if self.data_type not in ["audio_path", "video_path", "image_path"]:
             return
+        if self.metadata is None:
+            self.metadata = {}
         extension = DataTypeSerializer.get_extension(self.value)
         if extension:
             extension = extension.lstrip(".")
@@ -252,7 +254,9 @@ class SeedPromptGroup(YamlLoadable):
 
         # Check sequence and sort the prompts in the same loop
         if len(self.prompts) >= 1:
-            self.prompts = sorted(self.prompts, key=lambda prompt: prompt.sequence)
+            self.prompts = sorted(
+                self.prompts, key=lambda prompt: prompt.sequence if prompt.sequence is not None else 0
+            )
 
     def render_template_value(self, **kwargs):
         """Renders self.value as a template, applying provided parameters in kwargs
@@ -330,7 +334,7 @@ class SeedPromptDataset(YamlLoadable):
     def __init__(
         self,
         *,
-        prompts: Union[Sequence[Dict[str, Any]], Sequence[SeedPrompt]] = None,
+        prompts: Optional[Union[Sequence[Dict[str, Any]], Sequence[SeedPrompt]]] = None,
         data_type: Optional[PromptDataType] = "text",
         name: Optional[str] = None,
         dataset_name: Optional[str] = None,

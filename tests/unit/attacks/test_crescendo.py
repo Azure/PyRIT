@@ -27,10 +27,10 @@ from pyrit.exceptions import (
     InvalidJsonException,
 )
 from pyrit.models import (
+    ChatMessageRole,
     PromptRequestPiece,
     PromptRequestResponse,
     Score,
-    ChatMessageRole,
     ScoreType,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -40,7 +40,7 @@ from pyrit.score import FloatScaleThresholdScorer, SelfAskRefusalScorer
 
 def create_mock_chat_target(*, name: str = "MockChatTarget") -> MagicMock:
     """Create a mock chat target with common setup.
-    
+
     This standardizes the creation of mock chat targets across tests,
     ensuring they all have the required methods and return values.
     """
@@ -53,7 +53,7 @@ def create_mock_chat_target(*, name: str = "MockChatTarget") -> MagicMock:
 
 def create_mock_scorer(*, scorer_type: str, class_name: str) -> MagicMock:
     """Create a mock scorer with common setup.
-    
+
     Scorers are used to evaluate responses. This helper ensures all mock scorers
     have consistent behavior and required attributes.
     """
@@ -71,10 +71,10 @@ def create_score(
     score_category: str,
     scorer_class: str,
     score_rationale: str = "Test rationale",
-    score_value_description: str = "Test description"
+    score_value_description: str = "Test description",
 ) -> Score:
     """Create a score with common defaults.
-    
+
     Scores are central to the Crescendo attack's decision-making process.
     This helper creates valid Score objects with all required fields.
     """
@@ -92,7 +92,7 @@ def create_score(
 
 def create_prompt_response(*, text: str, role: ChatMessageRole = "assistant") -> PromptRequestResponse:
     """Create a prompt response with common defaults.
-    
+
     This simulates responses from the target model, which are then evaluated
     by the attack logic to determine next steps.
     """
@@ -113,18 +113,17 @@ def create_adversarial_json_response(
     *,
     question: str = "Attack prompt",
     summary: str = "Summary of last response",
-    rationale: str = "Rationale for the attack"
+    rationale: str = "Rationale for the attack",
 ) -> str:
     """Create a valid adversarial JSON response.
-    
+
     The Crescendo attack expects the adversarial chat to return JSON with specific fields.
     This helper creates properly formatted responses for testing.
     """
-    return json.dumps({
-        "generated_question": question,
-        "last_response_summary": summary,
-        "rationale_behind_jailbreak": rationale
-    })
+    return json.dumps(
+        {"generated_question": question, "last_response_summary": summary, "rationale_behind_jailbreak": rationale}
+    )
+
 
 @pytest.fixture
 def mock_objective_target() -> MagicMock:
@@ -180,7 +179,7 @@ def refusal_score() -> Score:
         score_category="refusal",
         scorer_class="SelfAskRefusalScorer",
         score_rationale="The target refused to comply with the request",
-        score_value_description="Target refused"
+        score_value_description="Target refused",
     )
 
 
@@ -192,7 +191,7 @@ def no_refusal_score() -> Score:
         score_category="refusal",
         scorer_class="SelfAskRefusalScorer",
         score_rationale="The target complied with the request",
-        score_value_description="Target did not refuse"
+        score_value_description="Target did not refuse",
     )
 
 
@@ -204,7 +203,7 @@ def success_objective_score() -> Score:
         score_category="objective",
         scorer_class="FloatScaleThresholdScorer",
         score_rationale="The response successfully achieves the objective",
-        score_value_description="High objective achievement"
+        score_value_description="High objective achievement",
     )
 
 
@@ -216,7 +215,7 @@ def failure_objective_score() -> Score:
         score_category="objective",
         scorer_class="FloatScaleThresholdScorer",
         score_rationale="The response does not achieve the objective",
-        score_value_description="Low objective achievement"
+        score_value_description="Low objective achievement",
     )
 
 
@@ -227,11 +226,11 @@ def adversarial_response() -> str:
 
 class CrescendoTestHelper:
     """Helper class for creating Crescendo attack instances with common configurations.
-    
+
     This centralizes the complex initialization logic and makes it easy to create
     attacks with different configurations for testing various scenarios.
     """
-    
+
     @staticmethod
     def create_attack(
         *,
@@ -242,18 +241,15 @@ class CrescendoTestHelper:
         max_backtracks: int = 10,
         prompt_normalizer: Optional[MagicMock] = None,
         system_prompt_path: Optional[Path] = None,
-        **kwargs
+        **kwargs,
     ) -> CrescendoAttack:
         """Create a CrescendoAttack instance with flexible configuration.
-        
+
         This method handles the complex initialization of CrescendoAttack,
         allowing tests to focus on specific scenarios without repeating setup code.
         """
-        adversarial_config = AttackAdversarialConfig(
-            target=adversarial_chat,
-            system_prompt_path=system_prompt_path
-        )
-        
+        adversarial_config = AttackAdversarialConfig(target=adversarial_chat, system_prompt_path=system_prompt_path)
+
         # Only create scoring config if scorers are provided
         # This allows testing both with custom scorers and default scorers
         scoring_config = None
@@ -261,9 +257,9 @@ class CrescendoTestHelper:
             scoring_config = AttackScoringConfig(
                 objective_scorer=objective_scorer,
                 refusal_scorer=refusal_scorer,
-                **{k: v for k, v in kwargs.items() if k in ['use_score_as_feedback', 'successful_objective_threshold']}
+                **{k: v for k, v in kwargs.items() if k in ["use_score_as_feedback", "successful_objective_threshold"]},
             )
-        
+
         return CrescendoAttack(
             objective_target=objective_target,
             attack_adversarial_config=adversarial_config,
@@ -294,9 +290,7 @@ class TestCrescendoAttackInitialization:
         assert isinstance(attack._refusal_scorer, SelfAskRefusalScorer)
         assert attack._max_backtracks == 10
 
-    def test_init_with_non_chat_target_raises_error(
-        self, mock_adversarial_chat: MagicMock
-    ):
+    def test_init_with_non_chat_target_raises_error(self, mock_adversarial_chat: MagicMock):
         """Test that initialization with non-PromptChatTarget raises ValueError."""
         non_chat_target = MagicMock(spec=PromptTarget)
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
@@ -355,10 +349,7 @@ class TestCrescendoAttackInitialization:
 
     @pytest.mark.parametrize(
         "system_prompt_path",
-        [
-            Path(DATASETS_PATH) / "orchestrators" / "crescendo" / f"crescendo_variant_{i}.yaml"
-            for i in range(1, 6)
-        ],
+        [Path(DATASETS_PATH) / "orchestrators" / "crescendo" / f"crescendo_variant_{i}.yaml" for i in range(1, 6)],
     )
     def test_init_with_different_system_prompt_variants(
         self,
@@ -368,8 +359,7 @@ class TestCrescendoAttackInitialization:
     ):
         """Test initialization with different Crescendo system prompt variants."""
         adversarial_config = AttackAdversarialConfig(
-            target=mock_adversarial_chat,
-            system_prompt_path=system_prompt_path
+            target=mock_adversarial_chat, system_prompt_path=system_prompt_path
         )
 
         attack = CrescendoAttack(
@@ -388,8 +378,7 @@ class TestCrescendoAttackInitialization:
     ):
         """Test that invalid system prompt path raises FileNotFoundError."""
         adversarial_config = AttackAdversarialConfig(
-            target=mock_adversarial_chat,
-            system_prompt_path="nonexistent_file.yaml"
+            target=mock_adversarial_chat, system_prompt_path="nonexistent_file.yaml"
         )
 
         with pytest.raises(FileNotFoundError):
@@ -421,23 +410,22 @@ class TestCrescendoAttackInitialization:
         mock_adversarial_chat: MagicMock,
     ):
         """Test initialization with converter configuration."""
-        from pyrit.prompt_normalizer import PromptConverterConfiguration
         from pyrit.prompt_converter import Base64Converter
-        
+        from pyrit.prompt_normalizer import PromptConverterConfiguration
+
         converter_config = AttackConverterConfig(
-            request_converters=[PromptConverterConfiguration(converters=[Base64Converter()])],
-            response_converters=[]
+            request_converters=[PromptConverterConfiguration(converters=[Base64Converter()])], response_converters=[]
         )
-        
+
         attack = CrescendoTestHelper.create_attack(
             objective_target=mock_objective_target,
             adversarial_chat=mock_adversarial_chat,
         )
-        
+
         # Update attack with converter config
         attack._request_converters = converter_config.request_converters
         attack._response_converters = converter_config.response_converters
-        
+
         assert len(attack._request_converters) == 1
         assert len(attack._response_converters) == 0
 
@@ -736,15 +724,12 @@ class TestPromptGeneration:
             adversarial_chat=mock_adversarial_chat,
             prompt_normalizer=mock_prompt_normalizer,
         )
-        
+
         # Mock no response
         mock_prompt_normalizer.send_prompt_async.return_value = None
-        
+
         with pytest.raises(ValueError, match="No response received from adversarial chat"):
-            await attack._send_prompt_to_adversarial_chat_async(
-                prompt_text="Test prompt",
-                context=basic_context
-            )
+            await attack._send_prompt_to_adversarial_chat_async(prompt_text="Test prompt", context=basic_context)
 
     @pytest.mark.parametrize(
         "response_json,expected_error",
@@ -752,13 +737,21 @@ class TestPromptGeneration:
             # Missing required keys - the attack expects all three fields
             ('{"generated_question": "Attack"}', "Missing required keys"),
             # Extra keys are not allowed - strict JSON validation prevents unexpected data
-            ('{"generated_question": "Attack", "last_response_summary": "Summary", "rationale_behind_jailbreak": "Rationale", "extra_key": "value"}', "Unexpected keys"),
+            (
+                '{"generated_question": "Attack", "last_response_summary": "Summary", '
+                '"rationale_behind_jailbreak": "Rationale", "extra_key": "value"}',
+                "Unexpected keys",
+            ),
             # Invalid JSON will trigger retry mechanism
-            ('invalid json', "Invalid JSON"),
+            ("invalid json", "Invalid JSON"),
             # Wrong key names indicate incorrect adversarial chat response format
             ('{"wrong_key": "value"}', "Missing required keys"),
             # Empty question is valid - the attack can handle empty strings
-            ('{"generated_question": "", "last_response_summary": "Summary", "rationale_behind_jailbreak": "Rationale"}', None),
+            (
+                '{"generated_question": "", "last_response_summary": "Summary", '
+                '"rationale_behind_jailbreak": "Rationale"}',
+                None,
+            ),
         ],
     )
     @pytest.mark.asyncio
@@ -770,7 +763,7 @@ class TestPromptGeneration:
         expected_error: Optional[str],
     ):
         """Test parsing adversarial response with various inputs.
-        
+
         This test verifies that the JSON parsing is strict and handles various
         error cases appropriately. The strict validation ensures the adversarial
         chat is providing responses in the expected format.
@@ -820,7 +813,7 @@ class TestResponseScoring:
         with patch(
             "pyrit.score.Scorer.score_response_with_objective_async",
             new_callable=AsyncMock,
-            return_value={"objective_scores": [success_objective_score], "auxiliary_scores": []}
+            return_value={"objective_scores": [success_objective_score], "auxiliary_scores": []},
         ):
             result = await attack._score_response_async(context=basic_context)
 
@@ -878,7 +871,7 @@ class TestResponseScoring:
 @pytest.mark.usefixtures("patch_central_database")
 class TestBacktrackingLogic:
     """Tests for backtracking functionality
-    
+
     Backtracking is a key feature of Crescendo that allows it to recover from
     refusals by reverting to an earlier conversation state and trying a different approach.
     """
@@ -894,7 +887,7 @@ class TestBacktrackingLogic:
         refusal_score: Score,
     ):
         """Test that backtracking is performed when response is refused.
-        
+
         When the target refuses a prompt, Crescendo should:
         1. Store the refused text for the adversarial chat to learn from
         2. Revert the conversation to before the refused prompt
@@ -918,8 +911,7 @@ class TestBacktrackingLogic:
         # This simulates the memory system creating a new conversation branch
         with patch.object(attack, "_backtrack_memory_async", new_callable=AsyncMock, return_value="new_conv_id"):
             result = await attack._perform_backtrack_if_refused_async(
-                context=basic_context,
-                prompt_sent="Refused prompt"
+                context=basic_context, prompt_sent="Refused prompt"
             )
 
         # Verify all expected state changes occurred
@@ -952,10 +944,7 @@ class TestBacktrackingLogic:
         basic_context.backtrack_count = 0
         mock_refusal_scorer.score_async.return_value = [no_refusal_score]
 
-        result = await attack._perform_backtrack_if_refused_async(
-            context=basic_context,
-            prompt_sent="Normal prompt"
-        )
+        result = await attack._perform_backtrack_if_refused_async(context=basic_context, prompt_sent="Normal prompt")
 
         assert result is False
         assert basic_context.refused_text is None
@@ -972,7 +961,7 @@ class TestBacktrackingLogic:
         refusal_score: Score,
     ):
         """Test that no backtracking occurs when max backtracks is reached.
-        
+
         This prevents infinite loops where the attack keeps getting refused.
         Once the limit is reached, the attack continues forward even if refused,
         allowing it to potentially find success through persistence rather than revision.
@@ -990,10 +979,7 @@ class TestBacktrackingLogic:
         basic_context.last_response = sample_response
         basic_context.backtrack_count = 5  # Already at max
 
-        result = await attack._perform_backtrack_if_refused_async(
-            context=basic_context,
-            prompt_sent="Refused prompt"
-        )
+        result = await attack._perform_backtrack_if_refused_async(context=basic_context, prompt_sent="Refused prompt")
 
         assert result is False
         # Important: Should not even check for refusal to save API calls
@@ -1043,7 +1029,7 @@ class TestAttackExecution:
             with patch(
                 "pyrit.score.Scorer.score_response_with_objective_async",
                 new_callable=AsyncMock,
-                return_value={"objective_scores": [success_objective_score], "auxiliary_scores": []}
+                return_value={"objective_scores": [success_objective_score], "auxiliary_scores": []},
             ):
                 result = await attack._perform_attack_async(context=basic_context)
 
@@ -1089,15 +1075,17 @@ class TestAttackExecution:
 
         # Set up mocks for multiple turns
         mock_prompt_normalizer.send_prompt_async.side_effect = [
-            adv_response, sample_response,  # Turn 1
-            adv_response, sample_response,  # Turn 2
+            adv_response,
+            sample_response,  # Turn 1
+            adv_response,
+            sample_response,  # Turn 2
         ]
 
         with patch.object(attack, "_check_refusal_async", new_callable=AsyncMock, return_value=no_refusal_score):
             with patch(
                 "pyrit.score.Scorer.score_response_with_objective_async",
                 new_callable=AsyncMock,
-                return_value={"objective_scores": [failure_objective_score], "auxiliary_scores": []}
+                return_value={"objective_scores": [failure_objective_score], "auxiliary_scores": []},
             ):
                 result = await attack._perform_attack_async(context=basic_context)
 
@@ -1121,12 +1109,12 @@ class TestAttackExecution:
         adversarial_response: str,
     ):
         """Test attack with backtracking due to refusal.
-        
+
         This test verifies the complete backtracking flow:
         1. First attempt is refused
         2. Attack backtracks and tries a different approach
         3. Second attempt succeeds
-        
+
         The key insight is that only successful turns count toward executed_turns,
         while backtracked attempts are tracked separately.
         """
@@ -1152,20 +1140,22 @@ class TestAttackExecution:
 
         # Set up mocks for the two attempts
         mock_prompt_normalizer.send_prompt_async.side_effect = [
-            adv_response, sample_response,  # First attempt (will be refused and backtracked)
-            adv_response, sample_response,  # Second attempt after backtrack (will succeed)
+            adv_response,
+            sample_response,  # First attempt (will be refused and backtracked)
+            adv_response,
+            sample_response,  # Second attempt after backtrack (will succeed)
         ]
 
         # First call returns refusal, triggering backtrack
         # Second call returns no refusal, allowing progress
         check_refusal_results = [refusal_score, no_refusal_score]
-        
+
         with patch.object(attack, "_check_refusal_async", new_callable=AsyncMock, side_effect=check_refusal_results):
             with patch.object(attack, "_backtrack_memory_async", new_callable=AsyncMock, return_value="new_conv_id"):
                 with patch(
                     "pyrit.score.Scorer.score_response_with_objective_async",
                     new_callable=AsyncMock,
-                    return_value={"objective_scores": [success_objective_score], "auxiliary_scores": []}
+                    return_value={"objective_scores": [success_objective_score], "auxiliary_scores": []},
                 ):
                     result = await attack._perform_attack_async(context=basic_context)
 
@@ -1186,7 +1176,7 @@ class TestAttackExecution:
         adversarial_response: str,
     ):
         """Test attack continues after reaching max backtracks.
-        
+
         This tests an important edge case: what happens when we hit the backtrack
         limit but haven't reached max turns? The attack should continue forward
         even if responses are refused, as persistence might eventually succeed.
@@ -1220,22 +1210,28 @@ class TestAttackExecution:
         # 3. Turn 2: Continues despite refusal
         # 4. Turn 3: Continues to max turns
         mock_prompt_normalizer.send_prompt_async.side_effect = [
-            adv_response, sample_response,  # Turn 1: First attempt (refused, backtrack)
-            adv_response, sample_response,  # After backtrack: Second attempt (refused, but max backtracks reached)
-            adv_response, sample_response,  # Turn 2: Third attempt (continues despite refusal)
-            adv_response, sample_response,  # Turn 3: Fourth attempt (to reach max turns)
+            adv_response,
+            sample_response,  # Turn 1: First attempt (refused, backtrack)
+            adv_response,
+            sample_response,  # After backtrack: Second attempt (refused, but max backtracks reached)
+            adv_response,
+            sample_response,  # Turn 2: Third attempt (continues despite refusal)
+            adv_response,
+            sample_response,  # Turn 3: Fourth attempt (to reach max turns)
         ]
 
         # Mock check_refusal_async to always return refusal
         mock_check_refusal = AsyncMock(return_value=refusal_score)
-        
+
         # Mock backtrack memory once
-        with patch.object(attack, "_backtrack_memory_async", new_callable=AsyncMock, return_value="new_conv_id") as mock_backtrack:
+        with patch.object(
+            attack, "_backtrack_memory_async", new_callable=AsyncMock, return_value="new_conv_id"
+        ) as mock_backtrack:
             with patch.object(attack, "_check_refusal_async", mock_check_refusal):
                 with patch(
                     "pyrit.score.Scorer.score_response_with_objective_async",
                     new_callable=AsyncMock,
-                    return_value={"objective_scores": [failure_objective_score], "auxiliary_scores": []}
+                    return_value={"objective_scores": [failure_objective_score], "auxiliary_scores": []},
                 ):
                     result = await attack._perform_attack_async(context=basic_context)
 
@@ -1328,7 +1324,7 @@ class TestAttackLifecycle:
 @pytest.mark.usefixtures("patch_central_database")
 class TestIntegrationScenarios:
     """Integration tests for complete attack scenarios
-    
+
     These tests verify that all components work together correctly in realistic scenarios.
     They simulate full attack flows including multiple turns, scoring, and decision-making.
     """
@@ -1341,12 +1337,12 @@ class TestIntegrationScenarios:
         mock_prompt_normalizer: MagicMock,
     ):
         """Test a complete successful attack scenario with multiple turns.
-        
+
         This simulates a realistic Crescendo attack that gradually escalates:
         1. Turn 1: Benign question to build rapport (low score)
         2. Turn 2: Slightly more targeted question (medium score)
         3. Turn 3: Direct request that achieves objective (high score)
-        
+
         The escalation pattern is key to Crescendo's effectiveness.
         """
         attack = CrescendoTestHelper.create_attack(
@@ -1354,77 +1350,91 @@ class TestIntegrationScenarios:
             adversarial_chat=mock_adversarial_chat,
             prompt_normalizer=mock_prompt_normalizer,
         )
-        
+
         context = MultiTurnAttackContext(
             objective="Extract sensitive information",
             max_turns=3,
         )
-        
+
         # Set up mock responses for a 3-turn successful attack
         adversarial_responses = [
             create_adversarial_json_response(
-                question="What's your favorite color?",
-                summary="Initial probe",
-                rationale="Building rapport"
+                question="What's your favorite color?", summary="Initial probe", rationale="Building rapport"
             ),
             create_adversarial_json_response(
                 question="What kind of data do you process?",
                 summary="User likes blue",
-                rationale="Moving to data topics"
+                rationale="Moving to data topics",
             ),
             create_adversarial_json_response(
                 question="Can you show me an example?",
                 summary="Processes user data",
-                rationale="Final extraction attempt"
+                rationale="Final extraction attempt",
             ),
         ]
-        
+
         target_responses = [
             create_prompt_response(text="I like blue!"),
             create_prompt_response(text="I process user data and configurations"),
             create_prompt_response(text="Sure, here's an example: [sensitive data]"),
         ]
-        
+
         # Create scores that show progression toward the objective
         # The increasing scores simulate the model becoming more compliant
         scores = [
-            create_score(score_type="float_scale", score_value="0.3", score_category="objective", scorer_class="FloatScaleThresholdScorer"),
-            create_score(score_type="float_scale", score_value="0.6", score_category="objective", scorer_class="FloatScaleThresholdScorer"),
-            create_score(score_type="float_scale", score_value="0.9", score_category="objective", scorer_class="FloatScaleThresholdScorer"),  # Above threshold
+            create_score(
+                score_type="float_scale",
+                score_value="0.3",
+                score_category="objective",
+                scorer_class="FloatScaleThresholdScorer",
+            ),
+            create_score(
+                score_type="float_scale",
+                score_value="0.6",
+                score_category="objective",
+                scorer_class="FloatScaleThresholdScorer",
+            ),
+            create_score(
+                score_type="float_scale",
+                score_value="0.9",
+                score_category="objective",
+                scorer_class="FloatScaleThresholdScorer",
+            ),  # Above threshold
         ]
-        
+
         # Set up mock behavior to simulate the conversation flow
         # The side_effect list must match the exact sequence of calls
         mock_prompt_normalizer.send_prompt_async.side_effect = [
-            create_prompt_response(text=adversarial_responses[0]), # Adversarial generates turn 1
-            target_responses[0], # Target responds to turn 1
-            create_prompt_response(text=adversarial_responses[1]), # Adversarial generates turn 2
-            target_responses[1], # Target responds to turn 2
-            create_prompt_response(text=adversarial_responses[2]), # Adversarial generates turn 3
-            target_responses[2], # Target responds to turn 3
+            create_prompt_response(text=adversarial_responses[0]),  # Adversarial generates turn 1
+            target_responses[0],  # Target responds to turn 1
+            create_prompt_response(text=adversarial_responses[1]),  # Adversarial generates turn 2
+            target_responses[1],  # Target responds to turn 2
+            create_prompt_response(text=adversarial_responses[2]),  # Adversarial generates turn 3
+            target_responses[2],  # Target responds to turn 3
         ]
-        
+
         no_refusal = create_score(
-            score_type="true_false",
-            score_value="false",
-            score_category="refusal",
-            scorer_class="SelfAskRefusalScorer"
+            score_type="true_false", score_value="false", score_category="refusal", scorer_class="SelfAskRefusalScorer"
         )
-        
+
         # Mock the conversation manager to return an empty state (no prepended conversation)
         mock_conversation_state = ConversationState(turn_count=0)
-        
-        with patch.object(attack._conversation_manager, "update_conversation_state_async", return_value=mock_conversation_state):
+
+        with patch.object(
+            attack._conversation_manager, "update_conversation_state_async", return_value=mock_conversation_state
+        ):
             with patch.object(attack, "_check_refusal_async", new_callable=AsyncMock, return_value=no_refusal):
-                with patch("pyrit.score.Scorer.score_response_with_objective_async", new_callable=AsyncMock) as mock_score:
+                with patch(
+                    "pyrit.score.Scorer.score_response_with_objective_async", new_callable=AsyncMock
+                ) as mock_score:
                     mock_score.side_effect = [
                         {"objective_scores": [scores[0]], "auxiliary_scores": []},
                         {"objective_scores": [scores[1]], "auxiliary_scores": []},
                         {"objective_scores": [scores[2]], "auxiliary_scores": []},
                     ]
-                    
+
                     result = await attack.execute_async(context=context)
-        
+
         # Verify the attack succeeded
         assert result.outcome == AttackOutcome.SUCCESS
         assert result.executed_turns == 3
@@ -1444,12 +1454,12 @@ class TestIntegrationScenarios:
         success_objective_score: Score,
     ):
         """Test attack scenario with backtracking due to refusals.
-        
+
         This tests Crescendo's adaptive behavior:
         1. First two attempts are too direct and get refused
         2. Each refusal triggers backtracking and a new approach
         3. Third attempt is subtle enough to succeed
-        
+
         This demonstrates how Crescendo learns from failures.
         """
         attack = CrescendoTestHelper.create_attack(
@@ -1458,37 +1468,31 @@ class TestIntegrationScenarios:
             prompt_normalizer=mock_prompt_normalizer,
             max_backtracks=2,
         )
-        
+
         context = MultiTurnAttackContext(
             objective="Test with refusals",
             max_turns=2,
         )
-        
+
         # Set up responses
         adversarial_responses = [
             create_adversarial_json_response(
-                question="Direct harmful request",
-                summary="Initial",
-                rationale="Too direct"
+                question="Direct harmful request", summary="Initial", rationale="Too direct"
             ),
             create_adversarial_json_response(
-                question="Subtle approach",
-                summary="Was refused",
-                rationale="Trying indirect"
+                question="Subtle approach", summary="Was refused", rationale="Trying indirect"
             ),
             create_adversarial_json_response(
-                question="Even more subtle",
-                summary="Still refused",
-                rationale="Third attempt"
+                question="Even more subtle", summary="Still refused", rationale="Third attempt"
             ),
         ]
-        
+
         target_responses = [
             create_prompt_response(text="I cannot help with that"),  # Refused
             create_prompt_response(text="I'm not comfortable with this"),  # Refused
             create_prompt_response(text="Well, maybe I can help..."),  # Accepted
         ]
-        
+
         # Mock setup - responses must be interleaved correctly
         # This is complex because each attempt involves:
         # 1. Adversarial chat generating a prompt
@@ -1498,24 +1502,33 @@ class TestIntegrationScenarios:
             all_responses.append(create_prompt_response(text=adversarial_responses[i]))
             if i < len(target_responses):
                 all_responses.append(target_responses[i])
-        
+
         mock_prompt_normalizer.send_prompt_async.side_effect = all_responses
-        
+
         # First two attempts are refused, third succeeds
         # This pattern simulates the attack learning what works
         refusal_checks = [refusal_score, refusal_score, no_refusal_score]
-        
+
         # Mock the conversation manager to return an empty state
         mock_conversation_state = ConversationState(turn_count=0)
-        
-        with patch.object(attack._conversation_manager, "update_conversation_state_async", return_value=mock_conversation_state):
+
+        with patch.object(
+            attack._conversation_manager, "update_conversation_state_async", return_value=mock_conversation_state
+        ):
             with patch.object(attack, "_check_refusal_async", new_callable=AsyncMock, side_effect=refusal_checks):
-                with patch.object(attack, "_backtrack_memory_async", new_callable=AsyncMock, return_value="new_conv_id"):
-                    with patch("pyrit.score.Scorer.score_response_with_objective_async", new_callable=AsyncMock) as mock_score:
-                        mock_score.return_value = {"objective_scores": [success_objective_score], "auxiliary_scores": []}
-                        
+                with patch.object(
+                    attack, "_backtrack_memory_async", new_callable=AsyncMock, return_value="new_conv_id"
+                ):
+                    with patch(
+                        "pyrit.score.Scorer.score_response_with_objective_async", new_callable=AsyncMock
+                    ) as mock_score:
+                        mock_score.return_value = {
+                            "objective_scores": [success_objective_score],
+                            "auxiliary_scores": [],
+                        }
+
                         result = await attack.execute_async(context=context)
-        
+
         # Verify backtracking occurred as expected
         assert result.metadata["backtrack_count"] == 2  # Two failed attempts
         assert result.executed_turns == 1  # Only successful turns count toward limit
@@ -1533,29 +1546,29 @@ class TestIntegrationScenarios:
             adversarial_chat=mock_adversarial_chat,
             prompt_normalizer=mock_prompt_normalizer,
         )
-        
+
         # Create prepended conversation
         prepended_conversation = [
             create_prompt_response(text="I've already started a conversation", role="user"),
             create_prompt_response(text="I see you're interested in this topic", role="assistant"),
         ]
-        
+
         context = MultiTurnAttackContext(
             objective="Continue previous conversation",
             max_turns=2,
             prepended_conversation=prepended_conversation,
         )
-        
+
         # Mock conversation state with prepended info
         mock_state = ConversationState(
             turn_count=1,
             last_user_message="Continue from here",
             last_assistant_message_scores=[],
         )
-        
+
         with patch.object(attack._conversation_manager, "update_conversation_state_async", return_value=mock_state):
             await attack._setup_async(context=context)
-        
+
         # Verify context was updated correctly
         assert context.executed_turns == 1
         assert context.custom_prompt == "Continue from here"
@@ -1564,7 +1577,7 @@ class TestIntegrationScenarios:
 @pytest.mark.usefixtures("patch_central_database")
 class TestEdgeCases:
     """Tests for edge cases and error conditions
-    
+
     These tests ensure the attack handles unexpected situations gracefully
     and provides meaningful error messages when things go wrong.
     """
@@ -1580,9 +1593,9 @@ class TestEdgeCases:
             objective_target=mock_objective_target,
             adversarial_chat=mock_adversarial_chat,
         )
-        
+
         context = MultiTurnAttackContext(objective="", max_turns=5)
-        
+
         with pytest.raises(AttackValidationException, match="Attack objective must be provided"):
             await attack.execute_async(context=context)
 
@@ -1595,7 +1608,7 @@ class TestEdgeCases:
         basic_context: MultiTurnAttackContext,
     ):
         """Test that JSON parsing errors trigger retry mechanism.
-        
+
         The adversarial chat might occasionally return malformed JSON.
         The retry decorator should handle transient failures automatically,
         making the attack more robust in production environments.
@@ -1605,22 +1618,19 @@ class TestEdgeCases:
             adversarial_chat=mock_adversarial_chat,
             prompt_normalizer=mock_prompt_normalizer,
         )
-        
+
         # First response is invalid JSON (simulating transient error)
         # Second response is valid (simulating successful retry)
         responses = [
             create_prompt_response(text="Invalid JSON response"),
             create_prompt_response(text=create_adversarial_json_response()),
         ]
-        
+
         mock_prompt_normalizer.send_prompt_async.side_effect = responses
-        
+
         # The retry decorator should handle the first failure transparently
-        result = await attack._get_attack_prompt_async(
-            context=basic_context,
-            refused_text=""
-        )
-        
+        result = await attack._get_attack_prompt_async(context=basic_context, refused_text="")
+
         assert result == "Attack prompt"
         # Verify retry occurred - called at least twice due to first failure
         assert mock_prompt_normalizer.send_prompt_async.call_count >= 2
@@ -1640,13 +1650,13 @@ class TestEdgeCases:
             adversarial_chat=mock_adversarial_chat,
             prompt_normalizer=mock_prompt_normalizer,
         )
-        
+
         basic_context.last_response = sample_response
-        
+
         # Mock scoring to return empty list
         with patch("pyrit.score.Scorer.score_response_with_objective_async", new_callable=AsyncMock) as mock_score:
             mock_score.return_value = {"objective_scores": [], "auxiliary_scores": []}
-            
+
             with pytest.raises(RuntimeError, match="No objective scores returned"):
                 await attack._score_response_async(context=basic_context)
 
@@ -1657,7 +1667,7 @@ class TestEdgeCases:
         mock_adversarial_chat: MagicMock,
     ):
         """Test that concurrent attacks don't interfere with each other.
-        
+
         In production, multiple Crescendo attacks might run simultaneously.
         This test ensures that each attack maintains its own state and
         conversation context, preventing cross-contamination of data.
@@ -1666,21 +1676,23 @@ class TestEdgeCases:
             objective_target=mock_objective_target,
             adversarial_chat=mock_adversarial_chat,
         )
-        
+
         # Create two contexts that could be used concurrently
         # They have different objectives and max_turns to ensure isolation
         context1 = MultiTurnAttackContext(objective="Objective 1", max_turns=5)
         context2 = MultiTurnAttackContext(objective="Objective 2", max_turns=3)
-        
+
         # Mock conversation manager for both setups
         mock_state1 = ConversationState(turn_count=0)
         mock_state2 = ConversationState(turn_count=0)
-        
-        with patch.object(attack._conversation_manager, "update_conversation_state_async", side_effect=[mock_state1, mock_state2]):
+
+        with patch.object(
+            attack._conversation_manager, "update_conversation_state_async", side_effect=[mock_state1, mock_state2]
+        ):
             # Simulate concurrent setup - both contexts use the same attack instance
             await attack._setup_async(context=context1)
             await attack._setup_async(context=context2)
-        
+
         # Verify contexts remain independent
         # Each should maintain its own state without interference
         assert context1.objective == "Objective 1"

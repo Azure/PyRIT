@@ -9,7 +9,6 @@ import json
 import logging
 import uuid
 from abc import abstractmethod
-from collections import defaultdict
 from typing import Dict, List, Optional, Sequence
 
 from pyrit.exceptions import (
@@ -479,11 +478,12 @@ class Scorer(abc.ABC):
                 - "auxiliary_scores": List of all auxiliary scores
                 - "objective_scores": List containing at most one objective score (first success or first failure)
         """
-        result: Dict[str, List[Score]] = defaultdict(list)
+        # Initialize result with both keys
+        result: Dict[str, List[Score]] = {"auxiliary_scores": [], "objective_scores": []}
 
         # Early return if no scorers provided
         if not auxiliary_scorers and not objective_scorers:
-            return dict(result)
+            return result
 
         # Build tasks
         tasks = []
@@ -524,4 +524,4 @@ class Scorer(abc.ABC):
                 # Convert single score to list format, handling None case
                 result[key] = [result_value] if isinstance(result_value, Score) else (result_value or [])
 
-        return dict(result)
+        return result
