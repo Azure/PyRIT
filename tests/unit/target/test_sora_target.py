@@ -217,9 +217,9 @@ async def test_send_prompt_async_succeeded_download(
         path = response.get_value()
         assert path
 
-        task_id = video_generation_response_success["id"]
-        gen_id = video_generation_response_success["generations"][0]["id"]
-        assert path.endswith(f"{task_id}_{gen_id}.mp4")
+        job_id = video_generation_response_success["id"]
+        generation_id = video_generation_response_success["generations"][0]["id"]
+        assert path.endswith(f"{job_id}_{generation_id}.mp4")
         assert os.path.exists(path)
 
         with open(path, "r") as file:
@@ -329,10 +329,10 @@ async def test_download_video_content_async_custom_retry(
 
         mock_request.return_value = openai_mock_return
 
-        gen_id = video_generation_response_success["generations"][0]["id"]
+        generation_id = video_generation_response_success["generations"][0]["id"]
 
         with pytest.raises(RetryError):
-            await sora_target.download_video_content_async(gen_id=gen_id)
+            await sora_target.download_video_content_async(generation_id=generation_id)
 
         max_attempts = os.getenv("CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS")
         if max_attempts:
@@ -362,9 +362,9 @@ async def test_send_prompt_async_timeout(
         response = await sora_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
         response_content = response.request_pieces[0]
 
-        task_id = video_generation_response["id"]
+        job_id = video_generation_response["id"]
         task_status = video_generation_response["status"]
-        response_content.original_value = f"{task_id} {task_status}, Response {str(video_generation_response)}"
+        response_content.original_value = f"{job_id} {task_status}, Response {str(video_generation_response)}"
 
 
 @pytest.mark.asyncio
@@ -381,10 +381,10 @@ async def test_check_job_status_async_custom_retry(
 
         mock_request.return_value = openai_mock_return
 
-        task_id = video_generation_response["id"]
+        job_id = video_generation_response["id"]
 
         with pytest.raises(RetryError):
-            await sora_target.check_job_status_async(task_id=task_id)
+            await sora_target.check_job_status_async(job_id=job_id)
 
         assert mock_request.call_count == sora_target.CHECK_JOB_RETRY_MAX_NUM_ATTEMPTS
 
@@ -440,7 +440,7 @@ async def test_check_task_exceptions(
     ) as mock_request:
 
         with pytest.raises(RateLimitException) as e:
-            await sora_target.check_job_status_async(task_id="task_id")
+            await sora_target.check_job_status_async(job_id="job_id")
             assert str(e.value) == "Status Code: 429, Message: Rate Limit Exception"
 
             max_attempts = os.getenv("RETRY_MAX_NUM_ATTEMPTS")
@@ -461,7 +461,7 @@ async def test_download_video_content_async_exceptions(
     ) as mock_request:
 
         with pytest.raises(RateLimitException) as e:
-            await sora_target.download_video_content_async(gen_id="gen_id")
+            await sora_target.download_video_content_async(generation_id="generation_id")
             assert str(e.value) == "Status Code: 429, Message: Rate Limit Exception"
 
             max_attempts = os.getenv("RETRY_MAX_NUM_ATTEMPTS")
