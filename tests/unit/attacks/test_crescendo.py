@@ -14,13 +14,14 @@ from pyrit.attacks.base.attack_config import (
     AttackConverterConfig,
     AttackScoringConfig,
 )
-from pyrit.attacks.base.attack_context import (
-    ConversationSession,
-    MultiTurnAttackContext,
-)
-from pyrit.attacks.base.attack_result import AttackOutcome, AttackResult
+from pyrit.attacks.base.attack_context import ConversationSession
+from pyrit.attacks.base.attack_result import AttackOutcome
 from pyrit.attacks.components.conversation_manager import ConversationState
-from pyrit.attacks.multi_turn.crescendo import CrescendoAttack
+from pyrit.attacks.multi_turn.crescendo import (
+    CrescendoAttack,
+    CrescendoAttackContext,
+    CrescendoAttackResult,
+)
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions import (
     AttackValidationException,
@@ -158,8 +159,8 @@ def mock_prompt_normalizer() -> MagicMock:
 
 
 @pytest.fixture
-def basic_context() -> MultiTurnAttackContext:
-    return MultiTurnAttackContext(
+def basic_context() -> CrescendoAttackContext:
+    return CrescendoAttackContext(
         objective="Test objective",
         max_turns=10,
         session=ConversationSession(),
@@ -457,7 +458,7 @@ class TestContextValidation:
             objective_target=mock_objective_target,
             attack_adversarial_config=adversarial_config,
         )
-        context = MultiTurnAttackContext(objective=objective, max_turns=max_turns)
+        context = CrescendoAttackContext(objective=objective, max_turns=max_turns)
 
         with pytest.raises(ValueError, match=expected_error):
             attack._validate_context(context=context)
@@ -466,7 +467,7 @@ class TestContextValidation:
         self,
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
-        basic_context: MultiTurnAttackContext,
+        basic_context: CrescendoAttackContext,
     ):
         """Test that valid context passes validation without errors."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
@@ -487,7 +488,7 @@ class TestSetupPhase:
         self,
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
-        basic_context: MultiTurnAttackContext,
+        basic_context: CrescendoAttackContext,
     ):
         """Test that setup correctly initializes a conversation session."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
@@ -512,7 +513,7 @@ class TestSetupPhase:
         self,
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
-        basic_context: MultiTurnAttackContext,
+        basic_context: CrescendoAttackContext,
     ):
         """Test that setup correctly sets the adversarial chat system prompt."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
@@ -540,7 +541,7 @@ class TestSetupPhase:
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
         mock_refusal_scorer: MagicMock,
-        basic_context: MultiTurnAttackContext,
+        basic_context: CrescendoAttackContext,
         refusal_score: Score,
     ):
         """Test that setup handles prepended conversation with refusal score."""
@@ -570,7 +571,7 @@ class TestSetupPhase:
         self,
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
-        basic_context: MultiTurnAttackContext,
+        basic_context: CrescendoAttackContext,
     ):
         """Test that setup retrieves custom prompt from prepended conversation."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
@@ -601,7 +602,7 @@ class TestPromptGeneration:
         self,
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
-        basic_context: MultiTurnAttackContext,
+        basic_context: CrescendoAttackContext,
     ):
         """Test that custom prompt is used when available."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
@@ -624,7 +625,7 @@ class TestPromptGeneration:
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
         mock_prompt_normalizer: MagicMock,
-        basic_context: MultiTurnAttackContext,
+        basic_context: CrescendoAttackContext,
         adversarial_response: str,
     ):
         """Test that adversarial chat is used to generate prompts when no custom prompt."""
@@ -661,7 +662,7 @@ class TestPromptGeneration:
         self,
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
-        basic_context: MultiTurnAttackContext,
+        basic_context: CrescendoAttackContext,
     ):
         """Test building adversarial prompt when previous attempt was refused."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
@@ -686,7 +687,7 @@ class TestPromptGeneration:
         self,
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
-        basic_context: MultiTurnAttackContext,
+        basic_context: CrescendoAttackContext,
         sample_response: PromptRequestResponse,
         failure_objective_score: Score,
     ):
@@ -716,7 +717,7 @@ class TestPromptGeneration:
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
         mock_prompt_normalizer: MagicMock,
-        basic_context: MultiTurnAttackContext,
+        basic_context: CrescendoAttackContext,
     ):
         """Test handling when adversarial chat returns no response."""
         attack = CrescendoTestHelper.create_attack(
@@ -793,7 +794,7 @@ class TestResponseScoring:
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
         mock_objective_scorer: MagicMock,
-        basic_context: MultiTurnAttackContext,
+        basic_context: CrescendoAttackContext,
         sample_response: PromptRequestResponse,
         success_objective_score: Score,
     ):
@@ -824,7 +825,7 @@ class TestResponseScoring:
         self,
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
-        basic_context: MultiTurnAttackContext,
+        basic_context: CrescendoAttackContext,
     ):
         """Test that scoring raises ValueError when no response is available."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
@@ -845,7 +846,7 @@ class TestResponseScoring:
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
         mock_refusal_scorer: MagicMock,
-        basic_context: MultiTurnAttackContext,
+        basic_context: CrescendoAttackContext,
         sample_response: PromptRequestResponse,
         refusal_score: Score,
     ):
@@ -882,7 +883,7 @@ class TestBacktrackingLogic:
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
         mock_refusal_scorer: MagicMock,
-        basic_context: MultiTurnAttackContext,
+        basic_context: CrescendoAttackContext,
         sample_response: PromptRequestResponse,
         refusal_score: Score,
     ):
@@ -926,7 +927,7 @@ class TestBacktrackingLogic:
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
         mock_refusal_scorer: MagicMock,
-        basic_context: MultiTurnAttackContext,
+        basic_context: CrescendoAttackContext,
         sample_response: PromptRequestResponse,
         no_refusal_score: Score,
     ):
@@ -956,7 +957,7 @@ class TestBacktrackingLogic:
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
         mock_refusal_scorer: MagicMock,
-        basic_context: MultiTurnAttackContext,
+        basic_context: CrescendoAttackContext,
         sample_response: PromptRequestResponse,
         refusal_score: Score,
     ):
@@ -996,7 +997,7 @@ class TestAttackExecution:
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
         mock_prompt_normalizer: MagicMock,
-        basic_context: MultiTurnAttackContext,
+        basic_context: CrescendoAttackContext,
         sample_response: PromptRequestResponse,
         success_objective_score: Score,
         no_refusal_score: Score,
@@ -1033,6 +1034,7 @@ class TestAttackExecution:
             ):
                 result = await attack._perform_attack_async(context=basic_context)
 
+        assert isinstance(result, CrescendoAttackResult)
         assert result.outcome == AttackOutcome.SUCCESS
         assert result.executed_turns == 1
         assert result.last_score == success_objective_score
@@ -1045,7 +1047,7 @@ class TestAttackExecution:
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
         mock_prompt_normalizer: MagicMock,
-        basic_context: MultiTurnAttackContext,
+        basic_context: CrescendoAttackContext,
         sample_response: PromptRequestResponse,
         failure_objective_score: Score,
         no_refusal_score: Score,
@@ -1089,6 +1091,7 @@ class TestAttackExecution:
             ):
                 result = await attack._perform_attack_async(context=basic_context)
 
+        assert isinstance(result, CrescendoAttackResult)
         assert result.outcome == AttackOutcome.FAILURE
         assert result.executed_turns == 2
         assert result.last_score == failure_objective_score
@@ -1101,7 +1104,7 @@ class TestAttackExecution:
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
         mock_prompt_normalizer: MagicMock,
-        basic_context: MultiTurnAttackContext,
+        basic_context: CrescendoAttackContext,
         sample_response: PromptRequestResponse,
         success_objective_score: Score,
         refusal_score: Score,
@@ -1159,9 +1162,10 @@ class TestAttackExecution:
                 ):
                     result = await attack._perform_attack_async(context=basic_context)
 
+        assert isinstance(result, CrescendoAttackResult)
         assert result.outcome == AttackOutcome.SUCCESS
         assert result.executed_turns == 1  # Only counts non-backtracked turns
-        assert result.metadata["backtrack_count"] == 1  # Tracks backtracking for analysis
+        assert result.backtrack_count == 1  # Tracks backtracking for analysis
 
     @pytest.mark.asyncio
     async def test_perform_attack_max_backtracks_then_continue(
@@ -1169,7 +1173,7 @@ class TestAttackExecution:
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
         mock_prompt_normalizer: MagicMock,
-        basic_context: MultiTurnAttackContext,
+        basic_context: CrescendoAttackContext,
         sample_response: PromptRequestResponse,
         failure_objective_score: Score,
         refusal_score: Score,
@@ -1237,9 +1241,10 @@ class TestAttackExecution:
 
         # Should only backtrack once (when backtrack count is 0)
         assert mock_backtrack.call_count == 1
+        assert isinstance(result, CrescendoAttackResult)
         assert result.outcome == AttackOutcome.FAILURE
         assert result.executed_turns == 3  # Reaches max turns despite refusals
-        assert result.metadata["backtrack_count"] == 1
+        assert result.backtrack_count == 1
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -1251,7 +1256,7 @@ class TestAttackLifecycle:
         self,
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
-        basic_context: MultiTurnAttackContext,
+        basic_context: CrescendoAttackContext,
         sample_response: PromptRequestResponse,
         success_objective_score: Score,
     ):
@@ -1269,7 +1274,7 @@ class TestAttackLifecycle:
                 with patch.object(attack, "_perform_attack_async", new_callable=AsyncMock) as mock_perform:
                     with patch.object(attack, "_teardown_async", new_callable=AsyncMock):
                         # Configure the return value for _perform_attack_async
-                        mock_perform.return_value = AttackResult(
+                        mock_perform.return_value = CrescendoAttackResult(
                             conversation_id=basic_context.session.conversation_id,
                             objective=basic_context.objective,
                             attack_identifier=attack.get_identifier(),
@@ -1284,7 +1289,7 @@ class TestAttackLifecycle:
                         result = await attack.execute_async(context=basic_context)
 
         # Verify result and proper execution order
-        assert isinstance(result, AttackResult)
+        assert isinstance(result, CrescendoAttackResult)
         assert result.outcome == AttackOutcome.SUCCESS
 
     @pytest.mark.asyncio
@@ -1292,7 +1297,7 @@ class TestAttackLifecycle:
         self,
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
-        basic_context: MultiTurnAttackContext,
+        basic_context: CrescendoAttackContext,
     ):
         """Test that validation failure prevents attack execution."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
@@ -1351,7 +1356,7 @@ class TestIntegrationScenarios:
             prompt_normalizer=mock_prompt_normalizer,
         )
 
-        context = MultiTurnAttackContext(
+        context = CrescendoAttackContext(
             objective="Extract sensitive information",
             max_turns=3,
         )
@@ -1436,6 +1441,7 @@ class TestIntegrationScenarios:
                     result = await attack.execute_async(context=context)
 
         # Verify the attack succeeded
+        assert isinstance(result, CrescendoAttackResult)
         assert result.outcome == AttackOutcome.SUCCESS
         assert result.executed_turns == 3
         assert result.last_score is not None
@@ -1469,7 +1475,7 @@ class TestIntegrationScenarios:
             max_backtracks=2,
         )
 
-        context = MultiTurnAttackContext(
+        context = CrescendoAttackContext(
             objective="Test with refusals",
             max_turns=2,
         )
@@ -1530,7 +1536,8 @@ class TestIntegrationScenarios:
                         result = await attack.execute_async(context=context)
 
         # Verify backtracking occurred as expected
-        assert result.metadata["backtrack_count"] == 2  # Two failed attempts
+        assert isinstance(result, CrescendoAttackResult)
+        assert result.backtrack_count == 2  # Two failed attempts
         assert result.executed_turns == 1  # Only successful turns count toward limit
 
     @pytest.mark.asyncio
@@ -1553,7 +1560,7 @@ class TestIntegrationScenarios:
             create_prompt_response(text="I see you're interested in this topic", role="assistant"),
         ]
 
-        context = MultiTurnAttackContext(
+        context = CrescendoAttackContext(
             objective="Continue previous conversation",
             max_turns=2,
             prepended_conversation=prepended_conversation,
@@ -1594,7 +1601,7 @@ class TestEdgeCases:
             adversarial_chat=mock_adversarial_chat,
         )
 
-        context = MultiTurnAttackContext(objective="", max_turns=5)
+        context = CrescendoAttackContext(objective="", max_turns=5)
 
         with pytest.raises(AttackValidationException, match="Attack objective must be provided"):
             await attack.execute_async(context=context)
@@ -1605,7 +1612,7 @@ class TestEdgeCases:
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
         mock_prompt_normalizer: MagicMock,
-        basic_context: MultiTurnAttackContext,
+        basic_context: CrescendoAttackContext,
     ):
         """Test that JSON parsing errors trigger retry mechanism.
 
@@ -1641,7 +1648,7 @@ class TestEdgeCases:
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
         mock_prompt_normalizer: MagicMock,
-        basic_context: MultiTurnAttackContext,
+        basic_context: CrescendoAttackContext,
         sample_response: PromptRequestResponse,
     ):
         """Test that scoring errors are handled appropriately."""
@@ -1679,8 +1686,8 @@ class TestEdgeCases:
 
         # Create two contexts that could be used concurrently
         # They have different objectives and max_turns to ensure isolation
-        context1 = MultiTurnAttackContext(objective="Objective 1", max_turns=5)
-        context2 = MultiTurnAttackContext(objective="Objective 2", max_turns=3)
+        context1 = CrescendoAttackContext(objective="Objective 1", max_turns=5)
+        context2 = CrescendoAttackContext(objective="Objective 2", max_turns=3)
 
         # Mock conversation manager for both setups
         mock_state1 = ConversationState(turn_count=0)

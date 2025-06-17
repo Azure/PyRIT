@@ -42,7 +42,41 @@ from pyrit.score import (
 logger = logging.getLogger(__name__)
 
 
-class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
+class CrescendoAttackContext(MultiTurnAttackContext):
+    """Context for the Crescendo attack strategy."""
+
+    # Text that was refused by the target in the previous attempt (used for backtracking)
+    refused_text: Optional[str] = None
+
+    # Counter for number of backtracks performed during the attack
+    backtrack_count: int = 0
+
+
+class CrescendoAttackResult(AttackResult):
+    """Result of the Crescendo attack strategy execution."""
+
+    @property
+    def backtrack_count(self) -> int:
+        """
+        Get the number of backtracks performed during the attack.
+
+        Returns:
+            int: The number of backtracks.
+        """
+        return self.metadata.get("backtrack_count", 0)
+
+    @backtrack_count.setter
+    def backtrack_count(self, value: int) -> None:
+        """
+        Set the number of backtracks performed during the attack.
+
+        Args:
+            value (int): The number of backtracks to set.
+        """
+        self.metadata["backtrack_count"] = value
+
+
+class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResult]):
     """
     Implementation of the Crescendo attack strategy.
 
@@ -166,12 +200,12 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             successful_objective_threshold=self._successful_objective_threshold,
         )
 
-    def _validate_context(self, *, context: MultiTurnAttackContext) -> None:
+    def _validate_context(self, *, context: CrescendoAttackContext) -> None:
         """
         Validate the context before executing the attack.
 
         Args:
-            context (MultiTurnAttackContext): The context to validate.
+            context (CrescendoAttackContext): The context to validate.
 
         Raises:
             ValueError: If the context is invalid.
@@ -185,12 +219,12 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             if not validator():
                 raise ValueError(error_msg)
 
-    async def _setup_async(self, *, context: MultiTurnAttackContext) -> None:
+    async def _setup_async(self, *, context: CrescendoAttackContext) -> None:
         """
         Prepare the strategy for execution.
 
         Args:
-            context (MultiTurnAttackContext): Attack context with configuration
+            context (CrescendoAttackContext): Attack context with configuration
         """
         # Ensure the context has a session
         context.session = ConversationSession()
@@ -237,17 +271,17 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         # Initialize backtrack count in context
         context.backtrack_count = 0
 
-    async def _perform_attack_async(self, *, context: MultiTurnAttackContext) -> AttackResult:
+    async def _perform_attack_async(self, *, context: CrescendoAttackContext) -> CrescendoAttackResult:
         """
         Execute the Crescendo attack by iteratively generating prompts,
         sending them to the target, and scoring the responses in a loop
         until the objective is achieved or the maximum turns are reached.
 
         Args:
-            context (MultiTurnAttackContext): The attack context containing configuration and state.
+            context (CrescendoAttackContext): The attack context containing configuration and state.
 
         Returns:
-            AttackResult: The result of the attack execution.
+            CrescendoAttackResult: The result of the attack execution.
         """
         # Log the attack configuration
         self._logger.info(f"Starting crescendo attack with objective: {context.objective}")
@@ -309,7 +343,7 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         )
 
         # Prepare the result
-        return AttackResult(
+        result = CrescendoAttackResult(
             attack_identifier=self.get_identifier(),
             conversation_id=context.session.conversation_id,
             objective=context.objective,
@@ -318,15 +352,17 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             executed_turns=context.executed_turns,
             last_response=context.last_response.get_piece() if context.last_response else None,
             last_score=context.last_score,
-            metadata={"backtrack_count": context.backtrack_count},
         )
+        # setting metadata for backtrack count
+        result.backtrack_count = context.backtrack_count
+        return result
 
-    async def _teardown_async(self, *, context: MultiTurnAttackContext) -> None:
+    async def _teardown_async(self, *, context: CrescendoAttackContext) -> None:
         """
         Clean up after attack execution
 
         Args:
-            context (MultiTurnAttackContext): The attack context.
+            context (CrescendoAttackContext): The attack context.
         """
         # Nothing to be done here, no-op
         pass
@@ -335,14 +371,14 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
     async def _get_attack_prompt_async(
         self,
         *,
-        context: MultiTurnAttackContext,
+        context: CrescendoAttackContext,
         refused_text: str,
     ) -> str:
         """
         Generate the next attack prompt using the adversarial chat.
 
         Args:
-            context (MultiTurnAttackContext): The attack context.
+            context (CrescendoAttackContext): The attack context.
             refused_text (str): Text that was refused by the target (if any).
 
         Returns:
@@ -360,14 +396,14 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
     def _build_adversarial_prompt(
         self,
         *,
-        context: MultiTurnAttackContext,
+        context: CrescendoAttackContext,
         refused_text: str,
     ) -> str:
         """
         Build the prompt to send to the adversarial chat.
 
         Args:
-            context (MultiTurnAttackContext): The attack context.
+            context (CrescendoAttackContext): The attack context.
             refused_text (str): Text that was refused by the target (if any).
 
         Returns:
@@ -412,14 +448,14 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         self,
         *,
         prompt_text: str,
-        context: MultiTurnAttackContext,
+        context: CrescendoAttackContext,
     ) -> str:
         """
         Send a prompt to the adversarial chat and get the response.
 
         Args:
             prompt_text (str): The prompt text to send.
-            context (MultiTurnAttackContext): The attack context.
+            context (CrescendoAttackContext): The attack context.
 
         Returns:
             str: The response text from the adversarial chat.
@@ -485,14 +521,14 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         self,
         *,
         attack_prompt: str,
-        context: MultiTurnAttackContext,
+        context: CrescendoAttackContext,
     ) -> PromptRequestResponse:
         """
         Send the attack prompt to the objective target.
 
         Args:
             attack_prompt (str): The prompt to send.
-            context (MultiTurnAttackContext): The attack context.
+            context (CrescendoAttackContext): The attack context.
 
         Returns:
             PromptRequestResponse: The response from the objective target.
@@ -521,12 +557,12 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
 
         return response
 
-    async def _check_refusal_async(self, context: MultiTurnAttackContext, task: str) -> Score:
+    async def _check_refusal_async(self, context: CrescendoAttackContext, task: str) -> Score:
         """
         Check if the response indicates a refusal.
 
         Args:
-            context (MultiTurnAttackContext): The attack context containing the response to check.
+            context (CrescendoAttackContext): The attack context containing the response to check.
             task (str): The task/prompt that was sent.
 
         Returns:
@@ -539,12 +575,12 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         scores = await self._refusal_scorer.score_async(request_response=response_piece, task=task)
         return scores[0]
 
-    async def _score_response_async(self, *, context: MultiTurnAttackContext) -> Score:
+    async def _score_response_async(self, *, context: CrescendoAttackContext) -> Score:
         """
         Score the target's response.
 
         Args:
-            context (MultiTurnAttackContext): The attack context containing the response to score.
+            context (CrescendoAttackContext): The attack context containing the response to score.
 
         Returns:
             Score: The objective score.
@@ -650,7 +686,7 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
 
         self._adversarial_chat_system_prompt_template = sp
 
-    async def _generate_next_prompt_async(self, context: MultiTurnAttackContext) -> str:
+    async def _generate_next_prompt_async(self, context: CrescendoAttackContext) -> str:
         """
         Generate the next prompt to be sent to the target during the Crescendo attack.
 
@@ -658,7 +694,7 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         generate a new attack prompt using the adversarial chat based on previous feedback.
 
         Args:
-            context (MultiTurnAttackContext): The attack context containing the current state and configuration.
+            context (CrescendoAttackContext): The attack context containing the current state and configuration.
 
         Returns:
             str: The generated prompt to be sent to the target.
@@ -680,14 +716,14 @@ class CrescendoAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
     async def _perform_backtrack_if_refused_async(
         self,
         *,
-        context: MultiTurnAttackContext,
+        context: CrescendoAttackContext,
         prompt_sent: str,
     ) -> bool:
         """
         Check if the response indicates a refusal and perform backtracking if needed.
 
         Args:
-            context (MultiTurnAttackContext): The attack context containing the response to check.
+            context (CrescendoAttackContext): The attack context containing the response to check.
             prompt_sent (str): The prompt that was sent to the target.
 
         Returns:
