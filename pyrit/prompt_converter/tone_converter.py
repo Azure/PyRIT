@@ -16,6 +16,7 @@ class ToneConverter(LLMGenericTextConverter):
     """
     Converts a conversation to a different tone.
     """
+
     def __init__(self, *, converter_target: PromptChatTarget, tone: str, prompt_template: SeedPrompt = None):
         """
         Initializes the converter with the target chat support, tone, and optional prompt template.

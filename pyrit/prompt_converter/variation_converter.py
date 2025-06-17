@@ -29,6 +29,7 @@ class VariationConverter(PromptConverter):
     """
     Generates variations of the input prompts using the converter target.
     """
+
     def __init__(self, *, converter_target: PromptChatTarget, prompt_template: SeedPrompt = None):
         """
         Initializes the converter with the specified target and prompt template.

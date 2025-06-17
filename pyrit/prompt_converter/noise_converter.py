@@ -18,6 +18,7 @@ class NoiseConverter(LLMGenericTextConverter):
     """
     Injects noise errors into a conversation.
     """
+
     def __init__(
         self,
         *,

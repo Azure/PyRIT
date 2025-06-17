@@ -21,6 +21,7 @@ class FuzzerExpandConverter(FuzzerConverter):
     """
     Generates versions of a prompt with new, prepended sentences.
     """
+
     def __init__(
         self,
         *,

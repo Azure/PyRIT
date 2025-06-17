@@ -15,6 +15,7 @@ class FuzzerSimilarConverter(FuzzerConverter):
     """
     Generates versions of a prompt with similar sentences.
     """
+
     def __init__(self, *, converter_target: PromptChatTarget, prompt_template: SeedPrompt = None):
         prompt_template = (
             prompt_template

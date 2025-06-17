@@ -11,6 +11,7 @@ class UnicodeReplacementConverter(WordLevelConverter):
     """
     Converts a prompt to its unicode representation.
     """
+
     def __init__(
         self,
         *,

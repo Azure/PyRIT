@@ -9,6 +9,7 @@ class UnicodeSubstitutionConverter(PromptConverter):
     """
     Encodes the prompt using any unicode starting point.
     """
+
     def __init__(self, *, start_value=0xE0000):
         self.startValue = start_value
 

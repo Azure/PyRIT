@@ -31,6 +31,7 @@ class TranslationConverter(PromptConverter):
     """
     Translates prompts into different languages using an LLM.
     """
+
     def __init__(
         self,
         *,

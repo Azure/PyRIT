@@ -21,6 +21,7 @@ class LLMGenericTextConverter(PromptConverter):
     """
     Represents a generic LLM converter that expects text to be transformed (e.g. no JSON parsing or format).
     """
+
     def __init__(
         self,
         *,

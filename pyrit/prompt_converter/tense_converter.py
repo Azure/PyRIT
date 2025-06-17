@@ -16,6 +16,7 @@ class TenseConverter(LLMGenericTextConverter):
     """
     Converts a conversation to a different tense.
     """
+
     def __init__(self, *, converter_target: PromptChatTarget, tense: str, prompt_template: SeedPrompt = None):
         """
         Initializes the converter with the target chat support, tense, and optional prompt template.
