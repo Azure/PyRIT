@@ -56,10 +56,12 @@ class TextBuggerConverter(PromptConverter):
 
     def __init__(
         self,
+        *,
         word_swap_ratio: float = 0.2,
         top_k: int = 5,
-        semantic_threshold: float = 0.8,
         max_transformations: int = 5,
+        use_universal_sentence_encoder: bool = False,
+        semantic_threshold: float = 0.8,
     ) -> None:
         """
         Initializes the converter with TextBugger parameters.
@@ -69,11 +71,12 @@ class TextBuggerConverter(PromptConverter):
                 Default is 0.2 (20% of words). Range: 0.0 to 1.0.
             top_k (int): Number of top semantic word candidates from GloVe embedding.
                 Default is 5. Higher values provide more word substitution options.
+            max_transformations (int): Maximum number of transformed versions to generate.
+                Default is 5. Higher values create more adversarial variations.
+            use_universal_sentence_encoder (bool): Whether to use Universal Sentence Encoder.
             semantic_threshold (float): Threshold for Universal Sentence Encoder similarity.
                 Default is 0.8. Higher values ensure transformed text stays more semantically similar.
                 Range: 0.0 to 1.0 (1.0 = identical meaning, 0.0 = completely different).
-            max_transformations (int): Maximum number of transformed versions to generate.
-                Default is 5. Higher values create more adversarial variations.
 
         Raises:
             ImportError: If TextAttack framework is not installed.
@@ -95,10 +98,15 @@ class TextBuggerConverter(PromptConverter):
 
         self._word_swap_ratio = word_swap_ratio
         self._top_k = top_k
-        self._semantic_threshold = semantic_threshold
         self._max_transformations = max_transformations
+        self._use_universal_sentence_encoder = use_universal_sentence_encoder
+        self._semantic_threshold = semantic_threshold
 
-        self._use_universal_sentence_encoder = False if find_spec("tensorflow_hub") is None else True
+        if self._use_universal_sentence_encoder:
+            if find_spec("tensorflow_hub") is None:
+                raise ImportError(
+                    "Universal Sentence Encoder requires tensorflow_hub. Install it with: pip install tensorflow-hub"
+                )
 
         # Augmenter instance that applies TextBugger transformations
         self._augmenter = self._create_augmenter()
