@@ -35,7 +35,7 @@ from pyrit.models import (
     ScoreType,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
-from pyrit.prompt_target import PromptChatTarget, PromptTarget
+from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import FloatScaleThresholdScorer, SelfAskRefusalScorer
 
 
