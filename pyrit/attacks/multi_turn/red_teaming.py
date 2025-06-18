@@ -114,6 +114,9 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         if attack_scoring_config.objective_scorer is None:
             raise ValueError("Objective scorer must be provided in the attack scoring configuration.")
 
+        # Check for unused optional parameters and warn if they are set
+        self._warn_if_set(config=attack_scoring_config, unused_fields=["refusal_scorer"])
+
         self._objective_scorer = attack_scoring_config.objective_scorer
         self._use_score_as_feedback = attack_scoring_config.use_score_as_feedback
         self._successful_objective_threshold = attack_scoring_config.successful_objective_threshold

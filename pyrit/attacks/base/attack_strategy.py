@@ -7,7 +7,7 @@ import time
 import uuid
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Dict, Generic, MutableMapping
+from typing import Any, AsyncIterator, Dict, Generic, List, MutableMapping
 
 from pyrit.attacks.base.attack_context import ContextT
 from pyrit.attacks.base.attack_result import AttackOutcome, ResultT
@@ -73,6 +73,45 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
             "__module__": self.__class__.__module__,
             "id": str(self._id),
         }
+
+    def _warn_if_set(self, *, config: Any, unused_fields: List[str]) -> None:
+        """
+        Utility method to warn about unused parameters in attack configurations.
+
+        This method checks if specified fields in a configuration object are set
+        (not None and not empty for collections) and logs a warning message for each
+        field that will be ignored by the current attack strategy.
+
+        Args:
+            config (Any): The configuration object to check for unused fields.
+            unused_fields (List[str]): List of field names to check in the config object.
+        """
+        config_name = config.__class__.__name__
+
+        for field_name in unused_fields:
+            # Get the field value from the config object
+            if not hasattr(config, field_name):
+                self._logger.warning(
+                    f"Field '{field_name}' does not exist in {config_name}. " f"Skipping unused parameter check."
+                )
+                continue
+
+            param_value = getattr(config, field_name)
+
+            # Check if the parameter is set
+            is_set = False
+            if param_value is not None:
+                # For collections, also check if they are not empty
+                if hasattr(param_value, "__len__"):
+                    is_set = len(param_value) > 0
+                else:
+                    is_set = True
+
+            if is_set:
+                self._logger.warning(
+                    f"{field_name} was provided in {config_name} but is not used by {self.__class__.__name__}. "
+                    f"This parameter will be ignored."
+                )
 
     @abstractmethod
     def _validate_context(self, *, context: ContextT) -> None:

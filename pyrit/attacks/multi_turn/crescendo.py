@@ -31,7 +31,7 @@ from pyrit.exceptions import (
 )
 from pyrit.models import PromptRequestResponse, Score, SeedPrompt, SeedPromptGroup
 from pyrit.prompt_normalizer import PromptNormalizer
-from pyrit.prompt_target import PromptChatTarget, PromptTarget
+from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import (
     FloatScaleThresholdScorer,
     Scorer,
@@ -103,9 +103,8 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
     def __init__(
         self,
         *,
-        objective_target: PromptTarget,
+        objective_target: PromptChatTarget,
         attack_adversarial_config: AttackAdversarialConfig,
-        scoring_target: Optional[PromptChatTarget] = None,
         attack_converter_config: Optional[AttackConverterConfig] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         max_backtracks: int = 10,
@@ -115,16 +114,14 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
         Initialize the Crescendo attack strategy.
 
         Args:
-            objective_target (PromptTarget): The target system to attack. Must be a PromptChatTarget.
+            objective_target (PromptChatTarget): The target system to attack. Must be a PromptChatTarget.
             attack_adversarial_config (AttackAdversarialConfig): Configuration for the adversarial component,
                 including the adversarial chat target and optional system prompt path.
-            scoring_target (Optional[PromptChatTarget]): The target to use for scoring. If not provided,
-                defaults to the adversarial chat target from attack_adversarial_config.
             attack_converter_config (Optional[AttackConverterConfig]): Configuration for attack converters,
                 including request and response converters.
             attack_scoring_config (Optional[AttackScoringConfig]): Configuration for attack scoring, including:
-                - objective_scorer: If not provided, creates a default FloatScaleThresholdScorer.
-                - refusal_scorer: If not provided, creates a default SelfAskRefusalScorer.
+                - objective_scorer: If not provided, creates a default `FloatScaleThresholdScorer`.
+                - refusal_scorer: If not provided, creates a default `SelfAskRefusalScorer`.
             max_backtracks (int): Maximum number of times to backtrack during the attack. Must be positive.
             prompt_normalizer (Optional[PromptNormalizer]): The prompt normalizer to use for sending prompts.
         Raises:
@@ -132,10 +129,6 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
         """
         # Initialize base class
         super().__init__(logger=logger)
-
-        # Validate objective target type
-        if not isinstance(objective_target, PromptChatTarget):
-            raise ValueError("Crescendo attack requires objective_target to be a PromptChatTarget")
 
         # Store the objective target
         self._objective_target = objective_target
@@ -149,10 +142,11 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
         attack_scoring_config = attack_scoring_config or AttackScoringConfig()
 
         # If no objective scorer provided, create the default Crescendo scorer
-        if not attack_scoring_config.objective_scorer:
-            # Use provided scoring target or default to adversarial chat
-            scoring_chat_target = scoring_target or attack_adversarial_config.target
-            attack_scoring_config.objective_scorer = FloatScaleThresholdScorer(
+        objective_scorer = attack_scoring_config.objective_scorer
+        if not objective_scorer:
+            # Use provided adversarial chat target for scoring
+            scoring_chat_target = attack_adversarial_config.target
+            objective_scorer = FloatScaleThresholdScorer(
                 scorer=SelfAskScaleScorer(
                     chat_target=scoring_chat_target,
                     scale_arguments_path=SelfAskScaleScorer.ScalePaths.TASK_ACHIEVED_SCALE.value,
@@ -161,14 +155,14 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
                 threshold=attack_scoring_config.successful_objective_threshold,
             )
 
-        self._objective_scorer = attack_scoring_config.objective_scorer
+        self._objective_scorer = objective_scorer
         self._use_score_as_feedback = attack_scoring_config.use_score_as_feedback
         self._successful_objective_threshold = attack_scoring_config.successful_objective_threshold
         self._auxiliary_scorers = attack_scoring_config.auxiliary_scorers
 
         # Initialize refusal scorer - use the one from config if provided, otherwise create default
         self._refusal_scorer = attack_scoring_config.refusal_scorer or SelfAskRefusalScorer(
-            chat_target=scoring_target or attack_adversarial_config.target,
+            chat_target=attack_adversarial_config.target,
         )
 
         # Initialize adversarial configuration

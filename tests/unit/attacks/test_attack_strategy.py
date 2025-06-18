@@ -486,3 +486,204 @@ class TestEdgeCasesAndErrorHandling:
 
         assert strategy1._id != strategy2._id
         assert strategy1.get_identifier()["id"] != strategy2.get_identifier()["id"]
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestWarnIfSet:
+    """Tests for the _warn_if_set utility method"""
+
+    def test_warn_if_set_with_none_values(self, mock_attack_strategy, caplog):
+        """Test that None values don't trigger warnings"""
+        # Create a mock config with None values
+        config = MagicMock()
+        config.__class__.__name__ = "TestConfig"
+        config.field1 = None
+        config.field2 = None
+
+        with caplog.at_level(logging.WARNING):
+            mock_attack_strategy._warn_if_set(config=config, unused_fields=["field1", "field2"])
+
+        # Should not have any warnings
+        assert len(caplog.records) == 0
+
+    def test_warn_if_set_with_set_values(self, mock_attack_strategy, caplog):
+        """Test that set values trigger warnings"""
+        # Create a mock config with set values
+        config = MagicMock()
+        config.__class__.__name__ = "TestConfig"
+        config.field1 = "some_value"
+        config.field2 = 42
+
+        with caplog.at_level(logging.WARNING):
+            mock_attack_strategy._warn_if_set(config=config, unused_fields=["field1", "field2"])
+
+        # Should have warnings for both fields
+        assert len(caplog.records) == 2
+        assert (
+            "field1 was provided in TestConfig but is not used by TestableAttackStrategy" in caplog.records[0].message
+        )
+        assert (
+            "field2 was provided in TestConfig but is not used by TestableAttackStrategy" in caplog.records[1].message
+        )
+
+    def test_warn_if_set_with_empty_collections(self, mock_attack_strategy, caplog):
+        """Test that empty collections don't trigger warnings"""
+        # Create a mock config with empty collections
+        config = MagicMock()
+        config.__class__.__name__ = "TestConfig"
+        config.empty_list = []
+        config.empty_dict = {}
+        config.empty_tuple = ()
+        config.empty_string = ""
+
+        with caplog.at_level(logging.WARNING):
+            mock_attack_strategy._warn_if_set(
+                config=config, unused_fields=["empty_list", "empty_dict", "empty_tuple", "empty_string"]
+            )
+
+        # Should not have any warnings
+        assert len(caplog.records) == 0
+
+    def test_warn_if_set_with_non_empty_collections(self, mock_attack_strategy, caplog):
+        """Test that non-empty collections trigger warnings"""
+        # Create a mock config with non-empty collections
+        config = MagicMock()
+        config.__class__.__name__ = "TestConfig"
+        config.some_list = [1, 2, 3]
+        config.some_dict = {"key": "value"}
+        config.some_tuple = (1, 2)
+        config.some_string = "hello"
+
+        with caplog.at_level(logging.WARNING):
+            mock_attack_strategy._warn_if_set(
+                config=config, unused_fields=["some_list", "some_dict", "some_tuple", "some_string"]
+            )
+
+        # Should have warnings for all fields
+        assert len(caplog.records) == 4
+        for record in caplog.records:
+            assert "was provided in TestConfig but is not used by TestableAttackStrategy" in record.message
+
+    def test_warn_if_set_with_missing_fields(self, mock_attack_strategy, caplog):
+        """Test handling of fields that don't exist in the config"""
+        # Create a mock config without certain fields
+        config = MagicMock()
+        config.__class__.__name__ = "TestConfig"
+        config.existing_field = "value"
+        # Note: missing_field is not set on config
+
+        # Remove the missing_field attribute to ensure it doesn't exist
+        if hasattr(config, "missing_field"):
+            delattr(config, "missing_field")
+
+        with caplog.at_level(logging.WARNING):
+            mock_attack_strategy._warn_if_set(config=config, unused_fields=["existing_field", "missing_field"])
+
+        # Should have one warning for existing_field and one for missing_field not existing
+        warning_records = [r for r in caplog.records if r.levelname == "WARNING"]
+        assert len(warning_records) == 2
+
+        # Check for the specific warning messages
+        messages = [r.message for r in warning_records]
+        assert any("existing_field was provided in TestConfig" in msg for msg in messages)
+        assert any("Field 'missing_field' does not exist in TestConfig" in msg for msg in messages)
+
+    def test_warn_if_set_mixed_values(self, mock_attack_strategy, caplog):
+        """Test with a mix of set and unset values"""
+        # Create a mock config with mixed values
+        config = MagicMock()
+        config.__class__.__name__ = "MixedConfig"
+        config.set_string = "value"
+        config.none_value = None
+        config.empty_list = []
+        config.full_list = [1, 2, 3]
+        config.zero_value = 0  # Should still trigger warning (0 is not None)
+        config.false_value = False  # Should still trigger warning (False is not None)
+
+        with caplog.at_level(logging.WARNING):
+            mock_attack_strategy._warn_if_set(
+                config=config,
+                unused_fields=["set_string", "none_value", "empty_list", "full_list", "zero_value", "false_value"],
+            )
+
+        # Should have warnings for: set_string, full_list, zero_value, false_value
+        warning_records = [r for r in caplog.records if r.levelname == "WARNING"]
+        assert len(warning_records) == 4
+
+        # Check that the right fields triggered warnings
+        warning_messages = " ".join(r.message for r in warning_records)
+        assert "set_string" in warning_messages
+        assert "full_list" in warning_messages
+        assert "zero_value" in warning_messages
+        assert "false_value" in warning_messages
+
+        # These should not be in warnings
+        assert "none_value" not in warning_messages
+        assert "empty_list" not in warning_messages
+
+    def test_warn_if_set_with_custom_objects(self, mock_attack_strategy, caplog):
+        """Test with custom objects that have __len__ method"""
+
+        # Create a custom object with __len__
+        class CustomCollection:
+            def __init__(self, items):
+                self.items = items
+
+            def __len__(self):
+                return len(self.items)
+
+        config = MagicMock()
+        config.__class__.__name__ = "CustomConfig"
+        config.empty_custom = CustomCollection([])
+        config.full_custom = CustomCollection([1, 2, 3])
+
+        with caplog.at_level(logging.WARNING):
+            mock_attack_strategy._warn_if_set(config=config, unused_fields=["empty_custom", "full_custom"])
+
+        # Should only warn about full_custom
+        assert len(caplog.records) == 1
+        assert "full_custom was provided in CustomConfig" in caplog.records[0].message
+
+    def test_warn_if_set_empty_unused_fields_list(self, mock_attack_strategy, caplog):
+        """Test that empty unused_fields list produces no warnings"""
+        config = MagicMock()
+        config.__class__.__name__ = "TestConfig"
+        config.field1 = "value"
+
+        with caplog.at_level(logging.WARNING):
+            mock_attack_strategy._warn_if_set(config=config, unused_fields=[])
+
+        # Should not have any warnings
+        assert len(caplog.records) == 0
+
+    @pytest.mark.parametrize(
+        "value,should_warn",
+        [
+            (None, False),
+            ("", False),
+            ([], False),
+            ({}, False),
+            ((), False),
+            (0, True),
+            (False, True),
+            (True, True),
+            ("value", True),
+            ([1], True),
+            ({"a": 1}, True),
+            ((1,), True),
+        ],
+    )
+    def test_warn_if_set_various_value_types(self, mock_attack_strategy, caplog, value, should_warn):
+        """Test warning behavior with various value types"""
+        config = MagicMock()
+        config.__class__.__name__ = "TestConfig"
+        config.test_field = value
+
+        with caplog.at_level(logging.WARNING):
+            mock_attack_strategy._warn_if_set(config=config, unused_fields=["test_field"])
+
+        if should_warn:
+            assert len(caplog.records) == 1
+            assert "test_field was provided in TestConfig" in caplog.records[0].message
+        else:
+            assert len(caplog.records) == 0

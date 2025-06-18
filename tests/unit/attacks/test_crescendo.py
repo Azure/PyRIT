@@ -137,11 +137,6 @@ def mock_adversarial_chat() -> MagicMock:
 
 
 @pytest.fixture
-def mock_scoring_target() -> MagicMock:
-    return create_mock_chat_target(name="MockScoringTarget")
-
-
-@pytest.fixture
 def mock_objective_scorer() -> MagicMock:
     return create_mock_scorer(scorer_type="float_scale", class_name="FloatScaleThresholdScorer")
 
@@ -291,17 +286,6 @@ class TestCrescendoAttackInitialization:
         assert isinstance(attack._refusal_scorer, SelfAskRefusalScorer)
         assert attack._max_backtracks == 10
 
-    def test_init_with_non_chat_target_raises_error(self, mock_adversarial_chat: MagicMock):
-        """Test that initialization with non-PromptChatTarget raises ValueError."""
-        non_chat_target = MagicMock(spec=PromptTarget)
-        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
-
-        with pytest.raises(ValueError, match="requires objective_target to be a PromptChatTarget"):
-            CrescendoAttack(
-                objective_target=non_chat_target,
-                attack_adversarial_config=adversarial_config,
-            )
-
     def test_init_with_custom_scoring_configuration(
         self,
         mock_objective_target: MagicMock,
@@ -329,19 +313,17 @@ class TestCrescendoAttackInitialization:
         assert attack._successful_objective_threshold == 0.7
         assert attack._use_score_as_feedback is False
 
-    def test_init_creates_default_scorers_with_custom_scoring_target(
+    def test_init_creates_default_scorers_with_adversarial_chat(
         self,
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
-        mock_scoring_target: MagicMock,
     ):
-        """Test that default scorers are created using the provided scoring target."""
+        """Test that default scorers are created using the adversarial chat target."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
 
         attack = CrescendoAttack(
             objective_target=mock_objective_target,
             attack_adversarial_config=adversarial_config,
-            scoring_target=mock_scoring_target,
         )
 
         # Verify default scorers were created

@@ -76,6 +76,10 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
 
         # Initialize scoring configuration
         attack_scoring_config = attack_scoring_config or AttackScoringConfig()
+
+        # Check for unused optional parameters and warn if they are set
+        self._warn_if_set(config=attack_scoring_config, unused_fields=["refusal_scorer"])
+
         self._auxiliary_scorers = attack_scoring_config.auxiliary_scorers
         self._objective_scorer = attack_scoring_config.objective_scorer
         if self._objective_scorer and self._objective_scorer.scorer_type != "true_false":
@@ -300,4 +304,5 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
         if not objective_scores:
             return None
 
+        return objective_scores[0]
         return objective_scores[0]
