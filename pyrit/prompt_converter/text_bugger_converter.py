@@ -10,6 +10,11 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 # TODO: consider adding textattack as PyRIT dependency?
 try:
     from textattack.augmentation import Augmenter
+    from textattack.constraints.pre_transformation import (
+        RepeatModification,
+        StopwordModification,
+    )
+    from textattack.constraints.semantics.sentence_encoders import UniversalSentenceEncoder
     from textattack.transformations import (
         CompositeTransformation,
         WordSwapEmbedding,
@@ -41,6 +46,10 @@ class TextBuggerConverter(PromptConverter):
     https://github.com/aiverify-foundation/moonshot-data/blob/main/attack-modules/textbugger_attack.py
 
     Original paper: https://arxiv.org/abs/1812.05271
+
+    Note:
+        This converter may require internet access for initial download of necessary
+        resources such as GloVe embeddings and Universal Sentence Encoder model.
     """
 
     def __init__(
@@ -98,39 +107,47 @@ class TextBuggerConverter(PromptConverter):
             Augmenter: Configured TextAttack augmenter instance.
         """
         # The five TEXTBUGGER transformations as defined in the paper
-        transformation = CompositeTransformation( # type: ignore
+        transformation = CompositeTransformation(  # type: ignore
             [
                 # (1) Insert: Insert a space into the word
-                WordSwapRandomCharacterInsertion( # type: ignore
+                WordSwapRandomCharacterInsertion(  # type: ignore
                     random_one=True,
                     letters_to_insert=" ",
                     skip_first_char=True,
                     skip_last_char=True,
                 ),
                 # (2) Delete: Delete a random character of the word
-                WordSwapRandomCharacterDeletion( # type: ignore
+                WordSwapRandomCharacterDeletion(  # type: ignore
                     random_one=True,
                     skip_first_char=True,
                     skip_last_char=True,
                 ),
                 # (3) Swap: Swap random two adjacent letters in the word
-                WordSwapNeighboringCharacterSwap( # type: ignore
+                WordSwapNeighboringCharacterSwap(  # type: ignore
                     random_one=True,
                     skip_first_char=True,
                     skip_last_char=True,
                 ),
                 # (4) Substitute-C: Replace characters with visually similar characters
-                WordSwapHomoglyphSwap(), # type: ignore
+                WordSwapHomoglyphSwap(),  # type: ignore
                 # (5) Substitute-W: Replace a word with its topk nearest neighbors
-                WordSwapEmbedding(max_candidates=self._top_k), # type: ignore
+                WordSwapEmbedding(max_candidates=self._top_k),  # type: ignore
             ]
         )
 
-        # TODO: add constraints
+        # Define the constraints for the transformations to ensure valid and meaningful changes
+        constraints = [
+            RepeatModification(),  # type: ignore
+            StopwordModification(),  # type: ignore
+
+            # Universal Sentence Encoder model is used, tensorflow_hub is required
+            UniversalSentenceEncoder(threshold=self._semantic_threshold),  # type: ignore
+        ]
 
         # Create the augmenter that orchestrates all transformations
-        return Augmenter( # type: ignore
+        return Augmenter(  # type: ignore
             transformation=transformation,
+            constraints=constraints,
             pct_words_to_swap=self._word_swap_ratio,
             transformations_per_example=self._max_transformations,
         )
@@ -164,7 +181,8 @@ class TextBuggerConverter(PromptConverter):
             selected_text = str(random.choice(transformed_texts))
             return ConverterResult(output_text=selected_text, output_type="text")
 
-        except Exception:
+        except Exception as e:
+            print(f"Error during TextBugger transformation: {str(e)}")
             # Return original prompt if transformation fails
             return ConverterResult(output_text=prompt, output_type="text")
 
