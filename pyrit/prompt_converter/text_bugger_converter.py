@@ -4,6 +4,8 @@
 import logging
 import random
 
+from importlib.util import find_spec
+
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 
@@ -96,6 +98,8 @@ class TextBuggerConverter(PromptConverter):
         self._semantic_threshold = semantic_threshold
         self._max_transformations = max_transformations
 
+        self._use_universal_sentence_encoder = False if find_spec("tensorflow_hub") is None else True
+
         # Augmenter instance that applies TextBugger transformations
         self._augmenter = self._create_augmenter()
 
@@ -139,10 +143,10 @@ class TextBuggerConverter(PromptConverter):
         constraints = [
             RepeatModification(),  # type: ignore
             StopwordModification(),  # type: ignore
-
-            # Universal Sentence Encoder model is used, tensorflow_hub is required
-            UniversalSentenceEncoder(threshold=self._semantic_threshold),  # type: ignore
         ]
+        if self._use_universal_sentence_encoder is True:
+            # Universal Sentence Encoder model is used, tensorflow_hub is required
+            constraints.append(UniversalSentenceEncoder(threshold=self._semantic_threshold))  # type: ignore
 
         # Create the augmenter that orchestrates all transformations
         return Augmenter(  # type: ignore
