@@ -3,7 +3,13 @@
 
 
 from pyrit.attacks.base.attack_config import AttackAdversarialConfig, AttackScoringConfig, AttackConverterConfig
-from pyrit.attacks.base.attack_context import AttackContext, MultiTurnAttackContext, ConversationSession, ContextT
+from pyrit.attacks.base.attack_context import (
+    AttackContext,
+    SingleTurnAttackContext,
+    MultiTurnAttackContext,
+    ConversationSession,
+    ContextT,
+)
 from pyrit.attacks.base.attack_executor import AttackExecutor
 from pyrit.attacks.base.attack_result import AttackResult, ResultT, AttackOutcome
 from pyrit.attacks.base.attack_strategy import AttackStrategy, AttackStrategyLogAdapter
@@ -18,6 +24,7 @@ __all__ = [
     "AttackConverterConfig",
     "AttackContext",
     "MultiTurnAttackContext",
+    "SingleTurnAttackContext",
     "ConversationSession",
     "ContextT",
     "AttackExecutor",

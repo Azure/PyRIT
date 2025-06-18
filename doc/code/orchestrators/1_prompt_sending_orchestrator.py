@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
@@ -148,20 +148,17 @@ await result.print_conversation_async()  # type: ignore
 #
 # If you prepend all or part of a conversation with `PromptSendingOrchestrator`, that is also supported. You can call `set_prepended_conversation` to customize the beginning part of any message. For example, you could use this to do a multi-turn conversation. Below sets the system prompt for many messages.
 
-# %%
-import pathlib
+from pyrit.datasets import TextJailBreak
 
-from pyrit.common.path import DATASETS_PATH
-from pyrit.models import SeedPrompt
+# %%
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 
 target = OpenAIChatTarget()
 
-jailbreak_path = pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dan_1.yaml"
-
-system_prompt_str = SeedPrompt.from_yaml_file(jailbreak_path).value
+jailbreak = TextJailBreak(template_file_name="dan_1.yaml")
+system_prompt_str = jailbreak.get_jailbreak_system_prompt()
 
 prepend_conversation = [PromptRequestResponse.from_system_prompt(system_prompt_str)]
 
