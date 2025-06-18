@@ -98,38 +98,38 @@ class TextBuggerConverter(PromptConverter):
             Augmenter: Configured TextAttack augmenter instance.
         """
         # The five TEXTBUGGER transformations as defined in the paper
-        transformation = CompositeTransformation(
+        transformation = CompositeTransformation( # type: ignore
             [
                 # (1) Insert: Insert a space into the word
-                WordSwapRandomCharacterInsertion(
+                WordSwapRandomCharacterInsertion( # type: ignore
                     random_one=True,
                     letters_to_insert=" ",
                     skip_first_char=True,
                     skip_last_char=True,
                 ),
                 # (2) Delete: Delete a random character of the word
-                WordSwapRandomCharacterDeletion(
+                WordSwapRandomCharacterDeletion( # type: ignore
                     random_one=True,
                     skip_first_char=True,
                     skip_last_char=True,
                 ),
                 # (3) Swap: Swap random two adjacent letters in the word
-                WordSwapNeighboringCharacterSwap(
+                WordSwapNeighboringCharacterSwap( # type: ignore
                     random_one=True,
                     skip_first_char=True,
                     skip_last_char=True,
                 ),
                 # (4) Substitute-C: Replace characters with visually similar characters
-                WordSwapHomoglyphSwap(),
+                WordSwapHomoglyphSwap(), # type: ignore
                 # (5) Substitute-W: Replace a word with its topk nearest neighbors
-                WordSwapEmbedding(max_candidates=self._top_k),
+                WordSwapEmbedding(max_candidates=self._top_k), # type: ignore
             ]
         )
 
         # TODO: add constraints
 
         # Create the augmenter that orchestrates all transformations
-        return Augmenter(
+        return Augmenter( # type: ignore
             transformation=transformation,
             pct_words_to_swap=self._word_swap_ratio,
             transformations_per_example=self._max_transformations,
@@ -161,7 +161,7 @@ class TextBuggerConverter(PromptConverter):
             logger.debug(f"Transformed texts: {transformed_texts}")
 
             # TODO: should I return all transformed texts or just one?
-            selected_text = random.choice(transformed_texts)
+            selected_text = str(random.choice(transformed_texts))
             return ConverterResult(output_text=selected_text, output_type="text")
 
         except Exception:
