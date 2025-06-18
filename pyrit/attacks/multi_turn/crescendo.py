@@ -196,7 +196,7 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
 
     def _validate_context(self, *, context: CrescendoAttackContext) -> None:
         """
-        Validate the context before executing the attack.
+        Validate the Crescendo attack context to ensure it has the necessary configuration.
 
         Args:
             context (CrescendoAttackContext): The context to validate.
@@ -571,13 +571,17 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
 
     async def _score_response_async(self, *, context: CrescendoAttackContext) -> Score:
         """
-        Score the target's response.
+        Score the last response in the context using the objective scorer.
 
         Args:
             context (CrescendoAttackContext): The attack context containing the response to score.
 
         Returns:
             Score: The objective score.
+
+        Raises:
+            ValueError: If no response is available in the context to score.
+            RuntimeError: If no objective scores are returned from the scoring process.
         """
         if not context.last_response:
             raise ValueError("No response available in context to score")
