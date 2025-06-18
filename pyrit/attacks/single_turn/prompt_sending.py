@@ -17,7 +17,6 @@ from pyrit.models import (
     SeedPrompt,
     SeedPromptGroup,
 )
-from pyrit.models.literals import ChatMessageRole
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.score import Scorer
@@ -77,6 +76,10 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
 
         # Initialize scoring configuration
         attack_scoring_config = attack_scoring_config or AttackScoringConfig()
+
+        # Check for unused optional parameters and warn if they are set
+        self._warn_if_set(config=attack_scoring_config, unused_fields=["refusal_scorer"])
+
         self._auxiliary_scorers = attack_scoring_config.auxiliary_scorers
         self._objective_scorer = attack_scoring_config.objective_scorer
         if self._objective_scorer and self._objective_scorer.scorer_type != "true_false":
@@ -289,16 +292,17 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
                 no objective scorer is set. Note that auxiliary scorer results are not returned
                 but are still executed and stored.
         """
+        scoring_results = await Scorer.score_response_with_objective_async(
+            response=response,
+            auxiliary_scorers=self._auxiliary_scorers,
+            objective_scorers=[self._objective_scorer] if self._objective_scorer else None,
+            role_filter="assistant",
+            task=objective,
+        )
 
-        role: ChatMessageRole = "assistant"
+        objective_scores = scoring_results["objective_scores"]
+        if not objective_scores:
+            return None
 
-        # Run auxiliary scorers (no return value needed)
-        await Scorer.score_response_async(response=response, scorers=self._auxiliary_scorers, role_filter=role)
-
-        # Run objective scorer
-        if self._objective_scorer:
-            return await Scorer.score_response_select_first_success_async(
-                response=response, scorers=[self._objective_scorer], role_filter=role, task=objective
-            )
-
-        return None
+        return objective_scores[0]
+        return objective_scores[0]

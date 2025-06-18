@@ -517,7 +517,7 @@ class TestPromptGeneration:
         basic_context.executed_turns = 0
         basic_context.custom_prompt = first_prompt
 
-        result = await attack._generate_next_prompt(context=basic_context)
+        result = await attack._generate_next_prompt_async(context=basic_context)
 
         assert result == first_prompt
         # Should not call adversarial chat
@@ -549,7 +549,7 @@ class TestPromptGeneration:
 
         # Mock build_adversarial_prompt
         with patch.object(attack, "_build_adversarial_prompt", new_callable=AsyncMock, return_value="Built prompt"):
-            result = await attack._generate_next_prompt(context=basic_context)
+            result = await attack._generate_next_prompt_async(context=basic_context)
 
         assert result == sample_response.get_value()
         mock_prompt_normalizer.send_prompt_async.assert_called_once()
@@ -580,7 +580,7 @@ class TestPromptGeneration:
         # Mock build_adversarial_prompt
         with patch.object(attack, "_build_adversarial_prompt", new_callable=AsyncMock, return_value="Built prompt"):
             with pytest.raises(ValueError, match="Received no response from adversarial chat"):
-                await attack._generate_next_prompt(context=basic_context)
+                await attack._generate_next_prompt_async(context=basic_context)
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -606,9 +606,8 @@ class TestAdversarialPromptBuilding:
             attack_scoring_config=scoring_config,
         )
 
-        # Mock conversation manager to return no last message
-        with patch.object(attack._conversation_manager, "get_last_message", return_value=None):
-            result = await attack._build_adversarial_prompt(basic_context)
+        basic_context.last_response = None
+        result = await attack._build_adversarial_prompt(basic_context)
 
         assert result == seed
 
@@ -650,16 +649,18 @@ class TestAdversarialPromptBuilding:
             attack_scoring_config=scoring_config,
         )
 
-        response = MagicMock(spec=PromptRequestPiece)
-        response.converted_value_data_type = data_type
-        response.converted_value = converted_value
-        response.has_error.return_value = has_error
-        response.is_blocked.return_value = is_blocked
-        response.response_error = "Error message"
+        response_piece = MagicMock(spec=PromptRequestPiece)
+        response_piece.converted_value_data_type = data_type
+        response_piece.converted_value = converted_value
+        response_piece.has_error.return_value = has_error
+        response_piece.is_blocked.return_value = is_blocked
+        response_piece.response_error = "Error message"
 
+        basic_context.last_response = MagicMock(spec=PromptRequestResponse)
+        basic_context.last_response.get_piece.return_value = response_piece
         basic_context.last_score = None
 
-        result = attack._handle_adversarial_text_response(response=response, context=basic_context)
+        result = attack._handle_adversarial_text_response(context=basic_context)
 
         assert result == expected_result
 
@@ -682,17 +683,42 @@ class TestAdversarialPromptBuilding:
             attack_scoring_config=scoring_config,
         )
 
-        response = MagicMock(spec=PromptRequestPiece)
-        response.converted_value_data_type = "text"
-        response.converted_value = "Target response"
-        response.has_error.return_value = False
+        response_piece = MagicMock(spec=PromptRequestPiece)
+        response_piece.converted_value_data_type = "text"
+        response_piece.converted_value = "Target response"
+        response_piece.has_error.return_value = False
 
+        basic_context.last_response = MagicMock(spec=PromptRequestResponse)
+        basic_context.last_response.get_piece.return_value = response_piece
         basic_context.last_score = success_score
 
-        result = attack._handle_adversarial_text_response(response=response, context=basic_context)
+        result = attack._handle_adversarial_text_response(context=basic_context)
 
         assert "Target response" in result
         assert success_score.score_rationale in result
+
+    def test_handle_adversarial_text_response_no_response(
+        self,
+        mock_objective_target: MagicMock,
+        mock_objective_scorer: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        basic_context: MultiTurnAttackContext,
+    ):
+        """Test handling when no last response is available."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+        )
+
+        basic_context.last_response = None
+
+        result = attack._handle_adversarial_text_response(context=basic_context)
+
+        assert result == "No response available. Please continue."
 
     def test_handle_adversarial_file_response_raises_on_error(
         self,
@@ -711,13 +737,16 @@ class TestAdversarialPromptBuilding:
             attack_scoring_config=scoring_config,
         )
 
-        response = MagicMock(spec=PromptRequestPiece)
-        response.converted_value_data_type = "image_path"
-        response.has_error.return_value = True
-        response.response_error = "File error"
+        response_piece = MagicMock(spec=PromptRequestPiece)
+        response_piece.converted_value_data_type = "image_path"
+        response_piece.has_error.return_value = True
+        response_piece.response_error = "File error"
+
+        basic_context.last_response = MagicMock(spec=PromptRequestResponse)
+        basic_context.last_response.get_piece.return_value = response_piece
 
         with pytest.raises(RuntimeError, match="Request to target failed.*File error"):
-            attack._handle_adversarial_file_response(response=response, context=basic_context)
+            attack._handle_adversarial_file_response(context=basic_context)
 
     def test_handle_adversarial_file_response_without_feedback_raises(
         self,
@@ -736,12 +765,15 @@ class TestAdversarialPromptBuilding:
             attack_scoring_config=scoring_config,
         )
 
-        response = MagicMock(spec=PromptRequestPiece)
-        response.converted_value_data_type = "image_path"
-        response.has_error.return_value = False
+        response_piece = MagicMock(spec=PromptRequestPiece)
+        response_piece.converted_value_data_type = "image_path"
+        response_piece.has_error.return_value = False
+
+        basic_context.last_response = MagicMock(spec=PromptRequestResponse)
+        basic_context.last_response.get_piece.return_value = response_piece
 
         with pytest.raises(ValueError, match="use_score_as_feedback flag is set to False"):
-            attack._handle_adversarial_file_response(response=response, context=basic_context)
+            attack._handle_adversarial_file_response(context=basic_context)
 
     def test_handle_adversarial_file_response_with_feedback(
         self,
@@ -761,15 +793,40 @@ class TestAdversarialPromptBuilding:
             attack_scoring_config=scoring_config,
         )
 
-        response = MagicMock(spec=PromptRequestPiece)
-        response.converted_value_data_type = "image_path"
-        response.has_error.return_value = False
+        response_piece = MagicMock(spec=PromptRequestPiece)
+        response_piece.converted_value_data_type = "image_path"
+        response_piece.has_error.return_value = False
 
+        basic_context.last_response = MagicMock(spec=PromptRequestResponse)
+        basic_context.last_response.get_piece.return_value = response_piece
         basic_context.last_score = success_score
 
-        result = attack._handle_adversarial_file_response(response=response, context=basic_context)
+        result = attack._handle_adversarial_file_response(context=basic_context)
 
         assert result == success_score.score_rationale
+
+    def test_handle_adversarial_file_response_no_response(
+        self,
+        mock_objective_target: MagicMock,
+        mock_objective_scorer: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        basic_context: MultiTurnAttackContext,
+    ):
+        """Test handling when no last response is available for file response."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer, use_score_as_feedback=True)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+        )
+
+        basic_context.last_response = None
+
+        result = attack._handle_adversarial_file_response(context=basic_context)
+
+        assert result == "No response available. Please continue."
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -796,15 +853,18 @@ class TestResponseScoring:
             attack_scoring_config=scoring_config,
         )
 
-        response_piece = sample_response.request_pieces[0]
-        mock_objective_scorer.score_async.return_value = [success_score]
+        basic_context.last_response = sample_response
+        basic_context.objective = "Test objective"
 
-        result = await attack._score_response_async(context=basic_context, response=response_piece)
+        # Mock the Scorer.score_response_with_objective_async method
+        with patch(
+            "pyrit.score.Scorer.score_response_with_objective_async",
+            new_callable=AsyncMock,
+            return_value={"objective_scores": [success_score], "auxiliary_scores": []},
+        ):
+            result = await attack._score_response_async(context=basic_context)
 
         assert result == success_score
-        mock_objective_scorer.score_async.assert_called_once_with(
-            request_response=response_piece, task=basic_context.objective
-        )
 
     @pytest.mark.asyncio
     async def test_score_response_returns_none_for_blocked(
@@ -825,23 +885,24 @@ class TestResponseScoring:
         )
 
         response_piece = MagicMock(spec=PromptRequestPiece)
-        response_piece.has_error.return_value = True
         response_piece.is_blocked.return_value = True
 
-        result = await attack._score_response_async(context=basic_context, response=response_piece)
+        basic_context.last_response = MagicMock(spec=PromptRequestResponse)
+        basic_context.last_response.get_piece.return_value = response_piece
+
+        result = await attack._score_response_async(context=basic_context)
 
         assert result is None
-        mock_objective_scorer.score_async.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_score_response_raises_on_non_blocked_error(
+    async def test_score_response_returns_none_when_no_response(
         self,
         mock_objective_target: MagicMock,
         mock_objective_scorer: MagicMock,
         mock_adversarial_chat: MagicMock,
         basic_context: MultiTurnAttackContext,
     ):
-        """Test that non-blocked errors raise RuntimeError."""
+        """Test that None is returned when no response is available."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
         scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
 
@@ -851,13 +912,11 @@ class TestResponseScoring:
             attack_scoring_config=scoring_config,
         )
 
-        response_piece = MagicMock(spec=PromptRequestPiece)
-        response_piece.has_error.return_value = True
-        response_piece.is_blocked.return_value = False
-        response_piece.response_error = "Some error"
+        basic_context.last_response = None
 
-        with pytest.raises(RuntimeError, match="Response error: Some error"):
-            await attack._score_response_async(context=basic_context, response=response_piece)
+        result = await attack._score_response_async(context=basic_context)
+
+        assert result is None
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -916,12 +975,12 @@ class TestAttackExecution:
         )
 
         # Mock methods
-        with patch.object(attack, "_generate_next_prompt", new_callable=AsyncMock, return_value="Attack prompt"):
+        with patch.object(attack, "_generate_next_prompt_async", new_callable=AsyncMock, return_value="Attack prompt"):
             with patch.object(
                 attack,
                 "_send_prompt_to_objective_target_async",
                 new_callable=AsyncMock,
-                return_value=sample_response.request_pieces[0],
+                return_value=sample_response,
             ):
                 with patch.object(attack, "_score_response_async", new_callable=AsyncMock, return_value=score):
                     result = await attack._perform_attack_async(context=basic_context)
@@ -954,13 +1013,13 @@ class TestAttackExecution:
 
         # Mock methods to always fail
         with patch.object(
-            attack, "_generate_next_prompt", new_callable=AsyncMock, return_value="Attack prompt"
+            attack, "_generate_next_prompt_async", new_callable=AsyncMock, return_value="Attack prompt"
         ) as mock_generate:
             with patch.object(
                 attack,
                 "_send_prompt_to_objective_target_async",
                 new_callable=AsyncMock,
-                return_value=sample_response.request_pieces[0],
+                return_value=sample_response,
             ) as mock_send:
                 with patch.object(
                     attack, "_score_response_async", new_callable=AsyncMock, return_value=failure_score
@@ -1010,7 +1069,7 @@ class TestAttackLifecycle:
                             attack_identifier=attack.get_identifier(),
                             outcome=AttackOutcome.SUCCESS,
                             executed_turns=1,
-                            last_response=sample_response.request_pieces[0],
+                            last_response=sample_response.get_piece(),
                             last_score=success_score,
                         )
 

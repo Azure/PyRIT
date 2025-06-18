@@ -328,27 +328,21 @@ class TestResponseEvaluation:
         attack_scoring_config = AttackScoringConfig(objective_scorer=mock_true_false_scorer)
         attack = PromptSendingAttack(objective_target=mock_target, attack_scoring_config=attack_scoring_config)
 
-        with (
-            patch("pyrit.score.scorer.Scorer.score_response_async", new=AsyncMock()) as mock_score_resp,
-            patch(
-                "pyrit.score.scorer.Scorer.score_response_select_first_success_async",
-                new=AsyncMock(return_value=success_score),
-            ) as mock_score_until,
-        ):
+        with patch(
+            "pyrit.attacks.single_turn.prompt_sending.Scorer.score_response_with_objective_async",
+            new_callable=AsyncMock,
+            return_value={"auxiliary_scores": [], "objective_scores": [success_score]},
+        ) as mock_score_method:
 
             result = await attack._evaluate_response_async(response=sample_response, objective="Test objective")
 
             assert result == success_score
 
-            # Verify auxiliary scorers were called
-            mock_score_resp.assert_called_once_with(
-                response=sample_response, scorers=attack._auxiliary_scorers, role_filter="assistant"
-            )
-
-            # Verify objective scorer was called with task
-            mock_score_until.assert_called_once_with(
+            # Verify the scorer was called with correct parameters
+            mock_score_method.assert_called_once_with(
                 response=sample_response,
-                scorers=[mock_true_false_scorer],
+                auxiliary_scorers=attack._auxiliary_scorers,
+                objective_scorers=[mock_true_false_scorer],
                 role_filter="assistant",
                 task="Test objective",
             )
@@ -357,14 +351,22 @@ class TestResponseEvaluation:
     async def test_evaluate_response_without_objective_scorer_returns_none(self, mock_target, sample_response):
         attack = PromptSendingAttack(objective_target=mock_target, attack_scoring_config=None)
 
-        with patch("pyrit.score.scorer.Scorer.score_response_async", new=AsyncMock()) as mock_score_resp:
+        with patch(
+            "pyrit.attacks.single_turn.prompt_sending.Scorer.score_response_with_objective_async",
+            new_callable=AsyncMock,
+            return_value={"auxiliary_scores": [], "objective_scores": []},
+        ) as mock_score_method:
             result = await attack._evaluate_response_async(response=sample_response, objective="Test objective")
 
             assert result is None
 
-            # Verify auxiliary scorers were still called
-            mock_score_resp.assert_called_once_with(
-                response=sample_response, scorers=attack._auxiliary_scorers, role_filter="assistant"
+            # Verify the scorer was called with no objective scorers
+            mock_score_method.assert_called_once_with(
+                response=sample_response,
+                auxiliary_scorers=attack._auxiliary_scorers,
+                objective_scorers=None,
+                role_filter="assistant",
+                task="Test objective",
             )
 
     @pytest.mark.asyncio
@@ -372,6 +374,15 @@ class TestResponseEvaluation:
         self, mock_target, mock_true_false_scorer, sample_response, success_score
     ):
         auxiliary_scorer = MagicMock(spec=Scorer)
+        auxiliary_score = Score(
+            score_type="float_scale",
+            score_value="0.8",
+            score_category="test_auxiliary",
+            score_value_description="Auxiliary score",
+            score_rationale="Auxiliary rationale",
+            score_metadata="{}",
+            prompt_request_response_id=str(uuid.uuid4()),
+        )
 
         attack = PromptSendingAttack(
             objective_target=mock_target,
@@ -380,19 +391,25 @@ class TestResponseEvaluation:
             ),
         )
 
-        with (
-            patch("pyrit.score.scorer.Scorer.score_response_async", new=AsyncMock()) as mock_score_resp,
-            patch(
-                "pyrit.score.scorer.Scorer.score_response_select_first_success_async",
-                new=AsyncMock(return_value=success_score),
-            ),
-        ):
+        with patch(
+            "pyrit.attacks.single_turn.prompt_sending.Scorer.score_response_with_objective_async",
+            new_callable=AsyncMock,
+            return_value={"auxiliary_scores": [auxiliary_score], "objective_scores": [success_score]},
+        ) as mock_score_method:
 
-            await attack._evaluate_response_async(response=sample_response, objective="Test objective")
+            result = await attack._evaluate_response_async(response=sample_response, objective="Test objective")
 
-            # Verify auxiliary scorers were called with the configured scorer
-            call_args = mock_score_resp.call_args
-            assert call_args.kwargs["scorers"] == [auxiliary_scorer]
+            # Only objective score is returned
+            assert result == success_score
+
+            # Verify auxiliary scorers were passed correctly
+            mock_score_method.assert_called_once_with(
+                response=sample_response,
+                auxiliary_scorers=[auxiliary_scorer],
+                objective_scorers=[mock_true_false_scorer],
+                role_filter="assistant",
+                task="Test objective",
+            )
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -950,12 +967,10 @@ class TestEdgeCasesAndErrorHandling:
         attack_scoring_config = AttackScoringConfig(objective_scorer=mock_true_false_scorer)
         attack = PromptSendingAttack(objective_target=mock_target, attack_scoring_config=attack_scoring_config)
 
-        with (
-            patch("pyrit.score.scorer.Scorer.score_response_async", new=AsyncMock()),
-            patch(
-                "pyrit.score.scorer.Scorer.score_response_select_first_success_async",
-                new=AsyncMock(side_effect=RuntimeError("Scorer error")),
-            ),
+        with patch(
+            "pyrit.attacks.single_turn.prompt_sending.Scorer.score_response_with_objective_async",
+            new_callable=AsyncMock,
+            side_effect=RuntimeError("Scorer error"),
         ):
 
             # Should propagate the exception

@@ -8,7 +8,6 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, TypeVar, Union
 
-from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.models.score import Score
 from pyrit.models.seed_prompt import SeedPromptGroup
@@ -64,7 +63,7 @@ class MultiTurnAttackContext(AttackContext):
     max_turns: int = 10
 
     # Model response produced in the latest turn
-    last_response: Optional[PromptRequestPiece] = None
+    last_response: Optional[PromptRequestResponse] = None
 
     # Score assigned to the latest response by a scorer component
     last_score: Optional[Score] = None
