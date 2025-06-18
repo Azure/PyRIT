@@ -55,24 +55,33 @@ class TextBuggerConverter(PromptConverter):
 
         Args:
             word_swap_ratio (float): Percentage of words in a prompt that should be changed.
-                Default is 0.2 (20% of words). Range: 0.0 to 1.0
+                Default is 0.2 (20% of words). Range: 0.0 to 1.0.
             top_k (int): Number of top semantic word candidates from GloVe embedding.
                 Default is 5. Higher values provide more word substitution options.
             semantic_threshold (float): Threshold for Universal Sentence Encoder similarity.
                 Default is 0.8. Higher values ensure transformed text stays more semantically similar.
-                Range: 0.0 to 1.0 (1.0 = identical meaning, 0.0 = completely different)
+                Range: 0.0 to 1.0 (1.0 = identical meaning, 0.0 = completely different).
             max_transformations (int): Maximum number of transformed versions to generate.
                 Default is 5. Higher values create more adversarial variations.
 
         Raises:
             ImportError: If TextAttack framework is not installed.
+            ValueError: If any parameter is out of valid range.
         """
         if not TEXTATTACK_AVAILABLE:
             raise ImportError(
                 "TextAttack framework is required for TextBuggerConverter. Install it with: pip install textattack"
             )
 
-        # TODO: validate parameters
+        if not (0.0 <= word_swap_ratio <= 1.0):
+            raise ValueError(f"word_swap_ratio must be between 0.0 and 1.0, got {word_swap_ratio}")
+        if not (0.0 <= semantic_threshold <= 1.0):
+            raise ValueError(f"semantic_threshold must be between 0.0 and 1.0, got {semantic_threshold}")
+        if top_k < 1:
+            raise ValueError(f"top_k must be at least 1, got {top_k}")
+        if max_transformations < 1:
+            raise ValueError(f"max_transformations must be at least 1, got {max_transformations}")
+
         self._word_swap_ratio = word_swap_ratio
         self._top_k = top_k
         self._semantic_threshold = semantic_threshold
