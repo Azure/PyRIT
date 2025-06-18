@@ -37,7 +37,7 @@ class TextBuggerConverter(PromptConverter):
         - 4. SUB-C: Replaces characters with visually similar characters (homoglyphs).
         - 5. SUB-W: Replaces words with semantically similar words using GloVe embeddings.
 
-    Inspired by TextBugger from Project Moonshot:
+    Inspired by TextBugger attack implementation from Project Moonshot:
     https://github.com/aiverify-foundation/moonshot-data/blob/main/attack-modules/textbugger_attack.py
 
     Original paper: https://arxiv.org/abs/1812.05271
