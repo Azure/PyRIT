@@ -138,10 +138,32 @@ class OpenAIDALLETarget(OpenAITarget):
                 params=params,
                 **self._httpx_client_kwargs,
             )
+
         except httpx.HTTPStatusError as StatusError:
             if StatusError.response.status_code == 400:
                 # Handle Bad Request
-                return handle_bad_request_exception(response_text=StatusError.response.text, request=request)
+                error_response_text = StatusError.response.text
+
+                try:
+                    json_error = json.loads(error_response_text).get("error", {})
+
+                    is_content_policy_violation = json_error.get("code") == "content_policy_violation"
+                    is_content_filter = json_error.get("code") == "content_filter"
+
+                    return handle_bad_request_exception(
+                        response_text=error_response_text,
+                        request=request,
+                        error_code=StatusError.response.status_code,
+                        is_content_filter=is_content_policy_violation or is_content_filter,
+                    )
+                except json.JSONDecodeError:
+                    # Invalid JSON response, proceed without parsing
+                    pass
+                return handle_bad_request_exception(
+                    response_text=error_response_text,
+                    request=request,
+                    error_code=StatusError.response.status_code,
+                )
             elif StatusError.response.status_code == 429:
                 raise RateLimitException()
             else:
