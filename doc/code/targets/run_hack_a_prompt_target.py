@@ -38,7 +38,7 @@ async def main():
 
     # Submit prompt and get model output
     response = await target.send_prompt_async(prompt_request=prompt_request)
-    print(f"\n=== Model Response ===\n{response.request_pieces[0].original_value}\n")
+    print(f"\n=== Model Response ===\n{response.get_value()}\n")
 
     # Submit for judging and show judge feedback
     judge_result = await target.judge_prompt_async()
