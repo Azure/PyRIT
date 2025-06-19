@@ -117,6 +117,7 @@ API Reference
     fetch_babelscape_alert_dataset
     fetch_darkbench_dataset
     fetch_decoding_trust_stereotypes_dataset
+    fetch_equitymedqa_dataset_unique_values
     fetch_examples
     fetch_forbidden_questions_dataset
     fetch_harmbench_dataset
@@ -127,10 +128,10 @@ API Reference
     fetch_multilingual_vulnerability_dataset
     fetch_pku_safe_rlhf_dataset
     fetch_seclists_bias_testing_dataset
+    fetch_sosbench_dataset
     fetch_tdc23_redteaming_dataset
     fetch_wmdp_dataset
     fetch_xstest_dataset
-    fetch_equitymedqa_dataset_unique_values
 
 
 :py:mod:`pyrit.embedding`
