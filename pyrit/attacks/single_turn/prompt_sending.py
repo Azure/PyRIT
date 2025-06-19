@@ -3,9 +3,13 @@
 
 import logging
 import uuid
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
-from pyrit.attacks.base.attack_config import AttackConverterConfig, AttackScoringConfig
+from pyrit.attacks.base.attack_config import (
+    AttackConverterConfig,
+    AttackRuntimeConfig,
+    AttackScoringConfig,
+)
 from pyrit.attacks.base.attack_context import SingleTurnAttackContext
 from pyrit.attacks.base.attack_result import AttackOutcome, AttackResult
 from pyrit.attacks.base.attack_strategy import AttackStrategy
@@ -91,6 +95,62 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
             attack_identifier=self.get_identifier(),
             prompt_normalizer=self._prompt_normalizer,
         )
+
+    def _create_context_from_params(
+        self,
+        *,
+        objective: str,
+        prepended_conversation: List[PromptRequestResponse],
+        memory_labels: Dict[str, str],
+        runtime_config: AttackRuntimeConfig,
+        **attack_params,
+    ) -> SingleTurnAttackContext:
+        """
+        Create a SingleTurnAttackContext from parameters.
+
+        Args:
+            objective (str): The objective of the attack.
+            prepended_conversation (List[PromptRequestResponse]): Conversation to prepend to the target model
+            memory_labels (Dict[str, str]): Additional labels that can be applied to the prompts throughout the attack
+            runtime_config (AttackRuntimeConfig): Runtime configuration for the attack
+            **attack_params: Additional parameters specific to the attack.
+
+        Returns:
+            SingleTurnAttackContext: An instance of the context for single-turn attacks.
+
+        Raises:
+            ValueError: If system_prompt is provided but is not a string.
+        """
+        seed_prompt_group = attack_params.get("seed_prompt_group", None)
+        system_prompt = attack_params.get("system_prompt", None)
+
+        # Validate attack-specific parameter types if provided
+        if seed_prompt_group is not None and not isinstance(seed_prompt_group, SeedPromptGroup):
+            raise ValueError(f"seed_prompt_group must be a SeedPromptGroup, got {type(seed_prompt_group).__name__}")
+
+        if system_prompt is not None and not isinstance(system_prompt, str):
+            raise ValueError(f"system_prompt must be a string, got {type(system_prompt).__name__}")
+
+        # Create context with only the parameters we need to override
+        # This allows the dataclass defaults to be used for unspecified values
+        context_kwargs: Dict[str, Any] = {
+            "objective": objective,
+            "prepended_conversation": prepended_conversation,
+            "memory_labels": memory_labels,
+        }
+
+        # Only set max_attempts_on_failure if explicitly provided
+        if runtime_config.max_attempts_on_failure is not None:
+            context_kwargs["max_attempts_on_failure"] = runtime_config.max_attempts_on_failure
+
+        # Only set optional parameters if provided
+        if seed_prompt_group is not None:
+            context_kwargs["seed_prompt_group"] = seed_prompt_group
+
+        if system_prompt is not None:
+            context_kwargs["system_prompt"] = system_prompt
+
+        return SingleTurnAttackContext(**context_kwargs)
 
     def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
         """

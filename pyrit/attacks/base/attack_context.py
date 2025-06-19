@@ -25,7 +25,7 @@ class AttackContext:
     # Conversation that is automatically prepended to the target model
     prepended_conversation: List[PromptRequestResponse] = field(default_factory=list)
 
-    # Key–value pairs stored in the model's memory for this single request
+    # Additional labels that can be applied to the prompts throughout the attack
     memory_labels: Dict[str, str] = field(default_factory=dict)
 
     def duplicate(self: ContextT) -> ContextT:

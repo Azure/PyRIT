@@ -153,7 +153,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
             memory_labels=memory_labels or {},
         )
 
-        result = await self._attack.execute_async(context=context)
+        result = await self._attack.execute_with_context_async(context=context)
         objective_achieved = result.outcome == AttackOutcome.SUCCESS
 
         # Translating the result back to the orchestrator result format

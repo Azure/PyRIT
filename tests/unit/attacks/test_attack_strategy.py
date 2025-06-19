@@ -4,6 +4,7 @@
 import asyncio
 import logging
 import uuid
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -44,6 +45,7 @@ def mock_attack_strategy(mock_default_values):
             super().__init__(logger=logging.getLogger(), **kwargs)
 
         # Mock all abstract methods
+        _create_context_from_params = MagicMock()
         _validate_context = MagicMock()
         _setup_async = AsyncMock()
         _perform_attack_async = AsyncMock()
@@ -71,6 +73,7 @@ class TestAttackStrategyInitialization:
 
     def test_init_with_default_parameters(self, mock_default_values):
         class ConcreteStrategy(AttackStrategy):
+            _create_context_from_params = MagicMock()
             _validate_context = MagicMock()
             _setup_async = AsyncMock()
             _perform_attack_async = AsyncMock()
@@ -86,6 +89,7 @@ class TestAttackStrategyInitialization:
 
     def test_init_with_custom_logger(self, mock_default_values):
         class ConcreteStrategy(AttackStrategy):
+            _create_context_from_params = MagicMock()
             _validate_context = MagicMock()
             _setup_async = AsyncMock()
             _perform_attack_async = AsyncMock()
@@ -110,6 +114,7 @@ class TestAttackStrategyInitialization:
             mock.get_non_required_value.return_value = memory_labels_str
 
             class ConcreteStrategy(AttackStrategy):
+                _create_context_from_params = MagicMock()
                 _validate_context = MagicMock()
                 _setup_async = AsyncMock()
                 _perform_attack_async = AsyncMock()
@@ -134,7 +139,13 @@ class TestAttackExecution:
 
     @pytest.mark.asyncio
     async def test_execute_async_successful_flow(self, mock_attack_strategy, basic_context):
-        result = await mock_attack_strategy.execute_async(context=basic_context)
+        # Configure _create_context_from_params to return the basic_context
+        mock_attack_strategy._create_context_from_params.return_value = basic_context
+
+        result = await mock_attack_strategy.execute_async(objective="Test objective")
+
+        # Verify context creation was called
+        mock_attack_strategy._create_context_from_params.assert_called_once()
 
         # Verify all lifecycle methods were called
         mock_attack_strategy._validate_context.assert_called_once_with(context=basic_context)
@@ -150,10 +161,11 @@ class TestAttackExecution:
 
     @pytest.mark.asyncio
     async def test_execute_async_validation_failure(self, mock_attack_strategy, basic_context):
+        mock_attack_strategy._create_context_from_params.return_value = basic_context
         mock_attack_strategy._validate_context.side_effect = ValueError("Validation failed")
 
         with pytest.raises(AttackValidationException) as exc_info:
-            await mock_attack_strategy.execute_async(context=basic_context)
+            await mock_attack_strategy.execute_async(objective="Test objective")
 
         # Verify error details
         assert "Context validation failed" in str(exc_info.value)
@@ -168,10 +180,11 @@ class TestAttackExecution:
 
     @pytest.mark.asyncio
     async def test_execute_async_setup_failure_calls_teardown(self, mock_attack_strategy, basic_context):
+        mock_attack_strategy._create_context_from_params.return_value = basic_context
         mock_attack_strategy._setup_async.side_effect = RuntimeError("Setup failed")
 
         with pytest.raises(AttackExecutionException) as exc_info:
-            await mock_attack_strategy.execute_async(context=basic_context)
+            await mock_attack_strategy.execute_async(objective="Test objective")
 
         # Verify error details
         assert "Unexpected error during attack execution" in str(exc_info.value)
@@ -186,10 +199,11 @@ class TestAttackExecution:
 
     @pytest.mark.asyncio
     async def test_execute_async_perform_failure_calls_teardown(self, mock_attack_strategy, basic_context):
+        mock_attack_strategy._create_context_from_params.return_value = basic_context
         mock_attack_strategy._perform_attack_async.side_effect = RuntimeError("Attack failed")
 
         with pytest.raises(AttackExecutionException):
-            await mock_attack_strategy.execute_async(context=basic_context)
+            await mock_attack_strategy.execute_async(objective="Test objective")
 
         # Verify lifecycle - teardown should still be called
         mock_attack_strategy._validate_context.assert_called_once()
@@ -199,11 +213,12 @@ class TestAttackExecution:
 
     @pytest.mark.asyncio
     async def test_execute_async_teardown_failure_propagates(self, mock_attack_strategy, basic_context):
+        mock_attack_strategy._create_context_from_params.return_value = basic_context
         mock_attack_strategy._teardown_async.side_effect = RuntimeError("Teardown failed")
 
         # Teardown failures should still propagate but after being called
         with pytest.raises(AttackExecutionException):
-            await mock_attack_strategy.execute_async(context=basic_context)
+            await mock_attack_strategy.execute_async(objective="Test objective")
 
         # All methods should have been called
         mock_attack_strategy._validate_context.assert_called_once()
@@ -222,10 +237,11 @@ class TestAttackExecution:
     async def test_execute_async_preserves_specific_exceptions(
         self, mock_attack_strategy, basic_context, existing_exception
     ):
+        mock_attack_strategy._create_context_from_params.return_value = basic_context
         mock_attack_strategy._perform_attack_async.side_effect = existing_exception
 
         with pytest.raises(type(existing_exception)) as exc_info:
-            await mock_attack_strategy.execute_async(context=basic_context)
+            await mock_attack_strategy.execute_async(objective="Test objective")
 
         # Should preserve the original exception type
         assert exc_info.value is existing_exception
@@ -233,6 +249,7 @@ class TestAttackExecution:
     @pytest.mark.asyncio
     async def test_execute_async_sets_execution_time(self, mock_attack_strategy, basic_context):
         """Test that execute_async properly sets execution_time_ms on the result"""
+        mock_attack_strategy._create_context_from_params.return_value = basic_context
 
         # Mock the perform_attack_async to take some time
         async def delayed_attack(context):
@@ -248,7 +265,7 @@ class TestAttackExecution:
         mock_attack_strategy._perform_attack_async = delayed_attack
 
         # Execute the attack
-        result = await mock_attack_strategy.execute_async(context=basic_context)
+        result = await mock_attack_strategy.execute_async(objective="Test objective")
 
         # Verify execution time is set and reasonable
         assert result.execution_time_ms is not None
@@ -262,6 +279,8 @@ class TestAttackExecution:
     @pytest.mark.asyncio
     async def test_execute_async_overwrites_existing_execution_time(self, mock_attack_strategy, basic_context):
         """Test that execute_async overwrites any pre-existing execution_time_ms value"""
+        mock_attack_strategy._create_context_from_params.return_value = basic_context
+
         # Configure mock result with a pre-existing execution time
         mock_result = MagicMock()
         mock_result.outcome = AttackOutcome.SUCCESS
@@ -273,12 +292,57 @@ class TestAttackExecution:
         cast(AsyncMock, mock_attack_strategy._perform_attack_async).return_value = mock_result
 
         # Execute the attack
-        result = await mock_attack_strategy.execute_async(context=basic_context)
+        result = await mock_attack_strategy.execute_async(objective="Test objective")
 
         # Verify execution time was overwritten
         assert result.execution_time_ms is not None
         assert result.execution_time_ms != 999999  # Should have been overwritten
         assert result.execution_time_ms >= 0  # Should be a valid time measurement
+
+    @pytest.mark.asyncio
+    async def test_execute_with_context_async_works(self, mock_attack_strategy, basic_context):
+        """Test that execute_with_context_async works for backward compatibility"""
+        result = await mock_attack_strategy.execute_with_context_async(context=basic_context)
+
+        # Verify all lifecycle methods were called
+        mock_attack_strategy._validate_context.assert_called_once_with(context=basic_context)
+        mock_attack_strategy._setup_async.assert_called_once_with(context=basic_context)
+        mock_attack_strategy._perform_attack_async.assert_called_once_with(context=basic_context)
+        mock_attack_strategy._teardown_async.assert_called_once_with(context=basic_context)
+
+        # Verify result
+        assert result.outcome == AttackOutcome.SUCCESS
+        assert result.outcome_reason == "Test successful"
+        assert result.execution_time_ms is not None
+        assert result.execution_time_ms >= 0
+
+    @pytest.mark.asyncio
+    async def test_execute_async_with_all_parameters(self, mock_attack_strategy, basic_context):
+        """Test execute_async with all optional parameters"""
+        prepended_conv = [MagicMock()]
+        memory_labels = {"custom": "label"}
+        runtime_config = MagicMock()
+
+        mock_attack_strategy._create_context_from_params.return_value = basic_context
+
+        result = await mock_attack_strategy.execute_async(
+            objective="Test objective",
+            prepended_conversation=prepended_conv,
+            memory_labels=memory_labels,
+            runtime_config=runtime_config,
+            custom_param="custom_value",
+        )
+
+        # Verify _create_context_from_params was called with all parameters
+        mock_attack_strategy._create_context_from_params.assert_called_once_with(
+            objective="Test objective",
+            prepended_conversation=prepended_conv,
+            memory_labels=memory_labels,
+            runtime_config=runtime_config,
+            custom_param="custom_value",
+        )
+
+        assert result.outcome == AttackOutcome.SUCCESS
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -287,9 +351,11 @@ class TestLogging:
 
     @pytest.mark.asyncio
     async def test_logging_during_lifecycle(self, mock_attack_strategy, basic_context, caplog):
+        mock_attack_strategy._create_context_from_params.return_value = basic_context
+
         # Ensure we're capturing at the root logger level
         with caplog.at_level(logging.DEBUG, logger=""):
-            await mock_attack_strategy.execute_async(context=basic_context)
+            await mock_attack_strategy.execute_async(objective="Test objective")
 
         # Check for expected log messages
         log_messages = [record.message for record in caplog.records]
@@ -341,9 +407,10 @@ class TestConcurrency:
     async def test_multiple_concurrent_executions(self, mock_default_values):
         # Create multiple independent strategy instances
         strategies = []
-        for _ in range(5):
+        for i in range(5):
 
             class ConcreteStrategy(AttackStrategy):
+                _create_context_from_params = MagicMock()
                 _validate_context = MagicMock()
                 _setup_async = AsyncMock()
                 _perform_attack_async = AsyncMock()
@@ -356,17 +423,17 @@ class TestConcurrency:
             mock_result.outcome_reason = "Test successful"
             mock_result.execution_time_ms = None
 
-            # Cast to AsyncMock to satisfy type checker
-            from typing import cast
-
             cast(AsyncMock, strategy._perform_attack_async).return_value = mock_result
+
+            # Configure context creation
+            mock_context = MagicMock(objective=f"Objective {i}")
+
+            cast(MagicMock, strategy._create_context_from_params).return_value = mock_context
+
             strategies.append(strategy)
 
-        # Create multiple mock contexts
-        contexts = [MagicMock(objective=f"Objective {i}") for i in range(5)]
-
         # Execute concurrently
-        tasks = [strategy.execute_async(context=ctx) for strategy, ctx in zip(strategies, contexts)]
+        tasks = [strategy.execute_async(objective=f"Objective {i}") for i, strategy in enumerate(strategies)]
         results = await asyncio.gather(*tasks)
 
         # All should complete successfully
@@ -392,6 +459,9 @@ class TestConcurrency:
         result2.outcome_reason = "Result 2 failed"
         result2.execution_time_ms = None
 
+        # Configure context creation to return different contexts
+        mock_attack_strategy._create_context_from_params.side_effect = [context1, context2]
+
         # Cast to AsyncMock to satisfy type checker
         from typing import cast
 
@@ -399,7 +469,8 @@ class TestConcurrency:
 
         # Execute concurrently
         results = await asyncio.gather(
-            mock_attack_strategy.execute_async(context=context1), mock_attack_strategy.execute_async(context=context2)
+            mock_attack_strategy.execute_async(objective="Objective 1"),
+            mock_attack_strategy.execute_async(objective="Objective 2"),
         )
 
         # Both should succeed with correct results
@@ -414,9 +485,11 @@ class TestConcurrency:
     @pytest.mark.asyncio
     async def test_attack_outcome_logging(self, mock_attack_strategy, basic_context, caplog):
         """Test that different attack outcomes are logged correctly"""
+        mock_attack_strategy._create_context_from_params.return_value = basic_context
+
         # Test SUCCESS outcome
         with caplog.at_level(logging.INFO, logger=""):
-            await mock_attack_strategy.execute_async(context=basic_context)
+            await mock_attack_strategy.execute_async(objective="Test objective")
         assert any("achieved the objective" in record.message for record in caplog.records)
 
         # Test FAILURE outcome
@@ -432,7 +505,7 @@ class TestConcurrency:
         cast(AsyncMock, mock_attack_strategy._perform_attack_async).return_value = mock_result
 
         with caplog.at_level(logging.INFO, logger=""):
-            await mock_attack_strategy.execute_async(context=basic_context)
+            await mock_attack_strategy.execute_async(objective="Test objective")
         assert any("did not achieve the objective" in record.message for record in caplog.records)
         assert any("Target refused" in record.message for record in caplog.records)
 
@@ -442,7 +515,7 @@ class TestConcurrency:
         mock_result.outcome_reason = None
 
         with caplog.at_level(logging.INFO, logger=""):
-            await mock_attack_strategy.execute_async(context=basic_context)
+            await mock_attack_strategy.execute_async(objective="Test objective")
         assert any("outcome is undetermined" in record.message for record in caplog.records)
         assert any("Not specified" in record.message for record in caplog.records)
 
@@ -467,6 +540,7 @@ class TestEdgeCasesAndErrorHandling:
             with pytest.raises(SyntaxError):
 
                 class ConcreteStrategy(AttackStrategy):
+                    _create_context_from_params = MagicMock()
                     _validate_context = MagicMock()
                     _setup_async = AsyncMock()
                     _perform_attack_async = AsyncMock()
@@ -476,6 +550,7 @@ class TestEdgeCasesAndErrorHandling:
 
     def test_multiple_instances_have_unique_ids(self, mock_default_values):
         class ConcreteStrategy(AttackStrategy):
+            _create_context_from_params = MagicMock()
             _validate_context = MagicMock()
             _setup_async = AsyncMock()
             _perform_attack_async = AsyncMock()

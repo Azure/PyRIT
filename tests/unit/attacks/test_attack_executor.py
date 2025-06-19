@@ -19,6 +19,7 @@ def mock_attack_strategy():
     """Create a mock attack strategy for testing"""
     strategy = MagicMock(spec=AttackStrategy)
     strategy.execute_async = AsyncMock()
+    strategy.execute_with_context_async = AsyncMock()
     strategy.get_identifier.return_value = {
         "__type__": "TestAttack",
         "__module__": "pyrit.attacks.test_attack",
@@ -96,7 +97,7 @@ class TestAttackExecutorInitialization:
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestExecuteMultiObjectiveAttack:
-    """Tests for execute_multi_objective_attack method"""
+    """Tests for execute_multi_objective_attack_with_context_async method"""
 
     @pytest.mark.asyncio
     async def test_execute_single_objective(self, mock_attack_strategy, basic_context, sample_attack_result):
@@ -107,9 +108,9 @@ class TestExecuteMultiObjectiveAttack:
         duplicated_context.objective = None  # Will be set by executor
         basic_context.duplicate = MagicMock(return_value=duplicated_context)
 
-        mock_attack_strategy.execute_async.return_value = sample_attack_result
+        mock_attack_strategy.execute_with_context_async.return_value = sample_attack_result
 
-        results = await executor.execute_multi_objective_attack(
+        results = await executor.execute_multi_objective_attack_with_context_async(
             attack=mock_attack_strategy, context_template=basic_context, objectives=["Single objective"]
         )
 
@@ -122,8 +123,8 @@ class TestExecuteMultiObjectiveAttack:
         # Verify objective was set on duplicated context
         assert duplicated_context.objective == "Single objective"
 
-        # Verify execute_async was called with duplicated context
-        mock_attack_strategy.execute_async.assert_called_once_with(context=duplicated_context)
+        # Verify execute_with_context_async was called with duplicated context
+        mock_attack_strategy.execute_with_context_async.assert_called_once_with(context=duplicated_context)
 
     @pytest.mark.asyncio
     async def test_execute_multiple_objectives(self, mock_attack_strategy, basic_context, multiple_objectives):
@@ -157,9 +158,9 @@ class TestExecuteMultiObjectiveAttack:
                     )
             raise ValueError("Unknown context")
 
-        mock_attack_strategy.execute_async.side_effect = create_result
+        mock_attack_strategy.execute_with_context_async.side_effect = create_result
 
-        results = await executor.execute_multi_objective_attack(
+        results = await executor.execute_multi_objective_attack_with_context_async(
             attack=mock_attack_strategy, context_template=basic_context, objectives=multiple_objectives
         )
 
@@ -172,8 +173,8 @@ class TestExecuteMultiObjectiveAttack:
         for i, ctx in enumerate(duplicated_contexts):
             assert ctx.objective == multiple_objectives[i]
 
-        # Verify execute_async was called for each context
-        assert mock_attack_strategy.execute_async.call_count == len(multiple_objectives)
+        # Verify execute_with_context_async was called for each context
+        assert mock_attack_strategy.execute_with_context_async.call_count == len(multiple_objectives)
 
         # Verify results match expected pattern
         for i, result in enumerate(results):
@@ -189,12 +190,12 @@ class TestExecuteMultiObjectiveAttack:
         original_duplicate = basic_context.duplicate
         basic_context.duplicate = MagicMock(side_effect=original_duplicate)
 
-        results = await executor.execute_multi_objective_attack(
+        results = await executor.execute_multi_objective_attack_with_context_async(
             attack=mock_attack_strategy, context_template=basic_context, objectives=[]
         )
 
         assert results == []
-        mock_attack_strategy.execute_async.assert_not_called()
+        mock_attack_strategy.execute_with_context_async.assert_not_called()
 
         # Verify duplicate was never called since there are no objectives
         basic_context.duplicate.assert_not_called()
@@ -221,9 +222,9 @@ class TestExecuteMultiObjectiveAttack:
         basic_context.duplicate = MagicMock(side_effect=create_duplicate)
 
         objectives = ["Objective 1", "Objective 2"]
-        mock_attack_strategy.execute_async.return_value = MagicMock()
+        mock_attack_strategy.execute_with_context_async.return_value = MagicMock()
 
-        await executor.execute_multi_objective_attack(
+        await executor.execute_multi_objective_attack_with_context_async(
             attack=mock_attack_strategy, context_template=basic_context, objectives=objectives
         )
 
@@ -284,9 +285,9 @@ class TestExecuteMultiObjectiveAttack:
                     )
             raise ValueError("Unknown context")
 
-        mock_attack_strategy.execute_async.side_effect = mock_execute
+        mock_attack_strategy.execute_with_context_async.side_effect = mock_execute
 
-        results = await executor.execute_multi_objective_attack(
+        results = await executor.execute_multi_objective_attack_with_context_async(
             attack=mock_attack_strategy, context_template=basic_context, objectives=objectives
         )
 
@@ -320,16 +321,16 @@ class TestConcurrencyControl:
             concurrent_count -= 1
             return MagicMock()
 
-        mock_attack_strategy.execute_async.side_effect = mock_execute
+        mock_attack_strategy.execute_with_context_async.side_effect = mock_execute
 
         objectives = [f"Objective {i}" for i in range(10)]
 
-        await executor.execute_multi_objective_attack(
+        await executor.execute_multi_objective_attack_with_context_async(
             attack=mock_attack_strategy, context_template=basic_context, objectives=objectives
         )
 
         assert max_concurrent <= max_concurrency
-        assert mock_attack_strategy.execute_async.call_count == len(objectives)
+        assert mock_attack_strategy.execute_with_context_async.call_count == len(objectives)
 
     @pytest.mark.asyncio
     async def test_single_concurrency_serializes_execution(self, mock_attack_strategy, basic_context):
@@ -354,11 +355,11 @@ class TestConcurrencyControl:
             execution_order.append(f"end_{context.objective}")
             return MagicMock()
 
-        mock_attack_strategy.execute_async.side_effect = mock_execute
+        mock_attack_strategy.execute_with_context_async.side_effect = mock_execute
 
         objectives = ["A", "B", "C"]
 
-        await executor.execute_multi_objective_attack(
+        await executor.execute_multi_objective_attack_with_context_async(
             attack=mock_attack_strategy, context_template=basic_context, objectives=objectives
         )
 
@@ -377,12 +378,12 @@ class TestErrorHandling:
 
         basic_context.duplicate = MagicMock(return_value=MagicMock(objective=None))
 
-        mock_attack_strategy.execute_async.side_effect = AttackExecutionException(
+        mock_attack_strategy.execute_with_context_async.side_effect = AttackExecutionException(
             message="Strategy execution failed", attack_name="MockStrategy", objective="Test objective"
         )
 
         with pytest.raises(AttackExecutionException, match="Strategy execution failed"):
-            await executor.execute_multi_objective_attack(
+            await executor.execute_multi_objective_attack_with_context_async(
                 attack=mock_attack_strategy, context_template=basic_context, objectives=["Test objective"]
             )
 
@@ -428,20 +429,20 @@ class TestErrorHandling:
                     executed_turns=1,
                 )
 
-        mock_attack_strategy.execute_async.side_effect = mock_execute
+        mock_attack_strategy.execute_with_context_async.side_effect = mock_execute
 
         objectives = ["Success 1", "Failure", "Success 2"]
 
         # The failure should propagate
         with pytest.raises(RuntimeError, match="Execution failed"):
-            await executor.execute_multi_objective_attack(
+            await executor.execute_multi_objective_attack_with_context_async(
                 attack=mock_attack_strategy, context_template=basic_context, objectives=objectives
             )
 
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestExecuteParallel:
-    """Tests for the internal _execute_parallel method"""
+    """Tests for the internal _execute_parallel_async method"""
 
     @pytest.mark.asyncio
     async def test_execute_parallel_with_multiple_contexts(self, mock_attack_strategy):
@@ -465,12 +466,12 @@ class TestExecuteParallel:
                 executed_turns=1,
             )
 
-        mock_attack_strategy.execute_async.side_effect = create_result
+        mock_attack_strategy.execute_with_context_async.side_effect = create_result
 
-        results = await executor._execute_parallel(attack=mock_attack_strategy, contexts=contexts)
+        results = await executor._execute_parallel_async(attack=mock_attack_strategy, contexts=contexts)
 
         assert len(results) == len(contexts)
-        assert mock_attack_strategy.execute_async.call_count == len(contexts)
+        assert mock_attack_strategy.execute_with_context_async.call_count == len(contexts)
 
         # Verify each result matches its context
         for i, result in enumerate(results):
@@ -481,10 +482,10 @@ class TestExecuteParallel:
     async def test_execute_parallel_with_empty_contexts(self, mock_attack_strategy):
         executor = AttackExecutor(max_concurrency=5)
 
-        results = await executor._execute_parallel(attack=mock_attack_strategy, contexts=[])
+        results = await executor._execute_parallel_async(attack=mock_attack_strategy, contexts=[])
 
         assert results == []
-        mock_attack_strategy.execute_async.assert_not_called()
+        mock_attack_strategy.execute_with_context_async.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_execute_parallel_maintains_semaphore_integrity(self, mock_attack_strategy):
@@ -501,13 +502,13 @@ class TestExecuteParallel:
             active_tasks.remove(task_id)
             return MagicMock()
 
-        mock_attack_strategy.execute_async.side_effect = mock_execute
+        mock_attack_strategy.execute_with_context_async.side_effect = mock_execute
 
         contexts = [
             SingleTurnAttackContext(objective=f"Objective {i}", conversation_id=str(uuid.uuid4())) for i in range(5)
         ]
 
-        await executor._execute_parallel(attack=mock_attack_strategy, contexts=contexts)
+        await executor._execute_parallel_async(attack=mock_attack_strategy, contexts=contexts)
 
         assert len(active_tasks) == 0  # All tasks should be complete
 
@@ -540,9 +541,9 @@ class TestIntegrationScenarios:
                 executed_turns=1,
             )
 
-        mock_attack_strategy.execute_async.side_effect = mock_execute
+        mock_attack_strategy.execute_with_context_async.side_effect = mock_execute
 
-        results = await executor.execute_multi_objective_attack(
+        results = await executor.execute_multi_objective_attack_with_context_async(
             attack=mock_attack_strategy, context_template=basic_context, objectives=objectives
         )
 
@@ -581,9 +582,9 @@ class TestIntegrationScenarios:
                 executed_turns=idx + 1,
             )
 
-        mock_attack_strategy.execute_async.side_effect = mock_execute
+        mock_attack_strategy.execute_with_context_async.side_effect = mock_execute
 
-        results = await executor.execute_multi_objective_attack(
+        results = await executor.execute_multi_objective_attack_with_context_async(
             attack=mock_attack_strategy, context_template=basic_context, objectives=objectives
         )
 
@@ -624,11 +625,11 @@ class TestIntegrationScenarios:
             context.memory_labels["modified"] = "yes"
             return MagicMock()
 
-        mock_attack_strategy.execute_async.side_effect = mock_execute
+        mock_attack_strategy.execute_with_context_async.side_effect = mock_execute
 
         objectives = ["Obj1", "Obj2", "Obj3"]
 
-        await executor.execute_multi_objective_attack(
+        await executor.execute_multi_objective_attack_with_context_async(
             attack=mock_attack_strategy, context_template=basic_context, objectives=objectives
         )
 
@@ -638,3 +639,68 @@ class TestIntegrationScenarios:
             assert captured["objective"] == objectives[i]
             assert captured["achieved_objective"] is False
             assert "modified" not in captured["memory_labels"]
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestExecuteMultiObjectiveAttackAsync:
+    """Tests for execute_multi_objective_attack_async method using parameters"""
+
+    @pytest.mark.asyncio
+    async def test_execute_with_parameters(self, mock_attack_strategy):
+        executor = AttackExecutor(max_concurrency=5)
+
+        objectives = ["Test objective 1", "Test objective 2"]
+        memory_labels = {"test": "label"}
+
+        # Create expected results
+        results = []
+        for obj in objectives:
+            results.append(
+                AttackResult(
+                    conversation_id=str(uuid.uuid4()),
+                    objective=obj,
+                    attack_identifier={
+                        "__type__": "TestAttack",
+                        "__module__": "pyrit.attacks.test_attack",
+                        "id": str(uuid.uuid4()),
+                    },
+                    outcome=AttackOutcome.SUCCESS,
+                    executed_turns=1,
+                )
+            )
+
+        mock_attack_strategy.execute_async.side_effect = results
+
+        actual_results = await executor.execute_multi_objective_attack_async(
+            attack=mock_attack_strategy,
+            objectives=objectives,
+            memory_labels=memory_labels,
+        )
+
+        assert len(actual_results) == len(objectives)
+        assert mock_attack_strategy.execute_async.call_count == len(objectives)
+
+        # Verify execute_async was called with correct parameters for each objective
+        for i, call in enumerate(mock_attack_strategy.execute_async.call_args_list):
+            assert call.kwargs["objective"] == objectives[i]
+            assert call.kwargs["memory_labels"] == memory_labels
+
+    @pytest.mark.asyncio
+    async def test_execute_with_runtime_config(self, mock_attack_strategy):
+        from pyrit.attacks.base.attack_config import AttackRuntimeConfig
+
+        executor = AttackExecutor(max_concurrency=3)
+        runtime_config = AttackRuntimeConfig(max_turns=5)
+
+        objectives = ["Obj1", "Obj2", "Obj3"]
+
+        mock_attack_strategy.execute_async.return_value = MagicMock()
+
+        await executor.execute_multi_objective_attack_async(
+            attack=mock_attack_strategy, objectives=objectives, runtime_config=runtime_config, custom_param="test_value"
+        )
+
+        # Verify all calls included the runtime config and custom param
+        for call in mock_attack_strategy.execute_async.call_args_list:
+            assert call.kwargs["runtime_config"] == runtime_config
+            assert call.kwargs["custom_param"] == "test_value"

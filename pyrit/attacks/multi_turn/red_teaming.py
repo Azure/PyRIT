@@ -6,11 +6,12 @@ from __future__ import annotations
 import enum
 import logging
 from pathlib import Path
-from typing import Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from pyrit.attacks.base.attack_config import (
     AttackAdversarialConfig,
     AttackConverterConfig,
+    AttackRuntimeConfig,
     AttackScoringConfig,
 )
 from pyrit.attacks.base.attack_context import (
@@ -141,6 +142,55 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             scorer=self._objective_scorer,
             successful_objective_threshold=self._successful_objective_threshold,
         )
+
+    def _create_context_from_params(
+        self,
+        *,
+        objective: str,
+        prepended_conversation: List[PromptRequestResponse],
+        memory_labels: Dict[str, str],
+        runtime_config: AttackRuntimeConfig,
+        **attack_params,
+    ) -> MultiTurnAttackContext:
+        """
+        Create a MultiTurnAttackContext from the given parameters.
+
+        Args:
+            objective (str): The objective of the attack.
+            prepended_conversation (List[PromptRequestResponse]): Conversation to prepend to the objective target model
+            memory_labels (Dict[str, str]): Additional labels that can be applied to the prompts throughout the attack
+            runtime_config (AttackRuntimeConfig): Runtime configuration for the attack
+            **attack_params: Additional parameters specific to the attack.
+
+        Returns:
+            MultiTurnAttackContext: An instance of the context for multi-turn attacks.
+
+        Raises:
+            ValueError: If custom_prompt is provided but is not a string.
+        """
+        custom_prompt = attack_params.get("custom_prompt", None)
+
+        # Validate custom_prompt if provided
+        if custom_prompt is not None and not isinstance(custom_prompt, str):
+            raise ValueError(f"custom_prompt must be a string, got {type(custom_prompt).__name__}")
+
+        # Create context with only the parameters we need to override
+        # This allows the dataclass defaults to be used for unspecified values
+        context_kwargs: Dict[str, Any] = {
+            "objective": objective,
+            "prepended_conversation": prepended_conversation,
+            "memory_labels": memory_labels,
+        }
+
+        # Only set max_turns if explicitly provided in runtime_config
+        if runtime_config.max_turns is not None:
+            context_kwargs["max_turns"] = runtime_config.max_turns
+
+        # Only set custom_prompt if provided
+        if custom_prompt is not None:
+            context_kwargs["custom_prompt"] = custom_prompt
+
+        return MultiTurnAttackContext(**context_kwargs)
 
     def _validate_context(self, *, context: MultiTurnAttackContext) -> None:
         """

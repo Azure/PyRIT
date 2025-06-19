@@ -7,8 +7,9 @@ import time
 import uuid
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Dict, Generic, List, MutableMapping
+from typing import Any, AsyncIterator, Dict, Generic, List, MutableMapping, Optional
 
+from pyrit.attacks.base.attack_config import AttackRuntimeConfig
 from pyrit.attacks.base.attack_context import ContextT
 from pyrit.attacks.base.attack_result import AttackOutcome, ResultT
 from pyrit.common import default_values
@@ -18,7 +19,7 @@ from pyrit.exceptions.exception_classes import (
     AttackValidationException,
 )
 from pyrit.memory.central_memory import CentralMemory
-from pyrit.models.identifiers import Identifier
+from pyrit.models import Identifier, PromptRequestResponse
 
 
 class AttackStrategyLogAdapter(logging.LoggerAdapter):
@@ -114,6 +115,31 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
                 )
 
     @abstractmethod
+    def _create_context_from_params(
+        self,
+        *,
+        objective: str,
+        prepended_conversation: List[PromptRequestResponse],
+        memory_labels: Dict[str, str],
+        runtime_config: AttackRuntimeConfig,
+        **attack_params,
+    ) -> ContextT:
+        """
+        Create the appropriate context type from parameters.
+
+        Args:
+            objective (str): The objective of the attack.
+            prepended_conversation (List[PromptRequestResponse]): Conversation to prepend to the target model
+            memory_labels (Dict[str, str]): Additional labels that can be applied to the prompts throughout the attack
+            runtime_config (AttackRuntimeConfig): Runtime configuration for the attack
+            **attack_params: Additional parameters specific to the attack.
+
+        Returns:
+            ContextT: An instance of the context type used by this attack strategy.
+        """
+        pass
+
+    @abstractmethod
     def _validate_context(self, *, context: ContextT) -> None:
         """
         Validate the context before executing the attack.
@@ -207,7 +233,7 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
             self._logger.debug(f"Tearing down attack strategy for objective: '{context.objective}'")
             await self._teardown_async(context=context)
 
-    async def execute_async(self, *, context: ContextT) -> ResultT:
+    async def execute_with_context_async(self, *, context: ContextT) -> ResultT:
         """
         Execute attack with complete lifecycle management.
 
@@ -276,3 +302,41 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
             )
             exec_error.process_exception()
             raise exec_error from e
+
+    async def execute_async(
+        self,
+        *,
+        objective: str,
+        prepended_conversation: Optional[List[PromptRequestResponse]] = None,
+        memory_labels: Optional[Dict[str, str]] = None,
+        runtime_config: Optional[AttackRuntimeConfig] = None,
+        **attack_params,
+    ) -> ResultT:
+        """
+        Execute the attack strategy asynchronously with provided parameters.
+        This method creates the context from the provided parameters and executes the attack.
+
+        Args:
+            objective (str): The objective of the attack.
+            prepended_conversation (Optional[List[PromptRequestResponse]]): Conversation to prepend to the target model.
+            memory_labels (Optional[Dict[str, str]]): Additional labels that can be applied to the prompts
+                                            throughout the attack.
+            runtime_config (Optional[AttackRuntimeConfig]): Runtime configuration for the attack.
+            **attack_params: Additional parameters specific to the attack strategy.
+
+        Returns:
+            ResultT: The result of the attack execution, including outcome and reason.
+        """
+        # Use the default runtime config if none provided
+        config = runtime_config or AttackRuntimeConfig()
+
+        # Create context using the abstract factory method
+        context = self._create_context_from_params(
+            objective=objective,
+            prepended_conversation=prepended_conversation or [],
+            memory_labels=memory_labels or {},
+            runtime_config=config,
+            **attack_params,
+        )
+
+        return await self.execute_with_context_async(context=context)

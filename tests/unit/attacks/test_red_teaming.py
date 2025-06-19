@@ -11,6 +11,7 @@ import pytest
 from pyrit.attacks.base.attack_config import (
     AttackAdversarialConfig,
     AttackConverterConfig,
+    AttackRuntimeConfig,
     AttackScoringConfig,
 )
 from pyrit.attacks.base.attack_context import (
@@ -272,6 +273,105 @@ class TestRedTeamingAttackInitialization:
                 attack_adversarial_config=adversarial_config,
                 attack_scoring_config=scoring_config,
             )
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestContextCreation:
+    """Tests for context creation from parameters"""
+
+    def test_create_context_from_params_basic(
+        self, mock_objective_target: MagicMock, mock_objective_scorer: MagicMock, mock_adversarial_chat: MagicMock
+    ):
+        """Test basic context creation from parameters."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+        )
+
+        context = attack._create_context_from_params(
+            objective="Test objective",
+            prepended_conversation=[],
+            memory_labels={"test": "label"},
+            runtime_config=AttackRuntimeConfig(max_turns=10),
+        )
+
+        assert context.objective == "Test objective"
+        assert context.max_turns == 10
+        assert context.memory_labels == {"test": "label"}
+        assert context.prepended_conversation == []
+
+    def test_create_context_from_params_with_custom_prompt(
+        self, mock_objective_target: MagicMock, mock_objective_scorer: MagicMock, mock_adversarial_chat: MagicMock
+    ):
+        """Test context creation with custom prompt."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+        )
+
+        context = attack._create_context_from_params(
+            objective="Test objective",
+            prepended_conversation=[],
+            memory_labels={},
+            runtime_config=AttackRuntimeConfig(),
+            custom_prompt="My custom prompt",
+        )
+
+        assert context.custom_prompt == "My custom prompt"
+
+    def test_create_context_from_params_invalid_custom_prompt(
+        self, mock_objective_target: MagicMock, mock_objective_scorer: MagicMock, mock_adversarial_chat: MagicMock
+    ):
+        """Test that non-string custom prompt raises ValueError."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+        )
+
+        with pytest.raises(ValueError, match="custom_prompt must be a string"):
+            attack._create_context_from_params(
+                objective="Test objective",
+                prepended_conversation=[],
+                memory_labels={},
+                runtime_config=AttackRuntimeConfig(),
+                custom_prompt=123,  # Invalid type
+            )
+
+    def test_create_context_from_params_uses_defaults(
+        self, mock_objective_target: MagicMock, mock_objective_scorer: MagicMock, mock_adversarial_chat: MagicMock
+    ):
+        """Test that context uses dataclass defaults when runtime_config values are None."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+        )
+
+        # Runtime config with None values should not override dataclass defaults
+        context = attack._create_context_from_params(
+            objective="Test objective",
+            prepended_conversation=[],
+            memory_labels={},
+            runtime_config=AttackRuntimeConfig(max_turns=None),
+        )
+
+        # Should use the dataclass default of 10
+        assert context.max_turns == 10
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -1043,11 +1143,94 @@ class TestAttackLifecycle:
         mock_objective_target: MagicMock,
         mock_objective_scorer: MagicMock,
         mock_adversarial_chat: MagicMock,
+        sample_response: PromptRequestResponse,
+        success_score: Score,
+    ):
+        """Test successful execution of complete attack lifecycle using execute_async."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+        )
+
+        # Mock all lifecycle methods
+        with patch.object(attack, "_validate_context"):
+            with patch.object(attack, "_setup_async", new_callable=AsyncMock):
+                with patch.object(attack, "_perform_attack_async", new_callable=AsyncMock) as mock_perform:
+                    with patch.object(attack, "_teardown_async", new_callable=AsyncMock):
+                        # Configure the return value for _perform_attack_async
+                        mock_perform.return_value = AttackResult(
+                            conversation_id="test-conversation-id",
+                            objective="Test objective",
+                            attack_identifier=attack.get_identifier(),
+                            outcome=AttackOutcome.SUCCESS,
+                            executed_turns=1,
+                            last_response=sample_response.get_piece(),
+                            last_score=success_score,
+                        )
+
+                        # Execute using execute_async
+                        result = await attack.execute_async(
+                            objective="Test objective",
+                            runtime_config=AttackRuntimeConfig(max_turns=5),
+                        )
+
+        # Verify result and proper execution order
+        assert isinstance(result, AttackResult)
+        assert result.outcome == AttackOutcome.SUCCESS
+
+    @pytest.mark.asyncio
+    async def test_execute_async_validation_failure_prevents_execution(
+        self,
+        mock_objective_target: MagicMock,
+        mock_objective_scorer: MagicMock,
+        mock_adversarial_chat: MagicMock,
+    ):
+        """Test that validation failure prevents attack execution when using execute_async."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+        )
+
+        # Mock validation to fail
+        with patch.object(attack, "_validate_context", side_effect=ValueError("Invalid context")) as mock_validate:
+            with patch.object(attack, "_setup_async", new_callable=AsyncMock) as mock_setup:
+                with patch.object(attack, "_perform_attack_async", new_callable=AsyncMock) as mock_perform:
+                    with patch.object(attack, "_teardown_async", new_callable=AsyncMock) as mock_teardown:
+                        # Should raise AttackValidationException
+                        with pytest.raises(AttackValidationException) as exc_info:
+                            await attack.execute_async(
+                                objective="Test objective",
+                                runtime_config=AttackRuntimeConfig(),
+                            )
+
+        # Verify error details
+        assert "Context validation failed" in str(exc_info.value)
+
+        # Verify only validation was attempted
+        mock_validate.assert_called_once()
+        mock_setup.assert_not_called()
+        mock_perform.assert_not_called()
+        mock_teardown.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_execute_with_context_async_successful(
+        self,
+        mock_objective_target: MagicMock,
+        mock_objective_scorer: MagicMock,
+        mock_adversarial_chat: MagicMock,
         basic_context: MultiTurnAttackContext,
         sample_response: PromptRequestResponse,
         success_score: Score,
     ):
-        """Test successful execution of complete attack lifecycle."""
+        """Test successful execution using execute_with_context_async."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
         scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
 
@@ -1073,48 +1256,13 @@ class TestAttackLifecycle:
                             last_score=success_score,
                         )
 
-                        # Execute the complete lifecycle
-                        result = await attack.execute_async(context=basic_context)
+                        # Execute using execute_with_context_async
+                        result = await attack.execute_with_context_async(context=basic_context)
 
-        # Verify result and proper execution order
+        # Verify result
         assert isinstance(result, AttackResult)
         assert result.outcome == AttackOutcome.SUCCESS
-
-    @pytest.mark.asyncio
-    async def test_execute_async_validation_failure_prevents_execution(
-        self,
-        mock_objective_target: MagicMock,
-        mock_objective_scorer: MagicMock,
-        mock_adversarial_chat: MagicMock,
-        basic_context: MultiTurnAttackContext,
-    ):
-        """Test that validation failure prevents attack execution."""
-        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
-        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
-
-        attack = RedTeamingAttack(
-            objective_target=mock_objective_target,
-            attack_adversarial_config=adversarial_config,
-            attack_scoring_config=scoring_config,
-        )
-
-        # Mock validation to fail
-        with patch.object(attack, "_validate_context", side_effect=ValueError("Invalid context")) as mock_validate:
-            with patch.object(attack, "_setup_async", new_callable=AsyncMock) as mock_setup:
-                with patch.object(attack, "_perform_attack_async", new_callable=AsyncMock) as mock_perform:
-                    with patch.object(attack, "_teardown_async", new_callable=AsyncMock) as mock_teardown:
-                        # Should raise AttackValidationException
-                        with pytest.raises(AttackValidationException) as exc_info:
-                            await attack.execute_async(context=basic_context)
-
-        # Verify error details
-        assert "Context validation failed" in str(exc_info.value)
-
-        # Verify only validation was attempted
-        mock_validate.assert_called_once_with(context=basic_context)
-        mock_setup.assert_not_called()
-        mock_perform.assert_not_called()
-        mock_teardown.assert_not_called()
+        assert result.objective == basic_context.objective
 
     @pytest.mark.asyncio
     async def test_teardown_async_is_noop(

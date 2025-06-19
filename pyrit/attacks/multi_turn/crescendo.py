@@ -3,12 +3,14 @@
 
 import json
 import logging
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from pyrit.attacks.base.attack_config import (
     AttackAdversarialConfig,
     AttackConverterConfig,
+    AttackRuntimeConfig,
     AttackScoringConfig,
 )
 from pyrit.attacks.base.attack_context import (
@@ -42,6 +44,7 @@ from pyrit.score import (
 logger = logging.getLogger(__name__)
 
 
+@dataclass
 class CrescendoAttackContext(MultiTurnAttackContext):
     """Context for the Crescendo attack strategy."""
 
@@ -51,7 +54,11 @@ class CrescendoAttackContext(MultiTurnAttackContext):
     # Counter for number of backtracks performed during the attack
     backtrack_count: int = 0
 
+    # Maximum number of backtracks allowed during the attack
+    max_backtracks: int = 10
 
+
+@dataclass
 class CrescendoAttackResult(AttackResult):
     """Result of the Crescendo attack strategy execution."""
 
@@ -107,7 +114,6 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
         attack_adversarial_config: AttackAdversarialConfig,
         attack_converter_config: Optional[AttackConverterConfig] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
-        max_backtracks: int = 10,
         prompt_normalizer: Optional[PromptNormalizer] = None,
     ) -> None:
         """
@@ -122,10 +128,10 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
             attack_scoring_config (Optional[AttackScoringConfig]): Configuration for attack scoring, including:
                 - objective_scorer: If not provided, creates a default `FloatScaleThresholdScorer`.
                 - refusal_scorer: If not provided, creates a default `SelfAskRefusalScorer`.
-            max_backtracks (int): Maximum number of times to backtrack during the attack. Must be positive.
             prompt_normalizer (Optional[PromptNormalizer]): The prompt normalizer to use for sending prompts.
+
         Raises:
-            ValueError: If max_backtracks is not positive or if objective_target is not a PromptChatTarget.
+            ValueError: If objective_target is not a PromptChatTarget.
         """
         # Initialize base class
         super().__init__(logger=logger)
@@ -177,11 +183,6 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
             error_message="Crescendo system prompt must have 'objective' and 'max_turns' parameters",
         )
 
-        # Validate and store max backtracks
-        if max_backtracks <= 0:
-            raise ValueError(f"max_backtracks must be a positive integer, got {max_backtracks}")
-        self._max_backtracks = max_backtracks
-
         # Initialize utilities
         self._prompt_normalizer = prompt_normalizer or PromptNormalizer()
         self._conversation_manager = ConversationManager(
@@ -193,6 +194,58 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
             scorer=self._objective_scorer,
             successful_objective_threshold=self._successful_objective_threshold,
         )
+
+    def _create_context_from_params(
+        self,
+        *,
+        objective: str,
+        prepended_conversation: List[PromptRequestResponse],
+        memory_labels: Dict[str, str],
+        runtime_config: AttackRuntimeConfig,
+        **attack_params,
+    ) -> CrescendoAttackContext:
+        """
+        Create a CrescendoAttackContext from parameters.
+
+        Args:
+            objective (str): The objective of the attack.
+            prepended_conversation (List[PromptRequestResponse]): Conversation to prepend to the target model
+            memory_labels (Dict[str, str]): Additional labels that can be applied to the prompts throughout the attack
+            runtime_config (AttackRuntimeConfig): Runtime configuration for the attack
+            **attack_params: Additional parameters specific to the attack.
+
+        Returns:
+            CrescendoAttackContext: An instance of the context for Crescendo attacks.
+
+        Raises:
+            ValueError: If custom_prompt is provided but is not a string.
+        """
+        custom_prompt = attack_params.get("custom_prompt", None)
+
+        # Validate custom_prompt if provided
+        if custom_prompt is not None and not isinstance(custom_prompt, str):
+            raise ValueError(f"custom_prompt must be a string, got {type(custom_prompt).__name__}")
+
+        # Create context with only the parameters we need to override
+        # This allows the dataclass defaults to be used for unspecified values
+        context_kwargs: Dict[str, Any] = {
+            "objective": objective,
+            "prepended_conversation": prepended_conversation,
+            "memory_labels": memory_labels,
+        }
+
+        # Only set values if explicitly provided in runtime_config
+        if runtime_config.max_turns is not None:
+            context_kwargs["max_turns"] = runtime_config.max_turns
+
+        if runtime_config.max_backtracks is not None:
+            context_kwargs["max_backtracks"] = runtime_config.max_backtracks
+
+        # Only set custom_prompt if provided
+        if custom_prompt is not None:
+            context_kwargs["custom_prompt"] = custom_prompt
+
+        return CrescendoAttackContext(**context_kwargs)
 
     def _validate_context(self, *, context: CrescendoAttackContext) -> None:
         """
@@ -207,6 +260,7 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
         validators = [
             (lambda: bool(context.objective), "Attack objective must be provided"),
             (lambda: context.max_turns > 0, "Max turns must be positive"),
+            (lambda: context.max_backtracks >= 0, "Max backtracks must be non-negative"),
         ]
 
         for validator, error_msg in validators:
@@ -279,7 +333,7 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
         """
         # Log the attack configuration
         self._logger.info(f"Starting crescendo attack with objective: {context.objective}")
-        self._logger.info(f"Max turns: {context.max_turns}, Max backtracks: {self._max_backtracks}")
+        self._logger.info(f"Max turns: {context.max_turns}, Max backtracks: {context.max_backtracks}")
 
         # Attack Execution Flow:
         # 1) Generate the next prompt (custom prompt or via adversarial chat)
@@ -728,8 +782,8 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
             bool: True if backtracking was performed, False otherwise.
         """
         # Check if we've reached the backtrack limit
-        if context.backtrack_count >= self._max_backtracks:
-            self._logger.debug(f"Backtrack limit reached ({self._max_backtracks}), continuing without backtracking")
+        if context.backtrack_count >= context.max_backtracks:
+            self._logger.debug(f"Backtrack limit reached ({context.max_backtracks}), continuing without backtracking")
             return False
 
         # Check for refusal
@@ -743,7 +797,7 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
 
         # Refusal detected, perform backtracking
         self._logger.info(
-            f"Response refused, backtracking (attempt {context.backtrack_count + 1}/{self._max_backtracks})"
+            f"Response refused, backtracking (attempt {context.backtrack_count + 1}/{context.max_backtracks})"
         )
 
         # Store refused text for next iteration

@@ -12,6 +12,7 @@ import pytest
 from pyrit.attacks.base.attack_config import (
     AttackAdversarialConfig,
     AttackConverterConfig,
+    AttackRuntimeConfig,
     AttackScoringConfig,
 )
 from pyrit.attacks.base.attack_context import ConversationSession
@@ -234,7 +235,6 @@ class CrescendoTestHelper:
         adversarial_chat: MagicMock,
         objective_scorer: Optional[MagicMock] = None,
         refusal_scorer: Optional[MagicMock] = None,
-        max_backtracks: int = 10,
         prompt_normalizer: Optional[MagicMock] = None,
         system_prompt_path: Optional[Path] = None,
         **kwargs,
@@ -260,7 +260,6 @@ class CrescendoTestHelper:
             objective_target=objective_target,
             attack_adversarial_config=adversarial_config,
             attack_scoring_config=scoring_config,
-            max_backtracks=max_backtracks,
             prompt_normalizer=prompt_normalizer,
         )
 
@@ -284,7 +283,6 @@ class TestCrescendoAttackInitialization:
         assert attack._adversarial_chat == mock_adversarial_chat
         assert isinstance(attack._objective_scorer, FloatScaleThresholdScorer)
         assert isinstance(attack._refusal_scorer, SelfAskRefusalScorer)
-        assert attack._max_backtracks == 10
 
     def test_init_with_custom_scoring_configuration(
         self,
@@ -377,15 +375,23 @@ class TestCrescendoAttackInitialization:
         mock_adversarial_chat: MagicMock,
         max_backtracks: int,
     ):
-        """Test that non-positive max_backtracks raises ValueError."""
+        """Test that negative max_backtracks raises ValueError."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
 
-        with pytest.raises(ValueError, match="max_backtracks must be a positive integer"):
-            CrescendoAttack(
-                objective_target=mock_objective_target,
-                attack_adversarial_config=adversarial_config,
-                max_backtracks=max_backtracks,
-            )
+        attack = CrescendoAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+        )
+
+        context = CrescendoAttackContext(objective="Test objective", max_backtracks=max_backtracks)
+
+        # Only negative values should raise an error
+        if max_backtracks < 0:
+            with pytest.raises(ValueError, match="Max backtracks must be non-negative"):
+                attack._validate_context(context=context)
+        else:
+            # max_backtracks=0 should be valid (no backtracking allowed)
+            attack._validate_context(context=context)  # Should not raise
 
     def test_init_with_converter_configuration(
         self,
@@ -956,10 +962,10 @@ class TestBacktrackingLogic:
             objective_target=mock_objective_target,
             attack_adversarial_config=adversarial_config,
             attack_scoring_config=scoring_config,
-            max_backtracks=5,
         )
 
         basic_context.last_response = sample_response
+        basic_context.max_backtracks = 5
         basic_context.backtrack_count = 5  # Already at max
 
         result = await attack._perform_backtrack_if_refused_async(context=basic_context, prompt_sent="Refused prompt")
@@ -1109,8 +1115,10 @@ class TestAttackExecution:
             objective_target=mock_objective_target,
             attack_adversarial_config=adversarial_config,
             prompt_normalizer=mock_prompt_normalizer,
-            max_backtracks=2,
         )
+
+        # Set max_backtracks in context
+        basic_context.max_backtracks = 2
 
         # Mock adversarial response
         adv_response = PromptRequestResponse(
@@ -1173,10 +1181,10 @@ class TestAttackExecution:
             objective_target=mock_objective_target,
             attack_adversarial_config=adversarial_config,
             prompt_normalizer=mock_prompt_normalizer,
-            max_backtracks=1,
         )
 
         basic_context.max_turns = 3
+        basic_context.max_backtracks = 1
 
         # Mock adversarial response
         adv_response = PromptRequestResponse(
@@ -1230,11 +1238,172 @@ class TestAttackExecution:
 
 
 @pytest.mark.usefixtures("patch_central_database")
+class TestContextCreation:
+    """Tests for _create_context_from_params method"""
+
+    def test_create_context_from_params_basic(
+        self,
+        mock_objective_target: MagicMock,
+        mock_adversarial_chat: MagicMock,
+    ):
+        """Test basic context creation with minimal parameters."""
+        attack = CrescendoTestHelper.create_attack(
+            objective_target=mock_objective_target,
+            adversarial_chat=mock_adversarial_chat,
+        )
+
+        runtime_config = AttackRuntimeConfig()
+        context = attack._create_context_from_params(
+            objective="Test objective",
+            prepended_conversation=[],
+            memory_labels={"test": "label"},
+            runtime_config=runtime_config,
+        )
+
+        assert isinstance(context, CrescendoAttackContext)
+        assert context.objective == "Test objective"
+        assert context.prepended_conversation == []
+        assert context.memory_labels == {"test": "label"}
+        # Should use dataclass defaults when not specified in runtime_config
+        assert context.max_turns == 10  # Default value
+        assert context.max_backtracks == 10  # Default value
+
+    def test_create_context_from_params_with_runtime_config(
+        self,
+        mock_objective_target: MagicMock,
+        mock_adversarial_chat: MagicMock,
+    ):
+        """Test context creation with runtime configuration."""
+        attack = CrescendoTestHelper.create_attack(
+            objective_target=mock_objective_target,
+            adversarial_chat=mock_adversarial_chat,
+        )
+
+        runtime_config = AttackRuntimeConfig(max_turns=5, max_backtracks=3)
+        context = attack._create_context_from_params(
+            objective="Test objective",
+            prepended_conversation=[],
+            memory_labels={},
+            runtime_config=runtime_config,
+        )
+
+        assert context.max_turns == 5
+        assert context.max_backtracks == 3
+
+    def test_create_context_from_params_with_partial_runtime_config(
+        self,
+        mock_objective_target: MagicMock,
+        mock_adversarial_chat: MagicMock,
+    ):
+        """Test context creation with partial runtime configuration."""
+        attack = CrescendoTestHelper.create_attack(
+            objective_target=mock_objective_target,
+            adversarial_chat=mock_adversarial_chat,
+        )
+
+        # Only set max_turns, leave max_backtracks as None
+        runtime_config = AttackRuntimeConfig(max_turns=7)
+        context = attack._create_context_from_params(
+            objective="Test objective",
+            prepended_conversation=[],
+            memory_labels={},
+            runtime_config=runtime_config,
+        )
+
+        assert context.max_turns == 7
+        assert context.max_backtracks == 10  # Should use default
+
+        # Only set max_backtracks, leave max_turns as None
+        runtime_config = AttackRuntimeConfig(max_backtracks=2)
+        context = attack._create_context_from_params(
+            objective="Test objective",
+            prepended_conversation=[],
+            memory_labels={},
+            runtime_config=runtime_config,
+        )
+
+        assert context.max_turns == 10  # Should use default
+        assert context.max_backtracks == 2
+
+    def test_create_context_from_params_with_custom_prompt(
+        self,
+        mock_objective_target: MagicMock,
+        mock_adversarial_chat: MagicMock,
+    ):
+        """Test context creation with custom prompt."""
+        attack = CrescendoTestHelper.create_attack(
+            objective_target=mock_objective_target,
+            adversarial_chat=mock_adversarial_chat,
+        )
+
+        runtime_config = AttackRuntimeConfig()
+        context = attack._create_context_from_params(
+            objective="Test objective",
+            prepended_conversation=[],
+            memory_labels={},
+            runtime_config=runtime_config,
+            custom_prompt="My custom prompt",
+        )
+
+        assert context.custom_prompt == "My custom prompt"
+
+    def test_create_context_from_params_invalid_custom_prompt(
+        self,
+        mock_objective_target: MagicMock,
+        mock_adversarial_chat: MagicMock,
+    ):
+        """Test that non-string custom_prompt raises ValueError."""
+        attack = CrescendoTestHelper.create_attack(
+            objective_target=mock_objective_target,
+            adversarial_chat=mock_adversarial_chat,
+        )
+
+        runtime_config = AttackRuntimeConfig()
+
+        # Test with various invalid types
+        invalid_prompts = [123, [], {}, True, 3.14]
+
+        for invalid_prompt in invalid_prompts:
+            with pytest.raises(ValueError, match="custom_prompt must be a string"):
+                attack._create_context_from_params(
+                    objective="Test objective",
+                    prepended_conversation=[],
+                    memory_labels={},
+                    runtime_config=runtime_config,
+                    custom_prompt=invalid_prompt,
+                )
+
+    def test_create_context_from_params_prepended_conversation(
+        self,
+        mock_objective_target: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        sample_response: PromptRequestResponse,
+    ):
+        """Test context creation with prepended conversation."""
+        attack = CrescendoTestHelper.create_attack(
+            objective_target=mock_objective_target,
+            adversarial_chat=mock_adversarial_chat,
+        )
+
+        prepended_conversation = [sample_response]
+        runtime_config = AttackRuntimeConfig()
+        context = attack._create_context_from_params(
+            objective="Test objective",
+            prepended_conversation=prepended_conversation,
+            memory_labels={},
+            runtime_config=runtime_config,
+        )
+
+        assert context.prepended_conversation == prepended_conversation
+        assert len(context.prepended_conversation) == 1
+
+
+@pytest.mark.usefixtures("patch_central_database")
 class TestAttackLifecycle:
-    """Tests for the complete attack lifecycle (execute_async)"""
+    """Tests for the complete attack lifecycle (execute_with_context_async and execute_async)"""
 
     @pytest.mark.asyncio
-    async def test_execute_async_successful_lifecycle(
+    async def test_execute_with_context_async_successful_lifecycle(
         self,
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
@@ -1268,14 +1437,14 @@ class TestAttackLifecycle:
                         )
 
                         # Execute the complete lifecycle
-                        result = await attack.execute_async(context=basic_context)
+                        result = await attack.execute_with_context_async(context=basic_context)
 
         # Verify result and proper execution order
         assert isinstance(result, CrescendoAttackResult)
         assert result.outcome == AttackOutcome.SUCCESS
 
     @pytest.mark.asyncio
-    async def test_execute_async_validation_failure_prevents_execution(
+    async def test_execute_with_context_async_validation_failure_prevents_execution(
         self,
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
@@ -1296,7 +1465,7 @@ class TestAttackLifecycle:
                     with patch.object(attack, "_teardown_async", new_callable=AsyncMock) as mock_teardown:
                         # Should raise AttackValidationException
                         with pytest.raises(AttackValidationException) as exc_info:
-                            await attack.execute_async(context=basic_context)
+                            await attack.execute_with_context_async(context=basic_context)
 
         # Verify error details
         assert "Context validation failed" in str(exc_info.value)
@@ -1306,6 +1475,77 @@ class TestAttackLifecycle:
         mock_setup.assert_not_called()
         mock_perform.assert_not_called()
         mock_teardown.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_execute_async_with_parameters(
+        self,
+        mock_objective_target: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        sample_response: PromptRequestResponse,
+        success_objective_score: Score,
+    ):
+        """Test the new parametrized execute_async method."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+
+        attack = CrescendoAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+        )
+
+        # Mock the execute_with_context_async to return a successful result
+        mock_result = CrescendoAttackResult(
+            conversation_id="test-conversation-id",
+            objective="Test objective",
+            attack_identifier=attack.get_identifier(),
+            outcome=AttackOutcome.SUCCESS,
+            executed_turns=1,
+            last_response=sample_response.get_piece(),
+            last_score=success_objective_score,
+            metadata={"backtrack_count": 0},
+        )
+
+        with patch.object(attack, "execute_with_context_async", new_callable=AsyncMock, return_value=mock_result):
+            result = await attack.execute_async(
+                objective="Test objective",
+                memory_labels={"test": "label"},
+                runtime_config=AttackRuntimeConfig(max_turns=5),
+                custom_prompt="Custom prompt",
+            )
+
+        assert isinstance(result, CrescendoAttackResult)
+        assert result.outcome == AttackOutcome.SUCCESS
+
+    @pytest.mark.asyncio
+    async def test_execute_async_with_default_config(
+        self,
+        mock_objective_target: MagicMock,
+        mock_adversarial_chat: MagicMock,
+    ):
+        """Test execute_async with default runtime configuration."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+
+        attack = CrescendoAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+        )
+
+        # Mock create_context_from_params to verify it's called correctly
+        mock_context = CrescendoAttackContext(objective="Test objective")
+
+        with patch.object(attack, "_create_context_from_params", return_value=mock_context) as mock_create:
+            with patch.object(attack, "execute_with_context_async", new_callable=AsyncMock) as mock_execute:
+                await attack.execute_async(objective="Test objective")
+
+        # Verify create_context_from_params was called with default values
+        mock_create.assert_called_once()
+        call_args = mock_create.call_args.kwargs
+        assert call_args["objective"] == "Test objective"
+        assert call_args["prepended_conversation"] == []
+        assert call_args["memory_labels"] == {}
+        assert isinstance(call_args["runtime_config"], AttackRuntimeConfig)
+
+        # Verify execute_with_context_async was called with the created context
+        mock_execute.assert_called_once_with(context=mock_context)
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -1420,7 +1660,7 @@ class TestIntegrationScenarios:
                         {"objective_scores": [scores[2]], "auxiliary_scores": []},
                     ]
 
-                    result = await attack.execute_async(context=context)
+                    result = await attack.execute_with_context_async(context=context)
 
         # Verify the attack succeeded
         assert isinstance(result, CrescendoAttackResult)
@@ -1454,12 +1694,12 @@ class TestIntegrationScenarios:
             objective_target=mock_objective_target,
             adversarial_chat=mock_adversarial_chat,
             prompt_normalizer=mock_prompt_normalizer,
-            max_backtracks=2,
         )
 
         context = CrescendoAttackContext(
             objective="Test with refusals",
             max_turns=2,
+            max_backtracks=2,
         )
 
         # Set up responses
@@ -1515,52 +1755,12 @@ class TestIntegrationScenarios:
                             "auxiliary_scores": [],
                         }
 
-                        result = await attack.execute_async(context=context)
+                        result = await attack.execute_with_context_async(context=context)
 
         # Verify backtracking occurred as expected
         assert isinstance(result, CrescendoAttackResult)
         assert result.backtrack_count == 2  # Two failed attempts
         assert result.executed_turns == 1  # Only successful turns count toward limit
-
-    @pytest.mark.asyncio
-    async def test_attack_with_prepended_conversation(
-        self,
-        mock_objective_target: MagicMock,
-        mock_adversarial_chat: MagicMock,
-        mock_prompt_normalizer: MagicMock,
-    ):
-        """Test attack with prepended conversation that influences the flow."""
-        attack = CrescendoTestHelper.create_attack(
-            objective_target=mock_objective_target,
-            adversarial_chat=mock_adversarial_chat,
-            prompt_normalizer=mock_prompt_normalizer,
-        )
-
-        # Create prepended conversation
-        prepended_conversation = [
-            create_prompt_response(text="I've already started a conversation", role="user"),
-            create_prompt_response(text="I see you're interested in this topic", role="assistant"),
-        ]
-
-        context = CrescendoAttackContext(
-            objective="Continue previous conversation",
-            max_turns=2,
-            prepended_conversation=prepended_conversation,
-        )
-
-        # Mock conversation state with prepended info
-        mock_state = ConversationState(
-            turn_count=1,
-            last_user_message="Continue from here",
-            last_assistant_message_scores=[],
-        )
-
-        with patch.object(attack._conversation_manager, "update_conversation_state_async", return_value=mock_state):
-            await attack._setup_async(context=context)
-
-        # Verify context was updated correctly
-        assert context.executed_turns == 1
-        assert context.custom_prompt == "Continue from here"
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -1586,7 +1786,7 @@ class TestEdgeCases:
         context = CrescendoAttackContext(objective="", max_turns=5)
 
         with pytest.raises(AttackValidationException, match="Attack objective must be provided"):
-            await attack.execute_async(context=context)
+            await attack.execute_with_context_async(context=context)
 
     @pytest.mark.asyncio
     async def test_attack_with_json_parsing_retry(
@@ -1690,3 +1890,81 @@ class TestEdgeCases:
         assert context2.max_turns == 3
         # Most importantly, they should have different conversation IDs
         assert context1.session.conversation_id != context2.session.conversation_id
+
+    @pytest.mark.asyncio
+    async def test_execute_async_integration(
+        self,
+        mock_objective_target: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        mock_prompt_normalizer: MagicMock,
+        sample_response: PromptRequestResponse,
+        success_objective_score: Score,
+        no_refusal_score: Score,
+        adversarial_response: str,
+    ):
+        """Test the new execute_async method end-to-end."""
+        attack = CrescendoTestHelper.create_attack(
+            objective_target=mock_objective_target,
+            adversarial_chat=mock_adversarial_chat,
+            prompt_normalizer=mock_prompt_normalizer,
+        )
+
+        # Mock adversarial response
+        adv_response = create_prompt_response(text=adversarial_response)
+
+        # Set up mocks
+        mock_prompt_normalizer.send_prompt_async.side_effect = [adv_response, sample_response]
+
+        # Mock conversation state
+        mock_conversation_state = ConversationState(turn_count=0)
+
+        with patch.object(
+            attack._conversation_manager, "update_conversation_state_async", return_value=mock_conversation_state
+        ):
+            with patch.object(attack, "_check_refusal_async", new_callable=AsyncMock, return_value=no_refusal_score):
+                with patch(
+                    "pyrit.score.Scorer.score_response_with_objective_async",
+                    new_callable=AsyncMock,
+                    return_value={"objective_scores": [success_objective_score], "auxiliary_scores": []},
+                ):
+                    # Use the new execute_async method with parameters
+                    result = await attack.execute_async(
+                        objective="Test objective",
+                        memory_labels={"test": "label"},
+                        runtime_config=AttackRuntimeConfig(max_turns=1),
+                    )
+
+        assert isinstance(result, CrescendoAttackResult)
+        assert result.outcome == AttackOutcome.SUCCESS
+        assert result.objective == "Test objective"
+
+    @pytest.mark.asyncio
+    async def test_execute_async_with_invalid_attack_params(
+        self,
+        mock_objective_target: MagicMock,
+        mock_adversarial_chat: MagicMock,
+    ):
+        """Test execute_async with invalid attack parameters."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+
+        attack = CrescendoAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+        )
+
+        # Test with unknown parameter - should be ignored
+        mock_result = CrescendoAttackResult(
+            conversation_id="test-id",
+            objective="Test objective",
+            attack_identifier=attack.get_identifier(),
+            outcome=AttackOutcome.SUCCESS,
+            executed_turns=1,
+        )
+
+        with patch.object(attack, "execute_with_context_async", new_callable=AsyncMock, return_value=mock_result):
+            # Unknown parameters should be ignored, not raise an error
+            result = await attack.execute_async(
+                objective="Test objective",
+                unknown_param="should be ignored",
+            )
+            assert result.outcome == AttackOutcome.SUCCESS

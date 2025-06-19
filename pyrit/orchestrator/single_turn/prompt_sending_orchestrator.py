@@ -149,7 +149,7 @@ class PromptSendingOrchestrator(Orchestrator):
             memory_labels=memory_labels or {},
         )
 
-        result = await self._attack.execute_async(context=context)
+        result = await self._attack.execute_with_context_async(context=context)
 
         # Map attack outcome to orchestrator status
         status_mapping: dict[AttackOutcome, OrchestratorResultStatus] = {
