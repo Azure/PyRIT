@@ -6,7 +6,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from pyrit.attacks.base.attack_config import AttackConverterConfig, AttackScoringConfig
+from pyrit.attacks.base.attack_config import (
+    AttackConverterConfig,
+    AttackRuntimeConfig,
+    AttackScoringConfig,
+)
 from pyrit.attacks.base.attack_context import SingleTurnAttackContext
 from pyrit.attacks.base.attack_result import AttackOutcome, AttackResult
 from pyrit.attacks.single_turn.prompt_sending import PromptSendingAttack
@@ -151,6 +155,159 @@ class TestPromptSendingAttackInitialization:
 
         assert attack._conversation_manager is not None
         assert hasattr(attack._conversation_manager, "update_conversation_state_async")
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestContextCreation:
+    """Tests for context creation from parameters"""
+
+    def test_create_context_from_params_basic(self, mock_target):
+        """Test basic context creation from parameters."""
+        attack = PromptSendingAttack(objective_target=mock_target)
+
+        context = attack._create_context_from_params(
+            objective="Test objective",
+            prepended_conversation=[],
+            memory_labels={"test": "label"},
+            runtime_config=AttackRuntimeConfig(max_attempts_on_failure=5),
+        )
+
+        assert context.objective == "Test objective"
+        assert context.max_attempts_on_failure == 5
+        assert context.memory_labels == {"test": "label"}
+        assert context.prepended_conversation == []
+        assert context.conversation_id  # Should have a conversation_id
+        assert context.seed_prompt_group is None  # Not provided
+        assert context.system_prompt is None  # Not provided
+
+    def test_create_context_from_params_with_seed_prompt_group(self, mock_target):
+        """Test context creation with seed prompt group."""
+        attack = PromptSendingAttack(objective_target=mock_target)
+
+        seed_group = SeedPromptGroup(prompts=[SeedPrompt(value="Test prompt", data_type="text")])
+
+        context = attack._create_context_from_params(
+            objective="Test objective",
+            prepended_conversation=[],
+            memory_labels={},
+            runtime_config=AttackRuntimeConfig(),
+            seed_prompt_group=seed_group,
+        )
+
+        assert context.seed_prompt_group == seed_group
+
+    def test_create_context_from_params_with_system_prompt(self, mock_target):
+        """Test context creation with system prompt."""
+        attack = PromptSendingAttack(objective_target=mock_target)
+
+        context = attack._create_context_from_params(
+            objective="Test objective",
+            prepended_conversation=[],
+            memory_labels={},
+            runtime_config=AttackRuntimeConfig(),
+            system_prompt="Custom system prompt",
+        )
+
+        assert context.system_prompt == "Custom system prompt"
+
+    def test_create_context_from_params_invalid_seed_prompt_group(self, mock_target):
+        """Test that non-SeedPromptGroup seed_prompt_group raises ValueError."""
+        attack = PromptSendingAttack(objective_target=mock_target)
+
+        with pytest.raises(ValueError, match="seed_prompt_group must be a SeedPromptGroup"):
+            attack._create_context_from_params(
+                objective="Test objective",
+                prepended_conversation=[],
+                memory_labels={},
+                runtime_config=AttackRuntimeConfig(),
+                seed_prompt_group="invalid_type",  # Invalid type
+            )
+
+    def test_create_context_from_params_invalid_system_prompt(self, mock_target):
+        """Test that non-string system_prompt raises ValueError."""
+        attack = PromptSendingAttack(objective_target=mock_target)
+
+        with pytest.raises(ValueError, match="system_prompt must be a string"):
+            attack._create_context_from_params(
+                objective="Test objective",
+                prepended_conversation=[],
+                memory_labels={},
+                runtime_config=AttackRuntimeConfig(),
+                system_prompt=123,  # Invalid type
+            )
+
+    def test_create_context_from_params_uses_defaults(self, mock_target):
+        """Test that context uses dataclass defaults when runtime_config values are None."""
+        attack = PromptSendingAttack(objective_target=mock_target)
+
+        # Runtime config with None values should not override dataclass defaults
+        context = attack._create_context_from_params(
+            objective="Test objective",
+            prepended_conversation=[],
+            memory_labels={},
+            runtime_config=AttackRuntimeConfig(max_attempts_on_failure=None),
+        )
+
+        # Should use the dataclass default of 0
+        assert context.max_attempts_on_failure == 0
+
+    def test_create_context_from_params_with_all_optional_params(self, mock_target, sample_response):
+        """Test context creation with all optional parameters provided."""
+        attack = PromptSendingAttack(objective_target=mock_target)
+
+        seed_group = SeedPromptGroup(prompts=[SeedPrompt(value="Test prompt", data_type="text")])
+        prepended_conv = [sample_response]
+        memory_labels = {"key1": "value1", "key2": "value2"}
+
+        context = attack._create_context_from_params(
+            objective="Test objective",
+            prepended_conversation=prepended_conv,
+            memory_labels=memory_labels,
+            runtime_config=AttackRuntimeConfig(max_attempts_on_failure=10),
+            seed_prompt_group=seed_group,
+            system_prompt="System prompt for test",
+        )
+
+        assert context.objective == "Test objective"
+        assert context.max_attempts_on_failure == 10
+        assert context.memory_labels == memory_labels
+        assert context.prepended_conversation == prepended_conv
+        assert context.seed_prompt_group == seed_group
+        assert context.system_prompt == "System prompt for test"
+
+    def test_create_context_from_params_ignores_unknown_attack_params(self, mock_target):
+        """Test that unknown attack parameters are ignored without error."""
+        attack = PromptSendingAttack(objective_target=mock_target)
+
+        # Pass unknown parameters
+        context = attack._create_context_from_params(
+            objective="Test objective",
+            prepended_conversation=[],
+            memory_labels={},
+            runtime_config=AttackRuntimeConfig(),
+            unknown_param="should be ignored",
+            another_unknown=123,
+        )
+
+        # Should create context successfully, ignoring unknown params
+        assert context.objective == "Test objective"
+        assert not hasattr(context, "unknown_param")
+        assert not hasattr(context, "another_unknown")
+
+    def test_create_context_from_params_empty_runtime_config(self, mock_target):
+        """Test context creation with empty runtime config uses all defaults."""
+        attack = PromptSendingAttack(objective_target=mock_target)
+
+        context = attack._create_context_from_params(
+            objective="Test objective",
+            prepended_conversation=[],
+            memory_labels={},
+            runtime_config=AttackRuntimeConfig(),  # All defaults
+        )
+
+        # Should use the dataclass default values
+        assert context.max_attempts_on_failure == 0
+        assert context.metadata is None
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -842,7 +999,7 @@ class TestAttackLifecycle:
         attack._teardown_async = AsyncMock()
 
         # Execute the complete lifecycle
-        result = await attack.execute_async(context=basic_context)
+        result = await attack.execute_with_context_async(context=basic_context)
 
         # Verify result and proper execution order
         assert result == mock_result
@@ -863,7 +1020,7 @@ class TestAttackLifecycle:
 
         # Should raise AttackValidationException
         with pytest.raises(AttackValidationException) as exc_info:
-            await attack.execute_async(context=basic_context)
+            await attack.execute_with_context_async(context=basic_context)
 
         # Verify error details
         assert "Context validation failed" in str(exc_info.value)
@@ -886,7 +1043,7 @@ class TestAttackLifecycle:
 
         # Should raise AttackExecutionException
         with pytest.raises(AttackExecutionException) as exc_info:
-            await attack.execute_async(context=basic_context)
+            await attack.execute_with_context_async(context=basic_context)
 
         # Verify error details
         assert "Unexpected error during attack execution" in str(exc_info.value)
