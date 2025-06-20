@@ -19,7 +19,7 @@ def fetch_sosbench_dataset() -> SeedPromptDataset:
         - https://huggingface.co/datasets/SOSBench/SOSBench \n
         - https://arxiv.org/abs/2505.21605 \n
     """
-    data = load_dataset("apart/sosbench", "default", data_files="sosbench.tsv")
+    data = load_dataset("SOSBench/SOSBench", "default")
 
     seed_prompts = [
         SeedPrompt(
