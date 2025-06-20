@@ -2,6 +2,9 @@
 
 name: build_and_test
 
+env:
+  PRE_COMMIT_PYTHON_VERSION: '3.11'
+
 on:
   push:
     branches:
@@ -30,14 +33,14 @@ jobs:
 
       - uses: actions/setup-python@v3
         with:
-          python-version: 3.11
+          python-version: ${{ env.PRE_COMMIT_PYTHON_VERSION }}
       - name: Cache pip packages
         uses: actions/cache@v3
         with:
           path: ${{ env.PIP_CACHE_DIR }}
-          key: ${{ runner.os }}-pip-3.11-${{ hashFiles('pyproject.toml') }}
+          key: ${{ runner.os }}-pip-${{ env.PRE_COMMIT_PYTHON_VERSION }}-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
-            ${{ runner.os }}-pip-3.11-
+            ${{ runner.os }}-pip-${{ env.PRE_COMMIT_PYTHON_VERSION }}-
             ${{ runner.os }}-pip-
 
       - name: Cache pre-commit environments
@@ -77,15 +80,15 @@ jobs:
 
       - uses: actions/setup-python@v3
         with:
-          python-version: 3.11
+          python-version: ${{ env.PRE_COMMIT_PYTHON_VERSION }}
 
       - name: Cache pip packages
         uses: actions/cache@v3
         with:
           path: ${{ env.PIP_CACHE_DIR }}
-          key: ${{ runner.os }}-pip-3.11-${{ hashFiles('pyproject.toml') }}
+          key: ${{ runner.os }}-pip-${{ env.PRE_COMMIT_PYTHON_VERSION }}-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
-            ${{ runner.os }}-pip-3.11-
+            ${{ runner.os }}-pip-${{ env.PRE_COMMIT_PYTHON_VERSION }}-
             ${{ runner.os }}-pip-
 
       - name: Cache pre-commit environments
