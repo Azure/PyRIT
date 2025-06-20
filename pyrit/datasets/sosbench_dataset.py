@@ -9,7 +9,7 @@ from pyrit.models.seed_prompt import SeedPrompt
 
 def fetch_sosbench_dataset() -> SeedPromptDataset:
     """
-    Fetch DarkBench examples and create a SeedPromptDataset.
+    Fetch SOSBench dataset and create a SeedPromptDataset.
 
     Returns:
         SeedPromptDataset: A SeedPromptDataset containing the examples.
