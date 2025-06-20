@@ -32,6 +32,7 @@ def seed_prompt_fixture():
         metadata={"key": "value"},
         parameters=["param1"],
         prompt_group_id=uuid.uuid4(),
+        prompt_group_sequence=1,
         sequence=1,
     )
 
@@ -42,6 +43,8 @@ def test_seed_prompt_initialization(seed_prompt_fixture):
     assert seed_prompt_fixture.data_type == "text"
     assert seed_prompt_fixture.parameters == ["param1"]
 
+def test_seed_prompt_default_role(seed_prompt_fixture):
+    assert seed_prompt_fixture.role == "user"
 
 def test_seed_prompt_render_template_success(seed_prompt_fixture):
     seed_prompt_fixture.value = "Test prompt with param1={{ param1 }}"
@@ -101,19 +104,28 @@ def test_seed_prompt_group_initialization(seed_prompt_fixture):
 def test_seed_prompt_group_sequence_default():
     prompt = SeedPrompt(value="Test prompt", data_type="text")
     seed_prompt_group = SeedPromptGroup(prompts=[prompt])
-    assert seed_prompt_group.prompts[0].sequence == 0
+    assert seed_prompt_group.prompts[0].prompt_group_sequence == 0
 
+def test_seed_prompt_group_sequence():
+    prompt = SeedPrompt(value="Test prompt", data_type="text", sequence=2)
+    seed_prompt_group = SeedPromptGroup(prompts=[prompt])
+    assert seed_prompt_group.sequence == 2
+
+def test_seed_prompt_sequence_default():
+    prompt = SeedPrompt(value="Test prompt", data_type="text")
+    seed_prompt_group = SeedPromptGroup(prompts=[prompt])
+    assert seed_prompt_group.sequence == -1
 
 def test_group_seed_prompts_by_prompt_group_id(seed_prompt_fixture):
     # Grouping two prompts
     prompt_2 = SeedPrompt(
-        value="Another prompt", data_type="text", prompt_group_id=seed_prompt_fixture.prompt_group_id, sequence=2
+        value="Another prompt", data_type="text", prompt_group_id=seed_prompt_fixture.prompt_group_id, sequence=1, prompt_group_sequence=2
     )
 
     groups = SeedPromptDataset.group_seed_prompts_by_prompt_group_id([seed_prompt_fixture, prompt_2])
     assert len(groups) == 1
     assert len(groups[0].prompts) == 2
-    assert groups[0].prompts[0].sequence < groups[0].prompts[1].sequence
+    assert groups[0].prompts[0].prompt_group_sequence < groups[0].prompts[1].prompt_group_sequence
 
 
 def test_seed_prompt_dataset_initialization(seed_prompt_fixture):
@@ -176,7 +188,7 @@ async def test_group_seed_prompt_groups_from_yaml(duckdb_instance):
     prompts = SeedPromptDataset.from_yaml_file(
         pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal-dataset.prompt"
     )
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=prompts.prompts, added_by="rlundeen")
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=prompts.prompts, added_by="test")
 
     groups = duckdb_instance.get_seed_prompt_groups()
     # there are 8 SeedPrompts, 6 SeedPromptGroups
@@ -184,11 +196,11 @@ async def test_group_seed_prompt_groups_from_yaml(duckdb_instance):
 
 
 @pytest.mark.asyncio
-async def test_group_seed_prompt_alias_sets_group_id(duckdb_instance):
+async def test_group_seed_prompt_sequence_sets_group_id(duckdb_instance):
     prompts = SeedPromptDataset.from_yaml_file(
         pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal-dataset.prompt"
     )
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=prompts.prompts, added_by="rlundeen")
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=prompts.prompts, added_by="test")
 
     groups = duckdb_instance.get_seed_prompt_groups()
     # there are 8 SeedPrompts, 6 SeedPromptGroups
@@ -237,6 +249,27 @@ def test_group_id_set_unequally_raises():
 
     assert "Inconsistent group IDs found across prompts" in str(exc_info.value)
 
+def test_role_set_unequally_raises():
+    with pytest.raises(ValueError) as exc_info:
+        SeedPromptGroup(
+            prompts=[
+                SeedPrompt(value="Hello", data_type="text", role="user"),
+                SeedPrompt(value="World", data_type="text", role="system"),
+            ]
+        )
+
+    assert "Inconsistent roles found across prompts" in str(exc_info.value)
+
+def test_sequence_set_unequally_raises():
+    with pytest.raises(ValueError) as exc_info:
+        SeedPromptGroup(
+            prompts=[
+                SeedPrompt(value="Hello", data_type="text", sequence=1),
+                SeedPrompt(value="World", data_type="text", sequence=2),
+            ]
+        )
+
+    assert "Inconsistent sequence found across prompts in the group" in str(exc_info.value)
 
 @pytest.mark.asyncio
 async def test_hashes_generated():
