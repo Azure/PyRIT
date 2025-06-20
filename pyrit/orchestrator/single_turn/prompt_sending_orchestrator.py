@@ -1,15 +1,21 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
 import logging
-import uuid
-from typing import Any, List, Optional, Sequence
+from typing import Any, Optional, Sequence, cast
 
-from pyrit.common.utils import combine_dict
+from typing_extensions import LiteralString, deprecated
+
+from pyrit.attacks import (
+    AttackConverterConfig,
+    AttackOutcome,
+    AttackScoringConfig,
+    PromptSendingAttack,
+    SingleTurnAttackContext,
+)
+from pyrit.common import deprecation_message
 from pyrit.models import (
     PromptRequestResponse,
-    SeedPrompt,
     SeedPromptGroup,
 )
 from pyrit.models.filter_criteria import PromptConverterState, PromptFilterCriteria
@@ -19,15 +25,29 @@ from pyrit.orchestrator import (
     OrchestratorResultStatus,
 )
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
-from pyrit.prompt_target import PromptChatTarget, PromptTarget
+from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
 from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
 
 
+@deprecated(
+    cast(
+        LiteralString,
+        deprecation_message(
+            old_item="PromptSendingOrchestrator",
+            new_item=PromptSendingAttack,
+            removed_in="v0.12.0",
+        ),
+    ),
+)
 class PromptSendingOrchestrator(Orchestrator):
     """
+    .. warning::
+        `PromptSendingOrchestrator` is deprecated and will be removed in **v0.12.0**;
+        use `pyrit.attacks.PromptSendingAttack` instead.
+
     This orchestrator takes a set of prompts, converts them using the list of PromptConverters,
     sends them to a target, and scores the resonses with scorers (if provided).
     """
@@ -77,6 +97,21 @@ class PromptSendingOrchestrator(Orchestrator):
         self._batch_size = batch_size
         self._retries_on_objective_failure = retries_on_objective_failure
 
+        # Build the new attack model
+        self._attack = PromptSendingAttack(
+            objective_target=objective_target,
+            attack_converter_config=AttackConverterConfig(
+                request_converters=self._request_converter_configurations,
+                response_converters=self._response_converter_configurations,
+            ),
+            attack_scoring_config=AttackScoringConfig(
+                objective_scorer=objective_scorer,
+                auxiliary_scorers=self._auxiliary_scorers,
+            ),
+            prompt_normalizer=self._prompt_normalizer,
+            max_attempts_on_failure=self._retries_on_objective_failure,
+        )
+
     def set_skip_criteria(
         self, *, skip_criteria: PromptFilterCriteria, skip_value_type: PromptConverterState = "original"
     ):
@@ -86,98 +121,6 @@ class PromptSendingOrchestrator(Orchestrator):
         If prompts match this in memory, then they won't be sent to a target.
         """
         self._prompt_normalizer.set_skip_criteria(skip_criteria=skip_criteria, skip_value_type=skip_value_type)
-
-    async def _add_prepended_conversation_to_memory(
-        self,
-        conversation_id: str,
-        prepended_conversation: Optional[List[PromptRequestResponse]] = None,
-    ):
-        """
-        Processes the prepended conversation by converting it if needed and adding it to memory.
-
-        Args:
-            prepended_conversation (Optional[list[PromptRequestResponse]]): The conversation to prepend
-            conversation_id (str): The conversation ID to use for the request pieces
-        """
-        if not prepended_conversation:
-            return
-
-        if not isinstance(self._objective_target, PromptChatTarget):
-            raise ValueError("Prepended conversation can only be used with a PromptChatTarget")
-
-        await self._prompt_normalizer.add_prepended_conversation_to_memory(
-            prepended_conversation=prepended_conversation,
-            conversation_id=conversation_id,
-            should_convert=self._should_convert_prepended_conversation,
-            converter_configurations=self._request_converter_configurations,
-            orchestrator_identifier=self.get_identifier(),
-        )
-
-    async def _score_auxiliary_async(self, result: PromptRequestResponse) -> None:
-        """
-        Scores the response using auxiliary scorers if they are configured.
-
-        Args:
-            result (PromptRequestResponse): The response to score
-        """
-        if not self._auxiliary_scorers:
-            return
-
-        tasks = []
-        for piece in result.request_pieces:
-            if piece.role == "assistant":
-                for scorer in self._auxiliary_scorers:
-                    tasks.append(scorer.score_async(request_response=piece))
-
-        if tasks:
-            await asyncio.gather(*tasks)
-
-    async def _score_objective_async(
-        self, result: PromptRequestResponse, objective: str
-    ) -> tuple[OrchestratorResultStatus, Optional[Any]]:
-        """
-        Scores the response using the objective scorer if configured.
-
-        Args:
-            result (PromptRequestResponse): The response to score
-            objective (str): The objective to score against
-
-        Returns:
-            tuple[OrchestratorResultStatus, Optional[Any]]: A tuple containing the status and objective score
-            If the objective_scorer returns a list of scores, the first score that is true will be returned as the
-            objective score.
-            Note, this behavior can be overridden by setting the objective_scorer to a CompositeScorer.
-        """
-        if not self._objective_scorer:
-            return "unknown", None
-
-        status: OrchestratorResultStatus = "failure"
-        objective_score = None
-        first_failure_score = None
-
-        for piece in result.request_pieces:
-            if piece.role == "assistant":
-                objective_score_list = await self._objective_scorer.score_async(
-                    request_response=piece,
-                    task=objective,
-                )
-
-                # Find and save the first score that is true
-                for score in objective_score_list:
-                    if score.get_value():
-                        objective_score = score
-                        status = "success"
-                        break
-                    elif first_failure_score is None:
-                        first_failure_score = score
-                if status == "success":
-                    break
-
-        # If no success was found, use the first failure score
-        if status == "failure" and first_failure_score is not None:
-            objective_score = first_failure_score
-
-        return status, objective_score
 
     async def run_attack_async(
         self,
@@ -199,46 +142,27 @@ class PromptSendingOrchestrator(Orchestrator):
             memory_labels (dict[str, str], Optional): The memory labels to use for the attack.
         """
 
-        conversation_id = ""
+        context = SingleTurnAttackContext(
+            objective=objective,
+            seed_prompt_group=seed_prompt,
+            prepended_conversation=prepended_conversation or [],
+            memory_labels=memory_labels or {},
+        )
 
-        if not seed_prompt:
-            seed_prompt = SeedPromptGroup(prompts=[SeedPrompt(value=objective)])
+        result = await self._attack.execute_with_context_async(context=context)
 
-        status: OrchestratorResultStatus = "unknown"
-        objective_score = None
-
-        for _ in range(self._retries_on_objective_failure + 1):
-            conversation_id = str(uuid.uuid4())
-            await self._add_prepended_conversation_to_memory(
-                prepended_conversation=prepended_conversation, conversation_id=conversation_id
-            )
-
-            result = await self._prompt_normalizer.send_prompt_async(
-                seed_prompt_group=seed_prompt,
-                target=self._objective_target,
-                conversation_id=conversation_id,
-                request_converter_configurations=self._request_converter_configurations,
-                response_converter_configurations=self._response_converter_configurations,
-                labels=combine_dict(existing_dict=self._global_memory_labels, new_dict=memory_labels),
-                orchestrator_identifier=self.get_identifier(),
-            )
-
-            if not result:
-                # This can happen if we skipped the prompts
-                return None
-
-            await self._score_auxiliary_async(result)
-
-            status, objective_score = await self._score_objective_async(result, objective)
-
-            if status == "success" or status == "unknown":
-                break
+        # Map attack outcome to orchestrator status
+        status_mapping: dict[AttackOutcome, OrchestratorResultStatus] = {
+            AttackOutcome.SUCCESS: "success",
+            AttackOutcome.FAILURE: "failure",
+            AttackOutcome.UNDETERMINED: "unknown",
+        }
 
         return OrchestratorResult(
-            conversation_id=conversation_id,
+            conversation_id=result.conversation_id,
             objective=objective,
-            status=status,
-            objective_score=objective_score,
+            status=status_mapping.get(result.outcome, "unknown"),
+            objective_score=result.last_score,
         )
 
     async def run_attacks_async(

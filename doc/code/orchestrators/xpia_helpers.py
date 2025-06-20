@@ -33,11 +33,11 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
 
     Args:
         deployment_name (str, optional): The name of the deployment. Defaults to the
-            DEPLOYMENT_ENVIRONMENT_VARIABLE environment variable .
+            `DEPLOYMENT_ENVIRONMENT_VARIABLE` environment variable .
         endpoint (str, optional): The endpoint URL for the Azure OpenAI service.
-            Defaults to the ENDPOINT_URI_ENVIRONMENT_VARIABLE environment variable.
+            Defaults to the `ENDPOINT_URI_ENVIRONMENT_VARIABLE` environment variable.
         api_key (str, optional): The API key for accessing the Azure OpenAI service.
-            Defaults to the API_KEY_ENVIRONMENT_VARIABLE environment variable.
+            Defaults to the `API_KEY_ENVIRONMENT_VARIABLE` environment variable.
         api_version (str, optional): The version of the Azure OpenAI API. Defaults to
             "2024-02-15-preview".
         plugin (Any, required): The semantic kernel plugin to retrieve the attack medium.

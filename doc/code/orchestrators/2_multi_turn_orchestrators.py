@@ -5,9 +5,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.6
+#       jupytext_version: 1.17.2
 #   kernelspec:
-#     display_name: pyrit-312
+#     display_name: pyrit-dev
 #     language: python
 #     name: python3
 # ---
@@ -77,13 +77,13 @@ await result.print_conversation_async()  # type: ignore
 # - Any attack that may need to have conversation history already preloaded before handing off to the orchestrator
 # %%
 import os
-import pathlib
 
-from pyrit.common.path import DATASETS_PATH
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, SeedPrompt
+from pyrit.datasets import TextJailBreak
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
 
-jailbreak_path = pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dan_1.yaml"
-system_prompt_str = SeedPrompt.from_yaml_file(jailbreak_path).value
+jailbreak = TextJailBreak(template_file_name="dan_1.yaml")
+system_prompt_str = jailbreak.get_jailbreak_system_prompt()
+
 
 prepended_conversation = [
     PromptRequestResponse(
