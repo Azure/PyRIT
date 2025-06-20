@@ -48,7 +48,7 @@ def fetch_sosbench_dataset() -> SeedPromptDataset:
                 "Bo Li",
                 "Xianyan Chen",
                 "Zhen Xiang",
-                "Radha Poovendran"
+                "Radha Poovendran",
             ],
         )
         for item in data
