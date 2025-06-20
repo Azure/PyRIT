@@ -38,14 +38,17 @@ def mock_default_values():
 def mock_attack_strategy(mock_default_values):
     """Create a mock attack strategy with all abstract methods mocked"""
 
+    # Create a mock context type
+    mock_context_type = MagicMock()
+    mock_context_type.create_from_params = MagicMock()
+
     # Create a concrete subclass with mocked abstract methods
     class TestableAttackStrategy(AttackStrategy):
         def __init__(self, **kwargs):
             # Use the root logger to ensure caplog can capture the logs
-            super().__init__(logger=logging.getLogger(), **kwargs)
+            super().__init__(context_type=mock_context_type, logger=logging.getLogger(), **kwargs)
 
         # Mock all abstract methods
-        _create_context_from_params = MagicMock()
         _validate_context = MagicMock()
         _setup_async = AsyncMock()
         _perform_attack_async = AsyncMock()
@@ -72,31 +75,34 @@ class TestAttackStrategyInitialization:
     """Tests for AttackStrategy initialization"""
 
     def test_init_with_default_parameters(self, mock_default_values):
+        mock_context_type = MagicMock()
+
         class ConcreteStrategy(AttackStrategy):
-            _create_context_from_params = MagicMock()
             _validate_context = MagicMock()
             _setup_async = AsyncMock()
             _perform_attack_async = AsyncMock()
             _teardown_async = AsyncMock()
 
-        strategy = ConcreteStrategy()
+        strategy = ConcreteStrategy(context_type=mock_context_type)
 
         assert strategy._id is not None
         assert isinstance(strategy._id, uuid.UUID)
         assert strategy._memory is not None
         assert strategy._memory_labels == {"test_label": "test_value"}
         assert isinstance(strategy._logger, AttackStrategyLogAdapter)
+        assert strategy._context_type == mock_context_type
 
     def test_init_with_custom_logger(self, mock_default_values):
+        mock_context_type = MagicMock()
+
         class ConcreteStrategy(AttackStrategy):
-            _create_context_from_params = MagicMock()
             _validate_context = MagicMock()
             _setup_async = AsyncMock()
             _perform_attack_async = AsyncMock()
             _teardown_async = AsyncMock()
 
         custom_logger = logging.getLogger("custom_test_logger")
-        strategy = ConcreteStrategy(logger=custom_logger)
+        strategy = ConcreteStrategy(context_type=mock_context_type, logger=custom_logger)
 
         assert strategy._logger.logger == custom_logger
 
@@ -112,15 +118,15 @@ class TestAttackStrategyInitialization:
     def test_init_with_various_memory_labels(self, memory_labels_str, expected):
         with patch("pyrit.attacks.base.attack_strategy.default_values") as mock:
             mock.get_non_required_value.return_value = memory_labels_str
+            mock_context_type = MagicMock()
 
             class ConcreteStrategy(AttackStrategy):
-                _create_context_from_params = MagicMock()
                 _validate_context = MagicMock()
                 _setup_async = AsyncMock()
                 _perform_attack_async = AsyncMock()
                 _teardown_async = AsyncMock()
 
-            strategy = ConcreteStrategy()
+            strategy = ConcreteStrategy(context_type=mock_context_type)
             assert strategy._memory_labels == expected
 
     def test_get_identifier_format(self, mock_attack_strategy):
@@ -139,13 +145,13 @@ class TestAttackExecution:
 
     @pytest.mark.asyncio
     async def test_execute_async_successful_flow(self, mock_attack_strategy, basic_context):
-        # Configure _create_context_from_params to return the basic_context
-        mock_attack_strategy._create_context_from_params.return_value = basic_context
+        # Configure context type's create_from_params to return the basic_context
+        mock_attack_strategy._context_type.create_from_params.return_value = basic_context
 
         result = await mock_attack_strategy.execute_async(objective="Test objective")
 
         # Verify context creation was called
-        mock_attack_strategy._create_context_from_params.assert_called_once()
+        mock_attack_strategy._context_type.create_from_params.assert_called_once()
 
         # Verify all lifecycle methods were called
         mock_attack_strategy._validate_context.assert_called_once_with(context=basic_context)
@@ -161,7 +167,7 @@ class TestAttackExecution:
 
     @pytest.mark.asyncio
     async def test_execute_async_validation_failure(self, mock_attack_strategy, basic_context):
-        mock_attack_strategy._create_context_from_params.return_value = basic_context
+        mock_attack_strategy._context_type.create_from_params.return_value = basic_context
         mock_attack_strategy._validate_context.side_effect = ValueError("Validation failed")
 
         with pytest.raises(AttackValidationException) as exc_info:
@@ -180,7 +186,7 @@ class TestAttackExecution:
 
     @pytest.mark.asyncio
     async def test_execute_async_setup_failure_calls_teardown(self, mock_attack_strategy, basic_context):
-        mock_attack_strategy._create_context_from_params.return_value = basic_context
+        mock_attack_strategy._context_type.create_from_params.return_value = basic_context
         mock_attack_strategy._setup_async.side_effect = RuntimeError("Setup failed")
 
         with pytest.raises(AttackExecutionException) as exc_info:
@@ -199,7 +205,7 @@ class TestAttackExecution:
 
     @pytest.mark.asyncio
     async def test_execute_async_perform_failure_calls_teardown(self, mock_attack_strategy, basic_context):
-        mock_attack_strategy._create_context_from_params.return_value = basic_context
+        mock_attack_strategy._context_type.create_from_params.return_value = basic_context
         mock_attack_strategy._perform_attack_async.side_effect = RuntimeError("Attack failed")
 
         with pytest.raises(AttackExecutionException):
@@ -213,7 +219,7 @@ class TestAttackExecution:
 
     @pytest.mark.asyncio
     async def test_execute_async_teardown_failure_propagates(self, mock_attack_strategy, basic_context):
-        mock_attack_strategy._create_context_from_params.return_value = basic_context
+        mock_attack_strategy._context_type.create_from_params.return_value = basic_context
         mock_attack_strategy._teardown_async.side_effect = RuntimeError("Teardown failed")
 
         # Teardown failures should still propagate but after being called
@@ -237,7 +243,7 @@ class TestAttackExecution:
     async def test_execute_async_preserves_specific_exceptions(
         self, mock_attack_strategy, basic_context, existing_exception
     ):
-        mock_attack_strategy._create_context_from_params.return_value = basic_context
+        mock_attack_strategy._context_type.create_from_params.return_value = basic_context
         mock_attack_strategy._perform_attack_async.side_effect = existing_exception
 
         with pytest.raises(type(existing_exception)) as exc_info:
@@ -249,7 +255,7 @@ class TestAttackExecution:
     @pytest.mark.asyncio
     async def test_execute_async_sets_execution_time(self, mock_attack_strategy, basic_context):
         """Test that execute_async properly sets execution_time_ms on the result"""
-        mock_attack_strategy._create_context_from_params.return_value = basic_context
+        mock_attack_strategy._context_type.create_from_params.return_value = basic_context
 
         # Mock the perform_attack_async to take some time
         async def delayed_attack(context):
@@ -279,7 +285,7 @@ class TestAttackExecution:
     @pytest.mark.asyncio
     async def test_execute_async_overwrites_existing_execution_time(self, mock_attack_strategy, basic_context):
         """Test that execute_async overwrites any pre-existing execution_time_ms value"""
-        mock_attack_strategy._create_context_from_params.return_value = basic_context
+        mock_attack_strategy._context_type.create_from_params.return_value = basic_context
 
         # Configure mock result with a pre-existing execution time
         mock_result = MagicMock()
@@ -321,24 +327,21 @@ class TestAttackExecution:
         """Test execute_async with all optional parameters"""
         prepended_conv = [MagicMock()]
         memory_labels = {"custom": "label"}
-        runtime_config = MagicMock()
 
-        mock_attack_strategy._create_context_from_params.return_value = basic_context
+        mock_attack_strategy._context_type.create_from_params.return_value = basic_context
 
         result = await mock_attack_strategy.execute_async(
             objective="Test objective",
             prepended_conversation=prepended_conv,
             memory_labels=memory_labels,
-            runtime_config=runtime_config,
             custom_param="custom_value",
         )
 
-        # Verify _create_context_from_params was called with all parameters
-        mock_attack_strategy._create_context_from_params.assert_called_once_with(
+        # Verify context type's create_from_params was called with all parameters
+        mock_attack_strategy._context_type.create_from_params.assert_called_once_with(
             objective="Test objective",
             prepended_conversation=prepended_conv,
             memory_labels=memory_labels,
-            runtime_config=runtime_config,
             custom_param="custom_value",
         )
 
@@ -351,7 +354,7 @@ class TestLogging:
 
     @pytest.mark.asyncio
     async def test_logging_during_lifecycle(self, mock_attack_strategy, basic_context, caplog):
-        mock_attack_strategy._create_context_from_params.return_value = basic_context
+        mock_attack_strategy._context_type.create_from_params.return_value = basic_context
 
         # Ensure we're capturing at the root logger level
         with caplog.at_level(logging.DEBUG, logger=""):
@@ -408,15 +411,15 @@ class TestConcurrency:
         # Create multiple independent strategy instances
         strategies = []
         for i in range(5):
+            mock_context_type = MagicMock()
 
             class ConcreteStrategy(AttackStrategy):
-                _create_context_from_params = MagicMock()
                 _validate_context = MagicMock()
                 _setup_async = AsyncMock()
                 _perform_attack_async = AsyncMock()
                 _teardown_async = AsyncMock()
 
-            strategy = ConcreteStrategy()
+            strategy = ConcreteStrategy(context_type=mock_context_type)
             # Configure mock result with required attributes
             mock_result = MagicMock()
             mock_result.outcome = AttackOutcome.SUCCESS
@@ -428,7 +431,7 @@ class TestConcurrency:
             # Configure context creation
             mock_context = MagicMock(objective=f"Objective {i}")
 
-            cast(MagicMock, strategy._create_context_from_params).return_value = mock_context
+            strategy._context_type.create_from_params.return_value = mock_context
 
             strategies.append(strategy)
 
@@ -460,7 +463,7 @@ class TestConcurrency:
         result2.execution_time_ms = None
 
         # Configure context creation to return different contexts
-        mock_attack_strategy._create_context_from_params.side_effect = [context1, context2]
+        mock_attack_strategy._context_type.create_from_params.side_effect = [context1, context2]
 
         # Cast to AsyncMock to satisfy type checker
         from typing import cast
@@ -485,7 +488,7 @@ class TestConcurrency:
     @pytest.mark.asyncio
     async def test_attack_outcome_logging(self, mock_attack_strategy, basic_context, caplog):
         """Test that different attack outcomes are logged correctly"""
-        mock_attack_strategy._create_context_from_params.return_value = basic_context
+        mock_attack_strategy._context_type.create_from_params.return_value = basic_context
 
         # Test SUCCESS outcome
         with caplog.at_level(logging.INFO, logger=""):
@@ -526,7 +529,7 @@ class TestEdgeCasesAndErrorHandling:
 
     def test_cannot_instantiate_abstract_base_class(self):
         with pytest.raises(TypeError) as exc_info:
-            AttackStrategy()  # type: ignore
+            AttackStrategy(context_type=MagicMock())  # type: ignore
 
         # Should mention the abstract methods
         error_msg = str(exc_info.value)
@@ -538,26 +541,27 @@ class TestEdgeCasesAndErrorHandling:
 
             # ast.literal_eval will raise SyntaxError for invalid syntax
             with pytest.raises(SyntaxError):
+                mock_context_type = MagicMock()
 
                 class ConcreteStrategy(AttackStrategy):
-                    _create_context_from_params = MagicMock()
                     _validate_context = MagicMock()
                     _setup_async = AsyncMock()
                     _perform_attack_async = AsyncMock()
                     _teardown_async = AsyncMock()
 
-                ConcreteStrategy()
+                ConcreteStrategy(context_type=mock_context_type)
 
     def test_multiple_instances_have_unique_ids(self, mock_default_values):
+        mock_context_type = MagicMock()
+
         class ConcreteStrategy(AttackStrategy):
-            _create_context_from_params = MagicMock()
             _validate_context = MagicMock()
             _setup_async = AsyncMock()
             _perform_attack_async = AsyncMock()
             _teardown_async = AsyncMock()
 
-        strategy1 = ConcreteStrategy()
-        strategy2 = ConcreteStrategy()
+        strategy1 = ConcreteStrategy(context_type=mock_context_type)
+        strategy2 = ConcreteStrategy(context_type=mock_context_type)
 
         assert strategy1._id != strategy2._id
         assert strategy1.get_identifier()["id"] != strategy2.get_identifier()["id"]

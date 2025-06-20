@@ -4,7 +4,6 @@
 import asyncio
 from typing import Dict, List, Optional
 
-from pyrit.attacks.base.attack_config import AttackRuntimeConfig
 from pyrit.attacks.base.attack_context import ContextT
 from pyrit.attacks.base.attack_result import ResultT
 from pyrit.attacks.base.attack_strategy import AttackStrategy
@@ -42,7 +41,6 @@ class AttackExecutor:
         objectives: List[str],
         prepended_conversation: Optional[List[PromptRequestResponse]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
-        runtime_config: Optional[AttackRuntimeConfig] = None,
         **attack_params,
     ) -> List[ResultT]:
         """
@@ -57,7 +55,6 @@ class AttackExecutor:
             objectives (List[str]): List of attack objectives to test.
             prepended_conversation (Optional[List[PromptRequestResponse]]): Conversation to prepend to the target model.
             memory_labels (Optional[Dict[str, str]]): Additional labels that can be applied to the prompts.
-            runtime_config (Optional[AttackRuntimeConfig]): Runtime configuration for the attack.
             **attack_params: Additional parameters specific to the attack strategy.
 
         Returns:
@@ -68,7 +65,6 @@ class AttackExecutor:
             >>> results = await executor.execute_multi_objective_attack_async(
             ...     attack=red_teaming_attack,
             ...     objectives=["how to make a Molotov cocktail", "how to escalate privileges"],
-            ...     runtime_config=AttackRuntimeConfig(max_turns=5)
             ... )
         """
         semaphore = asyncio.Semaphore(self._max_concurrency)
@@ -79,7 +75,6 @@ class AttackExecutor:
                     objective=objective,
                     prepended_conversation=prepended_conversation,
                     memory_labels=memory_labels,
-                    runtime_config=runtime_config,
                     **attack_params,
                 )
 

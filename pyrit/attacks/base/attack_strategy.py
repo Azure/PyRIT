@@ -9,7 +9,6 @@ from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator, Dict, Generic, List, MutableMapping, Optional
 
-from pyrit.attacks.base.attack_config import AttackRuntimeConfig
 from pyrit.attacks.base.attack_context import ContextT
 from pyrit.attacks.base.attack_result import AttackOutcome, ResultT
 from pyrit.common import default_values
@@ -57,12 +56,14 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
     _teardown_async(): Clean up resources
     """
 
-    def __init__(self, *, logger: logging.Logger = logger):
+    def __init__(self, *, context_type: type[ContextT], logger: logging.Logger = logger):
         self._id = uuid.uuid4()
         self._memory = CentralMemory.get_memory_instance()
         self._memory_labels: Dict[str, str] = ast.literal_eval(
             default_values.get_non_required_value(env_var_name="GLOBAL_MEMORY_LABELS") or "{}"
         )
+
+        self._context_type = context_type
 
         self._logger = AttackStrategyLogAdapter(
             logger, {"strategy_name": self.__class__.__name__, "strategy_id": str(self._id)[:8]}
@@ -113,31 +114,6 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
                     f"{field_name} was provided in {config_name} but is not used by {self.__class__.__name__}. "
                     f"This parameter will be ignored."
                 )
-
-    @abstractmethod
-    def _create_context_from_params(
-        self,
-        *,
-        objective: str,
-        prepended_conversation: List[PromptRequestResponse],
-        memory_labels: Dict[str, str],
-        runtime_config: AttackRuntimeConfig,
-        **attack_params,
-    ) -> ContextT:
-        """
-        Create the appropriate context type from parameters.
-
-        Args:
-            objective (str): The objective of the attack.
-            prepended_conversation (List[PromptRequestResponse]): Conversation to prepend to the target model
-            memory_labels (Dict[str, str]): Additional labels that can be applied to the prompts throughout the attack
-            runtime_config (AttackRuntimeConfig): Runtime configuration for the attack
-            **attack_params: Additional parameters specific to the attack.
-
-        Returns:
-            ContextT: An instance of the context type used by this attack strategy.
-        """
-        pass
 
     @abstractmethod
     def _validate_context(self, *, context: ContextT) -> None:
@@ -309,7 +285,6 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
         objective: str,
         prepended_conversation: Optional[List[PromptRequestResponse]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
-        runtime_config: Optional[AttackRuntimeConfig] = None,
         **attack_params,
     ) -> ResultT:
         """
@@ -321,21 +296,16 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
             prepended_conversation (Optional[List[PromptRequestResponse]]): Conversation to prepend to the target model.
             memory_labels (Optional[Dict[str, str]]): Additional labels that can be applied to the prompts
                                             throughout the attack.
-            runtime_config (Optional[AttackRuntimeConfig]): Runtime configuration for the attack.
             **attack_params: Additional parameters specific to the attack strategy.
 
         Returns:
             ResultT: The result of the attack execution, including outcome and reason.
         """
-        # Use the default runtime config if none provided
-        config = runtime_config or AttackRuntimeConfig()
 
-        # Create context using the abstract factory method
-        context = self._create_context_from_params(
+        context = self._context_type.create_from_params(
             objective=objective,
             prepended_conversation=prepended_conversation or [],
             memory_labels=memory_labels or {},
-            runtime_config=config,
             **attack_params,
         )
 

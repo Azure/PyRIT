@@ -31,9 +31,7 @@ def mock_attack_strategy():
 @pytest.fixture
 def basic_context():
     """Create a basic context for testing"""
-    return SingleTurnAttackContext(
-        objective="Test objective", conversation_id=str(uuid.uuid4()), max_attempts_on_failure=2
-    )
+    return SingleTurnAttackContext(objective="Test objective", conversation_id=str(uuid.uuid4()))
 
 
 @pytest.fixture
@@ -686,21 +684,19 @@ class TestExecuteMultiObjectiveAttackAsync:
             assert call.kwargs["memory_labels"] == memory_labels
 
     @pytest.mark.asyncio
-    async def test_execute_with_runtime_config(self, mock_attack_strategy):
-        from pyrit.attacks.base.attack_config import AttackRuntimeConfig
-
+    async def test_execute_with_attack_params(self, mock_attack_strategy):
         executor = AttackExecutor(max_concurrency=3)
-        runtime_config = AttackRuntimeConfig(max_turns=5)
 
         objectives = ["Obj1", "Obj2", "Obj3"]
 
         mock_attack_strategy.execute_async.return_value = MagicMock()
 
         await executor.execute_multi_objective_attack_async(
-            attack=mock_attack_strategy, objectives=objectives, runtime_config=runtime_config, custom_param="test_value"
+            attack=mock_attack_strategy,
+            objectives=objectives,
+            custom_param="test_value",
         )
 
-        # Verify all calls included the runtime config and custom param
+        # Verify all calls included the custom params
         for call in mock_attack_strategy.execute_async.call_args_list:
-            assert call.kwargs["runtime_config"] == runtime_config
             assert call.kwargs["custom_param"] == "test_value"

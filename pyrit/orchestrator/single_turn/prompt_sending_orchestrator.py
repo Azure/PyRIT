@@ -109,6 +109,7 @@ class PromptSendingOrchestrator(Orchestrator):
                 auxiliary_scorers=self._auxiliary_scorers,
             ),
             prompt_normalizer=self._prompt_normalizer,
+            max_attempts_on_failure=self._retries_on_objective_failure,
         )
 
     def set_skip_criteria(
@@ -145,7 +146,6 @@ class PromptSendingOrchestrator(Orchestrator):
             objective=objective,
             seed_prompt_group=seed_prompt,
             prepended_conversation=prepended_conversation or [],
-            max_attempts_on_failure=self._retries_on_objective_failure,
             memory_labels=memory_labels or {},
         )
 

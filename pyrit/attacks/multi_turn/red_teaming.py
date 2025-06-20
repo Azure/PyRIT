@@ -6,12 +6,11 @@ from __future__ import annotations
 import enum
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Optional, Union
 
 from pyrit.attacks.base.attack_config import (
     AttackAdversarialConfig,
     AttackConverterConfig,
-    AttackRuntimeConfig,
     AttackScoringConfig,
 )
 from pyrit.attacks.base.attack_context import (
@@ -85,6 +84,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         attack_converter_config: Optional[AttackConverterConfig] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
+        max_turns: int = 10,
     ):
         """
         Initialize the red teaming attack strategy.
@@ -95,12 +95,13 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             attack_converter_config: Configuration for attack converters. Defaults to None.
             attack_scoring_config: Configuration for attack scoring. Defaults to None.
             prompt_normalizer: The prompt normalizer to use for sending prompts. Defaults to None.
+            max_turns: Maximum number of turns for the attack. Defaults to 10.
 
         Raises:
             ValueError: If objective_scorer is not provided in attack_scoring_config.
         """
         # Initialize base class
-        super().__init__(logger=logger)
+        super().__init__(logger=logger, context_type=MultiTurnAttackContext)
 
         # Store the objective target
         self._objective_target = objective_target
@@ -136,6 +137,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
 
         # Initialize utilities
         self._prompt_normalizer = prompt_normalizer or PromptNormalizer()
+
         self._conversation_manager = ConversationManager(attack_identifier=self.get_identifier())
         self._score_evaluator = ObjectiveEvaluator(
             use_score_as_feedback=self._use_score_as_feedback,
@@ -143,54 +145,11 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             successful_objective_threshold=self._successful_objective_threshold,
         )
 
-    def _create_context_from_params(
-        self,
-        *,
-        objective: str,
-        prepended_conversation: List[PromptRequestResponse],
-        memory_labels: Dict[str, str],
-        runtime_config: AttackRuntimeConfig,
-        **attack_params,
-    ) -> MultiTurnAttackContext:
-        """
-        Create a MultiTurnAttackContext from the given parameters.
+        # set the maximum number of turns for the attack
+        if max_turns <= 0:
+            raise ValueError("Maximum turns must be a positive integer.")
 
-        Args:
-            objective (str): The objective of the attack.
-            prepended_conversation (List[PromptRequestResponse]): Conversation to prepend to the objective target model
-            memory_labels (Dict[str, str]): Additional labels that can be applied to the prompts throughout the attack
-            runtime_config (AttackRuntimeConfig): Runtime configuration for the attack
-            **attack_params: Additional parameters specific to the attack.
-
-        Returns:
-            MultiTurnAttackContext: An instance of the context for multi-turn attacks.
-
-        Raises:
-            ValueError: If custom_prompt is provided but is not a string.
-        """
-        custom_prompt = attack_params.get("custom_prompt", None)
-
-        # Validate custom_prompt if provided
-        if custom_prompt is not None and not isinstance(custom_prompt, str):
-            raise ValueError(f"custom_prompt must be a string, got {type(custom_prompt).__name__}")
-
-        # Create context with only the parameters we need to override
-        # This allows the dataclass defaults to be used for unspecified values
-        context_kwargs: Dict[str, Any] = {
-            "objective": objective,
-            "prepended_conversation": prepended_conversation,
-            "memory_labels": memory_labels,
-        }
-
-        # Only set max_turns if explicitly provided in runtime_config
-        if runtime_config.max_turns is not None:
-            context_kwargs["max_turns"] = runtime_config.max_turns
-
-        # Only set custom_prompt if provided
-        if custom_prompt is not None:
-            context_kwargs["custom_prompt"] = custom_prompt
-
-        return MultiTurnAttackContext(**context_kwargs)
+        self._max_turns = max_turns
 
     def _validate_context(self, *, context: MultiTurnAttackContext) -> None:
         """
@@ -205,8 +164,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         validators = [
             # conditions that must be met for the attack to proceed
             (lambda: bool(context.objective), "Attack objective must be provided"),
-            (lambda: context.max_turns > 0, "Max turns must be positive"),
-            (lambda: context.executed_turns < context.max_turns, "Already exceeded max turns"),
+            (lambda: context.executed_turns < self._max_turns, "Already exceeded max turns"),
         ]
 
         for validator, error_msg in validators:
@@ -238,7 +196,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         # Update the conversation state with the current context
         conversation_state: ConversationState = await self._conversation_manager.update_conversation_state_async(
             target=self._objective_target,
-            max_turns=context.max_turns,
+            max_turns=self._max_turns,
             conversation_id=context.session.conversation_id,
             prepended_conversation=context.prepended_conversation,
             converter_configurations=self._request_converters,
@@ -285,7 +243,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
 
         # Log the attack configuration
         logger.info(f"Starting red teaming attack with objective: {context.objective}")
-        logger.info(f"Max turns: {context.max_turns}")
+        logger.info(f"Max turns: {self._max_turns}")
 
         # Attack Execution Steps:
         # 1) Generate adversarial prompt based on previous feedback or custom prompt
@@ -298,8 +256,8 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         achieved_objective = False
 
         # Execute conversation turns
-        while context.executed_turns < context.max_turns and not achieved_objective:
-            logger.info(f"Executing turn {context.executed_turns + 1}/{context.max_turns}")
+        while context.executed_turns < self._max_turns and not achieved_objective:
+            logger.info(f"Executing turn {context.executed_turns + 1}/{self._max_turns}")
 
             # Determine what to send next
             prompt_to_send = await self._generate_next_prompt_async(context=context)

@@ -3,11 +3,10 @@
 
 import logging
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 from pyrit.attacks.base.attack_config import (
     AttackConverterConfig,
-    AttackRuntimeConfig,
     AttackScoringConfig,
 )
 from pyrit.attacks.base.attack_context import SingleTurnAttackContext
@@ -54,6 +53,7 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
         attack_converter_config: Optional[AttackConverterConfig] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
+        max_attempts_on_failure: int = 0,
     ) -> None:
         """
         Initialize the prompt injection attack strategy.
@@ -63,12 +63,13 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
             attack_converter_config (Optional[AttackConverterConfig]): Configuration for prompt converters.
             attack_scoring_config (Optional[AttackScoringConfig]): Configuration for scoring components.
             prompt_normalizer (Optional[PromptNormalizer]): Normalizer for handling prompts.
+            max_attempts_on_failure (int): Maximum number of attempts to retry on failure.
 
         Raises:
             ValueError: If the objective scorer is not a true/false scorer.
         """
         # Initialize base class
-        super().__init__(logger=logger)
+        super().__init__(logger=logger, context_type=SingleTurnAttackContext)
 
         # Store the objective target
         self._objective_target = objective_target
@@ -96,61 +97,11 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
             prompt_normalizer=self._prompt_normalizer,
         )
 
-    def _create_context_from_params(
-        self,
-        *,
-        objective: str,
-        prepended_conversation: List[PromptRequestResponse],
-        memory_labels: Dict[str, str],
-        runtime_config: AttackRuntimeConfig,
-        **attack_params,
-    ) -> SingleTurnAttackContext:
-        """
-        Create a SingleTurnAttackContext from parameters.
+        # Set the maximum attempts on failure
+        if max_attempts_on_failure < 0:
+            raise ValueError("max_attempts_on_failure must be a non-negative integer")
 
-        Args:
-            objective (str): The objective of the attack.
-            prepended_conversation (List[PromptRequestResponse]): Conversation to prepend to the target model
-            memory_labels (Dict[str, str]): Additional labels that can be applied to the prompts throughout the attack
-            runtime_config (AttackRuntimeConfig): Runtime configuration for the attack
-            **attack_params: Additional parameters specific to the attack.
-
-        Returns:
-            SingleTurnAttackContext: An instance of the context for single-turn attacks.
-
-        Raises:
-            ValueError: If system_prompt is provided but is not a string.
-        """
-        seed_prompt_group = attack_params.get("seed_prompt_group", None)
-        system_prompt = attack_params.get("system_prompt", None)
-
-        # Validate attack-specific parameter types if provided
-        if seed_prompt_group is not None and not isinstance(seed_prompt_group, SeedPromptGroup):
-            raise ValueError(f"seed_prompt_group must be a SeedPromptGroup, got {type(seed_prompt_group).__name__}")
-
-        if system_prompt is not None and not isinstance(system_prompt, str):
-            raise ValueError(f"system_prompt must be a string, got {type(system_prompt).__name__}")
-
-        # Create context with only the parameters we need to override
-        # This allows the dataclass defaults to be used for unspecified values
-        context_kwargs: Dict[str, Any] = {
-            "objective": objective,
-            "prepended_conversation": prepended_conversation,
-            "memory_labels": memory_labels,
-        }
-
-        # Only set max_attempts_on_failure if explicitly provided
-        if runtime_config.max_attempts_on_failure is not None:
-            context_kwargs["max_attempts_on_failure"] = runtime_config.max_attempts_on_failure
-
-        # Only set optional parameters if provided
-        if seed_prompt_group is not None:
-            context_kwargs["seed_prompt_group"] = seed_prompt_group
-
-        if system_prompt is not None:
-            context_kwargs["system_prompt"] = system_prompt
-
-        return SingleTurnAttackContext(**context_kwargs)
+        self._max_attempts_on_failure = max_attempts_on_failure
 
     def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
         """
@@ -200,7 +151,7 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
         """
         # Log the attack configuration
         self._logger.info(f"Starting prompt injection attack with objective: {context.objective}")
-        self._logger.info(f"Max attempts: {context.max_attempts_on_failure}")
+        self._logger.info(f"Max attempts: {self._max_attempts_on_failure}")
 
         # Execute with retries
         response = None
@@ -219,8 +170,8 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
         prompt_group = self._get_prompt_group(context)
 
         # Execute with retries
-        for attempt in range(context.max_attempts_on_failure + 1):
-            self._logger.debug(f"Attempt {attempt+1}/{context.max_attempts_on_failure + 1}")
+        for attempt in range(self._max_attempts_on_failure + 1):
+            self._logger.debug(f"Attempt {attempt+1}/{self._max_attempts_on_failure + 1}")
 
             # Send the prompt
             response = await self._send_prompt_to_objective_target_async(prompt_group=prompt_group, context=context)
@@ -281,7 +232,7 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
             # We got response(s) but none achieved the objective
             return (
                 AttackOutcome.FAILURE,
-                f"Failed to achieve objective after {context.max_attempts_on_failure + 1} attempts",
+                f"Failed to achieve objective after {self._max_attempts_on_failure + 1} attempts",
             )
 
         # No response at all (all attempts filtered/failed)
@@ -364,5 +315,4 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
         if not objective_scores:
             return None
 
-        return objective_scores[0]
         return objective_scores[0]

@@ -81,23 +81,3 @@ class AttackConverterConfig:
 
     # List of converter configurations to apply to target responses
     response_converters: List[PromptConverterConfiguration] = field(default_factory=list)
-
-
-@dataclass
-class AttackRuntimeConfig:
-    """
-    Runtime configuration for attacks, defining execution limits and constraints.
-    This class specifies various limits such as maximum attempts, turns, and backtracks
-    that can be used to control the execution of the attack.
-    """
-
-    # Single-turn attacks only:
-    # Maximum number of attempts to retry the attack in case of failure
-    max_attempts_on_failure: Optional[int] = None
-
-    # Multi-turn attacks only:
-    # Maximum number of turns the attack will run before stopping
-    max_turns: Optional[int] = None
-
-    # Maximum number of backtracks allowed during the attack
-    max_backtracks: Optional[int] = None
