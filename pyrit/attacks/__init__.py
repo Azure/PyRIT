@@ -15,6 +15,7 @@ from pyrit.attacks.base.attack_result import AttackResult, ResultT, AttackOutcom
 from pyrit.attacks.base.attack_strategy import AttackStrategy, AttackStrategyLogAdapter
 from pyrit.attacks.multi_turn.red_teaming import RedTeamingAttack, RTOSystemPromptPaths
 from pyrit.attacks.single_turn.prompt_sending import PromptSendingAttack
+from pyrit.attacks.single_turn.role_play import RolePlayAttack
 
 
 __all__ = [
@@ -33,6 +34,7 @@ __all__ = [
     "AttackStrategy",
     "AttackStrategyLogAdapter",
     "RedTeamingAttack",
+    "RolePlayAttack",
     "RTOSystemPromptPaths",
     "PromptSendingAttack",
 ]
