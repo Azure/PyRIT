@@ -320,7 +320,6 @@ class SeedPromptEntry(Base):
     prompt_group_sequence: Mapped[Optional[int]] = mapped_column(INTEGER, nullable=True)
     sequence: Mapped[Optional[int]] = mapped_column(INTEGER, nullable=True)
 
-
     def __init__(self, *, entry: SeedPrompt):
         self.id = entry.id
         self.value = entry.value

@@ -50,8 +50,8 @@ class PartialUndefined(Undefined):
 @dataclass
 class SeedPrompt(YamlLoadable):
     """Represents a seed prompt with various attributes and metadata."""
-    
-    """    
+
+    """
     value (str): The actual content of the prompt.
     role (ChatMessageRole): The role of the message (default is "user").
     value_sha256 (Optional[str]): SHA256 hash of the value, can be set asynchronously.
@@ -71,12 +71,12 @@ class SeedPrompt(YamlLoadable):
     prompt_group_id (Optional[uuid.UUID]): UUID for grouping related prompts together.
     prompt_group_sequence (Optional[int]): Integer for ordering within a prompt group (default 0).
     sequence (Optional[int]): Integer for ordering within the conversation. Can be the same number for multi-part requests (indicating a shared group).
-    
+
     TEMPLATE_PATHS (Dict): Dictionary mapping path names to actual filesystem paths for template rendering.
     """
 
     value: str
-    role: ChatMessageRole = "user" # Default role is 'user'
+    role: ChatMessageRole = "user"  # Default role is 'user'
     value_sha256: Optional[str] = None
     data_type: Optional[PromptDataType] = None
     id: Optional[uuid.UUID] = field(default_factory=lambda: uuid.uuid4())
@@ -305,7 +305,7 @@ class SeedPromptGroup(YamlLoadable):
         roles = {prompt.role for prompt in self.prompts}
         if len(roles) > 1:
             raise ValueError("Inconsistent roles found across prompts in the group.")
-    
+
     def _enforce_and_set_consistent_sequence(self):
         """
         Ensures that all prompts in the group have the same sequence.

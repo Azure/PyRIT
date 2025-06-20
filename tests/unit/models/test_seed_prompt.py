@@ -43,8 +43,10 @@ def test_seed_prompt_initialization(seed_prompt_fixture):
     assert seed_prompt_fixture.data_type == "text"
     assert seed_prompt_fixture.parameters == ["param1"]
 
+
 def test_seed_prompt_default_role(seed_prompt_fixture):
     assert seed_prompt_fixture.role == "user"
+
 
 def test_seed_prompt_render_template_success(seed_prompt_fixture):
     seed_prompt_fixture.value = "Test prompt with param1={{ param1 }}"
@@ -106,20 +108,27 @@ def test_seed_prompt_group_sequence_default():
     seed_prompt_group = SeedPromptGroup(prompts=[prompt])
     assert seed_prompt_group.prompts[0].prompt_group_sequence == 0
 
+
 def test_seed_prompt_group_sequence():
     prompt = SeedPrompt(value="Test prompt", data_type="text", sequence=2)
     seed_prompt_group = SeedPromptGroup(prompts=[prompt])
     assert seed_prompt_group.sequence == 2
+
 
 def test_seed_prompt_sequence_default():
     prompt = SeedPrompt(value="Test prompt", data_type="text")
     seed_prompt_group = SeedPromptGroup(prompts=[prompt])
     assert seed_prompt_group.sequence == -1
 
+
 def test_group_seed_prompts_by_prompt_group_id(seed_prompt_fixture):
     # Grouping two prompts
     prompt_2 = SeedPrompt(
-        value="Another prompt", data_type="text", prompt_group_id=seed_prompt_fixture.prompt_group_id, sequence=1, prompt_group_sequence=2
+        value="Another prompt",
+        data_type="text",
+        prompt_group_id=seed_prompt_fixture.prompt_group_id,
+        sequence=1,
+        prompt_group_sequence=2,
     )
 
     groups = SeedPromptDataset.group_seed_prompts_by_prompt_group_id([seed_prompt_fixture, prompt_2])
@@ -249,6 +258,7 @@ def test_group_id_set_unequally_raises():
 
     assert "Inconsistent group IDs found across prompts" in str(exc_info.value)
 
+
 def test_role_set_unequally_raises():
     with pytest.raises(ValueError) as exc_info:
         SeedPromptGroup(
@@ -260,6 +270,7 @@ def test_role_set_unequally_raises():
 
     assert "Inconsistent roles found across prompts" in str(exc_info.value)
 
+
 def test_sequence_set_unequally_raises():
     with pytest.raises(ValueError) as exc_info:
         SeedPromptGroup(
@@ -270,6 +281,7 @@ def test_sequence_set_unequally_raises():
         )
 
     assert "Inconsistent sequence found across prompts in the group" in str(exc_info.value)
+
 
 @pytest.mark.asyncio
 async def test_hashes_generated():
