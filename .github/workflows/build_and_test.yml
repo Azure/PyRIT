@@ -29,7 +29,10 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     env:
-      PIP_CACHE_DIR: ${{ github.workspace }}/.cache/pip
+      # Single cache path used by both the cache action and pip
+      PIP_CACHE: ${{ github.workspace }}/.cache/pip
+      PIP_DISABLE_PIP_VERSION_CHECK: 1
+      PYTHONHASHSEED: 0
 
     steps:
       - uses: actions/checkout@v3
@@ -41,7 +44,7 @@ jobs:
       - name: Cache pip packages
         uses: actions/cache@v3
         with:
-          path: ${{ env.PIP_CACHE_DIR }}
+          path: ${{ env.PIP_CACHE }}
           key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-pip-${{ matrix.python-version }}-
@@ -56,11 +59,11 @@ jobs:
             pre-commit-${{ runner.os }}-
 
       - name: Upgrade pip and setuptools
-        run: python -m pip install --upgrade pip setuptools packaging
+        run: python -m pip install --upgrade pip setuptools packaging wheel
 
       - name: Install dev extras
         run: |
-          python -m pip install --cache-dir "${{ env.PIP_CACHE_DIR }}" ".[dev,all]"
+          python -m pip install ".[dev,all]" --prefer-binary
 
       - name: Run pre-commit incrementally (on PR)
         if: github.event_name == 'pull_request'
@@ -84,7 +87,10 @@ jobs:
         package_extras: ["dev", "dev_all"]
     runs-on: ${{ matrix.os }}
     env:
-      PIP_CACHE_DIR: ${{ github.workspace }}/.cache/pip
+      # Single cache path used by both the cache action and pip
+      PIP_CACHE: ${{ github.workspace }}/.cache/pip
+      PIP_DISABLE_PIP_VERSION_CHECK: 1
+      PYTHONHASHSEED: 0
     # EnricoMi/publish-unit-test-result-action@v2 requires the following permissions
     permissions:
       contents: read
@@ -105,7 +111,7 @@ jobs:
       - name: Cache pip packages
         uses: actions/cache@v3
         with:
-          path: ${{ env.PIP_CACHE_DIR }}
+          path: ${{ env.PIP_CACHE }}
           key: ${{ runner.os }}-pip-${{ matrix.python }}-${{ matrix.package_extras }}-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-pip-${{ matrix.python }}-${{ matrix.package_extras }}-
@@ -113,7 +119,7 @@ jobs:
             ${{ runner.os }}-pip-
 
       - name: Install setuptools and pip
-        run: python -m pip install --upgrade pip setuptools packaging
+        run: python -m pip install --upgrade pip setuptools packaging wheel
 
       # Install PyRIT with optional extras
       - name: Install PyRIT with pip
@@ -127,7 +133,7 @@ jobs:
             extras="${{ matrix.package_extras }}"
           fi
 
-          python -m pip install --cache-dir "${{ env.PIP_CACHE_DIR }}" ".[${extras}]"
+          python -m pip install ".[${extras}]" --prefer-binary
 
       - name: Run unit tests with code coverage
         run: make unit-test-cov-xml
