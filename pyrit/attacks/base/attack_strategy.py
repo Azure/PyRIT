@@ -7,7 +7,7 @@ import time
 import uuid
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Dict, Generic, List, MutableMapping
+from typing import Any, AsyncIterator, Dict, Generic, List, MutableMapping, Optional
 
 from pyrit.attacks.base.attack_context import ContextT
 from pyrit.attacks.base.attack_result import AttackOutcome, ResultT
@@ -18,7 +18,7 @@ from pyrit.exceptions.exception_classes import (
     AttackValidationException,
 )
 from pyrit.memory.central_memory import CentralMemory
-from pyrit.models.identifiers import Identifier
+from pyrit.models import Identifier, PromptRequestResponse
 
 
 class AttackStrategyLogAdapter(logging.LoggerAdapter):
@@ -56,12 +56,14 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
     _teardown_async(): Clean up resources
     """
 
-    def __init__(self, *, logger: logging.Logger = logger):
+    def __init__(self, *, context_type: type[ContextT], logger: logging.Logger = logger):
         self._id = uuid.uuid4()
         self._memory = CentralMemory.get_memory_instance()
         self._memory_labels: Dict[str, str] = ast.literal_eval(
             default_values.get_non_required_value(env_var_name="GLOBAL_MEMORY_LABELS") or "{}"
         )
+
+        self._context_type = context_type
 
         self._logger = AttackStrategyLogAdapter(
             logger, {"strategy_name": self.__class__.__name__, "strategy_id": str(self._id)[:8]}
@@ -207,7 +209,7 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
             self._logger.debug(f"Tearing down attack strategy for objective: '{context.objective}'")
             await self._teardown_async(context=context)
 
-    async def execute_async(self, *, context: ContextT) -> ResultT:
+    async def execute_with_context_async(self, *, context: ContextT) -> ResultT:
         """
         Execute attack with complete lifecycle management.
 
@@ -276,3 +278,35 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
             )
             exec_error.process_exception()
             raise exec_error from e
+
+    async def execute_async(
+        self,
+        *,
+        objective: str,
+        prepended_conversation: Optional[List[PromptRequestResponse]] = None,
+        memory_labels: Optional[Dict[str, str]] = None,
+        **attack_params,
+    ) -> ResultT:
+        """
+        Execute the attack strategy asynchronously with provided parameters.
+        This method creates the context from the provided parameters and executes the attack.
+
+        Args:
+            objective (str): The objective of the attack.
+            prepended_conversation (Optional[List[PromptRequestResponse]]): Conversation to prepend to the target model.
+            memory_labels (Optional[Dict[str, str]]): Additional labels that can be applied to the prompts
+                                            throughout the attack.
+            **attack_params: Additional parameters specific to the attack strategy.
+
+        Returns:
+            ResultT: The result of the attack execution, including outcome and reason.
+        """
+
+        context = self._context_type.create_from_params(
+            objective=objective,
+            prepended_conversation=prepended_conversation or [],
+            memory_labels=memory_labels or {},
+            **attack_params,
+        )
+
+        return await self.execute_with_context_async(context=context)

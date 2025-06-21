@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import uuid
+from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, TypeVar, Union
@@ -16,7 +17,7 @@ ContextT = TypeVar("ContextT", bound="AttackContext")
 
 
 @dataclass
-class AttackContext:
+class AttackContext(ABC):
     """Base class for all attack contexts"""
 
     # Natural-language description of what the attack tries to achieve
@@ -25,8 +26,34 @@ class AttackContext:
     # Conversation that is automatically prepended to the target model
     prepended_conversation: List[PromptRequestResponse] = field(default_factory=list)
 
-    # Key–value pairs stored in the model's memory for this single request
+    # Additional labels that can be applied to the prompts throughout the attack
     memory_labels: Dict[str, str] = field(default_factory=dict)
+
+    @classmethod
+    @abstractmethod
+    def create_from_params(
+        cls: type[ContextT],
+        *,
+        objective: str,
+        prepended_conversation: List[PromptRequestResponse],
+        memory_labels: Dict[str, str],
+        **kwargs,
+    ) -> ContextT:
+        """
+        Factory method to create context from standard parameters.
+
+        All subclasses must implement this method to handle their specific fields.
+
+        Args:
+            objective: The objective of the attack.
+            prepended_conversation: Conversation to prepend to the target model.
+            memory_labels: Additional labels that can be applied to the prompts.
+            **kwargs: Additional parameters specific to the context type.
+
+        Returns:
+            An instance of the context type.
+        """
+        pass
 
     def duplicate(self: ContextT) -> ContextT:
         """
@@ -59,9 +86,6 @@ class MultiTurnAttackContext(AttackContext):
     # Counter of turns that have actually been executed so far
     executed_turns: int = 0
 
-    # Maximum number of turns the attack will run before stopping
-    max_turns: int = 10
-
     # Model response produced in the latest turn
     last_response: Optional[PromptRequestResponse] = None
 
@@ -71,6 +95,30 @@ class MultiTurnAttackContext(AttackContext):
     # Optional custom prompt that overrides the default one for the next turn
     custom_prompt: Optional[str] = None
 
+    @classmethod
+    def create_from_params(
+        cls,
+        *,
+        objective: str,
+        prepended_conversation: List[PromptRequestResponse],
+        memory_labels: Dict[str, str],
+        **kwargs,
+    ) -> "MultiTurnAttackContext":
+        """Create MultiTurnAttackContext from parameters."""
+
+        custom_prompt = kwargs.get("custom_prompt")
+
+        # Validate custom_prompt if provided
+        if custom_prompt is not None and not isinstance(custom_prompt, str):
+            raise ValueError(f"custom_prompt must be a string, got {type(custom_prompt).__name__}")
+
+        return cls(
+            objective=objective,
+            prepended_conversation=prepended_conversation,
+            memory_labels=memory_labels,
+            custom_prompt=custom_prompt,
+        )
+
 
 @dataclass
 class SingleTurnAttackContext(AttackContext):
@@ -78,10 +126,6 @@ class SingleTurnAttackContext(AttackContext):
 
     # Unique identifier of the main conversation between the attacker and model
     conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-
-    # Maximum number of attempts to retry the attack in case of failure
-    # (e.g., if the target model refuses to respond)
-    max_attempts_on_failure: int = 0
 
     # Group of seed prompts from which single-turn prompts will be drawn
     seed_prompt_group: Optional[SeedPromptGroup] = None
@@ -91,3 +135,31 @@ class SingleTurnAttackContext(AttackContext):
 
     # Arbitrary metadata that downstream orchestrators or scorers may attach
     metadata: Optional[dict[str, Union[str, int]]] = None
+
+    @classmethod
+    def create_from_params(
+        cls,
+        *,
+        objective: str,
+        prepended_conversation: List[PromptRequestResponse],
+        memory_labels: Dict[str, str],
+        **kwargs,
+    ) -> "SingleTurnAttackContext":
+        """Create SingleTurnAttackContext from parameters."""
+
+        # Extract and validate optional parameters
+        seed_prompt_group = kwargs.get("seed_prompt_group")
+        if seed_prompt_group is not None and not isinstance(seed_prompt_group, SeedPromptGroup):
+            raise ValueError(f"seed_prompt_group must be a SeedPromptGroup, got {type(seed_prompt_group).__name__}")
+
+        system_prompt = kwargs.get("system_prompt")
+        if system_prompt is not None and not isinstance(system_prompt, str):
+            raise ValueError(f"system_prompt must be a string, got {type(system_prompt).__name__}")
+
+        return cls(
+            objective=objective,
+            prepended_conversation=prepended_conversation,
+            memory_labels=memory_labels,
+            seed_prompt_group=seed_prompt_group,
+            system_prompt=system_prompt,
+        )
