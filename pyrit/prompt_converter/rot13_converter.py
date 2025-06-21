@@ -7,7 +7,9 @@ from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 
 
 class ROT13Converter(WordLevelConverter):
-    """Simple converter that just ROT13 encodes the prompt"""
+    """
+    Encodes prompts using the ROT13 cipher.
+    """
 
     async def convert_word_async(self, word: str) -> str:
         return codecs.encode(word, "rot13")

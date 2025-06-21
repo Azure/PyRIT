@@ -16,22 +16,17 @@ logger = logging.getLogger(__name__)
 
 class AzureSpeechTextToAudioConverter(PromptConverter):
     """
-    The AzureSpeechTextToAudio takes a prompt and generates a wave file.
+    Generates a wave file from a text prompt using Azure AI Speech service.
+
     https://learn.microsoft.com/en-us/azure/ai-services/speech-service/text-to-speech
-    Args:
-        azure_speech_region (str, Optional): The name of the Azure region.
-        azure_speech_key (str, Optional): The API key for accessing the service.
-        synthesis_language (str): Synthesis voice language
-        synthesis_voice_name (str): Synthesis voice name, see URL
-        For more details see the following link for synthesis language and synthesis voice:
-        https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support
-        filename (str): File name to be generated.  Please include either .wav or .mp3
-        output_format (str): Either wav or mp3. Must match the file prefix.
     """
 
+    #: The name of the Azure region.
     AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_REGION"
+    #: The API key for accessing the service.
     AZURE_SPEECH_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_KEY"
 
+    #: Supported audio formats for output.
     AzureSpeachAudioFormat = Literal["wav", "mp3"]
 
     def __init__(
@@ -42,6 +37,19 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         synthesis_voice_name: str = "en-US-AvaNeural",
         output_format: AzureSpeachAudioFormat = "wav",
     ) -> None:
+        """
+        Initializes the converter with Azure Speech service credentials, synthesis language, and voice name.
+
+        Args:
+            azure_speech_region (str, Optional): The name of the Azure region.
+            azure_speech_key (str, Optional): The API key for accessing the service.
+            synthesis_language (str): Synthesis voice language.
+            synthesis_voice_name (str): Synthesis voice name, see URL.
+                For more details see the following link for synthesis language and synthesis voice:
+                https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support
+            filename (str): File name to be generated. Please include either .wav or .mp3.
+            output_format (str): Either wav or mp3. Must match the file prefix.
+        """
         self._azure_speech_region: str = default_values.get_required_value(
             env_var_name=self.AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE, passed_value=azure_speech_region
         )
@@ -61,6 +69,21 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         return output_type == "audio_path"
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        """
+        Converts the given text prompt into its audio representation.
+
+        Args:
+            prompt (str): The text prompt to be converted into audio.
+            input_type (PromptDataType): The type of input data.
+
+        Returns:
+            ConverterResult: The result containing the audio file path.
+
+        Raises:
+            ModuleNotFoundError: If the ``azure.cognitiveservices.speech`` module is not installed.
+            RuntimeError: If there is an error during the speech synthesis process.
+            ValueError: If the input type is not supported or if the prompt is empty.
+        """
         try:
             import azure.cognitiveservices.speech as speechsdk  # noqa: F811
         except ModuleNotFoundError as e:

@@ -29,7 +29,8 @@ class WordLevelConverter(PromptConverter):
         regex: Optional[Union[str, re.Pattern]] = None,
     ):
         """
-        Initialize the converter.
+        Initializes the converter with the specified selection parameters.
+
         This class allows for selection of words to convert based on various criteria.
         Only one selection parameter may be provided at a time (indices, keywords, proportion, or regex).
         If no selection parameter is provided, all words will be converted.
@@ -58,7 +59,7 @@ class WordLevelConverter(PromptConverter):
         self._regex = regex or ".*"
 
     def _select_word_indices(self, words: List[str]) -> List[int]:
-        """Return indices of words to be converted based on the selection criteria."""
+        """Returns indices of words to be converted based on the selection criteria."""
         if not words:
             return []
 
@@ -85,17 +86,40 @@ class WordLevelConverter(PromptConverter):
 
     @abc.abstractmethod
     async def convert_word_async(self, word: str) -> str:
+        """
+        Converts a single word into the target format supported by the converter.
+
+        Args:
+            word (str): The word to be converted.
+
+        Returns:
+            str: The converted word.
+        """
         pass
 
     def validate_input(self, prompt: str) -> None:
-        """Validate the input before processing (can be overridden by subclasses)"""
+        """Validates the input before processing (can be overridden by subclasses)."""
         pass
 
     def join_words(self, words: list[str]) -> str:
-        """Provide a way for subclasses to override the default behavior of joining words."""
+        """Provides a way for subclasses to override the default behavior of joining words."""
         return " ".join(words)
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        """
+        Converts the given prompt into the target format supported by the converter.
+
+        Args:
+            prompt (str): The prompt to be converted.
+            input_type (PromptDataType): The type of input data.
+
+        Returns:
+            ConverterResult: The result containing the converted output and its type.
+
+        Raises:
+            TypeError: If the prompt is None.
+            ValueError: If the input type is not supported.
+        """
         if prompt is None:
             raise TypeError("Prompt cannot be None")
 

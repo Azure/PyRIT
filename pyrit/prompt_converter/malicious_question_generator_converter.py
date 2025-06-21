@@ -14,7 +14,9 @@ logger = logging.getLogger(__name__)
 
 class MaliciousQuestionGeneratorConverter(LLMGenericTextConverter):
     """
-    A PromptConverter that generates malicious questions using an LLM via an existing PromptTarget (like Azure OpenAI).
+    Generates malicious questions using an LLM.
+
+    An existing ``PromptChatTarget`` is used to perform the conversion (like Azure OpenAI).
     """
 
     def __init__(self, *, converter_target: PromptChatTarget, prompt_template: SeedPrompt = None):

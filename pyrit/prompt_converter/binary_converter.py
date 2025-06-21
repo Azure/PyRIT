@@ -11,12 +11,16 @@ from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 
 
 class BinaryConverter(WordLevelConverter):
-    """Transforms input text into its binary representation with configurable bits per character (8, 16, or 32)"""
+    """
+    Transforms input text into its binary representation with configurable bits per character (8, 16, or 32).
+    """
 
     class BitsPerChar(Enum):
-        BITS_8 = 8
-        BITS_16 = 16
-        BITS_32 = 32
+        """The number of bits per character for binary conversion."""
+
+        BITS_8 = 8  #: 8 bits per character, suitable for ASCII characters.
+        BITS_16 = 16  #: 16 bits per character, suitable for Unicode characters.
+        BITS_32 = 32  #: 32 bits per character, suitable for extended Unicode characters.
 
     def __init__(
         self,
@@ -28,7 +32,8 @@ class BinaryConverter(WordLevelConverter):
         regex: Optional[Union[str, re.Pattern]] = None,
     ):
         """
-        Initialize the converter.
+        Initializes the converter with the specified bits per character and selection parameters.
+
         This class allows for selection of words to convert based on various criteria.
         Only one selection parameter may be provided at a time (indices, keywords, proportion, or regex).
         If no selection parameter is provided, all words will be converted.
@@ -48,7 +53,7 @@ class BinaryConverter(WordLevelConverter):
         self.bits_per_char = bits_per_char
 
     def validate_input(self, prompt):
-        # Check if bits_per_char is sufficient for the characters in the prompt
+        """Checks if ``bits_per_char`` is sufficient for the characters in the prompt."""
         bits = self.bits_per_char.value
         max_code_point = max((ord(char) for char in prompt), default=0)
         min_bits_required = max_code_point.bit_length()
@@ -59,11 +64,11 @@ class BinaryConverter(WordLevelConverter):
             )
 
     async def convert_word_async(self, word: str) -> str:
+        """Converts each character in the word to its binary representation."""
         bits = self.bits_per_char.value
-        # Convert each character in the word to its binary representation
         return " ".join(format(ord(char), f"0{bits}b") for char in word)
 
     def join_words(self, words: list[str]) -> str:
-        """Join the converted words with the binary representation of a space."""
+        """Joins the converted words with the binary representation of a space."""
         space_binary = format(ord(" "), f"0{self.bits_per_char.value}b")
         return f" {space_binary} ".join(words)

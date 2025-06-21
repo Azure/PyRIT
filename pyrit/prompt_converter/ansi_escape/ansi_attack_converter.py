@@ -20,10 +20,12 @@ logger = logging.getLogger(__name__)
 
 class AnsiAttackConverter(PromptConverter):
     """
-    A single converter that can:
-    - Use raw and escaped ANSI payloads.
-    - Ask the model about ANSI codes, repeat given payloads, unescape strings.
-    - Incorporate the user's original prompt into the final scenario, making the testing more dynamic.
+    Generates prompts with ANSI codes to evaluate LLM behavior and system risks.
+
+    This converter can:
+        - Use raw and escaped ANSI payloads.
+        - Ask the model about ANSI codes, repeat given payloads, unescape strings.
+        - Incorporate the user's original prompt into the final scenario, making the testing more dynamic.
     """
 
     def __init__(
@@ -36,6 +38,8 @@ class AnsiAttackConverter(PromptConverter):
         incorporate_user_prompt: bool = True,
     ):
         """
+        Initializes the converter with various options to control the scenarios generated.
+
         Args:
             include_raw (bool): Include scenarios with raw ANSI codes.
             include_escaped (bool): Include scenarios with escaped ANSI codes.
@@ -58,6 +62,7 @@ class AnsiAttackConverter(PromptConverter):
         return output_type == "text"
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        """Converts the given prompt into an ANSI attack scenario."""
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 

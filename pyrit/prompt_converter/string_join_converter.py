@@ -8,7 +8,9 @@ from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 
 
 class StringJoinConverter(WordLevelConverter):
-    """Converts text by joining its characters with the specified join value"""
+    """
+    Converts text by joining its characters with the specified join value.
+    """
 
     def __init__(
         self,
@@ -20,7 +22,8 @@ class StringJoinConverter(WordLevelConverter):
         regex: Optional[Union[str, re.Pattern]] = None,
     ):
         """
-        Initialize the converter.
+        Initializes the converter with the specified join value and selection parameters.
+
         This class allows for selection of words to convert based on various criteria.
         Only one selection parameter may be provided at a time (indices, keywords, proportion, or regex).
         If no selection parameter is provided, all words will be converted.

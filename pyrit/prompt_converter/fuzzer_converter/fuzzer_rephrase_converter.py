@@ -12,6 +12,10 @@ from pyrit.prompt_target import PromptChatTarget
 
 
 class FuzzerRephraseConverter(FuzzerConverter):
+    """
+    Generates versions of a prompt with rephrased sentences.
+    """
+
     def __init__(self, *, converter_target: PromptChatTarget, prompt_template: SeedPrompt = None):
         prompt_template = (
             prompt_template

@@ -16,7 +16,9 @@ logger = logging.getLogger(__name__)
 
 
 class ZalgoConverter(WordLevelConverter):
-    """Converts text into cursed Zalgo text using combining Unicode marks."""
+    """
+    Converts text into cursed Zalgo text using combining Unicode marks.
+    """
 
     def __init__(
         self,
@@ -29,7 +31,8 @@ class ZalgoConverter(WordLevelConverter):
         regex: Optional[Union[str, re.Pattern]] = None,
     ):
         """
-        Initialize the converter.
+        Initializes the converter with the specified selection parameters.
+
         This class allows for selection of words to convert based on various criteria.
         Only one selection parameter may be provided at a time (indices, keywords, proportion, or regex).
         If no selection parameter is provided, all words will be converted.

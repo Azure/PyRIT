@@ -14,8 +14,8 @@ class AsciiSmugglerConverter(SmugglerConverter):
     Implements encoding and decoding using Unicode Tags.
 
     If 'control' is True, the encoded output is wrapped with:
-      - U+E0001 (start control tag)
-      - U+E007F (end control tag)
+        - U+E0001 (start control tag)
+        - U+E007F (end control tag)
 
     Replicates the functionality detailed in the following blog post:
     https://embracethered.com/blog/posts/2024/hiding-and-finding-text-with-unicode-tags/
@@ -23,9 +23,10 @@ class AsciiSmugglerConverter(SmugglerConverter):
 
     def __init__(self, action: Literal["encode", "decode"] = "encode", unicode_tags: bool = False):
         """
-        Initialize the converter with options for encoding/decoding.
+        Initializes the converter with options for encoding/decoding.
 
         Args:
+            action (Literal["encode", "decode"]): The action to perform.
             unicode_tags (bool): Whether to add Unicode tags during encoding.
         """
         self.unicode_tags = unicode_tags
