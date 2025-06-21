@@ -115,6 +115,7 @@ API Reference
     fetch_adv_bench_dataset
     fetch_aya_redteaming_dataset
     fetch_babelscape_alert_dataset
+    fetch_ccp_sensitive_prompts_dataset
     fetch_darkbench_dataset
     fetch_decoding_trust_stereotypes_dataset
     fetch_examples
@@ -131,6 +132,7 @@ API Reference
     fetch_wmdp_dataset
     fetch_xstest_dataset
     fetch_equitymedqa_dataset_unique_values
+    fetch_ccp_sensitive_prompts_dataset
 
 
 :py:mod:`pyrit.embedding`
