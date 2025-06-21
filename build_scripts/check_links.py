@@ -50,6 +50,7 @@ def resolve_relative_url(base_path, url):
 
 
 def check_url(url, retries=2, delay=2):
+
     """
     Check the validity of a URL, with retries if it fails.
 
