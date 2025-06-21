@@ -5,7 +5,10 @@ import logging
 import uuid
 from typing import Optional
 
-from pyrit.attacks.base.attack_config import AttackConverterConfig, AttackScoringConfig
+from pyrit.attacks.base.attack_config import (
+    AttackConverterConfig,
+    AttackScoringConfig,
+)
 from pyrit.attacks.base.attack_context import SingleTurnAttackContext
 from pyrit.attacks.base.attack_result import AttackOutcome, AttackResult
 from pyrit.attacks.base.attack_strategy import AttackStrategy
@@ -17,7 +20,6 @@ from pyrit.models import (
     SeedPrompt,
     SeedPromptGroup,
 )
-from pyrit.models.literals import ChatMessageRole
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.score import Scorer
@@ -51,6 +53,7 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
         attack_converter_config: Optional[AttackConverterConfig] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
+        max_attempts_on_failure: int = 0,
     ) -> None:
         """
         Initialize the prompt injection attack strategy.
@@ -60,12 +63,13 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
             attack_converter_config (Optional[AttackConverterConfig]): Configuration for prompt converters.
             attack_scoring_config (Optional[AttackScoringConfig]): Configuration for scoring components.
             prompt_normalizer (Optional[PromptNormalizer]): Normalizer for handling prompts.
+            max_attempts_on_failure (int): Maximum number of attempts to retry on failure.
 
         Raises:
             ValueError: If the objective scorer is not a true/false scorer.
         """
         # Initialize base class
-        super().__init__(logger=logger)
+        super().__init__(logger=logger, context_type=SingleTurnAttackContext)
 
         # Store the objective target
         self._objective_target = objective_target
@@ -77,6 +81,10 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
 
         # Initialize scoring configuration
         attack_scoring_config = attack_scoring_config or AttackScoringConfig()
+
+        # Check for unused optional parameters and warn if they are set
+        self._warn_if_set(config=attack_scoring_config, unused_fields=["refusal_scorer"])
+
         self._auxiliary_scorers = attack_scoring_config.auxiliary_scorers
         self._objective_scorer = attack_scoring_config.objective_scorer
         if self._objective_scorer and self._objective_scorer.scorer_type != "true_false":
@@ -88,6 +96,12 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
             attack_identifier=self.get_identifier(),
             prompt_normalizer=self._prompt_normalizer,
         )
+
+        # Set the maximum attempts on failure
+        if max_attempts_on_failure < 0:
+            raise ValueError("max_attempts_on_failure must be a non-negative integer")
+
+        self._max_attempts_on_failure = max_attempts_on_failure
 
     def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
         """
@@ -137,7 +151,7 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
         """
         # Log the attack configuration
         self._logger.info(f"Starting prompt injection attack with objective: {context.objective}")
-        self._logger.info(f"Max attempts: {context.max_attempts_on_failure}")
+        self._logger.info(f"Max attempts: {self._max_attempts_on_failure}")
 
         # Execute with retries
         response = None
@@ -156,8 +170,8 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
         prompt_group = self._get_prompt_group(context)
 
         # Execute with retries
-        for attempt in range(context.max_attempts_on_failure + 1):
-            self._logger.debug(f"Attempt {attempt+1}/{context.max_attempts_on_failure + 1}")
+        for attempt in range(self._max_attempts_on_failure + 1):
+            self._logger.debug(f"Attempt {attempt+1}/{self._max_attempts_on_failure + 1}")
 
             # Send the prompt
             response = await self._send_prompt_to_objective_target_async(prompt_group=prompt_group, context=context)
@@ -218,7 +232,7 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
             # We got response(s) but none achieved the objective
             return (
                 AttackOutcome.FAILURE,
-                f"Failed to achieve objective after {context.max_attempts_on_failure + 1} attempts",
+                f"Failed to achieve objective after {self._max_attempts_on_failure + 1} attempts",
             )
 
         # No response at all (all attempts filtered/failed)
@@ -289,16 +303,16 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
                 no objective scorer is set. Note that auxiliary scorer results are not returned
                 but are still executed and stored.
         """
+        scoring_results = await Scorer.score_response_with_objective_async(
+            response=response,
+            auxiliary_scorers=self._auxiliary_scorers,
+            objective_scorers=[self._objective_scorer] if self._objective_scorer else None,
+            role_filter="assistant",
+            task=objective,
+        )
 
-        role: ChatMessageRole = "assistant"
+        objective_scores = scoring_results["objective_scores"]
+        if not objective_scores:
+            return None
 
-        # Run auxiliary scorers (no return value needed)
-        await Scorer.score_response_async(response=response, scorers=self._auxiliary_scorers, role_filter=role)
-
-        # Run objective scorer
-        if self._objective_scorer:
-            return await Scorer.score_response_select_first_success_async(
-                response=response, scorers=[self._objective_scorer], role_filter=role, task=objective
-            )
-
-        return None
+        return objective_scores[0]

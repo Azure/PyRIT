@@ -2,7 +2,11 @@
 # Licensed under the MIT license.
 
 from pathlib import Path
+<<<<<<< HEAD
 from typing import Literal, Optional
+=======
+from typing import Optional
+>>>>>>> main
 
 from pyrit.datasets.dataset_helper import FILE_TYPE_HANDLERS, fetch_examples
 from pyrit.models import SeedPromptDataset
@@ -11,9 +15,8 @@ from pyrit.models.seed_prompt import SeedPrompt
 
 def fetch_ccp_sensitive_prompts_dataset(
     source: str = (
-        "https://huggingface.co/datasets/" "promptfoo/CCP-sensitive-prompts/resolve/main/" "ccp-sensitive-prompts.csv"
+        "https://huggingface.co/datasets/promptfoo/CCP-sensitive-prompts/resolve/main/ccp-sensitive-prompts.csv"
     ),
-    source_type: Literal["public_url"] = "public_url",
     cache: bool = True,
     data_home: Optional[Path] = None,
 ) -> SeedPromptDataset:
@@ -22,7 +25,6 @@ def fetch_ccp_sensitive_prompts_dataset(
 
     Args:
         source (str): The URL of the CCP-sensitive-prompts CSV file.
-        source_type (Literal["public_url"]): The type of source ('public_url').
         cache (bool): Whether to cache the fetched file.
         data_home (Optional[Path]): Directory to store cached data. Defaults to None.
 
@@ -30,12 +32,10 @@ def fetch_ccp_sensitive_prompts_dataset(
         SeedPromptDataset: A dataset of CCP-sensitive prompts.
 
     .. note::
-        For more information, see
-        https://huggingface.co/datasets/promptfoo/CCP-sensitive-prompts
+        For more information, see https://huggingface.co/datasets/promptfoo/CCP-sensitive-prompts
 
         **Author**: promptfoo (Hugging Face user)
-        **Purpose**: Collection of prompts that cover sensitive topics
-         in China, and are likely to be censored by Chinese models.
+        **Purpose**: Collection of prompts that cover sensitive topics in China, and are likely to be censored by Chinese models.
     """
     file_type = source.split(".")[-1]
     if file_type not in FILE_TYPE_HANDLERS:
@@ -45,7 +45,7 @@ def fetch_ccp_sensitive_prompts_dataset(
     # Required keys
     required_keys = {"subject", "prompt"}
 
-    examples = fetch_examples(source, source_type, cache, data_home)
+    examples = fetch_examples(source, "public_url", cache, data_home)
     seed_prompts = []
     for ex in examples:
         missing = required_keys - ex.keys()
@@ -60,7 +60,7 @@ def fetch_ccp_sensitive_prompts_dataset(
                 name="CCP Sensitive Prompts",
                 dataset_name="CCP-sensitive-prompts",
                 harm_categories=[ex["subject"]],
-                description=("Prompts censored by Chinese models, covering " "topics sensitive to the CCP."),
+                description=("Prompts censored by Chinese models, covering topics sensitive to the CCP."),
             )
         )
 

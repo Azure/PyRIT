@@ -25,12 +25,16 @@ from pyrit.datasets.xstest_dataset import fetch_xstest_dataset
 from pyrit.datasets.fetch_equitymedqa_dataset import fetch_equitymedqa_dataset_unique_values
 from pyrit.datasets.text_jailbreak import TextJailBreak
 from pyrit.datasets.ccp_sensitive_prompts_dataset import fetch_ccp_sensitive_prompts_dataset
+<<<<<<< HEAD
 
+=======
+>>>>>>> main
 
 __all__ = [
     "fetch_adv_bench_dataset",
     "fetch_aya_redteaming_dataset",
     "fetch_babelscape_alert_dataset",
+    "fetch_ccp_sensitive_prompts_dataset",
     "fetch_darkbench_dataset",
     "fetch_multilingual_vulnerability_dataset",
     "fetch_decoding_trust_stereotypes_dataset",

@@ -44,6 +44,9 @@ class AttackScoringConfig:
     # Primary scorer for evaluating attack effectiveness
     objective_scorer: Optional[Scorer] = None
 
+    # Refusal scorer for detecting refusals or non-compliance
+    refusal_scorer: Optional[Scorer] = None
+
     # Additional scorers for auxiliary metrics or custom evaluations
     auxiliary_scorers: List[Scorer] = field(default_factory=list)
 

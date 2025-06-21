@@ -140,6 +140,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                 request_converters=PromptConverterConfiguration.from_converters(converters=prompt_converters or []),
             ),
             prompt_normalizer=self._prompt_normalizer,
+            max_turns=max_turns,
         )
 
     async def run_attack_async(
@@ -149,11 +150,10 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         # Transitions to the new attack model
         context = MultiTurnAttackContext(
             objective=objective,
-            max_turns=self._max_turns,
             memory_labels=memory_labels or {},
         )
 
-        result = await self._attack.execute_async(context=context)
+        result = await self._attack.execute_with_context_async(context=context)
         objective_achieved = result.outcome == AttackOutcome.SUCCESS
 
         # Translating the result back to the orchestrator result format
