@@ -293,7 +293,8 @@ class SeedPromptEntry(Base):
             Groups are used to organize prompts for multi-turn conversations or multi-modal prompts.
         prompt_group_sequence (int): The turn of the seed prompt in a group. When entire multi-turn conversations
             are stored, this is used to order the prompts.
-        sequence (int): The sequence of the seed prompt in a conversation; will be the same for SeedPrompts in the same SeedPromptGroup.
+        sequence (int): The sequence of the seed prompt in a conversation; will be the same for SeedPrompts in the
+            same SeedPromptGroup.
 
     Methods:
         __str__(): Returns a string representation of the memory entry.

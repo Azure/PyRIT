@@ -71,7 +71,8 @@ class SeedPrompt(YamlLoadable):
     parameters (Optional[Sequence[str]]): Parameters that can be used in template rendering.
     prompt_group_id (Optional[uuid.UUID]): UUID for grouping related prompts together.
     prompt_group_sequence (int): Integer for ordering within a prompt group (default 0).
-    sequence (Optional[int]): Integer for ordering within the conversation. Can be the same number for multi-part requests (indicating a shared group).
+    sequence (Optional[int]): Integer for ordering within the conversation. Can be the same number for multi-part
+        requests (indicating a shared group).
 
     TEMPLATE_PATHS (Dict): Dictionary mapping path names to actual filesystem paths for template rendering.
     """
