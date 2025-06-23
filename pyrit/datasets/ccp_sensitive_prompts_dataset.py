@@ -2,11 +2,7 @@
 # Licensed under the MIT license.
 
 from pathlib import Path
-<<<<<<< HEAD
-from typing import Literal, Optional
-=======
 from typing import Optional
->>>>>>> main
 
 from pyrit.datasets.dataset_helper import FILE_TYPE_HANDLERS, fetch_examples
 from pyrit.models import SeedPromptDataset
