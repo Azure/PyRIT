@@ -282,7 +282,8 @@ class SeedPromptGroup(YamlLoadable):
         # Check group sequence and sort the prompts in the same loop
         if len(self.prompts) >= 1:
             self.prompts = sorted(
-                self.prompts, key=lambda prompt: prompt.prompt_group_sequence if prompt.prompt_group_sequence is not None else 0
+                self.prompts,
+                key=lambda prompt: prompt.prompt_group_sequence if prompt.prompt_group_sequence is not None else 0,
             )
 
     def render_template_value(self, **kwargs):
