@@ -70,7 +70,7 @@ class RolePlayAttack(AttackStrategy[SingleTurnAttackContext, AttackResult]):
         max_attempts_on_failure: int = 0,
     ) -> None:
         """
-        Initialize the role-play attack strategy.
+        Initializes the role-play attack strategy.
 
         Args:
             objective_target (PromptTarget): The target system to attack.
