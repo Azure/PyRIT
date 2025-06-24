@@ -23,7 +23,7 @@ from pyrit.datasets.sosbench_dataset import fetch_sosbench_dataset
 from pyrit.datasets.tdc23_redteaming_dataset import fetch_tdc23_redteaming_dataset
 from pyrit.datasets.wmdp_dataset import fetch_wmdp_dataset
 from pyrit.datasets.xstest_dataset import fetch_xstest_dataset
-from pyrit.datasets.fetch_equitymedqa_dataset import fetch_equitymedqa_dataset_unique_values
+from pyrit.datasets.equitymedqa_dataset import fetch_equitymedqa_dataset_unique_values
 from pyrit.datasets.text_jailbreak import TextJailBreak
 
 __all__ = [
