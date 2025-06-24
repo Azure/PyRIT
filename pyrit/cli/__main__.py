@@ -50,6 +50,34 @@ def load_seed_prompt_groups(dataset_paths: List[str]) -> List[SeedPromptGroup]:
     return all_prompt_groups
 
 
+def _get_first_text_values_if_exist(prompt_groups: List[SeedPromptGroup]) -> List[str]:
+    """
+    Get the first text value from the seed prompts in each of the provided prompt groups.
+
+    If no text value exists, return the value of the first seed prompt.
+
+    Args:
+        prompt_groups (List[SeedPromptGroup]): List of SeedPromptGroup objects.
+            Assumed to contain at least one group, and each group is assumed to
+            contain at least one seed prompt.
+    """
+    first_text_values = []
+    for group in prompt_groups:
+        if not group.prompts:
+            raise ValueError("Seed prompt group is empty, no prompts available.")
+        # Find the first text prompt in the group.
+        # If none exist, use the first prompt's value.
+        first_text_value = group.prompts[0].value
+        for prompt in group.prompts:
+            if prompt.data_type == "text":
+                first_text_value = prompt.value
+                break
+
+        first_text_values.append(first_text_value)
+
+    return first_text_values
+
+
 async def run_scenarios_async(config: ScannerConfig) -> None:
     """
     Run scenarios
@@ -62,7 +90,7 @@ async def run_scenarios_async(config: ScannerConfig) -> None:
     orchestrators = config.create_orchestrators(prompt_converters=prompt_converters)
 
     for orchestrator in orchestrators:
-        objectives = [prompt_group.prompts[0].value for prompt_group in seed_prompt_groups]
+        objectives = _get_first_text_values_if_exist(seed_prompt_groups)
         if hasattr(orchestrator, "run_attacks_async"):
             args = {
                 "objectives": objectives,
