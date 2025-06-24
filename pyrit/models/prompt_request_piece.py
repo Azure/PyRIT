@@ -6,7 +6,7 @@ from __future__ import annotations
 import abc
 import uuid
 from datetime import datetime
-from typing import Dict, List, Literal, Optional, Union, get_args
+from typing import Dict, List, Literal, Optional, Union, cast, get_args
 from uuid import uuid4
 
 from pyrit.models.chat_message import ChatMessage, ChatMessageRole
@@ -64,7 +64,7 @@ class PromptRequestPiece(abc.ABC):
         converter_identifiers: Optional[List[Dict[str, str]]] = None,
         prompt_target_identifier: Optional[Dict[str, str]] = None,
         orchestrator_identifier: Optional[Dict[str, str]] = None,
-        scorer_identifier: Dict[str, str] = None,
+        scorer_identifier: Optional[Dict[str, str]] = None,
         original_value_data_type: PromptDataType = "text",
         converted_value_data_type: PromptDataType = "text",
         response_error: PromptResponseError = "none",
@@ -138,22 +138,38 @@ class PromptRequestPiece(abc.ABC):
         from pyrit.models.data_type_serializer import data_serializer_factory
 
         original_serializer = data_serializer_factory(
-            category="prompt-memory-entries", data_type=self.original_value_data_type, value=self.original_value
+            category="prompt-memory-entries",
+            data_type=cast(PromptDataType, self.original_value_data_type),
+            value=self.original_value,
         )
         self.original_value_sha256 = await original_serializer.get_sha256()
 
         converted_serializer = data_serializer_factory(
-            category="prompt-memory-entries", data_type=self.converted_value_data_type, value=self.converted_value
+            category="prompt-memory-entries",
+            data_type=cast(PromptDataType, self.converted_value_data_type),
+            value=self.converted_value,
         )
         self.converted_value_sha256 = await converted_serializer.get_sha256()
 
     def to_chat_message(self) -> ChatMessage:
-        return ChatMessage(role=self.role, content=self.converted_value)
+        return ChatMessage(role=cast(ChatMessageRole, self.role), content=self.converted_value)
 
     def to_prompt_request_response(self) -> "PromptRequestResponse":  # type: ignore # noqa F821
         from pyrit.models.prompt_request_response import PromptRequestResponse
 
         return PromptRequestResponse([self])  # noqa F821
+
+    def has_error(self) -> bool:
+        """
+        Check if the prompt request piece has an error.
+        """
+        return self.response_error != "none"
+
+    def is_blocked(self) -> bool:
+        """
+        Check if the prompt request piece is blocked.
+        """
+        return self.response_error == "blocked"
 
     def to_dict(self) -> dict:
         return {

@@ -117,6 +117,7 @@ API Reference
     fetch_babelscape_alert_dataset
     fetch_darkbench_dataset
     fetch_decoding_trust_stereotypes_dataset
+    fetch_equitymedqa_dataset_unique_values
     fetch_examples
     fetch_forbidden_questions_dataset
     fetch_harmbench_dataset
@@ -130,7 +131,6 @@ API Reference
     fetch_tdc23_redteaming_dataset
     fetch_wmdp_dataset
     fetch_xstest_dataset
-    fetch_equitymedqa_dataset_unique_values
 
 
 :py:mod:`pyrit.embedding`
@@ -321,6 +321,7 @@ API Reference
     SearchReplaceConverter
     StringJoinConverter
     SuffixAppendConverter
+    SuperscriptConverter
     TenseConverter
     TextToHexConverter
     ToneConverter
