@@ -264,11 +264,12 @@ def test_group_id_set_unequally_raises():
 
 
 def test_role_set_unequally_raises():
+    id = uuid.uuid4()
     with pytest.raises(ValueError) as exc_info:
         SeedPromptGroup(
             prompts=[
-                SeedPrompt(value="Hello", data_type="text", role="user"),
-                SeedPrompt(value="World", data_type="text", role="system"),
+                SeedPrompt(value="Hello", data_type="text", role="user", prompt_group_id=id),
+                SeedPrompt(value="World", data_type="text", role="system", prompt_group_id=id),
             ]
         )
 
@@ -276,11 +277,13 @@ def test_role_set_unequally_raises():
 
 
 def test_sequence_set_unequally_raises():
+    id = uuid.uuid4()
+
     with pytest.raises(ValueError) as exc_info:
         SeedPromptGroup(
             prompts=[
-                SeedPrompt(value="Hello", data_type="text", sequence=1),
-                SeedPrompt(value="World", data_type="text", sequence=2),
+                SeedPrompt(value="Hello", data_type="text", sequence=1, prompt_group_id=id),
+                SeedPrompt(value="World", data_type="text", sequence=2, prompt_group_id=id),
             ]
         )
 

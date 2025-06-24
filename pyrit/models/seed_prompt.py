@@ -50,9 +50,8 @@ class PartialUndefined(Undefined):
 
 @dataclass
 class SeedPrompt(YamlLoadable):
-    """Represents a seed prompt with various attributes and metadata."""
+    """Represents a seed prompt with various attributes and metadata.
 
-    """
     value (str): The actual content of the prompt.
     role (ChatMessageRole): The role of the message (default is "user").
     value_sha256 (Optional[str]): SHA256 hash of the value, can be set asynchronously.
@@ -70,9 +69,11 @@ class SeedPrompt(YamlLoadable):
     metadata (Optional[Dict[str, Union[str, int]]]): Additional metadata as key-value pairs.
     parameters (Optional[Sequence[str]]): Parameters that can be used in template rendering.
     prompt_group_id (Optional[uuid.UUID]): UUID for grouping related prompts together.
-    prompt_group_sequence (int): Integer for ordering within a prompt group (default 0).
-    sequence (Optional[int]): Integer for ordering within the conversation. Can be the same number for multi-part
-        requests (indicating a shared group).
+    prompt_group_alias (str): Alias for the prompt group, used to group prompts with the same alias. Prompts in the
+        same group are prompts that need to be sent together in the same turn.
+    sequence (Optional[int]): Integer for ordering within the conversation. Should be the same number for multi-part
+        requests (indicating a shared request/response turn).
+    conversation_id (str): The identifier for the conversation which is associated with a single target.
 
     TEMPLATE_PATHS (Dict): Dictionary mapping path names to actual filesystem paths for template rendering.
     """
@@ -94,8 +95,9 @@ class SeedPrompt(YamlLoadable):
     metadata: Optional[Dict[str, Union[str, int]]] = field(default_factory=lambda: {})
     parameters: Optional[Sequence[str]] = field(default_factory=lambda: [])
     prompt_group_id: Optional[uuid.UUID] = None
-    prompt_group_sequence: int = 0
-    sequence: Optional[int] = None
+    prompt_group_alias: Optional[str] = None
+    prompt_group_sequence: Optional[int] = 0
+    sequence: int = -1
 
     TEMPLATE_PATHS = {
         "datasets_path": DATASETS_PATH,
@@ -109,6 +111,9 @@ class SeedPrompt(YamlLoadable):
     def __post_init__(self) -> None:
         """Post-initialization to render the template to replace existing values"""
         self.value = self.render_template_value_silent(**self.TEMPLATE_PATHS)
+
+        if self.role not in ChatMessageRole.__args__:  # type: ignore
+            raise ValueError(f"Role {self.role} is not a valid role.")
 
         if not self.data_type:
             # If data_type is not provided, infer it from the value
@@ -280,7 +285,7 @@ class SeedPromptGroup(YamlLoadable):
         self._enforce_consistent_group_role()
         self._enforce_and_set_consistent_sequence()
 
-        # Check group sequence and sort the prompts in the same loop
+        # Check prompt group sequence and sort the prompts in the same loop
         if len(self.prompts) >= 1:
             self.prompts = sorted(
                 self.prompts,
@@ -352,10 +357,8 @@ class SeedPromptGroup(YamlLoadable):
         if len(sequences) > 1:
             raise ValueError("Inconsistent sequence found across prompts in the group.")
         elif len(sequences) == 1:
-            sequence = sequences.pop() or -1  # Default to -1 if sequence is None
+            sequence = sequences.pop()
             self.sequence = sequence
-        else:
-            self.sequence = -1
 
     def is_single_request(self) -> bool:
         unique_group_sequences = {prompt.prompt_group_sequence for prompt in self.prompts}
@@ -500,7 +503,8 @@ class SeedPromptDataset(YamlLoadable):
             if "prompt_group_id" in prompt:
                 raise ValueError("prompt_group_id should not be set in prompt data")
 
-        SeedPromptDataset._set_seed_prompt_group_id_by_sequence(seed_prompts=merged_prompts)
+        SeedPromptDataset._set_seed_prompt_group_id_by_alias(seed_prompts=merged_prompts)
+        SeedPromptDataset._check_consistant_seed_prompt_group_roles(seedprompts=merged_prompts)
 
         # Now create the dataset with the newly merged prompt dicts
         return cls(prompts=merged_prompts, **dataset_defaults)
@@ -522,23 +526,41 @@ class SeedPromptDataset(YamlLoadable):
             prompt.value = prompt.render_template_value(**kwargs)
 
     @staticmethod
-    def _set_seed_prompt_group_id_by_sequence(seed_prompts: Sequence[dict]):
+    def _set_seed_prompt_group_id_by_alias(seed_prompts: Sequence[dict]):
         """
-        Sets all seed_prompt_group_ids based on prompt sequence
+        Sets all seed_prompt_group_ids based on prompt_group_id_alias matches
 
-        This is important so the sequence can be set in yaml to group prompts
+        This is important so the prompt_group_id_alias can be set in yaml to group prompts
         """
-        sequence_to_group_id = {}
+        alias_to_group_id = {}
+
         for prompt in seed_prompts:
-            sequence = prompt.get("sequence")
-
-            # create a group if the user sets sequence
-            if sequence is not None:
-                if sequence not in sequence_to_group_id:
-                    sequence_to_group_id[sequence] = uuid.uuid4()
-                prompt["prompt_group_id"] = sequence_to_group_id[sequence]
+            alias = prompt.get("prompt_group_alias")
+            if alias:
+                if alias not in alias_to_group_id:
+                    alias_to_group_id[alias] = uuid.uuid4()
+                prompt["prompt_group_id"] = alias_to_group_id[alias]
             else:
                 prompt["prompt_group_id"] = uuid.uuid4()
+
+    @staticmethod
+    def _check_consistant_seed_prompt_group_roles(seedprompts: Sequence[dict]):
+        """
+        Checks that all seed prompts in a group in the dataset have the same role.
+        If not, raises a ValueError.
+        """
+        group_id_to_role = {}
+        for prompt in seedprompts:
+            group_id = prompt.get("prompt_group_id")
+            role = prompt.get("role")
+            # compare roles in the same group using the group id
+            if group_id not in group_id_to_role:
+                group_id_to_role[group_id] = role
+            elif group_id_to_role[group_id] != role:
+                raise ValueError(
+                    f"Inconsistent roles found for prompt group {prompt.get('prompt_group_alias')}: "
+                    f"{group_id_to_role[group_id]} vs {role}"
+                )
 
     @staticmethod
     def group_seed_prompts_by_prompt_group_id(seed_prompts: Sequence[SeedPrompt]) -> Sequence[SeedPromptGroup]:
@@ -555,14 +577,14 @@ class SeedPromptDataset(YamlLoadable):
         # Group seed prompts by `prompt_group_id`
         grouped_prompts = defaultdict(list)
         for prompt in seed_prompts:
-            # Use existing group ID or create a new one
-            group_id = prompt.prompt_group_id or uuid.uuid4()
-            grouped_prompts[group_id].append(prompt)
+            if prompt.prompt_group_id:
+                grouped_prompts[prompt.prompt_group_id].append(prompt)
+            else:
+                grouped_prompts[uuid.uuid4()].append(prompt)
 
         # Create SeedPromptGroup instances from grouped prompts
         seed_prompt_groups = []
         for group_prompts in grouped_prompts.values():
-            # sort prompts in a group by prompt_group_sequence if more than one prompt in the group
             if len(group_prompts) > 1:
                 group_prompts.sort(key=lambda prompt: prompt.prompt_group_sequence)
 

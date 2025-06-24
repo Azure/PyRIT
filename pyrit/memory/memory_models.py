@@ -291,10 +291,11 @@ class SeedPromptEntry(Base):
             However, they are stored in the same table.
         prompt_group_id (uuid.UUID): The ID of a group the seed prompt may optionally belong to.
             Groups are used to organize prompts for multi-turn conversations or multi-modal prompts.
+        sequence (int): The turn of the seed prompt in a group. When entire multi-turn conversations
+            are stored, this is used to order the prompts.
         prompt_group_sequence (int): The turn of the seed prompt in a group. When entire multi-turn conversations
             are stored, this is used to order the prompts.
-        sequence (int): The sequence of the seed prompt in a conversation; will be the same for SeedPrompts in the
-            same SeedPromptGroup.
+        role (Literal["user", "assistant", "system"]): The role of the seed prompt in the conversation.
 
     Methods:
         __str__(): Returns a string representation of the memory entry.
@@ -320,6 +321,7 @@ class SeedPromptEntry(Base):
     prompt_group_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, nullable=True)
     prompt_group_sequence: Mapped[Optional[int]] = mapped_column(INTEGER, nullable=True)
     sequence: Mapped[Optional[int]] = mapped_column(INTEGER, nullable=True)
+    role: Mapped[Literal["user", "assistant", "system"]] = mapped_column(String, nullable=False)
 
     def __init__(self, *, entry: SeedPrompt):
         self.id = entry.id
@@ -340,6 +342,7 @@ class SeedPromptEntry(Base):
         self.prompt_group_id = entry.prompt_group_id
         self.prompt_group_sequence = entry.prompt_group_sequence
         self.sequence = entry.sequence
+        self.role = entry.role
 
     def get_seed_prompt(self) -> SeedPrompt:
         return SeedPrompt(
@@ -361,4 +364,5 @@ class SeedPromptEntry(Base):
             prompt_group_id=self.prompt_group_id,
             prompt_group_sequence=self.prompt_group_sequence,
             sequence=self.sequence,
+            role=self.role,
         )

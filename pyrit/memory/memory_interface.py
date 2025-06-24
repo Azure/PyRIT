@@ -583,6 +583,7 @@ class MemoryInterface(abc.ABC):
         groups: Optional[Sequence[str]] = None,
         source: Optional[str] = None,
         parameters: Optional[Sequence[str]] = None,
+        role: Optional[str] = None,
         metadata: Optional[dict[str, Union[str, int]]] = None,
     ) -> Sequence[SeedPrompt]:
         """
@@ -625,6 +626,8 @@ class MemoryInterface(abc.ABC):
             conditions.append(SeedPromptEntry.added_by == added_by)
         if source:
             conditions.append(SeedPromptEntry.source == source)
+        if role:
+            conditions.append(SeedPromptEntry.role == role)
 
         self._add_list_conditions(field=SeedPromptEntry.harm_categories, values=harm_categories, conditions=conditions)
         self._add_list_conditions(field=SeedPromptEntry.authors, values=authors, conditions=conditions)

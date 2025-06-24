@@ -1313,13 +1313,29 @@ async def test_add_seed_prompt_groups_to_memory_single_element_with_added_by(duc
 
 
 @pytest.mark.asyncio
+async def test_add_seed_prompt_groups_to_memory_with_role(duckdb_instance: MemoryInterface):
+    prompt = SeedPrompt(value="Test prompt", added_by="tester", data_type="text", sequence=0, role="system")
+    prompt_group = SeedPromptGroup(prompts=[prompt])
+    await duckdb_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
+    assert len(duckdb_instance.get_seed_prompts()) == 1
+    group_from_memory = duckdb_instance.get_seed_prompt_groups()
+    assert group_from_memory[0].prompts[0].role == "system"
+
+
+@pytest.mark.asyncio
+async def test_add_seed_prompt_groups_to_memory_with_default_role(duckdb_instance: MemoryInterface):
+    prompt = SeedPrompt(value="Test prompt", added_by="tester", data_type="text", sequence=0)
+    prompt_group = SeedPromptGroup(prompts=[prompt])
+    await duckdb_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
+    assert len(duckdb_instance.get_seed_prompts()) == 1
+    group_from_memory = duckdb_instance.get_seed_prompt_groups()
+    assert group_from_memory[0].prompts[0].role == "user"
+
+
+@pytest.mark.asyncio
 async def test_add_seed_prompt_groups_to_memory_multiple_elements_with_added_by(duckdb_instance: MemoryInterface):
-    prompt1 = SeedPrompt(
-        value="Test prompt 1", added_by="tester", data_type="text", sequence=0, prompt_group_sequence=0
-    )
-    prompt2 = SeedPrompt(
-        value="Test prompt 2", added_by="tester", data_type="text", sequence=0, prompt_group_sequence=1
-    )
+    prompt1 = SeedPrompt(value="Test prompt 1", added_by="tester", data_type="text", prompt_group_sequence=0)
+    prompt2 = SeedPrompt(value="Test prompt 2", added_by="tester", data_type="text", prompt_group_sequence=1)
     prompt_group = SeedPromptGroup(prompts=[prompt1, prompt2])
     await duckdb_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
     assert len(duckdb_instance.get_seed_prompts()) == 2
@@ -1328,16 +1344,16 @@ async def test_add_seed_prompt_groups_to_memory_multiple_elements_with_added_by(
 @pytest.mark.asyncio
 async def test_add_seed_prompt_groups_to_memory_multiple_groups_with_added_by(duckdb_instance: MemoryInterface):
     prompt1 = SeedPrompt(
-        value="Test prompt 1", added_by="tester", data_type="text", sequence=0, prompt_group_sequence=0
+        value="Test prompt 1", added_by="tester", data_type="text", prompt_group_sequence=0, sequence=0
     )
     prompt2 = SeedPrompt(
-        value="Test prompt 2", added_by="tester", data_type="text", sequence=0, prompt_group_sequence=1
+        value="Test prompt 2", added_by="tester", data_type="text", prompt_group_sequence=1, sequence=0
     )
     prompt3 = SeedPrompt(
-        value="Test prompt 3", added_by="tester", data_type="text", sequence=0, prompt_group_sequence=0
+        value="Test prompt 3", added_by="tester", data_type="text", prompt_group_sequence=0, sequence=1
     )
     prompt4 = SeedPrompt(
-        value="Test prompt 4", added_by="tester", data_type="text", sequence=0, prompt_group_sequence=1
+        value="Test prompt 4", added_by="tester", data_type="text", prompt_group_sequence=1, sequence=1
     )
 
     prompt_group1 = SeedPromptGroup(prompts=[prompt1, prompt2])
@@ -1379,25 +1395,13 @@ async def test_add_seed_prompt_groups_to_memory_with_all_modalities(duckdb_insta
 
         # Create prompts with the temporary file paths
         prompt1 = SeedPrompt(
-            value=image_file.name,
-            added_by="testmultimodal",
-            data_type="image_path",
-            sequence=0,
-            prompt_group_sequence=0,
+            value=image_file.name, added_by="testmultimodal", data_type="image_path", sequence=0, prompt_group_sequence=0
         )
         prompt2 = SeedPrompt(
-            value=audio_file.name,
-            added_by="testmultimodal",
-            data_type="audio_path",
-            sequence=0,
-            prompt_group_sequence=1,
+            value=audio_file.name, added_by="testmultimodal", data_type="audio_path", sequence=0, prompt_group_sequence=1
         )
         prompt3 = SeedPrompt(
-            value=video_file.name,
-            added_by="testmultimodal",
-            data_type="video_path",
-            sequence=0,
-            prompt_group_sequence=2,
+            value=video_file.name, added_by="testmultimodal", data_type="video_path", sequence=0, prompt_group_sequence=2
         )
         prompt4 = SeedPrompt(
             value="Test prompt 4", added_by="testmultimodal", data_type="text", sequence=0, prompt_group_sequence=3
