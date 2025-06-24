@@ -4,12 +4,13 @@
 import asyncio
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser, Namespace
 from datetime import datetime
+import inspect
 from pathlib import Path
 from typing import List
 
 from pyrit.common import initialize_pyrit
 from pyrit.memory import CentralMemory
-from pyrit.models.seed_prompt import SeedPrompt, SeedPromptDataset
+from pyrit.models.seed_prompt import SeedPromptGroup, SeedPromptDataset
 
 from .scanner_config import ScannerConfig
 
@@ -31,21 +32,22 @@ def parse_args(args=None) -> Namespace:
     return parser.parse_args(args)
 
 
-def load_seed_prompts(dataset_paths: List[str]) -> List[SeedPrompt]:
+def load_seed_prompt_groups(dataset_paths: List[str]) -> List[SeedPromptGroup]:
     """
     loads each dataset file path into a list of SeedPrompt objects.
     """
     if not dataset_paths:
         raise ValueError("No datasets provided in the configuration.")
 
-    all_prompts: List[SeedPrompt] = []
+    all_prompt_groups: List[SeedPromptGroup] = []
     for path_str in dataset_paths:
         path = Path(path_str)
         if not path.exists():
             raise FileNotFoundError(f"Dataset file '{path}' does not exist.")
         dataset = SeedPromptDataset.from_yaml_file(path)
-        all_prompts.extend(dataset.prompts)
-    return all_prompts
+        groups = SeedPromptDataset.group_seed_prompts_by_prompt_group_id(dataset.prompts)
+        all_prompt_groups.extend(groups)
+    return all_prompt_groups
 
 
 async def run_scenarios_async(config: ScannerConfig) -> None:
@@ -55,16 +57,23 @@ async def run_scenarios_async(config: ScannerConfig) -> None:
     memory_labels = config.database.memory_labels or {}
     memory_labels[SCANNER_EXECUTION_START_TIME_MEMORY_LABEL] = datetime.now().isoformat()
 
-    seed_prompts = load_seed_prompts(config.datasets)
+    seed_prompt_groups = load_seed_prompt_groups(config.datasets)
     prompt_converters = config.create_prompt_converters()
     orchestrators = config.create_orchestrators(prompt_converters=prompt_converters)
 
     for orchestrator in orchestrators:
-        objectives = [prompt.value for prompt in seed_prompts]
+        objectives = [prompt_group.prompts[0].value for prompt_group in seed_prompt_groups]
         if hasattr(orchestrator, "run_attacks_async"):
-            await orchestrator.run_attacks_async(objectives=objectives, memory_labels=memory_labels)
+            args = {
+                "objectives": objectives,
+                "memory_labels": memory_labels,
+            }
+            sig = inspect.signature(orchestrator.run_attacks_async)
+            if "seed_prompts" in sig.parameters:
+                args["seed_prompts"] = seed_prompt_groups
+            await orchestrator.run_attacks_async(**args)
         else:
-            raise ValueError(f"The orchestrator {type(orchestrator).__name__} does not have run_attacks_async. ")
+            raise ValueError(f"The orchestrator {type(orchestrator).__name__} does not have run_attacks_async.")
 
     # Print conversation pieces from memory
     memory = CentralMemory.get_memory_instance()
