@@ -1,11 +1,33 @@
 # %% [markdown]
 # # HackAPrompt Playground Demo
 #
-# This notebook demonstrates how to send prompts and receive judged responses from the HackAPrompt competition platform using PyRIT. To authenticate, you need a valid session ID and authentication cookies from your HackAPrompt account.
+# This notebook demonstrates how to send prompts and receive judged responses from the [HackAPrompt](https://hackaprompt.com) competition platform using **PyRIT**.
 #
-# The session ID can be found in Chrome DevTools under the Network tab by inspecting any `/api/chat` request payload while you are logged in and interacting with the challenge, look for the `session_id` value in the JSON body. Your authentication cookies are visible under the Application tab in DevTools, inside Storage > Cookies for `hackaprompt.com`. Copy the names and values (such as `sb-...auth-token.0` and `.1`) directly from there.
+# To authenticate, you need two things from your HackAPrompt account:
 #
-# With these details, you can programmatically interact with the HackAPrompt API as your logged-in user, send prompts, and see how the judge panel scores your attack.
+# ## 1. Session ID
+#
+# - Open Chrome DevTools (`F12` or `Ctrl+Shift+I`)
+# - Go to the **Network** tab
+# - Interact with the challenge and look for a request to `/api/chat`
+# - In the request **Payload**, find the `session_id`
+#
+# ![Session ID](../../../assets/hack_a_prompt_get_session_id.png)
+#
+# ## 2. Authentication Cookies
+#
+# - In DevTools, go to the **Application** tab
+# - Navigate to **Storage > Cookies > https://hackaprompt.com**
+# - Copy the required auth token values (e.g., `sb-...auth-token.0` and `.1`)
+#
+# ![Authentication Cookies](../../../assets/hack_a_prompt_get_cookies.png)
+#
+# ---
+#
+# With these values, you can authenticate as your logged-in user and interact programmatically with the HackAPrompt API to:
+# - Send prompts
+# - Receive model responses
+# - View judge panel feedback
 
 
 # %%
