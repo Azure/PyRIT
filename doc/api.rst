@@ -132,7 +132,6 @@ API Reference
     fetch_wmdp_dataset
     fetch_xstest_dataset
     fetch_equitymedqa_dataset_unique_values
-    fetch_ccp_sensitive_prompts_dataset
 
 
 :py:mod:`pyrit.embedding`
