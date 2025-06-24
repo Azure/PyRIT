@@ -31,7 +31,8 @@ def fetch_ccp_sensitive_prompts_dataset(
         For more information, see https://huggingface.co/datasets/promptfoo/CCP-sensitive-prompts
 
         **Author**: promptfoo (Hugging Face user)
-        **Purpose**: Collection of prompts that cover sensitive topics in China, and are likely to be censored by Chinese models.
+        **Purpose**: Collection of prompts that cover sensitive topics in China, and are likely to be censored by
+            Chinese models.
     """
     file_type = source.split(".")[-1]
     if file_type not in FILE_TYPE_HANDLERS:
