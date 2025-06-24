@@ -186,7 +186,6 @@ class RolePlayAttack(AttackStrategy[SingleTurnAttackContext, AttackResult]):
         self._logger.info(f"Starting role-play attack with objective: {context.objective}")
         self._logger.info(f"Max attempts: {self._max_attempts_on_failure}")
 
-        # Execute with retries
         response = None
         score = None
 
