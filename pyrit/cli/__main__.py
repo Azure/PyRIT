@@ -2,15 +2,15 @@
 # Licensed under the MIT License.
 
 import asyncio
+import inspect
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser, Namespace
 from datetime import datetime
-import inspect
 from pathlib import Path
 from typing import List
 
 from pyrit.common import initialize_pyrit
 from pyrit.memory import CentralMemory
-from pyrit.models.seed_prompt import SeedPromptGroup, SeedPromptDataset
+from pyrit.models.seed_prompt import SeedPromptDataset, SeedPromptGroup
 
 from .scanner_config import ScannerConfig
 
