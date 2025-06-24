@@ -47,7 +47,7 @@ class OpenAIDALLETarget(OpenAITarget):
             model_name (str, Optional): The name of the model.
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-                Defaults to the OPENAI_DALLE_API_KEY environment variable.
+                Defaults to the `OPENAI_DALLE_API_KEY` environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
             use_aad_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
@@ -71,7 +71,7 @@ class OpenAIDALLETarget(OpenAITarget):
             *args: Additional positional arguments to be passed to AzureOpenAITarget.
             **kwargs: Additional keyword arguments to be passed to AzureOpenAITarget.
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
-                httpx.AsyncClient() constructor.
+                `httpx.AsyncClient()` constructor.
                 For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
 
         Raises:
@@ -138,10 +138,32 @@ class OpenAIDALLETarget(OpenAITarget):
                 params=params,
                 **self._httpx_client_kwargs,
             )
+
         except httpx.HTTPStatusError as StatusError:
             if StatusError.response.status_code == 400:
                 # Handle Bad Request
-                return handle_bad_request_exception(response_text=StatusError.response.text, request=request)
+                error_response_text = StatusError.response.text
+
+                try:
+                    json_error = json.loads(error_response_text).get("error", {})
+
+                    is_content_policy_violation = json_error.get("code") == "content_policy_violation"
+                    is_content_filter = json_error.get("code") == "content_filter"
+
+                    return handle_bad_request_exception(
+                        response_text=error_response_text,
+                        request=request,
+                        error_code=StatusError.response.status_code,
+                        is_content_filter=is_content_policy_violation or is_content_filter,
+                    )
+                except json.JSONDecodeError:
+                    # Invalid JSON response, proceed without parsing
+                    pass
+                return handle_bad_request_exception(
+                    response_text=error_response_text,
+                    request=request,
+                    error_code=StatusError.response.status_code,
+                )
             elif StatusError.response.status_code == 429:
                 raise RateLimitException()
             else:

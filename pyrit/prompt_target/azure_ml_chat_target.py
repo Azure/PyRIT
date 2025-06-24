@@ -54,7 +54,7 @@ class AzureMLChatTarget(PromptChatTarget):
             endpoint (str, Optional): The endpoint URL for the deployed Azure ML model.
                 Defaults to the value of the AZURE_ML_MANAGED_ENDPOINT environment variable.
             api_key (str, Optional): The API key for accessing the Azure ML endpoint.
-                Defaults to the value of the AZURE_ML_KEY environment variable.
+                Defaults to the value of the `AZURE_ML_KEY` environment variable.
             chat_message_normalizer (ChatMessageNormalizer, Optional): The chat message normalizer.
                 For models that do not allow system prompts such as mistralai-Mixtral-8x7B-Instruct-v01,
                 GenericSystemSquash() can be passed in. Defaults to ChatMessageNop(), which does not
