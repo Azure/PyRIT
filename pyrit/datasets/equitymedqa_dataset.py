@@ -14,7 +14,7 @@ DATA_SUBSETS: list[str] = [
     "cc_manual",
     "ehai",
     "fbrt_llm",
-    "fbrt_llm_sampled",
+    "fbrt_llm_661_sampled",
     "fbrt_manual",
     "mixed_mmqa_omaq",
     "multimedqa",
