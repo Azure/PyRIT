@@ -53,11 +53,13 @@ class GandalfTarget(PromptTarget):
         return response_entry
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
-        if len(prompt_request.request_pieces) != 1:
-            raise ValueError("This target only supports a single prompt request piece.")
+        n_pieces = len(prompt_request.request_pieces)
+        if n_pieces != 1:
+            raise ValueError(f"This target only supports a single prompt request piece. Received: {n_pieces} pieces.")
 
-        if prompt_request.request_pieces[0].converted_value_data_type != "text":
-            raise ValueError("This target only supports text prompt input.")
+        piece_type = prompt_request.request_pieces[0].converted_value_data_type
+        if piece_type != "text":
+            raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
     async def check_password(self, password: str) -> bool:
         """
