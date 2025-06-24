@@ -43,7 +43,7 @@ def mock_equitymedqa_data():
     }
 
 
-@patch("pyrit.datasets.fetch_equitymedqa_dataset.load_dataset")
+@patch("pyrit.datasets.equitymedqa_dataset.load_dataset")
 def test_get_sub_dataset(mock_load_dataset, mock_equitymedqa_data):
     mock_load_dataset.return_value = mock_equitymedqa_data
 
@@ -59,7 +59,7 @@ def test_get_sub_dataset(mock_load_dataset, mock_equitymedqa_data):
     assert "cc_manual_prompt_2" in prompt_list
 
 
-@patch("pyrit.datasets.fetch_equitymedqa_dataset.load_dataset")
+@patch("pyrit.datasets.equitymedqa_dataset.load_dataset")
 def test_fetch_equitymedqa_dataset_unique_values_all(mock_load_dataset, mock_equitymedqa_data):
     mock_load_dataset.return_value = mock_equitymedqa_data
 
