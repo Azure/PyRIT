@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from pyrit.datasets.fetch_equitymedqa_dataset import (
+from pyrit.datasets import (
     fetch_equitymedqa_dataset_unique_values,
 )
 from pyrit.models import SeedPromptDataset
