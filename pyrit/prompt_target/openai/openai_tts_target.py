@@ -164,7 +164,8 @@ class OpenAITTSTarget(OpenAITarget):
         n_messages = len(messages)
         if n_messages > 0:
             raise ValueError(
-                f"This target only supports a single turn conversation. Received: {n_messages} messages which indicates a prior turn."
+                "This target only supports a single turn conversation. "
+                f"Received: {n_messages} messages which indicates a prior turn."
             )
 
     def is_json_response_supported(self) -> bool:
