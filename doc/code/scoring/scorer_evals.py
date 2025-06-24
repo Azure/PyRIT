@@ -37,7 +37,8 @@ initialize_pyrit(memory_db_type=IN_MEMORY)
 target = OpenAIChatTarget()
 likert_scorer = SelfAskLikertScorer(chat_target=target, likert_scale_path=LikertScalePaths.HATE_SPEECH_SCALE.value)
 
-evaluator = ScorerEvaluator(scorer=likert_scorer)
+# factory method that creates an HarmScorerEvaluator in this case
+evaluator = ScorerEvaluator.from_scorer(scorer=likert_scorer, metrics_type="harm")
 csv_path = f"{str(SCORER_EVALS_PATH)}/harm/SAMPLE_hate_speech.csv"
 # Uncomment the line below to use the full dataset of approx 200 entries
 # csv_path = f"{str(SCORER_EVALS_PATH)}/harm/hate_speech.csv"
@@ -45,11 +46,10 @@ csv_path = f"{str(SCORER_EVALS_PATH)}/harm/SAMPLE_hate_speech.csv"
 # The dataset_name defaults to "SAMPLE_hate_speech" but can be manually set to any string. Each response is graded once by the scorer.
 metrics = await evaluator.run_evaluation_from_csv_async(
     csv_path=csv_path,
-    type="harm",
     assistant_response_col="assistant_response",
     human_label_col_names=["human_likert_score_1", "human_likert_score_2", "human_likert_score_3"],
     objective_or_harm_col_name="category",
-    scorer_trials=1,
+    num_scorer_trials=1,
 )
 
 # Metrics are saved to datasets/score/scorer_evals/harm/SAMPLE_hate_speech_SelfAskLikertScorer_metrics.json
@@ -62,8 +62,8 @@ metrics
 
 # %%
 # Either work for fetching the hate_speech metrics
-evaluator.get_scorer_metrics(metrics_type="harm", dataset_name="SAMPLE_hate_speech")
-likert_scorer.get_scorer_metrics(dataset_name="SAMPLE_hate_speech")
+evaluator.get_scorer_metrics(dataset_name="SAMPLE_hate_speech")
+likert_scorer.get_scorer_metrics(dataset_name="SAMPLE_hate_speech", metrics_type="harm")
 
 # Retrieve metrics for the full hate_speech dataset that have already been computed and saved by the PyRIT team.
 # full_metrics = likert_scorer.get_scorer_metrics(dataset_name="hate_speech")
@@ -78,17 +78,17 @@ from pyrit.score import SelfAskRefusalScorer
 target = OpenAIChatTarget()
 refusal_scorer = SelfAskRefusalScorer(chat_target=target)
 
-evaluator = ScorerEvaluator(scorer=refusal_scorer)
+# factory method that creates an ObjectiveScorerEvaluator in this case
+evaluator = ScorerEvaluator.from_scorer(scorer=refusal_scorer)
 csv_path = f"{str(SCORER_EVALS_PATH)}/objective/SAMPLE_mixed_objective_refusal.csv"
 # Uncomment the line below to use the full dataset of approx 200 entries
 # csv_path = f"{str(SCORER_EVALS_PATH)}/objective/mixed_objective_refusal.csv"
 metrics = await evaluator.run_evaluation_from_csv_async(
     csv_path=csv_path,
-    type="objective",
     assistant_response_col="assistant_message",
     human_label_col_names=["human_score"],
     objective_or_harm_col_name="objective",
-    scorer_trials=1,
+    num_scorer_trials=1,
 )
 
 refusal_scorer.get_scorer_metrics(dataset_name="SAMPLE_mixed_objective_refusal")

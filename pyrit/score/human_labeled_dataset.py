@@ -10,7 +10,7 @@ from typing import List, Literal, Optional, Union
 
 import pandas as pd
 
-from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
 
 logger = logging.getLogger(__name__)
 
@@ -20,8 +20,8 @@ class HumanLabeledEntry:
     """
     A class that represents an entry in a dataset of assistant responses that have been scored by humans. It is used
     to evaluate PyRIT scorer performance as measured by degree of alignment with human labels. This class includes
-    the PromptRequestResponses and a list of human-assigned scores, which are floats between 0.0 and 1.0 inclusive for
-    harm datasets, and booleans for objective datasets.
+    the PromptRequestResponses and a list of human-assigned scores, which are floats between 0.0 and 1.0 inclusive
+    (representing degree of severity) for harm datasets, and booleans for objective datasets.
 
     Parameters:
         responses_to_score (List[PromptRequestResponse]): A list of PromptRequestResponse objects representing the
@@ -39,8 +39,8 @@ class HarmHumanLabeledEntry(HumanLabeledEntry):
     """
     A class that represents a human-labeled dataset entry for a specific harm category. This class includes the
     PromptRequestResponses and a list of human scores, which are floats between 0.0 and 1.0 inclusive,
-    representing the degree of harm severity. The harm category is a string that represents the type of
-    harm (e.g., "hate_speech", "misinformation", etc.).
+    representing the degree of harm severity where 0.0 is minimal and 1.0 is maximal. The harm category is a
+    string that represents the type of harm (e.g., "hate_speech", "misinformation", etc.).
     """
 
     human_scores: List[float]
@@ -76,7 +76,8 @@ class HumanLabeledDataset:
             category (e.g. hate_speech) or objective. It will be used in the naming of metrics (JSON) and
             model scores (CSV) files when evaluation is run on this dataset.
         entries (List[HumanLabeledEntry]): A list of HumanLabeledEntry objects representing the entries in the dataset.
-        type (Literal["harm", "objective"]): The type of the human-labeled dataset, either "harm" or "objective".
+        metrics_type (Literal["harm", "objective"]): The type of the human-labeled dataset, either "harm" or
+            "objective".
     """
 
     def __init__(
@@ -84,14 +85,14 @@ class HumanLabeledDataset:
         *,
         name: str,
         entries: List[HumanLabeledEntry],
-        type: Literal["harm", "objective"],
+        metrics_type: Literal["harm", "objective"],
     ):
         self.name = name
         self.entries = entries
-        self.type = type
+        self.metrics_type = metrics_type
         for entry in self.entries:
             self.validate_entry(entry)
-        if self.type == "harm":
+        if self.metrics_type == "harm":
             if len(set(entry.harm_category for entry in self.entries)) > 1:
                 logger.warning(
                     "All entries in a harm dataset should have the same harm category. "
@@ -102,7 +103,7 @@ class HumanLabeledDataset:
     def from_csv(
         cls,
         csv_path: Union[str, Path],
-        type: Literal["harm", "objective"],
+        metrics_type: Literal["harm", "objective"],
         assistant_responses_col_name: str,
         human_label_col_names: List[str],
         objective_or_harm_col_name: str,
@@ -114,7 +115,8 @@ class HumanLabeledDataset:
 
         Args:
             csv_path (Union[str, Path]): The path to the CSV file.
-            type (Literal["harm", "objective"]): The type of the human-labeled dataset.
+            metrics_type (Literal["harm", "objective"]): The type of the human-labeled dataset, either "harm" or
+                "objective".
             assistant_responses_col_name (str): The name of the column containing the assistant responses.
             human_label_col_names (List[str]): The names of the columns containing the human assigned labels. For
                 harm datasets, the CSV file should contain float scores between 0.0 and 1.0 for each response.
@@ -167,7 +169,7 @@ class HumanLabeledDataset:
                     ],
                 )
             ]
-            if type == "harm":
+            if metrics_type == "harm":
                 entry = cls._construct_harm_entry(
                     request_responses=request_responses,
                     harm=objective_or_harm,
@@ -182,13 +184,13 @@ class HumanLabeledDataset:
             entries.append(entry)
 
         dataset_name = dataset_name or Path(csv_path).stem
-        return cls(entries=entries, name=dataset_name, type=type)
+        return cls(entries=entries, name=dataset_name, metrics_type=metrics_type)
 
     def validate_entry(self, entry: HumanLabeledEntry):
-        if self.type == "harm":
+        if self.metrics_type == "harm":
             if not isinstance(entry, HarmHumanLabeledEntry):
                 raise ValueError("All entries must be HarmHumanLabeledEntry instances for harm datasets.")
-        elif self.type == "objective":
+        elif self.metrics_type == "objective":
             if not isinstance(entry, ObjectiveHumanLabeledEntry):
                 raise ValueError("All entries must be ObjectiveHumanLabeledEntry instances for objective datasets.")
 
@@ -210,7 +212,7 @@ class HumanLabeledDataset:
             entry (HumanLabeledEntry): The entry to add.
         """
         self.validate_entry(entry)
-        if self.type == "harm":
+        if self.metrics_type == "harm":
             if self.entries and entry.harm_category != self.entries[0].harm_category:
                 logger.warning(
                     "All entries in a harm dataset should have the same harm category."
@@ -226,23 +228,15 @@ class HumanLabeledDataset:
         objective_or_harm_col_name: str,
         assistant_responses_data_type_col_name: Optional[str] = None,
     ):
-        required_columns = set(human_label_col_names + [assistant_responses_col_name, objective_or_harm_col_name])
-        if assistant_responses_data_type_col_name:
-            required_columns.add(assistant_responses_data_type_col_name)
-        assert required_columns.issubset(eval_df.columns), "Missing required columns in the dataset"
-        for human_label_col in human_label_col_names:
-            assert len(eval_df[human_label_col]) == len(
-                eval_df[assistant_responses_col_name]
-            ), f"Number of scores in column {human_label_col} does not match the number of responses"
+        assert len(eval_df.columns) == len(set(eval_df.columns)), "Column names need to be unique."
 
-        assert len(eval_df[objective_or_harm_col_name]) == len(
-            eval_df[assistant_responses_col_name]
-        ), f"Number of entries in column {objective_or_harm_col_name} does not match the number of responses"
-
+        required_columns = human_label_col_names + [assistant_responses_col_name, objective_or_harm_col_name]
         if assistant_responses_data_type_col_name:
-            assert len(eval_df[assistant_responses_data_type_col_name]) == len(
-                eval_df[assistant_responses_col_name]
-            ), f"Number of entries in column {assistant_responses_data_type_col_name} does not match the number of responses"
+            required_columns.append(assistant_responses_data_type_col_name)
+        
+        for column in required_columns:
+            assert column in eval_df.columns, f"Column {column} is missing from the dataset"
+            assert not eval_df[column].isna().any(), f"Column {column} contains NaN values."
 
     @staticmethod
     def _construct_harm_entry(request_responses: List[PromptRequestResponse], harm: str, human_scores: List):

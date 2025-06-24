@@ -5,7 +5,7 @@ import abc
 import json
 import uuid
 from abc import abstractmethod
-from typing import Dict, Optional, Sequence
+from typing import Dict, Literal, Optional, Sequence
 
 from pyrit.exceptions import (
     InvalidJsonException,
@@ -36,21 +36,23 @@ class Scorer(abc.ABC):
     def _memory(self) -> MemoryInterface:
         return CentralMemory.get_memory_instance()
 
-    def get_scorer_metrics(self, dataset_name: str):
+    def get_scorer_metrics(self, dataset_name: str, metrics_type: Optional[Literal["harm", "objective"]] = None):
         """
         Returns evaluation statistics for the scorer using the dataset_name of the human labeled dataset that this
         scorer was run against. If you did not evaluate the scorer against your own human labeled dataset, you can
         use this method to retrieve metrics based on a pre-existing dataset name, which is often a 'harm_category'
-        or 'objective'. For example, to retrieve metrics for the 'hate_speech' harm, you would pass 'hate_speech' as the
-        the dataset_name.
+        or abbreviated version of the 'objective'. For example, to retrieve metrics for the 'hate_speech' harm,
+        you would pass 'hate_speech' as the dataset_name.
 
         The existing metrics can be found in the 'dataset/score/scorer_evals' directory within either
         the 'harm' or 'objective' subdirectory.
 
         Args:
             dataset_name (str): The name of the dataset on which the scorer evaluation was run. This is used to
-                inform the name of the metrics file to read in the `scorer_evals` directory and is often a
-                'harm_category' or 'objective'.
+                inform the name of the metrics file to read in the `scorer_evals` directory.
+            metrics_type (Literal["harm", "objective"], optional): The type of metrics to retrieve, either "harm"
+                or "objective". If not provided, it will default to "objective" for true/false scorers
+                and "harm" for all other scorers.
 
         Returns:
             ScorerMetrics: A ScorerMetrics object containing the saved evaluation statistics for the scorer.
@@ -58,10 +60,11 @@ class Scorer(abc.ABC):
         # Importing ScorerEvaluator here to avoid circular imports
         from pyrit.score.scorer_evaluator import ScorerEvaluator
 
-        scorer_evaluator = ScorerEvaluator(scorer=self)
-        metrics_type = "objective" if self.scorer_type == "true_false" else "harm"
+        if not metrics_type:
+            metrics_type = "objective" if self.scorer_type == "true_false" else "harm"
+        scorer_evaluator = ScorerEvaluator.from_scorer(self, metrics_type=metrics_type)
 
-        return scorer_evaluator.get_scorer_metrics(metrics_type=metrics_type, dataset_name=dataset_name)
+        return scorer_evaluator.get_scorer_metrics(dataset_name=dataset_name)
 
     @abstractmethod
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:

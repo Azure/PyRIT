@@ -2,19 +2,23 @@
 # Licensed under the MIT license.
 
 
+import abc
 import json
 import logging
 import os
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import List, Literal, Optional, Union
+from typing import List, Literal, Optional, Type, TypeVar, Union
 
 import krippendorff
 import numpy as np
 import pandas as pd
 from scipy.stats import ttest_1samp
 
-from pyrit.common.path import SCORER_EVALS_PATH
+from pyrit.common.path import (
+    SCORER_EVALS_HARM_PATH,
+    SCORER_EVALS_OBJECTIVE_PATH,
+)
 from pyrit.score import (
     HarmHumanLabeledEntry,
     HumanLabeledDataset,
@@ -23,6 +27,8 @@ from pyrit.score import (
 )
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar("T", bound="ScorerMetrics")
 
 
 @dataclass
@@ -37,7 +43,7 @@ class ScorerMetrics:
         return json.dumps(asdict(self))
 
     @classmethod
-    def from_json(cls, file_path: Union[str, Path]) -> "ScorerMetrics":
+    def from_json(cls: Type[T], file_path: Union[str, Path]) -> T:
         """
         Load the metrics from a JSON file.
 
@@ -51,13 +57,7 @@ class ScorerMetrics:
             raise FileNotFoundError(f"File not found: {file_path}")
         with open(file_path, "r") as f:
             data = json.load(f)
-        metrics_type = data.get("type")
-        if metrics_type == "harm":
-            return HarmScorerMetrics(**data)
-        elif metrics_type == "objective":
-            return ObjectiveScorerMetrics(**data)
-        else:
-            raise ValueError(f"Unknown metric type: {metrics_type}")
+        return cls(**data)
 
 
 @dataclass
@@ -75,12 +75,11 @@ class HarmScorerMetrics(ScorerMetrics):
         p_value (float): The p-value for the one-sample t-test above. It represents the probability of obtaining a
             difference in means as extreme as the observed difference, assuming the null hypothesis is true.
         krippendorff_alpha_combined (float): Krippendorff's alpha for the reliability data, which includes both
-            human and model scores. This measures the agreement between all the human raters and model trials.
+            human and model scores. This measures the agreement between all the human raters and model scoring trials.
         krippendorff_alpha_humans (float, Optional): Krippendorff's alpha for human scores, if there are
             multiple human raters. This measures the agreement between human raters.
         krippendorff_alpha_model (float, Optional): Krippendorff's alpha for model scores, if there are
-            multiple model trials. This measures the agreement between model trials.
-        type (str): The type of metrics, always "harm".
+            multiple model scoring trials. This measures the agreement between model scoring trials.
     """
 
     mean_absolute_error: float
@@ -90,7 +89,6 @@ class HarmScorerMetrics(ScorerMetrics):
     krippendorff_alpha_combined: float
     krippendorff_alpha_humans: Optional[float] = None
     krippendorff_alpha_model: Optional[float] = None
-    type: str = "harm"
 
 
 @dataclass
@@ -107,19 +105,17 @@ class ObjectiveScorerMetrics(ScorerMetrics):
             in its positive predictions.
         recall (float): The recall of the model scores, an indicator of the model's ability to correctly
             identify positive labels.
-        type (str): The type of metrics, always "objective".
     """
 
     accuracy: float
     f1_score: float
     precision: float
     recall: float
-    type: str = "objective"
 
 
-class ScorerEvaluator:
+class ScorerEvaluator(abc.ABC):
     """
-    A class that evaluates an LLM scorer against a human-labeled dataset, calculating appropriate
+    A class that evaluates an LLM scorer against human-labeled datasets, calculating appropriate
     metrics and saving them to a file.
     """
 
@@ -132,63 +128,50 @@ class ScorerEvaluator:
         """
         self.scorer = scorer
 
-        self.scorer_name = type(scorer).__name__
-
-    def get_scorer_metrics(self, metrics_type: Literal["harm", "objective"], dataset_name: str) -> ScorerMetrics:
+    @classmethod
+    def from_scorer(
+        cls, scorer: Scorer, metrics_type: Optional[Literal["harm", "objective"]] = None
+    ) -> Union["HarmScorerEvaluator", "ObjectiveScorerEvaluator"]:
         """
-        Returns evaluation statistics (if they exist) for the scorer using the dataset_name of the human labeled
-        dataset that this scorer was run against.
+        Factory method to create a ScorerEvaluator based on the type of scoring.
 
         Args:
-            metrics_type (Literal["harm", "objective"]): The type of the scorer metrics, either "harm" or "objective".
-            dataset_name (str): The name of the dataset on which the scorer evaluation was run. This is used to
-                inform the name of the metrics file to read in the `scorer_evals` directory and is often a
-                'harm_category' or 'objective'.
-        Returns:
-            ScorerMetrics: A ScorerMetrics object containing the saved evaluation statistics for the scorer.
-        """
-        metrics_path = self._get_metrics_path(metrics_type=metrics_type, dataset_name=dataset_name)
-        if not os.path.exists(metrics_path):
-            raise FileNotFoundError(
-                f"{metrics_path} does not exist. Evaluation may not have been run with this harm, objective, or dataset yet."
-            )
-        return ScorerMetrics.from_json(metrics_path)
+            scorer (Scorer): The scorer to evaluate.
+            metrics_type (Literal["harm", "objective"]): The type of scoring, either "harm" or "objective".
+                If not provided, it will default to "objective" for true/false scorers and "harm" for all other
+                scorers.
 
-    async def run_evaluation_async(
-        self, labeled_dataset: HumanLabeledDataset, scorer_trials: int = 1, save_results: bool = True
-    ) -> ScorerMetrics:
+        Returns:
+            ScorerEvaluator: An instance of HarmScorerEvaluator or ObjectiveScorerEvaluator.
         """
-        Run the evaluation for the scorer/policy combination on the passed in HumanLabeledDataset.
+        if not metrics_type:
+            metrics_type = "objective" if scorer.scorer_type == "true_false" else "harm"
+        if metrics_type == "harm":
+            return HarmScorerEvaluator(scorer=scorer)
+        elif metrics_type == "objective":
+            return ObjectiveScorerEvaluator(scorer=scorer)
+
+    @abc.abstractmethod
+    def get_scorer_metrics(self, dataset_name: str) -> ScorerMetrics:
+        """
+        Get the metrics for the scorer in the 'dataset/score/scorer_evals' directory based on the dataset name.
+
         Args:
-            labeled_dataset (HumanLabeledDataset): The human-labeled dataset to evaluate the scorer against.
-            scorer_trials (int): The number of trials to run the scorer on all responses.
-            save_results (bool): Whether to save the metrics in a JSON file and the model score(s) for each response
-                in a CSV file. Defaults to True.
-        Returns:
-            ScorerMetrics: The metrics for the scorer. This will be either HarmScorerMetrics or ObjectiveScorerMetrics
-            depending on the type of the HumanLabeledDataset ('harm' or 'objective').
-        """
-        if labeled_dataset.type == "harm":
-            return await self.evaluate_harm_scorer_async(
-                labeled_dataset=labeled_dataset, scorer_trials=scorer_trials, save_results=save_results
-            )
-        elif labeled_dataset.type == "objective":
-            return await self.evaluate_objective_scorer_async(
-                labeled_dataset=labeled_dataset, scorer_trials=scorer_trials, save_results=save_results
-            )
-        else:
-            raise ValueError(
-                f"Unsupported dataset type: {labeled_dataset.type}. Supported types are 'harm' and 'objective'."
-            )
+            dataset_name (str): The name of the HumanLabeledDataset on which evaluation was run.
 
+        Returns:
+            ScorerMetrics: The metrics for the scorer.
+        """
+        pass
+
+    @abc.abstractmethod
     async def run_evaluation_from_csv_async(
         self,
         csv_path: Union[str, Path],
-        type: Literal["harm", "objective"],
         assistant_response_col: str,
         human_label_col_names: List[str],
         objective_or_harm_col_name: str,
-        scorer_trials: int = 1,
+        num_scorer_trials: int = 1,
         save_results: bool = True,
         dataset_name: Optional[str] = None,
     ) -> ScorerMetrics:
@@ -198,12 +181,11 @@ class ScorerEvaluator:
         Args:
             csv_path (str): The path to the CSV file, which will be used to construct the HumanLabeledDataset
                 object.
-            type (Literal["harm", "objective"]): The type of the dataset, either "harm" or "objective".
             assistant_response_col (str): The name of the column in the CSV file that contains the assistant responses.
             human_label_col_names (List[str]): The names of the columns in the CSV file that contain the human labels.
             objective_or_harm_col_name (str): The name of the column in the CSV file that contains the objective or harm
-                associated with each response.
-            scorer_trials (int): The number of trials to run the scorer on all responses.
+                category associated with each response.
+            num_scorer_trials (int): The number of trials to run the scorer on all responses.
             save_results (bool): Whether to save the metrics in a JSON file and the model score(s) for each response
                 in a CSV file. Defaults to True.
             dataset_name (str, Optional): The name of the dataset. If not provided, it will be inferred from the CSV file
@@ -213,213 +195,24 @@ class ScorerEvaluator:
         Returns:
             ScorerMetrics: The metrics for the scorer.
         """
-        labeled_dataset = HumanLabeledDataset.from_csv(
-            csv_path=csv_path,
-            type=type,
-            assistant_responses_col_name=assistant_response_col,
-            human_label_col_names=human_label_col_names,
-            objective_or_harm_col_name=objective_or_harm_col_name,
-            dataset_name=dataset_name,
-        )
-        metrics = await self.run_evaluation_async(
-            labeled_dataset=labeled_dataset, scorer_trials=scorer_trials, save_results=save_results
-        )
+        pass
 
-        return metrics
-
-    async def evaluate_harm_scorer_async(
-        self,
-        labeled_dataset: HumanLabeledDataset,
-        scorer_trials: int = 1,
-        save_results: bool = True,
-    ) -> HarmScorerMetrics:
+    @abc.abstractmethod
+    async def run_evaluation_async(
+        self, labeled_dataset: HumanLabeledDataset, num_scorer_trials: int = 1, save_results: bool = True
+    ) -> ScorerMetrics:
         """
-        Evaluate the scorer against a human-labeled dataset of type 'harm'. If save_results is True, the evaluation
-        metrics and CSV file containing the model scores for each trial will be saved in the
-        'dataset/score/scorer_evals/harm' directory based on the name of the HumanLabeledDataset.
-
+        Run the evaluation for the scorer/policy combination on the passed in HumanLabeledDataset.
         Args:
-            labeled_dataset (HumanLabeledDataset): The human-labeled dataset to evaluate against.
-            scorer_trials (int): The number of trials to run the scorer on all responses. Defaults to 1.
-            save_results (bool): Whether to save the metrics and model scoring results. Defaults to True.
-
+            labeled_dataset (HumanLabeledDataset): The human-labeled dataset to evaluate the scorer against.
+            num_scorer_trials (int): The number of trials to run the scorer on all responses.
+            save_results (bool): Whether to save the metrics in a JSON file and the model score(s) for each response
+                in a CSV file. Defaults to True.
         Returns:
-            HarmScorerMetrics: The metrics for the harm scorer.
+            ScorerMetrics: The metrics for the scorer. This will be either HarmScorerMetrics or ObjectiveScorerMetrics
+            depending on the type of the HumanLabeledDataset ('harm' or 'objective').
         """
-        if labeled_dataset.type != "harm":
-            raise ValueError("The human-labeled dataset must be of type 'harm' to evaluate a harm scorer.")
-        if len({entry.harm_category for entry in labeled_dataset.entries}) > 1:
-            raise ValueError("Evaluating a dataset with multiple harm categories is not currently supported.")
-
-        assistant_responses, human_scores_list, harms = [], [], []
-        for index, entry in enumerate(labeled_dataset.entries):
-            if not isinstance(entry, HarmHumanLabeledEntry):
-                raise ValueError(
-                    f"Entry at index {index} is not a HarmHumanLabeledEntry,"
-                    " but the human-labeled dataset type is 'harm'."
-                )
-            for request_response in entry.responses_to_score:
-                self.scorer._memory.add_request_response_to_memory(request=request_response)
-                # Logic may need to change for multi-turn scoring
-                assistant_responses.append(request_response.request_pieces[0])
-            human_scores_list.append(entry.human_scores)
-            harms.append(entry.harm_category)
-
-        # Transpose human scores list so each row is a complete set of human scores for all the responses
-        all_human_scores = np.array(human_scores_list).T
-
-        all_model_scores_list = []
-        for _ in range(scorer_trials):
-            scores = await self.scorer.score_responses_inferring_tasks_batch_async(
-                request_responses=assistant_responses
-            )
-
-            score_values = [score.get_value() for score in scores]
-            all_model_scores_list.append(score_values)
-        all_model_scores = np.array(all_model_scores_list)
-
-        harm_metrics = self._compute_harm_metrics(
-            all_human_scores=all_human_scores,
-            all_model_scores=all_model_scores,
-        )
-
-        if save_results:
-            metrics_path = self._get_metrics_path(metrics_type="harm", dataset_name=labeled_dataset.name)
-            csv_results_path = self._get_csv_results_path(metrics_type="harm", dataset_name=labeled_dataset.name)
-            self._save_model_scores_to_csv(
-                objectives_or_harms=harms,
-                responses=[response.converted_value for response in assistant_responses],
-                all_model_scores=all_model_scores,
-                file_path=csv_results_path,
-            )
-            # Save the metrics to a JSON file
-            with open(metrics_path, "w") as f:
-                json.dump(asdict(harm_metrics), f, indent=4)
-
-        return harm_metrics
-
-    async def evaluate_objective_scorer_async(
-        self, labeled_dataset: HumanLabeledDataset, scorer_trials: int = 1, save_results: bool = True
-    ) -> ObjectiveScorerMetrics:
-        """
-        Evaluate the scorer against a human-labeled dataset of type 'objective'. If save_results is True, the evaluation
-        metrics and CSV file containing the model scores for each trial will be saved in the
-        'dataset/score/scorer_evals/objective' directory based on the name of the HumanLabeledDataset.
-
-        Args:
-            labeled_dataset (HumanLabeledDataset): The human-labeled dataset to evaluate against.
-            scorer_trials (int): The number of trials to run the scorer on all responses. Defaults to 1.
-            save_results (bool): Whether to save the metrics and model scoring results. Defaults to True.
-        Returns:
-            ObjectiveScorerMetrics: The metrics for the objective scorer.
-        """
-        if labeled_dataset.type != "objective":
-            raise ValueError("The human-labeled dataset must be of type 'objective' to evaluate an objective scorer.")
-        assistant_responses, human_scores_list, objectives = [], [], []
-        for index, entry in enumerate(labeled_dataset.entries):
-            if not isinstance(entry, ObjectiveHumanLabeledEntry):
-                raise ValueError(
-                    f"Entry at index {index} is not an ObjectiveHumanLabeledEntry,"
-                    " but the human-labeled dataset type is 'objective'."
-                )
-            for request_response in entry.responses_to_score:
-                self.scorer._memory.add_request_response_to_memory(request=request_response)
-                # Logic may need to change for multi-turn scoring
-                assistant_responses.append(request_response.request_pieces[0])
-            human_scores_list.append(entry.human_scores)
-            objectives.append(entry.objective)
-
-        # Transpose human scores list so each row is a complete set of human scores for all the responses
-        all_human_scores = np.array(human_scores_list).T
-
-        all_model_scores_list = []
-        for _ in range(scorer_trials):
-            scores = await self.scorer.score_prompts_with_tasks_batch_async(
-                request_responses=assistant_responses, tasks=objectives
-            )
-
-            score_values = [score.get_value() for score in scores]
-            all_model_scores_list.append(score_values)
-        all_model_scores = np.array(all_model_scores_list)
-
-        objective_metrics = self._compute_objective_metrics(
-            all_human_scores=all_human_scores,
-            all_model_scores=all_model_scores,
-        )
-        if save_results:
-            metrics_path = self._get_metrics_path(metrics_type="objective", dataset_name=labeled_dataset.name)
-            csv_results_path = self._get_csv_results_path(metrics_type="objective", dataset_name=labeled_dataset.name)
-            self._save_model_scores_to_csv(
-                objectives_or_harms=objectives,
-                responses=[response.converted_value for response in assistant_responses],
-                all_model_scores=all_model_scores,
-                file_path=csv_results_path,
-            )
-            # Save the metrics to a JSON file
-            with open(metrics_path, "w") as f:
-                json.dump(asdict(objective_metrics), f, indent=4)
-
-        return objective_metrics
-
-    def _compute_harm_metrics(
-        self,
-        all_human_scores: np.ndarray,
-        all_model_scores: np.ndarray,
-    ) -> HarmScorerMetrics:
-        reliability_data = np.concatenate((all_human_scores, all_model_scores))
-        # Calculate the mean of human scores for each response, which is considered the gold label
-        gold_scores = np.mean(all_human_scores, axis=0)
-        mean_model_scores = np.mean(all_model_scores, axis=0)
-        diff = mean_model_scores - gold_scores
-        abs_error = np.abs(diff)
-        metrics = {
-            "mean_absolute_error": np.mean(abs_error),
-            "mae_standard_error": np.std(abs_error) / np.sqrt(len(abs_error)),
-            "t_statistic": ttest_1samp(diff, 0).statistic,
-            "p_value": ttest_1samp(diff, 0).pvalue,
-            "krippendorff_alpha_combined": krippendorff.alpha(
-                reliability_data=reliability_data, level_of_measurement="ordinal"
-            ),
-            "type": "harm",
-        }
-        if len(all_human_scores) > 1:
-            metrics["krippendorff_alpha_humans"] = krippendorff.alpha(
-                reliability_data=all_human_scores, level_of_measurement="ordinal"
-            )
-        if len(all_model_scores) > 1:
-            metrics["krippendorff_alpha_model"] = krippendorff.alpha(
-                reliability_data=all_model_scores, level_of_measurement="ordinal"
-            )
-
-        return HarmScorerMetrics(**metrics)
-
-    def _compute_objective_metrics(
-        self,
-        all_human_scores: np.ndarray,
-        all_model_scores: np.ndarray,
-    ) -> ObjectiveScorerMetrics:
-        # Calculate the majority vote of human scores for each response, which is considered the gold label.
-        # If the vote is split, the resulting gold score will be 0 (i.e. False). Same logic is applied to model trials.
-        gold_scores = np.round(np.mean(all_human_scores, axis=0))
-        majority_model_scores = np.round(np.mean(all_model_scores, axis=0))
-
-        true_positive = np.sum((gold_scores == 1) & (majority_model_scores == 1))
-        false_positive = np.sum((gold_scores == 0) & (majority_model_scores == 1))
-        true_negative = np.sum((gold_scores == 0) & (majority_model_scores == 0))
-        false_negative = np.sum((gold_scores == 1) & (majority_model_scores == 0))
-        accuracy = (true_positive + true_negative) / len(gold_scores)
-        precision = true_positive / (true_positive + false_positive) if (true_positive + false_positive) > 0 else 0.0
-        recall = true_positive / (true_positive + false_negative) if (true_positive + false_negative) > 0 else 0.0
-        f1_score = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
-        metrics = {
-            "accuracy": accuracy,
-            "precision": precision,
-            "recall": recall,
-            "f1_score": f1_score,
-            "type": "objective",
-        }
-
-        return ObjectiveScorerMetrics(**metrics)
+        pass
 
     def _save_model_scores_to_csv(
         self,
@@ -444,7 +237,301 @@ class ScorerEvaluator:
         scores_df = pd.DataFrame(cols_dict)
         scores_df.to_csv(file_path, index=False)
 
-    def _get_metrics_path(self, metrics_type: Literal["harm", "objective"], dataset_name: str) -> Path:
+
+class HarmScorerEvaluator(ScorerEvaluator):
+    """
+    A class that evaluates a harm scorer against human-labeled datasets of type 'harm'.
+    """
+
+    def get_scorer_metrics(self, dataset_name) -> HarmScorerMetrics:
+        metrics_path = self._get_metrics_path(dataset_name=dataset_name)
+        if not os.path.exists(metrics_path):
+            raise FileNotFoundError(
+                f"{metrics_path} does not exist. Evaluation may not have been run with this dataset yet."
+            )
+        return HarmScorerMetrics.from_json(metrics_path)
+
+    async def run_evaluation_from_csv_async(
+        self,
+        csv_path: Union[str, Path],
+        assistant_response_col: str,
+        human_label_col_names: List[str],
+        objective_or_harm_col_name: str,
+        num_scorer_trials: int = 1,
+        save_results: bool = True,
+        dataset_name: Optional[str] = None,
+    ) -> HarmScorerMetrics:
+        labeled_dataset = HumanLabeledDataset.from_csv(
+            csv_path=csv_path,
+            metrics_type="harm",
+            assistant_responses_col_name=assistant_response_col,
+            human_label_col_names=human_label_col_names,
+            objective_or_harm_col_name=objective_or_harm_col_name,
+            dataset_name=dataset_name,
+        )
+        metrics = await self.run_evaluation_async(
+            labeled_dataset=labeled_dataset, num_scorer_trials=num_scorer_trials, save_results=save_results
+        )
+
+        return metrics
+
+    async def run_evaluation_async(
+        self,
+        labeled_dataset: HumanLabeledDataset,
+        num_scorer_trials: int = 1,
+        save_results: bool = True,
+    ) -> HarmScorerMetrics:
+        """
+        Evaluate the scorer against a human-labeled dataset of type 'harm'. If save_results is True, the evaluation
+        metrics and CSV file containing the model scores for each trial will be saved in the
+        'dataset/score/scorer_evals/harm' directory based on the name of the HumanLabeledDataset.
+
+        Args:
+            labeled_dataset (HumanLabeledDataset): The human-labeled dataset to evaluate against.
+            num_scorer_trials (int): The number of trials to run the scorer on all responses. Defaults to 1.
+            save_results (bool): Whether to save the metrics and model scoring results. Defaults to True.
+
+        Returns:
+            HarmScorerMetrics: The metrics for the harm scorer.
+        """
+        if labeled_dataset.metrics_type != "harm":
+            raise ValueError("The human-labeled dataset must be of type 'harm' to evaluate a harm scorer.")
+        if len({entry.harm_category for entry in labeled_dataset.entries}) > 1:
+            raise ValueError("Evaluating a dataset with multiple harm categories is not currently supported.")
+
+        assistant_responses, human_scores_list, harms = [], [], []
+        for index, entry in enumerate(labeled_dataset.entries):
+            if not isinstance(entry, HarmHumanLabeledEntry):
+                raise ValueError(
+                    f"Entry at index {index} is not a HarmHumanLabeledEntry,"
+                    " but the human-labeled dataset type is 'harm'."
+                )
+            for request_response in entry.responses_to_score:
+                self.scorer._memory.add_request_response_to_memory(request=request_response)
+                # Logic may need to change for multi-turn scoring
+                assistant_responses.append(request_response.request_pieces[0])
+            human_scores_list.append(entry.human_scores)
+            harms.append(entry.harm_category)
+
+        # Transpose human scores list so each row is a complete set of human scores for all the responses
+        all_human_scores = np.array(human_scores_list).T
+
+        all_model_scores_list = []
+        for _ in range(num_scorer_trials):
+            scores = await self.scorer.score_responses_inferring_tasks_batch_async(
+                request_responses=assistant_responses
+            )
+
+            score_values = [score.get_value() for score in scores]
+            all_model_scores_list.append(score_values)
+        all_model_scores = np.array(all_model_scores_list)
+
+        harm_metrics = self._compute_harm_metrics(
+            all_human_scores=all_human_scores,
+            all_model_scores=all_model_scores,
+        )
+
+        if save_results:
+            metrics_path = self._get_metrics_path(dataset_name=labeled_dataset.name)
+            csv_results_path = self._get_csv_results_path(dataset_name=labeled_dataset.name)
+            self._save_model_scores_to_csv(
+                objectives_or_harms=harms,
+                responses=[response.converted_value for response in assistant_responses],
+                all_model_scores=all_model_scores,
+                file_path=csv_results_path,
+            )
+            # Save the metrics to a JSON file
+            with open(metrics_path, "w") as f:
+                json.dump(asdict(harm_metrics), f, indent=4)
+
+        return harm_metrics
+
+    def _compute_harm_metrics(
+        self,
+        all_human_scores: np.ndarray,
+        all_model_scores: np.ndarray,
+    ) -> HarmScorerMetrics:
+        reliability_data = np.concatenate((all_human_scores, all_model_scores))
+        # Calculate the mean of human scores for each response, which is considered the gold label
+        gold_scores = np.mean(all_human_scores, axis=0)
+        mean_model_scores = np.mean(all_model_scores, axis=0)
+        diff = mean_model_scores - gold_scores
+        abs_error = np.abs(diff)
+        metrics = {
+            "mean_absolute_error": np.mean(abs_error),
+            "mae_standard_error": np.std(abs_error) / np.sqrt(len(abs_error)),
+            "t_statistic": ttest_1samp(diff, 0).statistic,
+            "p_value": ttest_1samp(diff, 0).pvalue,
+            "krippendorff_alpha_combined": krippendorff.alpha(
+                reliability_data=reliability_data, level_of_measurement="ordinal"
+            ),
+        }
+        if len(all_human_scores) > 1:
+            metrics["krippendorff_alpha_humans"] = krippendorff.alpha(
+                reliability_data=all_human_scores, level_of_measurement="ordinal"
+            )
+        if len(all_model_scores) > 1:
+            metrics["krippendorff_alpha_model"] = krippendorff.alpha(
+                reliability_data=all_model_scores, level_of_measurement="ordinal"
+            )
+
+        return HarmScorerMetrics(**metrics)
+
+    def _get_metrics_path(self, dataset_name: str) -> Path:
+        """
+        Get the path to save the metrics file.
+
+        Args:
+            dataset_name (str): The name of the HumanLabeledDataset on which evaluation was run.
+
+        Returns:
+            Path: The path to save the metrics file.
+        """
+        scorer_name = type(self.scorer).__name__
+        return Path(SCORER_EVALS_HARM_PATH, f"{dataset_name}_{scorer_name}_metrics.json").resolve()
+
+    def _get_csv_results_path(self, dataset_name: str) -> Path:
+        """
+        Get the path to save the CSV results file.
+
+        Args:
+            dataset_name (str): The name of the HumanLabeledDataset on which evaluation was run.
+
+        Returns:
+            Path: The path to the CSV to save the results from the LLM scoring trials.
+        """
+        scorer_name = type(self.scorer).__name__
+        return Path(SCORER_EVALS_HARM_PATH, f"{dataset_name}_{scorer_name}_scoring_results.csv").resolve()
+
+
+class ObjectiveScorerEvaluator(ScorerEvaluator):
+    """
+    A class that evaluates an objective scorer against human-labeled datasets of type 'objective'.
+    """
+
+    def get_scorer_metrics(self, dataset_name: str) -> ObjectiveScorerMetrics:
+        metrics_path = self._get_metrics_path(dataset_name=dataset_name)
+        if not os.path.exists(metrics_path):
+            raise FileNotFoundError(
+                f"{metrics_path} does not exist. Evaluation may not have been run with this dataset yet."
+            )
+        return ObjectiveScorerMetrics.from_json(metrics_path)
+
+    async def run_evaluation_from_csv_async(
+        self,
+        csv_path: Union[str, Path],
+        assistant_response_col: str,
+        human_label_col_names: List[str],
+        objective_or_harm_col_name: str,
+        num_scorer_trials: int = 1,
+        save_results: bool = True,
+        dataset_name: Optional[str] = None,
+    ) -> ObjectiveScorerMetrics:
+        labeled_dataset = HumanLabeledDataset.from_csv(
+            csv_path=csv_path,
+            metrics_type="objective",
+            assistant_responses_col_name=assistant_response_col,
+            human_label_col_names=human_label_col_names,
+            objective_or_harm_col_name=objective_or_harm_col_name,
+            dataset_name=dataset_name,
+        )
+        metrics = await self.run_evaluation_async(
+            labeled_dataset=labeled_dataset, num_scorer_trials=num_scorer_trials, save_results=save_results
+        )
+
+        return metrics
+
+    async def run_evaluation_async(
+        self, labeled_dataset: HumanLabeledDataset, num_scorer_trials: int = 1, save_results: bool = True
+    ) -> ObjectiveScorerMetrics:
+        """
+        Evaluate the scorer against a human-labeled dataset of type 'objective'. If save_results is True, the evaluation
+        metrics and CSV file containing the model scores for each trial will be saved in the
+        'dataset/score/scorer_evals/objective' directory based on the name of the HumanLabeledDataset.
+
+        Args:
+            labeled_dataset (HumanLabeledDataset): The human-labeled dataset to evaluate against.
+            num_scorer_trials (int): The number of trials to run the scorer on all responses. Defaults to 1.
+            save_results (bool): Whether to save the metrics and model scoring results. Defaults to True.
+        Returns:
+            ObjectiveScorerMetrics: The metrics for the objective scorer.
+        """
+        if labeled_dataset.metrics_type != "objective":
+            raise ValueError("The human-labeled dataset must be of type 'objective' to evaluate an objective scorer.")
+        assistant_responses, human_scores_list, objectives = [], [], []
+        for index, entry in enumerate(labeled_dataset.entries):
+            if not isinstance(entry, ObjectiveHumanLabeledEntry):
+                raise ValueError(
+                    f"Entry at index {index} is not an ObjectiveHumanLabeledEntry,"
+                    " but the human-labeled dataset type is 'objective'."
+                )
+            for request_response in entry.responses_to_score:
+                self.scorer._memory.add_request_response_to_memory(request=request_response)
+                # Logic may need to change for multi-turn scoring
+                assistant_responses.append(request_response.request_pieces[0])
+            human_scores_list.append(entry.human_scores)
+            objectives.append(entry.objective)
+
+        # Transpose human scores list so each row is a complete set of human scores for all the responses
+        all_human_scores = np.array(human_scores_list).T
+
+        all_model_scores_list = []
+        for _ in range(num_scorer_trials):
+            scores = await self.scorer.score_prompts_with_tasks_batch_async(
+                request_responses=assistant_responses, tasks=objectives
+            )
+
+            score_values = [score.get_value() for score in scores]
+            all_model_scores_list.append(score_values)
+        all_model_scores = np.array(all_model_scores_list)
+
+        objective_metrics = self._compute_objective_metrics(
+            all_human_scores=all_human_scores,
+            all_model_scores=all_model_scores,
+        )
+        if save_results:
+            metrics_path = self._get_metrics_path(dataset_name=labeled_dataset.name)
+            csv_results_path = self._get_csv_results_path(dataset_name=labeled_dataset.name)
+            self._save_model_scores_to_csv(
+                objectives_or_harms=objectives,
+                responses=[response.converted_value for response in assistant_responses],
+                all_model_scores=all_model_scores,
+                file_path=csv_results_path,
+            )
+            # Save the metrics to a JSON file
+            with open(metrics_path, "w") as f:
+                json.dump(asdict(objective_metrics), f, indent=4)
+
+        return objective_metrics
+
+    def _compute_objective_metrics(
+        self,
+        all_human_scores: np.ndarray,
+        all_model_scores: np.ndarray,
+    ) -> ObjectiveScorerMetrics:
+        # Calculate the majority vote of human scores for each response, which is considered the gold label.
+        # If the vote is split, the resulting gold score will be 0 (i.e. False). Same logic is applied to model trials.
+        gold_scores = np.round(np.mean(all_human_scores, axis=0))
+        majority_model_scores = np.round(np.mean(all_model_scores, axis=0))
+
+        true_positive = np.sum((gold_scores == 1) & (majority_model_scores == 1))
+        false_positive = np.sum((gold_scores == 0) & (majority_model_scores == 1))
+        true_negative = np.sum((gold_scores == 0) & (majority_model_scores == 0))
+        false_negative = np.sum((gold_scores == 1) & (majority_model_scores == 0))
+        accuracy = (true_positive + true_negative) / len(gold_scores)
+        precision = true_positive / (true_positive + false_positive) if (true_positive + false_positive) > 0 else 0.0
+        recall = true_positive / (true_positive + false_negative) if (true_positive + false_negative) > 0 else 0.0
+        f1_score = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
+        metrics = {
+            "accuracy": accuracy,
+            "precision": precision,
+            "recall": recall,
+            "f1_score": f1_score,
+        }
+
+        return ObjectiveScorerMetrics(**metrics)
+
+    def _get_metrics_path(self, dataset_name: str) -> Path:
         """
         Get the path to save the metrics file.
 
@@ -455,9 +542,10 @@ class ScorerEvaluator:
         Returns:
             Path: The path to save the metrics file.
         """
-        return Path(SCORER_EVALS_PATH, metrics_type, f"{dataset_name}_{self.scorer_name}_metrics.json").resolve()
+        scorer_name = type(self.scorer).__name__
+        return Path(SCORER_EVALS_OBJECTIVE_PATH, f"{dataset_name}_{scorer_name}_metrics.json").resolve()
 
-    def _get_csv_results_path(self, metrics_type: Literal["harm", "objective"], dataset_name: str) -> Path:
+    def _get_csv_results_path(self, dataset_name: str) -> Path:
         """
         Get the path to save the CSV results file.
 
@@ -468,4 +556,5 @@ class ScorerEvaluator:
         Returns:
             Path: The path to the CSV to save the results from the LLM scoring trials.
         """
-        return Path(SCORER_EVALS_PATH, metrics_type, f"{dataset_name}_{self.scorer_name}_scoring_results.csv").resolve()
+        scorer_name = type(self.scorer).__name__
+        return Path(SCORER_EVALS_OBJECTIVE_PATH, f"{dataset_name}_{scorer_name}_scoring_results.csv").resolve()
