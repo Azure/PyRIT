@@ -60,7 +60,9 @@ def fetch_decoding_trust_stereotypes_dataset(
         raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
 
     if system_prompt_type == "targeted":
-        system_prompt = SeedPrompt.from_yaml_file(Path(DATASETS_PATH) / "jailbreak" / "dt_stereotypes_targeted.yaml")
+        system_prompt = SeedPrompt.from_yaml_file(
+            Path(DATASETS_PATH) / "jailbreak" / "multi_parameter" / "dt_stereotypes_targeted.yaml"
+        )
     elif system_prompt_type == "untargeted":
         system_prompt = SeedPrompt.from_yaml_file(Path(DATASETS_PATH) / "jailbreak" / "dt_stereotypes_untargeted.yaml")
     else:
