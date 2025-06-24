@@ -150,7 +150,9 @@ class OpenAITTSTarget(OpenAITarget):
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         n_pieces = len(prompt_request.request_pieces)
         if n_pieces != 1:
-            raise ValueError(f"This target only supports a single prompt request piece. Received: {n_pieces} pieces.")
+            raise ValueError(
+                "This target only supports a single prompt request piece. " f"Received: {n_pieces} pieces."
+            )
 
         piece_type = prompt_request.request_pieces[0].converted_value_data_type
         if piece_type != "text":
