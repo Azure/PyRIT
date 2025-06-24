@@ -42,16 +42,20 @@ class RolePlayAttack(AttackStrategy[SingleTurnAttackContext, AttackResult]):
     Implementation of single-turn role-play attack strategy.
 
     This class orchestrates a role-play attack where malicious objectives are rephrased
-    into game or script contexts to make them appear more benign and bypass content filters.
+    into role-playing contexts to make them appear more benign and bypass content filters.
     The strategy uses an adversarial chat target to transform the objective into a role-play
     scenario before sending it to the target system.
 
     The attack flow consists of:
-    1. Loading role-play definitions from a YAML file.
+    1. Loading role-play scenarios from a YAML file.
     2. Using an adversarial chat target to rephrase the objective into the role-play context.
-    3. Prepending the conversation with role-play setup messages.
-    4. Sending the rephrased objective to the target system.
-    5. Evaluating the response with scorers if configured.
+    3. Sending the rephrased objective to the target system.
+    4. Evaluating the response with scorers if configured.
+    5. Retrying on failure up to the configured number of retries.
+    6. Returning the attack result
+
+    The strategy supports customization through prepended conversations, converters,
+    and multiple scorer types for comprehensive evaluation.
     """
 
     def __init__(
@@ -63,6 +67,7 @@ class RolePlayAttack(AttackStrategy[SingleTurnAttackContext, AttackResult]):
         attack_converter_config: Optional[AttackConverterConfig] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
+        max_attempts_on_failure: int = 0,
     ) -> None:
         """
         Initialize the role-play attack strategy.
@@ -76,20 +81,21 @@ class RolePlayAttack(AttackStrategy[SingleTurnAttackContext, AttackResult]):
             attack_converter_config (Optional[AttackConverterConfig]): Configuration for prompt converters.
             attack_scoring_config (Optional[AttackScoringConfig]): Configuration for scoring components.
             prompt_normalizer (Optional[PromptNormalizer]): Normalizer for handling prompts.
+            max_attempts_on_failure (int): Maximum number of attempts to retry the attack
 
         Raises:
             ValueError: If the objective scorer is not a true/false scorer.
             FileNotFoundError: If the role_play_definition_path does not exist.
         """
         # Initialize base class
-        super().__init__(logger=logger)
+        super().__init__(logger=logger, context_type=SingleTurnAttackContext)
 
         # Store the objective target and adversarial chat
         self._objective_target = objective_target
         self._adversarial_chat = adversarial_chat
 
         # Load role-play definitions
-        role_play_definition: SeedPromptDataset = SeedPromptDataset.from_yaml_file(role_play_definition_path)
+        role_play_definition = SeedPromptDataset.from_yaml_file(role_play_definition_path)
         self._rephrase_instructions = role_play_definition.prompts[0]
         self._user_start_turn = role_play_definition.prompts[1]
         self._assistant_start_turn = role_play_definition.prompts[2]
@@ -101,6 +107,10 @@ class RolePlayAttack(AttackStrategy[SingleTurnAttackContext, AttackResult]):
 
         # Initialize scoring configuration
         attack_scoring_config = attack_scoring_config or AttackScoringConfig()
+
+        # Check for unused optional parameters and warn if they are set
+        self._warn_if_set(config=attack_scoring_config, unused_fields=["refusal_scorer"])
+
         self._auxiliary_scorers = attack_scoring_config.auxiliary_scorers
         self._objective_scorer = attack_scoring_config.objective_scorer
         if self._objective_scorer and self._objective_scorer.scorer_type != "true_false":
@@ -112,6 +122,12 @@ class RolePlayAttack(AttackStrategy[SingleTurnAttackContext, AttackResult]):
             attack_identifier=self.get_identifier(),
             prompt_normalizer=self._prompt_normalizer,
         )
+
+        # Set the maximum attempts on failure
+        if max_attempts_on_failure < 0:
+            raise ValueError("max_attempts_on_failure must be a non-negative integer")
+
+        self._max_attempts_on_failure = max_attempts_on_failure
 
     def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
         """
@@ -166,9 +182,9 @@ class RolePlayAttack(AttackStrategy[SingleTurnAttackContext, AttackResult]):
         Returns:
             AttackResult containing the outcome of the attack.
         """
-        # Log the attack configuration
+
         self._logger.info(f"Starting role-play attack with objective: {context.objective}")
-        self._logger.info(f"Max attempts: {context.max_attempts_on_failure}")
+        self._logger.info(f"Max attempts: {self._max_attempts_on_failure}")
 
         # Execute with retries
         response = None
@@ -188,8 +204,8 @@ class RolePlayAttack(AttackStrategy[SingleTurnAttackContext, AttackResult]):
         prompt_group = self._get_prompt_group(context)
 
         # Execute with retries
-        for attempt in range(context.max_attempts_on_failure + 1):
-            self._logger.debug(f"Attempt {attempt+1}/{context.max_attempts_on_failure + 1}")
+        for attempt in range(self._max_attempts_on_failure + 1):
+            self._logger.debug(f"Attempt {attempt+1}/{self._max_attempts_on_failure + 1}")
 
             # Send the prompt with role-play context (conversation start already set up in _setup_async)
             response = await self._send_prompt_to_objective_target_async(prompt_group=prompt_group, context=context)
@@ -359,7 +375,7 @@ class RolePlayAttack(AttackStrategy[SingleTurnAttackContext, AttackResult]):
             # We got response(s) but none achieved the objective
             return (
                 AttackOutcome.FAILURE,
-                f"Failed to achieve objective after {context.max_attempts_on_failure + 1} attempts",
+                f"Failed to achieve objective after {self._max_attempts_on_failure + 1} attempts",
             )
 
         # No response at all (all attempts filtered/failed)
