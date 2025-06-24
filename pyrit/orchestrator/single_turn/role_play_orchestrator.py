@@ -6,9 +6,25 @@ import logging
 import pathlib
 from typing import Optional
 
+from typing_extensions import LiteralString, cast, deprecated
+
+from pyrit.attacks import (
+    AttackConverterConfig,
+    AttackOutcome,
+    AttackScoringConfig,
+    RolePlayAttack,
+    SingleTurnAttackContext,
+)
+from pyrit.attacks.base.attack_result import AttackResult
+from pyrit.attacks.base.attack_strategy import AttackStrategy
+from pyrit.common import deprecation_message
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import PromptRequestResponse, SeedPromptDataset
-from pyrit.orchestrator import OrchestratorResult, PromptSendingOrchestrator
+from pyrit.orchestrator import (
+    OrchestratorResult,
+    OrchestratorResultStatus,
+    PromptSendingOrchestrator,
+)
 from pyrit.prompt_converter import LLMGenericTextConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import PromptChatTarget
@@ -24,8 +40,22 @@ class RolePlayPaths(enum.Enum):
     PERSUASION_SCRIPT = pathlib.Path(DATASETS_PATH) / "orchestrators" / "role_play" / "persuasion_script.yaml"
 
 
+@deprecated(
+    cast(
+        LiteralString,
+        deprecation_message(
+            old_item="RolePlayOrchestrator",
+            new_item=RolePlayAttack,
+            removed_in="v0.12.0",
+        ),
+    ),
+)
 class RolePlayOrchestrator(PromptSendingOrchestrator):
     """
+    .. warning::
+        `RolePlayOrchestrator` is deprecated and will be removed in **v0.12.0**;
+        use `pyrit.attacks.RolePlayAttack` instead.
+
     This orchestrator implements a role-playing attack where the objective is rephrased into a game or script context.
     It uses an adversarial chat target to rephrase the objective into a more benign form that fits within the role-play
     scenario, making it harder for the target to detect the true intent.
@@ -95,6 +125,23 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
             verbose=verbose,
         )
 
+        # Override the attack with RolePlayAttack
+        self._attack: AttackStrategy[SingleTurnAttackContext, AttackResult] = RolePlayAttack(  # type: ignore
+            objective_target=objective_target,
+            adversarial_chat=adversarial_chat,
+            role_play_definition_path=role_play_definition_path,
+            attack_converter_config=AttackConverterConfig(
+                request_converters=self._request_converter_configurations,
+                response_converters=self._response_converter_configurations,
+            ),
+            attack_scoring_config=AttackScoringConfig(
+                objective_scorer=objective_scorer,
+                auxiliary_scorers=self._auxiliary_scorers,
+            ),
+            prompt_normalizer=self._prompt_normalizer,
+            max_attempts_on_failure=self._retries_on_objective_failure,
+        )
+
     async def run_attack_async(  # type: ignore[override]
         self,
         *,
@@ -103,10 +150,27 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
     ) -> OrchestratorResult:
 
         prepended_conversation = await self._get_conversation_start(objective=objective)
-        return await super().run_attack_async(
+
+        context = SingleTurnAttackContext(
             objective=objective,
-            prepended_conversation=prepended_conversation,
-            memory_labels=memory_labels,
+            prepended_conversation=prepended_conversation or [],
+            memory_labels=memory_labels or {},
+        )
+
+        result = await self._attack.execute_with_context_async(context=context)
+
+        # Map attack outcome to orchestrator status
+        status_mapping: dict[AttackOutcome, OrchestratorResultStatus] = {
+            AttackOutcome.SUCCESS: "success",
+            AttackOutcome.FAILURE: "failure",
+            AttackOutcome.UNDETERMINED: "unknown",
+        }
+
+        return OrchestratorResult(
+            conversation_id=result.conversation_id,
+            objective=objective,
+            status=status_mapping.get(result.outcome, "unknown"),
+            objective_score=result.last_score,
         )
 
     async def run_attacks_async(  # type: ignore[override]
@@ -120,7 +184,7 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
             memory_labels=memory_labels,
         )
 
-    async def _get_conversation_start(self, objective: str = None) -> Optional[list[PromptRequestResponse]]:
+    async def _get_conversation_start(self, objective: Optional[str] = None) -> Optional[list[PromptRequestResponse]]:
 
         return [
             PromptRequestResponse.from_prompt(
