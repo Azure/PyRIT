@@ -13,6 +13,7 @@ class EmojiConverter(WordLevelConverter):
     Inspired by https://github.com/BASI-LABS/parseltongue/blob/main/src/utils.ts
     """
 
+    #: Dictionary mapping letters to their corresponding emojis.
     emoji_dict = {
         "a": ["🅐", "🅰️", "🄰"],
         "b": ["🅑", "🅱️", "🄱"],

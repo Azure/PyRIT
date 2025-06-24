@@ -8,11 +8,12 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 
 class Base64Converter(PromptConverter):
+    """
+    Converts text prompts into Base64 encoded strings.
+    """
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
-        """
-        Simple converter that just base64 encodes the prompt
-        """
+        """Converts the given prompt into Base64 encoded string."""
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
