@@ -530,11 +530,13 @@ class RealtimeTarget(OpenAITarget):
         """
 
         # Check the number of request pieces
-        if len(prompt_request.request_pieces) != 1:
-            raise ValueError("This target only supports one request piece.")
+        n_pieces = len(prompt_request.request_pieces)
+        if n_pieces != 1:
+            raise ValueError(f"This target only supports one request piece. Received: {n_pieces} pieces.")
 
-        if prompt_request.request_pieces[0].converted_value_data_type not in ["text", "audio_path"]:
-            raise ValueError("This target only supports text and audio_path prompt input.")
+        piece_type = prompt_request.request_pieces[0].converted_value_data_type
+        if piece_type not in ["text", "audio_path"]:
+            raise ValueError(f"This target only supports text and audio_path prompt input. Received: {piece_type}.")
 
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""
