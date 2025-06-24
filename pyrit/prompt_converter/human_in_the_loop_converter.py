@@ -14,15 +14,17 @@ class HumanInTheLoopConverter(PromptConverter):
     """
     Allows review of each prompt sent to a target before sending it. User can choose to send the prompt as is,
     modify the prompt, or run the prompt through one of the passed-in converters before sending it.
-
-    Args:
-        converters: (List[PromptConverter], Optional): List of possible converters to run input through.
     """
 
     def __init__(
         self,
         converters: Optional[list[PromptConverter]] = None,
     ):
+        """Initialize the HumanInTheLoopConverter.
+
+        Args:
+            converters (List[PromptConverter], Optional): List of possible converters to run input through.
+        """
         self._converters = converters or []
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:

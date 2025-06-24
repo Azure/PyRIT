@@ -25,9 +25,11 @@ logger = logging.getLogger(__name__)
 
 
 class OpenAIDALLETarget(OpenAITarget):
-    """
-    The Dalle3Target takes a prompt and generates images
-    This class initializes a DALL-E image target
+    """OpenAI DALL-E Target for generating images from text prompts.
+
+    This class provides an interface to OpenAI's DALL-E image generation API,
+    supporting various image generation parameters and formats. It handles
+    prompt processing, API communication, and image response handling.
     """
 
     def __init__(

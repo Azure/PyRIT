@@ -18,15 +18,6 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
     """
     The AzureSpeechTextToAudio takes a prompt and generates a wave file.
     https://learn.microsoft.com/en-us/azure/ai-services/speech-service/text-to-speech
-    Args:
-        azure_speech_region (str, Optional): The name of the Azure region.
-        azure_speech_key (str, Optional): The API key for accessing the service.
-        synthesis_language (str): Synthesis voice language
-        synthesis_voice_name (str): Synthesis voice name, see URL
-        For more details see the following link for synthesis language and synthesis voice:
-        https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support
-        filename (str): File name to be generated.  Please include either .wav or .mp3
-        output_format (str): Either wav or mp3. Must match the file prefix.
     """
 
     AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_REGION"
@@ -42,6 +33,18 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         synthesis_voice_name: str = "en-US-AvaNeural",
         output_format: AzureSpeachAudioFormat = "wav",
     ) -> None:
+        """Initialize the AzureSpeechTextToAudioConverter.
+
+        For more details see the following link for synthesis language and synthesis voice:
+        https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support
+
+        Args:
+            azure_speech_region (str, Optional): The name of the Azure region.
+            azure_speech_key (str, Optional): The API key for accessing the service.
+            synthesis_language (str): Synthesis voice language
+            synthesis_voice_name (str): Synthesis voice name, see URL
+            output_format (str): Either wav or mp3. Must match the file prefix.
+        """
         self._azure_speech_region: str = default_values.get_required_value(
             env_var_name=self.AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE, passed_value=azure_speech_region
         )

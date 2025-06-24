@@ -23,18 +23,6 @@ class PDFConverter(PromptConverter):
     into a PDF.
     3. Modify Existing PDFs (Overlay approach): Enables injecting text into existing PDFs at specified
     coordinates, merging a new "overlay layer" onto the original PDF.
-
-    Args:
-        prompt_template (Optional[SeedPrompt], optional): A `SeedPrompt` object representing a template.
-        font_type (str): Font type for the PDF. Defaults to "Helvetica".
-        font_size (int): Font size for the PDF. Defaults to 12.
-        font_color (tuple): Font color for the PDF in RGB format. Defaults to (255, 255, 255).
-        page_width (int): Width of the PDF page in mm. Defaults to 210 (A4 width).
-        page_height (int): Height of the PDF page in mm. Defaults to 297 (A4 height).
-        column_width (int): Width of each column in the PDF. Defaults to 0 (full page width).
-        row_height (int): Height of each row in the PDF. Defaults to 10.
-        existing_pdf (Optional[Path], optional): Path to an existing PDF file. Defaults to None.
-        injection_items (Optional[List[Dict]], optional): A list of injection items for modifying an existing PDF.
     """
 
     def __init__(
@@ -50,6 +38,20 @@ class PDFConverter(PromptConverter):
         existing_pdf: Optional[Path] = None,
         injection_items: Optional[List[Dict]] = None,
     ) -> None:
+        """Initialize the PDFConverter.
+
+        Args:
+            prompt_template (Optional[SeedPrompt], optional): A `SeedPrompt` object representing a template.
+            font_type (str): Font type for the PDF. Defaults to "Helvetica".
+            font_size (int): Font size for the PDF. Defaults to 12.
+            font_color (tuple): Font color for the PDF in RGB format. Defaults to (255, 255, 255).
+            page_width (int): Width of the PDF page in mm. Defaults to 210 (A4 width).
+            page_height (int): Height of the PDF page in mm. Defaults to 297 (A4 height).
+            column_width (int): Width of each column in the PDF. Defaults to 0 (full page width).
+            row_height (int): Height of each row in the PDF. Defaults to 10.
+            existing_pdf (Optional[Path], optional): Path to an existing PDF file. Defaults to None.
+            injection_items (Optional[List[Dict]], optional): A list of injection items for modifying an existing PDF.
+        """
         self._prompt_template = prompt_template
         self._font_type = font_type
         self._font_size = font_size

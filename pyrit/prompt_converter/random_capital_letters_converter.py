@@ -11,14 +11,15 @@ logger = logging.getLogger(__name__)
 
 
 class RandomCapitalLettersConverter(PromptConverter):
-    """This converter takes a prompt and randomly capitalizes it by a percentage of the total characters.
-
-    Args:
-        This accepts a text prompt, and a percentage of randomization from 1 to 100.  This includes decimal
-        points in that range.
-    """
+    """This converter takes a prompt and randomly capitalizes it by a percentage of the total characters."""
 
     def __init__(self, percentage: float = 100.0) -> None:
+        """Initialize the RandomCapitalLettersConverter.
+
+        Args:
+            percentage (float): A percentage of randomization from 1 to 100. This includes decimal
+                points in that range. Defaults to 100.0.
+        """
         self.percentage = percentage
 
     def input_supported(self, input_type: PromptDataType) -> bool:

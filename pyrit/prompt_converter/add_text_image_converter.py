@@ -18,14 +18,6 @@ logger = logging.getLogger(__name__)
 class AddTextImageConverter(PromptConverter):
     """
     Adds a string to an image and wraps the text into multiple lines if necessary.
-
-    Args:
-        text_to_add (str): Text to add to an image. Defaults to empty string.
-        font_name (str): Path of font to use. Must be a TrueType font (.ttf). Defaults to "helvetica.ttf".
-        color (tuple): Color to print text in, using RGB values. Defaults to (0, 0, 0).
-        font_size (float): Size of font to use. Defaults to 15.
-        x_pos (int): X coordinate to place text in (0 is left most). Defaults to 10.
-        y_pos (int): Y coordinate to place text in (0 is upper most). Defaults to 10.
     """
 
     def __init__(
@@ -37,6 +29,16 @@ class AddTextImageConverter(PromptConverter):
         x_pos: int = 10,
         y_pos: int = 10,
     ):
+        """Initialize the AddTextImageConverter.
+
+        Args:
+            text_to_add (str): Text to add to an image. Defaults to empty string.
+            font_name (str): Path of font to use. Must be a TrueType font (.ttf). Defaults to "helvetica.ttf".
+            color (tuple): Color to print text in, using RGB values. Defaults to (0, 0, 0).
+            font_size (int): Size of font to use. Defaults to 15.
+            x_pos (int): X coordinate to place text in (0 is left most). Defaults to 10.
+            y_pos (int): Y coordinate to place text in (0 is upper most). Defaults to 10.
+        """
         if text_to_add.strip() == "":
             raise ValueError("Please provide valid text_to_add value")
         if not font_name.endswith(".ttf"):
