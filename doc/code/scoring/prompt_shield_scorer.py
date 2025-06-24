@@ -7,7 +7,7 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.17.1
 #   kernelspec:
-#     display_name: pyrit-python313-fresh2
+#     display_name: pyrit-dev
 #     language: python
 #     name: python3
 # ---
