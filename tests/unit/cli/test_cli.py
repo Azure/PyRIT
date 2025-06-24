@@ -21,50 +21,41 @@ test_cases_success = [
     (
         "--config-file 'tests/unit/cli/prompt_send_success.yaml'",
         [PromptSendingOrchestrator],
-        ["run_attack_async"],
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_success_converters_default.yaml'",
         [PromptSendingOrchestrator],
-        ["run_attack_async"],
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_success_converters_custom_target.yaml'",
         [PromptSendingOrchestrator],
-        ["run_attack_async"],
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_success_converters_llm_mixed_target.yaml'",
         [PromptSendingOrchestrator],
-        ["run_attack_async"],
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_success_converters_no_target.yaml'",
         [PromptSendingOrchestrator],
-        ["run_attack_async"],
     ),
-    ("--config-file 'tests/unit/cli/multi_turn_rto_success.yaml'", [RedTeamingOrchestrator], ["run_attack_async"]),
-    ("--config-file 'tests/unit/cli/multi_turn_rto_args_success.yaml'", [RedTeamingOrchestrator], ["run_attack_async"]),
-    ("--config-file 'tests/unit/cli/multi_turn_crescendo_success.yaml'", [CrescendoOrchestrator], ["run_attack_async"]),
+    ("--config-file 'tests/unit/cli/multi_turn_rto_success.yaml'", [RedTeamingOrchestrator]),
+    ("--config-file 'tests/unit/cli/multi_turn_rto_args_success.yaml'", [RedTeamingOrchestrator]),
+    ("--config-file 'tests/unit/cli/multi_turn_crescendo_success.yaml'", [CrescendoOrchestrator]),
     (
         "--config-file 'tests/unit/cli/multi_turn_crescendo_args_success.yaml'",
         [CrescendoOrchestrator],
-        ["run_attack_async"],
     ),
     (
         "--config-file 'tests/unit/cli/multi_turn_tap_success.yaml'",
         [TreeOfAttacksWithPruningOrchestrator],
-        ["run_attack_async"],
     ),
     (
         "--config-file 'tests/unit/cli/multi_turn_tap_args_success.yaml'",
         [TreeOfAttacksWithPruningOrchestrator],
-        ["run_attack_async"],
     ),
     (
         "--config-file 'tests/unit/cli/multi_turn_multiple_orchestrators_args_success.yaml'",
         [TreeOfAttacksWithPruningOrchestrator, CrescendoOrchestrator, RedTeamingOrchestrator],
-        ["run_attack_async", "run_attack_async", "run_attack_async"],
     ),
     (
         "--config-file 'tests/unit/cli/mixed_multiple_orchestrators_args_success.yaml'",
@@ -74,7 +65,6 @@ test_cases_success = [
             CrescendoOrchestrator,
             RedTeamingOrchestrator,
         ],
-        ["run_attacks_async", "run_attack_async", "run_attack_async", "run_attack_async"],
     ),
 ]
 
@@ -181,14 +171,15 @@ test_cases_error = [
 ]
 
 
-@pytest.mark.parametrize("command, orchestrator_classes, methods", test_cases_success)
+@pytest.mark.parametrize("command, orchestrator_classes", test_cases_success)
 @patch("pyrit.common.default_values.get_required_value", return_value="value")
-def test_cli_success(get_required_value, command, orchestrator_classes, methods):
+def test_cli_success(get_required_value, command, orchestrator_classes):
     # Patching the request sending functionality since we don't want to test the orchestrator,
     # but just the CLI part.
+
     with contextlib.ExitStack() as stack:
-        for orchestrator_class, method in zip(orchestrator_classes, methods):
-            stack.enter_context(patch.object(orchestrator_class, method))
+        for orchestrator_class in orchestrator_classes:
+            stack.enter_context(patch.object(orchestrator_class, "run_attack_async"))
         main(shlex.split(command))
 
 
