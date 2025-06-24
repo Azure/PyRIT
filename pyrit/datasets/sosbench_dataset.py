@@ -23,7 +23,7 @@ def fetch_sosbench_dataset() -> SeedPromptDataset:
 
     seed_prompts = [
         SeedPrompt(
-            value=item["Example"],
+            value=item["goal"],
             data_type="text",
             name="",
             dataset_name="SOSBench",
@@ -51,7 +51,7 @@ def fetch_sosbench_dataset() -> SeedPromptDataset:
                 "Radha Poovendran",
             ],
         )
-        for item in data
+        for item in data["train"]
     ]
 
     seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
