@@ -11,7 +11,7 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import (
 
 
 @dataclass
-class NormalizerRequest():
+class NormalizerRequest:
     """
     Represents a single request sent to normalizer.
     """

@@ -15,7 +15,7 @@ from pyrit.models.score import Score
 Originator = Literal["orchestrator", "converter", "undefined", "scorer"]
 
 
-class PromptRequestPiece():
+class PromptRequestPiece:
     """Represents a piece of a prompt request to a target.
 
     This class represents a single piece of a prompt request that will be sent
