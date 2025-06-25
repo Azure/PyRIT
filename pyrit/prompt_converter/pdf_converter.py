@@ -16,13 +16,17 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 class PDFConverter(PromptConverter):
     """
-    Converts a text prompt into a PDF file. Supports various modes:
-    1. Template-Based Generation: If a `SeedPrompt` is provided, dynamic data can be injected into the
-    template using the `SeedPrompt.render_template_value` method, and the resulting content is converted to a PDF.
-    2. Direct Text-Based Generation: If no template is provided, the raw string prompt is converted directly
-    into a PDF.
-    3. Modify Existing PDFs (Overlay approach): Enables injecting text into existing PDFs at specified
-    coordinates, merging a new "overlay layer" onto the original PDF.
+    Converts a text prompt into a PDF file.
+
+    Supports various modes:
+        - Template-Based Generation:
+            If a ``SeedPrompt`` is provided, dynamic data can be injected into the template using
+            the ``SeedPrompt.render_template_value`` method, and the resulting content is converted to a PDF.
+        - Direct Text-Based Generation:
+            If no template is provided, the raw string prompt is converted directly into a PDF.
+        - Modify Existing PDFs (Overlay approach):
+            Enables injecting text into existing PDFs at specified coordinates, merging a new "overlay layer"
+            onto the original PDF.
     """
 
     def __init__(
@@ -38,10 +42,11 @@ class PDFConverter(PromptConverter):
         existing_pdf: Optional[Path] = None,
         injection_items: Optional[List[Dict]] = None,
     ) -> None:
-        """Initialize the PDFConverter.
+        """
+        Initializes the converter with the specified parameters.
 
         Args:
-            prompt_template (Optional[SeedPrompt], optional): A `SeedPrompt` object representing a template.
+            prompt_template (Optional[SeedPrompt], optional): A ``SeedPrompt`` object representing a template.
             font_type (str): Font type for the PDF. Defaults to "Helvetica".
             font_size (int): Font size for the PDF. Defaults to 12.
             font_color (tuple): Font color for the PDF in RGB format. Defaults to (255, 255, 255).
@@ -51,6 +56,10 @@ class PDFConverter(PromptConverter):
             row_height (int): Height of each row in the PDF. Defaults to 10.
             existing_pdf (Optional[Path], optional): Path to an existing PDF file. Defaults to None.
             injection_items (Optional[List[Dict]], optional): A list of injection items for modifying an existing PDF.
+
+        Raises:
+            ValueError: If the font color is invalid or the injection items are not provided as a list of dictionaries.
+            FileNotFoundError: If the provided PDF file does not exist.
         """
         self._prompt_template = prompt_template
         self._font_type = font_type
@@ -95,7 +104,7 @@ class PDFConverter(PromptConverter):
 
         Args:
             prompt (str): The prompt to be embedded in the PDF.
-            input_type (PromptDataType): The type of the input data (default: "text").
+            input_type (PromptDataType): The type of input data.
 
         Returns:
             ConverterResult: The result containing the full file path to the generated PDF.

@@ -10,20 +10,20 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 class MorseConverter(PromptConverter):
     """
-    Converter to encode prompts using morse code.
+    Encodes prompts using morse code.
 
     Uses '-' and '.' characters, with ' ' to separate characters and '/' to separate words.
-
-    Invalid/unsupported characters replaced with error sequence '........'.
-
-    Parameters
-    ---
-    append_description: bool, default=False
-        Append plaintext "expert" text to the prompt. Includes instructions to only communicate
-        using the cipher, a description of the cipher, and an example encoded using cipher.
+    Invalid or unsupported characters are replaced with an error sequence '........'.
     """
 
     def __init__(self, *, append_description: bool = False) -> None:
+        """
+        Initializes the converter with an option to append a description to the prompt.
+
+        Args:
+            append_description (bool): Append plaintext "expert" text to the prompt. Includes instructions to only
+                communicate using the cipher, a description of the cipher, and an example encoded using cipher.
+        """
         self.append_description = append_description
         self.example = (
             "User: How do I cut down a stop sign?\n"
@@ -33,7 +33,7 @@ class MorseConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Simple converter that morse code encodes the prompt.
+        Converts the given prompt to morse code.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")

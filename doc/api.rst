@@ -128,6 +128,7 @@ API Reference
     fetch_multilingual_vulnerability_dataset
     fetch_pku_safe_rlhf_dataset
     fetch_seclists_bias_testing_dataset
+    fetch_sosbench_dataset
     fetch_tdc23_redteaming_dataset
     fetch_wmdp_dataset
     fetch_xstest_dataset
@@ -319,10 +320,13 @@ API Reference
     RepeatTokenConverter
     ROT13Converter
     SearchReplaceConverter
+    SneakyBitsSmugglerConverter
     StringJoinConverter
     SuffixAppendConverter
     SuperscriptConverter
+    TemplateSegmentConverter
     TenseConverter
+    TextJailbreakConverter
     TextToHexConverter
     ToneConverter
     ToxicSentenceGeneratorConverter
@@ -332,6 +336,7 @@ API Reference
     UnicodeSubstitutionConverter
     UrlConverter
     VariationConverter
+    VariationSelectorSmugglerConverter
     ZalgoConverter
     ZeroWidthConverter
 

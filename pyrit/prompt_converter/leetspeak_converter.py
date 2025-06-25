@@ -9,7 +9,9 @@ from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 
 
 class LeetspeakConverter(WordLevelConverter):
-    """Converts a string to a leetspeak version."""
+    """
+    Converts a string to a leetspeak version.
+    """
 
     def __init__(
         self,
@@ -22,7 +24,8 @@ class LeetspeakConverter(WordLevelConverter):
         regex: Optional[Union[str, re.Pattern]] = None,
     ):
         """
-        Initialize the converter with optional deterministic mode and custom substitutions.
+        Initializes the converter with optional deterministic mode and custom substitutions.
+
         This class allows for selection of words to convert based on various criteria.
         Only one selection parameter may be provided at a time (indices, keywords, proportion, or regex).
         If no selection parameter is provided, all words will be converted.
