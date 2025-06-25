@@ -14,7 +14,7 @@ class HumanInTheLoopConverter(PromptConverter):
     """
     Allows review of each prompt sent to a target before sending it.
 
-    User can choose to send the prompt as is, modify the prompt,
+    Users can choose to send the prompt as is, modify the prompt,
     or run the prompt through one of the passed-in converters before sending it.
     """
 

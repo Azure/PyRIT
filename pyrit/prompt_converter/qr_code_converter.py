@@ -11,9 +11,7 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 
 class QRCodeConverter(PromptConverter):
-    """
-    Converts a text string to a QR code image.
-    """
+    """Converts a text string to a QR code image."""
 
     def __init__(
         self,

@@ -8,12 +8,26 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 
 class Base64Converter(PromptConverter):
-    """
-    Converts text prompts into Base64 encoded strings.
+    """Converter that encodes text to base64 format.
+
+    This converter takes input text and converts it to base64 encoding,
+    which can be useful for obfuscating text or testing how systems
+    handle encoded content.
     """
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
-        """Converts the given prompt into Base64 encoded string."""
+        """Converts the given prompt to base64 encoding.
+
+        Args:
+            prompt: The prompt to be converted.
+            input_type: Type of data, unused for this converter.
+
+        Returns:
+            The converted text representation of the original prompt in base64.
+
+        Raises:
+            ValueError: If the input type is not supported.
+        """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 

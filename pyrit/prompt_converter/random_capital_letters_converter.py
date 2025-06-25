@@ -11,9 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class RandomCapitalLettersConverter(PromptConverter):
-    """
-    Takes a prompt and randomly capitalizes it by a percentage of the total characters.
-    """
+    """Takes a prompt and randomly capitalizes it by a percentage of the total characters."""
 
     def __init__(self, percentage: float = 100.0) -> None:
         """
