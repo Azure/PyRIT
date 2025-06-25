@@ -11,15 +11,14 @@ def fetch_ccp_sensitive_prompts_dataset() -> SeedPromptDataset:
     """
     Fetch CCP-sensitive-prompts examples and create a SeedPromptDataset.
 
+    The dataset was collected by Promptfoo to cover sensitive topics in China.
+    These are likely to be censored by certain models.
+
     Returns:
         SeedPromptDataset: A dataset of CCP-sensitive prompts.
 
     Note:
         For more information, see https://huggingface.co/datasets/promptfoo/CCP-sensitive-prompts
-
-        **Author**: promptfoo
-        **Purpose**: Collection of prompts that cover sensitive topics in China, and are likely to be censored by
-            Chinese models.
     """
     data = load_dataset(
         "promptfoo/CCP-sensitive-prompts",
