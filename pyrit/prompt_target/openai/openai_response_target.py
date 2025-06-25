@@ -3,7 +3,7 @@
 
 import json
 import logging
-from typing import Any, Dict, List, MutableSequence, Optional
+from typing import Any, Dict, List, MutableSequence, Optional, Sequence
 
 from pyrit.common import convert_local_image_to_data_url
 from pyrit.exceptions import (
@@ -14,6 +14,7 @@ from pyrit.exceptions import (
 from pyrit.models import (
     ChatMessage,
     ChatMessageListDictContent,
+    ChatMessageRole,
     PromptDataType,
     PromptRequestPiece,
     PromptRequestResponse,
@@ -45,6 +46,8 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         **kwargs,
     ):
         """
+        Initializes the OpenAIResponseTarget with the provided parameters.
+
         Args:
             model_name (str, Optional): The name of the model.
             endpoint (str, Optional): The target URL for the OpenAI service.
@@ -94,65 +97,165 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         Builds chat messages based on prompt request response entries.
 
         Args:
-            conversation (list[PromptRequestResponse]): A list of PromptRequestResponse objects.
+            conversation: A list of PromptRequestResponse objects representing the conversation.
 
         Returns:
-            list[dict]: The list of constructed chat messages.
+            A list of constructed chat messages formatted for OpenAI Response API.
+
+        Raises:
+            ValueError: If conversation is empty or contains invalid message structure.
         """
-        full_request: List[Dict[str, Any]] = []
-        for message in conversation:
+        if not conversation:
+            raise ValueError("Conversation cannot be empty")
 
-            prompt_request_pieces = message.request_pieces
+        chat_messages: List[Dict[str, Any]] = []
 
-            if len(prompt_request_pieces) == 0:
-                raise ValueError("No prompt request pieces found in the conversation.")
+        for message_index, message in enumerate(conversation):
+            try:
+                chat_message = await self._process_single_message(message)
+                if chat_message:  # Only add non-empty messages
+                    chat_messages.append(chat_message)
+            except Exception as e:
+                logger.error(f"Failed to process message at index {message_index}: {e}")
+                raise ValueError(f"Failed to process conversation message at index {message_index}: {e}") from e
 
-            # System messages are a special case. Instead of the nested formatting with
-            # "type" and "text" at a deeper level, they are just a single content string.
-            first_piece = prompt_request_pieces[0]
-            if first_piece.role == "system":
-                if len(prompt_request_pieces) > 1:
-                    raise ValueError(
-                        "System messages should only have a single request piece. "
-                        "Multiple system messages are not supported."
-                    )
-                full_request.append(
-                    ChatMessage(role="system", content=first_piece.converted_value).model_dump(exclude_none=True)
-                )
-                continue
+        self._translate_roles(conversation=chat_messages)
+        return chat_messages
 
-            content = []
-            for prompt_request_piece in prompt_request_pieces:
-                role = prompt_request_piece.role
-                if prompt_request_piece.converted_value_data_type == "text":
-                    if role == "user":
-                        type = "input_text"
-                    else:
-                        type = "output_text"
-                    entry = {"type": type, "text": prompt_request_piece.converted_value}
-                    content.append(entry)
-                elif prompt_request_piece.converted_value_data_type == "image_path":
-                    data_base64_encoded_url = await convert_local_image_to_data_url(
-                        prompt_request_piece.converted_value
-                    )
-                    image_url_entry = {"url": data_base64_encoded_url}
-                    entry = {"type": "input_image", "image_url": image_url_entry}  # type: ignore
-                    content.append(entry)
-                elif prompt_request_piece.converted_value_data_type == "reasoning":
-                    # reasoning summaries are not passed back to the target
-                    pass
-                else:
-                    raise ValueError(
-                        f"Multimodal data type {prompt_request_piece.converted_value_data_type} is not yet supported."
-                    )
+    async def _process_single_message(self, message: PromptRequestResponse) -> Optional[Dict[str, Any]]:
+        """
+        Process a single message from the conversation.
 
-            full_request.append(
-                ChatMessageListDictContent(role=role, content=content).model_dump(exclude_none=True)  # type: ignore
+        Args:
+            message: The PromptRequestResponse to process.
+
+        Returns:
+            A formatted chat message dictionary, or None if message should be skipped.
+
+        Raises:
+            ValueError: If message structure is invalid.
+        """
+        request_pieces = message.request_pieces
+
+        if not request_pieces:
+            raise ValueError("Message contains no request pieces")
+
+        # Handle system messages as a special case
+        first_piece = request_pieces[0]
+        if first_piece.role == "system":
+            return self._create_system_message(request_pieces)
+
+        # Process regular messages with content
+        content_items = await self._build_content_items(request_pieces)
+
+        # Skip messages with no valid content
+        if not content_items:
+            logger.warning("Skipping message with no valid content items")
+            return None
+
+        # Use the role from the first piece (all pieces should have the same role)
+        message_role: ChatMessageRole = first_piece.role
+
+        return ChatMessageListDictContent(role=message_role, content=content_items).model_dump(exclude_none=True)
+
+    def _create_system_message(self, request_pieces: Sequence[PromptRequestPiece]) -> Dict[str, Any]:
+        """
+        Create a system message from request pieces.
+
+        Args:
+            request_pieces: List of request pieces for the system message.
+
+        Returns:
+            A formatted system message dictionary.
+
+        Raises:
+            ValueError: If system message format is invalid.
+        """
+        if len(request_pieces) > 1:
+            raise ValueError(
+                "System messages must contain exactly one request piece. " f"Found {len(request_pieces)} pieces."
             )
 
-        self._translate_roles(conversation=full_request)
+        system_piece = request_pieces[0]
+        system_role: ChatMessageRole = "system"
+        return ChatMessage(role=system_role, content=system_piece.converted_value).model_dump(exclude_none=True)
 
-        return full_request
+    async def _build_content_items(self, request_pieces: Sequence[PromptRequestPiece]) -> List[Dict[str, Any]]:
+        """
+        Build content items from request pieces.
+
+        Args:
+            request_pieces: List of request pieces to process.
+
+        Returns:
+            List of formatted content items.
+        """
+        content_items: List[Dict[str, Any]] = []
+
+        for piece in request_pieces:
+            content_item = await self._create_content_item(piece)
+            if content_item:  # Only add non-None items
+                content_items.append(content_item)
+
+        return content_items
+
+    async def _create_content_item(self, piece: PromptRequestPiece) -> Optional[Dict[str, Any]]:
+        """
+        Create a content item from a single request piece.
+
+        Args:
+            piece: The PromptRequestPiece to convert.
+
+        Returns:
+            A formatted content item dictionary, or None for skipped types.
+
+        Raises:
+            ValueError: If the data type is not supported.
+        """
+        data_type = piece.converted_value_data_type
+        print(data_type)
+
+        if data_type == "text":
+            return self._create_text_content_item(piece)
+        elif data_type == "image_path":
+            return await self._create_image_content_item(piece)
+        elif data_type == "reasoning":
+            # Reasoning summaries are intentionally not passed back to the target
+            return None
+        else:
+            raise ValueError(f"Multimodal data type '{data_type}' is not yet supported for role '{piece.role}'")
+
+    def _create_text_content_item(self, piece: PromptRequestPiece) -> Dict[str, Any]:
+        """
+        Create a text content item.
+
+        Args:
+            piece: The PromptRequestPiece containing text data.
+
+        Returns:
+            A formatted text content item.
+        """
+        content_type = "input_text" if piece.role == "user" else "output_text"
+        return {"type": content_type, "text": piece.converted_value}
+
+    async def _create_image_content_item(self, piece: PromptRequestPiece) -> Dict[str, Any]:
+        """
+        Create an image content item.
+
+        Args:
+            piece: The PromptRequestPiece containing image path data.
+
+        Returns:
+            A formatted image content item.
+
+        Raises:
+            ValueError: If image conversion fails.
+        """
+        try:
+            data_base64_encoded_url = await convert_local_image_to_data_url(piece.converted_value)
+            return {"type": "input_image", "image_url": {"url": data_base64_encoded_url}}
+        except Exception as e:
+            raise ValueError(f"Failed to convert image at path '{piece.converted_value}': {e}") from e
 
     def _translate_roles(self, conversation: List[Dict[str, Any]]) -> None:
         # The "system" role is mapped to "developer" in the OpenAI Response API.

@@ -11,6 +11,7 @@ import httpx
 import pytest
 from openai import BadRequestError, RateLimitError
 from unit.mocks import (
+    get_audio_request_piece,
     get_image_request_piece,
     get_sample_conversations,
     openai_response_json_dict,
@@ -144,12 +145,14 @@ async def test_build_input_for_multi_modal(target: OpenAIResponseTarget):
 @pytest.mark.asyncio
 async def test_build_input_for_multi_modal_with_unsupported_data_types(target: OpenAIResponseTarget):
     # Like an image_path, the audio_path requires a file, but doesn't validate any contents
-    entry = get_image_request_piece()
-    entry.converted_value_data_type = "audio_path"
+    entry = get_audio_request_piece()
 
     with pytest.raises(ValueError) as excinfo:
         await target._build_input_for_multi_modal_async([PromptRequestResponse(request_pieces=[entry])])
-    assert "Multimodal data type audio_path is not yet supported." in str(excinfo.value)
+    assert (
+        "Failed to process conversation message at index 0: "
+        "Multimodal data type 'audio_path' is not yet supported for role 'user'" in str(excinfo.value)
+    )
 
 
 @pytest.mark.asyncio
@@ -683,7 +686,7 @@ def test_construct_prompt_response_from_openai_json_invalid_json(
         target._construct_prompt_response_from_openai_json(
             open_ai_str_response="{invalid_json", request_piece=dummy_text_request_piece
         )
-    assert "Failed to parse JSON response" in str(excinfo.value)
+    assert "Status Code: 500, Message: Failed to parse response from model gpt-o" in str(excinfo.value)
 
 
 def test_construct_prompt_response_from_openai_json_no_status(
@@ -760,7 +763,7 @@ async def test_build_input_for_multi_modal_async_empty_conversation(target: Open
     req = PromptRequestResponse(request_pieces=[])
     with pytest.raises(ValueError) as excinfo:
         await target._build_input_for_multi_modal_async([req])
-    assert "No prompt request pieces found" in str(excinfo.value)
+    assert "Failed to process conversation message at index 0: Message contains no request pieces" in str(excinfo.value)
 
 
 @pytest.mark.asyncio
