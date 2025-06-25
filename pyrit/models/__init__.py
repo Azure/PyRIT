@@ -9,6 +9,8 @@ from pyrit.models.chat_message import (
 )
 from pyrit.models.prompt_request_piece import PromptRequestPiece, sort_request_pieces
 
+from pyrit.models.attack_result import AttackResult, AttackOutcome, ResultT
+
 from pyrit.models.data_type_serializer import (
     AllowedCategories,
     AudioPathDataTypeSerializer,
@@ -35,6 +37,8 @@ from pyrit.models.storage_io import AzureBlobStorageIO, DiskStorageIO, StorageIO
 __all__ = [
     "ALLOWED_CHAT_MESSAGE_ROLES",
     "AllowedCategories",
+    "AttackResult",
+    "AttackOutcome",
     "AudioPathDataTypeSerializer",
     "AzureBlobStorageIO",
     "ChatMessage",
@@ -62,6 +66,7 @@ __all__ = [
     "QuestionAnsweringDataset",
     "QuestionAnsweringEntry",
     "QuestionChoice",
+    "ResultT",
     "Score",
     "ScoreType",
     "SeedPrompt",

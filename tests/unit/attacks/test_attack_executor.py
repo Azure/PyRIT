@@ -9,7 +9,7 @@ import pytest
 
 from pyrit.attacks.base.attack_context import SingleTurnAttackContext
 from pyrit.attacks.base.attack_executor import AttackExecutor
-from pyrit.attacks.base.attack_result import AttackOutcome, AttackResult
+from pyrit.models import AttackOutcome, AttackResult
 from pyrit.attacks.base.attack_strategy import AttackStrategy
 from pyrit.exceptions.exception_classes import AttackExecutionException
 

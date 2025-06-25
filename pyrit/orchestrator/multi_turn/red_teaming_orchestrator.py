@@ -14,7 +14,6 @@ from typing_extensions import LiteralString, deprecated
 from pyrit.attacks import (
     AttackAdversarialConfig,
     AttackConverterConfig,
-    AttackOutcome,
     AttackScoringConfig,
     MultiTurnAttackContext,
     RedTeamingAttack,
@@ -29,6 +28,7 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import (
 )
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import Scorer
+from pyrit.models import AttackOutcome
 
 logger = logging.getLogger(__name__)
 

@@ -15,7 +15,7 @@ from pyrit.attacks.base.attack_config import (
     AttackScoringConfig,
 )
 from pyrit.attacks.base.attack_context import ConversationSession
-from pyrit.attacks.base.attack_result import AttackOutcome
+from pyrit.models import AttackOutcome
 from pyrit.attacks.components.conversation_manager import ConversationState
 from pyrit.attacks.multi_turn.crescendo import (
     CrescendoAttack,

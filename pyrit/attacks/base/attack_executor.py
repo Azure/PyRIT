@@ -5,7 +5,7 @@ import asyncio
 from typing import Dict, List, Optional
 
 from pyrit.attacks.base.attack_context import ContextT
-from pyrit.attacks.base.attack_result import ResultT
+from pyrit.models import ResultT
 from pyrit.attacks.base.attack_strategy import AttackStrategy
 from pyrit.models import PromptRequestResponse
 

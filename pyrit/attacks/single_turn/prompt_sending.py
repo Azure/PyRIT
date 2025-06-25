@@ -10,7 +10,7 @@ from pyrit.attacks.base.attack_config import (
     AttackScoringConfig,
 )
 from pyrit.attacks.base.attack_context import SingleTurnAttackContext
-from pyrit.attacks.base.attack_result import AttackOutcome, AttackResult
+from pyrit.models import AttackOutcome, AttackResult
 from pyrit.attacks.base.attack_strategy import AttackStrategy
 from pyrit.attacks.components.conversation_manager import ConversationManager
 from pyrit.common.utils import combine_dict

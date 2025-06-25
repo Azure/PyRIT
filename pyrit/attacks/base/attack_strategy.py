@@ -9,8 +9,8 @@ from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator, Dict, Generic, List, MutableMapping, Optional
 
+from pyrit.models import AttackOutcome, ResultT
 from pyrit.attacks.base.attack_context import ContextT
-from pyrit.attacks.base.attack_result import AttackOutcome, ResultT
 from pyrit.common import default_values
 from pyrit.common.logger import logger
 from pyrit.exceptions.exception_classes import (

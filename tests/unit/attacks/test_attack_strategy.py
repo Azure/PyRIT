@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from pyrit.attacks.base.attack_result import AttackOutcome
+from pyrit.models import AttackOutcome
 from pyrit.attacks.base.attack_strategy import AttackStrategy, AttackStrategyLogAdapter
 from pyrit.exceptions.exception_classes import (
     AttackExecutionException,
