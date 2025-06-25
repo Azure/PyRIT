@@ -17,35 +17,11 @@ Originator = Literal["orchestrator", "converter", "undefined", "scorer"]
 
 
 class PromptRequestPiece(abc.ABC):
-    """
-    Represents a prompt request piece.
+    """Represents a piece of a prompt request to a target.
 
-    Parameters:
-        id (UUID): The unique identifier for the memory entry.
-        role (PromptType): system, assistant, user
-        conversation_id (str): The identifier for the conversation which is associated with a single target.
-        sequence (int): The order of the conversation within a conversation_id.
-            Can be the same number for multi-part requests or multi-part responses.
-        timestamp (DateTime): The timestamp of the memory entry.
-        labels (Dict[str, str]): The labels associated with the memory entry. Several can be standardized.
-        prompt_metadata (Dict[str, str | int]): The metadata associated with the prompt. This can be
-            specific to any scenarios. Because memory is how components talk with each other, this
-            can be component specific. e.g. the URI from a file uploaded to a blob store,
-            or a document type you want to upload.
-        converters (list[PromptConverter]): The converters for the prompt.
-        prompt_target (PromptTarget): The target for the prompt.
-        orchestrator_identifier (Dict[str, str]): The orchestrator identifier for the prompt.
-        original_value_data_type (PromptDataType): The data type of the original prompt (text, image)
-        original_value (str): The text of the original prompt. If prompt is an image, it's a link.
-        original_value_sha256 (str): The SHA256 hash of the original prompt data.
-        converted_value_data_type (PromptDataType): The data type of the converted prompt (text, image)
-        converted_value (str): The text of the converted prompt. If prompt is an image, it's a link.
-        converted_value_sha256 (str): The SHA256 hash of the original prompt data.
-        original_prompt_id (UUID): The original prompt id. It is equal to id unless it is a duplicate.
-        scores (list[Score]): The scores associated with the prompt.
-
-    Methods:
-        __str__(): Returns a string representation of the memory entry.
+    This class represents a single piece of a prompt request that will be sent
+    to a target. Since some targets can handle multiple pieces (e.g., text and images),
+    requests are composed of lists of PromptRequestPiece objects.
     """
 
     def __init__(
@@ -73,6 +49,35 @@ class PromptRequestPiece(abc.ABC):
         timestamp: Optional[datetime] = None,
         scores: Optional[List[Score]] = None,
     ):
+        """Initialize a PromptRequestPiece.
+
+        Args:
+            role: The role of the prompt (system, assistant, user).
+            original_value: The text of the original prompt. If prompt is an image, it's a link.
+            original_value_sha256: The SHA256 hash of the original prompt data. Defaults to None.
+            converted_value: The text of the converted prompt. If prompt is an image, it's a link. Defaults to None.
+            converted_value_sha256: The SHA256 hash of the converted prompt data. Defaults to None.
+            id: The unique identifier for the memory entry. Defaults to None (auto-generated).
+            conversation_id: The identifier for the conversation which is associated with a single target.
+                Defaults to None.
+            sequence: The order of the conversation within a conversation_id. Defaults to -1.
+            labels: The labels associated with the memory entry. Several can be standardized. Defaults to None.
+            prompt_metadata: The metadata associated with the prompt. This can be specific to any scenarios.
+                Because memory is how components talk with each other, this can be component specific.
+                e.g. the URI from a file uploaded to a blob store, or a document type you want to upload.
+                Defaults to None.
+            converter_identifiers: The converter identifiers for the prompt. Defaults to None.
+            prompt_target_identifier: The target identifier for the prompt. Defaults to None.
+            orchestrator_identifier: The orchestrator identifier for the prompt. Defaults to None.
+            scorer_identifier: The scorer identifier for the prompt. Defaults to None.
+            original_value_data_type: The data type of the original prompt (text, image). Defaults to "text".
+            converted_value_data_type: The data type of the converted prompt (text, image). Defaults to "text".
+            response_error: The response error type. Defaults to "none".
+            originator: The originator of the prompt. Defaults to "undefined".
+            original_prompt_id: The original prompt id. It is equal to id unless it is a duplicate. Defaults to None.
+            timestamp: The timestamp of the memory entry. Defaults to None (auto-generated).
+            scores: The scores associated with the prompt. Defaults to None.
+        """
 
         self.id = id if id else uuid4()
 

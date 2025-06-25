@@ -50,7 +50,7 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
             model_name (str, Optional): The name of the model.
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-                Defaults to the OPENAI_CHAT_KEY environment variable.
+                Defaults to the `OPENAI_CHAT_KEY` environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
             use_aad_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
@@ -89,7 +89,7 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
                 using adversarial infrastructure (e.g. Crescendo scorers will set this flag).
             extra_body_parameters (dict, Optional): Additional parameters to be included in the request body.
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
-                httpx.AsyncClient() constructor.
+                `httpx.AsyncClient()` constructor.
                 For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
         """
         super().__init__(temperature=temperature, top_p=top_p, **kwargs)
@@ -289,4 +289,4 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         # Some models may not support all of these
         for prompt_data_type in converted_prompt_data_types:
             if prompt_data_type not in ["text", "image_path"]:
-                raise ValueError("This target only supports text and image_path.")
+                raise ValueError(f"This target only supports text and image_path. Received: {prompt_data_type}.")

@@ -61,16 +61,12 @@ def fetch_decoding_trust_stereotypes_dataset(
 
     if system_prompt_type == "targeted":
         system_prompt = SeedPrompt.from_yaml_file(
-            Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dt_stereotypes_targeted.yaml"
+            Path(DATASETS_PATH) / "jailbreak" / "multi_parameter" / "dt_stereotypes_targeted.yaml"
         )
     elif system_prompt_type == "untargeted":
-        system_prompt = SeedPrompt.from_yaml_file(
-            Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dt_stereotypes_untargeted.yaml"
-        )
+        system_prompt = SeedPrompt.from_yaml_file(Path(DATASETS_PATH) / "jailbreak" / "dt_stereotypes_untargeted.yaml")
     else:
-        system_prompt = SeedPrompt.from_yaml_file(
-            Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dt_stereotypes_benign.yaml"
-        )
+        system_prompt = SeedPrompt.from_yaml_file(Path(DATASETS_PATH) / "jailbreak" / "dt_stereotypes_benign.yaml")
 
     # Required keys to validate each example
     required_keys = {"stereotype_topic", "target_group", "user_prompt"}

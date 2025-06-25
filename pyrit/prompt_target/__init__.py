@@ -24,6 +24,7 @@ from pyrit.prompt_target.openai.openai_completion_target import OpenAICompletion
 from pyrit.prompt_target.openai.openai_dall_e_target import OpenAIDALLETarget
 from pyrit.prompt_target.openai.openai_realtime_target import RealtimeTarget
 from pyrit.prompt_target.openai.openai_response_target import OpenAIResponseTarget
+from pyrit.prompt_target.openai.openai_sora_target import OpenAISoraTarget
 from pyrit.prompt_target.openai.openai_tts_target import OpenAITTSTarget
 from pyrit.prompt_target.playwright_target import PlaywrightTarget
 from pyrit.prompt_target.prompt_shield_target import PromptShieldTarget
@@ -46,6 +47,7 @@ __all__ = [
     "OpenAIDALLETarget",
     "OpenAIChatTarget",
     "OpenAIResponseTarget",
+    "OpenAISoraTarget",
     "OpenAITTSTarget",
     "OpenAITarget",
     "PlaywrightTarget",

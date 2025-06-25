@@ -17,9 +17,10 @@ from pyrit.score import Scorer
 
 
 class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
-    """
-    Question Answering Benchmark Orchestrator class is responsible for sending multiple choice questions
-    as defined in a QuestionAnsweringDataset
+    """Question Answering Benchmark Orchestrator for processing multiple choice questions.
+
+    This orchestrator is responsible for sending multiple choice questions as defined
+    in a QuestionAnsweringDataset and evaluating the responses from target models.
     """
 
     OBJECTIVE_FORMAT_STRING = textwrap.dedent(
