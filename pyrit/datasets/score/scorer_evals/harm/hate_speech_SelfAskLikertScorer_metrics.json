@@ -5,6 +5,5 @@
     "p_value": 0.7804574308600751,
     "krippendorff_alpha_combined": 0.8495743543112846,
     "krippendorff_alpha_humans": 0.8612011988306925,
-    "krippendorff_alpha_model": null,
-    "type": "harm"
+    "krippendorff_alpha_model": null
 }

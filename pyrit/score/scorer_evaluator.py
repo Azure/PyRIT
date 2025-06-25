@@ -108,6 +108,7 @@ class ObjectiveScorerMetrics(ScorerMetrics):
     """
 
     accuracy: float
+    accuracy_standard_error: float
     f1_score: float
     precision: float
     recall: float
@@ -188,9 +189,9 @@ class ScorerEvaluator(abc.ABC):
             num_scorer_trials (int): The number of trials to run the scorer on all responses.
             save_results (bool): Whether to save the metrics in a JSON file and the model score(s) for each response
                 in a CSV file. Defaults to True.
-            dataset_name (str, Optional): The name of the dataset. If not provided, it will be inferred from the CSV file
-                name. This is used to inform the name of the metrics file and model scoring results CSV to save in the
-                'scorer_evals' directory.
+            dataset_name (str, Optional): The name of the dataset. If not provided, it will be inferred from the CSV
+                file name. This is used to inform the name of the metrics file and model scoring results CSV to save
+                in the 'scorer_evals' directory.
 
         Returns:
             ScorerMetrics: The metrics for the scorer.
@@ -296,7 +297,8 @@ class HarmScorerEvaluator(ScorerEvaluator):
         """
         if labeled_dataset.metrics_type != "harm":
             raise ValueError("The human-labeled dataset must be of type 'harm' to evaluate a harm scorer.")
-        if len({entry.harm_category for entry in labeled_dataset.entries}) > 1:
+
+        if len({entry.harm_category for entry in labeled_dataset.entries}) > 1:  # type: ignore
             raise ValueError("Evaluating a dataset with multiple harm categories is not currently supported.")
 
         assistant_responses, human_scores_list, harms = [], [], []
@@ -524,6 +526,7 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
         f1_score = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
         metrics = {
             "accuracy": accuracy,
+            "accuracy_standard_error": np.sqrt(accuracy * (1 - accuracy) / len(gold_scores)),
             "precision": precision,
             "recall": recall,
             "f1_score": f1_score,
