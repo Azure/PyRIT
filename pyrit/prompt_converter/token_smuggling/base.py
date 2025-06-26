@@ -20,23 +20,29 @@ class SmugglerConverter(PromptConverter, abc.ABC):
     """
 
     def __init__(self, action: Literal["encode", "decode"] = "encode") -> None:
+        """
+        Initializes the converter with options for encoding/decoding.
+
+        Args:
+            action (Literal["encode", "decode"]): The action to perform.
+        """
         if action not in ["encode", "decode"]:
             raise ValueError("Action must be either 'encode' or 'decode'")
         self.action = action
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Convert the prompt by either encoding or decoding it based on the specified action.
+        Converts the given prompt by either encoding or decoding it based on the specified action.
 
         Args:
-            prompt (str): The prompt to be processed.
-            input_type (PromptDataType): Type of input; only "text" is supported.
+            prompt (str): The prompt to be converted.
+            input_type (PromptDataType): The type of input data.
 
         Returns:
-            ConverterResult: The result containing the output text and its type.
+            ConverterResult: The result containing the converted text and its type.
 
         Raises:
-            ValueError: If the input type is unsupported.
+            ValueError: If the input type is not supported.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
@@ -49,11 +55,9 @@ class SmugglerConverter(PromptConverter, abc.ABC):
             return ConverterResult(output_text=decoded, output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
-        """Return True if the input type is 'text'."""
         return input_type == "text"
 
     def output_supported(self, output_type: PromptDataType) -> bool:
-        """Return True if the output type is 'text'."""
         return output_type == "text"
 
     @abc.abstractmethod
