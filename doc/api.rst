@@ -133,6 +133,7 @@ API Reference
     fetch_tdc23_redteaming_dataset
     fetch_wmdp_dataset
     fetch_xstest_dataset
+    fetch_medsafetybench
 
 
 :py:mod:`pyrit.embedding`
