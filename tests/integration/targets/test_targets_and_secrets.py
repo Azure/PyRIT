@@ -11,6 +11,7 @@ from pyrit.prompt_target import (
     OpenAIChatTarget,
     OpenAICompletionTarget,
     OpenAIDALLETarget,
+    OpenAIResponseTarget,
     OpenAISoraTarget,
     OpenAITTSTarget,
     RealtimeTarget,
@@ -84,6 +85,28 @@ async def test_connect_required_openai_text_targets(
         args["seed"] = 42
 
     target = OpenAIChatTarget(**args)
+
+    await _assert_can_send_prompt(target)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("endpoint", "api_key", "model_name", "no_api_version"),
+    [
+        ("OPENAI_RESPONSES_ENDPOINT", "OPENAI_RESPONSES_KEY", "OPENAI_RESPONSES_MODEL", True),
+        ("AZURE_OPENAI_RESPONSES_ENDPOINT", "AZURE_OPENAI_RESPONSES_KEY", "AZURE_OPENAI_RESPONSES_MODEL", False),
+    ],
+)
+async def test_connect_required_openai_response_targets(duckdb_instance, endpoint, api_key, model_name, no_api_version):
+    args = {
+        "endpoint": os.getenv(endpoint),
+        "api_key": os.getenv(api_key),
+        "model_name": os.getenv(model_name),
+    }
+    if no_api_version:
+        args["api_version"] = None
+
+    target = OpenAIResponseTarget(**args)
 
     await _assert_can_send_prompt(target)
 
