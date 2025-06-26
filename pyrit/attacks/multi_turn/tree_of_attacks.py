@@ -26,7 +26,12 @@ from pyrit.common.utils import combine_dict
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score, SeedPrompt
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.score import Scorer, SelfAskTrueFalseScorer, TrueFalseQuestion
+from pyrit.score import (
+    Scorer,
+    SelfAskScaleScorer,
+    SelfAskTrueFalseScorer,
+    TrueFalseQuestion,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -69,13 +74,13 @@ class TAPAttackContext(AttackContext):
         Factory method to create context from standard parameters.
 
         Args:
-            objective: The objective of the attack.
-            prepended_conversation: Conversation to prepend to the target model.
-            memory_labels: Additional labels that can be applied to the prompts.
-            **kwargs: Additional parameters specific to TAP attack (currently unused).
+            objective (str): The attack objective to achieve.
+            prepended_conversation (List[PromptRequestResponse]): Initial conversation history to prepend.
+            memory_labels (Dict[str, str]): Memory labels for the attack context.
+            **kwargs: Additional parameters for future extensibility.
 
         Returns:
-            An instance of TAPAttackContext.
+            TAPAttackContext: A new instance of TAPAttackContext initialized with the provided parameters.
         """
         return cls(
             objective=objective,
@@ -147,40 +152,71 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
     """
     Implementation of the Tree of Attacks with Pruning (TAP) attack strategy.
 
-    The TAP attack strategy explores multiple attack paths in parallel, using a tree
-    structure to systematically generate and evaluate adversarial prompts. It employs
-    pruning to focus computational resources on the most promising branches.
+    The TAP attack strategy systematically explores multiple adversarial prompt paths in parallel
+    using a tree structure. It employs breadth-first search with pruning to efficiently find
+    effective jailbreaks while managing computational resources.
 
-    The attack flow consists of:
-    1. Initializing multiple parallel branches (width) for exploration.
-    2. For each iteration (up to depth), generating adversarial prompts for each branch.
-    3. Evaluating responses and scoring them for objective achievement.
-    4. Pruning less promising branches based on scores and width constraints.
-    5. Branching the most promising nodes to explore variations.
-    6. Continuing until the objective is achieved or maximum depth is reached.
+    How it works:
+    1. **Initialization**: Creates multiple initial attack branches (width) to explore different approaches
+    2. **Tree Expansion**: For each iteration (depth), branches are expanded by a branching factor
+    3. **Prompt Generation**: Each node generates adversarial prompts via an LLM red-teaming assistant
+    4. **Evaluation**: Responses are evaluated for objective achievement and on-topic relevance
+    5. **Pruning**: Low-scoring or off-topic branches are pruned to maintain the width constraint
+    6. **Iteration**: The process continues until the objective is achieved or max depth is reached
 
-    The strategy supports customization through:
-    - Tree structure parameters (width, depth, branching factor) set at initialization
-    - Execution parameters (on-topic checking, response prefix, batch size) set at initialization
-    - Various scoring and conversion configurations
+    The strategy balances exploration (trying diverse approaches) with exploitation (focusing on
+    promising paths) through its pruning mechanism.
 
-    Args:
-        objective_target: The target system to attack.
-        attack_adversarial_config: Configuration for the adversarial component.
-        attack_converter_config: Configuration for prompt converters. Defaults to None.
-        attack_scoring_config: Configuration for scoring. Must include objective_scorer.
-        prompt_normalizer: Normalizer for handling prompts. Defaults to None.
-        tree_width: Number of branches to explore in parallel. Defaults to 3.
-        tree_depth: Maximum number of iterations. Defaults to 5.
-        branching_factor: Number of child branches per parent. Defaults to 2.
-        on_topic_checking_enabled: Whether to check if prompts are on-topic. Defaults to True.
-        desired_response_prefix: Expected prefix for successful responses. Defaults to "Sure, here is".
-        batch_size: Number of nodes to process in parallel per batch. Defaults to 10.
+    Example:
+        >>> from pyrit.prompt_target import AzureOpenAIChat
+        >>> from pyrit.score import SelfAskScaleScorer, FloatScaleThresholdScorer
+        >>> from pyrit.attacks import TreeOfAttacksWithPruningAttack, AttackAdversarialConfig, AttackScoringConfig
+        >>>
+        >>> # Initialize models
+        >>> target = AzureOpenAIChat(deployment_name="gpt-4", endpoint="...", api_key="...")
+        >>> adversarial_llm = AzureOpenAIChat(deployment_name="gpt-4", endpoint="...", api_key="...")
+        >>>
+        >>> # Configure attack
+        >>> tap_attack = TreeOfAttacksWithPruningAttack(
+        ...     objective_target=target,
+        ...     attack_adversarial_config=AttackAdversarialConfig(target=adversarial_llm),
+        ...     attack_scoring_config=AttackScoringConfig(
+        ...         objective_scorer=FloatScaleThresholdScorer(
+        ...             scorer=SelfAskScaleScorer(chat_target=adversarial_llm),
+        ...             threshold=0.7,
+        ...         )
+        ...     ),
+        ...     tree_width=3,
+        ...     tree_depth=5,
+        ... )
+        >>>
+        >>> # Execute attack
+        >>> result = await tap_attack.execute_async(objective="Generate harmful content")
+        >>> print(f"Attack {'succeeded' if result.outcome == AttackOutcome.SUCCESS else 'failed'}")
+        >>> print(f"Explored {result.nodes_explored} nodes, pruned {result.nodes_pruned}")
 
-    Raises:
-        ValueError: If objective_scorer is not provided in attack_scoring_config,
-                   if targets are not PromptChatTarget, or if tree parameters are invalid.
+    Note:
+        The TAP attack is particularly effective for complex objectives that benefit from systematic
+        exploration. The tree visualization in the result provides insights into the attack's
+        decision-making process.
+
+    References:
+        Tree of Attacks: Jailbreaking Black-Box LLMs Automatically
+        https://arxiv.org/abs/2312.02119
     """
+
+    # Default paths for TAP attack prompts
+    DEFAULT_ADVERSARIAL_SYSTEM_PROMPT_PATH: Path = (
+        DATASETS_PATH / "orchestrators" / "tree_of_attacks" / "adversarial_system_prompt.yaml"
+    )
+
+    DEFAULT_ADVERSARIAL_PROMPT_TEMPLATE_PATH: Path = (
+        DATASETS_PATH / "orchestrators" / "tree_of_attacks" / "adversarial_prompt_template.yaml"
+    )
+
+    DEFAULT_ADVERSARIAL_SEED_PROMPT_PATH: Path = (
+        DATASETS_PATH / "orchestrators" / "tree_of_attacks" / "adversarial_seed_prompt.yaml"
+    )
 
     def __init__(
         self,
@@ -200,27 +236,24 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         """
         Initialize the Tree of Attacks with Pruning attack strategy.
 
-        Tree structure parameters (width, depth, branching_factor) and execution
-        configuration (on_topic_checking_enabled, desired_response_prefix, batch_size)
-        are set at initialization because they define the fundamental behavior of
-        the attack strategy and are not expected to change between executions.
-
         Args:
-            objective_target: The target system to attack. Must be a PromptChatTarget.
-            attack_adversarial_config: Configuration for the adversarial chat component.
-            attack_converter_config: Configuration for attack converters. Defaults to None.
-            attack_scoring_config: Configuration for attack scoring. Must include objective_scorer.
-            prompt_normalizer: The prompt normalizer to use. Defaults to None.
-            tree_width: Number of branches to explore in parallel at each level. Defaults to 3.
-            tree_depth: Maximum number of iterations to perform. Defaults to 5.
-            branching_factor: Number of child branches to create from each parent. Defaults to 2.
-            on_topic_checking_enabled: Whether to check if prompts are on-topic. Defaults to True.
-            desired_response_prefix: Expected prefix for successful responses. Defaults to "Sure, here is".
-            batch_size: Number of nodes to process in parallel per batch. Defaults to 10.
+            objective_target (PromptChatTarget): The target system to attack.
+            attack_adversarial_config (AttackAdversarialConfig): Configuration for the adversarial chat component.
+            attack_converter_config (Optional[AttackConverterConfig]): Configuration for attack converters.
+                Defaults to None.
+            attack_scoring_config (Optional[AttackScoringConfig]): Configuration for attack scoring. Must include
+                objective_scorer. Defaults to None.
+            prompt_normalizer (Optional[PromptNormalizer]): The prompt normalizer to use. Defaults to None.
+            tree_width (int): Number of branches to explore in parallel at each level. Defaults to 3.
+            tree_depth (int): Maximum number of iterations to perform. Defaults to 5.
+            branching_factor (int): Number of child branches to create from each parent. Defaults to 2.
+            on_topic_checking_enabled (bool): Whether to check if prompts are on-topic. Defaults to True.
+            desired_response_prefix (str): Expected prefix for successful responses. Defaults to "Sure, here is".
+            batch_size (int): Number of nodes to process in parallel per batch. Defaults to 10.
 
         Raises:
             ValueError: If objective_scorer is not provided, if target is not PromptChatTarget,
-                       or if parameters are invalid.
+                    or if parameters are invalid.
         """
         # Validate tree parameters
         if tree_depth < 1:
@@ -254,8 +287,11 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
             raise ValueError("The adversarial target must be a PromptChatTarget for TAP attack.")
 
         # Load system prompts
-        self._adversarial_chat_system_prompt_path = attack_adversarial_config.system_prompt_path or Path(
-            DATASETS_PATH / "orchestrators" / "tree_of_attacks" / "adversarial_system_prompt.yaml"
+        self._adversarial_chat_system_prompt_path = (
+            attack_adversarial_config.system_prompt_path
+            or
+            # default to the predefined system prompt path
+            TreeOfAttacksWithPruningAttack.DEFAULT_ADVERSARIAL_SYSTEM_PROMPT_PATH
         )
         self._load_adversarial_prompts()
 
@@ -266,14 +302,22 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
 
         # Initialize scoring configuration
         attack_scoring_config = attack_scoring_config or AttackScoringConfig()
-        if attack_scoring_config.objective_scorer is None:
-            raise ValueError("Objective scorer must be provided in the attack scoring configuration.")
+        objective_scorer = attack_scoring_config.objective_scorer
+        # If no objective scorer provided, create the default TAP scorer
+        if objective_scorer is None:
+            # Use the adversarial chat target for scoring (as in old orchestrator)
+            objective_scorer = SelfAskScaleScorer(
+                chat_target=self._adversarial_chat,
+                scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
+                system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
+            )
+            self._logger.warning("No objective scorer provided, using default scorer")
 
         # Check for unused optional parameters and warn if they are set
-        self._warn_if_set(config=attack_scoring_config, unused_fields=["refusal_scorer", "use_score_as_feedback"])
+        self._warn_if_set(config=attack_scoring_config, unused_fields=["refusal_scorer"])
 
-        self._objective_scorer = attack_scoring_config.objective_scorer
         self._auxiliary_scorers = attack_scoring_config.auxiliary_scorers or []
+        self._objective_scorer = objective_scorer
         self._successful_objective_threshold = attack_scoring_config.successful_objective_threshold
 
         # Use the adversarial chat target for scoring, as in CrescendoAttack
@@ -295,24 +339,29 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         )
 
         # Load prompt template
-        prompt_template_path = Path(
-            DATASETS_PATH / "orchestrators" / "tree_of_attacks" / "adversarial_prompt_template.yaml"
+        self._adversarial_chat_prompt_template = SeedPrompt.from_yaml_file(
+            TreeOfAttacksWithPruningAttack.DEFAULT_ADVERSARIAL_PROMPT_TEMPLATE_PATH
         )
-        self._adversarial_chat_prompt_template = SeedPrompt.from_yaml_file(prompt_template_path)
 
         # Load initial seed prompt
-        seed_prompt_path = Path(DATASETS_PATH / "orchestrators" / "tree_of_attacks" / "adversarial_seed_prompt.yaml")
-        self._adversarial_chat_seed_prompt = SeedPrompt.from_yaml_file(seed_prompt_path)
+        self._adversarial_chat_seed_prompt = SeedPrompt.from_yaml_file(
+            TreeOfAttacksWithPruningAttack.DEFAULT_ADVERSARIAL_SEED_PROMPT_PATH
+        )
 
     def _validate_context(self, *, context: TAPAttackContext) -> None:
         """
         Validate the context before execution.
 
+        This method ensures the attack context contains all required configuration
+        before the attack can proceed. Currently validates that an objective is set.
+
         Args:
-            context: The attack context to validate.
+            context (TAPAttackContext): The attack context to validate, containing
+                the objective and other attack-specific configuration.
 
         Raises:
-            ValueError: If validation fails.
+            ValueError: If the context is invalid, specifically:
+                - If context.objective is empty or None
         """
         if not context.objective:
             raise ValueError("The attack objective must be set in the context.")
@@ -321,8 +370,12 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         """
         Setup phase before executing the attack.
 
+        Initializes the attack state by preparing the tree visualization structure,
+        combining memory labels, and resetting execution tracking variables. This
+        method is called automatically after validation and before attack execution.
+
         Args:
-            context: The attack context containing configuration.
+            context (TAPAttackContext): The attack context containing configuration.
         """
         # Update memory labels for this execution
         context.memory_labels = combine_dict(existing_dict=self._memory_labels, new_dict=context.memory_labels)
@@ -342,13 +395,24 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         Execute the Tree of Attacks with Pruning strategy.
 
         This method implements the core TAP algorithm, managing the tree exploration,
-        node evaluation, and pruning logic.
+        node evaluation, and pruning logic. It iteratively explores the attack tree
+        up to the configured depth, pruning less promising branches while tracking
+        the best performing paths.
+
+        The execution flow:
+        1. For each iteration (1 to tree_depth):
+        - Initialize nodes (first iteration) or branch existing nodes
+        - Send adversarial prompts to all active nodes in parallel batches
+        - Prune nodes based on scores to maintain tree_width constraint
+        - Update best conversation and score from top performers
+        - Check if objective achieved for early termination
+        2. Return success if objective met, otherwise return failure
 
         Args:
-            context: The attack context containing configuration and state.
+            context (TAPAttackContext): The attack context containing configuration and state.
 
         Returns:
-            TAPAttackResult: The result of the attack execution including tree visualization.
+            TAPAttackResult: The result of the attack execution
         """
         # Log the attack configuration
         self._logger.info(f"Starting TAP attack with objective: {context.objective}")
@@ -406,8 +470,16 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         """
         Clean up after attack execution.
 
+        This method is called automatically after attack execution completes,
+        regardless of success or failure. It provides an opportunity to clean
+        up resources, close connections, or perform other finalization tasks.
+
+        Currently, the TAP attack does not require any specific cleanup operations
+        as all resources are managed by the parent components.
+
         Args:
-            context: The attack context.
+            context (TAPAttackContext): The attack context containing the final
+                state after execution.
         """
         # No specific teardown needed for TAP attack
         pass
@@ -416,8 +488,13 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         """
         Prepare nodes for the current iteration by either initializing or branching.
 
+        This method sets up the nodes for tree exploration based on the current
+        iteration number. For the first iteration, it creates initial nodes up
+        to the tree width. For subsequent iterations, it branches existing nodes
+        according to the branching factor.
+
         Args:
-            context: The attack context.
+            context (TAPAttackContext): The attack context containing configuration and state.
         """
         if context.current_iteration == 1:
             await self._initialize_first_level_nodes_async(context)
@@ -429,8 +506,13 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         Execute a single iteration of the attack by sending prompts to all nodes,
         pruning based on results, and updating best scores.
 
+        This method orchestrates the three main phases of each TAP iteration:
+        1. Parallel prompt execution for all active nodes
+        2. Pruning to maintain the tree width constraint
+        3. Tracking the best performing conversation
+
         Args:
-            context: The attack context.
+            context (TAPAttackContext): The attack context containing configuration and state.
         """
         # Send prompts to all nodes and collect results
         await self._send_prompts_to_all_nodes_async(context)
@@ -445,26 +527,34 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         """
         Check if the objective has been achieved based on the best score.
 
+        Determines success by comparing the best objective score found so far
+        against the configured `successful_objective_threshold`. The objective
+        is considered achieved when the score meets or exceeds the threshold.
+
         Args:
-            context: The attack context.
+            context (TAPAttackContext): The attack context containing the best score.
 
         Returns:
-            bool: True if objective achieved, False otherwise.
+            bool: True if the best_objective_score exists and is greater than or
+                equal to the successful objective threshold, False otherwise.
         """
-        return (
-            context.best_objective_score is not None
-            and context.best_objective_score.get_value() >= self._successful_objective_threshold
-        )
+        normalized_score = self._normalize_score_to_float(context.best_objective_score)
+        return normalized_score >= self._successful_objective_threshold
 
     def _all_nodes_pruned(self, context: TAPAttackContext) -> bool:
         """
         Check if all nodes have been pruned.
 
+        This method determines if the attack should terminate early due to all
+        branches being pruned. This can occur when all nodes are off-topic,
+        have errors, or lack valid scores.
+
         Args:
-            context: The attack context.
+            context (TAPAttackContext): The attack context containing the current state of nodes.
 
         Returns:
-            bool: True if no nodes remain, False otherwise.
+            bool: True if `context.nodes` is empty (all branches pruned),
+                False if any nodes remain active.
         """
         return len(context.nodes) == 0
 
@@ -473,9 +563,11 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         Initialize the first level of nodes in the attack tree.
 
         Creates multiple nodes up to the tree width to explore different initial approaches.
+        Each node represents an independent attack path that will generate its own
+        adversarial prompts. All first-level nodes are created as children of the root.
 
         Args:
-            context: The attack context.
+            context (TAPAttackContext): The attack context containing configuration and state.
         """
         context.nodes = []
 
@@ -489,9 +581,12 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         Branch existing nodes to create new exploration paths.
 
         Each existing node is branched according to the branching factor to explore variations.
+        The original node is retained, and (`branching_factor` - 1) duplicates are created,
+        resulting in branching_factor total paths from each parent node. Duplicated nodes
+        inherit the full conversation history from their parent.
 
         Args:
-            context: The attack context.
+            context (TAPAttackContext): The attack context containing the current state of nodes.
         """
         cloned_nodes = []
 
@@ -509,11 +604,18 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         """
         Send prompts for all nodes in the current level.
 
-        Processes nodes in parallel batches using asyncio.gather() to improve performance
-        while respecting the batch_size limit.
+        Processes nodes in parallel batches to improve performance while respecting
+        the batch_size limit. Each node generates and sends its own adversarial prompt
+        to the objective target, evaluates the response, and updates its internal
+        state with scores and completion status.
 
         Args:
-            context: The attack context.
+            context (TAPAttackContext): The attack context containing the current state of nodes.
+
+        Note:
+            Nodes are processed in batches of size `batch_size` to manage API rate limits.
+            Within each batch, all nodes execute in parallel. The tree visualization is
+            updated with score results or pruning status after each batch completes.
         """
         # Process nodes in batches
         for batch_start in range(0, len(context.nodes), self._batch_size):
@@ -546,9 +648,18 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         Prune nodes to maintain the width constraint of the tree.
 
         Keeps only the top-performing nodes based on their objective scores.
+        Nodes are filtered to include only completed, on-topic nodes with valid scores,
+        then sorted by score in descending order. The top tree_width nodes are retained
+        while the rest are pruned. Pruned nodes are marked in the tree visualization
+        but remain visible for analysis.
 
         Args:
-            context: The attack context.
+            context (TAPAttackContext): The attack context containing the current state of nodes.
+
+        Note:
+            Nodes that are incomplete, off-topic, or lack valid scores are automatically
+            excluded from consideration and effectively pruned. Only nodes with valid
+            float objective scores can be retained.
         """
         # Get completed on-topic nodes sorted by score
         completed_nodes = self._get_completed_nodes_sorted_by_score(context.nodes)
@@ -568,11 +679,16 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         """
         Update the best conversation ID and score from the top-performing node.
 
+        This method extracts the best conversation ID and score from the highest-scoring
+        node remaining after pruning. It assumes context.nodes is already sorted by
+        objective score in descending order (which occurs during pruning). The best
+        conversation represents the most promising attack path found so far.
+
         Args:
-            context: The attack context.
+            context (TAPAttackContext): The attack context containing the current state of nodes.
         """
         if context.nodes:
-            best_node = context.nodes[0]  # Already sorted by score
+            best_node = context.nodes[0]  # Assumes already sorted by score
             context.best_conversation_id = best_node.objective_target_conversation_id
             context.best_objective_score = best_node.objective_score
 
@@ -580,12 +696,18 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         """
         Create a new attack node with the configured settings.
 
+        Constructs a TreeOfAttacksNode instance with all necessary components including
+        targets, scorers, converters, and attack metadata. If on-topic checking is enabled,
+        creates a specialized scorer configured for the current objective.
+
         Args:
-            context: The attack context.
-            parent_id: Optional parent node ID for branched nodes.
+            context (TAPAttackContext): The attack context containing the objective and other configuration.
+            parent_id (Optional[str]): The ID of the parent node in the tree, if any. If None,
+                the node will be a root-level node.
 
         Returns:
-            TreeOfAttacksNode: A new configured node.
+            TreeOfAttacksNode: A new node configured for the TAP attack, ready to
+                generate adversarial prompts and evaluate responses.
         """
         return TreeOfAttacksNode(
             objective_target=self._objective_target,
@@ -605,31 +727,56 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
             prompt_normalizer=self._prompt_normalizer,
         )
 
+    def _normalize_score_to_float(self, score: Optional[Score]) -> float:
+        """
+        Normalize any score to a float value between 0.0 and 1.0.
+
+        Args:
+            score: The score to normalize, or None.
+
+        Returns:
+            Float value between 0.0 and 1.0. Returns 0.0 if score is None.
+        """
+        if not score:
+            return 0.0
+
+        score_value = score.get_value()
+        if isinstance(score_value, bool):
+            return 1.0 if score_value else 0.0
+        elif isinstance(score_value, (int, float)):
+            return float(score_value)
+        else:
+            self._logger.warning(f"Unexpected score value type: {type(score_value)} with value: {score_value}")
+            return 0.0
+
     def _get_completed_nodes_sorted_by_score(self, nodes: List[TreeOfAttacksNode]) -> List[TreeOfAttacksNode]:
         """
         Get completed, on-topic nodes sorted by score in descending order.
 
-        Filters out incomplete, off-topic, or unscored nodes.
+        Filters out incomplete, off-topic, or unscored nodes. Only nodes that have
+        successfully completed execution with valid float scores are included. The
+        sorting uses a random tiebreaker to ensure consistent ordering when nodes
+        have identical scores.
 
         Args:
-            nodes: List of nodes to filter and sort.
+            nodes (List[TreeOfAttacksNode]): List of nodes to filter and sort. May
+                contain nodes in various states (completed, off-topic, errored, etc.)
 
         Returns:
-            Sorted list of completed, on-topic nodes.
+            List[TreeOfAttacksNode]: A list of nodes that are completed, on-topic,
+                and have valid objective scores, sorted by score in descending order.
         """
         completed_nodes = [
-            node
-            for node in nodes
-            if node
-            and node.completed
-            and (not node.off_topic)
-            and node.objective_score
-            and isinstance(node.objective_score.get_value(), float)
+            node for node in nodes if node and node.completed and (not node.off_topic) and node.objective_score
         ]
 
         # Sort by score (descending) with random tiebreaker
         completed_nodes.sort(
-            key=lambda x: (x.objective_score.get_value() if x.objective_score else 0.0, random.random()), reverse=True
+            key=lambda x: (
+                self._normalize_score_to_float(x.objective_score) if x.objective_score else 0.0,
+                random.random(),
+            ),
+            reverse=True,
         )
 
         return completed_nodes
@@ -638,11 +785,20 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         """
         Format a node's result as a human-readable string for visualization.
 
+        Converts the node's execution status and score into a descriptive string
+        that will be displayed in the tree visualization. Handles different node
+        states including off-topic, incomplete, and successful completion with scores.
+
         Args:
-            node: The node to format.
+            node (TreeOfAttacksNode): The node to format, which may be in any state
+                (off-topic, incomplete, completed with score, or error state)
 
         Returns:
-            A formatted string describing the node's result.
+            str: A formatted string describing the node's result:
+                - "Pruned (off-topic)" if node was marked off-topic
+                - "Pruned (no score available)" if node is incomplete or lacks a score
+                - "Score: X/10 || " if node completed with a valid score, where X is
+                the score converted from 0-1 range to 1-10 human-readable scale
         """
         if node.off_topic:
             return "Pruned (off-topic)"
@@ -650,18 +806,29 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
             return "Pruned (no score available)"
 
         # Convert normalized score (0-1) to human-readable format (1-10)
-        unnormalized_score = round(1 + node.objective_score.get_value() * 9)
+        normalized_score = self._normalize_score_to_float(node.objective_score)
+        unnormalized_score = round(1 + normalized_score * 9)
         return f"Score: {unnormalized_score}/10 || "
 
     def _create_on_topic_scorer(self, objective: str) -> Optional[Scorer]:
         """
         Create an on-topic scorer if enabled, configured for the specific objective.
 
+        Constructs a `SelfAskTrueFalseScorer` that evaluates whether generated prompts
+        are asking for the same information as the attack objective. This helps prune
+        branches that have diverged from the original goal.
+
         Args:
-            objective: The attack objective to check prompts against.
+            objective (str): The attack objective to check prompts against. This is
+                embedded in the true/false question to determine if prompts remain
+                relevant to the original goal.
 
         Returns:
-            On-topic scorer instance or None if disabled.
+            Optional[Scorer]:
+                - `SelfAskTrueFalseScorer` instance configured with the objective if
+                `on_topic_checking_enabled` is `True` and scoring_target exists
+                - `None` if `on_topic_checking_enabled` is `False` or no scoring_target
+                is available
         """
         if not self._on_topic_checking_enabled:
             return None
@@ -687,11 +854,16 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         """
         Create a success result for the attack.
 
+        Constructs a `TAPAttackResult` indicating successful objective achievement.
+        The outcome reason includes the achieved score and threshold for transparency.
+        Delegates to `_create_attack_result` for common result construction logic.
+
         Args:
-            context: The attack context.
+            context (TAPAttackContext): The attack context containing the final state
+                after execution, including best conversation ID and score.
 
         Returns:
-            TAPAttackResult: The success result.
+            TAPAttackResult: The success result indicating the attack achieved its objective.
         """
         score_value = context.best_objective_score.get_value() if context.best_objective_score else 0
         outcome_reason = f"Achieved score {score_value:.2f} >= " f"threshold {self._successful_objective_threshold}"
@@ -706,11 +878,17 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         """
         Create a failure result for the attack.
 
+        Constructs a `TAPAttackResult` indicating the attack failed to achieve its objective
+        within the configured tree depth. The outcome reason includes the best score
+        achieved for diagnostic purposes. Delegates to `_create_attack_result` for common
+        result construction logic.
+
         Args:
-            context: The attack context.
+            context (TAPAttackContext): The attack context containing the final state
+                after execution, including best conversation ID and score.
 
         Returns:
-            TAPAttackResult: The failure result.
+            TAPAttackResult: The failure result indicating the attack did not achieve its objective.
         """
         best_score = context.best_objective_score.get_value() if context.best_objective_score else 0
         outcome_reason = f"Did not achieve threshold score. Best score: {best_score:.2f}"
@@ -729,15 +907,23 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         outcome_reason: str,
     ) -> TAPAttackResult:
         """
-        Helper method to create TAPAttackResult with common counting logic and metadata.
+        Helper method to create `TAPAttackResult` with common counting logic and metadata.
+
+        Consolidates the result construction logic used by both success and failure cases.
+        Extracts the last response from the best conversation, compiles auxiliary scores
+        from the top node, calculates tree statistics, and populates all TAP-specific
+        metadata fields.
 
         Args:
-            context: The attack context.
-            outcome: The attack outcome (SUCCESS or FAILURE).
-            outcome_reason: The reason for the outcome.
+            context (TAPAttackContext): The attack context containing the final state
+                after execution, including best conversation ID, score, and tree visualization.
+            outcome (AttackOutcome): The attack outcome (`SUCCESS` or `FAILURE`).
+            outcome_reason (str): Human-readable explanation of the outcome.
 
         Returns:
-            TAPAttackResult: The constructed attack result.
+            TAPAttackResult: The constructed result containing all relevant information
+                about the attack execution, including conversation ID, objective, outcome,
+                outcome reason, executed turns, last response, last score, and additional metadata.
         """
         # Get the last response from the best conversation if available
         last_response = self._get_last_response_from_conversation(context.best_conversation_id)
@@ -773,11 +959,17 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         """
         Retrieve the last response from a conversation.
 
+        Fetches all prompt request pieces from memory for the given conversation ID
+        and returns the most recent one. This is typically used to extract the final
+        response from the best performing conversation for inclusion in the attack result.
+
         Args:
-            conversation_id: The conversation ID to retrieve from.
+            conversation_id (Optional[str]): The conversation ID to retrieve from. May be
+                None if no successful conversations were found during the attack.
 
         Returns:
-            The last response piece or None if not available.
+            Optional[PromptRequestPiece]: The last response piece from the conversation,
+                or None if no conversation ID was provided or no responses exist.
         """
         if not conversation_id:
             return None
@@ -789,11 +981,16 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         """
         Extract auxiliary scores from the best node if available.
 
+        Retrieves all auxiliary scorer results from the top-performing node and
+        converts them to a summary dictionary. This provides additional metrics
+        beyond the objective score that may be useful for analysis.
+
         Args:
-            nodes: List of nodes (expected to be sorted by score).
+            nodes (List[TreeOfAttacksNode]): List of nodes to extract auxiliary scores from.
 
         Returns:
-            Dictionary of auxiliary scorer names to score values.
+            Dict[str, float]: A dictionary mapping auxiliary score names to their
+                float values, or an empty dictionary if no auxiliary scores are available.
         """
         if not nodes or not nodes[0].auxiliary_scores:
             return {}
@@ -804,11 +1001,19 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         """
         Calculate statistics from the tree visualization.
 
+        Analyzes the complete tree structure to extract metrics about the attack
+        execution. Counts total nodes explored and how many were pruned during
+        the attack process.
+
         Args:
-            tree_visualization: The tree to analyze.
+            tree_visualization (Tree): The tree to analyze, containing all nodes
+                created during the attack. Each node's tag may contain "Pruned"
+                if it was removed from consideration.
 
         Returns:
-            Dictionary with nodes_explored and nodes_pruned counts.
+            Dict[str, int]: A dictionary with the following keys:
+                - "nodes_explored": Total number of nodes explored (excluding root)
+                - "nodes_pruned": Total number of nodes that were pruned during execution
         """
         all_nodes = list(tree_visualization.all_nodes())
         explored_count = len(all_nodes) - 1  # Exclude root
