@@ -25,9 +25,11 @@ logger = logging.getLogger(__name__)
 
 
 class OpenAIDALLETarget(OpenAITarget):
-    """
-    The Dalle3Target takes a prompt and generates images
-    This class initializes a DALL-E image target
+    """OpenAI DALL-E Target for generating images from text prompts.
+
+    This class provides an interface to OpenAI's DALL-E image generation API,
+    supporting various image generation parameters and formats. It handles
+    prompt processing, API communication, and image response handling.
     """
 
     def __init__(
@@ -202,11 +204,13 @@ class OpenAIDALLETarget(OpenAITarget):
         return image_generation_args
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
-        if len(prompt_request.request_pieces) != 1:
-            raise ValueError("This target only supports a single prompt request piece.")
+        n_pieces = len(prompt_request.request_pieces)
+        if n_pieces != 1:
+            raise ValueError(f"This target only supports a single prompt request piece. Received: {n_pieces} pieces.")
 
-        if prompt_request.request_pieces[0].converted_value_data_type != "text":
-            raise ValueError("This target only supports text prompt input.")
+        piece_type = prompt_request.request_pieces[0].converted_value_data_type
+        if piece_type != "text":
+            raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""

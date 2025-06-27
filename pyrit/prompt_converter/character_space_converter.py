@@ -8,13 +8,15 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 
 class CharacterSpaceConverter(PromptConverter):
+    """
+    Spaces out the input prompt and removes specified punctuations.
+
+    For more information on the bypass strategy, refer to:
+    https://www.robustintelligence.com/blog-posts/bypassing-metas-llama-classifier-a-simple-jailbreak
+    """
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
-        """
-        Simple converter that spaces out the input prompt and removes specified punctuations.
-        For more information on the bypass strategy, refer to:
-        https://www.robustintelligence.com/blog-posts/bypassing-metas-llama-classifier-a-simple-jailbreak
-        """
+        """Converts the given prompt by removing punctuation and spacing out characters."""
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
         converted_text = re.sub("[!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~]", "", " ".join(prompt))

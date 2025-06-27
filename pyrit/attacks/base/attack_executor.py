@@ -2,11 +2,12 @@
 # Licensed under the MIT license.
 
 import asyncio
-from typing import List
+from typing import Dict, List, Optional
 
 from pyrit.attacks.base.attack_context import ContextT
 from pyrit.attacks.base.attack_result import ResultT
 from pyrit.attacks.base.attack_strategy import AttackStrategy
+from pyrit.models import PromptRequestResponse
 
 
 class AttackExecutor:
@@ -33,15 +34,62 @@ class AttackExecutor:
             raise ValueError(f"max_concurrency must be a positive integer, got {max_concurrency}")
         self._max_concurrency = max_concurrency
 
-    async def execute_multi_objective_attack(
-        self, attack: AttackStrategy[ContextT, ResultT], context_template: ContextT, objectives: List[str]
+    async def execute_multi_objective_attack_async(
+        self,
+        *,
+        attack: AttackStrategy[ContextT, ResultT],
+        objectives: List[str],
+        prepended_conversation: Optional[List[PromptRequestResponse]] = None,
+        memory_labels: Optional[Dict[str, str]] = None,
+        **attack_params,
     ) -> List[ResultT]:
         """
         Execute the same attack strategy with multiple objectives against the same target in parallel.
 
-        This is a convenience method for the common use case of testing multiple attack objectives
-        against the same target using the same strategy. It creates a separate context for each
-        objective by duplicating the template context and setting the objective.
+        This method provides a simplified interface for executing multiple objectives without
+        requiring users to create context objects. It uses the attack's execute_async method
+        which accepts parameters directly.
+
+        Args:
+            attack (AttackStrategy[ContextT, ResultT]): The attack strategy to use for all objectives.
+            objectives (List[str]): List of attack objectives to test.
+            prepended_conversation (Optional[List[PromptRequestResponse]]): Conversation to prepend to the target model.
+            memory_labels (Optional[Dict[str, str]]): Additional labels that can be applied to the prompts.
+            **attack_params: Additional parameters specific to the attack strategy.
+
+        Returns:
+            List[ResultT]: List of attack results in the same order as the objectives list.
+
+        Example:
+            >>> executor = AttackExecutor(max_concurrency=3)
+            >>> results = await executor.execute_multi_objective_attack_async(
+            ...     attack=red_teaming_attack,
+            ...     objectives=["how to make a Molotov cocktail", "how to escalate privileges"],
+            ... )
+        """
+        semaphore = asyncio.Semaphore(self._max_concurrency)
+
+        async def execute_with_semaphore(objective: str) -> ResultT:
+            async with semaphore:
+                return await attack.execute_async(
+                    objective=objective,
+                    prepended_conversation=prepended_conversation,
+                    memory_labels=memory_labels,
+                    **attack_params,
+                )
+
+        tasks = [execute_with_semaphore(obj) for obj in objectives]
+        return await asyncio.gather(*tasks)
+
+    async def execute_multi_objective_attack_with_context_async(
+        self, attack: AttackStrategy[ContextT, ResultT], context_template: ContextT, objectives: List[str]
+    ) -> List[ResultT]:
+        """
+        Execute the same attack strategy with multiple objectives using context objects.
+
+        This method works with context objects directly, duplicating the template context
+        for each objective. Use this when you need fine-grained control over the context
+        or have an existing context template to reuse.
 
         Args:
             attack (AttackStrategy[ContextT, ResultT]): The attack strategy to use for all objectives
@@ -62,9 +110,10 @@ class AttackExecutor:
 
         Example:
             >>> executor = AttackExecutor(max_concurrency=3)
-            >>> results = await executor.execute_multi_objective_attack(
+            >>> context = MultiTurnAttackContext(max_turns=5, ...)
+            >>> results = await executor.execute_multi_objective_attack_with_context_async(
             ...     attack=prompt_injection_attack,
-            ...     context_template=base_context,
+            ...     context_template=context,
             ...     objectives=["how to make a Molotov cocktail", "how to escalate privileges"]
             ... )
         """
@@ -78,10 +127,10 @@ class AttackExecutor:
             contexts.append(context)
 
         # Run strategies in parallel
-        results = await self._execute_parallel(attack=attack, contexts=contexts)
+        results = await self._execute_parallel_async(attack=attack, contexts=contexts)
         return results
 
-    async def _execute_parallel(
+    async def _execute_parallel_async(
         self, *, attack: AttackStrategy[ContextT, ResultT], contexts: List[ContextT]
     ) -> List[ResultT]:
         """
@@ -107,7 +156,7 @@ class AttackExecutor:
         # anonymous function to execute strategy with semaphore
         async def execute_with_semaphore(attack: AttackStrategy[ContextT, ResultT], ctx: ContextT) -> ResultT:
             async with semaphore:
-                return await attack.execute_async(context=ctx)
+                return await attack.execute_with_context_async(context=ctx)
 
         tasks = [execute_with_semaphore(attack, ctx) for ctx in contexts]
 

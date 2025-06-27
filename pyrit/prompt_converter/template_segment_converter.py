@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 
 class TemplateSegmentConverter(PromptConverter):
     """
-    A PromptConverter that uses a template to randomly split a prompt into segments defined by the template.
+    Uses a template to randomly split a prompt into segments defined by the template.
 
-    This converter is a generalized version of this
+    This converter is a generalized version of this:
     https://adversa.ai/blog/universal-llm-jailbreak-chatgpt-gpt-4-bard-bing-anthropic-and-beyond/
     """
 
@@ -27,9 +27,14 @@ class TemplateSegmentConverter(PromptConverter):
         prompt_template: Optional[SeedPrompt] = None,
     ):
         """
+        Initializes the converter with the specified target and prompt template.
+
         Args:
             prompt_template (SeedPrompt, Optional): The prompt template for the conversion. Must have two or more
-            parameters. If not provided, uses the default tom_and_jerry.yaml template.
+                parameters. If not provided, uses the default ``tom_and_jerry.yaml`` template.
+
+        Raises:
+            ValueError: If the template has fewer than two parameters or if any parameter is missing in the template.
         """
         super().__init__()
 
@@ -67,7 +72,7 @@ class TemplateSegmentConverter(PromptConverter):
     def output_supported(self, output_type: PromptDataType) -> bool:
         return output_type == "text"
 
-    async def convert_async(self, *, prompt: str, input_type="text") -> ConverterResult:
+    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Converts the given prompt by splitting it into random segments and using them to fill the template parameters.
         The prompt is split into N segments (where N is the number of template parameters) at random word boundaries.
@@ -75,13 +80,13 @@ class TemplateSegmentConverter(PromptConverter):
 
         Args:
             prompt (str): The prompt to be converted.
-            input_type (str): The type of input data. Must be "text".
+            input_type (PromptDataType): The type of input data.
 
         Returns:
             ConverterResult: The result containing the template filled with prompt segments.
 
         Raises:
-            ValueError: If input_type is not supported.
+            ValueError: If the input type is not supported.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
@@ -98,10 +103,10 @@ class TemplateSegmentConverter(PromptConverter):
         If there aren't enough words for all parameters, remaining segments will be empty strings.
 
         Args:
-            prompt (str): The prompt to split into segments
+            prompt (str): The prompt to split into segments.
 
         Returns:
-            list[str]: List of segments, padded with empty strings if needed
+            list[str]: List of segments, padded with empty strings if needed.
         """
         words = prompt.split()
         num_splits = min(len(words), self._number_parameters - 1)

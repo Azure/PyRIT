@@ -84,6 +84,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         attack_converter_config: Optional[AttackConverterConfig] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
+        max_turns: int = 10,
     ):
         """
         Initialize the red teaming attack strategy.
@@ -94,12 +95,13 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             attack_converter_config: Configuration for attack converters. Defaults to None.
             attack_scoring_config: Configuration for attack scoring. Defaults to None.
             prompt_normalizer: The prompt normalizer to use for sending prompts. Defaults to None.
+            max_turns: Maximum number of turns for the attack. Defaults to 10.
 
         Raises:
             ValueError: If objective_scorer is not provided in attack_scoring_config.
         """
         # Initialize base class
-        super().__init__(logger=logger)
+        super().__init__(logger=logger, context_type=MultiTurnAttackContext)
 
         # Store the objective target
         self._objective_target = objective_target
@@ -135,12 +137,19 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
 
         # Initialize utilities
         self._prompt_normalizer = prompt_normalizer or PromptNormalizer()
+
         self._conversation_manager = ConversationManager(attack_identifier=self.get_identifier())
         self._score_evaluator = ObjectiveEvaluator(
             use_score_as_feedback=self._use_score_as_feedback,
             scorer=self._objective_scorer,
             successful_objective_threshold=self._successful_objective_threshold,
         )
+
+        # set the maximum number of turns for the attack
+        if max_turns <= 0:
+            raise ValueError("Maximum turns must be a positive integer.")
+
+        self._max_turns = max_turns
 
     def _validate_context(self, *, context: MultiTurnAttackContext) -> None:
         """
@@ -155,8 +164,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         validators = [
             # conditions that must be met for the attack to proceed
             (lambda: bool(context.objective), "Attack objective must be provided"),
-            (lambda: context.max_turns > 0, "Max turns must be positive"),
-            (lambda: context.executed_turns < context.max_turns, "Already exceeded max turns"),
+            (lambda: context.executed_turns < self._max_turns, "Already exceeded max turns"),
         ]
 
         for validator, error_msg in validators:
@@ -188,7 +196,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         # Update the conversation state with the current context
         conversation_state: ConversationState = await self._conversation_manager.update_conversation_state_async(
             target=self._objective_target,
-            max_turns=context.max_turns,
+            max_turns=self._max_turns,
             conversation_id=context.session.conversation_id,
             prepended_conversation=context.prepended_conversation,
             converter_configurations=self._request_converters,
@@ -235,7 +243,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
 
         # Log the attack configuration
         logger.info(f"Starting red teaming attack with objective: {context.objective}")
-        logger.info(f"Max turns: {context.max_turns}")
+        logger.info(f"Max turns: {self._max_turns}")
 
         # Attack Execution Steps:
         # 1) Generate adversarial prompt based on previous feedback or custom prompt
@@ -248,8 +256,8 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         achieved_objective = False
 
         # Execute conversation turns
-        while context.executed_turns < context.max_turns and not achieved_objective:
-            logger.info(f"Executing turn {context.executed_turns + 1}/{context.max_turns}")
+        while context.executed_turns < self._max_turns and not achieved_objective:
+            logger.info(f"Executing turn {context.executed_turns + 1}/{self._max_turns}")
 
             # Determine what to send next
             prompt_to_send = await self._generate_next_prompt_async(context=context)

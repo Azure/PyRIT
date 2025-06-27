@@ -3,6 +3,7 @@
 
 import json
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Union
 
@@ -42,6 +43,7 @@ from pyrit.score import (
 logger = logging.getLogger(__name__)
 
 
+@dataclass
 class CrescendoAttackContext(MultiTurnAttackContext):
     """Context for the Crescendo attack strategy."""
 
@@ -52,6 +54,7 @@ class CrescendoAttackContext(MultiTurnAttackContext):
     backtrack_count: int = 0
 
 
+@dataclass
 class CrescendoAttackResult(AttackResult):
     """Result of the Crescendo attack strategy execution."""
 
@@ -107,8 +110,9 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
         attack_adversarial_config: AttackAdversarialConfig,
         attack_converter_config: Optional[AttackConverterConfig] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
-        max_backtracks: int = 10,
         prompt_normalizer: Optional[PromptNormalizer] = None,
+        max_backtracks: int = 10,
+        max_turns: int = 10,
     ) -> None:
         """
         Initialize the Crescendo attack strategy.
@@ -122,13 +126,15 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
             attack_scoring_config (Optional[AttackScoringConfig]): Configuration for attack scoring, including:
                 - objective_scorer: If not provided, creates a default `FloatScaleThresholdScorer`.
                 - refusal_scorer: If not provided, creates a default `SelfAskRefusalScorer`.
-            max_backtracks (int): Maximum number of times to backtrack during the attack. Must be positive.
             prompt_normalizer (Optional[PromptNormalizer]): The prompt normalizer to use for sending prompts.
+            max_backtracks (int): Maximum number of backtracks allowed during the attack. Default is 10.
+            max_turns (int): Maximum number of turns allowed in the attack. Default is 10.
+
         Raises:
-            ValueError: If max_backtracks is not positive or if objective_target is not a PromptChatTarget.
+            ValueError: If objective_target is not a PromptChatTarget.
         """
         # Initialize base class
-        super().__init__(logger=logger)
+        super().__init__(logger=logger, context_type=CrescendoAttackContext)
 
         # Store the objective target
         self._objective_target = objective_target
@@ -177,11 +183,6 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
             error_message="Crescendo system prompt must have 'objective' and 'max_turns' parameters",
         )
 
-        # Validate and store max backtracks
-        if max_backtracks <= 0:
-            raise ValueError(f"max_backtracks must be a positive integer, got {max_backtracks}")
-        self._max_backtracks = max_backtracks
-
         # Initialize utilities
         self._prompt_normalizer = prompt_normalizer or PromptNormalizer()
         self._conversation_manager = ConversationManager(
@@ -193,6 +194,16 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
             scorer=self._objective_scorer,
             successful_objective_threshold=self._successful_objective_threshold,
         )
+
+        # Set the maximum number of backtracks and turns
+        if max_backtracks < 0:
+            raise ValueError("max_backtracks must be non-negative")
+
+        if max_turns <= 0:
+            raise ValueError("max_turns must be positive")
+
+        self._max_backtracks = max_backtracks
+        self._max_turns = max_turns
 
     def _validate_context(self, *, context: CrescendoAttackContext) -> None:
         """
@@ -206,7 +217,6 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
         """
         validators = [
             (lambda: bool(context.objective), "Attack objective must be provided"),
-            (lambda: context.max_turns > 0, "Max turns must be positive"),
         ]
 
         for validator, error_msg in validators:
@@ -229,7 +239,7 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
         # Update the conversation state
         conversation_state = await self._conversation_manager.update_conversation_state_async(
             target=self._objective_target,
-            max_turns=context.max_turns,
+            max_turns=self._max_turns,
             conversation_id=context.session.conversation_id,
             prepended_conversation=context.prepended_conversation,
             converter_configurations=self._request_converters,
@@ -252,7 +262,7 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
         # Set the system prompt for adversarial chat
         system_prompt = self._adversarial_chat_system_prompt_template.render_template_value(
             objective=context.objective,
-            max_turns=context.max_turns,
+            max_turns=self._max_turns,
         )
 
         self._adversarial_chat.set_system_prompt(
@@ -279,7 +289,7 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
         """
         # Log the attack configuration
         self._logger.info(f"Starting crescendo attack with objective: {context.objective}")
-        self._logger.info(f"Max turns: {context.max_turns}, Max backtracks: {self._max_backtracks}")
+        self._logger.info(f"Max turns: {self._max_turns}, Max backtracks: {self._max_backtracks}")
 
         # Attack Execution Flow:
         # 1) Generate the next prompt (custom prompt or via adversarial chat)
@@ -295,8 +305,8 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
         achieved_objective = False
 
         # Execute conversation turns
-        while context.executed_turns < context.max_turns and not achieved_objective:
-            self._logger.info(f"Executing turn {context.executed_turns + 1}/{context.max_turns}")
+        while context.executed_turns < self._max_turns and not achieved_objective:
+            self._logger.info(f"Executing turn {context.executed_turns + 1}/{self._max_turns}")
 
             # Determine what to send next
             prompt_to_send = await self._generate_next_prompt_async(context=context)
@@ -333,7 +343,7 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
         outcome_reason = (
             f"Objective achieved in {context.executed_turns} turns"
             if achieved_objective
-            else f"Max turns ({context.max_turns}) reached without achieving objective"
+            else f"Max turns ({self._max_turns}) reached without achieving objective"
         )
 
         # Prepare the result
@@ -407,7 +417,7 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
 
         # Build the base prompt
         prompt_parts = [
-            f"This is the turn {turn_num} of {context.max_turns} turns.",
+            f"This is the turn {turn_num} of {self._max_turns} turns.",
             "Generate the next question in the series of questions you need to ask",
             f'to accomplish the conversation_objective: "{context.objective}".\n',
         ]

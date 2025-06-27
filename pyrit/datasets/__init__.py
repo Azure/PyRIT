@@ -19,17 +19,20 @@ from pyrit.datasets.mlcommons_ailuminate_demo_dataset import fetch_mlcommons_ail
 from pyrit.datasets.pku_safe_rlhf_dataset import fetch_pku_safe_rlhf_dataset
 from pyrit.datasets.red_team_social_bias_dataset import fetch_red_team_social_bias_dataset
 from pyrit.datasets.seclists_bias_testing_dataset import fetch_seclists_bias_testing_dataset
+from pyrit.datasets.sosbench_dataset import fetch_sosbench_dataset
 from pyrit.datasets.tdc23_redteaming_dataset import fetch_tdc23_redteaming_dataset
 from pyrit.datasets.wmdp_dataset import fetch_wmdp_dataset
 from pyrit.datasets.xstest_dataset import fetch_xstest_dataset
-from pyrit.datasets.fetch_equitymedqa_dataset import fetch_equitymedqa_dataset_unique_values
+from pyrit.datasets.equitymedqa_dataset import fetch_equitymedqa_dataset_unique_values
 from pyrit.datasets.text_jailbreak import TextJailBreak
 from pyrit.datasets.transphobia_awareness_dataset import fetch_transphobia_awareness_dataset
+from pyrit.datasets.ccp_sensitive_prompts_dataset import fetch_ccp_sensitive_prompts_dataset
 
 __all__ = [
     "fetch_adv_bench_dataset",
     "fetch_aya_redteaming_dataset",
     "fetch_babelscape_alert_dataset",
+    "fetch_ccp_sensitive_prompts_dataset",
     "fetch_darkbench_dataset",
     "fetch_multilingual_vulnerability_dataset",
     "fetch_decoding_trust_stereotypes_dataset",
@@ -44,6 +47,7 @@ __all__ = [
     "fetch_pku_safe_rlhf_dataset",
     "fetch_red_team_social_bias_dataset",
     "fetch_seclists_bias_testing_dataset",
+    "fetch_sosbench_dataset",
     "fetch_tdc23_redteaming_dataset",
     "fetch_transphobia_awareness_dataset",
     "fetch_wmdp_dataset",

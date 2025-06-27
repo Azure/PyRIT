@@ -11,6 +11,7 @@ import pytest
 import yaml
 
 from pyrit.cli.__main__ import main
+from pyrit.exceptions import AttackExecutionException
 
 test_cases_success = [
     "--config-file 'tests/integration/cli/mixed_multiple_orchestrators_args_success.yaml'",
@@ -272,7 +273,7 @@ test_cases_error = [
     (
         "--config-file 'tests/integration/cli/prompt_send_converters_wrong_data_type.yaml'",
         "Input type not supported",
-        ValueError,
+        AttackExecutionException,
     ),
 ]
 
