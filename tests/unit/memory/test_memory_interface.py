@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import hashlib
 import os
 import random
 import tempfile
@@ -2567,8 +2568,10 @@ def test_attack_result_metadata_handling(duckdb_instance: MemoryInterface):
 
 
 def test_attack_result_objective_sha256_auto_generation(duckdb_instance: MemoryInterface):
-    """Test that objective SHA256 is properly handled when not provided."""
+    """Test that objective SHA256 is always calculated."""
+
     objective = "Test objective without SHA256"
+    expected_sha256 = hashlib.sha256(objective.encode()).hexdigest()
 
     # Create attack result without providing objective_sha256
     attack_result = AttackResult(
@@ -2583,12 +2586,44 @@ def test_attack_result_objective_sha256_auto_generation(duckdb_instance: MemoryI
     # Add to memory
     duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
 
-    # Retrieve and verify that objective_sha256 is None (not auto-generated)
+    # Retrieve and verify that objective_sha256 is calculated
     all_entries: Sequence[AttackResultEntry] = duckdb_instance._query_entries(AttackResultEntry)
     assert len(all_entries) == 1
 
     retrieved_result = all_entries[0].get_attack_result()
-    assert retrieved_result.objective_sha256 is None
+    assert retrieved_result.objective_sha256 == expected_sha256
+
+
+def test_attack_result_objective_sha256_overwritten_when_provided(duckdb_instance: MemoryInterface):
+    """Test that objective SHA256 is overwritten when already provided."""
+    import hashlib
+
+    objective = "Test objective with provided SHA256"
+    provided_sha256 = "custom_sha256_hash_value"
+
+    # Create attack result with a custom objective_sha256
+    attack_result = AttackResult(
+        conversation_id="conv_1",
+        objective=objective,
+        attack_identifier={"name": "test_attack"},
+        objective_sha256=provided_sha256,
+        executed_turns=5,
+        execution_time_ms=1000,
+        outcome=AttackOutcome.SUCCESS,
+    )
+
+    # Add to memory
+    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
+
+    # Retrieve and verify that the provided objective_sha256 is preserved
+    all_entries: Sequence[AttackResultEntry] = duckdb_instance._query_entries(AttackResultEntry)
+    assert len(all_entries) == 1
+
+    retrieved_result = all_entries[0].get_attack_result()
+
+    # Verify it's not the auto-calculated value
+    expected_auto_sha256 = hashlib.sha256(objective.encode()).hexdigest()
+    assert retrieved_result.objective_sha256 == expected_auto_sha256
 
 
 def test_get_attack_results_case_sensitive_objective(duckdb_instance: MemoryInterface):
@@ -2624,3 +2659,35 @@ def test_get_attack_results_case_sensitive_objective(duckdb_instance: MemoryInte
     retrieved_results = duckdb_instance.get_attack_results(objective="test objective")
     assert len(retrieved_results) == 1
     assert retrieved_results[0].objective == "test objective for failure"
+
+
+def test_attack_result_objective_sha256_always_calculated(duckdb_instance: MemoryInterface):
+    """Test that objective SHA256 is always calculated regardless of provided value."""
+    import hashlib
+
+    objective = "Test objective with provided SHA256"
+    provided_sha256 = "custom_sha256_hash_value"
+    expected_sha256 = hashlib.sha256(objective.encode()).hexdigest()
+
+    # Create attack result with a custom objective_sha256
+    attack_result = AttackResult(
+        conversation_id="conv_1",
+        objective=objective,
+        attack_identifier={"name": "test_attack"},
+        objective_sha256=provided_sha256,
+        executed_turns=5,
+        execution_time_ms=1000,
+        outcome=AttackOutcome.SUCCESS,
+    )
+
+    # Add to memory - this should recalculate the objective_sha256
+    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
+
+    # Retrieve and verify that the objective_sha256 is recalculated
+    all_entries: Sequence[AttackResultEntry] = duckdb_instance._query_entries(AttackResultEntry)
+    assert len(all_entries) == 1
+
+    retrieved_result = all_entries[0].get_attack_result()
+    assert retrieved_result.objective_sha256 == expected_sha256
+    # Verify it's not the originally provided value
+    assert retrieved_result.objective_sha256 != provided_sha256
