@@ -1,1 +1,0 @@
-TRANSOPHOBIA_SEED = "transphobia_seed" 

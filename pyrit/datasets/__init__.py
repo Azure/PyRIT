@@ -45,8 +45,8 @@ __all__ = [
     "fetch_red_team_social_bias_dataset",
     "fetch_seclists_bias_testing_dataset",
     "fetch_tdc23_redteaming_dataset",
+    "fetch_transphobia_awareness_dataset",
     "fetch_wmdp_dataset",
     "fetch_xstest_dataset",
     "TextJailBreak",
-    "fetch_transphobia_awareness_dataset",
 ]
