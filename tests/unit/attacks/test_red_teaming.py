@@ -1197,6 +1197,8 @@ class TestAttackLifecycle:
             max_turns=5,
         )
 
+        attack._memory = MagicMock()
+
         # Mock all lifecycle methods
         with patch.object(attack, "_validate_context"):
             with patch.object(attack, "_setup_async", new_callable=AsyncMock):
@@ -1278,6 +1280,8 @@ class TestAttackLifecycle:
             attack_adversarial_config=adversarial_config,
             attack_scoring_config=scoring_config,
         )
+
+        attack._memory = MagicMock()
 
         # Mock all lifecycle methods
         with patch.object(attack, "_validate_context"):

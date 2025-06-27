@@ -56,6 +56,10 @@ def mock_attack_strategy(mock_default_values):
 
     strategy = TestableAttackStrategy()
 
+    # Mock the memory to avoid any issues with the real memory system
+    mock_memory = MagicMock()
+    strategy._memory = mock_memory
+
     # Configure default return value for _perform_attack_async with required attributes
     mock_result = MagicMock()
     mock_result.outcome = AttackOutcome.SUCCESS
@@ -157,6 +161,7 @@ class TestAttackExecution:
         mock_attack_strategy._validate_context.assert_called_once_with(context=basic_context)
         mock_attack_strategy._setup_async.assert_called_once_with(context=basic_context)
         mock_attack_strategy._perform_attack_async.assert_called_once_with(context=basic_context)
+        mock_attack_strategy._memory.add_attack_results_to_memory.assert_called_once()
         mock_attack_strategy._teardown_async.assert_called_once_with(context=basic_context)
 
         # Verify result
@@ -183,6 +188,7 @@ class TestAttackExecution:
         mock_attack_strategy._setup_async.assert_not_called()
         mock_attack_strategy._perform_attack_async.assert_not_called()
         mock_attack_strategy._teardown_async.assert_not_called()
+        mock_attack_strategy._memory.add_attack_results_to_memory.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_execute_async_setup_failure_calls_teardown(self, mock_attack_strategy, basic_context):
@@ -197,11 +203,12 @@ class TestAttackExecution:
         assert exc_info.value.attack_name == "TestableAttackStrategy"
         assert exc_info.value.objective == "Test objective"
 
-        # Verify lifecycle - teardown should still be called
+        # Verify lifecycle - teardown should still be called, but memory should not be called
         mock_attack_strategy._validate_context.assert_called_once()
         mock_attack_strategy._setup_async.assert_called_once()
         mock_attack_strategy._perform_attack_async.assert_not_called()
         mock_attack_strategy._teardown_async.assert_called_once()
+        mock_attack_strategy._memory.add_attack_results_to_memory.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_execute_async_perform_failure_calls_teardown(self, mock_attack_strategy, basic_context):
@@ -211,11 +218,12 @@ class TestAttackExecution:
         with pytest.raises(AttackExecutionException):
             await mock_attack_strategy.execute_async(objective="Test objective")
 
-        # Verify lifecycle - teardown should still be called
+        # Verify lifecycle - teardown should still be called, but memory should not be called since attack failed
         mock_attack_strategy._validate_context.assert_called_once()
         mock_attack_strategy._setup_async.assert_called_once()
         mock_attack_strategy._perform_attack_async.assert_called_once()
         mock_attack_strategy._teardown_async.assert_called_once()
+        mock_attack_strategy._memory.add_attack_results_to_memory.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_execute_async_teardown_failure_propagates(self, mock_attack_strategy, basic_context):
@@ -226,11 +234,12 @@ class TestAttackExecution:
         with pytest.raises(AttackExecutionException):
             await mock_attack_strategy.execute_async(objective="Test objective")
 
-        # All methods should have been called
+        # All methods should have been called, including memory since attack completed
         mock_attack_strategy._validate_context.assert_called_once()
         mock_attack_strategy._setup_async.assert_called_once()
         mock_attack_strategy._perform_attack_async.assert_called_once()
         mock_attack_strategy._teardown_async.assert_called_once()
+        mock_attack_strategy._memory.add_attack_results_to_memory.assert_called_once()
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -312,6 +321,7 @@ class TestAttackExecution:
 
         # Verify all lifecycle methods were called
         mock_attack_strategy._validate_context.assert_called_once_with(context=basic_context)
+        mock_attack_strategy._memory.add_attack_results_to_memory.assert_called_once()
         mock_attack_strategy._setup_async.assert_called_once_with(context=basic_context)
         mock_attack_strategy._perform_attack_async.assert_called_once_with(context=basic_context)
         mock_attack_strategy._teardown_async.assert_called_once_with(context=basic_context)
@@ -420,6 +430,11 @@ class TestConcurrency:
                 _teardown_async = AsyncMock()
 
             strategy = ConcreteStrategy(context_type=mock_context_type)
+            
+            # Mock the memory to avoid any issues with the real memory system
+            mock_memory = MagicMock()
+            strategy._memory = mock_memory
+            
             # Configure mock result with required attributes
             mock_result = MagicMock()
             mock_result.outcome = AttackOutcome.SUCCESS

@@ -898,7 +898,8 @@ class TestAttackLifecycle:
         """Test execute_async creates context using factory method and executes attack"""
         attack = PromptSendingAttack(objective_target=mock_target, max_attempts_on_failure=3)
 
-        # Mock the attack execution methods
+        attack._memory = MagicMock()
+
         attack._validate_context = MagicMock()
         attack._setup_async = AsyncMock()
         mock_result = AttackResult(

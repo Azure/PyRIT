@@ -264,6 +264,9 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
                 # Log the attack outcome
                 self._log_attack_outcome(result)
 
+                # Add the result to memory
+                self._memory.add_attack_results_to_memory(attack_results=[result])
+
                 return result
 
         except (AttackExecutionException, AttackValidationException):
