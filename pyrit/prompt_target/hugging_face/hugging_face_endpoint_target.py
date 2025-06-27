@@ -120,11 +120,13 @@ class HuggingFaceEndpointTarget(PromptTarget):
         Raises:
             ValueError: If the request is not valid for this target.
         """
-        if len(prompt_request.request_pieces) != 1:
-            raise ValueError("This target only supports a single prompt request piece.")
+        n_pieces = len(prompt_request.request_pieces)
+        if n_pieces != 1:
+            raise ValueError(f"This target only supports a single prompt request piece. Received: {n_pieces} pieces.")
 
-        if prompt_request.request_pieces[0].converted_value_data_type != "text":
-            raise ValueError("This target only supports text prompt input.")
+        piece_type = prompt_request.request_pieces[0].converted_value_data_type
+        if piece_type != "text":
+            raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""

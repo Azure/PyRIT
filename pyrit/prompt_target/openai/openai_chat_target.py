@@ -393,7 +393,7 @@ class OpenAIChatTarget(OpenAITarget):
         # Some models may not support all of these
         for prompt_data_type in converted_prompt_data_types:
             if prompt_data_type not in ["text", "image_path"]:
-                raise ValueError("This target only supports text and image_path.")
+                raise ValueError(f"This target only supports text and image_path. Received: {prompt_data_type}.")
 
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""

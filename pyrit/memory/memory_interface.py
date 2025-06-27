@@ -49,13 +49,11 @@ Model = TypeVar("Model")
 
 
 class MemoryInterface(abc.ABC):
-    """
-    Represents a conversation memory that stores chat messages. This class must be overwritten with a
-    specific implementation to store the memory objects (e.g. relational database, NoSQL database, etc.)
+    """Abstract interface for conversation memory storage systems.
 
-    Args:
-        embedding_model (EmbeddingSupport): If set, this includes embeddings in the memory entries
-        which are extremely useful for comparing chat messages and similarities, but also includes overhead
+    This interface defines the contract for storing and retrieving chat messages
+    and conversation history. Implementations can use different storage backends
+    such as files, databases, or cloud storage services.
     """
 
     memory_embedding: MemoryEmbedding = None
@@ -63,6 +61,13 @@ class MemoryInterface(abc.ABC):
     results_path: str = None
 
     def __init__(self, embedding_model=None):
+        """Initialize the MemoryInterface.
+
+        Args:
+            embedding_model: If set, this includes embeddings in the memory entries
+                which are extremely useful for comparing chat messages and similarities,
+                but also includes overhead.
+        """
         self.memory_embedding = embedding_model
         # Initialize the MemoryExporter instance
         self.exporter = MemoryExporter()

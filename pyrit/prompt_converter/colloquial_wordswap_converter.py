@@ -10,13 +10,15 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 
 class ColloquialWordswapConverter(PromptConverter):
-    """Converts a string to a Singaporean colloquial version"""
+    """
+    Converts text into colloquial Singaporean context.
+    """
 
     def __init__(
         self, deterministic: bool = False, custom_substitutions: Optional[Dict[str, List[str]]] = None
     ) -> None:
         """
-        Initialize the converter with optional deterministic mode and custom substitutions.
+        Initializes the converter with optional deterministic mode and custom substitutions.
 
         Args:
             deterministic (bool): If True, use the first substitution for each wordswap.
@@ -47,16 +49,7 @@ class ColloquialWordswapConverter(PromptConverter):
         self._deterministic = deterministic
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
-        """
-        Convert the given prompt to colloquial Singaporean context.
-
-        Args:
-            prompt (str): The text to convert.
-            input_type (PromptDataType): The type of input data.
-
-        Returns:
-            ConverterResult: A ConverterResult containing the Singaporean colloquial version of the prompt.
-        """
+        """Converts the given prompt by replacing words with colloquial Singaporean terms."""
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 

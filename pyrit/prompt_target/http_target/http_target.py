@@ -231,5 +231,6 @@ class HTTPTarget(PromptTarget):
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         request_pieces: Sequence[PromptRequestPiece] = prompt_request.request_pieces
 
-        if len(request_pieces) != 1:
-            raise ValueError("This target only supports a single prompt request piece.")
+        n_pieces = len(request_pieces)
+        if n_pieces != 1:
+            raise ValueError(f"This target only supports a single prompt request piece. Received: {n_pieces} pieces.")
