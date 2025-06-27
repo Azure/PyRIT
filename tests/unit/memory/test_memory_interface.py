@@ -24,6 +24,8 @@ from pyrit.models import (
     SeedPrompt,
     SeedPromptGroup,
 )
+from pyrit.models.attack_result import AttackResult, AttackOutcome
+from pyrit.memory.memory_models import AttackResultEntry
 from pyrit.orchestrator import Orchestrator
 
 
@@ -2046,14 +2048,584 @@ async def test_prompt_piece_hash_stored_and_retrieved(duckdb_instance: MemoryInt
 
 @pytest.mark.asyncio
 async def test_seed_prompt_hash_stored_and_retrieved(duckdb_instance: MemoryInterface):
-    entries = [
-        SeedPrompt(value="Hello 1", data_type="text"),
-        SeedPrompt(value="Hello 2", data_type="text"),
-    ]
+    """Test that seed prompt hash values are properly stored and retrieved."""
+    from pyrit.models import SeedPrompt
 
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=entries, added_by="rlundeen")
-    retrieved_entries = duckdb_instance.get_seed_prompts()
+    # Create a seed prompt
+    seed_prompt = SeedPrompt(
+        value="Test seed prompt",
+        data_type="text",
+        dataset_name="test_dataset",
+        added_by="test_user",
+    )
 
-    assert len(retrieved_entries) == 2
-    for prompt in retrieved_entries:
-        assert prompt.value_sha256
+    # Add to memory
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=[seed_prompt])
+
+    # Retrieve and verify hash
+    retrieved_prompts = duckdb_instance.get_seed_prompts(value_sha256=[seed_prompt.value_sha256])
+    assert len(retrieved_prompts) == 1
+    assert retrieved_prompts[0].value_sha256 == seed_prompt.value_sha256
+
+
+def test_add_attack_results_to_memory(duckdb_instance: MemoryInterface):
+    """Test adding attack results to memory."""
+    # Create sample attack results
+    attack_result1 = AttackResult(
+        conversation_id="conv_1",
+        objective="Test objective 1",
+        attack_identifier={"name": "test_attack_1", "module": "test_module"},
+        executed_turns=5,
+        execution_time_ms=1000,
+        outcome=AttackOutcome.SUCCESS,
+        outcome_reason="Attack was successful",
+        metadata={"test_key": "test_value"},
+    )
+
+    attack_result2 = AttackResult(
+        conversation_id="conv_2",
+        objective="Test objective 2",
+        attack_identifier={"name": "test_attack_2", "module": "test_module"},
+        executed_turns=3,
+        execution_time_ms=500,
+        outcome=AttackOutcome.FAILURE,
+        outcome_reason="Attack failed",
+        metadata={"another_key": "another_value"},
+    )
+
+    # Add attack results to memory
+    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2])
+
+    # Verify they were added by querying all attack results
+    all_attack_results = duckdb_instance._query_entries(AttackResultEntry)
+    assert len(all_attack_results) == 2
+
+    # Verify the data was stored correctly
+    stored_results = [entry.get_attack_result() for entry in all_attack_results]
+    conversation_ids = {result.conversation_id for result in stored_results}
+    assert conversation_ids == {"conv_1", "conv_2"}
+
+
+def test_get_attack_results_by_ids(duckdb_instance: MemoryInterface):
+    """Test retrieving attack results by their IDs."""
+    # Create and add attack results
+    attack_result1 = AttackResult(
+        conversation_id="conv_1",
+        objective="Test objective 1",
+        attack_identifier={"name": "test_attack_1"},
+        executed_turns=5,
+        execution_time_ms=1000,
+        outcome=AttackOutcome.SUCCESS,
+    )
+
+    attack_result2 = AttackResult(
+        conversation_id="conv_2",
+        objective="Test objective 2",
+        attack_identifier={"name": "test_attack_2"},
+        executed_turns=3,
+        execution_time_ms=500,
+        outcome=AttackOutcome.FAILURE,
+    )
+
+    attack_result3 = AttackResult(
+        conversation_id="conv_3",
+        objective="Test objective 3",
+        attack_identifier={"name": "test_attack_3"},
+        executed_turns=7,
+        execution_time_ms=1500,
+        outcome=AttackOutcome.UNDETERMINED,
+    )
+
+    # Add all attack results to memory
+    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2, attack_result3])
+
+    # Get all attack result entries to get their IDs
+    all_entries = duckdb_instance._query_entries(AttackResultEntry)
+    assert len(all_entries) == 3
+
+    # Get IDs of first two attack results
+    attack_result_ids = [str(entry.id) for entry in all_entries[:2]]
+
+    # Retrieve attack results by IDs
+    retrieved_results = duckdb_instance.get_attack_results(attack_result_ids=attack_result_ids)
+
+    # Verify correct results were retrieved
+    assert len(retrieved_results) == 2
+    retrieved_conversation_ids = {result.conversation_id for result in retrieved_results}
+    assert retrieved_conversation_ids == {"conv_1", "conv_2"}
+
+
+def test_get_attack_results_by_conversation_id(duckdb_instance: MemoryInterface):
+    """Test retrieving attack results by conversation ID."""
+    # Create and add attack results
+    attack_result1 = AttackResult(
+        conversation_id="conv_1",
+        objective="Test objective 1",
+        attack_identifier={"name": "test_attack_1"},
+        executed_turns=5,
+        execution_time_ms=1000,
+        outcome=AttackOutcome.SUCCESS,
+    )
+
+    attack_result2 = AttackResult(
+        conversation_id="conv_1",  # Same conversation ID
+        objective="Test objective 2",
+        attack_identifier={"name": "test_attack_2"},
+        executed_turns=3,
+        execution_time_ms=500,
+        outcome=AttackOutcome.FAILURE,
+    )
+
+    attack_result3 = AttackResult(
+        conversation_id="conv_2",  # Different conversation ID
+        objective="Test objective 3",
+        attack_identifier={"name": "test_attack_3"},
+        executed_turns=7,
+        execution_time_ms=1500,
+        outcome=AttackOutcome.UNDETERMINED,
+    )
+
+    # Add all attack results to memory
+    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2, attack_result3])
+
+    # Retrieve attack results by conversation ID
+    retrieved_results = duckdb_instance.get_attack_results(conversation_id="conv_1")
+
+    # Verify correct results were retrieved
+    assert len(retrieved_results) == 2
+    for result in retrieved_results:
+        assert result.conversation_id == "conv_1"
+
+
+def test_get_attack_results_by_objective(duckdb_instance: MemoryInterface):
+    """Test retrieving attack results by objective substring."""
+    # Create and add attack results
+    attack_result1 = AttackResult(
+        conversation_id="conv_1",
+        objective="Test objective for success",
+        attack_identifier={"name": "test_attack_1"},
+        executed_turns=5,
+        execution_time_ms=1000,
+        outcome=AttackOutcome.SUCCESS,
+    )
+
+    attack_result2 = AttackResult(
+        conversation_id="conv_2",
+        objective="Another objective for failure",
+        attack_identifier={"name": "test_attack_2"},
+        executed_turns=3,
+        execution_time_ms=500,
+        outcome=AttackOutcome.FAILURE,
+    )
+
+    attack_result3 = AttackResult(
+        conversation_id="conv_3",
+        objective="Different objective entirely",
+        attack_identifier={"name": "test_attack_3"},
+        executed_turns=7,
+        execution_time_ms=1500,
+        outcome=AttackOutcome.UNDETERMINED,
+    )
+
+    # Add all attack results to memory
+    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2, attack_result3])
+
+    # Retrieve attack results by objective substring
+    retrieved_results = duckdb_instance.get_attack_results(objective="objective for")
+
+    # Verify correct results were retrieved (should match first two)
+    assert len(retrieved_results) == 2
+    objectives = {result.objective for result in retrieved_results}
+    assert "Test objective for success" in objectives
+    assert "Another objective for failure" in objectives
+
+
+def test_get_attack_results_by_outcome(duckdb_instance: MemoryInterface):
+    """Test retrieving attack results by outcome."""
+    # Create and add attack results
+    attack_result1 = AttackResult(
+        conversation_id="conv_1",
+        objective="Test objective 1",
+        attack_identifier={"name": "test_attack_1"},
+        executed_turns=5,
+        execution_time_ms=1000,
+        outcome=AttackOutcome.SUCCESS,
+    )
+
+    attack_result2 = AttackResult(
+        conversation_id="conv_2",
+        objective="Test objective 2",
+        attack_identifier={"name": "test_attack_2"},
+        executed_turns=3,
+        execution_time_ms=500,
+        outcome=AttackOutcome.SUCCESS,  # Same outcome
+    )
+
+    attack_result3 = AttackResult(
+        conversation_id="conv_3",
+        objective="Test objective 3",
+        attack_identifier={"name": "test_attack_3"},
+        executed_turns=7,
+        execution_time_ms=1500,
+        outcome=AttackOutcome.FAILURE,  # Different outcome
+    )
+
+    # Add all attack results to memory
+    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2, attack_result3])
+
+    # Retrieve attack results by outcome
+    retrieved_results = duckdb_instance.get_attack_results(outcome="success")
+
+    # Verify correct results were retrieved
+    assert len(retrieved_results) == 2
+    for result in retrieved_results:
+        assert result.outcome == AttackOutcome.SUCCESS
+
+
+def test_get_attack_results_by_objective_sha256(duckdb_instance: MemoryInterface):
+    """Test retrieving attack results by objective SHA256."""
+    import hashlib
+
+    # Create objectives with known SHA256 hashes
+    objective1 = "Test objective 1"
+    objective1_sha256 = hashlib.sha256(objective1.encode()).hexdigest()
+    
+    objective2 = "Test objective 2"
+    objective2_sha256 = hashlib.sha256(objective2.encode()).hexdigest()
+
+    # Create and add attack results
+    attack_result1 = AttackResult(
+        conversation_id="conv_1",
+        objective=objective1,
+        objective_sha256=objective1_sha256,
+        attack_identifier={"name": "test_attack_1"},
+        executed_turns=5,
+        execution_time_ms=1000,
+        outcome=AttackOutcome.SUCCESS,
+    )
+
+    attack_result2 = AttackResult(
+        conversation_id="conv_2",
+        objective=objective2,
+        objective_sha256=objective2_sha256,
+        attack_identifier={"name": "test_attack_2"},
+        executed_turns=3,
+        execution_time_ms=500,
+        outcome=AttackOutcome.FAILURE,
+    )
+
+    attack_result3 = AttackResult(
+        conversation_id="conv_3",
+        objective="Different objective",
+        objective_sha256=hashlib.sha256("Different objective".encode()).hexdigest(),
+        attack_identifier={"name": "test_attack_3"},
+        executed_turns=7,
+        execution_time_ms=1500,
+        outcome=AttackOutcome.UNDETERMINED,
+    )
+
+    # Add all attack results to memory
+    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2, attack_result3])
+
+    # Retrieve attack results by objective SHA256
+    retrieved_results = duckdb_instance.get_attack_results(objective_sha256=[objective1_sha256, objective2_sha256])
+
+    # Verify correct results were retrieved
+    assert len(retrieved_results) == 2
+    retrieved_objectives = {result.objective for result in retrieved_results}
+    assert objective1 in retrieved_objectives
+    assert objective2 in retrieved_objectives
+
+
+def test_get_attack_results_multiple_filters(duckdb_instance: MemoryInterface):
+    """Test retrieving attack results with multiple filters."""
+    # Create and add attack results
+    attack_result1 = AttackResult(
+        conversation_id="conv_1",
+        objective="Test objective for success",
+        attack_identifier={"name": "test_attack_1"},
+        executed_turns=5,
+        execution_time_ms=1000,
+        outcome=AttackOutcome.SUCCESS,
+    )
+
+    attack_result2 = AttackResult(
+        conversation_id="conv_1",  # Same conversation ID
+        objective="Another objective for failure",
+        attack_identifier={"name": "test_attack_2"},
+        executed_turns=3,
+        execution_time_ms=500,
+        outcome=AttackOutcome.FAILURE,  # Different outcome
+    )
+
+    attack_result3 = AttackResult(
+        conversation_id="conv_2",  # Different conversation ID
+        objective="Test objective for success",
+        attack_identifier={"name": "test_attack_3"},
+        executed_turns=7,
+        execution_time_ms=1500,
+        outcome=AttackOutcome.SUCCESS,
+    )
+
+    # Add all attack results to memory
+    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2, attack_result3])
+
+    # Retrieve attack results with multiple filters
+    retrieved_results = duckdb_instance.get_attack_results(
+        conversation_id="conv_1",
+        objective="objective for",
+        outcome="success"
+    )
+
+    # Should only match the first result
+    assert len(retrieved_results) == 1
+    assert retrieved_results[0].conversation_id == "conv_1"
+    assert retrieved_results[0].outcome == AttackOutcome.SUCCESS
+    assert "objective for" in retrieved_results[0].objective
+
+
+def test_get_attack_results_no_filters(duckdb_instance: MemoryInterface):
+    """Test retrieving all attack results when no filters are provided."""
+    # Create and add attack results
+    attack_result1 = AttackResult(
+        conversation_id="conv_1",
+        objective="Test objective 1",
+        attack_identifier={"name": "test_attack_1"},
+        executed_turns=5,
+        execution_time_ms=1000,
+        outcome=AttackOutcome.SUCCESS,
+    )
+
+    attack_result2 = AttackResult(
+        conversation_id="conv_2",
+        objective="Test objective 2",
+        attack_identifier={"name": "test_attack_2"},
+        executed_turns=3,
+        execution_time_ms=500,
+        outcome=AttackOutcome.FAILURE,
+    )
+
+    # Add attack results to memory
+    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2])
+
+    # Retrieve all attack results (no filters)
+    retrieved_results = duckdb_instance.get_attack_results()
+
+    # Should return all results
+    assert len(retrieved_results) == 2
+
+
+def test_get_attack_results_empty_list(duckdb_instance: MemoryInterface):
+    """Test retrieving attack results with empty ID list."""
+    # Create and add an attack result
+    attack_result = AttackResult(
+        conversation_id="conv_1",
+        objective="Test objective",
+        attack_identifier={"name": "test_attack"},
+        executed_turns=5,
+        execution_time_ms=1000,
+        outcome=AttackOutcome.SUCCESS,
+    )
+
+    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
+
+    # Try to retrieve with empty list
+    retrieved_results = duckdb_instance.get_attack_results(attack_result_ids=[])
+    assert len(retrieved_results) == 0
+
+
+def test_get_attack_results_nonexistent_ids(duckdb_instance: MemoryInterface):
+    """Test retrieving attack results with non-existent IDs."""
+    # Create and add an attack result
+    attack_result = AttackResult(
+        conversation_id="conv_1",
+        objective="Test objective",
+        attack_identifier={"name": "test_attack"},
+        executed_turns=5,
+        execution_time_ms=1000,
+        outcome=AttackOutcome.SUCCESS,
+    )
+
+    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
+
+    # Try to retrieve with non-existent IDs
+    nonexistent_ids = [str(uuid.uuid4()), str(uuid.uuid4())]
+    retrieved_results = duckdb_instance.get_attack_results(attack_result_ids=nonexistent_ids)
+    assert len(retrieved_results) == 0
+
+
+def test_attack_result_with_last_response_and_score(duckdb_instance: MemoryInterface):
+    """Test attack result with last_response and last_score relationships."""
+    # Create a prompt request piece first
+    prompt_piece = PromptRequestPiece(
+        role="user",
+        original_value="Test prompt",
+        converted_value="Test prompt",
+        conversation_id="conv_1",
+    )
+
+    # Create a score
+    score = Score(
+        score_value="1.0",
+        score_type="float_scale",
+        score_category="test_category",
+        scorer_class_identifier={"name": "test_scorer"},
+        prompt_request_response_id=prompt_piece.id,
+        score_value_description="Test score description",
+        score_rationale="Test score rationale",
+        score_metadata="Test metadata",
+    )
+
+    # Add prompt piece and score to memory
+    duckdb_instance.add_request_pieces_to_memory(request_pieces=[prompt_piece])
+    duckdb_instance.add_scores_to_memory(scores=[score])
+
+    # Create attack result with last_response and last_score
+    attack_result = AttackResult(
+        conversation_id="conv_1",
+        objective="Test objective with relationships",
+        attack_identifier={"name": "test_attack"},
+        last_response=prompt_piece,
+        last_score=score,
+        executed_turns=5,
+        execution_time_ms=1000,
+        outcome=AttackOutcome.SUCCESS,
+    )
+
+    # Add attack result to memory
+    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
+
+    # Retrieve and verify relationships
+    all_entries = duckdb_instance.get_attack_results()
+    assert len(all_entries) == 1
+    assert all_entries[0].conversation_id == "conv_1"
+    assert all_entries[0].last_response is not None
+    assert all_entries[0].last_response.id == prompt_piece.id
+    assert all_entries[0].last_score is not None
+    assert all_entries[0].last_score.id == score.id
+
+def test_attack_result_all_outcomes(duckdb_instance: MemoryInterface):
+    """Test attack results with all possible outcomes."""
+    outcomes = [AttackOutcome.SUCCESS, AttackOutcome.FAILURE, AttackOutcome.UNDETERMINED]
+    attack_results = []
+
+    for i, outcome in enumerate(outcomes):
+        attack_result = AttackResult(
+            conversation_id=f"conv_{i}",
+            objective=f"Test objective {i}",
+            attack_identifier={"name": f"test_attack_{i}"},
+            executed_turns=i + 1,
+            execution_time_ms=(i + 1) * 100,
+            outcome=outcome,
+            outcome_reason=f"Attack {outcome.value}",
+        )
+        attack_results.append(attack_result)
+
+    # Add all attack results to memory
+    duckdb_instance.add_attack_results_to_memory(attack_results=attack_results)
+
+    # Verify all were added
+    all_entries = duckdb_instance._query_entries(AttackResultEntry)
+    assert len(all_entries) == 3
+
+    # Verify outcomes were stored correctly
+    stored_results = [entry.get_attack_result() for entry in all_entries]
+    stored_outcomes = {result.outcome for result in stored_results}
+    assert stored_outcomes == set(outcomes)
+
+
+def test_attack_result_metadata_handling(duckdb_instance: MemoryInterface):
+    """Test that attack result metadata is properly stored and retrieved."""
+    # Create attack result with various metadata types
+    metadata = {
+        "string_value": "test_string",
+        "int_value": 42,
+        "float_value": 3.14,
+        "bool_value": True,
+        "list_value": ["item1", "item2"],
+        "dict_value": {"nested": "value"},
+    }
+
+    attack_result = AttackResult(
+        conversation_id="conv_1",
+        objective="Test objective with metadata",
+        attack_identifier={"name": "test_attack"},
+        executed_turns=5,
+        execution_time_ms=1000,
+        outcome=AttackOutcome.SUCCESS,
+        metadata=metadata,
+    )
+
+    # Add to memory
+    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
+
+    # Retrieve and verify metadata
+    all_entries = duckdb_instance._query_entries(AttackResultEntry)
+    assert len(all_entries) == 1
+
+    retrieved_result = all_entries[0].get_attack_result()
+    assert retrieved_result.metadata == metadata
+
+
+def test_attack_result_objective_sha256_auto_generation(duckdb_instance: MemoryInterface):
+    """Test that objective SHA256 is properly handled when not provided."""
+    import hashlib
+
+    objective = "Test objective without SHA256"
+    expected_sha256 = hashlib.sha256(objective.encode()).hexdigest()
+
+    # Create attack result without providing objective_sha256
+    attack_result = AttackResult(
+        conversation_id="conv_1",
+        objective=objective,
+        attack_identifier={"name": "test_attack"},
+        executed_turns=5,
+        execution_time_ms=1000,
+        outcome=AttackOutcome.SUCCESS,
+    )
+
+    # Add to memory
+    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
+
+    # Retrieve and verify that objective_sha256 is None (not auto-generated)
+    all_entries = duckdb_instance._query_entries(AttackResultEntry)
+    assert len(all_entries) == 1
+
+    retrieved_result = all_entries[0].get_attack_result()
+    assert retrieved_result.objective_sha256 is None
+
+
+def test_get_attack_results_case_sensitive_objective(duckdb_instance: MemoryInterface):
+    """Test that objective filtering is case sensitive."""
+    # Create and add attack results
+    attack_result1 = AttackResult(
+        conversation_id="conv_1",
+        objective="Test Objective for Success",
+        attack_identifier={"name": "test_attack_1"},
+        executed_turns=5,
+        execution_time_ms=1000,
+        outcome=AttackOutcome.SUCCESS,
+    )
+
+    attack_result2 = AttackResult(
+        conversation_id="conv_2",
+        objective="test objective for failure",
+        attack_identifier={"name": "test_attack_2"},
+        executed_turns=3,
+        execution_time_ms=500,
+        outcome=AttackOutcome.FAILURE,
+    )
+
+    # Add attack results to memory
+    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2])
+
+    # Test case-sensitive search
+    retrieved_results = duckdb_instance.get_attack_results(objective="Test Objective")
+    assert len(retrieved_results) == 1
+    assert retrieved_results[0].objective == "Test Objective for Success"
+
+    # Test different case
+    retrieved_results = duckdb_instance.get_attack_results(objective="test objective")
+    assert len(retrieved_results) == 1
+    assert retrieved_results[0].objective == "test objective for failure"
+

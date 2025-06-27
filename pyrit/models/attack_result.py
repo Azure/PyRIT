@@ -36,11 +36,14 @@ class AttackResult:
     # Unique identifier of the conversation that produced this result
     conversation_id: str
 
-    # Natural-language description of the attacker’s objective
+    # Natural-language description of the attacker's objective
     objective: str
 
     # Identifier of the attack (e.g., name, module)
     attack_identifier: dict[str, str]
+
+    # SHA256 hash of the objective for efficient querying
+    objective_sha256: Optional[str] = None
 
     # Evidence
     # Model response generated in the final turn of the attack

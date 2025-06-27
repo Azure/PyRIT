@@ -20,6 +20,7 @@ from pyrit.memory.memory_models import (
     EmbeddingDataEntry,
     PromptMemoryEntry,
     SeedPromptEntry,
+    AttackResultEntry,
 )
 from pyrit.models import DiskStorageIO, PromptRequestPiece
 
@@ -190,6 +191,11 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 query = session.query(Model)
                 if join_scores and Model == PromptMemoryEntry:
                     query = query.options(joinedload(PromptMemoryEntry.scores))
+                elif Model == AttackResultEntry:
+                    query = query.options(
+                        joinedload(AttackResultEntry.last_response).joinedload(PromptMemoryEntry.scores),
+                        joinedload(AttackResultEntry.last_score)
+                    )
                 if conditions is not None:
                     query = query.filter(conditions)
                 if distinct:
@@ -278,3 +284,4 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         Base.metadata.drop_all(self.engine)
         # Recreate the tables
         Base.metadata.create_all(self.engine, checkfirst=True)
+

@@ -6,20 +6,24 @@ import struct
 from contextlib import closing
 from datetime import datetime, timedelta, timezone
 from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
+import uuid
 
 from azure.core.credentials import AccessToken
 from azure.identity import DefaultAzureCredential
-from sqlalchemy import MetaData, create_engine, event, text
+from sqlalchemy import MetaData, create_engine, event, text, and_
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload, sessionmaker
 from sqlalchemy.orm.session import Session
+from sqlalchemy.orm.attributes import InstrumentedAttribute
 
 from pyrit.common import default_values
 from pyrit.common.singleton import Singleton
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry
-from pyrit.models import AzureBlobStorageIO, PromptRequestPiece
+from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry, SeedPromptEntry, AttackResultEntry
+from pyrit.models import AzureBlobStorageIO, PromptRequestPiece, SeedPrompt, SeedPromptGroup, SeedPromptDataset
+from pyrit.models.attack_result import AttackResult
+from pyrit.models import DataTypeSerializer, data_serializer_factory
 
 logger = logging.getLogger(__name__)
 
@@ -307,6 +311,11 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 query = session.query(Model)
                 if join_scores and Model == PromptMemoryEntry:
                     query = query.options(joinedload(PromptMemoryEntry.scores))
+                elif Model == AttackResultEntry:
+                    query = query.options(
+                        joinedload(AttackResultEntry.last_response).joinedload(PromptMemoryEntry.scores),
+                        joinedload(AttackResultEntry.last_score)
+                    )
                 if conditions is not None:
                     query = query.filter(conditions)
                 if distinct:
