@@ -21,12 +21,12 @@ from pyrit.memory.memory_embedding import (
 )
 from pyrit.memory.memory_exporter import MemoryExporter
 from pyrit.memory.memory_models import (
+    AttackResultEntry,
     Base,
     EmbeddingDataEntry,
     PromptMemoryEntry,
     ScoreEntry,
     SeedPromptEntry,
-    AttackResultEntry,
 )
 from pyrit.models import (
     ChatMessage,

@@ -17,6 +17,7 @@ from unit.mocks import get_sample_conversation_entries, get_sample_conversations
 
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.memory import MemoryExporter, MemoryInterface, PromptMemoryEntry
+from pyrit.memory.memory_models import AttackResultEntry
 from pyrit.models import (
     PromptRequestPiece,
     PromptRequestResponse,
@@ -24,8 +25,7 @@ from pyrit.models import (
     SeedPrompt,
     SeedPromptGroup,
 )
-from pyrit.models.attack_result import AttackResult, AttackOutcome
-from pyrit.memory.memory_models import AttackResultEntry
+from pyrit.models.attack_result import AttackOutcome, AttackResult
 from pyrit.orchestrator import Orchestrator
 
 
@@ -2289,7 +2289,7 @@ def test_get_attack_results_by_objective_sha256(duckdb_instance: MemoryInterface
     # Create objectives with known SHA256 hashes
     objective1 = "Test objective 1"
     objective1_sha256 = hashlib.sha256(objective1.encode()).hexdigest()
-    
+
     objective2 = "Test objective 2"
     objective2_sha256 = hashlib.sha256(objective2.encode()).hexdigest()
 
@@ -2372,9 +2372,7 @@ def test_get_attack_results_multiple_filters(duckdb_instance: MemoryInterface):
 
     # Retrieve attack results with multiple filters
     retrieved_results = duckdb_instance.get_attack_results(
-        conversation_id="conv_1",
-        objective="objective for",
-        outcome="success"
+        conversation_id="conv_1", objective="objective for", outcome="success"
     )
 
     # Should only match the first result
@@ -2504,6 +2502,7 @@ def test_attack_result_with_last_response_and_score(duckdb_instance: MemoryInter
     assert all_entries[0].last_score is not None
     assert all_entries[0].last_score.id == score.id
 
+
 def test_attack_result_all_outcomes(duckdb_instance: MemoryInterface):
     """Test attack results with all possible outcomes."""
     outcomes = [AttackOutcome.SUCCESS, AttackOutcome.FAILURE, AttackOutcome.UNDETERMINED]
@@ -2628,4 +2627,3 @@ def test_get_attack_results_case_sensitive_objective(duckdb_instance: MemoryInte
     retrieved_results = duckdb_instance.get_attack_results(objective="test objective")
     assert len(retrieved_results) == 1
     assert retrieved_results[0].objective == "test objective for failure"
-

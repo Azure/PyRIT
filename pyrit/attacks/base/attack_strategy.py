@@ -9,7 +9,6 @@ from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator, Dict, Generic, List, MutableMapping, Optional
 
-from pyrit.models import AttackOutcome, ResultT
 from pyrit.attacks.base.attack_context import ContextT
 from pyrit.common import default_values
 from pyrit.common.logger import logger
@@ -18,7 +17,7 @@ from pyrit.exceptions.exception_classes import (
     AttackValidationException,
 )
 from pyrit.memory.central_memory import CentralMemory
-from pyrit.models import Identifier, PromptRequestResponse
+from pyrit.models import AttackOutcome, Identifier, PromptRequestResponse, ResultT
 
 
 class AttackStrategyLogAdapter(logging.LoggerAdapter):

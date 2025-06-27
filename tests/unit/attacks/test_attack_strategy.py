@@ -9,12 +9,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from pyrit.models import AttackOutcome
 from pyrit.attacks.base.attack_strategy import AttackStrategy, AttackStrategyLogAdapter
 from pyrit.exceptions.exception_classes import (
     AttackExecutionException,
     AttackValidationException,
 )
+from pyrit.models import AttackOutcome
 
 
 @pytest.fixture
@@ -430,11 +430,11 @@ class TestConcurrency:
                 _teardown_async = AsyncMock()
 
             strategy = ConcreteStrategy(context_type=mock_context_type)
-            
+
             # Mock the memory to avoid any issues with the real memory system
             mock_memory = MagicMock()
             strategy._memory = mock_memory
-            
+
             # Configure mock result with required attributes
             mock_result = MagicMock()
             mock_result.outcome = AttackOutcome.SUCCESS

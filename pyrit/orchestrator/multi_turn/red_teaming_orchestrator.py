@@ -20,6 +20,7 @@ from pyrit.attacks import (
 )
 from pyrit.common import deprecation_message
 from pyrit.common.path import RED_TEAM_ORCHESTRATOR_PATH
+from pyrit.models import AttackOutcome
 from pyrit.orchestrator import MultiTurnOrchestrator, OrchestratorResult
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -28,7 +29,6 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import (
 )
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import Scorer
-from pyrit.models import AttackOutcome
 
 logger = logging.getLogger(__name__)
 

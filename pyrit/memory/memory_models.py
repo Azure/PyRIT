@@ -2,8 +2,8 @@
 # Licensed under the MIT license.
 
 import uuid
-from typing import List, Literal, Optional, Union, Any
 from datetime import datetime
+from typing import Any, List, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import (
@@ -26,7 +26,7 @@ from sqlalchemy.orm import (  # type: ignore
 from sqlalchemy.types import Uuid  # type: ignore
 
 from pyrit.models import PromptDataType, PromptRequestPiece, Score, SeedPrompt
-from pyrit.models.attack_result import AttackResult, AttackOutcome
+from pyrit.models.attack_result import AttackOutcome, AttackResult
 
 
 class Base(DeclarativeBase):
@@ -402,7 +402,9 @@ class AttackResultEntry(Base):
     )
     executed_turns = mapped_column(INTEGER, nullable=False, default=0)
     execution_time_ms = mapped_column(INTEGER, nullable=False, default=0)
-    outcome: Mapped[Literal["success", "failure", "undetermined"]] = mapped_column(String, nullable=False, default="undetermined")
+    outcome: Mapped[Literal["success", "failure", "undetermined"]] = mapped_column(
+        String, nullable=False, default="undetermined"
+    )
     outcome_reason = mapped_column(String, nullable=True)
     attack_metadata: Mapped[dict[str, Union[str, int, float, bool]]] = mapped_column(JSON, nullable=True)
     timestamp = mapped_column(DateTime, nullable=False)
