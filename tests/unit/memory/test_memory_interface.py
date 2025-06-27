@@ -2097,7 +2097,7 @@ def test_add_attack_results_to_memory(duckdb_instance: MemoryInterface):
     duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2])
 
     # Verify they were added by querying all attack results
-    all_attack_results = duckdb_instance._query_entries(AttackResultEntry)
+    all_attack_results: Sequence[AttackResultEntry] = duckdb_instance._query_entries(AttackResultEntry)
     assert len(all_attack_results) == 2
 
     # Verify the data was stored correctly
@@ -2140,7 +2140,7 @@ def test_get_attack_results_by_ids(duckdb_instance: MemoryInterface):
     duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2, attack_result3])
 
     # Get all attack result entries to get their IDs
-    all_entries = duckdb_instance._query_entries(AttackResultEntry)
+    all_entries: Sequence[AttackResultEntry] = duckdb_instance._query_entries(AttackResultEntry)
     assert len(all_entries) == 3
 
     # Get IDs of first two attack results
@@ -2494,7 +2494,7 @@ def test_attack_result_with_last_response_and_score(duckdb_instance: MemoryInter
     duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
 
     # Retrieve and verify relationships
-    all_entries = duckdb_instance.get_attack_results()
+    all_entries: Sequence[AttackResult] = duckdb_instance.get_attack_results()
     assert len(all_entries) == 1
     assert all_entries[0].conversation_id == "conv_1"
     assert all_entries[0].last_response is not None
@@ -2524,7 +2524,7 @@ def test_attack_result_all_outcomes(duckdb_instance: MemoryInterface):
     duckdb_instance.add_attack_results_to_memory(attack_results=attack_results)
 
     # Verify all were added
-    all_entries = duckdb_instance._query_entries(AttackResultEntry)
+    all_entries: Sequence[AttackResultEntry] = duckdb_instance._query_entries(AttackResultEntry)
     assert len(all_entries) == 3
 
     # Verify outcomes were stored correctly
@@ -2559,7 +2559,7 @@ def test_attack_result_metadata_handling(duckdb_instance: MemoryInterface):
     duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
 
     # Retrieve and verify metadata
-    all_entries = duckdb_instance._query_entries(AttackResultEntry)
+    all_entries: Sequence[AttackResultEntry] = duckdb_instance._query_entries(AttackResultEntry)
     assert len(all_entries) == 1
 
     retrieved_result = all_entries[0].get_attack_result()
@@ -2568,10 +2568,7 @@ def test_attack_result_metadata_handling(duckdb_instance: MemoryInterface):
 
 def test_attack_result_objective_sha256_auto_generation(duckdb_instance: MemoryInterface):
     """Test that objective SHA256 is properly handled when not provided."""
-    import hashlib
-
     objective = "Test objective without SHA256"
-    expected_sha256 = hashlib.sha256(objective.encode()).hexdigest()
 
     # Create attack result without providing objective_sha256
     attack_result = AttackResult(
@@ -2587,7 +2584,7 @@ def test_attack_result_objective_sha256_auto_generation(duckdb_instance: MemoryI
     duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
 
     # Retrieve and verify that objective_sha256 is None (not auto-generated)
-    all_entries = duckdb_instance._query_entries(AttackResultEntry)
+    all_entries: Sequence[AttackResultEntry] = duckdb_instance._query_entries(AttackResultEntry)
     assert len(all_entries) == 1
 
     retrieved_result = all_entries[0].get_attack_result()

@@ -3,18 +3,16 @@
 
 import logging
 import struct
-import uuid
 from contextlib import closing
 from datetime import datetime, timedelta, timezone
 from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
 
 from azure.core.credentials import AccessToken
 from azure.identity import DefaultAzureCredential
-from sqlalchemy import MetaData, and_, create_engine, event, text
+from sqlalchemy import MetaData, create_engine, event, text
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload, sessionmaker
-from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.orm.session import Session
 
 from pyrit.common import default_values
@@ -25,18 +23,11 @@ from pyrit.memory.memory_models import (
     Base,
     EmbeddingDataEntry,
     PromptMemoryEntry,
-    SeedPromptEntry,
 )
 from pyrit.models import (
     AzureBlobStorageIO,
-    DataTypeSerializer,
     PromptRequestPiece,
-    SeedPrompt,
-    SeedPromptDataset,
-    SeedPromptGroup,
-    data_serializer_factory,
 )
-from pyrit.models.attack_result import AttackResult
 
 logger = logging.getLogger(__name__)
 

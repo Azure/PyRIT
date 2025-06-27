@@ -9,10 +9,11 @@ import uuid
 import weakref
 from datetime import datetime
 from pathlib import Path
-from typing import MutableSequence, Optional, Sequence, Tuple, TypeVar, Union
+from typing import MutableSequence, Optional, Sequence, TypeVar, Union
 
-from sqlalchemy import and_, func
+from sqlalchemy import and_
 from sqlalchemy.orm.attributes import InstrumentedAttribute
+from sqlalchemy.sql.elements import ColumnElement
 
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.memory.memory_embedding import (
@@ -912,13 +913,15 @@ class MemoryInterface(abc.ABC):
             attack_result_ids (Optional[Sequence[str]], optional): A list of attack result IDs. Defaults to None.
             conversation_id (Optional[str], optional): The conversation ID to filter by. Defaults to None.
             objective (Optional[str], optional): The objective to filter by (substring match). Defaults to None.
-            objective_sha256 (Optional[Sequence[str]], optional): A list of objective SHA256 hashes to filter by. Defaults to None.
-            outcome (Optional[str], optional): The outcome to filter by (success, failure, undetermined). Defaults to None.
+            objective_sha256 (Optional[Sequence[str]], optional): A list of objective SHA256 hashes to filter by.
+                Defaults to None.
+            outcome (Optional[str], optional): The outcome to filter by (success, failure, undetermined).
+                Defaults to None.
 
         Returns:
             Sequence[AttackResult]: A list of AttackResult objects that match the specified filters.
         """
-        conditions = []
+        conditions: list[ColumnElement[bool]] = []
 
         if attack_result_ids is not None:
             if len(attack_result_ids) == 0:

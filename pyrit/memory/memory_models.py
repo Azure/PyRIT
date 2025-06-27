@@ -3,7 +3,7 @@
 
 import uuid
 from datetime import datetime
-from typing import Any, List, Literal, Optional, Union
+from typing import List, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import (
@@ -425,8 +425,8 @@ class AttackResultEntry(Base):
         self.objective = entry.objective
         self.attack_identifier = entry.attack_identifier
         self.objective_sha256 = entry.objective_sha256
-        self.last_response_id = entry.last_response.id if entry.last_response else None
-        self.last_score_id = entry.last_score.id if entry.last_score else None
+        self.last_response_id = entry.last_response.id if entry.last_response else None  # type: ignore
+        self.last_score_id = entry.last_score.id if entry.last_score else None  # type: ignore
         self.executed_turns = entry.executed_turns
         self.execution_time_ms = entry.execution_time_ms
         self.outcome = entry.outcome.value  # type: ignore
