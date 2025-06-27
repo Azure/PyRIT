@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-
 import abc
 import json
 import logging
@@ -315,7 +314,8 @@ class HarmScorerEvaluator(ScorerEvaluator):
             human_scores_list.append(entry.human_scores)
             harms.append(entry.harm_category)
 
-        # Transpose human scores list so each row is a complete set of human scores for all the responses
+        # Transpose human scores list so each row is a complete set of human scores across all the responses
+        # (i.e. if there are 200 responses and 3 human scores per response, the shape will be (3, 200))
         all_human_scores = np.array(human_scores_list).T
 
         all_model_scores_list = []
@@ -474,7 +474,8 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
             human_scores_list.append(entry.human_scores)
             objectives.append(entry.objective)
 
-        # Transpose human scores list so each row is a complete set of human scores for all the responses
+        # Transpose human scores list so each row is a complete set of human scores across all the responses
+        # (i.e. if there are 200 responses and 3 human scores per response, the shape will be (3, 200))
         all_human_scores = np.array(human_scores_list).T
 
         all_model_scores_list = []

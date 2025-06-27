@@ -6,6 +6,10 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.16.1
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -35,7 +39,7 @@ likert_scorer = SelfAskLikertScorer(chat_target=target, likert_scale_path=Likert
 
 # factory method that creates an HarmScorerEvaluator in this case
 evaluator = ScorerEvaluator.from_scorer(scorer=likert_scorer, metrics_type="harm")
-csv_path = f"{str(SCORER_EVALS_HARM_PATH)}/harm/SAMPLE_hate_speech.csv"
+csv_path = f"{str(SCORER_EVALS_HARM_PATH)}/SAMPLE_hate_speech.csv"
 # Uncomment the line below to use the full dataset of approx 200 entries
 # csv_path = f"{str(SCORER_EVALS_HARM_PATH)}/hate_speech.csv"
 
@@ -43,7 +47,7 @@ csv_path = f"{str(SCORER_EVALS_HARM_PATH)}/harm/SAMPLE_hate_speech.csv"
 metrics = await evaluator.run_evaluation_from_csv_async(  # type:ignore
     csv_path=csv_path,
     assistant_response_col="assistant_response",
-    human_label_col_names=["human_likert_score_1", "human_likert_score_2", "human_likert_score_3"],
+    human_label_col_names=["human_score_1", "human_score_2", "human_score_3"],
     objective_or_harm_col_name="category",
     num_scorer_trials=1,
 )
@@ -83,7 +87,7 @@ csv_path = f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/SAMPLE_mixed_objective_refusal.c
 
 metrics = await evaluator.run_evaluation_from_csv_async(  # type:ignore
     csv_path=csv_path,
-    assistant_response_col="assistant_message",
+    assistant_response_col="assistant_response",
     human_label_col_names=["human_score"],
     objective_or_harm_col_name="objective",
     num_scorer_trials=1,

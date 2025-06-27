@@ -43,6 +43,33 @@ class Scorer(abc.ABC):
     def _memory(self) -> MemoryInterface:
         return CentralMemory.get_memory_instance()
 
+    @abstractmethod
+    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+        """
+        Score the request_response, add the results to the database
+        and return a list of Score objects.
+
+        Args:
+            request_response (PromptRequestPiece): The request response to be scored.
+            task (str): The task based on which the text should be scored (the original attacker model's objective).
+
+        Returns:
+            list[Score]: A list of Score objects representing the results.
+        """
+        raise NotImplementedError("score_async method not implemented")
+
+    @abstractmethod
+    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
+        """
+        Validates the request_response piece to score. Because some scorers may require
+        specific PromptRequestPiece types or values.
+
+        Args:
+            request_response (PromptRequestPiece): The request response to be validated.
+            task (str): The task based on which the text should be scored (the original attacker model's objective).
+        """
+        raise NotImplementedError("score_async method not implemented")
+
     def get_scorer_metrics(self, dataset_name: str, metrics_type: Optional[Literal["harm", "objective"]] = None):
         """
         Returns evaluation statistics for the scorer using the dataset_name of the human labeled dataset that this
@@ -72,33 +99,6 @@ class Scorer(abc.ABC):
         scorer_evaluator = ScorerEvaluator.from_scorer(self, metrics_type=metrics_type)
 
         return scorer_evaluator.get_scorer_metrics(dataset_name=dataset_name)
-
-    @abstractmethod
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
-        """
-        Score the request_response, add the results to the database
-        and return a list of Score objects.
-
-        Args:
-            request_response (PromptRequestPiece): The request response to be scored.
-            task (str): The task based on which the text should be scored (the original attacker model's objective).
-
-        Returns:
-            list[Score]: A list of Score objects representing the results.
-        """
-        raise NotImplementedError("score_async method not implemented")
-
-    @abstractmethod
-    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
-        """
-        Validates the request_response piece to score. Because some scorers may require
-        specific PromptRequestPiece types or values.
-
-        Args:
-            request_response (PromptRequestPiece): The request response to be validated.
-            task (str): The task based on which the text should be scored (the original attacker model's objective).
-        """
-        raise NotImplementedError("score_async method not implemented")
 
     async def score_text_async(self, text: str, *, task: Optional[str] = None) -> list[Score]:
         """
