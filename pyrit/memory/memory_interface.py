@@ -4,7 +4,6 @@
 import abc
 import atexit
 import copy
-import hashlib
 import logging
 import uuid
 import weakref
@@ -895,12 +894,8 @@ class MemoryInterface(abc.ABC):
     def add_attack_results_to_memory(self, *, attack_results: Sequence[AttackResult]) -> None:
         """
         Inserts a list of attack results into the memory storage.
-        Always calculates objective_sha256 for consistency.
+        The database model automatically calculates objective_sha256 for consistency.
         """
-        for attack_result in attack_results:
-            objective_sha256 = hashlib.sha256(attack_result.objective.encode()).hexdigest()
-            attack_result.objective_sha256 = objective_sha256
-
         self._insert_entries(entries=[AttackResultEntry(entry=attack_result) for attack_result in attack_results])
 
     def get_attack_results(

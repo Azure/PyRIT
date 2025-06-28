@@ -409,7 +409,6 @@ class AttackResultEntry(Base):
     attack_metadata: Mapped[dict[str, Union[str, int, float, bool]]] = mapped_column(JSON, nullable=True)
     timestamp = mapped_column(DateTime, nullable=False)
 
-    # Relationships
     last_response: Mapped[Optional["PromptMemoryEntry"]] = relationship(
         "PromptMemoryEntry",
         foreign_keys=[last_response_id],
@@ -424,7 +423,7 @@ class AttackResultEntry(Base):
         self.conversation_id = entry.conversation_id
         self.objective = entry.objective
         self.attack_identifier = entry.attack_identifier
-        self.objective_sha256 = entry.objective_sha256
+        self.objective_sha256 = entry.get_objective_sha256()
         self.last_response_id = entry.last_response.id if entry.last_response else None  # type: ignore
         self.last_score_id = entry.last_score.id if entry.last_score else None  # type: ignore
         self.executed_turns = entry.executed_turns
@@ -439,7 +438,6 @@ class AttackResultEntry(Base):
             conversation_id=self.conversation_id,
             objective=self.objective,
             attack_identifier=self.attack_identifier,
-            objective_sha256=self.objective_sha256,
             last_response=self.last_response.get_prompt_request_piece() if self.last_response else None,
             last_score=self.last_score.get_score() if self.last_score else None,
             executed_turns=self.executed_turns,
@@ -448,6 +446,3 @@ class AttackResultEntry(Base):
             outcome_reason=self.outcome_reason,
             metadata=self.attack_metadata or {},
         )
-
-    def __str__(self):
-        return f"AttackResult: {self.conversation_id}: {self.objective[:50]}..."

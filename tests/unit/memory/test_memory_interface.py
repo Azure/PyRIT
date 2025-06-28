@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import hashlib
 import os
 import random
 import tempfile
@@ -2285,40 +2284,36 @@ def test_get_attack_results_by_outcome(duckdb_instance: MemoryInterface):
 
 def test_get_attack_results_by_objective_sha256(duckdb_instance: MemoryInterface):
     """Test retrieving attack results by objective SHA256."""
-    import hashlib
 
     # Create objectives with known SHA256 hashes
     objective1 = "Test objective 1"
-    objective1_sha256 = hashlib.sha256(objective1.encode()).hexdigest()
-
     objective2 = "Test objective 2"
-    objective2_sha256 = hashlib.sha256(objective2.encode()).hexdigest()
+    objective3 = "Different objective"
 
     # Create and add attack results
     attack_result1 = AttackResult(
         conversation_id="conv_1",
         objective=objective1,
-        objective_sha256=objective1_sha256,
         attack_identifier={"name": "test_attack_1"},
         executed_turns=5,
         execution_time_ms=1000,
         outcome=AttackOutcome.SUCCESS,
     )
+    objective1_sha256 = attack_result1.get_objective_sha256()
 
     attack_result2 = AttackResult(
         conversation_id="conv_2",
         objective=objective2,
-        objective_sha256=objective2_sha256,
         attack_identifier={"name": "test_attack_2"},
         executed_turns=3,
         execution_time_ms=500,
         outcome=AttackOutcome.FAILURE,
     )
+    objective2_sha256 = attack_result2.get_objective_sha256()
 
     attack_result3 = AttackResult(
         conversation_id="conv_3",
-        objective="Different objective",
-        objective_sha256=hashlib.sha256("Different objective".encode()).hexdigest(),
+        objective=objective3,
         attack_identifier={"name": "test_attack_3"},
         executed_turns=7,
         execution_time_ms=1500,
@@ -2556,7 +2551,6 @@ def test_attack_result_metadata_handling(duckdb_instance: MemoryInterface):
         metadata=metadata,
     )
 
-    # Add to memory
     duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
 
     # Retrieve and verify metadata
@@ -2571,9 +2565,6 @@ def test_attack_result_objective_sha256_auto_generation(duckdb_instance: MemoryI
     """Test that objective SHA256 is always calculated."""
 
     objective = "Test objective without SHA256"
-    expected_sha256 = hashlib.sha256(objective.encode()).hexdigest()
-
-    # Create attack result without providing objective_sha256
     attack_result = AttackResult(
         conversation_id="conv_1",
         objective=objective,
@@ -2582,53 +2573,20 @@ def test_attack_result_objective_sha256_auto_generation(duckdb_instance: MemoryI
         execution_time_ms=1000,
         outcome=AttackOutcome.SUCCESS,
     )
+    expected_sha256 = attack_result.get_objective_sha256()
 
-    # Add to memory
     duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
 
     # Retrieve and verify that objective_sha256 is calculated
     all_entries: Sequence[AttackResultEntry] = duckdb_instance._query_entries(AttackResultEntry)
     assert len(all_entries) == 1
 
-    retrieved_result = all_entries[0].get_attack_result()
-    assert retrieved_result.objective_sha256 == expected_sha256
-
-
-def test_attack_result_objective_sha256_overwritten_when_provided(duckdb_instance: MemoryInterface):
-    """Test that objective SHA256 is overwritten when already provided."""
-    import hashlib
-
-    objective = "Test objective with provided SHA256"
-    provided_sha256 = "custom_sha256_hash_value"
-
-    # Create attack result with a custom objective_sha256
-    attack_result = AttackResult(
-        conversation_id="conv_1",
-        objective=objective,
-        attack_identifier={"name": "test_attack"},
-        objective_sha256=provided_sha256,
-        executed_turns=5,
-        execution_time_ms=1000,
-        outcome=AttackOutcome.SUCCESS,
-    )
-
-    # Add to memory
-    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
-
-    # Retrieve and verify that the provided objective_sha256 is preserved
-    all_entries: Sequence[AttackResultEntry] = duckdb_instance._query_entries(AttackResultEntry)
-    assert len(all_entries) == 1
-
-    retrieved_result = all_entries[0].get_attack_result()
-
-    # Verify it's not the auto-calculated value
-    expected_auto_sha256 = hashlib.sha256(objective.encode()).hexdigest()
-    assert retrieved_result.objective_sha256 == expected_auto_sha256
+    # Verify the database stored the correct SHA256
+    assert all_entries[0].objective_sha256 == expected_sha256
 
 
 def test_get_attack_results_case_sensitive_objective(duckdb_instance: MemoryInterface):
     """Test that objective filtering is case sensitive."""
-    # Create and add attack results
     attack_result1 = AttackResult(
         conversation_id="conv_1",
         objective="Test Objective for Success",
@@ -2647,7 +2605,6 @@ def test_get_attack_results_case_sensitive_objective(duckdb_instance: MemoryInte
         outcome=AttackOutcome.FAILURE,
     )
 
-    # Add attack results to memory
     duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2])
 
     # Test case-sensitive search
@@ -2662,32 +2619,25 @@ def test_get_attack_results_case_sensitive_objective(duckdb_instance: MemoryInte
 
 
 def test_attack_result_objective_sha256_always_calculated(duckdb_instance: MemoryInterface):
-    """Test that objective SHA256 is always calculated regardless of provided value."""
-    import hashlib
+    """Test that objective SHA256 is always calculated by the database model."""
 
-    objective = "Test objective with provided SHA256"
-    provided_sha256 = "custom_sha256_hash_value"
-    expected_sha256 = hashlib.sha256(objective.encode()).hexdigest()
+    objective = "Test objective"
 
-    # Create attack result with a custom objective_sha256
     attack_result = AttackResult(
         conversation_id="conv_1",
         objective=objective,
         attack_identifier={"name": "test_attack"},
-        objective_sha256=provided_sha256,
         executed_turns=5,
         execution_time_ms=1000,
         outcome=AttackOutcome.SUCCESS,
     )
+    expected_sha256 = attack_result.get_objective_sha256()
 
-    # Add to memory - this should recalculate the objective_sha256
     duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
 
-    # Retrieve and verify that the objective_sha256 is recalculated
+    # Retrieve and verify that the objective_sha256 is calculated
     all_entries: Sequence[AttackResultEntry] = duckdb_instance._query_entries(AttackResultEntry)
     assert len(all_entries) == 1
 
-    retrieved_result = all_entries[0].get_attack_result()
-    assert retrieved_result.objective_sha256 == expected_sha256
-    # Verify it's not the originally provided value
-    assert retrieved_result.objective_sha256 != provided_sha256
+    # Verify the database stored the correct SHA256
+    assert all_entries[0].objective_sha256 == expected_sha256
