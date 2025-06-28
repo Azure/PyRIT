@@ -26,13 +26,8 @@ logger = logging.getLogger(__name__)
 
 
 class PromptNode:
-
-    """Class to maintain the tree information for each prompt template
-
-        Args:
-            template: Prompt template.
-            parent: Parent node.
-
+    """
+    Class to maintain the tree information for each prompt template
     """
 
     def __init__(
@@ -40,6 +35,14 @@ class PromptNode:
         template: str,
         parent: Optional[PromptNode] = None,
     ):
+        """
+        Creates the PromptNode instance.
+
+        Args:
+            template: Prompt template.
+            parent: Parent node.
+        """
+
         self.id = uuid.uuid4()
         self.template: str = template
         self.children: list[PromptNode] = []
@@ -115,16 +118,37 @@ class FuzzerResult:
 
 
 class FuzzerOrchestrator(Orchestrator):
+    """
+    An orchestrator that explores a variety of jailbreak options via fuzzing.
+
+    Paper - GPTFUZZER - Red Teaming Large Language Models with Auto-Generated Jailbreak Prompts.
+    Link - https://arxiv.org/pdf/2309.10253
+    Authors - Jiahao Yu, Xingwei Lin, Zheng Yu, Xinyu Xing
+    GitHub - https://github.com/sherdencooper/GPTFuzz
+    """
+
     _memory: MemoryInterface
 
-    """Creates an orchestrator that explores a variety of jailbreak options via fuzzing.
-
-        Paper: GPTFUZZER: Red Teaming Large Language Models with Auto-Generated Jailbreak Prompts.
-
-            Link: https://arxiv.org/pdf/2309.10253
-            Authors: Jiahao Yu, Xingwei Lin, Zheng Yu, Xinyu Xing
-            GitHub: https://github.com/sherdencooper/GPTFuzz
-
+    def __init__(
+        self,
+        *,
+        prompts: list[str],
+        prompt_target: PromptTarget,
+        prompt_templates: list[str],
+        prompt_converters: Optional[list[PromptConverter]] = None,
+        template_converters: list[FuzzerConverter],
+        scoring_target: PromptChatTarget,
+        verbose: bool = False,
+        frequency_weight: float = 0.5,
+        reward_penalty: float = 0.1,
+        minimum_reward: float = 0.2,
+        non_leaf_node_probability: float = 0.1,
+        batch_size: int = 10,
+        target_jailbreak_goal_count: int = 1,
+        max_query_limit: Optional[int] = None,
+    ) -> None:
+        """
+        Creates the FuzzerOrchestrator instance.
         Args:
 
             prompts: The prompts will be the questions to the target.
@@ -151,27 +175,8 @@ class FuzzerOrchestrator(Orchestrator):
             max_query_limit: Maximum number of times the fuzzer will run. By default, it calculates the product
                 of prompts and prompt templates and multiplies it by 10. Each iteration makes as many calls as
                 the number of prompts.
-    """
+        """
 
-    def __init__(
-        self,
-        *,
-        prompts: list[str],
-        prompt_target: PromptTarget,
-        prompt_templates: list[str],
-        prompt_converters: Optional[list[PromptConverter]] = None,
-        template_converters: list[FuzzerConverter],
-        scoring_target: PromptChatTarget,
-        verbose: bool = False,
-        frequency_weight: float = 0.5,
-        reward_penalty: float = 0.1,
-        minimum_reward: float = 0.2,
-        non_leaf_node_probability: float = 0.1,
-        batch_size: int = 10,
-        target_jailbreak_goal_count: int = 1,
-        max_query_limit: Optional[int] = None,
-    ) -> None:
-        
         super().__init__(prompt_converters=prompt_converters, verbose=verbose)
 
         if not prompt_templates:
