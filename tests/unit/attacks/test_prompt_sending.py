@@ -11,13 +11,14 @@ from pyrit.attacks.base.attack_config import (
     AttackScoringConfig,
 )
 from pyrit.attacks.base.attack_context import SingleTurnAttackContext
-from pyrit.attacks.base.attack_result import AttackOutcome, AttackResult
 from pyrit.attacks.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.exceptions.exception_classes import (
     AttackExecutionException,
     AttackValidationException,
 )
 from pyrit.models import (
+    AttackOutcome,
+    AttackResult,
     PromptRequestPiece,
     PromptRequestResponse,
     Score,
@@ -898,7 +899,8 @@ class TestAttackLifecycle:
         """Test execute_async creates context using factory method and executes attack"""
         attack = PromptSendingAttack(objective_target=mock_target, max_attempts_on_failure=3)
 
-        # Mock the attack execution methods
+        attack._memory = MagicMock()
+
         attack._validate_context = MagicMock()
         attack._setup_async = AsyncMock()
         mock_result = AttackResult(

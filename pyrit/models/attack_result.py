@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, Optional, TypeVar
@@ -10,7 +11,7 @@ from typing import Any, Dict, Optional, TypeVar
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.score import Score
 
-ResultT = TypeVar("ResultT", bound="AttackResult")
+AttackResultT = TypeVar("AttackResultT", bound="AttackResult")
 
 
 class AttackOutcome(Enum):
@@ -36,7 +37,7 @@ class AttackResult:
     # Unique identifier of the conversation that produced this result
     conversation_id: str
 
-    # Natural-language description of the attacker’s objective
+    # Natural-language description of the attacker's objective
     objective: str
 
     # Identifier of the attack (e.g., name, module)
@@ -66,3 +67,12 @@ class AttackResult:
     # Additional information
     # Metadata can be included as key-value pairs to provide extra context
     metadata: Dict[str, Any] = field(default_factory=dict)
+
+    def get_objective_sha256(self) -> str:
+        """
+        Returns the SHA256 hash of the objective string.
+        """
+        return hashlib.sha256(self.objective.encode()).hexdigest()
+
+    def __str__(self):
+        return f"AttackResult: {self.conversation_id}: {self.outcome.value}: {self.objective[:50]}..."
