@@ -13,20 +13,26 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 class InsertPunctuationConverter(PromptConverter):
     """
     Inserts punctuation into a prompt to test robustness.
-    Punctuation insertion: inserting single punctuations in string.punctuation.
+
+    Punctuation insertion: inserting single punctuations in `string.punctuation`.
     Words in a prompt: a word does not contain any punctuation and space.
     "a1b2c3" is a word; "a1 2" are 2 words; "a1,b,3" are 3 words.
     """
 
+    #: Common punctuation characters. Used if no punctuation list is provided.
     default_punctuation_list = [",", ".", "!", "?", ":", ";", "-"]
 
     def __init__(self, word_swap_ratio: float = 0.2, between_words: bool = True) -> None:
         """
-        Initialize the converter with optional and word swap ratio.
+        Initializes the converter with a word swap ratio and punctuation insertion mode.
+
         Args:
             word_swap_ratio (float): Percentage of words to perturb. Defaults to 0.2.
             between_words (bool): If True, insert punctuation only between words.
-            If False, insert punctuation within words. Defaults to True.
+                If False, insert punctuation within words. Defaults to True.
+
+        Raises:
+            ValueError: If ``word_swap_ratio`` is not between 0 and 1.
         """
         # Swap ratio cannot be 0 or larger than 1
         if not 0 < word_swap_ratio <= 1:
@@ -50,13 +56,18 @@ class InsertPunctuationConverter(PromptConverter):
         self, *, prompt: str, input_type: PromptDataType = "text", punctuation_list: Optional[List[str]] = None
     ) -> ConverterResult:
         """
-        Convert the given prompt by inserting punctuation.
+        Converts the given prompt by inserting punctuation.
+
         Args:
             prompt (str): The text to convert.
             input_type (PromptDataType): The type of input data.
             punctuation_list (Optional[List[str]]): List of punctuations to use for insertion.
+
         Returns:
-            ConverterResult: A ConverterResult containing a interation of modified prompts.
+            ConverterResult: The result containing a interation of modified prompts.
+
+        Raises:
+            ValueError: If the input type is not supported.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")

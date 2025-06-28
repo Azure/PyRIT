@@ -157,11 +157,13 @@ class AzureBlobStorageTarget(PromptTarget):
         return response
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
-        if len(prompt_request.request_pieces) != 1:
-            raise ValueError("This target only supports a single prompt request piece.")
+        n_pieces = len(prompt_request.request_pieces)
+        if n_pieces != 1:
+            raise ValueError(f"This target only supports a single prompt request piece. Received {n_pieces} pieces")
 
-        if prompt_request.request_pieces[0].converted_value_data_type not in ["text", "url"]:
-            raise ValueError("This target only supports text and url prompt input.")
+        piece_type = prompt_request.request_pieces[0].converted_value_data_type
+        if piece_type not in ["text", "url"]:
+            raise ValueError(f"This target only supports text and url prompt input. Received: {piece_type}.")
 
         request = prompt_request.request_pieces[0]
         messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)

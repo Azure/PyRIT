@@ -20,13 +20,7 @@ from pyrit.prompt_target import PromptChatTarget
 
 class FuzzerCrossOverConverter(FuzzerConverter):
     """
-    Fuzzer converter that uses multiple prompt templates to generate new prompts.
-
-    Args:
-        converter_target (PromptChatTarget): Chat target used to perform fuzzing on user prompt
-        prompt_template (SeedPrompt, Optional): Template to be used instead of the default system prompt with
-            instructions for the chat target.
-        prompt_templates (List[str], Optional): List of prompt templates to use in addition to the default template.
+    Uses multiple prompt templates to generate new prompts.
     """
 
     def __init__(
@@ -36,6 +30,15 @@ class FuzzerCrossOverConverter(FuzzerConverter):
         prompt_template: Optional[SeedPrompt] = None,
         prompt_templates: Optional[List[str]] = None,
     ):
+        """
+        Initializes the converter with the specified chat target and prompt templates.
+
+        Args:
+            converter_target (PromptChatTarget): Chat target used to perform fuzzing on user prompt.
+            prompt_template (SeedPrompt, Optional): Template to be used instead of the default system prompt with
+                instructions for the chat target.
+            prompt_templates (List[str], Optional): List of prompt templates to use in addition to the default one.
+        """
         prompt_template = (
             prompt_template
             if prompt_template
@@ -53,7 +56,7 @@ class FuzzerCrossOverConverter(FuzzerConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Converter to generate versions of prompt with new, prepended sentences.
+        Converts the given prompt by combining it with a random prompt template from the list of available templates.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")

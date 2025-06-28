@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import abc
 from dataclasses import dataclass
 from typing import Optional
 
@@ -12,7 +11,7 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import (
 
 
 @dataclass
-class NormalizerRequest(abc.ABC):
+class NormalizerRequest:
     """
     Represents a single request sent to normalizer.
     """
