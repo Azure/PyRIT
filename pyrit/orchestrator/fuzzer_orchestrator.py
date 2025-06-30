@@ -151,7 +151,6 @@ class FuzzerOrchestrator(Orchestrator):
         Creates the FuzzerOrchestrator instance.
 
         Args:
-
             prompts: The prompts will be the questions to the target.
             prompt_target: The target to send the prompts to.
             prompt_templates: List of all the jailbreak templates which will act as the seed pool.
