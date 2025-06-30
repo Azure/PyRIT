@@ -306,6 +306,7 @@ API Reference
     FuzzerRephraseConverter
     FuzzerShortenConverter
     FuzzerSimilarConverter
+    HiddenLayerConverter
     HumanInTheLoopConverter
     ImageCompressionConverter
     InsertPunctuationConverter

@@ -35,6 +35,7 @@ from pyrit.prompt_converter.fuzzer_converter import (
     FuzzerShortenConverter,
     FuzzerSimilarConverter,
 )
+from pyrit.prompt_converter.hidden_layer_image_converter import HiddenLayerConverter
 from pyrit.prompt_converter.human_in_the_loop_converter import HumanInTheLoopConverter
 from pyrit.prompt_converter.image_compression_converter import ImageCompressionConverter
 from pyrit.prompt_converter.insert_punctuation_converter import InsertPunctuationConverter
@@ -100,6 +101,7 @@ __all__ = [
     "FuzzerRephraseConverter",
     "FuzzerShortenConverter",
     "FuzzerSimilarConverter",
+    "HiddenLayerConverter",
     "HumanInTheLoopConverter",
     "ImageCompressionConverter",
     "InsertPunctuationConverter",
