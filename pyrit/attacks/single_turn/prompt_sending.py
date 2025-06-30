@@ -167,14 +167,16 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
         # 7) Return an AttackResult object that captures the outcome of the attack
 
         # Prepare the prompt
-        prompt_group = self._get_prompt_group(context)
+        seed_prompts = self._get_prompt_group(context).prompts
 
         # Execute with retries
         for attempt in range(self._max_attempts_on_failure + 1):
             self._logger.debug(f"Attempt {attempt+1}/{self._max_attempts_on_failure + 1}")
 
             # Send the prompt
-            response = await self._send_prompt_to_objective_target_async(prompt_group=prompt_group, context=context)
+            response = await self._send_prompt_to_objective_target_async(
+                seed_prompts=seed_prompts.prompts, context=context
+            )
             if not response:
                 self._logger.warning(f"No response received on attempt {attempt+1} (likely filtered)")
                 continue  # Retry if no response (filtered or error)
@@ -263,7 +265,7 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
         return SeedPromptGroup(prompts=[SeedPrompt(value=context.objective, data_type="text")])
 
     async def _send_prompt_to_objective_target_async(
-        self, *, prompt_group: SeedPromptGroup, context: SingleTurnAttackContext
+        self, *, seed_prompts: list[SeedPrompt], context: SingleTurnAttackContext
     ) -> Optional[PromptRequestResponse]:
         """
         Send the prompt to the target and return the response.
@@ -278,7 +280,7 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
         """
 
         return await self._prompt_normalizer.send_prompt_async(
-            seed_prompt_group=prompt_group,
+            seed_prompts=seed_prompts,
             target=self._objective_target,
             conversation_id=context.conversation_id,
             request_converter_configurations=self._request_converters,

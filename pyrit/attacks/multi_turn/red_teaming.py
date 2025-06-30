@@ -30,7 +30,6 @@ from pyrit.models import (
     PromptRequestResponse,
     Score,
     SeedPrompt,
-    SeedPromptGroup,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target.common.prompt_target import PromptTarget
@@ -319,10 +318,10 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
 
         # Send the prompt to the adversarial chat and get the response
         logger.debug(f"Sending prompt to adversarial chat: {prompt_text[:50]}...")
-        prompt_grp = SeedPromptGroup(prompts=[SeedPrompt(value=prompt_text, data_type="text")])
+        prompts = [SeedPrompt(value=prompt_text, data_type="text")]
 
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_prompt_group=prompt_grp,
+            seed_prompts=prompts,
             conversation_id=context.session.adversarial_chat_conversation_id,
             target=self._adversarial_chat,
             orchestrator_identifier=self.get_identifier(),
@@ -462,12 +461,11 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         logger.info(f"Sending prompt to target: {prompt[:50]}...")
 
         # Create a seed prompt group from the prompt
-        seed_prompt = SeedPrompt(value=prompt, data_type="text")
-        seed_prompt_group = SeedPromptGroup(prompts=[seed_prompt])
+        seed_prompt = [SeedPrompt(value=prompt, data_type="text")]
 
         # Send the prompt to the target
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_prompt_group=seed_prompt_group,
+            seed_prompts=seed_prompt,
             conversation_id=context.session.conversation_id,
             request_converter_configurations=self._request_converters,
             response_converter_configurations=self._response_converters,

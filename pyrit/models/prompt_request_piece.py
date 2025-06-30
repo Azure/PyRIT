@@ -20,7 +20,7 @@ class PromptRequestPiece(abc.ABC):
     """Represents a piece of a prompt request to a target.
 
     This class represents a single piece of a prompt request that will be sent
-    to a target. Since some targets can handle multiple pieces (e.g., text and images),
+    to a target. Since some targets can handle multiple modalities (e.g., text and images),
     requests are composed of lists of PromptRequestPiece objects.
     """
 

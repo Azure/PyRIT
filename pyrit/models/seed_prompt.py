@@ -27,7 +27,7 @@ from pyrit.common.path import (
 )
 from pyrit.common.yaml_loadable import YamlLoadable
 from pyrit.models import DataTypeSerializer
-from pyrit.models.literals import PromptDataType
+from pyrit.models.literals import ChatMessageRole, PromptDataType
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,37 @@ class PartialUndefined(Undefined):
 
 @dataclass
 class SeedPrompt(YamlLoadable):
-    """Represents a seed prompt with various attributes and metadata."""
+    """Represents a seed prompt with various attributes and metadata.
+
+    value (str): The prompt text, which can include Jinja2 template parameters.
+    value_sha256 (Optional[str]): The SHA256 hash of the prompt value.
+    data_type (Optional[PromptDataType]): The type of data the prompt represents (e.g., text, image, audio).
+    id (Optional[uuid.UUID]): Unique identifier for the prompt.
+    name (Optional[str]): Name of the prompt.
+    dataset_name (Optional[str]): Name of the dataset this prompt belongs to.
+    harm_categories (Optional[Sequence[str]]): Categories of potential harm associated with the prompt.
+    description (Optional[str]): Description of the prompt.
+    authors (Optional[Sequence[str]]): Authors of the prompt.
+    groups (Optional[Sequence[str]]): Groups associated with the prompt.
+    source (Optional[str]): Source of the prompt.
+    date_added (Optional[datetime]): Date when the prompt was added.
+    added_by (Optional[str]): User who added the prompt.
+    metadata (Optional[Dict[str, Union[str, int]]]): Additional metadata for the prompt
+    parameters (Optional[Sequence[str]]): Parameters that can be used in the prompt.
+    prompt_group_id (Optional[uuid.UUID]): a unique identifier generated for the prompt group this prompt
+        belongs to.
+    prompt_group_alias (Optional[str]): user set alias for the prompt group. Prompts in the same group will be
+        sent together. If the group alias is not set, the prompt is assumed to be the only prompt in the group.
+    sequence (Optional[int]): Sequence number for ordering prompts with the same seed alias. Relevant only if the prompt
+        seed alias is set and there is more than one prompt in the prompt associated with that alias. Defaults to 0.
+    role: (ChatMessageRole): The role of the prompt in a chat context--"system", "user", or "assistant". Defaults
+        to "user".
+    prompt_seed_alias (Optional[str]): An alias for the seed prompt, used to identify which seed prompts should be
+        sent in the same turn. This is useful for multimodal prompts where multiple prompts need to be sent
+        together in a single request. If not set, the prompt is assumed to be a single prompt that does not
+        require grouping with other prompts.
+    prompt_group_alias_id (Optional[uuid.UUID]): A unique identifier for the prompt group alias.
+    """
 
     value: str
     value_sha256: Optional[str] = None
@@ -70,6 +100,10 @@ class SeedPrompt(YamlLoadable):
     prompt_group_id: Optional[uuid.UUID] = None
     prompt_group_alias: Optional[str] = None
     sequence: Optional[int] = 0
+    # TODO: need to update internal roles to be system
+    role: ChatMessageRole = "user"
+    prompt_seed_alias: Optional[str] = None
+    prompt_seed_alias_id: Optional[uuid.UUID] = None
 
     TEMPLATE_PATHS = {
         "datasets_path": DATASETS_PATH,
@@ -83,6 +117,9 @@ class SeedPrompt(YamlLoadable):
     def __post_init__(self) -> None:
         """Post-initialization to render the template to replace existing values"""
         self.value = self.render_template_value_silent(**self.TEMPLATE_PATHS)
+
+        if self.role not in ChatMessageRole.__args__:  # type: ignore
+            raise ValueError(f"Role {self.role} is not a valid role.")
 
         if not self.data_type:
             # If data_type is not provided, infer it from the value
@@ -230,8 +267,10 @@ class SeedPromptGroup(YamlLoadable):
     """
     A group of prompts that need to be sent together, along with an objective.
 
-    This class is useful when a target requires multiple (multimodal) prompt pieces to be grouped
-    and sent together. All prompts in the group should share the same `prompt_group_id`.
+    This class is useful when a target requires multiple prompts to be grouped
+    and sent together. All prompts in the group should share the same `prompt_group_id`. Within the group,
+    there can be multiple prompts with the same `prompt_seed_alias`, which will be sent together in a single request.
+
     """
 
     prompts: Sequence[SeedPrompt]
@@ -250,12 +289,14 @@ class SeedPromptGroup(YamlLoadable):
             elif isinstance(prompt, dict):
                 self.prompts.append(SeedPrompt(**prompt))
 
+        self._enforce_consistent_role()
         self._enforce_consistent_group_id()
 
-        # Check sequence and sort the prompts in the same loop
-        if len(self.prompts) >= 1:
+        # check seed_alias and group the seed prompts by sequence if seed_alias is set
+        if any(prompt.prompt_seed_alias for prompt in self.prompts):
             self.prompts = sorted(
-                self.prompts, key=lambda prompt: prompt.sequence if prompt.sequence is not None else 0
+                self.prompts,
+                key=lambda prompt: (prompt.prompt_seed_alias_id, prompt.sequence if prompt.sequence is not None else 0),
             )
 
     def render_template_value(self, **kwargs):
@@ -298,6 +339,24 @@ class SeedPromptGroup(YamlLoadable):
             new_group_id = uuid.uuid4()
             for prompt in self.prompts:
                 prompt.prompt_group_id = new_group_id
+
+    def _enforce_consistent_role(self):
+        """
+        Ensures that all prompts in the group have the same role.
+        If they do not, raises a ValueError.
+
+        Raises:
+            ValueError: If multiple different roles exist among the prompts.
+        """
+        alias_id_to_role = {}
+        for prompt in self.prompts:
+            role = prompt.role
+            alias_id = prompt.prompt_seed_alias_id
+            if alias_id in alias_id_to_role:
+                if alias_id_to_role[alias_id] != role:
+                    raise ValueError(f"Inconsistent roles found across prompts: {role}")
+            else:
+                alias_id_to_role[alias_id] = role
 
     def is_single_request(self) -> bool:
         unique_sequences = {prompt.sequence for prompt in self.prompts}
@@ -442,7 +501,8 @@ class SeedPromptDataset(YamlLoadable):
             if "prompt_group_id" in prompt:
                 raise ValueError("prompt_group_id should not be set in prompt data")
 
-        SeedPromptDataset._set_seed_prompt_group_id_by_alias(seed_prompts=merged_prompts)
+        SeedPromptDataset._set_prompt_group_id_by_alias(seed_prompts=merged_prompts)
+        SeedPromptDataset._set_prompt_seed_id_by_alias(seed_prompts=merged_prompts)
 
         # Now create the dataset with the newly merged prompt dicts
         return cls(prompts=merged_prompts, **dataset_defaults)
@@ -464,22 +524,39 @@ class SeedPromptDataset(YamlLoadable):
             prompt.value = prompt.render_template_value(**kwargs)
 
     @staticmethod
-    def _set_seed_prompt_group_id_by_alias(seed_prompts: Sequence[dict]):
+    def _set_id_by_alias(seed_prompts: Sequence[dict], alias_field: str, id_field: str):
+        """
+        Helper function to set unique IDs for seed prompts based on an alias field.
+
+        """
+        alias_to_id = {}
+
+        for prompt in seed_prompts:
+            alias = prompt.get(alias_field)
+            if alias:
+                if alias not in alias_to_id:
+                    alias_to_id[alias] = uuid.uuid4()
+                prompt[id_field] = alias_to_id[alias]
+            else:
+                prompt[id_field] = uuid.uuid4()
+
+    @staticmethod
+    def _set_prompt_group_id_by_alias(seed_prompts: Sequence[dict]):
         """
         Sets all seed_prompt_group_ids based on prompt_group_id_alias matches
 
         This is important so the prompt_group_id_alias can be set in yaml to group prompts
         """
-        alias_to_group_id = {}
+        SeedPromptDataset._set_id_by_alias(seed_prompts, alias_field="prompt_group_alias", id_field="prompt_group_id")
 
-        for prompt in seed_prompts:
-            alias = prompt.get("prompt_group_alias")
-            if alias:
-                if alias not in alias_to_group_id:
-                    alias_to_group_id[alias] = uuid.uuid4()
-                prompt["prompt_group_id"] = alias_to_group_id[alias]
-            else:
-                prompt["prompt_group_id"] = uuid.uuid4()
+    @staticmethod
+    def _set_prompt_seed_id_by_alias(seed_prompts: Sequence[dict]):
+        """
+        Sets all seed_prompt_ids based on prompt_seed_alias matches
+
+        This is important so the prompt_group_id_alias can be set in yaml to group prompts
+        """
+        SeedPromptDataset._set_id_by_alias(seed_prompts, alias_field="prompt_group_alias", id_field="prompt_group_id")
 
     @staticmethod
     def group_seed_prompts_by_prompt_group_id(seed_prompts: Sequence[SeedPrompt]) -> Sequence[SeedPromptGroup]:

@@ -17,7 +17,7 @@ from pyrit.models import (
     construct_response_from_request,
 )
 from pyrit.models.filter_criteria import PromptConverterState, PromptFilterCriteria
-from pyrit.models.seed_prompt import SeedPromptGroup
+from pyrit.models.seed_prompt import SeedPrompt
 from pyrit.prompt_normalizer import NormalizerRequest, PromptConverterConfiguration
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
@@ -43,12 +43,11 @@ class PromptNormalizer(abc.ABC):
     async def send_prompt_async(
         self,
         *,
-        seed_prompt_group: SeedPromptGroup,
+        seed_prompts: list[SeedPrompt],
         target: PromptTarget,
         conversation_id: Optional[str] = None,
         request_converter_configurations: list[PromptConverterConfiguration] = [],
         response_converter_configurations: list[PromptConverterConfiguration] = [],
-        sequence: int = -1,
         labels: Optional[dict[str, str]] = None,
         orchestrator_identifier: Optional[dict[str, str]] = None,
     ) -> PromptRequestResponse:
@@ -56,7 +55,7 @@ class PromptNormalizer(abc.ABC):
         Sends a single request to a target.
 
         Args:
-            seed_prompt_group (SeedPromptGroup): The seed prompt group to be sent.
+            seed_prompts (list[SeedPrompt]): The seed prompts to be sent.
             target (PromptTarget): The target to which the prompt is sent.
             conversation_id (str, optional): The ID of the conversation. Defaults to None.
             request_converter_configurations (list[PromptConverterConfiguration], optional): Configurations for
@@ -76,11 +75,10 @@ class PromptNormalizer(abc.ABC):
         """
 
         request = await self._build_prompt_request_response(
-            seed_prompt_group=seed_prompt_group,
+            seed_prompts=seed_prompts,
             conversation_id=conversation_id,
             request_converter_configurations=request_converter_configurations,
             target=target,
-            sequence=sequence,
             labels=labels,
             orchestrator_identifier=orchestrator_identifier,
         )
@@ -284,11 +282,10 @@ class PromptNormalizer(abc.ABC):
     async def _build_prompt_request_response(
         self,
         *,
-        seed_prompt_group: SeedPromptGroup,
+        seed_prompts: list[SeedPrompt],
         conversation_id: str,
         request_converter_configurations: list[PromptConverterConfiguration],
         target: PromptTarget,
-        sequence: int,
         labels: dict[str, str],
         orchestrator_identifier: Optional[dict[str, str]] = None,
     ) -> PromptRequestResponse:
@@ -303,7 +300,6 @@ class PromptNormalizer(abc.ABC):
             request_converter_configurations (list[PromptConverterConfiguration]): List of configurations for
                 request converters.
             target (PromptTarget): The target for the prompt.
-            sequence (int): The sequence number of the prompt.
             labels (dict[str, str]): A dictionary of labels associated with the prompt.
             orchestrator_identifier (Optional[dict[str, str]]): An optional dictionary for orchestrator identifiers.
 
@@ -315,13 +311,13 @@ class PromptNormalizer(abc.ABC):
 
         # All prompt request pieces within PromptRequestResponse needs to have same conversation ID.
         conversation_id = conversation_id if conversation_id else str(uuid4())
-        for seed_prompt in seed_prompt_group.prompts:
+        for seed_prompt in seed_prompts:
 
             prompt_request_piece = PromptRequestPiece(
-                role="user",
+                role=seed_prompt.role,
                 original_value=seed_prompt.value,
                 conversation_id=conversation_id,
-                sequence=sequence,
+                sequence=seed_prompt.sequence,
                 labels=labels,
                 prompt_metadata=seed_prompt.metadata,
                 prompt_target_identifier=target.get_identifier(),

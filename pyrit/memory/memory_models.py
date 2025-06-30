@@ -289,10 +289,12 @@ class SeedPromptEntry(Base):
         parameters (List[str]): The parameters included in the value.
             Note that seed prompts do not have parameters, only prompt templates do.
             However, they are stored in the same table.
-        prompt_group_id (uuid.UUID): The ID of a group the seed prompt may optionally belong to.
-            Groups are used to organize prompts for multi-turn conversations or multi-modal prompts.
-        sequence (int): The turn of the seed prompt in a group. When entire multi-turn conversations
+        prompt_group_id (uuid.UUID): The ID of a group the seed prompt belongs to.
+            Groups are used to organize prompts for multi-turn conversations prompts.
+        sequence (int): The turn of the seed prompt in a turn. When multi-modal turns
             are stored, this is used to order the prompts.
+        prompt_seed_alias (uuid.UUID): The ID of that relates other seed prompts to this one.
+            This is useful for multi-modal prompts that need to be sent in the same turn.
 
     Methods:
         __str__(): Returns a string representation of the memory entry.
@@ -317,6 +319,7 @@ class SeedPromptEntry(Base):
     parameters: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
     prompt_group_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, nullable=True)
     sequence: Mapped[Optional[int]] = mapped_column(INTEGER, nullable=True)
+    prompt_seed_alias_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, nullable=True)
 
     def __init__(self, *, entry: SeedPrompt):
         self.id = entry.id
@@ -336,6 +339,7 @@ class SeedPromptEntry(Base):
         self.parameters = entry.parameters  # type: ignore
         self.prompt_group_id = entry.prompt_group_id
         self.sequence = entry.sequence
+        self.prompt_seed_alias_id = entry.prompt_seed_alias_id
 
     def get_seed_prompt(self) -> SeedPrompt:
         return SeedPrompt(
@@ -356,4 +360,5 @@ class SeedPromptEntry(Base):
             parameters=self.parameters,
             prompt_group_id=self.prompt_group_id,
             sequence=self.sequence,
+            prompt_seed_alias_id=self.prompt_seed_alias_id,
         )

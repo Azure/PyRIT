@@ -9,7 +9,7 @@ from uuid import uuid4
 
 from aioconsole import ainput
 
-from pyrit.models import Score, SeedPrompt, SeedPromptGroup
+from pyrit.models import Score, SeedPrompt
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
@@ -76,10 +76,10 @@ class XPIAOrchestrator(Orchestrator):
 
         converters = PromptConverterConfiguration(converters=self._prompt_converters)
 
-        seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=self._attack_content, data_type="text")])
+        seed_prompts = [SeedPrompt(value=self._attack_content, data_type="text")]
 
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_prompt_group=seed_prompt_group,
+            seed_prompts=seed_prompts,
             request_converter_configurations=[converters],
             target=self._attack_setup_target,
             labels=self._global_memory_labels,
@@ -152,10 +152,10 @@ class XPIATestOrchestrator(XPIAOrchestrator):
 
     async def _process_async(self) -> str:
 
-        seed_prompt_group = SeedPromptGroup(prompts=[self._processing_prompt])
+        seed_prompts = [self._processing_prompt]
 
         processing_response = await self._prompt_normalizer.send_prompt_async(
-            seed_prompt_group=seed_prompt_group,
+            seed_prompts=seed_prompts,
             target=self._processing_target,
             labels=self._global_memory_labels,
             orchestrator_identifier=self.get_identifier(),
