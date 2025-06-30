@@ -149,6 +149,7 @@ class FuzzerOrchestrator(Orchestrator):
     ) -> None:
         """
         Creates the FuzzerOrchestrator instance.
+
         Args:
 
             prompts: The prompts will be the questions to the target.
