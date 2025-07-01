@@ -8,13 +8,13 @@ from typing_extensions import LiteralString, deprecated
 
 from pyrit.attacks import (
     AttackConverterConfig,
-    AttackOutcome,
     AttackScoringConfig,
     PromptSendingAttack,
     SingleTurnAttackContext,
 )
 from pyrit.common import deprecation_message
 from pyrit.models import (
+    AttackOutcome,
     PromptRequestResponse,
     SeedPromptGroup,
 )
