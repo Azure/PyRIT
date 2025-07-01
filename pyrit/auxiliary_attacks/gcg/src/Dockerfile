@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/azureml/curated/acpt-pytorch-2.2-cuda12.1:7
+FROM mcr.microsoft.com/azureml/curated/acpt-pytorch-2.2-cuda12.1:37
 
 RUN apt-get update
 
