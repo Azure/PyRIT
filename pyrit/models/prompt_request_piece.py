@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import abc
 import uuid
 from datetime import datetime
 from typing import Dict, List, Literal, Optional, Union, cast, get_args
@@ -16,7 +15,7 @@ from pyrit.models.score import Score
 Originator = Literal["orchestrator", "converter", "undefined", "scorer"]
 
 
-class PromptRequestPiece(abc.ABC):
+class PromptRequestPiece:
     """Represents a piece of a prompt request to a target.
 
     This class represents a single piece of a prompt request that will be sent

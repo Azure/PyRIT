@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import abc
 import asyncio
 import copy
 import logging
@@ -25,7 +24,7 @@ from pyrit.prompt_target.batch_helper import batch_task_async
 logger = logging.getLogger(__name__)
 
 
-class PromptNormalizer(abc.ABC):
+class PromptNormalizer:
     _memory: MemoryInterface = None
 
     def __init__(self, start_token: str = "⟪", end_token: str = "⟫") -> None:
