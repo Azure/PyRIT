@@ -286,7 +286,6 @@ class SeedPromptGroup(YamlLoadable):
             if isinstance(prompt, SeedPrompt):
                 self.prompts.append(prompt)
             elif isinstance(prompt, dict):
-                self._set_prompt_seed_id_by_alias(prompt)
                 self.prompts.append(SeedPrompt(**prompt))
 
         self._enforce_consistent_group_id()
@@ -314,25 +313,6 @@ class SeedPromptGroup(YamlLoadable):
 
         for prompt in self.prompts:
             prompt.value = prompt.render_template_value(**kwargs)
-
-    def _set_prompt_seed_id_by_alias(self, prompt):
-        """
-        Sets seed_prompt_ids based on prompt_seed_alias matches
-
-        This is important so the prompt_seed_id_alias can be set in yaml to group prompts
-        """
-        prompt_alias = prompt.get("prompt_seed_alias")
-        if prompt_alias is None:
-            prompt["prompt_seed_id"] = uuid.uuid4()
-            return
-
-        for p in self.prompts:
-            alias = p.get("prompt_seed_alias")
-            if alias and alias == prompt_alias:
-                prompt["prompt_seed_id"] = p.prompt_seed_id
-                return
-
-        prompt["prompt_seed_id"] = uuid.uuid4()
 
     def _enforce_consistent_group_id(self):
         """
@@ -521,6 +501,7 @@ class SeedPromptDataset(YamlLoadable):
                 raise ValueError("prompt_group_id should not be set in prompt data")
 
         SeedPromptDataset._set_seed_prompt_group_id_by_alias(seed_prompts=merged_prompts)
+        SeedPromptDataset._set_prompt_seed_id_by_alias(seed_prompts=merged_prompts)
 
         # Now create the dataset with the newly merged prompt dicts
         return cls(prompts=merged_prompts, **dataset_defaults)
@@ -544,8 +525,9 @@ class SeedPromptDataset(YamlLoadable):
     @staticmethod
     def _set_seed_prompt_group_id_by_alias(seed_prompts: Sequence[dict]):
         """
-        Helper function to set unique IDs for seed prompts based on an alias field.
+        Sets prompt_group_ids based on prompt_group_alias matches
 
+        This is important so the prompt_group_id_alias can be set in yaml to group prompts
         """
         alias_to_group_id = {}
 
@@ -557,6 +539,24 @@ class SeedPromptDataset(YamlLoadable):
                 prompt["prompt_group_id"] = alias_to_group_id[alias]
             else:
                 prompt["prompt_group_id"] = uuid.uuid4()
+
+    @staticmethod
+    def _set_prompt_seed_id_by_alias(seed_prompts: Sequence[dict]):
+        """
+        Sets seed_prompt_ids based on prompt_seed_alias matches
+
+        This is important so the prompt_seed_id_alias can be set in yaml to group prompts
+        """
+        alias_to_seed_id = {}
+        for prompt in seed_prompts:
+            prompt_alias = prompt.get("prompt_seed_alias")
+            if prompt_alias:
+                if prompt_alias not in alias_to_seed_id:
+                    alias_to_seed_id[prompt_alias] = uuid.uuid4()
+                # verify group and seed are the same
+                prompt["prompt_seed_id"] = alias_to_seed_id[prompt_alias]
+            else:
+                prompt["prompt_seed_id"] = uuid.uuid4()
 
     @staticmethod
     def group_seed_prompts_by_prompt_group_id(seed_prompts: Sequence[SeedPrompt]) -> Sequence[SeedPromptGroup]:
