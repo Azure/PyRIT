@@ -22,8 +22,8 @@ from pyrit.attacks.multi_turn.tree_of_attacks import (
     TAPAttackContext,
     TAPAttackResult,
     TreeOfAttacksWithPruningAttack,
+    _TreeOfAttacksNode,
 )
-from pyrit.attacks.multi_turn.tree_of_attacks_node import TreeOfAttacksNode
 from pyrit.exceptions import InvalidJsonException
 from pyrit.models import (
     PromptRequestPiece,
@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class NodeMockConfig:
-    """Configuration for creating mock TreeOfAttacksNode objects."""
+    """Configuration for creating mock _TreeOfAttacksNode objects."""
 
     node_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     parent_id: Optional[str] = None
@@ -53,11 +53,11 @@ class NodeMockConfig:
 
 
 class MockNodeFactory:
-    """Factory for creating mock TreeOfAttacksNode objects."""
+    """Factory for creating mock _TreeOfAttacksNode objects."""
 
     @staticmethod
-    def create_node(config: Optional[NodeMockConfig] = None) -> "TreeOfAttacksNode":
-        """Create a mock TreeOfAttacksNode with the given configuration."""
+    def create_node(config: Optional[NodeMockConfig] = None) -> "_TreeOfAttacksNode":
+        """Create a mock _TreeOfAttacksNode with the given configuration."""
         if config is None:
             config = NodeMockConfig()
 
@@ -126,7 +126,7 @@ class MockNodeFactory:
         return node
 
     @staticmethod
-    def create_nodes_with_scores(scores: List[float]) -> List[TreeOfAttacksNode]:
+    def create_nodes_with_scores(scores: List[float]) -> List[_TreeOfAttacksNode]:
         """Create multiple nodes with the given objective scores."""
         return [
             MockNodeFactory.create_node(NodeMockConfig(node_id=f"node_{i}", objective_score_value=score))
@@ -250,7 +250,7 @@ class TestHelpers:
         )
 
     @staticmethod
-    def add_nodes_to_tree(context: TAPAttackContext, nodes: List[TreeOfAttacksNode], parent: str = "root"):
+    def add_nodes_to_tree(context: TAPAttackContext, nodes: List[_TreeOfAttacksNode], parent: str = "root"):
         """Add nodes to the context's tree visualization."""
         for i, node in enumerate(nodes):
             score_str = ""
@@ -386,6 +386,111 @@ class TestPruningLogic:
         # Verify off-topic node is excluded
         assert len(completed) == 3
         assert all(not node.off_topic for node in completed)
+
+    def test_update_best_performing_node_with_unsorted_nodes(self, basic_attack, node_factory, helpers):
+        """Test that _update_best_performing_node correctly finds the best node regardless of input order."""
+        context = helpers.create_basic_context()
+
+        # Create nodes with scores in random order (not sorted)
+        nodes = node_factory.create_nodes_with_scores([0.3, 0.9, 0.1, 0.7, 0.5])
+        # Shuffle to ensure they're not in any particular order
+        import random
+
+        random.shuffle(nodes)
+        context.nodes = nodes
+
+        # Execute update
+        basic_attack._update_best_performing_node(context)
+
+        # Verify the best node (0.9 score) was selected
+        assert context.best_objective_score is not None
+        assert context.best_objective_score.get_value() == 0.9
+        assert context.best_conversation_id is not None
+
+    def test_update_best_performing_node_with_empty_nodes(self, basic_attack, helpers):
+        """Test that _update_best_performing_node handles empty nodes gracefully."""
+        context = helpers.create_basic_context()
+        context.nodes = []
+
+        # Should return early without raising an exception
+        basic_attack._update_best_performing_node(context)
+
+        # Best scores should remain None since no nodes exist
+        assert context.best_objective_score is None
+        assert context.best_conversation_id is None
+
+    def test_update_best_performing_node_with_incomplete_nodes(self, basic_attack, node_factory, helpers):
+        """Test that _update_best_performing_node handles nodes without valid scores."""
+        context = helpers.create_basic_context()
+
+        # Create mix of completed and incomplete nodes
+        incomplete_node = node_factory.create_node(
+            NodeMockConfig(node_id="incomplete", completed=False, objective_score_value=None)
+        )
+        off_topic_node = node_factory.create_node(
+            NodeMockConfig(node_id="off_topic", off_topic=True, objective_score_value=0.9)
+        )
+        no_score_node = node_factory.create_node(
+            NodeMockConfig(node_id="no_score", completed=True, objective_score_value=None)
+        )
+        valid_node = node_factory.create_node(
+            NodeMockConfig(node_id="valid", completed=True, objective_score_value=0.6)
+        )
+
+        context.nodes = [incomplete_node, off_topic_node, no_score_node, valid_node]
+
+        # Execute update
+        basic_attack._update_best_performing_node(context)
+
+        # Should select the only valid node
+        assert context.best_objective_score is not None
+        assert context.best_objective_score.get_value() == 0.6
+        assert context.best_conversation_id == valid_node.objective_target_conversation_id
+
+    def test_update_best_performing_node_with_all_invalid_nodes(self, basic_attack, node_factory, helpers):
+        """Test that _update_best_performing_node handles case where no valid nodes exist."""
+        context = helpers.create_basic_context()
+
+        # Create only invalid nodes
+        incomplete_node = node_factory.create_node(
+            NodeMockConfig(node_id="incomplete", completed=False, objective_score_value=None)
+        )
+        off_topic_node = node_factory.create_node(
+            NodeMockConfig(node_id="off_topic", off_topic=True, objective_score_value=0.9)
+        )
+
+        context.nodes = [incomplete_node, off_topic_node]
+
+        # Execute update - should not update best scores when no valid nodes
+        basic_attack._update_best_performing_node(context)
+
+        # Best scores should remain None since no valid nodes exist
+        assert context.best_objective_score is None
+        assert context.best_conversation_id is None
+
+    def test_update_best_performing_node_preserves_existing_best_when_no_valid_nodes(
+        self, basic_attack, node_factory, helpers
+    ):
+        """Test that _update_best_performing_node preserves existing best when no new valid nodes."""
+        context = helpers.create_basic_context()
+
+        # Set existing best
+        existing_score = helpers.create_score(0.8)
+        context.best_objective_score = existing_score
+        context.best_conversation_id = "existing_conv_id"
+
+        # Add only invalid nodes
+        off_topic_node = node_factory.create_node(
+            NodeMockConfig(node_id="off_topic", off_topic=True, objective_score_value=0.95)
+        )
+        context.nodes = [off_topic_node]
+
+        # Execute update
+        basic_attack._update_best_performing_node(context)
+
+        # Should preserve existing best since no valid nodes
+        assert context.best_objective_score == existing_score
+        assert context.best_conversation_id == "existing_conv_id"
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -592,11 +697,11 @@ class TestEndToEndExecution:
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestTreeOfAttacksNode:
-    """Tests for TreeOfAttacksNode functionality."""
+    """Tests for _TreeOfAttacksNode functionality."""
 
     @pytest.fixture
     def node_components(self, attack_builder):
-        """Create components needed for TreeOfAttacksNode."""
+        """Create components needed for _TreeOfAttacksNode."""
         builder = attack_builder.with_default_mocks()
 
         adversarial_chat_seed_prompt = MagicMock(spec=SeedPrompt)
@@ -631,8 +736,8 @@ class TestTreeOfAttacksNode:
         return components
 
     def test_node_initialization(self, node_components):
-        """Test TreeOfAttacksNode initialization."""
-        node = TreeOfAttacksNode(**node_components)
+        """Test _TreeOfAttacksNode initialization."""
+        node = _TreeOfAttacksNode(**node_components)
 
         assert node.node_id is not None
         assert node.parent_id is None
@@ -644,7 +749,7 @@ class TestTreeOfAttacksNode:
 
     def test_node_duplicate_creates_child(self, node_components):
         """Test that duplicate() creates a proper child node."""
-        parent_node = TreeOfAttacksNode(**node_components)
+        parent_node = _TreeOfAttacksNode(**node_components)
         parent_node.node_id = "parent_node_id"
 
         # Mock memory duplicate conversation
@@ -661,7 +766,7 @@ class TestTreeOfAttacksNode:
         prompt_normalizer = MagicMock(spec=PromptNormalizer)
         components_with_normalizer = node_components.copy()
         components_with_normalizer["prompt_normalizer"] = prompt_normalizer
-        node = TreeOfAttacksNode(**components_with_normalizer)
+        node = _TreeOfAttacksNode(**components_with_normalizer)
 
         # Mock adversarial chat to raise JSON error
         json_error = InvalidJsonException(message="Invalid JSON")
@@ -681,7 +786,7 @@ class TestTreeOfAttacksNode:
     @pytest.mark.asyncio
     async def test_node_send_prompt_unexpected_error_handling(self, node_components):
         """Test handling of unexpected errors in send_prompt_async."""
-        node = TreeOfAttacksNode(**node_components)
+        node = _TreeOfAttacksNode(**node_components)
 
         # Mock adversarial chat to raise unexpected error
         unexpected_error = RuntimeError("Unexpected error")
@@ -712,7 +817,7 @@ class TestTreeOfAttacksNode:
         components_with_scorer["adversarial_chat"].conversation_id = "test-adv-conv-id"
         components_with_scorer["objective_target"].conversation_id = "test-obj-conv-id"
 
-        node = TreeOfAttacksNode(**components_with_scorer)
+        node = _TreeOfAttacksNode(**components_with_scorer)
 
         test_prompt = "test adversarial prompt"
         with patch.object(
@@ -748,7 +853,7 @@ class TestTreeOfAttacksNode:
 
         node_components["auxiliary_scorers"] = [aux_scorer1, aux_scorer2]
 
-        node = TreeOfAttacksNode(**node_components)
+        node = _TreeOfAttacksNode(**node_components)
 
         # Create a mock prompt normalizer if not provided
         mock_normalizer = node._prompt_normalizer
