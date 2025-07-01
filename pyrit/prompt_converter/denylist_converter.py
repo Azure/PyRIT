@@ -14,7 +14,11 @@ logger = logging.getLogger(__name__)
 
 
 class DenylistConverter(LLMGenericTextConverter):
-    """Eliminates forbidden words or phrases in a prompt by replacing them with synonyms."""
+    """
+    Replaces forbidden words or phrases in a prompt with synonyms using an LLM.
+
+    An existing ``PromptChatTarget`` is used to perform the conversion (like Azure OpenAI).
+    """
 
     def __init__(
         self,
@@ -23,6 +27,15 @@ class DenylistConverter(LLMGenericTextConverter):
         system_prompt_template: Optional[SeedPrompt] = None,
         denylist: list[str] = [],
     ):
+        """
+        Initializes the converter with a target, an optional system prompt template, and a denylist.
+
+        Args:
+            converter_target (PromptChatTarget): The target for the prompt conversion.
+            system_prompt_template (Optional[SeedPrompt]): The system prompt template to use for the conversion.
+                If not provided, a default template will be used.
+            denylist (list[str]): A list of words or phrases that should be replaced in the prompt.
+        """
         # set to default strategy if not provided
         system_prompt_template = (
             system_prompt_template
@@ -38,13 +51,15 @@ class DenylistConverter(LLMGenericTextConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Removes any words or phrases from the input prompt that are in the denylist, replacing them
-        with synonomous words.
+        Converts the given prompt by removing any words or phrases that are in the denylist,
+        replacing them with synonymous words.
 
         Args:
             prompt (str): The prompt to be converted.
+            input_type (PromptDataType): The type of input data.
+
         Returns:
-            str: The converted prompt without any denied words.
+            ConverterResult: The result containing the modified prompt.
         """
 
         # check if the prompt contains any words from the  denylist and if so,

@@ -7,10 +7,9 @@ import time
 import uuid
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Dict, Generic, MutableMapping
+from typing import Any, AsyncIterator, Dict, Generic, List, MutableMapping, Optional
 
 from pyrit.attacks.base.attack_context import ContextT
-from pyrit.attacks.base.attack_result import AttackOutcome, ResultT
 from pyrit.common import default_values
 from pyrit.common.logger import logger
 from pyrit.exceptions.exception_classes import (
@@ -18,7 +17,7 @@ from pyrit.exceptions.exception_classes import (
     AttackValidationException,
 )
 from pyrit.memory.central_memory import CentralMemory
-from pyrit.models.identifiers import Identifier
+from pyrit.models import AttackOutcome, AttackResultT, Identifier, PromptRequestResponse
 
 
 class AttackStrategyLogAdapter(logging.LoggerAdapter):
@@ -36,13 +35,13 @@ class AttackStrategyLogAdapter(logging.LoggerAdapter):
         strategy_id = self.extra.get("strategy_id")
 
         if strategy_name and strategy_id:
-            strategy_info = f"[{strategy_name} (ID: {strategy_id})]"
+            strategy_info = f"[{strategy_name} (ID: {str(strategy_id)})]"
             return f"{strategy_info} {msg}", kwargs
 
         return msg, kwargs
 
 
-class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
+class AttackStrategy(ABC, Identifier, Generic[ContextT, AttackResultT]):
     """
     Abstract base class for attack strategies with enforced lifecycle management.
 
@@ -56,12 +55,14 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
     _teardown_async(): Clean up resources
     """
 
-    def __init__(self, *, logger: logging.Logger = logger):
+    def __init__(self, *, context_type: type[ContextT], logger: logging.Logger = logger):
         self._id = uuid.uuid4()
         self._memory = CentralMemory.get_memory_instance()
         self._memory_labels: Dict[str, str] = ast.literal_eval(
             default_values.get_non_required_value(env_var_name="GLOBAL_MEMORY_LABELS") or "{}"
         )
+
+        self._context_type = context_type
 
         self._logger = AttackStrategyLogAdapter(
             logger, {"strategy_name": self.__class__.__name__, "strategy_id": str(self._id)[:8]}
@@ -74,14 +75,57 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
             "id": str(self._id),
         }
 
+    def _warn_if_set(self, *, config: Any, unused_fields: List[str]) -> None:
+        """
+        Utility method to warn about unused parameters in attack configurations.
+
+        This method checks if specified fields in a configuration object are set
+        (not None and not empty for collections) and logs a warning message for each
+        field that will be ignored by the current attack strategy.
+
+        Args:
+            config (Any): The configuration object to check for unused fields.
+            unused_fields (List[str]): List of field names to check in the config object.
+        """
+        config_name = config.__class__.__name__
+
+        for field_name in unused_fields:
+            # Get the field value from the config object
+            if not hasattr(config, field_name):
+                self._logger.warning(
+                    f"Field '{field_name}' does not exist in {config_name}. " f"Skipping unused parameter check."
+                )
+                continue
+
+            param_value = getattr(config, field_name)
+
+            # Check if the parameter is set
+            is_set = False
+            if param_value is not None:
+                # For collections, also check if they are not empty
+                if hasattr(param_value, "__len__"):
+                    is_set = len(param_value) > 0
+                else:
+                    is_set = True
+
+            if is_set:
+                self._logger.warning(
+                    f"{field_name} was provided in {config_name} but is not used by {self.__class__.__name__}. "
+                    f"This parameter will be ignored."
+                )
+
     @abstractmethod
     def _validate_context(self, *, context: ContextT) -> None:
         """
-        Validate the context before executing the attack.
-        This method should be implemented by subclasses to ensure the context is suitable for the attack.
+        Validate the attack context before execution.
+        This method should be implemented by subclasses to validate that the context
+        is suitable for the attack strategy.
 
         Args:
             context (ContextT): The context to validate.
+
+        Raises:
+            AttackValidationException: If the context is invalid for this attack strategy.
         """
         pass
 
@@ -98,7 +142,7 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
         pass
 
     @abstractmethod
-    async def _perform_attack_async(self, *, context: ContextT) -> ResultT:
+    async def _perform_attack_async(self, *, context: ContextT) -> AttackResultT:
         """
         Core attack implementation to be defined by subclasses.
         This contains the actual attack logic that subclasses must implement.
@@ -107,7 +151,7 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
             context (ContextT): The context for the attack.
 
         Returns:
-            ResultT: The result of the attack execution.
+            AttackResultT: The result of the attack execution.
         """
         pass
 
@@ -123,12 +167,12 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
         """
         pass
 
-    def _log_attack_outcome(self, result: ResultT) -> None:
+    def _log_attack_outcome(self, result: AttackResultT) -> None:
         """
         Log the outcome of the attack.
 
         Args:
-            result (ResultT): The result of the attack containing outcome and reason.
+            result (AttackResultT): The result of the attack containing outcome and reason.
         """
         attack_name = self.__class__.__name__
 
@@ -168,7 +212,7 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
             self._logger.debug(f"Tearing down attack strategy for objective: '{context.objective}'")
             await self._teardown_async(context=context)
 
-    async def execute_async(self, *, context: ContextT) -> ResultT:
+    async def execute_with_context_async(self, *, context: ContextT) -> AttackResultT:
         """
         Execute attack with complete lifecycle management.
 
@@ -178,7 +222,7 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
             context (ContextT): The context for the attack, containing configuration and state.
 
         Returns:
-            ResultT: The result of the attack execution, including outcome and reason.
+            AttackResultT: The result of the attack execution, including outcome and reason.
 
         Raises:
             AttackValidationError: If context validation fails.
@@ -223,6 +267,9 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
                 # Log the attack outcome
                 self._log_attack_outcome(result)
 
+                # Add the result to memory
+                self._memory.add_attack_results_to_memory(attack_results=[result])
+
                 return result
 
         except (AttackExecutionException, AttackValidationException):
@@ -237,3 +284,35 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
             )
             exec_error.process_exception()
             raise exec_error from e
+
+    async def execute_async(
+        self,
+        *,
+        objective: str,
+        prepended_conversation: Optional[List[PromptRequestResponse]] = None,
+        memory_labels: Optional[Dict[str, str]] = None,
+        **attack_params,
+    ) -> AttackResultT:
+        """
+        Execute the attack strategy asynchronously with provided parameters.
+        This method creates the context from the provided parameters and executes the attack.
+
+        Args:
+            objective (str): The objective of the attack.
+            prepended_conversation (Optional[List[PromptRequestResponse]]): Conversation to prepend to the target model.
+            memory_labels (Optional[Dict[str, str]]): Additional labels that can be applied to the prompts
+                                            throughout the attack.
+            **attack_params: Additional parameters specific to the attack strategy.
+
+        Returns:
+            AttackResultT: The result of the attack execution, including outcome and reason.
+        """
+
+        context = self._context_type.create_from_params(
+            objective=objective,
+            prepended_conversation=prepended_conversation or [],
+            memory_labels=memory_labels or {},
+            **attack_params,
+        )
+
+        return await self.execute_with_context_async(context=context)

@@ -33,11 +33,11 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
 
     Args:
         deployment_name (str, optional): The name of the deployment. Defaults to the
-            DEPLOYMENT_ENVIRONMENT_VARIABLE environment variable .
+            `DEPLOYMENT_ENVIRONMENT_VARIABLE` environment variable .
         endpoint (str, optional): The endpoint URL for the Azure OpenAI service.
-            Defaults to the ENDPOINT_URI_ENVIRONMENT_VARIABLE environment variable.
+            Defaults to the `ENDPOINT_URI_ENVIRONMENT_VARIABLE` environment variable.
         api_key (str, optional): The API key for accessing the Azure OpenAI service.
-            Defaults to the API_KEY_ENVIRONMENT_VARIABLE environment variable.
+            Defaults to the `API_KEY_ENVIRONMENT_VARIABLE` environment variable.
         api_version (str, optional): The version of the Azure OpenAI API. Defaults to
             "2024-02-15-preview".
         plugin (Any, required): The semantic kernel plugin to retrieve the attack medium.
@@ -170,17 +170,21 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
         return response
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
-        if len(prompt_request.request_pieces) != 1:
-            raise ValueError("This target only supports a single prompt request piece.")
+        n_pieces = len(prompt_request.request_pieces)
+        if n_pieces != 1:
+            raise ValueError(f"This target only supports a single prompt request piece. Received: {n_pieces} pieces.")
 
-        if prompt_request.request_pieces[0].converted_value_data_type != "text":
-            raise ValueError("This target only supports text prompt input.")
+        piece_type = prompt_request.request_pieces[0].converted_value_data_type
+        if piece_type != "text":
+            raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
         request = prompt_request.request_pieces[0]
         messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
-
-        if len(messages) > 0:
-            raise ValueError("This target only supports a single turn conversation.")
+        n_messages = len(messages)
+        if n_messages > 0:
+            raise ValueError(
+                f"This target only supports a single turn conversation. Received {n_messages} messages which indicates a prior turn."
+            )
 
     def is_json_response_supported(self):
         """Returns bool if JSON response is supported"""

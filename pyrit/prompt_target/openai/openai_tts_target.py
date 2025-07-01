@@ -46,7 +46,7 @@ class OpenAITTSTarget(OpenAITarget):
             model_name (str, Optional): The name of the model. Defaults to "tts-1".
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-                Defaults to the OPENAI_TTS_KEY environment variable.
+                Defaults to the `OPENAI_TTS_KEY` environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
             use_aad_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
@@ -57,8 +57,6 @@ class OpenAITTSTarget(OpenAITarget):
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
-            httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
-                httpx.AsyncClient() constructor.
             voice (str, Optional): The voice to use for TTS. Defaults to "alloy".
             response_format (str, Optional): The format of the audio response. Defaults to "mp3".
             language (str): The language for TTS. Defaults to "en".
@@ -150,17 +148,25 @@ class OpenAITTSTarget(OpenAITarget):
         return {k: v for k, v in body_parameters.items() if v is not None}
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
-        if len(prompt_request.request_pieces) != 1:
-            raise ValueError("This target only supports a single prompt request piece.")
+        n_pieces = len(prompt_request.request_pieces)
+        if n_pieces != 1:
+            raise ValueError(
+                "This target only supports a single prompt request piece. " f"Received: {n_pieces} pieces."
+            )
 
-        if prompt_request.request_pieces[0].converted_value_data_type != "text":
-            raise ValueError("This target only supports text prompt input.")
+        piece_type = prompt_request.request_pieces[0].converted_value_data_type
+        if piece_type != "text":
+            raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
         request = prompt_request.request_pieces[0]
         messages = self._memory.get_conversation(conversation_id=request.conversation_id)
 
-        if len(messages) > 0:
-            raise ValueError("This target only supports a single turn conversation.")
+        n_messages = len(messages)
+        if n_messages > 0:
+            raise ValueError(
+                "This target only supports a single turn conversation. "
+                f"Received: {n_messages} messages which indicates a prior turn."
+            )
 
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""

@@ -17,13 +17,14 @@ from pyrit.attacks.base.attack_context import (
     ConversationSession,
     MultiTurnAttackContext,
 )
-from pyrit.attacks.base.attack_result import AttackOutcome, AttackResult
 from pyrit.attacks.components.conversation_manager import ConversationState
 from pyrit.attacks.multi_turn.red_teaming import RedTeamingAttack, RTOSystemPromptPaths
 from pyrit.exceptions.exception_classes import (
     AttackValidationException,
 )
 from pyrit.models import (
+    AttackOutcome,
+    AttackResult,
     PromptRequestPiece,
     PromptRequestResponse,
     Score,
@@ -72,7 +73,6 @@ def mock_prompt_normalizer() -> MagicMock:
 def basic_context() -> MultiTurnAttackContext:
     return MultiTurnAttackContext(
         objective="Test objective",
-        max_turns=5,
         session=ConversationSession(),
     )
 
@@ -155,6 +155,7 @@ class TestRedTeamingAttackInitialization:
         assert attack._objective_scorer == mock_objective_scorer
         assert attack._adversarial_chat == mock_adversarial_chat
         assert isinstance(attack._prompt_normalizer, PromptNormalizer)
+        assert attack._max_turns == 10  # Default value
 
     @pytest.mark.parametrize(
         "system_prompt_path",
@@ -253,11 +254,13 @@ class TestRedTeamingAttackInitialization:
             attack_converter_config=converter_config,
             attack_scoring_config=scoring_config,
             prompt_normalizer=mock_prompt_normalizer,
+            max_turns=20,  # Custom max turns
         )
 
         assert attack._request_converters == converter_config.request_converters
         assert attack._response_converters == converter_config.response_converters
         assert attack._prompt_normalizer == mock_prompt_normalizer
+        assert attack._max_turns == 20
 
     def test_init_without_objective_scorer_raises_error(
         self, mock_objective_target: MagicMock, mock_adversarial_chat: MagicMock
@@ -275,6 +278,126 @@ class TestRedTeamingAttackInitialization:
 
 
 @pytest.mark.usefixtures("patch_central_database")
+class TestContextCreation:
+    """Tests for context creation from parameters"""
+
+    @pytest.mark.asyncio
+    async def test_execute_async_creates_context_properly(
+        self, mock_objective_target: MagicMock, mock_objective_scorer: MagicMock, mock_adversarial_chat: MagicMock
+    ):
+        """Test that execute_async creates context properly."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+            max_turns=15,
+        )
+
+        # Mock the execution methods
+        with patch.object(attack, "_validate_context") as mock_validate:
+            with patch.object(attack, "_setup_async", new_callable=AsyncMock):
+                with patch.object(attack, "_perform_attack_async", new_callable=AsyncMock) as mock_perform:
+                    with patch.object(attack, "_teardown_async", new_callable=AsyncMock):
+                        captured_context = None
+
+                        async def capture_context(*args, **kwargs):
+                            # Capture the context that was created
+                            nonlocal captured_context
+                            captured_context = kwargs.get("context")
+                            return AttackResult(
+                                conversation_id="test-id",
+                                objective="Test objective",
+                                attack_identifier=attack.get_identifier(),
+                                outcome=AttackOutcome.SUCCESS,
+                                executed_turns=1,
+                            )
+
+                        mock_perform.side_effect = capture_context
+
+                        # Execute
+                        await attack.execute_async(
+                            objective="Test objective",
+                            memory_labels={"test": "label"},
+                        )
+
+                        # Verify the captured context
+                        assert captured_context is not None
+                        assert captured_context.objective == "Test objective"
+                        assert captured_context.prepended_conversation == []
+                        assert captured_context.memory_labels == {"test": "label"}
+
+                        # Verify that validation was called
+                        mock_validate.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_execute_async_with_custom_prompt(
+        self, mock_objective_target: MagicMock, mock_objective_scorer: MagicMock, mock_adversarial_chat: MagicMock
+    ):
+        """Test context creation with custom prompt."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+        )
+
+        with patch.object(attack, "_validate_context"):
+            with patch.object(attack, "_setup_async", new_callable=AsyncMock):
+                with patch.object(attack, "_perform_attack_async", new_callable=AsyncMock) as mock_perform:
+                    with patch.object(attack, "_teardown_async", new_callable=AsyncMock):
+                        captured_context = None
+
+                        async def capture_context(*args, **kwargs):
+                            nonlocal captured_context
+                            captured_context = kwargs.get("context")
+                            return AttackResult(
+                                conversation_id="test-id",
+                                objective="Test objective",
+                                attack_identifier=attack.get_identifier(),
+                                outcome=AttackOutcome.SUCCESS,
+                                executed_turns=1,
+                            )
+
+                        mock_perform.side_effect = capture_context
+
+                        # Execute with custom prompt
+                        await attack.execute_async(
+                            objective="Test objective",
+                            custom_prompt="My custom prompt",
+                        )
+
+                        # Verify the captured context
+                        assert captured_context is not None
+                        assert captured_context.custom_prompt == "My custom prompt"
+
+    @pytest.mark.asyncio
+    async def test_execute_async_invalid_custom_prompt_type(
+        self, mock_objective_target: MagicMock, mock_objective_scorer: MagicMock, mock_adversarial_chat: MagicMock
+    ):
+        """Test that non-string custom prompt raises ValueError."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+        )
+
+        # Should raise ValueError during context creation
+        with pytest.raises(ValueError, match="custom_prompt must be a string"):
+            await attack.execute_async(
+                objective="Test objective",
+                custom_prompt=123,  # Invalid type
+            )
+
+
+@pytest.mark.usefixtures("patch_central_database")
 class TestContextValidation:
     """Tests for context validation logic"""
 
@@ -282,7 +405,6 @@ class TestContextValidation:
         "objective,max_turns,executed_turns,expected_error",
         [
             ("", 5, 0, "Attack objective must be provided"),
-            ("Test objective", 0, 0, "Max turns must be positive"),
             ("Test objective", 5, 5, "Already exceeded max turns"),
             ("Test objective", 5, 6, "Already exceeded max turns"),
         ],
@@ -305,8 +427,9 @@ class TestContextValidation:
             objective_target=mock_objective_target,
             attack_adversarial_config=adversarial_config,
             attack_scoring_config=scoring_config,
+            max_turns=max_turns,
         )
-        context = MultiTurnAttackContext(objective=objective, max_turns=max_turns, executed_turns=executed_turns)
+        context = MultiTurnAttackContext(objective=objective, executed_turns=executed_turns)
 
         with pytest.raises(ValueError, match=expected_error):
             attack._validate_context(context=context)
@@ -326,8 +449,27 @@ class TestContextValidation:
             objective_target=mock_objective_target,
             attack_adversarial_config=adversarial_config,
             attack_scoring_config=scoring_config,
+            max_turns=10,
         )
         attack._validate_context(context=basic_context)  # Should not raise
+
+    def test_init_with_invalid_max_turns(
+        self,
+        mock_objective_target: MagicMock,
+        mock_objective_scorer: MagicMock,
+        mock_adversarial_chat: MagicMock,
+    ):
+        """Test that initialization with invalid max_turns raises ValueError."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+
+        with pytest.raises(ValueError, match="Maximum turns must be a positive integer"):
+            RedTeamingAttack(
+                objective_target=mock_objective_target,
+                attack_adversarial_config=adversarial_config,
+                attack_scoring_config=scoring_config,
+                max_turns=0,
+            )
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -517,7 +659,7 @@ class TestPromptGeneration:
         basic_context.executed_turns = 0
         basic_context.custom_prompt = first_prompt
 
-        result = await attack._generate_next_prompt(context=basic_context)
+        result = await attack._generate_next_prompt_async(context=basic_context)
 
         assert result == first_prompt
         # Should not call adversarial chat
@@ -549,7 +691,7 @@ class TestPromptGeneration:
 
         # Mock build_adversarial_prompt
         with patch.object(attack, "_build_adversarial_prompt", new_callable=AsyncMock, return_value="Built prompt"):
-            result = await attack._generate_next_prompt(context=basic_context)
+            result = await attack._generate_next_prompt_async(context=basic_context)
 
         assert result == sample_response.get_value()
         mock_prompt_normalizer.send_prompt_async.assert_called_once()
@@ -580,7 +722,7 @@ class TestPromptGeneration:
         # Mock build_adversarial_prompt
         with patch.object(attack, "_build_adversarial_prompt", new_callable=AsyncMock, return_value="Built prompt"):
             with pytest.raises(ValueError, match="Received no response from adversarial chat"):
-                await attack._generate_next_prompt(context=basic_context)
+                await attack._generate_next_prompt_async(context=basic_context)
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -606,9 +748,8 @@ class TestAdversarialPromptBuilding:
             attack_scoring_config=scoring_config,
         )
 
-        # Mock conversation manager to return no last message
-        with patch.object(attack._conversation_manager, "get_last_message", return_value=None):
-            result = await attack._build_adversarial_prompt(basic_context)
+        basic_context.last_response = None
+        result = await attack._build_adversarial_prompt(basic_context)
 
         assert result == seed
 
@@ -650,16 +791,18 @@ class TestAdversarialPromptBuilding:
             attack_scoring_config=scoring_config,
         )
 
-        response = MagicMock(spec=PromptRequestPiece)
-        response.converted_value_data_type = data_type
-        response.converted_value = converted_value
-        response.has_error.return_value = has_error
-        response.is_blocked.return_value = is_blocked
-        response.response_error = "Error message"
+        response_piece = MagicMock(spec=PromptRequestPiece)
+        response_piece.converted_value_data_type = data_type
+        response_piece.converted_value = converted_value
+        response_piece.has_error.return_value = has_error
+        response_piece.is_blocked.return_value = is_blocked
+        response_piece.response_error = "Error message"
 
+        basic_context.last_response = MagicMock(spec=PromptRequestResponse)
+        basic_context.last_response.get_piece.return_value = response_piece
         basic_context.last_score = None
 
-        result = attack._handle_adversarial_text_response(response=response, context=basic_context)
+        result = attack._handle_adversarial_text_response(context=basic_context)
 
         assert result == expected_result
 
@@ -682,17 +825,42 @@ class TestAdversarialPromptBuilding:
             attack_scoring_config=scoring_config,
         )
 
-        response = MagicMock(spec=PromptRequestPiece)
-        response.converted_value_data_type = "text"
-        response.converted_value = "Target response"
-        response.has_error.return_value = False
+        response_piece = MagicMock(spec=PromptRequestPiece)
+        response_piece.converted_value_data_type = "text"
+        response_piece.converted_value = "Target response"
+        response_piece.has_error.return_value = False
 
+        basic_context.last_response = MagicMock(spec=PromptRequestResponse)
+        basic_context.last_response.get_piece.return_value = response_piece
         basic_context.last_score = success_score
 
-        result = attack._handle_adversarial_text_response(response=response, context=basic_context)
+        result = attack._handle_adversarial_text_response(context=basic_context)
 
         assert "Target response" in result
         assert success_score.score_rationale in result
+
+    def test_handle_adversarial_text_response_no_response(
+        self,
+        mock_objective_target: MagicMock,
+        mock_objective_scorer: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        basic_context: MultiTurnAttackContext,
+    ):
+        """Test handling when no last response is available."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+        )
+
+        basic_context.last_response = None
+
+        result = attack._handle_adversarial_text_response(context=basic_context)
+
+        assert result == "No response available. Please continue."
 
     def test_handle_adversarial_file_response_raises_on_error(
         self,
@@ -711,13 +879,16 @@ class TestAdversarialPromptBuilding:
             attack_scoring_config=scoring_config,
         )
 
-        response = MagicMock(spec=PromptRequestPiece)
-        response.converted_value_data_type = "image_path"
-        response.has_error.return_value = True
-        response.response_error = "File error"
+        response_piece = MagicMock(spec=PromptRequestPiece)
+        response_piece.converted_value_data_type = "image_path"
+        response_piece.has_error.return_value = True
+        response_piece.response_error = "File error"
+
+        basic_context.last_response = MagicMock(spec=PromptRequestResponse)
+        basic_context.last_response.get_piece.return_value = response_piece
 
         with pytest.raises(RuntimeError, match="Request to target failed.*File error"):
-            attack._handle_adversarial_file_response(response=response, context=basic_context)
+            attack._handle_adversarial_file_response(context=basic_context)
 
     def test_handle_adversarial_file_response_without_feedback_raises(
         self,
@@ -736,12 +907,15 @@ class TestAdversarialPromptBuilding:
             attack_scoring_config=scoring_config,
         )
 
-        response = MagicMock(spec=PromptRequestPiece)
-        response.converted_value_data_type = "image_path"
-        response.has_error.return_value = False
+        response_piece = MagicMock(spec=PromptRequestPiece)
+        response_piece.converted_value_data_type = "image_path"
+        response_piece.has_error.return_value = False
+
+        basic_context.last_response = MagicMock(spec=PromptRequestResponse)
+        basic_context.last_response.get_piece.return_value = response_piece
 
         with pytest.raises(ValueError, match="use_score_as_feedback flag is set to False"):
-            attack._handle_adversarial_file_response(response=response, context=basic_context)
+            attack._handle_adversarial_file_response(context=basic_context)
 
     def test_handle_adversarial_file_response_with_feedback(
         self,
@@ -761,15 +935,40 @@ class TestAdversarialPromptBuilding:
             attack_scoring_config=scoring_config,
         )
 
-        response = MagicMock(spec=PromptRequestPiece)
-        response.converted_value_data_type = "image_path"
-        response.has_error.return_value = False
+        response_piece = MagicMock(spec=PromptRequestPiece)
+        response_piece.converted_value_data_type = "image_path"
+        response_piece.has_error.return_value = False
 
+        basic_context.last_response = MagicMock(spec=PromptRequestResponse)
+        basic_context.last_response.get_piece.return_value = response_piece
         basic_context.last_score = success_score
 
-        result = attack._handle_adversarial_file_response(response=response, context=basic_context)
+        result = attack._handle_adversarial_file_response(context=basic_context)
 
         assert result == success_score.score_rationale
+
+    def test_handle_adversarial_file_response_no_response(
+        self,
+        mock_objective_target: MagicMock,
+        mock_objective_scorer: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        basic_context: MultiTurnAttackContext,
+    ):
+        """Test handling when no last response is available for file response."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer, use_score_as_feedback=True)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+        )
+
+        basic_context.last_response = None
+
+        result = attack._handle_adversarial_file_response(context=basic_context)
+
+        assert result == "No response available. Please continue."
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -796,15 +995,18 @@ class TestResponseScoring:
             attack_scoring_config=scoring_config,
         )
 
-        response_piece = sample_response.request_pieces[0]
-        mock_objective_scorer.score_async.return_value = [success_score]
+        basic_context.last_response = sample_response
+        basic_context.objective = "Test objective"
 
-        result = await attack._score_response_async(context=basic_context, response=response_piece)
+        # Mock the Scorer.score_response_with_objective_async method
+        with patch(
+            "pyrit.score.Scorer.score_response_with_objective_async",
+            new_callable=AsyncMock,
+            return_value={"objective_scores": [success_score], "auxiliary_scores": []},
+        ):
+            result = await attack._score_response_async(context=basic_context)
 
         assert result == success_score
-        mock_objective_scorer.score_async.assert_called_once_with(
-            request_response=response_piece, task=basic_context.objective
-        )
 
     @pytest.mark.asyncio
     async def test_score_response_returns_none_for_blocked(
@@ -825,23 +1027,24 @@ class TestResponseScoring:
         )
 
         response_piece = MagicMock(spec=PromptRequestPiece)
-        response_piece.has_error.return_value = True
         response_piece.is_blocked.return_value = True
 
-        result = await attack._score_response_async(context=basic_context, response=response_piece)
+        basic_context.last_response = MagicMock(spec=PromptRequestResponse)
+        basic_context.last_response.get_piece.return_value = response_piece
+
+        result = await attack._score_response_async(context=basic_context)
 
         assert result is None
-        mock_objective_scorer.score_async.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_score_response_raises_on_non_blocked_error(
+    async def test_score_response_returns_none_when_no_response(
         self,
         mock_objective_target: MagicMock,
         mock_objective_scorer: MagicMock,
         mock_adversarial_chat: MagicMock,
         basic_context: MultiTurnAttackContext,
     ):
-        """Test that non-blocked errors raise RuntimeError."""
+        """Test that None is returned when no response is available."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
         scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
 
@@ -851,13 +1054,11 @@ class TestResponseScoring:
             attack_scoring_config=scoring_config,
         )
 
-        response_piece = MagicMock(spec=PromptRequestPiece)
-        response_piece.has_error.return_value = True
-        response_piece.is_blocked.return_value = False
-        response_piece.response_error = "Some error"
+        basic_context.last_response = None
 
-        with pytest.raises(RuntimeError, match="Response error: Some error"):
-            await attack._score_response_async(context=basic_context, response=response_piece)
+        result = await attack._score_response_async(context=basic_context)
+
+        assert result is None
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -916,12 +1117,12 @@ class TestAttackExecution:
         )
 
         # Mock methods
-        with patch.object(attack, "_generate_next_prompt", new_callable=AsyncMock, return_value="Attack prompt"):
+        with patch.object(attack, "_generate_next_prompt_async", new_callable=AsyncMock, return_value="Attack prompt"):
             with patch.object(
                 attack,
                 "_send_prompt_to_objective_target_async",
                 new_callable=AsyncMock,
-                return_value=sample_response.request_pieces[0],
+                return_value=sample_response,
             ):
                 with patch.object(attack, "_score_response_async", new_callable=AsyncMock, return_value=score):
                     result = await attack._perform_attack_async(context=basic_context)
@@ -948,19 +1149,18 @@ class TestAttackExecution:
             attack_adversarial_config=adversarial_config,
             attack_scoring_config=scoring_config,
             prompt_normalizer=mock_prompt_normalizer,
+            max_turns=3,  # Set max turns in attack init
         )
-
-        basic_context.max_turns = 3
 
         # Mock methods to always fail
         with patch.object(
-            attack, "_generate_next_prompt", new_callable=AsyncMock, return_value="Attack prompt"
+            attack, "_generate_next_prompt_async", new_callable=AsyncMock, return_value="Attack prompt"
         ) as mock_generate:
             with patch.object(
                 attack,
                 "_send_prompt_to_objective_target_async",
                 new_callable=AsyncMock,
-                return_value=sample_response.request_pieces[0],
+                return_value=sample_response,
             ) as mock_send:
                 with patch.object(
                     attack, "_score_response_async", new_callable=AsyncMock, return_value=failure_score
@@ -984,11 +1184,10 @@ class TestAttackLifecycle:
         mock_objective_target: MagicMock,
         mock_objective_scorer: MagicMock,
         mock_adversarial_chat: MagicMock,
-        basic_context: MultiTurnAttackContext,
         sample_response: PromptRequestResponse,
         success_score: Score,
     ):
-        """Test successful execution of complete attack lifecycle."""
+        """Test successful execution of complete attack lifecycle using execute_async."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
         scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
 
@@ -996,7 +1195,10 @@ class TestAttackLifecycle:
             objective_target=mock_objective_target,
             attack_adversarial_config=adversarial_config,
             attack_scoring_config=scoring_config,
+            max_turns=5,
         )
+
+        attack._memory = MagicMock()
 
         # Mock all lifecycle methods
         with patch.object(attack, "_validate_context"):
@@ -1005,17 +1207,19 @@ class TestAttackLifecycle:
                     with patch.object(attack, "_teardown_async", new_callable=AsyncMock):
                         # Configure the return value for _perform_attack_async
                         mock_perform.return_value = AttackResult(
-                            conversation_id=basic_context.session.conversation_id,
-                            objective=basic_context.objective,
+                            conversation_id="test-conversation-id",
+                            objective="Test objective",
                             attack_identifier=attack.get_identifier(),
                             outcome=AttackOutcome.SUCCESS,
                             executed_turns=1,
-                            last_response=sample_response.request_pieces[0],
+                            last_response=sample_response.get_piece(),
                             last_score=success_score,
                         )
 
-                        # Execute the complete lifecycle
-                        result = await attack.execute_async(context=basic_context)
+                        # Execute using execute_async
+                        result = await attack.execute_async(
+                            objective="Test objective",
+                        )
 
         # Verify result and proper execution order
         assert isinstance(result, AttackResult)
@@ -1027,9 +1231,8 @@ class TestAttackLifecycle:
         mock_objective_target: MagicMock,
         mock_objective_scorer: MagicMock,
         mock_adversarial_chat: MagicMock,
-        basic_context: MultiTurnAttackContext,
     ):
-        """Test that validation failure prevents attack execution."""
+        """Test that validation failure prevents attack execution when using execute_async."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
         scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
 
@@ -1046,16 +1249,64 @@ class TestAttackLifecycle:
                     with patch.object(attack, "_teardown_async", new_callable=AsyncMock) as mock_teardown:
                         # Should raise AttackValidationException
                         with pytest.raises(AttackValidationException) as exc_info:
-                            await attack.execute_async(context=basic_context)
+                            await attack.execute_async(
+                                objective="Test objective",
+                            )
 
         # Verify error details
         assert "Context validation failed" in str(exc_info.value)
 
         # Verify only validation was attempted
-        mock_validate.assert_called_once_with(context=basic_context)
+        mock_validate.assert_called_once()
         mock_setup.assert_not_called()
         mock_perform.assert_not_called()
         mock_teardown.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_execute_with_context_async_successful(
+        self,
+        mock_objective_target: MagicMock,
+        mock_objective_scorer: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        basic_context: MultiTurnAttackContext,
+        sample_response: PromptRequestResponse,
+        success_score: Score,
+    ):
+        """Test successful execution using execute_with_context_async."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+        )
+
+        attack._memory = MagicMock()
+
+        # Mock all lifecycle methods
+        with patch.object(attack, "_validate_context"):
+            with patch.object(attack, "_setup_async", new_callable=AsyncMock):
+                with patch.object(attack, "_perform_attack_async", new_callable=AsyncMock) as mock_perform:
+                    with patch.object(attack, "_teardown_async", new_callable=AsyncMock):
+                        # Configure the return value for _perform_attack_async
+                        mock_perform.return_value = AttackResult(
+                            conversation_id=basic_context.session.conversation_id,
+                            objective=basic_context.objective,
+                            attack_identifier=attack.get_identifier(),
+                            outcome=AttackOutcome.SUCCESS,
+                            executed_turns=1,
+                            last_response=sample_response.get_piece(),
+                            last_score=success_score,
+                        )
+
+                        # Execute using execute_with_context_async
+                        result = await attack.execute_with_context_async(context=basic_context)
+
+        # Verify result
+        assert isinstance(result, AttackResult)
+        assert result.outcome == AttackOutcome.SUCCESS
+        assert result.objective == basic_context.objective
 
     @pytest.mark.asyncio
     async def test_teardown_async_is_noop(

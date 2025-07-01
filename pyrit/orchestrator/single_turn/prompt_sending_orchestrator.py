@@ -8,13 +8,13 @@ from typing_extensions import LiteralString, deprecated
 
 from pyrit.attacks import (
     AttackConverterConfig,
-    AttackOutcome,
     AttackScoringConfig,
     PromptSendingAttack,
     SingleTurnAttackContext,
 )
 from pyrit.common import deprecation_message
 from pyrit.models import (
+    AttackOutcome,
     PromptRequestResponse,
     SeedPromptGroup,
 )
@@ -109,6 +109,7 @@ class PromptSendingOrchestrator(Orchestrator):
                 auxiliary_scorers=self._auxiliary_scorers,
             ),
             prompt_normalizer=self._prompt_normalizer,
+            max_attempts_on_failure=self._retries_on_objective_failure,
         )
 
     def set_skip_criteria(
@@ -145,11 +146,10 @@ class PromptSendingOrchestrator(Orchestrator):
             objective=objective,
             seed_prompt_group=seed_prompt,
             prepended_conversation=prepended_conversation or [],
-            max_attempts_on_failure=self._retries_on_objective_failure,
             memory_labels=memory_labels or {},
         )
 
-        result = await self._attack.execute_async(context=context)
+        result = await self._attack.execute_with_context_async(context=context)
 
         # Map attack outcome to orchestrator status
         status_mapping: dict[AttackOutcome, OrchestratorResultStatus] = {
