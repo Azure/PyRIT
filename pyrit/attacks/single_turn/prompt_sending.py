@@ -174,9 +174,7 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
             self._logger.debug(f"Attempt {attempt+1}/{self._max_attempts_on_failure + 1}")
 
             # Send the prompt
-            response = await self._send_prompt_to_objective_target_async(
-                seed_prompts=seed_prompts, context=context
-            )
+            response = await self._send_prompt_to_objective_target_async(seed_prompts=seed_prompts, context=context)
             if not response:
                 self._logger.warning(f"No response received on attempt {attempt+1} (likely filtered)")
                 continue  # Retry if no response (filtered or error)
