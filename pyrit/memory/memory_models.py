@@ -319,7 +319,7 @@ class SeedPromptEntry(Base):
     parameters: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
     prompt_group_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, nullable=True)
     sequence: Mapped[Optional[int]] = mapped_column(INTEGER, nullable=True)
-    prompt_seed_alias_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, nullable=True)
+    prompt_seed_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, nullable=True)
 
     def __init__(self, *, entry: SeedPrompt):
         self.id = entry.id
@@ -339,7 +339,7 @@ class SeedPromptEntry(Base):
         self.parameters = entry.parameters  # type: ignore
         self.prompt_group_id = entry.prompt_group_id
         self.sequence = entry.sequence
-        self.prompt_seed_alias_id = entry.prompt_seed_alias_id
+        self.prompt_seed_id = entry.prompt_seed_id
 
     def get_seed_prompt(self) -> SeedPrompt:
         return SeedPrompt(
@@ -360,5 +360,5 @@ class SeedPromptEntry(Base):
             parameters=self.parameters,
             prompt_group_id=self.prompt_group_id,
             sequence=self.sequence,
-            prompt_seed_alias_id=self.prompt_seed_alias_id,
+            prompt_seed_id=self.prompt_seed_id,
         )
