@@ -16,6 +16,7 @@ import pytest
 from unit.mocks import get_sample_conversation_entries, get_sample_conversations
 
 from pyrit.common.path import DB_DATA_PATH
+from pyrit.common.utils import to_sha256
 from pyrit.memory import MemoryExporter, MemoryInterface, PromptMemoryEntry
 from pyrit.memory.memory_models import AttackResultEntry
 from pyrit.models import (
@@ -2299,7 +2300,7 @@ def test_get_attack_results_by_objective_sha256(duckdb_instance: MemoryInterface
         execution_time_ms=1000,
         outcome=AttackOutcome.SUCCESS,
     )
-    objective1_sha256 = attack_result1.get_objective_sha256()
+    objective1_sha256 = to_sha256(attack_result1.objective)
 
     attack_result2 = AttackResult(
         conversation_id="conv_2",
@@ -2309,7 +2310,7 @@ def test_get_attack_results_by_objective_sha256(duckdb_instance: MemoryInterface
         execution_time_ms=500,
         outcome=AttackOutcome.FAILURE,
     )
-    objective2_sha256 = attack_result2.get_objective_sha256()
+    objective2_sha256 = to_sha256(attack_result2.objective)
 
     attack_result3 = AttackResult(
         conversation_id="conv_3",
@@ -2573,7 +2574,7 @@ def test_attack_result_objective_sha256_auto_generation(duckdb_instance: MemoryI
         execution_time_ms=1000,
         outcome=AttackOutcome.SUCCESS,
     )
-    expected_sha256 = attack_result.get_objective_sha256()
+    expected_sha256 = to_sha256(attack_result.objective)
 
     duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
 
@@ -2631,7 +2632,7 @@ def test_attack_result_objective_sha256_always_calculated(duckdb_instance: Memor
         execution_time_ms=1000,
         outcome=AttackOutcome.SUCCESS,
     )
-    expected_sha256 = attack_result.get_objective_sha256()
+    expected_sha256 = to_sha256(attack_result.objective)
 
     duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
 
