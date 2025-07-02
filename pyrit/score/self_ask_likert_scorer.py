@@ -8,7 +8,7 @@ from typing import Dict, Optional
 
 import yaml
 
-from pyrit.common.path import LIKERT_SCALES_PATH, SCORER_EVALS_PATH
+from pyrit.common.path import LIKERT_SCALES_PATH
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer import Scorer
@@ -92,8 +92,7 @@ class SelfAskLikertScorer(Scorer):
 
         return likert_scale_description
 
-    async def score_async(
-        self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Scores the given request_response using "self-ask" for the chat target and adds score to memory.
 
@@ -108,7 +107,7 @@ class SelfAskLikertScorer(Scorer):
                          The score_value is a value from [0,1] that is scaled from the likert scale.
         """
         self.validate(request_response, task=task)
-        
+
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=self._system_prompt,
@@ -128,6 +127,5 @@ class SelfAskLikertScorer(Scorer):
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
 
-    def validate(
-        self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
+    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
         pass
