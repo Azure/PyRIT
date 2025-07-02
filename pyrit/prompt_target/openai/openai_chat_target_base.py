@@ -59,14 +59,23 @@ class OpenAIChatTargetBase(OpenAITarget):
                 randomness of the response.
             top_p (float, Optional): The top-p parameter for controlling the diversity of the
                 response.
-            is_json_supported (bool, Optional): If True, the target will supports formatting responses as JSON by
+            is_json_supported (bool, Optional): If True, the target will support formatting responses as JSON by
                 setting the response_format header. Official OpenAI models all support this, but if you are using
                 this target with different models, is_json_supported should be set correctly to avoid issues when
                 using adversarial infrastructure (e.g. Crescendo scorers will set this flag).
             extra_body_parameters (dict, Optional): Additional parameters to be included in the request body.
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
                 httpx.AsyncClient() constructor.
-                For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
+                For example, to specify a 3 minute timeout: httpx_client_kwargs={"timeout": 180}
+
+        Raises:
+            PyritException: If the temperature or top_p values are out of bounds.
+            ValueError: If the temperature is not between 0 and 2 (inclusive).
+            ValueError: If the top_p is not between 0 and 1 (inclusive).
+            RateLimitException: If the target is rate-limited.
+            httpx.HTTPStatusError: If the request fails with a 400 Bad Request or 429 Too Many Requests error.
+            json.JSONDecodeError: If the response from the target is not valid JSON.
+            Exception: If the request fails for any other reason.
         """
         super().__init__(**kwargs)
 
@@ -138,12 +147,11 @@ class OpenAIChatTargetBase(OpenAITarget):
 
                 except json.JSONDecodeError:
                     # Not valid JSON, proceed without parsing
-                    pass
-                return handle_bad_request_exception(
-                    response_text=error_response_text,
-                    request=request_piece,
-                    error_code=StatusError.response.status_code,
-                )
+                    return handle_bad_request_exception(
+                        response_text=error_response_text,
+                        request=request_piece,
+                        error_code=StatusError.response.status_code,
+                    )
             elif StatusError.response.status_code == 429:
                 raise RateLimitException()
             else:

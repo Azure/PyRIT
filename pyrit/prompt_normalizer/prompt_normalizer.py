@@ -253,8 +253,8 @@ class PromptNormalizer:
             # so remove such requests from the prompts to skip list.
             responses = self._memory.get_prompt_request_pieces(role="assistant", **skip_args)  # type: ignore
             response_conversation_ids = {response.conversation_id for response in responses}
-            request_conversation_ids = {prompt.conversation_id for prompt in prompts_to_skip}
-            missing_response_conversation_ids = request_conversation_ids - response_conversation_ids
+            prompt_conversation_ids = {prompt.conversation_id for prompt in prompts_to_skip}
+            missing_response_conversation_ids = prompt_conversation_ids - response_conversation_ids
             prompts_to_skip = [
                 prompt for prompt in prompts_to_skip if prompt.conversation_id not in missing_response_conversation_ids
             ]

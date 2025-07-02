@@ -3,6 +3,7 @@
 
 import json
 import logging
+from enum import Enum
 from typing import Any, Dict, List, MutableSequence, Optional, Sequence
 
 from pyrit.common import convert_local_image_to_data_url
@@ -23,6 +24,24 @@ from pyrit.models import (
 from pyrit.prompt_target.openai.openai_chat_target_base import OpenAIChatTargetBase
 
 logger = logging.getLogger(__name__)
+
+
+# Define PromptRequestPieceType enum for all mentioned types
+
+
+class PromptRequestPieceType(str, Enum):
+    MESSAGE = "message"
+    REASONING = "reasoning"
+    IMAGE_GENERATION_CALL = "image_generation_call"
+    FILE_SEARCH_CALL = "file_search_call"
+    FUNCTION_CALL = "function_call"
+    WEB_SEARCH_CALL = "web_search_call"
+    COMPUTER_CALL = "computer_call"
+    CODE_INTERPRETER_CALL = "code_interpreter_call"
+    LOCAL_SHELL_CALL = "local_shell_call"
+    MCP_CALL = "mcp_call"
+    MCP_LIST_TOOLS = "mcp_list_tools"
+    MCP_APPROVAL_REQUEST = "mcp_approval_request"
 
 
 class OpenAIResponseTarget(OpenAIChatTargetBase):
@@ -66,14 +85,24 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
                 randomness of the response.
             top_p (float, Optional): The top-p parameter for controlling the diversity of the
                 response.
-            is_json_supported (bool, Optional): If True, the target will supports formatting responses as JSON by
+            is_json_supported (bool, Optional): If True, the target will support formatting responses as JSON by
                 setting the response_format header. Official OpenAI models all support this, but if you are using
                 this target with different models, is_json_supported should be set correctly to avoid issues when
                 using adversarial infrastructure (e.g. Crescendo scorers will set this flag).
             extra_body_parameters (dict, Optional): Additional parameters to be included in the request body.
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
                 httpx.AsyncClient() constructor.
-                For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
+                For example, to specify a 3 minute timeout: httpx_client_kwargs={"timeout": 180}
+
+        Raises:
+            PyritException: If the temperature or top_p values are out of bounds.
+            ValueError: If the temperature is not between 0 and 2 (inclusive).
+            ValueError: If the top_p is not between 0 and 1 (inclusive).
+            ValueError: If both `max_output_tokens` and `max_tokens` are provided.
+            RateLimitException: If the target is rate-limited.
+            httpx.HTTPStatusError: If the request fails with a 400 Bad Request or 429 Too Many Requests error.
+            json.JSONDecodeError: If the response from the target is not valid JSON.
+            Exception: If the request fails for any other reason.
         """
         super().__init__(api_version=api_version, temperature=temperature, top_p=top_p, **kwargs)
 
@@ -173,7 +202,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         """
         if len(request_pieces) > 1:
             raise ValueError(
-                "System messages must contain exactly one request piece. " f"Found {len(request_pieces)} pieces."
+                f"System messages must contain exactly one request piece. Found {len(request_pieces)} pieces."
             )
 
         system_piece = request_pieces[0]
@@ -213,7 +242,6 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             ValueError: If the data type is not supported.
         """
         data_type = piece.converted_value_data_type
-        print(data_type)
 
         if data_type == "text":
             return self._create_text_content_item(piece)
@@ -280,8 +308,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         }
 
         if self._extra_body_parameters:
-            for key, value in self._extra_body_parameters.items():
-                body_parameters[key] = value
+            body_parameters.update(self._extra_body_parameters)
 
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
@@ -340,13 +367,13 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
     ) -> PromptRequestPiece | None:
         piece_type: PromptDataType = "text"
         section_type = section.get("type", "")
-        if section_type == "message":
+
+        if section_type == PromptRequestPieceType.MESSAGE:
             section_content = section.get("content", [])
             if len(section_content) == 0:
                 raise EmptyResponseException(message="The chat returned an empty message section.")
-
             piece_value = section_content[0].get("text", "")
-        elif section_type == "reasoning":
+        elif section_type == PromptRequestPieceType.REASONING:
             piece_value = ""
             piece_type = "reasoning"
             for summary_piece in section.get("summary", []):

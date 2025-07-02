@@ -83,14 +83,24 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
             seed (int, Optional): If specified, openAI will make a best effort to sample deterministically,
                 such that repeated requests with the same seed and parameters should return the same result.
             n (int, Optional): The number of completions to generate for each prompt.
-            is_json_supported (bool, Optional): If True, the target will supports formatting responses as JSON by
+            is_json_supported (bool, Optional): If True, the target will support formatting responses as JSON by
                 setting the response_format header. Official OpenAI models all support this, but if you are using
                 this target with different models, is_json_supported should be set correctly to avoid issues when
                 using adversarial infrastructure (e.g. Crescendo scorers will set this flag).
             extra_body_parameters (dict, Optional): Additional parameters to be included in the request body.
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
                 `httpx.AsyncClient()` constructor.
-                For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
+                For example, to specify a 3 minute timeout: httpx_client_kwargs={"timeout": 180}
+
+        Raises:
+            PyritException: If the temperature or top_p values are out of bounds.
+            ValueError: If the temperature is not between 0 and 2 (inclusive).
+            ValueError: If the top_p is not between 0 and 1 (inclusive).
+            ValueError: If both `max_completion_tokens` and `max_tokens` are provided.
+            RateLimitException: If the target is rate-limited.
+            httpx.HTTPStatusError: If the request fails with a 400 Bad Request or 429 Too Many Requests error.
+            json.JSONDecodeError: If the response from the target is not valid JSON.
+            Exception: If the request fails for any other reason.
         """
         super().__init__(temperature=temperature, top_p=top_p, **kwargs)
 
