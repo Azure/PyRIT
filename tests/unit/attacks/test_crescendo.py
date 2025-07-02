@@ -15,7 +15,6 @@ from pyrit.attacks.base.attack_config import (
     AttackScoringConfig,
 )
 from pyrit.attacks.base.attack_context import ConversationSession
-from pyrit.attacks.base.attack_result import AttackOutcome
 from pyrit.attacks.components.conversation_manager import ConversationState
 from pyrit.attacks.multi_turn.crescendo import (
     CrescendoAttack,
@@ -28,6 +27,7 @@ from pyrit.exceptions import (
     InvalidJsonException,
 )
 from pyrit.models import (
+    AttackOutcome,
     ChatMessageRole,
     PromptRequestPiece,
     PromptRequestResponse,
@@ -254,12 +254,23 @@ class CrescendoTestHelper:
                 **{k: v for k, v in kwargs.items() if k in ["use_score_as_feedback", "successful_objective_threshold"]},
             )
 
-        return CrescendoAttack(
+        attack = CrescendoAttack(
             objective_target=objective_target,
             attack_adversarial_config=adversarial_config,
             attack_scoring_config=scoring_config,
             prompt_normalizer=prompt_normalizer,
         )
+
+        CrescendoTestHelper.mock_memory_for_attack(attack)
+
+        return attack
+
+    @staticmethod
+    def mock_memory_for_attack(attack: CrescendoAttack) -> MagicMock:
+
+        mock_memory = MagicMock()
+        attack._memory = mock_memory
+        return mock_memory
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -1319,6 +1330,9 @@ class TestAttackLifecycle:
             attack_adversarial_config=adversarial_config,
         )
 
+        mock_memory = MagicMock()
+        attack._memory = mock_memory
+
         # Mock all lifecycle methods
         with patch.object(attack, "_validate_context"):
             with patch.object(attack, "_setup_async", new_callable=AsyncMock):
@@ -1428,6 +1442,8 @@ class TestAttackLifecycle:
             objective_target=mock_objective_target,
             attack_adversarial_config=adversarial_config,
         )
+
+        CrescendoTestHelper.mock_memory_for_attack(attack)
 
         # Mock the context creation
         with patch.object(CrescendoAttackContext, "create_from_params") as mock_create:

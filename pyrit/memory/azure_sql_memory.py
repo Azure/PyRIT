@@ -18,8 +18,16 @@ from sqlalchemy.orm.session import Session
 from pyrit.common import default_values
 from pyrit.common.singleton import Singleton
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry
-from pyrit.models import AzureBlobStorageIO, PromptRequestPiece
+from pyrit.memory.memory_models import (
+    AttackResultEntry,
+    Base,
+    EmbeddingDataEntry,
+    PromptMemoryEntry,
+)
+from pyrit.models import (
+    AzureBlobStorageIO,
+    PromptRequestPiece,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -307,6 +315,11 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 query = session.query(Model)
                 if join_scores and Model == PromptMemoryEntry:
                     query = query.options(joinedload(PromptMemoryEntry.scores))
+                elif Model == AttackResultEntry:
+                    query = query.options(
+                        joinedload(AttackResultEntry.last_response).joinedload(PromptMemoryEntry.scores),
+                        joinedload(AttackResultEntry.last_score),
+                    )
                 if conditions is not None:
                     query = query.filter(conditions)
                 if distinct:
