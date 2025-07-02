@@ -5,7 +5,7 @@ import asyncio
 import copy
 import logging
 import traceback
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 from pyrit.exceptions import EmptyResponseException
@@ -232,7 +232,7 @@ class PromptNormalizer:
         """
         self._skip_criteria = skip_criteria
 
-        skip_args = {
+        skip_args: Dict[str, Any] = {
             "orchestrator_id": self._skip_criteria.orchestrator_id,
             "conversation_id": self._skip_criteria.conversation_id,
             "prompt_ids": self._skip_criteria.prompt_ids,
@@ -246,12 +246,12 @@ class PromptNormalizer:
             "converted_value_sha256": self._skip_criteria.converted_value_sha256,
         }
 
-        prompts_to_skip = self._memory.get_prompt_request_pieces(role="user", **skip_args)  # type: ignore
+        prompts_to_skip = self._memory.get_prompt_request_pieces(role="user", **skip_args)
 
         if ensure_response:
             # If a request was sent but we don't have a response we need to retry
             # so remove such requests from the prompts to skip list.
-            responses = self._memory.get_prompt_request_pieces(role="assistant", **skip_args)  # type: ignore
+            responses = self._memory.get_prompt_request_pieces(role="assistant", **skip_args)
             response_conversation_ids = {response.conversation_id for response in responses}
             prompt_conversation_ids = {prompt.conversation_id for prompt in prompts_to_skip}
             missing_response_conversation_ids = prompt_conversation_ids - response_conversation_ids
