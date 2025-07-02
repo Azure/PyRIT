@@ -138,20 +138,16 @@ class OpenAIChatTargetBase(OpenAITarget):
                 try:
                     json_error = json.loads(error_response_text)
                     is_content_filter = json_error.get("error", {}).get("code") == "content_filter"
-                    return handle_bad_request_exception(
-                        response_text=error_response_text,
-                        request=request_piece,
-                        error_code=StatusError.response.status_code,
-                        is_content_filter=is_content_filter,
-                    )
-
                 except json.JSONDecodeError:
-                    # Not valid JSON, proceed without parsing
-                    return handle_bad_request_exception(
-                        response_text=error_response_text,
-                        request=request_piece,
-                        error_code=StatusError.response.status_code,
-                    )
+                    # Not valid JSON, set content filter to False
+                    is_content_filter = False
+
+                return handle_bad_request_exception(
+                    response_text=error_response_text,
+                    request=request_piece,
+                    error_code=StatusError.response.status_code,
+                    is_content_filter=is_content_filter,
+                )
             elif StatusError.response.status_code == 429:
                 raise RateLimitException()
             else:
