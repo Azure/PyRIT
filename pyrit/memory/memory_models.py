@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import uuid
+from datetime import datetime
 from typing import List, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict
@@ -25,6 +26,7 @@ from sqlalchemy.orm import (  # type: ignore
 from sqlalchemy.types import Uuid  # type: ignore
 
 from pyrit.models import PromptDataType, PromptRequestPiece, Score, SeedPrompt
+from pyrit.models.attack_result import AttackOutcome, AttackResult
 
 
 class Base(DeclarativeBase):
@@ -356,4 +358,91 @@ class SeedPromptEntry(Base):
             parameters=self.parameters,
             prompt_group_id=self.prompt_group_id,
             sequence=self.sequence,
+        )
+
+
+class AttackResultEntry(Base):
+    """
+    Represents the attack result data in the database.
+
+    Parameters:
+        __tablename__ (str): The name of the database table.
+        __table_args__ (dict): Additional arguments for the database table.
+        id (Uuid): The unique identifier for the attack result entry.
+        conversation_id (str): The unique identifier of the conversation that produced this result.
+        objective (str): Natural-language description of the attacker's objective.
+        attack_identifier (dict[str, str]): Identifier of the attack (e.g., name, module).
+        objective_sha256 (str): The SHA256 hash of the objective.
+        last_response_id (Uuid): Foreign key to the last response PromptRequestPiece.
+        last_score_id (Uuid): Foreign key to the last score ScoreEntry.
+        executed_turns (int): Total number of turns that were executed.
+        execution_time_ms (int): Total execution time of the attack in milliseconds.
+        outcome (AttackOutcome): The outcome of the attack, indicating success, failure, or undetermined.
+        outcome_reason (str): Optional reason for the outcome, providing additional context.
+        attack_metadata (dict[str, Any]): Metadata can be included as key-value pairs to provide extra context.
+        timestamp (DateTime): The timestamp of the attack result entry.
+        last_response (PromptMemoryEntry): Relationship to the last response prompt memory entry.
+        last_score (ScoreEntry): Relationship to the last score entry.
+    Methods:
+        __str__(): Returns a string representation of the attack result entry.
+    """
+
+    __tablename__ = "AttackResultEntries"
+    __table_args__ = {"extend_existing": True}
+    id = mapped_column(Uuid, nullable=False, primary_key=True)
+    conversation_id = mapped_column(String, nullable=False)
+    objective = mapped_column(Unicode, nullable=False)
+    attack_identifier: Mapped[dict[str, str]] = mapped_column(JSON, nullable=False)
+    objective_sha256 = mapped_column(String, nullable=True)
+    last_response_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        Uuid, ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), nullable=True
+    )
+    last_score_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        Uuid, ForeignKey(f"{ScoreEntry.__tablename__}.id"), nullable=True
+    )
+    executed_turns = mapped_column(INTEGER, nullable=False, default=0)
+    execution_time_ms = mapped_column(INTEGER, nullable=False, default=0)
+    outcome: Mapped[Literal["success", "failure", "undetermined"]] = mapped_column(
+        String, nullable=False, default="undetermined"
+    )
+    outcome_reason = mapped_column(String, nullable=True)
+    attack_metadata: Mapped[dict[str, Union[str, int, float, bool]]] = mapped_column(JSON, nullable=True)
+    timestamp = mapped_column(DateTime, nullable=False)
+
+    last_response: Mapped[Optional["PromptMemoryEntry"]] = relationship(
+        "PromptMemoryEntry",
+        foreign_keys=[last_response_id],
+    )
+    last_score: Mapped[Optional["ScoreEntry"]] = relationship(
+        "ScoreEntry",
+        foreign_keys=[last_score_id],
+    )
+
+    def __init__(self, *, entry: AttackResult):
+        self.id = uuid.uuid4()
+        self.conversation_id = entry.conversation_id
+        self.objective = entry.objective
+        self.attack_identifier = entry.attack_identifier
+        self.objective_sha256 = entry.get_objective_sha256()
+        self.last_response_id = entry.last_response.id if entry.last_response else None  # type: ignore
+        self.last_score_id = entry.last_score.id if entry.last_score else None  # type: ignore
+        self.executed_turns = entry.executed_turns
+        self.execution_time_ms = entry.execution_time_ms
+        self.outcome = entry.outcome.value  # type: ignore
+        self.outcome_reason = entry.outcome_reason
+        self.attack_metadata = entry.metadata
+        self.timestamp = datetime.now()
+
+    def get_attack_result(self) -> AttackResult:
+        return AttackResult(
+            conversation_id=self.conversation_id,
+            objective=self.objective,
+            attack_identifier=self.attack_identifier,
+            last_response=self.last_response.get_prompt_request_piece() if self.last_response else None,
+            last_score=self.last_score.get_score() if self.last_score else None,
+            executed_turns=self.executed_turns,
+            execution_time_ms=self.execution_time_ms,
+            outcome=AttackOutcome(self.outcome),
+            outcome_reason=self.outcome_reason,
+            metadata=self.attack_metadata or {},
         )
