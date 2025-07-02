@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import hashlib
 import logging
 import math
 import random
@@ -77,3 +78,16 @@ def get_random_indices(*, start: int, size: int, proportion: float) -> List[int]
 
     n = max(math.ceil(size * proportion), 1)  # the number of indices to select
     return random.sample(range(start, start + size), n)
+
+
+def to_sha256(data: str) -> str:
+    """
+    Converts a string to its SHA-256 hash representation.
+
+    Args:
+        data (str): The input string to be hashed.
+
+    Returns:
+        str: The SHA-256 hash of the input string, represented as a hexadecimal string.
+    """
+    return hashlib.sha256(data.encode()).hexdigest()

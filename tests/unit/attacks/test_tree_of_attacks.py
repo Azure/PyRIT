@@ -17,7 +17,6 @@ from pyrit.attacks.base.attack_config import (
     AttackConverterConfig,
     AttackScoringConfig,
 )
-from pyrit.attacks.base.attack_result import AttackOutcome
 from pyrit.attacks.multi_turn.tree_of_attacks import (
     TAPAttackContext,
     TAPAttackResult,
@@ -26,6 +25,7 @@ from pyrit.attacks.multi_turn.tree_of_attacks import (
 )
 from pyrit.exceptions import InvalidJsonException
 from pyrit.models import (
+    AttackOutcome,
     PromptRequestPiece,
     PromptRequestResponse,
     Score,
@@ -239,6 +239,7 @@ class TestHelpers:
     def create_score(value: float = 0.9) -> Score:
         """Create a mock Score object."""
         return Score(
+            id=None,
             score_type="float_scale",
             score_value=str(value),
             score_category="test",
@@ -687,7 +688,8 @@ class TestEndToEndExecution:
         with patch.object(attack, "_perform_attack_async", return_value=mock_result):
             with patch.object(attack._memory, "get_conversation", return_value=[]):
                 with patch.object(attack._memory, "get_prompt_request_pieces", return_value=[]):
-                    result = await attack.execute_async(objective="Test objective", memory_labels={"test": "label"})
+                    with patch.object(attack._memory, "add_attack_results_to_memory", return_value=None):
+                        result = await attack.execute_async(objective="Test objective", memory_labels={"test": "label"})
 
         assert result.outcome == AttackOutcome.SUCCESS
         assert result.objective == "Test objective"

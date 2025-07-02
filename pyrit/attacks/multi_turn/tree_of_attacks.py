@@ -19,7 +19,6 @@ from pyrit.attacks.base.attack_config import (
 from pyrit.attacks.base.attack_context import (
     AttackContext,
 )
-from pyrit.attacks.base.attack_result import AttackOutcome, AttackResult
 from pyrit.attacks.base.attack_strategy import AttackStrategy
 from pyrit.common.path import DATASETS_PATH
 from pyrit.common.utils import combine_dict
@@ -30,6 +29,8 @@ from pyrit.exceptions import (
 )
 from pyrit.memory import CentralMemory
 from pyrit.models import (
+    AttackOutcome,
+    AttackResult,
     PromptRequestPiece,
     PromptRequestResponse,
     Score,
