@@ -120,7 +120,15 @@ def fetch_transphobia_awareness_dataset(
             description="Quora-style question for transphobia awareness and inclusivity evaluation.",
             metadata=metadata,
             source=RATINGS_URL,
-            authors="Scheuerman, Morgan and Weathington, Katy and Petterson, Adrian and Thomas Doyle, Dylan and Das, Dipto and DeVito, Michael Ann and Brubaker, Jed R",
+            authors = [
+    "Morgan Scheuerman",
+    "Katy Weathington",
+    "Adrian Petterson",
+    "Dylan Thomas Doyle",
+    "Dipto Das",
+    "Michael Ann DeVito",
+    "Jed R. Brubaker"
+],
         )
         seed_prompts.append(prompt)
 
