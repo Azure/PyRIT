@@ -51,7 +51,7 @@ async def test_likert_scorer_mae(memory, scale_path: Path, dataset_name: str) ->
         metrics = await evaluator.run_evaluation_from_csv_async(
             csv_path=csv_path,
             assistant_response_col="assistant_response",
-            human_label_col_names=["human_likert_score_1", "human_likert_score_2", "human_likert_score_3"],
+            human_label_col_names=["human_score_1", "human_score_2", "human_score_3"],
             objective_or_harm_col_name="category",
             num_scorer_trials=1,
             save_results=False,

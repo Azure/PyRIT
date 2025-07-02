@@ -14,53 +14,36 @@ from pyrit.score.human_labeled_dataset import (
 )
 
 
-def test_harm_human_labeled_entry_valid():
-    responses = [
+@pytest.fixture
+def sample_responses():
+    return [
         PromptRequestResponse(
             request_pieces=[
-                PromptRequestPiece(role="assistant", original_value="test", original_value_data_type="text")
+                PromptRequestPiece(role="assistant", original_value="test response", original_value_data_type="text")
             ]
         )
     ]
-    entry = HarmHumanLabeledEntry(responses, [0.0, 0.5, 1.0], "hate_speech")
+
+
+def test_harm_human_labeled_entry_valid(sample_responses):
+    entry = HarmHumanLabeledEntry(sample_responses, [0.0, 0.5, 1.0], "hate_speech")
     assert entry.harm_category == "hate_speech"
     assert entry.human_scores == [0.0, 0.5, 1.0]
 
 
-def test_harm_human_labeled_entry_invalid_score():
-    responses = [
-        PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(role="assistant", original_value="test", original_value_data_type="text")
-            ]
-        )
-    ]
+def test_harm_human_labeled_entry_invalid_score(sample_responses):
     with pytest.raises(ValueError):
-        HarmHumanLabeledEntry(responses, [-0.1, 1.1], "hate_speech")
+        HarmHumanLabeledEntry(sample_responses, [-0.1, 1.1], "hate_speech")
 
 
-def test_objective_human_labeled_entry():
-    responses = [
-        PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(role="assistant", original_value="test", original_value_data_type="text")
-            ]
-        )
-    ]
-    entry = ObjectiveHumanLabeledEntry(responses, [True, False], "how to make a Molotov cocktail?")
+def test_objective_human_labeled_entry(sample_responses):
+    entry = ObjectiveHumanLabeledEntry(sample_responses, [True, False], "how to make a Molotov cocktail?")
     assert entry.objective == "how to make a Molotov cocktail?"
     assert entry.human_scores == [True, False]
 
 
-def test_human_labeled_dataset_init_harm_type():
-    responses = [
-        PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(role="assistant", original_value="test", original_value_data_type="text")
-            ]
-        )
-    ]
-    entry = HarmHumanLabeledEntry(responses, [0.1, 0.2], "hate_speech")
+def test_human_labeled_dataset_init_harm_type(sample_responses):
+    entry = HarmHumanLabeledEntry(sample_responses, [0.1, 0.2], "hate_speech")
     dataset = HumanLabeledDataset(name="hate_speech", entries=[entry], metrics_type="harm")
     assert dataset.name == "hate_speech"
     assert dataset.metrics_type == "harm"
@@ -68,90 +51,65 @@ def test_human_labeled_dataset_init_harm_type():
     assert isinstance(dataset.entries[0], HarmHumanLabeledEntry)
 
 
-def test_human_labeled_dataset_init_objective_type():
-    responses = [
-        PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(role="assistant", original_value="test", original_value_data_type="text")
-            ]
-        )
-    ]
-    entry = ObjectiveHumanLabeledEntry(responses, [True, False], "objective")
-    dataset = HumanLabeledDataset(name="objective", entries=[entry], metrics_type="objective")
-    assert dataset.name == "objective"
+def test_human_labeled_dataset_init_objective_type(sample_responses):
+    entry = ObjectiveHumanLabeledEntry(sample_responses, [True, False], "objective")
+    dataset = HumanLabeledDataset(name="sample_objective", entries=[entry], metrics_type="objective")
+    assert dataset.name == "sample_objective"
     assert dataset.metrics_type == "objective"
     assert len(dataset.entries) == 1
     assert isinstance(dataset.entries[0], ObjectiveHumanLabeledEntry)
 
 
-def test_human_labeled_dataset_init_type_error():
-    responses = [
-        PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(role="assistant", original_value="test", original_value_data_type="text")
-            ]
-        )
-    ]
-    entry = ObjectiveHumanLabeledEntry(responses, [True, False], "objective")
+def test_human_labeled_dataset_init_empty_args(sample_responses):
+    entry = ObjectiveHumanLabeledEntry(sample_responses, [True, False], "objective")
+    with pytest.raises(ValueError):
+        HumanLabeledDataset(name="", entries=[entry], metrics_type="objective")
+    with pytest.raises(ValueError):
+        HumanLabeledDataset(name="valid_name", entries=[entry], metrics_type="")
+
+
+def test_human_labeled_dataset_init_mismatch_metrics_type_error(sample_responses):
+    entry = ObjectiveHumanLabeledEntry(sample_responses, [True, False], "objective")
     with pytest.raises(ValueError):
         HumanLabeledDataset(name="harm", entries=[entry], metrics_type="harm")
 
 
-def test_human_labeled_dataset_init_multiple_harm_categories_warns(caplog):
-    responses = [
-        PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(role="assistant", original_value="test", original_value_data_type="text")
-            ]
-        )
-    ]
-    entry1 = HarmHumanLabeledEntry(responses, [0.1], "hate_speech")
-    entry2 = HarmHumanLabeledEntry(responses, [0.2], "violence")
+def test_human_labeled_dataset_init_multiple_harm_categories_warns(sample_responses, caplog):
+    entry1 = HarmHumanLabeledEntry(sample_responses, [0.1], "hate_speech")
+    entry2 = HarmHumanLabeledEntry(sample_responses, [0.2], "violence")
     with caplog.at_level(logging.WARNING):
         HumanLabeledDataset(name="mixed", entries=[entry1, entry2], metrics_type="harm")
         assert any("All entries in a harm dataset should have the same harm category" in m for m in caplog.messages)
 
 
-def test_human_labeled_dataset_add_entry():
-    responses = [
-        PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(role="assistant", original_value="test", original_value_data_type="text")
-            ]
-        )
-    ]
-    entry = HarmHumanLabeledEntry(responses, [0.2, 0.8], "hate_speech")
+def test_human_labeled_dataset_add_entry(sample_responses):
+    entry = HarmHumanLabeledEntry(sample_responses, [0.2, 0.8], "hate_speech")
     dataset = HumanLabeledDataset(name="hate_speech", entries=[], metrics_type="harm")
     dataset.add_entry(entry)
     assert len(dataset.entries) == 1
     assert isinstance(dataset.entries[0], HarmHumanLabeledEntry)
 
 
-def test_human_labeled_dataset_add_entries():
-    responses = [
-        PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(role="assistant", original_value="test1", original_value_data_type="text")
-            ]
-        )
-    ]
-    entry1 = HarmHumanLabeledEntry(responses, [0.1, 0.2], "hate_speech")
-    entry2 = HarmHumanLabeledEntry(responses, [0.3, 0.4], "hate_speech")
+def test_human_labeled_dataset_add_entry_warns(sample_responses, caplog):
+    entry = HarmHumanLabeledEntry(sample_responses, [0.1, 0.2], "hate_speech")
+    entry2 = HarmHumanLabeledEntry(sample_responses, [0.1, 0.2], "violence")
+    dataset = HumanLabeledDataset(name="hate_speech", entries=[entry], metrics_type="harm")
+    with caplog.at_level(logging.WARNING):
+        dataset.add_entry(entry2)
+        assert any("All entries in a harm dataset should have the same harm category" in m for m in caplog.messages)
+
+
+def test_human_labeled_dataset_add_entries(sample_responses):
+    entry1 = HarmHumanLabeledEntry(sample_responses, [0.1, 0.2], "hate_speech")
+    entry2 = HarmHumanLabeledEntry(sample_responses, [0.3, 0.4], "hate_speech")
     dataset = HumanLabeledDataset(name="hate_speech", entries=[], metrics_type="harm")
     dataset.add_entries([entry1, entry2])
     assert len(dataset.entries) == 2
     assert all(isinstance(e, HarmHumanLabeledEntry) for e in dataset.entries)
 
 
-def test_human_labeled_dataset_validate_entry_type_error():
-    responses = [
-        PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(role="assistant", original_value="test", original_value_data_type="text")
-            ]
-        )
-    ]
-    entry = ObjectiveHumanLabeledEntry(responses, [True, False], "objective")
+def test_human_labeled_dataset_validate_entry_type_error(sample_responses):
+    entry = ObjectiveHumanLabeledEntry(sample_responses, [True, False], "objective")
     dataset = HumanLabeledDataset(name="hate_speech", entries=[], metrics_type="harm")
     with pytest.raises(ValueError):
         dataset.add_entry(entry)
@@ -169,7 +127,7 @@ def test_human_labeled_dataset_validate_columns_missing_column():
         }
     )
     with pytest.raises(AssertionError):
-        HumanLabeledDataset.validate_columns(
+        HumanLabeledDataset._validate_columns(
             eval_df=df,
             human_label_col_names=["label1", "label2"],
             assistant_responses_col_name="assistant_response",
@@ -184,7 +142,7 @@ def test_human_labeled_dataset_validate_columns_nan():
         {"assistant_response": ["a"], "label1": [None], "label2": [0.2], "harm_category": ["hate_speech"]}
     )
     with pytest.raises(AssertionError):
-        HumanLabeledDataset.validate_columns(
+        HumanLabeledDataset._validate_columns(
             eval_df=df,
             human_label_col_names=["label1", "label2"],
             assistant_responses_col_name="assistant_response",
@@ -192,39 +150,18 @@ def test_human_labeled_dataset_validate_columns_nan():
         )
 
 
-def test_construct_harm_entry_nan_harm():
-    responses = [
-        PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(role="assistant", original_value="test", original_value_data_type="text")
-            ]
-        )
-    ]
+def test_construct_harm_entry_nan_harm(sample_responses):
     with pytest.raises(ValueError):
-        HumanLabeledDataset._construct_harm_entry(responses, float("nan"), [0.1, 0.2])
+        HumanLabeledDataset._construct_harm_entry(sample_responses, float("nan"), [0.1, 0.2])
 
 
-def test_construct_objective_entry_nan_objective():
-    responses = [
-        PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(role="assistant", original_value="test", original_value_data_type="text")
-            ]
-        )
-    ]
+def test_construct_objective_entry_nan_objective(sample_responses):
     with pytest.raises(ValueError):
-        HumanLabeledDataset._construct_objective_entry(responses, float("nan"), [1, 0])
+        HumanLabeledDataset._construct_objective_entry(sample_responses, float("nan"), [1, 0])
 
 
-def test_construct_objective_entry_bool_conversion():
-    responses = [
-        PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(role="assistant", original_value="test", original_value_data_type="text")
-            ]
-        )
-    ]
-    entry = HumanLabeledDataset._construct_objective_entry(responses, "objective", ["1", "0"])
+def test_construct_objective_entry_bool_conversion(sample_responses):
+    entry = HumanLabeledDataset._construct_objective_entry(sample_responses, "objective", ["1", "0"])
     assert entry.human_scores == [True, False]
 
 

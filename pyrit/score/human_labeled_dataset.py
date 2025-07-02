@@ -87,17 +87,17 @@ class HumanLabeledDataset:
         entries: List[HumanLabeledEntry],
         metrics_type: Literal["harm", "objective"],
     ):
+        if not name:
+            raise ValueError("Dataset name cannot be an empty string.")
+        if metrics_type not in ["harm", "objective"]:
+            raise ValueError("Metrics type must be either 'harm' or 'objective'.")
+
         self.name = name
         self.entries = entries
         self.metrics_type = metrics_type
+
         for entry in self.entries:
-            self.validate_entry(entry)
-        if self.metrics_type == "harm":
-            if len(set(entry.harm_category for entry in self.entries)) > 1:
-                logger.warning(
-                    "All entries in a harm dataset should have the same harm category. "
-                    "Evaluating a dataset with multiple harm categories is not currently supported."
-                )
+            self._validate_entry(entry)
 
     @classmethod
     def from_csv(
@@ -136,7 +136,7 @@ class HumanLabeledDataset:
 
         eval_df = pd.read_csv(csv_path)
         # Validate the required columns exist in the DataFrame and are of the correct length.
-        cls.validate_columns(
+        cls._validate_columns(
             eval_df=eval_df,
             human_label_col_names=human_label_col_names,
             assistant_responses_col_name=assistant_responses_col_name,
@@ -186,14 +186,6 @@ class HumanLabeledDataset:
         dataset_name = dataset_name or Path(csv_path).stem
         return cls(entries=entries, name=dataset_name, metrics_type=metrics_type)
 
-    def validate_entry(self, entry: HumanLabeledEntry):
-        if self.metrics_type == "harm":
-            if not isinstance(entry, HarmHumanLabeledEntry):
-                raise ValueError("All entries must be HarmHumanLabeledEntry instances for harm datasets.")
-        elif self.metrics_type == "objective":
-            if not isinstance(entry, ObjectiveHumanLabeledEntry):
-                raise ValueError("All entries must be ObjectiveHumanLabeledEntry instances for objective datasets.")
-
     def add_entries(self, entries: List[HumanLabeledEntry]):
         """
         Add multiple entries to the human-labeled dataset.
@@ -211,17 +203,28 @@ class HumanLabeledDataset:
         Args:
             entry (HumanLabeledEntry): The entry to add.
         """
-        self.validate_entry(entry)
-        if self.metrics_type == "harm":
-            if self.entries and entry.harm_category != self.entries[0].harm_category:
-                logger.warning(
-                    "All entries in a harm dataset should have the same harm category."
-                    "Evaluating a dataset with multiple harm categories is not currently supported."
-                )
+        self._validate_entry(entry)
         self.entries.append(entry)
 
+    def _validate_entry(self, entry: HumanLabeledEntry):
+        if self.metrics_type == "harm":
+            if not isinstance(entry, HarmHumanLabeledEntry):
+                raise ValueError("All entries must be HarmHumanLabeledEntry instances for harm datasets.")
+            if self.entries:
+                first_entry = self.entries[0]
+                # if statement for static type checking
+                if isinstance(first_entry, HarmHumanLabeledEntry):
+                    if entry.harm_category != first_entry.harm_category:
+                        logger.warning(
+                            "All entries in a harm dataset should have the same harm category. "
+                            "Evaluating a dataset with multiple harm categories is not currently supported."
+                        )
+        elif self.metrics_type == "objective":
+            if not isinstance(entry, ObjectiveHumanLabeledEntry):
+                raise ValueError("All entries must be ObjectiveHumanLabeledEntry instances for objective datasets.")
+
     @staticmethod
-    def validate_columns(
+    def _validate_columns(
         eval_df: pd.DataFrame,
         human_label_col_names: List[str],
         assistant_responses_col_name: str,
@@ -233,7 +236,7 @@ class HumanLabeledDataset:
         required_columns = human_label_col_names + [assistant_responses_col_name, objective_or_harm_col_name]
         if assistant_responses_data_type_col_name:
             required_columns.append(assistant_responses_data_type_col_name)
-        
+
         for column in required_columns:
             assert column in eval_df.columns, f"Column {column} is missing from the dataset"
             assert not eval_df[column].isna().any(), f"Column {column} contains NaN values."

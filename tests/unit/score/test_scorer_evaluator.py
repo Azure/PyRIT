@@ -169,7 +169,6 @@ async def test_run_evaluation_from_csv_async_harm(mock_run_eval, sample_harm_csv
     )
     mock_run_eval.return_value = expected_metrics
 
-    # Act
     result = await evaluator.run_evaluation_from_csv_async(
         csv_path=sample_harm_csv_path,
         assistant_response_col="assistant_response",
@@ -180,7 +179,6 @@ async def test_run_evaluation_from_csv_async_harm(mock_run_eval, sample_harm_csv
         dataset_name="SAMPLE_hate_speech",
     )
 
-    # Assert
     assert result == expected_metrics
     mock_run_eval.assert_awaited_once()
 
@@ -252,7 +250,6 @@ def test_get_metrics_path_and_csv_path_objective(mock_objective_scorer):
 
 @pytest.mark.asyncio
 async def test_run_evaluation_async_harm(mock_harm_scorer):
-    # Setup mock dataset and entries
     responses = [
         PromptRequestResponse(
             request_pieces=[
@@ -267,7 +264,6 @@ async def test_run_evaluation_async_harm(mock_harm_scorer):
     entry_values = [MagicMock(get_value=lambda: 0.2), MagicMock(get_value=lambda: 0.4)]
     mock_harm_scorer.score_responses_inferring_tasks_batch_async = AsyncMock(return_value=entry_values)
     evaluator = HarmScorerEvaluator(mock_harm_scorer)
-    # Patch krippendorff.alpha to avoid dependency
     metrics = await evaluator.run_evaluation_async(
         labeled_dataset=mock_dataset, num_scorer_trials=2, save_results=False
     )
@@ -300,3 +296,53 @@ async def test_run_evaluation_async_objective(mock_objective_scorer):
     assert isinstance(metrics, ObjectiveScorerMetrics)
     assert metrics.accuracy == 0.0
     assert metrics.accuracy_standard_error == 0.0
+
+
+def test_compute_objective_metrics_perfect_agreement(mock_objective_scorer):
+    evaluator = ObjectiveScorerEvaluator(scorer=mock_objective_scorer)
+    # 2 responses, 3 human scores each, all agree (all 1s), model also all 1s
+    all_human_scores = np.array([[1, 1], [1, 1], [1, 1]])
+    all_model_scores = np.array([[1, 1], [1, 1]])
+    metrics = evaluator._compute_objective_metrics(all_human_scores, all_model_scores)
+    assert metrics.accuracy == 1.0
+    assert metrics.f1_score == 1.0
+    assert metrics.precision == 1.0
+    assert metrics.recall == 1.0
+
+
+def test_compute_objective_metrics_partial_agreement(mock_objective_scorer):
+    evaluator = ObjectiveScorerEvaluator(scorer=mock_objective_scorer)
+    # 2 responses, 3 human scores each, mixed labels, model gets one right, one wrong
+    all_human_scores = np.array([[1, 0], [1, 0], [0, 1]])  # gold: [1, 0]
+    all_model_scores = np.array([[1, 1]])
+    metrics = evaluator._compute_objective_metrics(all_human_scores, all_model_scores)
+    # gold: [1, 0], model: [1, 1]
+    # TP=1 (first), FP=1 (second), TN=0, FN=0
+    assert metrics.accuracy == 0.5
+    assert metrics.precision == 0.5
+    assert metrics.recall == 1.0
+    assert metrics.f1_score == pytest.approx(2 * 0.5 * 1.0 / (0.5 + 1.0))
+
+
+def test_compute_harm_metrics_perfect_agreement(mock_harm_scorer):
+    evaluator = HarmScorerEvaluator(mock_harm_scorer)
+    # 2 responses, 3 human scores each, all agree, model matches exactly
+    all_human_scores = np.array([[0.1, 0.2], [0.1, 0.2], [0.1, 0.2]])
+    # 2 model trials
+    all_model_scores = np.array([[0.1, 0.2], [0.1, 0.2]])
+    # Patch krippendorff.alpha to return 1.0 for all calls
+    metrics = evaluator._compute_harm_metrics(all_human_scores, all_model_scores)
+    assert metrics.mean_absolute_error == 0.0
+    assert metrics.mae_standard_error == 0.0
+    assert metrics.krippendorff_alpha_combined == 1.0
+    assert metrics.krippendorff_alpha_humans == 1.0
+    assert metrics.krippendorff_alpha_model == 1.0
+
+
+def test_compute_harm_metrics_partial_agreement(mock_harm_scorer):
+    evaluator = HarmScorerEvaluator(scorer=mock_harm_scorer)
+    # 2 responses, 3 human scores each, model is off by 0.1 for each
+    all_human_scores = np.array([[0.1, 0.2], [0.1, 0.2], [0.1, 0.2]])
+    all_model_scores = np.array([[0.2, 0.3], [0.2, 0.3]])
+    metrics = evaluator._compute_harm_metrics(all_human_scores, all_model_scores)
+    assert np.isclose(metrics.mean_absolute_error, 0.1)
