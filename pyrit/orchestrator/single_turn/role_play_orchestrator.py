@@ -97,8 +97,9 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
         self._adversarial_chat = adversarial_chat
         self._role_play_definition_path = role_play_definition_path
 
-        # For backward compatibility, load role-play definitions to get conversation start
+        # For backward compatibility, load role-play definitions to get all prompts
         role_play_definition: SeedPromptDataset = SeedPromptDataset.from_yaml_file(role_play_definition_path)
+        self._rephrase_instructions = role_play_definition.prompts[0]
         self._user_start_turn = role_play_definition.prompts[1]
         self._assistant_start_turn = role_play_definition.prompts[2]
 
