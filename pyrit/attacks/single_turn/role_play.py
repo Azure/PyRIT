@@ -87,7 +87,7 @@ class RolePlayAttack(PromptSendingAttack):
         self._user_start_turn = role_play_definition.prompts[1]
         self._assistant_start_turn = role_play_definition.prompts[2]
 
-        # Create the rephrase converter configuration 
+        # Create the rephrase converter configuration
         rephrase_converter = PromptConverterConfiguration.from_converters(
             converters=[
                 LLMGenericTextConverter(
