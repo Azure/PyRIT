@@ -46,7 +46,7 @@ class RolePlayAttack(PromptSendingAttack):
     6. Returning the attack result
 
     The strategy supports customization through prepended conversations, converters,
-    and multiple scorer types for comprehensive evaluation.
+    and multiple scorer types.
     """
 
     def __init__(
