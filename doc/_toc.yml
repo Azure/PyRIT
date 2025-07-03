@@ -57,6 +57,7 @@ chapters:
       - file: code/targets/5_multi_modal_targets
       - file: code/targets/6_rate_limiting
       - file: code/targets/7_http_target
+      - file: code/targets/8_openai_responses_target
       - file: code/targets/open_ai_completions
       - file: code/targets/playwright_target
       - file: code/targets/prompt_shield_target

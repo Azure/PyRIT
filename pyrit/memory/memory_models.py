@@ -1,9 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import json
 import uuid
 from datetime import datetime
-from typing import List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import (
@@ -25,6 +26,7 @@ from sqlalchemy.orm import (  # type: ignore
 )
 from sqlalchemy.types import Uuid  # type: ignore
 
+from pyrit.common.utils import to_sha256
 from pyrit.models import PromptDataType, PromptRequestPiece, Score, SeedPrompt
 from pyrit.models.attack_result import AttackOutcome, AttackResult
 
@@ -423,15 +425,64 @@ class AttackResultEntry(Base):
         self.conversation_id = entry.conversation_id
         self.objective = entry.objective
         self.attack_identifier = entry.attack_identifier
-        self.objective_sha256 = entry.get_objective_sha256()
-        self.last_response_id = entry.last_response.id if entry.last_response else None  # type: ignore
-        self.last_score_id = entry.last_score.id if entry.last_score else None  # type: ignore
+        self.objective_sha256 = to_sha256(entry.objective)
+
+        # Use helper method for UUID conversions
+        self.last_response_id = self._get_id_as_uuid(entry.last_response)
+        self.last_score_id = self._get_id_as_uuid(entry.last_score)
+
         self.executed_turns = entry.executed_turns
         self.execution_time_ms = entry.execution_time_ms
         self.outcome = entry.outcome.value  # type: ignore
         self.outcome_reason = entry.outcome_reason
-        self.attack_metadata = entry.metadata
+        self.attack_metadata = self.filter_json_serializable_metadata(entry.metadata)
         self.timestamp = datetime.now()
+
+    @staticmethod
+    def _get_id_as_uuid(obj: Any) -> Optional[uuid.UUID]:
+        """
+        Safely extract and convert an object's id to UUID.
+
+        Args:
+            obj: Object that might have an id attribute
+
+        Returns:
+            UUID if successful, None otherwise
+        """
+        if obj and hasattr(obj, "id") and obj.id:
+            try:
+                return uuid.UUID(str(obj.id))
+            except (ValueError, TypeError):
+                pass
+        return None
+
+    @staticmethod
+    def filter_json_serializable_metadata(metadata: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Filter a dictionary to only include JSON-serializable values.
+
+        This function iterates through the metadata dictionary and keeps only
+        values that can be serialized to JSON, discarding any non-serializable objects.
+
+        Args:
+            metadata: Dictionary with potentially non-serializable values
+
+        Returns:
+            Dictionary with only JSON-serializable values
+        """
+        if not metadata:
+            return {}
+
+        filtered_metadata = {}
+
+        for key, value in metadata.items():
+            try:
+                json.dumps(value)
+                filtered_metadata[key] = value
+            except (TypeError, ValueError):
+                pass
+
+        return filtered_metadata
 
     def get_attack_result(self) -> AttackResult:
         return AttackResult(
