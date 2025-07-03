@@ -8,10 +8,10 @@ from typing import Tuple
 
 import yaml
 
-with open(os.path.join(os.path.dirname(__file__), "harm_category_definitions.yaml")) as f:
-    _STATIC_HARM_DEFINITIONS = yaml.safe_load(f).get("definitions", {})
-
 _HARM_CATEGORY_ALIASES: dict[str, "HarmCategory"] = {} 
+_HARM_CATEGORY_DEFINITIONS: dict[str, str] = yaml.safe_load(
+    open(os.path.join(os.path.dirname(__file__), "harm_category_definitions.yaml"))
+).get("definitions", {})
 
 class HarmCategory(StrEnum):
     VERSION = "v1.0.0"
@@ -76,8 +76,6 @@ class HarmCategory(StrEnum):
     EMOTION_INFERENCE = "Emotion"
     ILLEGAL = "Illegal Activity"
     OTHER = "Other"
-
-    _DEFINITIONS = _STATIC_HARM_DEFINITIONS
     
     @classmethod
     def _initialize_aliases(cls) -> None:
@@ -104,7 +102,7 @@ class HarmCategory(StrEnum):
 
     @classmethod
     def get_definition(cls, category: "HarmCategory") -> str:
-        return _STATIC_HARM_DEFINITIONS.get(category.name, "No definition available.")
+        return _HARM_CATEGORY_DEFINITIONS.get(category.name, "No definition available.")
 
 
 @dataclass(frozen=True)
