@@ -6,9 +6,7 @@ from pathlib import Path
 from typing import List, Literal, Optional
 
 from pyrit.datasets.dataset_helper import fetch_examples
-from pyrit.models import SeedPromptDataset
-from pyrit.models.harm_category import HarmCategory
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import SeedPromptDataset, SeedPrompt, HarmCategory
 
 
 def fetch_aya_redteaming_dataset(

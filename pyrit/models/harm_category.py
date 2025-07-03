@@ -8,7 +8,7 @@ from typing import Tuple
 
 import yaml
 
-with open(os.path.join(os.path.dirname(__file__), "harm_categories.yaml")) as f:
+with open(os.path.join(os.path.dirname(__file__), "harm_category_definitions.yaml")) as f:
     _STATIC_HARM_DEFINITIONS = yaml.safe_load(f).get("definitions", {})
 
 class HarmCategory(StrEnum):
@@ -53,7 +53,7 @@ class HarmCategory(StrEnum):
     INSECURE_CODE = "Insecure Code"
     MALWARE = "Malware"
     MILITARY = "Weapons Development & Military"
-    CBRN = "CBRN"
+    CBRN = "Chemical, Biological, Radiological, and Nuclear"
     HIGH_RISK_GOVERNMENT = "High-Risk Government Decision-Making"
     INFRASTRUCTURE_RISK = "Management or Operation of Critical Infrastructure in Energy, Transportation & Water"
     FINANCIAL_ADVICE = "Financial Advice"

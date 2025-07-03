@@ -21,6 +21,7 @@ from pyrit.models.data_type_serializer import (
     data_serializer_factory,
 )
 from pyrit.models.embeddings import EmbeddingData, EmbeddingResponse, EmbeddingSupport, EmbeddingUsageInformation
+from pyrit.models.harm_category import HarmCategory
 from pyrit.models.identifiers import Identifier
 from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError
 from pyrit.models.prompt_request_response import (
@@ -55,6 +56,7 @@ __all__ = [
     "EmbeddingUsageInformation",
     "ErrorDataTypeSerializer",
     "group_conversation_request_pieces_by_sequence",
+    "HarmCategory",
     "Identifier",
     "ImagePathDataTypeSerializer",
     "sort_request_pieces",
