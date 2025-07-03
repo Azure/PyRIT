@@ -11,9 +11,10 @@ import httpx
 import pytest
 from openai import BadRequestError, RateLimitError
 from unit.mocks import (
+    get_audio_request_piece,
     get_image_request_piece,
     get_sample_conversations,
-    openai_chat_response_json_dict,
+    openai_response_json_dict,
 )
 
 from pyrit.exceptions.exception_classes import (
@@ -23,7 +24,7 @@ from pyrit.exceptions.exception_classes import (
 )
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.prompt_target import OpenAIResponseTarget
 
 
 def fake_construct_response_from_request(request, response_text_pieces):
@@ -48,8 +49,8 @@ def dummy_text_request_piece() -> PromptRequestPiece:
 
 
 @pytest.fixture
-def target(patch_central_database) -> OpenAIChatTarget:
-    return OpenAIChatTarget(
+def target(patch_central_database) -> OpenAIResponseTarget:
+    return OpenAIResponseTarget(
         model_name="gpt-o",
         endpoint="https://mock.azure.com/",
         api_key="mock-api-key",
@@ -59,19 +60,19 @@ def target(patch_central_database) -> OpenAIChatTarget:
 
 @pytest.fixture
 def openai_response_json() -> dict:
-    return openai_chat_response_json_dict()
+    return openai_response_json_dict()
 
 
 def test_init_with_no_deployment_var_raises():
     with patch.dict(os.environ, {}, clear=True):
         with pytest.raises(ValueError):
-            OpenAIChatTarget()
+            OpenAIResponseTarget()
 
 
 def test_init_with_no_endpoint_uri_var_raises():
     with patch.dict(os.environ, {}, clear=True):
         with pytest.raises(ValueError):
-            OpenAIChatTarget(
+            OpenAIResponseTarget(
                 model_name="gpt-4",
                 endpoint="",
                 api_key="xxxxx",
@@ -82,11 +83,13 @@ def test_init_with_no_endpoint_uri_var_raises():
 def test_init_with_no_additional_request_headers_var_raises():
     with patch.dict(os.environ, {}, clear=True):
         with pytest.raises(ValueError):
-            OpenAIChatTarget(model_name="gpt-4", endpoint="", api_key="xxxxx", api_version="some_version", headers="")
+            OpenAIResponseTarget(
+                model_name="gpt-4", endpoint="", api_key="xxxxx", api_version="some_version", headers=""
+            )
 
 
 @pytest.mark.asyncio()
-async def test_build_chat_messages_for_multi_modal(target: OpenAIChatTarget):
+async def test_build_input_for_multi_modal(target: OpenAIResponseTarget):
 
     image_request = get_image_request_piece()
     entries = [
@@ -94,43 +97,69 @@ async def test_build_chat_messages_for_multi_modal(target: OpenAIChatTarget):
             request_pieces=[
                 PromptRequestPiece(
                     role="user",
-                    converted_value_data_type="text",
-                    original_value="Hello",
+                    original_value_data_type="text",
+                    original_value="Hello 1",
                 ),
                 image_request,
             ]
-        )
+        ),
+        PromptRequestResponse(
+            request_pieces=[
+                PromptRequestPiece(
+                    role="assistant",
+                    original_value_data_type="text",
+                    original_value="Hello 2",
+                ),
+            ]
+        ),
+        PromptRequestResponse(
+            request_pieces=[
+                PromptRequestPiece(
+                    role="user",
+                    original_value_data_type="text",
+                    original_value="Hello 3",
+                ),
+                image_request,
+            ]
+        ),
     ]
     with patch(
         "pyrit.common.data_url_converter.convert_local_image_to_data_url",
         return_value="data:image/jpeg;base64,encoded_string",
     ):
-        messages = await target._build_chat_messages_for_multi_modal_async(entries)
+        messages = await target._build_input_for_multi_modal_async(entries)
 
-    assert len(messages) == 1
+    assert len(messages) == 3
     assert messages[0]["role"] == "user"
-    assert messages[0]["content"][0]["type"] == "text"  # type: ignore
-    assert messages[0]["content"][1]["type"] == "image_url"  # type: ignore
+    assert messages[0]["content"][0]["type"] == "input_text"  # type: ignore
+    assert messages[0]["content"][1]["type"] == "input_image"  # type: ignore
+    assert messages[1]["role"] == "assistant"
+    assert messages[1]["content"][0]["type"] == "output_text"  # type: ignore
+    assert messages[2]["role"] == "user"
+    assert messages[2]["content"][0]["type"] == "input_text"  # type: ignore
+    assert messages[2]["content"][1]["type"] == "input_image"  # type: ignore
 
     os.remove(image_request.original_value)
 
 
 @pytest.mark.asyncio
-async def test_build_chat_messages_for_multi_modal_with_unsupported_data_types(target: OpenAIChatTarget):
+async def test_build_input_for_multi_modal_with_unsupported_data_types(target: OpenAIResponseTarget):
     # Like an image_path, the audio_path requires a file, but doesn't validate any contents
-    entry = get_image_request_piece()
-    entry.converted_value_data_type = "audio_path"
+    entry = get_audio_request_piece()
 
     with pytest.raises(ValueError) as excinfo:
-        await target._build_chat_messages_for_multi_modal_async([PromptRequestResponse(request_pieces=[entry])])
-    assert "Multimodal data type audio_path is not yet supported." in str(excinfo.value)
+        await target._build_input_for_multi_modal_async([PromptRequestResponse(request_pieces=[entry])])
+    assert (
+        "Failed to process conversation message at index 0: "
+        "Multimodal data type 'audio_path' is not yet supported for role 'user'" in str(excinfo.value)
+    )
 
 
 @pytest.mark.asyncio
 async def test_construct_request_body_includes_extra_body_params(
     patch_central_database, dummy_text_request_piece: PromptRequestPiece
 ):
-    target = OpenAIChatTarget(
+    target = OpenAIResponseTarget(
         endpoint="https://mock.azure.com/",
         api_key="mock-api-key",
         api_version="some_version",
@@ -146,21 +175,21 @@ async def test_construct_request_body_includes_extra_body_params(
 @pytest.mark.asyncio
 @pytest.mark.parametrize("is_json", [True, False])
 async def test_construct_request_body_includes_json(
-    is_json, target: OpenAIChatTarget, dummy_text_request_piece: PromptRequestPiece
+    is_json, target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece
 ):
 
     request = PromptRequestResponse(request_pieces=[dummy_text_request_piece])
 
     body = await target._construct_request_body(conversation=[request], is_json_response=is_json)
     if is_json:
-        assert body["response_format"] == {"type": "json_object"}
+        assert body["text"] == {"format": {"type": "json_object"}}
     else:
-        assert "response_format" not in body
+        assert "format" not in body
 
 
 @pytest.mark.asyncio
 async def test_construct_request_body_removes_empty_values(
-    target: OpenAIChatTarget, dummy_text_request_piece: PromptRequestPiece
+    target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece
 ):
     request = PromptRequestResponse(request_pieces=[dummy_text_request_piece])
 
@@ -175,31 +204,31 @@ async def test_construct_request_body_removes_empty_values(
 
 @pytest.mark.asyncio
 async def test_construct_request_body_serializes_text_message(
-    target: OpenAIChatTarget, dummy_text_request_piece: PromptRequestPiece
+    target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece
 ):
     request = PromptRequestResponse(request_pieces=[dummy_text_request_piece])
 
     body = await target._construct_request_body(conversation=[request], is_json_response=False)
-    assert (
-        body["messages"][0]["content"] == "dummy text"
-    ), "Text messages are serialized in a simple way that's more broadly supported"
+    assert body["input"][0]["content"][0]["text"] == "dummy text"
 
 
 @pytest.mark.asyncio
 async def test_construct_request_body_serializes_complex_message(
-    target: OpenAIChatTarget, dummy_text_request_piece: PromptRequestPiece
+    target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece
 ):
     request = PromptRequestResponse(request_pieces=[dummy_text_request_piece, get_image_request_piece()])
 
     body = await target._construct_request_body(conversation=[request], is_json_response=False)
-    messages = body["messages"][0]["content"]
-    assert len(messages) == 2, "Complex messages are serialized as a list"
-    assert messages[0]["type"] == "text", "Text messages are serialized properly when multi-modal"
-    assert messages[1]["type"] == "image_url", "Image messages are serialized properly when multi-modal"
+    messages = body["input"][0]["content"]
+    assert len(messages) == 2
+    assert messages[0]["type"] == "input_text"
+    assert messages[1]["type"] == "input_image"
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_empty_response_adds_to_memory(openai_response_json: dict, target: OpenAIChatTarget):
+async def test_send_prompt_async_empty_response_adds_to_memory(
+    openai_response_json: dict, target: OpenAIResponseTarget
+):
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
     mock_memory.add_request_response_to_memory = AsyncMock()
@@ -236,7 +265,7 @@ async def test_send_prompt_async_empty_response_adds_to_memory(openai_response_j
         ]
     )
     # Make assistant response empty
-    openai_response_json["choices"][0]["message"]["content"] = ""
+    openai_response_json["output"][0]["content"][0]["text"] = ""
 
     openai_mock_return = MagicMock()
     openai_mock_return.text = json.dumps(openai_response_json)
@@ -259,7 +288,7 @@ async def test_send_prompt_async_empty_response_adds_to_memory(openai_response_j
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_rate_limit_exception_adds_to_memory(
-    target: OpenAIChatTarget,
+    target: OpenAIResponseTarget,
 ):
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
@@ -287,7 +316,7 @@ async def test_send_prompt_async_rate_limit_exception_adds_to_memory(
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_bad_request_error_adds_to_memory(target: OpenAIChatTarget):
+async def test_send_prompt_async_bad_request_error_adds_to_memory(target: OpenAIResponseTarget):
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
     mock_memory.add_request_response_to_memory = AsyncMock()
@@ -300,7 +329,7 @@ async def test_send_prompt_async_bad_request_error_adds_to_memory(target: OpenAI
 
     response = MagicMock()
     response.status_code = 400
-    response.text = "Some error message"
+    response.text = "Some error text"
 
     side_effect = httpx.HTTPStatusError("Bad Request", response=response, request=MagicMock())
 
@@ -314,7 +343,7 @@ async def test_send_prompt_async_bad_request_error_adds_to_memory(target: OpenAI
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async(openai_response_json: dict, target: OpenAIChatTarget):
+async def test_send_prompt_async(openai_response_json: dict, target: OpenAIResponseTarget):
     with NamedTemporaryFile(suffix=".jpg", delete=False) as tmp_file:
         tmp_file_name = tmp_file.name
     assert os.path.exists(tmp_file_name)
@@ -361,7 +390,7 @@ async def test_send_prompt_async(openai_response_json: dict, target: OpenAIChatT
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_empty_response_retries(openai_response_json: dict, target: OpenAIChatTarget):
+async def test_send_prompt_async_empty_response_retries(openai_response_json: dict, target: OpenAIResponseTarget):
     with NamedTemporaryFile(suffix=".jpg", delete=False) as tmp_file:
         tmp_file_name = tmp_file.name
     assert os.path.exists(tmp_file_name)
@@ -392,7 +421,7 @@ async def test_send_prompt_async_empty_response_retries(openai_response_json: di
         ]
     )
     # Make assistant response empty
-    openai_response_json["choices"][0]["message"]["content"] = ""
+    openai_response_json["output"][0]["content"][0]["text"] = ""
     with patch(
         "pyrit.common.data_url_converter.convert_local_image_to_data_url",
         return_value="data:image/jpeg;base64,encoded_string",
@@ -413,7 +442,7 @@ async def test_send_prompt_async_empty_response_retries(openai_response_json: di
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_rate_limit_exception_retries(target: OpenAIChatTarget):
+async def test_send_prompt_async_rate_limit_exception_retries(target: OpenAIResponseTarget):
 
     prompt_request = PromptRequestResponse(
         request_pieces=[PromptRequestPiece(role="user", conversation_id="12345", original_value="Hello")]
@@ -434,7 +463,7 @@ async def test_send_prompt_async_rate_limit_exception_retries(target: OpenAIChat
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_bad_request_error(target: OpenAIChatTarget):
+async def test_send_prompt_async_bad_request_error(target: OpenAIResponseTarget):
 
     response = MagicMock()
     response.status_code = 400
@@ -452,17 +481,17 @@ async def test_send_prompt_async_bad_request_error(target: OpenAIChatTarget):
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_content_filter_200(target: OpenAIChatTarget):
+async def test_send_prompt_async_content_filter(target: OpenAIResponseTarget):
 
     response_body = json.dumps(
         {
-            "choices": [
-                {
-                    "content_filter_results": {"violence": {"filtered": True, "severity": "medium"}},
-                    "finish_reason": "content_filter",
-                    "message": {"content": "Offending content omitted since this is just a test.", "role": "assistant"},
-                }
-            ],
+            "error": {
+                "code": "content_filter",
+                "innererror": {
+                    "code": "ResponsibleAIPolicyViolation",
+                    "content_filter_result": {"violence": {"filtered": True, "severity": "medium"}},
+                },
+            }
         }
     )
 
@@ -485,10 +514,10 @@ async def test_send_prompt_async_content_filter_200(target: OpenAIChatTarget):
         assert len(response.request_pieces) == 1
         assert response.request_pieces[0].response_error == "blocked"
         assert response.request_pieces[0].converted_value_data_type == "error"
-        assert "content_filter_results" in response.get_value()
+        assert "content_filter_result" in response.get_value()
 
 
-def test_validate_request_unsupported_data_types(target: OpenAIChatTarget):
+def test_validate_request_unsupported_data_types(target: OpenAIResponseTarget):
 
     image_piece = get_image_request_piece()
     image_piece.converted_value_data_type = "new_unknown_type"  # type: ignore
@@ -509,11 +538,11 @@ def test_validate_request_unsupported_data_types(target: OpenAIChatTarget):
     os.remove(image_piece.original_value)
 
 
-def test_is_json_response_supported(target: OpenAIChatTarget):
+def test_is_json_response_supported(target: OpenAIResponseTarget):
     assert target.is_json_response_supported() is True
 
 
-def test_is_response_format_json_supported(target: OpenAIChatTarget):
+def test_is_response_format_json_supported(target: OpenAIResponseTarget):
 
     request_piece = PromptRequestPiece(
         role="user",
@@ -529,7 +558,7 @@ def test_is_response_format_json_supported(target: OpenAIChatTarget):
     assert result is True
 
 
-def test_is_response_format_json_no_metadata(target: OpenAIChatTarget):
+def test_is_response_format_json_no_metadata(target: OpenAIResponseTarget):
     request_piece = PromptRequestPiece(
         role="user",
         original_value="original prompt text",
@@ -544,26 +573,28 @@ def test_is_response_format_json_no_metadata(target: OpenAIChatTarget):
     assert result is False
 
 
-@pytest.mark.parametrize("finish_reason", ["stop", "length"])
-def test_construct_prompt_response_valid_stop(
-    finish_reason: str, target: OpenAIChatTarget, dummy_text_request_piece: PromptRequestPiece
+@pytest.mark.parametrize(
+    "status", ["failed", "in_progress", "cancelled", "queued", "incomplete", "some_unexpected_status"]
+)
+def test_construct_prompt_response_not_completed_status(
+    status: str, target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece
 ):
-    response_dict = {"choices": [{"finish_reason": f"{finish_reason}", "message": {"content": "Hello from stop"}}]}
+    response_dict = {"status": f"{status}", "error": {"code": "some_error_code", "message": "An error occurred"}}
     response_str = json.dumps(response_dict)
 
-    result = target._construct_prompt_response_from_openai_json(
-        open_ai_str_response=response_str, request_piece=dummy_text_request_piece
-    )
-
-    assert len(result.request_pieces) == 1
-    assert result.get_value() == "Hello from stop"
+    with pytest.raises(PyritException) as excinfo:
+        target._construct_prompt_response_from_openai_json(
+            open_ai_str_response=response_str, request_piece=dummy_text_request_piece
+        )
+    error_substring_with_single_quotes = json.dumps(response_dict["error"]).replace('"', "'")
+    assert f"Message: Status {status} and error {error_substring_with_single_quotes}" in str(excinfo.value)
 
 
 def test_construct_prompt_response_empty_response(
-    target: OpenAIChatTarget, dummy_text_request_piece: PromptRequestPiece
+    target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece, openai_response_json
 ):
-    response_dict = {"choices": [{"finish_reason": "stop", "message": {"content": ""}}]}
-    response_str = json.dumps(response_dict)
+    openai_response_json["output"][0]["content"][0]["text"] = ""  # Simulate empty response
+    response_str = json.dumps(openai_response_json)
 
     with pytest.raises(EmptyResponseException) as excinfo:
         target._construct_prompt_response_from_openai_json(
@@ -572,22 +603,11 @@ def test_construct_prompt_response_empty_response(
     assert "The chat returned an empty response." in str(excinfo.value)
 
 
-def test_construct_prompt_response_unknown_finish_reason(
-    target: OpenAIChatTarget, dummy_text_request_piece: PromptRequestPiece
-):
-    response_dict = {"choices": [{"finish_reason": "unexpected", "message": {"content": "Some content"}}]}
-    response_str = json.dumps(response_dict)
-
-    with pytest.raises(PyritException) as excinfo:
-        target._construct_prompt_response_from_openai_json(
-            open_ai_str_response=response_str, request_piece=dummy_text_request_piece
-        )
-    assert "Unknown finish_reason" in str(excinfo.value)
-
-
 @pytest.mark.asyncio
-async def test_openai_chat_target_no_api_version(sample_conversations: MutableSequence[PromptRequestPiece]):
-    target = OpenAIChatTarget(
+async def test_openai_response_target_no_api_version(
+    sample_conversations: MutableSequence[PromptRequestPiece], openai_response_json: dict
+):
+    target = OpenAIResponseTarget(
         api_key="test_key", endpoint="https://mock.azure.com", model_name="gpt-35-turbo", api_version=None
     )
     request_piece = sample_conversations[0]
@@ -596,7 +616,7 @@ async def test_openai_chat_target_no_api_version(sample_conversations: MutableSe
     with patch("httpx.AsyncClient.request", new_callable=AsyncMock) as mock_request:
         mock_request.return_value = MagicMock()
         mock_request.return_value.status_code = 200
-        mock_request.return_value.text = '{"choices": [{"message": {"content": "hi"}, "finish_reason": "stop"}]}'
+        mock_request.return_value.text = json.dumps(openai_response_json)
 
         await target.send_prompt_async(prompt_request=request)
 
@@ -605,25 +625,27 @@ async def test_openai_chat_target_no_api_version(sample_conversations: MutableSe
 
 
 @pytest.mark.asyncio
-async def test_openai_chat_target_default_api_version(sample_conversations: MutableSequence[PromptRequestPiece]):
-    target = OpenAIChatTarget(api_key="test_key", endpoint="https://mock.azure.com", model_name="gpt-35-turbo")
+async def test_openai_response_target_default_api_version(
+    sample_conversations: MutableSequence[PromptRequestPiece], openai_response_json: dict
+):
+    target = OpenAIResponseTarget(api_key="test_key", endpoint="https://mock.azure.com", model_name="gpt-35-turbo")
     request_piece = sample_conversations[0]
     request = PromptRequestResponse(request_pieces=[request_piece])
 
     with patch("httpx.AsyncClient.request", new_callable=AsyncMock) as mock_request:
         mock_request.return_value = MagicMock()
         mock_request.return_value.status_code = 200
-        mock_request.return_value.text = '{"choices": [{"message": {"content": "hi"}, "finish_reason": "stop"}]}'
+        mock_request.return_value.text = json.dumps(openai_response_json)
 
         await target.send_prompt_async(prompt_request=request)
 
         called_params = mock_request.call_args[1]["params"]
         assert "api-version" in called_params
-        assert called_params["api-version"] == "2024-10-21"
+        assert called_params["api-version"] == "2025-03-01-preview"
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIChatTarget):
+async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIResponseTarget, openai_response_json: dict):
     mock_memory = MagicMock(spec=MemoryInterface)
     mock_memory.get_conversation.return_value = []
     mock_memory.add_request_response_to_memory = AsyncMock()
@@ -640,9 +662,7 @@ async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIChatTa
         mock_construct.return_value = {}
 
         with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock_make_request:
-            mock_make_request.return_value = MagicMock(
-                text='{"choices": [{"finish_reason": "stop", "message": {"content": "test response"}}]}'
-            )
+            mock_make_request.return_value = MagicMock(text=json.dumps(openai_response_json))
 
             prompt_request = PromptRequestResponse(
                 request_pieces=[
@@ -658,76 +678,176 @@ async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIChatTa
             mock_refresh.assert_called_once()
 
 
-@pytest.mark.asyncio
-async def test_send_prompt_async_content_filter_400(target: OpenAIChatTarget):
-    mock_memory = MagicMock(spec=MemoryInterface)
-    mock_memory.get_conversation.return_value = []
-    mock_memory.add_request_response_to_memory = AsyncMock()
-    target._azure_auth = MagicMock()
-    target._memory = mock_memory
-
-    with (
-        patch.object(target, "refresh_auth_headers"),
-        patch.object(target, "_validate_request"),
-        patch.object(target, "_construct_request_body", new_callable=AsyncMock) as mock_construct,
-    ):
-
-        mock_construct.return_value = {}
-
-        error_json = {"error": {"code": "content_filter"}}
-        response = MagicMock()
-        response.status_code = 400
-        response.text = json.dumps(error_json)
-        status_error = httpx.HTTPStatusError("Bad Request", request=MagicMock(), response=response)
-
-        prompt_piece = PromptRequestPiece(
-            role="user",
-            conversation_id="cid",
-            original_value="hello",
-            converted_value="hello",
-            original_value_data_type="text",
-            converted_value_data_type="text",
+def test_construct_prompt_response_from_openai_json_invalid_json(
+    target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece
+):
+    # Should raise PyritException for invalid JSON
+    with pytest.raises(PyritException) as excinfo:
+        target._construct_prompt_response_from_openai_json(
+            open_ai_str_response="{invalid_json", request_piece=dummy_text_request_piece
         )
-        prompt_request = PromptRequestResponse(request_pieces=[prompt_piece])
+    assert "Status Code: 500, Message: Failed to parse response from model gpt-o" in str(excinfo.value)
 
-        with patch(
-            "pyrit.common.net_utility.make_request_and_raise_if_error_async", AsyncMock(side_effect=status_error)
-        ) as mock_make_request:
-            result = await target.send_prompt_async(prompt_request=prompt_request)
 
-            assert mock_make_request.call_count == 1
-            assert result.request_pieces[0].converted_value_data_type == "error"
-            assert result.request_pieces[0].response_error == "blocked"
+def test_construct_prompt_response_from_openai_json_no_status(
+    target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece
+):
+    # Should raise PyritException for missing status and no content_filter error
+    bad_json = json.dumps({"output": [{"type": "message", "content": [{"text": "hi"}]}]})
+    with pytest.raises(PyritException) as excinfo:
+        target._construct_prompt_response_from_openai_json(
+            open_ai_str_response=bad_json, request_piece=dummy_text_request_piece
+        )
+    assert "Unexpected response format" in str(excinfo.value)
+
+
+def test_construct_prompt_response_from_openai_json_reasoning(
+    target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece
+):
+    # Should handle reasoning type and skip empty summaries
+    reasoning_json = {
+        "status": "completed",
+        "output": [{"type": "reasoning", "summary": [{"type": "summary_text", "text": "Reasoning summary."}]}],
+    }
+    response = target._construct_prompt_response_from_openai_json(
+        open_ai_str_response=json.dumps(reasoning_json), request_piece=dummy_text_request_piece
+    )
+    assert response.request_pieces[0].original_value == "Reasoning summary."
+    assert response.request_pieces[0].original_value_data_type == "reasoning"
+
+
+def test_construct_prompt_response_from_openai_json_unsupported_type(
+    target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece
+):
+    # Should raise ValueError for unsupported response type
+    bad_type_json = {
+        "status": "completed",
+        "output": [{"type": "function_call", "content": [{"text": "some function call"}]}],
+    }
+    with pytest.raises(ValueError) as excinfo:
+        target._construct_prompt_response_from_openai_json(
+            open_ai_str_response=json.dumps(bad_type_json), request_piece=dummy_text_request_piece
+        )
+    assert "Unsupported response type" in str(excinfo.value)
+
+
+def test_validate_request_allows_text_and_image(target: OpenAIResponseTarget):
+    # Should not raise for valid types
+    req = PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(role="user", original_value_data_type="text", original_value="Hello"),
+            PromptRequestPiece(role="user", original_value_data_type="image_path", original_value="fake.jpg"),
+        ]
+    )
+    target._validate_request(prompt_request=req)
+
+
+def test_validate_request_raises_for_invalid_type(target: OpenAIResponseTarget):
+    req = PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(role="user", original_value_data_type="audio_path", original_value="fake.mp3"),
+        ]
+    )
+    with pytest.raises(ValueError) as excinfo:
+        target._validate_request(prompt_request=req)
+    assert "only supports text and image_path" in str(excinfo.value)
+
+
+def test_is_json_response_supported_returns_true(target: OpenAIResponseTarget):
+    assert target.is_json_response_supported() is True
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_other_http_error(monkeypatch):
-    target = OpenAIChatTarget(
-        model_name="gpt-4",
-        endpoint="https://mock.azure.com/",
-        api_key="mock-api-key",
-        api_version="2024-06-01",
-    )
-    prompt_piece = PromptRequestPiece(
+async def test_build_input_for_multi_modal_async_empty_conversation(target: OpenAIResponseTarget):
+    # Should raise ValueError if no request pieces
+    req = PromptRequestResponse(request_pieces=[])
+    with pytest.raises(ValueError) as excinfo:
+        await target._build_input_for_multi_modal_async([req])
+    assert "Failed to process conversation message at index 0: Message contains no request pieces" in str(excinfo.value)
+
+
+@pytest.mark.asyncio
+async def test_build_input_for_multi_modal_async_image_and_text(target: OpenAIResponseTarget):
+    # Should build correct structure for text and image
+    text_piece = PromptRequestPiece(role="user", original_value_data_type="text", original_value="hello")
+    image_piece = PromptRequestPiece(role="user", original_value_data_type="image_path", original_value="fake.jpg")
+    req = PromptRequestResponse(request_pieces=[text_piece, image_piece])
+    with patch(
+        "pyrit.prompt_target.openai.openai_response_target.convert_local_image_to_data_url",
+        return_value="data:image/jpeg;base64,abc",
+    ):
+        result = await target._build_input_for_multi_modal_async([req])
+    assert result[0]["role"] == "user"
+    assert result[0]["content"][0]["type"] == "input_text"
+    assert result[0]["content"][1]["type"] == "input_image"
+    assert result[0]["content"][1]["image_url"]["url"].startswith("data:image/jpeg;base64,")
+
+
+@pytest.mark.asyncio
+async def test_construct_request_body_filters_none(
+    target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece
+):
+    req = PromptRequestResponse(request_pieces=[dummy_text_request_piece])
+    body = await target._construct_request_body([req], is_json_response=False)
+    assert "max_output_tokens" not in body or body["max_output_tokens"] is None
+    assert "temperature" not in body or body["temperature"] is None
+    assert "top_p" not in body or body["top_p"] is None
+
+
+def test_set_openai_env_configuration_vars_sets_vars():
+    target = OpenAIResponseTarget(model_name="gpt", endpoint="http://test", api_key="key")
+    target._set_openai_env_configuration_vars()
+    assert target.model_name_environment_variable == "OPENAI_RESPONSES_MODEL"
+    assert target.endpoint_environment_variable == "OPENAI_RESPONSES_ENDPOINT"
+    assert target.api_key_environment_variable == "OPENAI_RESPONSES_KEY"
+
+
+@pytest.mark.asyncio
+async def test_build_input_for_multi_modal_async_filters_reasoning(target: OpenAIResponseTarget):
+    # Prepare a conversation with a reasoning piece and a text piece
+    user_prompt = PromptRequestPiece(
         role="user",
-        conversation_id="cid",
-        original_value="hello",
-        converted_value="hello",
+        original_value="Hello",
+        converted_value="Hello",
         original_value_data_type="text",
         converted_value_data_type="text",
     )
-    prompt_request = PromptRequestResponse(request_pieces=[prompt_piece])
-    target._memory = MagicMock()
-    target._memory.get_conversation.return_value = []
-    target.refresh_auth_headers = MagicMock()
-
-    response = MagicMock()
-    response.status_code = 500
-    status_error = httpx.HTTPStatusError("Internal Server Error", request=MagicMock(), response=response)
-
-    monkeypatch.setattr(
-        "pyrit.common.net_utility.make_request_and_raise_if_error_async", AsyncMock(side_effect=status_error)
+    response_reasoning_piece = PromptRequestPiece(
+        role="assistant",
+        original_value="Reasoning summary.",
+        converted_value="Reasoning summary.",
+        original_value_data_type="reasoning",
+        converted_value_data_type="reasoning",
     )
+    response_text_piece = PromptRequestPiece(
+        role="assistant",
+        original_value="hello there",
+        converted_value="hello there",
+        original_value_data_type="text",
+        converted_value_data_type="text",
+    )
+    user_followup_prompt = PromptRequestPiece(
+        role="user",
+        original_value="Hello indeed",
+        converted_value="Hello indeed",
+        original_value_data_type="text",
+        converted_value_data_type="text",
+    )
+    conversation = [
+        PromptRequestResponse(request_pieces=[user_prompt]),
+        PromptRequestResponse(request_pieces=[response_reasoning_piece, response_text_piece]),
+        PromptRequestResponse(request_pieces=[user_followup_prompt]),
+    ]
 
-    with pytest.raises(httpx.HTTPStatusError):
-        await target.send_prompt_async(prompt_request=prompt_request)
+    # Patch image conversion (should not be called)
+    with patch("pyrit.common.data_url_converter.convert_local_image_to_data_url", new_callable=AsyncMock):
+        result = await target._build_input_for_multi_modal_async(conversation)
+
+    # Only the text piece should be present, reasoning should be filtered out
+    assert len(result) == 3
+    assert result[0]["role"] == "user"
+    assert result[0]["content"][0]["type"] == "input_text"
+    assert result[1]["role"] == "assistant"
+    assert result[1]["content"][0]["type"] == "output_text"
+    assert result[2]["role"] == "user"
+    assert result[2]["content"][0]["type"] == "input_text"

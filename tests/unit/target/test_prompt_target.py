@@ -6,7 +6,7 @@ from typing import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from unit.mocks import get_sample_conversations, openai_response_json_dict
+from unit.mocks import get_sample_conversations, openai_chat_response_json_dict
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.orchestrator.orchestrator_class import Orchestrator
@@ -20,7 +20,7 @@ def sample_entries() -> MutableSequence[PromptRequestPiece]:
 
 @pytest.fixture
 def openai_response_json() -> dict:
-    return openai_response_json_dict()
+    return openai_chat_response_json_dict()
 
 
 @pytest.fixture
