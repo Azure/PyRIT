@@ -84,6 +84,7 @@ API Reference
 
     combine_dict
     combine_list
+    convert_local_image_to_data_url
     display_image_response
     download_chunk
     download_file
@@ -384,6 +385,7 @@ API Reference
     OpenAICompletionTarget
     OpenAIDALLETarget
     OpenAIChatTarget
+    OpenAIResponseTarget
     OpenAITTSTarget
     OpenAITarget
     PromptChatTarget

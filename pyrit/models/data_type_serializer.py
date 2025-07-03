@@ -54,7 +54,7 @@ def data_serializer_factory(
             f"The 'category' argument is mandatory and must be one of the following: {get_args(AllowedCategories)}."
         )
     if value is not None:
-        if data_type == "text":
+        if data_type in ["text", "reasoning"]:
             return TextDataTypeSerializer(prompt_text=value)
         elif data_type == "image_path":
             return ImagePathDataTypeSerializer(category=category, prompt_text=value, extension=extension)
