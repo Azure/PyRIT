@@ -1,4 +1,4 @@
-# 3. PromptRequestPiece and PromptRequestResposne
+# 3. PromptRequestPiece and PromptRequestResponse
 
 One of the most basic data structures is [PromptRequestPiece](../../../pyrit/models/prompt_request_piece.py) and [PromptRequestResponse](../../../pyrit/models/prompt_request_response.py).
 
