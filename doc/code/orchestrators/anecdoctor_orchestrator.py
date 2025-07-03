@@ -14,7 +14,7 @@
 
 # %% [markdown]
 #
-# ## Anecdoctor Orchestrator
+# # Anecdoctor Orchestrator
 #
 # This demo showcases the use of the `AnecdoctorOrchestrator` in PyRIT. 
 # Anecdoctoring is a method for using in-the-wild examples to develop an attack prompt that can be used to create more, similar attacks. 
@@ -40,6 +40,7 @@
 
 # %%
 import os
+import asyncio
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.orchestrator import AnecdoctorOrchestrator
@@ -67,7 +68,7 @@ orchestrator = AnecdoctorOrchestrator(
     verbose=True,
 )
 
-results = await orchestrator.generate_attack()  # type: ignore
+results = await orchestrator.generate_attack()  # type: ignore[top-level-await]
 
 # %% [markdown]
 # Few-shot prompting produces passable attack prompts, 
@@ -83,7 +84,7 @@ orchestrator_with_kg = AnecdoctorOrchestrator(
     verbose=True,
 )
 
-results = await orchestrator_with_kg.generate_attack() 
+results = await orchestrator_with_kg.generate_attack()  # type: ignore[top-level-await]
 
 # %% [markdown]
 # The use of knowledge graph-augmented prompting can be particularly valuable when working with data across languages and cultures. 
@@ -111,7 +112,7 @@ orchestrator_with_kg_german = AnecdoctorOrchestrator(
     verbose=True,
 )
 
-results = await orchestrator_with_kg_german.generate_attack()  # type: ignore
+results = await orchestrator_with_kg_german.generate_attack()  # type: ignore[top-level-await]
 
 # %% [markdown]
 # To better understand the attacks under evaluation, you can visualize the knowledge graphs produced in the processing step.

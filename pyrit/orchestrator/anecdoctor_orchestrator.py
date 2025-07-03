@@ -70,7 +70,7 @@ class AnecdoctorOrchestrator(Orchestrator):
         self._normalizer = PromptNormalizer()
 
         # Optionally store the extracted KG for later usage.
-        self._kg_result = None
+        self._kg_result: Optional[str]
 
     def _load_prompt_from_yaml(self, yaml_filename: str) -> str:
         """
