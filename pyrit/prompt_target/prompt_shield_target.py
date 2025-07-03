@@ -126,12 +126,13 @@ class PromptShieldTarget(PromptTarget):
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         request_pieces: Sequence[PromptRequestPiece] = prompt_request.request_pieces
 
-        if len(request_pieces) != 1:
-            raise ValueError("This target only supports a single prompt request piece.")
-        if request_pieces[0].original_value_data_type != "text":
-            raise ValueError(
-                f"This target only supports text prompt input. Got: {type(request_pieces[0].original_value_data_type)}"
-            )
+        n_pieces = len(request_pieces)
+        if n_pieces != 1:
+            raise ValueError(f"This target only supports a single prompt request piece. Received: {n_pieces} pieces.")
+
+        piece_type = request_pieces[0].converted_value_data_type
+        if piece_type != "text":
+            raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
     def _validate_response(self, request_body: dict, response_body: dict) -> None:
         """

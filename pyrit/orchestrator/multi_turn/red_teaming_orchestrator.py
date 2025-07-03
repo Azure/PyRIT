@@ -14,13 +14,13 @@ from typing_extensions import LiteralString, deprecated
 from pyrit.attacks import (
     AttackAdversarialConfig,
     AttackConverterConfig,
-    AttackOutcome,
     AttackScoringConfig,
     MultiTurnAttackContext,
     RedTeamingAttack,
 )
 from pyrit.common import deprecation_message
 from pyrit.common.path import RED_TEAM_ORCHESTRATOR_PATH
+from pyrit.models import AttackOutcome
 from pyrit.orchestrator import MultiTurnOrchestrator, OrchestratorResult
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer

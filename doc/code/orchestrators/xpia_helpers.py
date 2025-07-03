@@ -170,17 +170,21 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
         return response
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
-        if len(prompt_request.request_pieces) != 1:
-            raise ValueError("This target only supports a single prompt request piece.")
+        n_pieces = len(prompt_request.request_pieces)
+        if n_pieces != 1:
+            raise ValueError(f"This target only supports a single prompt request piece. Received: {n_pieces} pieces.")
 
-        if prompt_request.request_pieces[0].converted_value_data_type != "text":
-            raise ValueError("This target only supports text prompt input.")
+        piece_type = prompt_request.request_pieces[0].converted_value_data_type
+        if piece_type != "text":
+            raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
         request = prompt_request.request_pieces[0]
         messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
-
-        if len(messages) > 0:
-            raise ValueError("This target only supports a single turn conversation.")
+        n_messages = len(messages)
+        if n_messages > 0:
+            raise ValueError(
+                f"This target only supports a single turn conversation. Received {n_messages} messages which indicates a prior turn."
+            )
 
     def is_json_response_supported(self):
         """Returns bool if JSON response is supported"""

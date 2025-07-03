@@ -17,13 +17,14 @@ from pyrit.attacks.base.attack_context import (
     ConversationSession,
     MultiTurnAttackContext,
 )
-from pyrit.attacks.base.attack_result import AttackOutcome, AttackResult
 from pyrit.attacks.components.conversation_manager import ConversationState
 from pyrit.attacks.multi_turn.red_teaming import RedTeamingAttack, RTOSystemPromptPaths
 from pyrit.exceptions.exception_classes import (
     AttackValidationException,
 )
 from pyrit.models import (
+    AttackOutcome,
+    AttackResult,
     PromptRequestPiece,
     PromptRequestResponse,
     Score,
@@ -1197,6 +1198,8 @@ class TestAttackLifecycle:
             max_turns=5,
         )
 
+        attack._memory = MagicMock()
+
         # Mock all lifecycle methods
         with patch.object(attack, "_validate_context"):
             with patch.object(attack, "_setup_async", new_callable=AsyncMock):
@@ -1278,6 +1281,8 @@ class TestAttackLifecycle:
             attack_adversarial_config=adversarial_config,
             attack_scoring_config=scoring_config,
         )
+
+        attack._memory = MagicMock()
 
         # Mock all lifecycle methods
         with patch.object(attack, "_validate_context"):

@@ -84,6 +84,7 @@ API Reference
 
     combine_dict
     combine_list
+    convert_local_image_to_data_url
     display_image_response
     download_chunk
     download_file
@@ -118,6 +119,7 @@ API Reference
     fetch_ccp_sensitive_prompts_dataset
     fetch_darkbench_dataset
     fetch_decoding_trust_stereotypes_dataset
+    fetch_equitymedqa_dataset_unique_values
     fetch_examples
     fetch_forbidden_questions_dataset
     fetch_harmbench_dataset
@@ -128,10 +130,10 @@ API Reference
     fetch_multilingual_vulnerability_dataset
     fetch_pku_safe_rlhf_dataset
     fetch_seclists_bias_testing_dataset
+    fetch_sosbench_dataset
     fetch_tdc23_redteaming_dataset
     fetch_wmdp_dataset
     fetch_xstest_dataset
-    fetch_equitymedqa_dataset_unique_values
 
 
 :py:mod:`pyrit.embedding`
@@ -320,10 +322,13 @@ API Reference
     RepeatTokenConverter
     ROT13Converter
     SearchReplaceConverter
+    SneakyBitsSmugglerConverter
     StringJoinConverter
     SuffixAppendConverter
     SuperscriptConverter
+    TemplateSegmentConverter
     TenseConverter
+    TextJailbreakConverter
     TextToHexConverter
     ToneConverter
     ToxicSentenceGeneratorConverter
@@ -333,6 +338,7 @@ API Reference
     UnicodeSubstitutionConverter
     UrlConverter
     VariationConverter
+    VariationSelectorSmugglerConverter
     ZalgoConverter
     ZeroWidthConverter
 
@@ -379,6 +385,7 @@ API Reference
     OpenAICompletionTarget
     OpenAIDALLETarget
     OpenAIChatTarget
+    OpenAIResponseTarget
     OpenAITTSTarget
     OpenAITarget
     PromptChatTarget

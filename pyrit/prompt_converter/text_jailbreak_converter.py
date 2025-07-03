@@ -7,13 +7,22 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 
 class TextJailbreakConverter(PromptConverter):
+    """
+    Uses a jailbreak template to create a prompt.
+    """
 
     def __init__(self, *, jailbreak_template: TextJailBreak):
+        """
+        Initializes the converter with the specified jailbreak template.
+
+        Args:
+            jailbreak_template (TextJailBreak): The jailbreak template to use for conversion.
+        """
         self.jail_break_template = jailbreak_template
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Simple converter that uses a jailbreak template to create a prompt
+        Converts the given prompt using the jailbreak template.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
