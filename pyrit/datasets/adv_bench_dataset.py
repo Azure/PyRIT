@@ -6,8 +6,7 @@ from typing import List, Literal, Optional
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets.dataset_helper import fetch_examples
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import HarmCategory, SeedPrompt, SeedPromptDataset
 
 
 def fetch_adv_bench_dataset(
@@ -87,7 +86,10 @@ def fetch_adv_bench_dataset(
             data_type="text",
             name="AdvBench Dataset [Extended]",
             dataset_name="AdvBench Dataset",
-            harm_categories=item["main_categories"] + item["sub_categories"],
+            harm_categories=[
+                HarmCategory.parse(cat)
+                for cat in item["main_categories"] + item["sub_categories"]
+            ],
             description="""AdvBench is a set of 520 harmful behaviors formulated as instructions. This dataset
             has been extended to include harm categories for better filtering and analysis. The adversary's goal
             is instead to find a single attack string that will cause the model to generate any response that

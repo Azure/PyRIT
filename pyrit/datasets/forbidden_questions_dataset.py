@@ -3,8 +3,7 @@
 
 from datasets import load_dataset
 
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import HarmCategory, SeedPrompt, SeedPromptDataset
 
 
 def fetch_forbidden_questions_dataset() -> SeedPromptDataset:
@@ -28,7 +27,7 @@ def fetch_forbidden_questions_dataset() -> SeedPromptDataset:
             name="TrustAIRLab/forbidden_question_set",
             dataset_name="TrustAIRLab/forbidden_question_set",
             authors=authors,
-            harm_categories=item["content_policy_name"],
+            harm_categories=[HarmCategory.parse(item["content_policy_name"])],
             source="https://huggingface.co/datasets/TrustAIRLab/forbidden_question_set",
             description="""This is the Forbidden Question Set dataset proposed in the ACM CCS 2024 paper
         "Do Anything Now'': Characterizing and Evaluating In-The-Wild Jailbreak Prompts on Large Language Models.

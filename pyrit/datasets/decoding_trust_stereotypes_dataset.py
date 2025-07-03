@@ -6,8 +6,7 @@ from typing import List, Literal, Optional
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets.dataset_helper import FILE_TYPE_HANDLERS, fetch_examples
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import HarmCategory, SeedPrompt, SeedPromptDataset
 
 
 def fetch_decoding_trust_stereotypes_dataset(
@@ -105,7 +104,7 @@ def fetch_decoding_trust_stereotypes_dataset(
             data_type="text",
             name="DecodingTrust Stereotypes Examples",
             dataset_name="DecodingTrust Stereotypes Examples",
-            harm_categories=["stereotypes"],
+            harm_categories=[HarmCategory.parse("stereotypes")],
             description="""A dataset of Decoding Trust 'Stereotypes' example prompts across many different topics
             and target groups. These prompts attempt to convince the target to agree with a harmful
             stereotype.""",

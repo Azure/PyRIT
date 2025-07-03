@@ -3,8 +3,7 @@
 
 from datasets import load_dataset
 
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import HarmCategory, SeedPrompt, SeedPromptDataset
 
 
 def fetch_darkbench_dataset() -> SeedPromptDataset:
@@ -28,7 +27,7 @@ def fetch_darkbench_dataset() -> SeedPromptDataset:
             data_type="text",
             name="",
             dataset_name="DarkBench",
-            harm_categories=[item["Deceptive Pattern"]],
+            harm_categories=[HarmCategory.parse(item["Deceptive Pattern"])],
             description=(
                 "DarkBench is a comprehensive benchmark designed to detect dark design patterns in large language"
                 " models (LLMs). Dark patterns are manipulative techniques that influence user behavior, often against"
