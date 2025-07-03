@@ -25,6 +25,7 @@ from sqlalchemy.orm import (  # type: ignore
 from sqlalchemy.types import Uuid  # type: ignore
 
 from pyrit.models import PromptDataType, PromptRequestPiece, Score, SeedPrompt
+from pyrit.models.harm_category import HarmCategory
 
 
 class Base(DeclarativeBase):
@@ -277,7 +278,7 @@ class SeedPromptEntry(Base):
         value_sha256 (str): The SHA256 hash of the value of the seed prompt data.
         data_type (PromptDataType): The data type of the seed prompt.
         dataset_name (str): The name of the dataset the seed prompt belongs to.
-        harm_categories (List[str]): The harm categories associated with the seed prompt.
+        harm_categories (List[HarmCategory]): The harm categories associated with the seed prompt.
         description (str): The description of the seed prompt.
         authors (List[str]): The authors of the seed prompt.
         groups (List[str]): The groups involved in authoring the seed prompt (if any).
@@ -306,7 +307,7 @@ class SeedPromptEntry(Base):
     data_type: Mapped[PromptDataType] = mapped_column(String, nullable=False)
     name = mapped_column(String, nullable=True)
     dataset_name = mapped_column(String, nullable=True)
-    harm_categories: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
+    harm_categories: Mapped[Optional[List[HarmCategory]]] = mapped_column(JSON, nullable=True)
     description = mapped_column(String, nullable=True)
     authors: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
     groups: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)

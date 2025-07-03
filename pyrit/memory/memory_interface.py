@@ -41,6 +41,7 @@ from pyrit.models import (
     group_conversation_request_pieces_by_sequence,
     sort_request_pieces,
 )
+from pyrit.models.harm_category import HarmCategory
 
 logger = logging.getLogger(__name__)
 
@@ -582,7 +583,7 @@ class MemoryInterface(abc.ABC):
         value_sha256: Optional[Sequence[str]] = None,
         dataset_name: Optional[str] = None,
         data_types: Optional[Sequence[str]] = None,
-        harm_categories: Optional[Sequence[str]] = None,
+        harm_categories: Optional[Sequence[HarmCategory]] = None,
         added_by: Optional[str] = None,
         authors: Optional[Sequence[str]] = None,
         groups: Optional[Sequence[str]] = None,
@@ -599,7 +600,7 @@ class MemoryInterface(abc.ABC):
             dataset_name (str): The dataset name to match. If None, all dataset names are considered.
             data_types (Optional[Sequence[str], Optional): List of data types to filter seed prompts by
                 (e.g., text, image_path).
-            harm_categories (Sequence[str]): A list of harm categories to filter by. If None,
+            harm_categories (Sequence[HarmCategory]): A list of harm categories to filter by. If None,
             all harm categories are considered.
                 Specifying multiple harm categories returns only prompts that are marked with all harm categories.
             added_by (str): The user who added the prompts.
@@ -787,7 +788,7 @@ class MemoryInterface(abc.ABC):
         value_sha256: Optional[Sequence[str]] = None,
         dataset_name: Optional[str] = None,
         data_types: Optional[Sequence[str]] = None,
-        harm_categories: Optional[Sequence[str]] = None,
+        harm_categories: Optional[Sequence[HarmCategory]] = None,
         added_by: Optional[str] = None,
         authors: Optional[Sequence[str]] = None,
         groups: Optional[Sequence[str]] = None,
@@ -800,7 +801,7 @@ class MemoryInterface(abc.ABC):
             dataset_name (Optional[str], Optional): Name of the dataset to filter seed prompts.
             data_types (Optional[Sequence[str]], Optional): List of data types to filter seed prompts by
             (e.g., text, image_path).
-            harm_categories (Optional[Sequence[str]], Optional): List of harm categories to filter seed prompts by.
+            harm_categories (Optional[Sequence[HarmCategory]], Optional): List of harm categories to filter seed prompts by.
             added_by (Optional[str], Optional): The user who added the seed prompt groups to filter by.
             authors (Optional[Sequence[str]], Optional): List of authors to filter seed prompt groups by.
             groups (Optional[Sequence[str]], Optional): List of groups to filter seed prompt groups by.

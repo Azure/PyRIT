@@ -13,6 +13,7 @@ from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
 import pytest
+from pyrit.models.harm_category import HarmCategory
 from unit.mocks import get_sample_conversation_entries, get_sample_conversations
 
 from pyrit.common.path import DB_DATA_PATH
@@ -943,14 +944,14 @@ async def test_get_seed_prompts_with_source_filter(duckdb_instance: MemoryInterf
 @pytest.mark.asyncio
 async def test_get_seed_prompts_with_harm_categories_filter(duckdb_instance: MemoryInterface):
     seed_prompts = [
-        SeedPrompt(value="prompt1", harm_categories=["category1"], data_type="text"),
-        SeedPrompt(value="prompt2", harm_categories=["category2"], data_type="text"),
+        SeedPrompt(value="prompt1", harm_categories=[HarmCategory.OTHER], data_type="text"),
+        SeedPrompt(value="prompt2", harm_categories=[HarmCategory.ILLEGAL], data_type="text"),
     ]
     await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
-    result = duckdb_instance.get_seed_prompts(harm_categories=["category1"])
+    result = duckdb_instance.get_seed_prompts(harm_categories=[HarmCategory.OTHER])
     assert len(result) == 1
-    assert result[0].harm_categories == ["category1"]
+    assert result[0].harm_categories == [HarmCategory.OTHER]
 
 
 @pytest.mark.asyncio
@@ -1022,8 +1023,8 @@ async def test_get_seed_prompts_with_multiple_filters(duckdb_instance: MemoryInt
 @pytest.mark.asyncio
 async def test_get_seed_prompts_with_empty_list_filters(duckdb_instance: MemoryInterface):
     seed_prompts = [
-        SeedPrompt(value="prompt1", harm_categories=["harm1"], authors=["author1"], data_type="text"),
-        SeedPrompt(value="prompt2", harm_categories=["harm2"], authors=["author2"], data_type="text"),
+        SeedPrompt(value="prompt1", harm_categories=[HarmCategory.FINANCIAL_ADVICE], authors=["author1"], data_type="text"),
+        SeedPrompt(value="prompt2", harm_categories=[HarmCategory.OTHER], authors=["author2"], data_type="text"),
     ]
     await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
@@ -1034,14 +1035,14 @@ async def test_get_seed_prompts_with_empty_list_filters(duckdb_instance: MemoryI
 @pytest.mark.asyncio
 async def test_get_seed_prompts_with_single_element_list_filters(duckdb_instance: MemoryInterface):
     seed_prompts = [
-        SeedPrompt(value="prompt1", harm_categories=["category1"], authors=["author1"], data_type="text"),
-        SeedPrompt(value="prompt2", harm_categories=["category2"], authors=["author2"], data_type="text"),
+        SeedPrompt(value="prompt1", harm_categories=[HarmCategory.OTHER], authors=["author1"], data_type="text"),
+        SeedPrompt(value="prompt2", harm_categories=[HarmCategory.ILLEGAL], authors=["author2"], data_type="text"),
     ]
     await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
-    result = duckdb_instance.get_seed_prompts(harm_categories=["category1"], authors=["author1"])
+    result = duckdb_instance.get_seed_prompts(harm_categories=[HarmCategory.OTHER], authors=["author1"])
     assert len(result) == 1
-    assert result[0].harm_categories == ["category1"]
+    assert result[0].harm_categories == [HarmCategory.OTHER]
     assert result[0].authors == ["author1"]
 
 
@@ -1050,19 +1051,19 @@ async def test_get_seed_prompts_with_multiple_elements_list_filters(duckdb_insta
     seed_prompts = [
         SeedPrompt(
             value="prompt1",
-            harm_categories=["category1", "category2"],
+            harm_categories=[HarmCategory.OTHER, HarmCategory.ILLEGAL],
             authors=["author1", "author2"],
             data_type="text",
         ),
-        SeedPrompt(value="prompt2", harm_categories=["category3"], authors=["author3"], data_type="text"),
+        SeedPrompt(value="prompt2", harm_categories=[HarmCategory.FINANCIAL_ADVICE], authors=["author3"], data_type="text"),
     ]
     await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
     result = duckdb_instance.get_seed_prompts(
-        harm_categories=["category1", "category2"], authors=["author1", "author2"]
+        harm_categories=[HarmCategory.OTHER, HarmCategory.ILLEGAL], authors=["author1", "author2"]
     )
     assert len(result) == 1
-    assert result[0].harm_categories == ["category1", "category2"]
+    assert result[0].harm_categories == [HarmCategory.OTHER, HarmCategory.ILLEGAL]
     assert result[0].authors == ["author1", "author2"]
 
 
@@ -1071,14 +1072,14 @@ async def test_get_seed_prompts_with_multiple_elements_list_filters_additional(d
     seed_prompts = [
         SeedPrompt(
             value="prompt1",
-            harm_categories=["category1", "category2"],
+            harm_categories=[HarmCategory.OTHER, HarmCategory.ILLEGAL],
             authors=["author1", "author2"],
             data_type="text",
         ),
-        SeedPrompt(value="prompt2", harm_categories=["category3"], authors=["author3"], data_type="text"),
+        SeedPrompt(value="prompt2", harm_categories=[HarmCategory.FINANCIAL_ADVICE], authors=["author3"], data_type="text"),
         SeedPrompt(
             value="prompt3",
-            harm_categories=["category1", "category3"],
+            harm_categories=[HarmCategory.OTHER, HarmCategory.FINANCIAL_ADVICE],
             authors=["author1", "author3"],
             data_type="text",
         ),
@@ -1086,24 +1087,24 @@ async def test_get_seed_prompts_with_multiple_elements_list_filters_additional(d
     await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
     result = duckdb_instance.get_seed_prompts(
-        harm_categories=["category1", "category3"], authors=["author1", "author3"]
+        harm_categories=[HarmCategory.OTHER, HarmCategory.FINANCIAL_ADVICE], authors=["author1", "author3"]
     )
     assert len(result) == 1
-    assert result[0].harm_categories == ["category1", "category3"]
+    assert result[0].harm_categories == [HarmCategory.OTHER, HarmCategory.FINANCIAL_ADVICE]
     assert result[0].authors == ["author1", "author3"]
 
 
 @pytest.mark.asyncio
 async def test_get_seed_prompts_with_substring_filters_harm_categories(duckdb_instance: MemoryInterface):
     seed_prompts = [
-        SeedPrompt(value="prompt1", harm_categories=["category1"], authors=["author1"], data_type="text"),
-        SeedPrompt(value="prompt2", harm_categories=["category2"], authors=["author2"], data_type="text"),
+        SeedPrompt(value="prompt1", harm_categories=[HarmCategory.OTHER], authors=["author1"], data_type="text"),
+        SeedPrompt(value="prompt2", harm_categories=[HarmCategory.ILLEGAL], authors=["author2"], data_type="text"),
     ]
     await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
     result = duckdb_instance.get_seed_prompts(harm_categories=["ory1"])
     assert len(result) == 1
-    assert result[0].harm_categories == ["category1"]
+    assert result[0].harm_categories == [HarmCategory.OTHER]
 
     result = duckdb_instance.get_seed_prompts(authors=["auth"])
     assert len(result) == 2
@@ -1454,7 +1455,7 @@ async def test_add_seed_prompt_groups_to_memory_with_textimage_modalities(duckdb
 async def test_get_seed_prompts_with_param_filters(duckdb_instance: MemoryInterface):
     template_value = "Test template {{ param1 }}"
     dataset_name = "dataset_1"
-    harm_categories = ["category1"]
+    harm_categories = [HarmCategory.HATESPEECH]
     added_by = "tester"
     parameters = ["param1"]
     template = SeedPrompt(
@@ -1501,7 +1502,7 @@ async def test_get_seed_prompt_groups_with_dataset_name(duckdb_instance: MemoryI
 async def test_get_seed_prompt_groups_with_multiple_filters(duckdb_instance: MemoryInterface):
     dataset_name = "dataset_1"
     data_types = ["text"]
-    harm_categories = ["category1"]
+    harm_categories = [HarmCategory.HATESPEECH]
     added_by = "tester"
     group = SeedPromptGroup(
         prompts=[
