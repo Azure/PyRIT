@@ -26,7 +26,7 @@ from pyrit.common.path import (
     PYRIT_PATH,
 )
 from pyrit.common.yaml_loadable import YamlLoadable
-from pyrit.models import DataTypeSerializer
+from pyrit.models import DataTypeSerializer, HarmCategory
 from pyrit.models.literals import PromptDataType
 
 logger = logging.getLogger(__name__)
@@ -58,7 +58,7 @@ class SeedPrompt(YamlLoadable):
     id: Optional[uuid.UUID] = field(default_factory=lambda: uuid.uuid4())
     name: Optional[str] = None
     dataset_name: Optional[str] = None
-    harm_categories: Optional[Sequence[str]] = field(default_factory=lambda: [])
+    harm_categories: Optional[Sequence[HarmCategory]] = field(default_factory=lambda: [])
     description: Optional[str] = None
     authors: Optional[Sequence[str]] = field(default_factory=lambda: [])
     groups: Optional[Sequence[str]] = field(default_factory=lambda: [])
@@ -320,7 +320,7 @@ class SeedPromptDataset(YamlLoadable):
     data_type: Optional[str]
     name: Optional[str]
     dataset_name: Optional[str]
-    harm_categories: Optional[Sequence[str]]
+    harm_categories: Optional[Sequence[HarmCategory]]
     description: Optional[str]
     authors: Optional[Sequence[str]]
     groups: Optional[Sequence[str]]
@@ -338,7 +338,7 @@ class SeedPromptDataset(YamlLoadable):
         data_type: Optional[PromptDataType] = "text",
         name: Optional[str] = None,
         dataset_name: Optional[str] = None,
-        harm_categories: Optional[Sequence[str]] = None,
+        harm_categories: Optional[Sequence[HarmCategory]] = None,
         description: Optional[str] = None,
         authors: Optional[Sequence[str]] = None,
         groups: Optional[Sequence[str]] = None,
