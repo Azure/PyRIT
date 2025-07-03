@@ -14,7 +14,6 @@ from typing import Any, Dict, Optional, Sequence, Union
 
 from jinja2 import BaseLoader, Environment, StrictUndefined, Template, Undefined
 from pydantic.types import PositiveInt
-from pyrit.models.harm_category import HarmCategory
 from tinytag import TinyTag
 
 from pyrit.common import utils
@@ -27,7 +26,7 @@ from pyrit.common.path import (
     PYRIT_PATH,
 )
 from pyrit.common.yaml_loadable import YamlLoadable
-from pyrit.models import DataTypeSerializer
+from pyrit.models import DataTypeSerializer, HarmCategory
 from pyrit.models.literals import PromptDataType
 
 logger = logging.getLogger(__name__)

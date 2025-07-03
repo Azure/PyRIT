@@ -1,15 +1,16 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import os
 from dataclasses import dataclass, field
 from enum import StrEnum
-import os
 from typing import Tuple
 
 import yaml
 
 with open(os.path.join(os.path.dirname(__file__), "harm_category_definitions.yaml")) as f:
     _STATIC_HARM_DEFINITIONS = yaml.safe_load(f).get("definitions", {})
+
 
 class HarmCategory(StrEnum):
     VERSION = "v1.0.0"
@@ -75,11 +76,11 @@ class HarmCategory(StrEnum):
     ILLEGAL = "Illegal Activity"
     OTHER = "Other"
 
-    _ALIASES = { #TODO ADD ALL in the DB
+    _ALIASES = {  # TODO: Add the rest of the aliases
         "violent": VIOLENT_CONTENT,
         "bullying": HARASSMENT,
         "illegal": ILLEGAL,
-    } # type: ignore
+    }  # type: ignore
 
     _DEFINITIONS = _STATIC_HARM_DEFINITIONS
 
@@ -95,11 +96,12 @@ class HarmCategory(StrEnum):
             return cls._ALIASES[value]  # type: ignore
 
         return cls.OTHER
-    
+
     @classmethod
     def get_definition(cls, category: "HarmCategory") -> str:
         return _STATIC_HARM_DEFINITIONS.get(category.name, "No definition available.")
-    
+
+
 @dataclass(frozen=True)
 class SeedPrompt:
     text: str
@@ -112,7 +114,4 @@ class SeedPrompt:
     def _parse_categories(raw):
         if isinstance(raw, str):
             raw = [raw]
-        return tuple(
-            c if isinstance(c, HarmCategory) else HarmCategory.parse(c)
-            for c in raw
-        )
+        return tuple(c if isinstance(c, HarmCategory) else HarmCategory.parse(c) for c in raw)

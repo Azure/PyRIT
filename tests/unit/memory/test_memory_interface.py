@@ -13,7 +13,6 @@ from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
 import pytest
-from pyrit.models.harm_category import HarmCategory
 from unit.mocks import get_sample_conversation_entries, get_sample_conversations
 
 from pyrit.common.path import DB_DATA_PATH
@@ -21,13 +20,15 @@ from pyrit.common.utils import to_sha256
 from pyrit.memory import MemoryExporter, MemoryInterface, PromptMemoryEntry
 from pyrit.memory.memory_models import AttackResultEntry
 from pyrit.models import (
+    AttackOutcome,
+    AttackResult,
+    HarmCategory,
     PromptRequestPiece,
     PromptRequestResponse,
     Score,
     SeedPrompt,
     SeedPromptGroup,
 )
-from pyrit.models.attack_result import AttackOutcome, AttackResult
 from pyrit.orchestrator import Orchestrator
 
 
@@ -1026,7 +1027,9 @@ async def test_get_seed_prompts_with_multiple_filters(duckdb_instance: MemoryInt
 @pytest.mark.asyncio
 async def test_get_seed_prompts_with_empty_list_filters(duckdb_instance: MemoryInterface):
     seed_prompts = [
-        SeedPrompt(value="prompt1", harm_categories=[HarmCategory.FINANCIAL_ADVICE], authors=["author1"], data_type="text"),
+        SeedPrompt(
+            value="prompt1", harm_categories=[HarmCategory.FINANCIAL_ADVICE], authors=["author1"], data_type="text"
+        ),
         SeedPrompt(value="prompt2", harm_categories=[HarmCategory.OTHER], authors=["author2"], data_type="text"),
     ]
     await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
@@ -1058,7 +1061,9 @@ async def test_get_seed_prompts_with_multiple_elements_list_filters(duckdb_insta
             authors=["author1", "author2"],
             data_type="text",
         ),
-        SeedPrompt(value="prompt2", harm_categories=[HarmCategory.FINANCIAL_ADVICE], authors=["author3"], data_type="text"),
+        SeedPrompt(
+            value="prompt2", harm_categories=[HarmCategory.FINANCIAL_ADVICE], authors=["author3"], data_type="text"
+        ),
     ]
     await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
@@ -1079,7 +1084,9 @@ async def test_get_seed_prompts_with_multiple_elements_list_filters_additional(d
             authors=["author1", "author2"],
             data_type="text",
         ),
-        SeedPrompt(value="prompt2", harm_categories=[HarmCategory.FINANCIAL_ADVICE], authors=["author3"], data_type="text"),
+        SeedPrompt(
+            value="prompt2", harm_categories=[HarmCategory.FINANCIAL_ADVICE], authors=["author3"], data_type="text"
+        ),
         SeedPrompt(
             value="prompt3",
             harm_categories=[HarmCategory.OTHER, HarmCategory.FINANCIAL_ADVICE],

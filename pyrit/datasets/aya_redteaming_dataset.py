@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import List, Literal, Optional
 
 from pyrit.datasets.dataset_helper import fetch_examples
-from pyrit.models import SeedPromptDataset, SeedPrompt, HarmCategory
+from pyrit.models import HarmCategory, SeedPrompt, SeedPromptDataset
 
 
 def fetch_aya_redteaming_dataset(
@@ -74,10 +74,8 @@ def fetch_aya_redteaming_dataset(
         data_home=data_home,
     )
 
-    parsed_filter_categories = (
-        [HarmCategory.parse(c) for c in harm_categories] if harm_categories else None
-    )
-    
+    parsed_filter_categories = [HarmCategory.parse(c) for c in harm_categories] if harm_categories else None
+
     seed_prompts = []
 
     for example in examples:

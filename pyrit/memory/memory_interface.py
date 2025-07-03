@@ -30,6 +30,8 @@ from pyrit.memory.memory_models import (
     SeedPromptEntry,
 )
 from pyrit.models import (
+    AttackResult,
+    HarmCategory,
     ChatMessage,
     DataTypeSerializer,
     PromptRequestPiece,
@@ -43,8 +45,6 @@ from pyrit.models import (
     group_conversation_request_pieces_by_sequence,
     sort_request_pieces,
 )
-from pyrit.models.harm_category import HarmCategory
-from pyrit.models.attack_result import AttackResult
 
 logger = logging.getLogger(__name__)
 

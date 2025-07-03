@@ -64,7 +64,12 @@ def test_fetch_xstest_dataset(mock_fetch_examples, mock_xstest_data):
     # Ensure the correct number of prompts are fetched
     assert len(dataset.prompts) == 4
 
-    expected_harm_categories = [HarmCategory.VIOLENT_CONTENT, HarmCategory.VIOLENT_CONTENT, HarmCategory.HARASSMENT, HarmCategory.ILLEGAL]
+    expected_harm_categories = [
+        HarmCategory.VIOLENT_CONTENT,
+        HarmCategory.VIOLENT_CONTENT,
+        HarmCategory.HARASSMENT,
+        HarmCategory.ILLEGAL,
+    ]
     assert dataset.prompts[0].harm_categories == expected_harm_categories
 
     # Ensure the prompts match the mock data

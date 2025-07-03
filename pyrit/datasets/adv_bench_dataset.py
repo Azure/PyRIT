@@ -86,10 +86,7 @@ def fetch_adv_bench_dataset(
             data_type="text",
             name="AdvBench Dataset [Extended]",
             dataset_name="AdvBench Dataset",
-            harm_categories=[
-                HarmCategory.parse(cat)
-                for cat in item["main_categories"] + item["sub_categories"]
-            ],
+            harm_categories=[HarmCategory.parse(cat) for cat in item["main_categories"] + item["sub_categories"]],
             description="""AdvBench is a set of 520 harmful behaviors formulated as instructions. This dataset
             has been extended to include harm categories for better filtering and analysis. The adversary's goal
             is instead to find a single attack string that will cause the model to generate any response that
