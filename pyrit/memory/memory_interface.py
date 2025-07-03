@@ -9,10 +9,11 @@ import uuid
 import weakref
 from datetime import datetime
 from pathlib import Path
-from typing import MutableSequence, Optional, Sequence, Tuple, TypeVar, Union
+from typing import MutableSequence, Optional, Sequence, TypeVar, Union
 
 from sqlalchemy import and_
 from sqlalchemy.orm.attributes import InstrumentedAttribute
+from sqlalchemy.sql.elements import ColumnElement
 
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.memory.memory_embedding import (
@@ -21,6 +22,7 @@ from pyrit.memory.memory_embedding import (
 )
 from pyrit.memory.memory_exporter import MemoryExporter
 from pyrit.memory.memory_models import (
+    AttackResultEntry,
     Base,
     EmbeddingDataEntry,
     PromptMemoryEntry,
@@ -42,6 +44,7 @@ from pyrit.models import (
     sort_request_pieces,
 )
 from pyrit.models.harm_category import HarmCategory
+from pyrit.models.attack_result import AttackResult
 
 logger = logging.getLogger(__name__)
 
@@ -732,15 +735,19 @@ class MemoryInterface(abc.ABC):
         Returns a list of all seed prompt dataset names in the memory storage.
         """
         try:
-            entries: Sequence[Tuple[str]] = self._query_entries(
-                SeedPromptEntry.dataset_name,
+            entries: Sequence[SeedPromptEntry] = self._query_entries(
+                SeedPromptEntry,
                 conditions=and_(
                     SeedPromptEntry.dataset_name is not None, SeedPromptEntry.dataset_name != ""  # type: ignore
                 ),
                 distinct=True,
-            )  # type: ignore
-            # return value is list of tuples with a single entry (the dataset name)
-            return [entry[0] for entry in entries]
+            )
+            # Extract unique dataset names from the entries
+            dataset_names = set()
+            for entry in entries:
+                if entry.dataset_name:
+                    dataset_names.add(entry.dataset_name)
+            return list(dataset_names)
         except Exception as e:
             logger.exception(f"Failed to retrieve dataset names with error {e}")
             return []
@@ -884,3 +891,59 @@ class MemoryInterface(abc.ABC):
         self.exporter.export_data(data, file_path=file_path, export_type=export_type)
 
         return file_path
+
+    def add_attack_results_to_memory(self, *, attack_results: Sequence[AttackResult]) -> None:
+        """
+        Inserts a list of attack results into the memory storage.
+        The database model automatically calculates objective_sha256 for consistency.
+        """
+        self._insert_entries(entries=[AttackResultEntry(entry=attack_result) for attack_result in attack_results])
+
+    def get_attack_results(
+        self,
+        *,
+        attack_result_ids: Optional[Sequence[str]] = None,
+        conversation_id: Optional[str] = None,
+        objective: Optional[str] = None,
+        objective_sha256: Optional[Sequence[str]] = None,
+        outcome: Optional[str] = None,
+    ) -> Sequence[AttackResult]:
+        """
+        Retrieves a list of AttackResult objects based on the specified filters.
+
+        Args:
+            attack_result_ids (Optional[Sequence[str]], optional): A list of attack result IDs. Defaults to None.
+            conversation_id (Optional[str], optional): The conversation ID to filter by. Defaults to None.
+            objective (Optional[str], optional): The objective to filter by (substring match). Defaults to None.
+            objective_sha256 (Optional[Sequence[str]], optional): A list of objective SHA256 hashes to filter by.
+                Defaults to None.
+            outcome (Optional[str], optional): The outcome to filter by (success, failure, undetermined).
+                Defaults to None.
+
+        Returns:
+            Sequence[AttackResult]: A list of AttackResult objects that match the specified filters.
+        """
+        conditions: list[ColumnElement[bool]] = []
+
+        if attack_result_ids is not None:
+            if len(attack_result_ids) == 0:
+                # Empty list means no results
+                return []
+            conditions.append(AttackResultEntry.id.in_(attack_result_ids))
+        if conversation_id:
+            conditions.append(AttackResultEntry.conversation_id == conversation_id)
+        if objective:
+            conditions.append(AttackResultEntry.objective.contains(objective))
+        if objective_sha256:
+            conditions.append(AttackResultEntry.objective_sha256.in_(objective_sha256))
+        if outcome:
+            conditions.append(AttackResultEntry.outcome == outcome)
+
+        try:
+            entries: Sequence[AttackResultEntry] = self._query_entries(
+                AttackResultEntry, conditions=and_(*conditions) if conditions else None
+            )
+            return [entry.get_attack_result() for entry in entries]
+        except Exception as e:
+            logger.exception(f"Failed to retrieve attack results with error {e}")
+            return []
