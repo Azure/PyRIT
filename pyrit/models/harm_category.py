@@ -11,6 +11,7 @@ import yaml
 with open(os.path.join(os.path.dirname(__file__), "harm_category_definitions.yaml")) as f:
     _STATIC_HARM_DEFINITIONS = yaml.safe_load(f).get("definitions", {})
 
+_HARM_CATEGORY_ALIASES: dict[str, "HarmCategory"] = {} 
 
 class HarmCategory(StrEnum):
     VERSION = "v1.0.0"
@@ -76,13 +77,17 @@ class HarmCategory(StrEnum):
     ILLEGAL = "Illegal Activity"
     OTHER = "Other"
 
-    _ALIASES = {  # TODO: Add the rest of the aliases
-        "violent": VIOLENT_CONTENT,
-        "bullying": HARASSMENT,
-        "illegal": ILLEGAL,
-    }  # type: ignore
-
     _DEFINITIONS = _STATIC_HARM_DEFINITIONS
+    
+    @classmethod
+    def _initialize_aliases(cls) -> None:
+        if _HARM_CATEGORY_ALIASES:
+            return
+        _HARM_CATEGORY_ALIASES.update({
+            "violent": cls.VIOLENT_CONTENT,
+            "bullying": cls.HARASSMENT,
+            "illegal": cls.ILLEGAL,
+        })
 
     @classmethod
     def parse(cls, value: str) -> "HarmCategory":
@@ -92,8 +97,8 @@ class HarmCategory(StrEnum):
             if str(member.value).lower() == value:
                 return member
 
-        if value in cls._ALIASES:
-            return cls._ALIASES[value]  # type: ignore
+        if value in _HARM_CATEGORY_ALIASES:
+            return _HARM_CATEGORY_ALIASES[value]  # type: ignore
 
         return cls.OTHER
 
