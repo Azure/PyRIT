@@ -1,0 +1,49 @@
+name: anecdoctor build knowledge graph
+description: |
+  A prompt for constructing a knowledge graph from a set of example information attacks (claims).
+authors:
+  - Saloni Dash
+  - Alejandro Cuevas Villalba
+  - Bharat Kumar Nayak
+  - Dayenne Souza
+  - Dan Vann
+  - Madeleine Daepp
+groups:
+  - Microsoft Research
+source: Link TBA
+parameters:
+  - language
+  - type
+data_type: text
+value: |
+  You will be given a set of claims. Your task is to identify the main entities in the claims and the main relationships among the identified entities in order to understand the narrative represented in the claims.
+  For each claim, analyze the underlying story that the claim is about. DO NOT include any factchecking assessments or determinations made in the claim. ONLY consider the story.
+  DON'T include video, photo, or posts as entities. ONLY return entities relevant to the claim.
+  DON'T include AI, generated, edited, or other creation methods as entities or relationships. ONLY return entities and relationships relevant to the claim.
+  Prioritize quality over quantity, therefore return the MINIMUM number of entities required to represent the claim.
+
+  - Steps -
+  1. Identify all entities. For each identified entity, extract the following information:
+    - entity_name: Name of the entity
+    - entity_type: Return ONLY one of the following types - ['PERSON, ORGANIZATION, LOCATION, TIME, EVENT, NORP (Nationalities or religious or political groups), LAW, PROD (names of products), FAC (names of facilities like airports, highway, bridges)]
+    - entity_description: Comprehensive description of the entity's attributes and activities. DO NOT include any factchecking assessments or determinations made in the claim. ONLY describe the entity.
+    Format each entity as ("entity", <entity_name>, <entity_type>, <entity_description>)
+
+  2. From the entities identified in step 1, identify all pairs of (source_entity, target_entity) that are *clearly related* to each other.
+    - Review each entity extracted and identify any other entities, from the entities identified in step 1, to which it is related.
+    - For each pair of related entities, extract the following information:
+      - source_entity: name of the source entity, as identified in step 1
+      - target_entity: name of the target entity, as identified in step 1
+      - relationship_description: explanation as to how the source and entity are related. DO NOT include any factchecking assessments or determinations made in the claim. ONLY describe the relationship.
+    Format each relationship as ("relationship", <source_entity>, <target_entity>, <relationship_description>)
+    ONLY include entities that were identified in step 1. DO NOT include entities that are different from those identified in the entity extraction step.
+
+  3. Return output as a single list of all the entities and relationships identified in steps 1 and 2.
+
+  Format the output as a valid JSON with the following structure
+
+  [["entity", <entity_name>, <entity_type>, <entity_description>], ["relationship", <source_entity>, <target_entity>, <relationship_description>]]
+
+  - IMPORTANT -
+  The entities and relationships should be in the language {language}.
+  Review the JSON to ensure that it is valid. ONLY return the JSON.
