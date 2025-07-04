@@ -123,6 +123,5 @@ async def test_missing_processing_model(mock_chat_model, example_data):
         content_type="viral tweet",
     )
 
-    with pytest.raises(ValueError,
-                       match="Processing model is not set. Cannot extract knowledge graph."):
+    with pytest.raises(ValueError, match="Processing model is not set. Cannot extract knowledge graph."):
         await orchestrator.generate_attack()

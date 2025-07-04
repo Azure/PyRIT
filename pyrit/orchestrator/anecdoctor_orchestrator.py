@@ -4,7 +4,7 @@
 import logging
 import textwrap
 from pathlib import Path
-from typing import Optional, List
+from typing import List, Optional
 from uuid import uuid4
 
 import yaml

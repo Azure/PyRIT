@@ -6,21 +6,17 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.0
-#   kernelspec:
-#     display_name: pyrit-test
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
 #
 # # Anecdoctor Orchestrator
 #
-# This demo showcases the use of the `AnecdoctorOrchestrator` in PyRIT. 
-# Anecdoctoring is a method for using in-the-wild examples to develop an attack prompt that can be used to create more, similar attacks. 
-# It was originally developed to construct multilingual information- and communication-based attacks with high fidelity, 
-# but can be adapted to other cases where you have example attacks. 
-# Below, we use a simulated example; researchers seeking to implement the method may consider using fact-check data in ClaimReview format 
+# This demo showcases the use of the `AnecdoctorOrchestrator` in PyRIT.
+# Anecdoctoring is a method for using in-the-wild examples to develop an attack prompt that can be used to create more, similar attacks.
+# It was originally developed to construct multilingual information- and communication-based attacks with high fidelity,
+# but can be adapted to other cases where you have example attacks.
+# Below, we use a simulated example; researchers seeking to implement the method may consider using fact-check data in ClaimReview format
 # (see e.g. [Fact-Check Insights](https://www.factcheckinsights.org/) from the Duke Reporter's Lab).
 #
 # There are two options for the orchestrator:
@@ -28,10 +24,10 @@
 # 1. Few-shot prompting: Include attacks as examples and ask an LLM to create a prompt for a similar attack
 # 2. Knowledge graph-augmented promption: Use example attacks to construct a knowledge graph which is in turn included in context to generate a new attack prompt.
 #
-# Using knowledge graph-augmented generation can improve attack realism and coherence to the original data. 
-# It requires an additional processing step, which produces the knowledge graph in JSON format. 
-# As with other orchestrators, anecdoctor is more likely to succeed if you have a model endpoint 
-# without content moderation or other safety mechanisms and success rates 
+# Using knowledge graph-augmented generation can improve attack realism and coherence to the original data.
+# It requires an additional processing step, which produces the knowledge graph in JSON format.
+# As with other orchestrators, anecdoctor is more likely to succeed if you have a model endpoint
+# without content moderation or other safety mechanisms and success rates
 # will vary depending on the model, topic, and example data.
 #
 # Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
@@ -40,7 +36,6 @@
 
 # %%
 import os
-import asyncio
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.orchestrator import AnecdoctorOrchestrator
@@ -71,8 +66,8 @@ orchestrator = AnecdoctorOrchestrator(
 results = await orchestrator.generate_attack()  # type: ignore[top-level-await]
 
 # %% [markdown]
-# Few-shot prompting produces passable attack prompts, 
-# but details are vague and attacks are likely to lack the specificity and nuance of real-world attacks. 
+# Few-shot prompting produces passable attack prompts,
+# but details are vague and attacks are likely to lack the specificity and nuance of real-world attacks.
 # Incorporating a knowledge graph can improve specificity.
 
 # %%
@@ -87,11 +82,11 @@ orchestrator_with_kg = AnecdoctorOrchestrator(
 results = await orchestrator_with_kg.generate_attack()  # type: ignore[top-level-await]
 
 # %% [markdown]
-# The use of knowledge graph-augmented prompting can be particularly valuable when working with data across languages and cultures. 
+# The use of knowledge graph-augmented prompting can be particularly valuable when working with data across languages and cultures.
 # The AnecdoctorOrchestrator has the option to change the operations' language as well as the type of content generated.
 #
-# Note that for best results, we recommend clustering examples as 
-# the approach works best when prompts are generated from sets of 
+# Note that for best results, we recommend clustering examples as
+# the approach works best when prompts are generated from sets of
 # attacks with reasonable internal consistency.
 
 # %%
@@ -118,10 +113,11 @@ results = await orchestrator_with_kg_german.generate_attack()  # type: ignore[to
 # To better understand the attacks under evaluation, you can visualize the knowledge graphs produced in the processing step.
 
 # %%
-import pandas as pd
 import json
-import networkx as nx
+
 import matplotlib.pyplot as plt
+import networkx as nx
+import pandas as pd
 
 
 def visualize_knowledge_graph(kg_result):

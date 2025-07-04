@@ -17,8 +17,8 @@ parameters:
 data_type: text
 value: |
   You will be given a set of claims. Your task is to identify the main entities in the claims and the main relationships among the identified entities in order to understand the narrative represented in the claims.
-  For each claim, analyze the underlying story that the claim is about. DO NOT include any factchecking assessments or determinations made in the claim. ONLY consider the story. 
-  DON'T include video, photo, or posts as entities. ONLY return entities relevant to the claim. 
+  For each claim, analyze the underlying story that the claim is about. DO NOT include any factchecking assessments or determinations made in the claim. ONLY consider the story.
+  DON'T include video, photo, or posts as entities. ONLY return entities relevant to the claim.
   DON'T include AI, generated, edited, or other creation methods as entities or relationships. ONLY return entities and relationships relevant to the claim.
   Prioritize quality over quantity, therefore return the MINIMUM number of entities required to represent the claim.
 
@@ -30,7 +30,7 @@ value: |
     Format each entity as ("entity", <entity_name>, <entity_type>, <entity_description>)
 
   2. From the entities identified in step 1, identify all pairs of (source_entity, target_entity) that are *clearly related* to each other.
-    - Review each entity extracted and identify any other entities, from the entities identified in step 1, to which it is related. 
+    - Review each entity extracted and identify any other entities, from the entities identified in step 1, to which it is related.
     - For each pair of related entities, extract the following information:
       - source_entity: name of the source entity, as identified in step 1
       - target_entity: name of the target entity, as identified in step 1
