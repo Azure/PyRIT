@@ -11,23 +11,6 @@ RATINGS_URL = "https://zenodo.org/records/15482694/files/Ratings.xlsx?download=1
 QUESTION_RESPONSE_PAIRS_URL = "https://zenodo.org/records/15482694/files/Question_Response_Pairs.xlsx?download=1"
 QUORA_QUESTION_LIST_URL = "https://zenodo.org/records/15482694/files/Quora%20Question%20List.xlsx?download=1"
 
-def fetch_ratings_xlsx(url: Optional[str] = None) -> pd.DataFrame:
-    """Fetch ratings.xlsx as a pandas DataFrame from the web."""
-    if url is None:
-        url = RATINGS_URL
-    return pd.read_excel(url, header=1)
-
-def fetch_question_response_pairs_xlsx(url: Optional[str] = None) -> pd.DataFrame:
-    """Fetch question_response_pairs.xlsx as a pandas DataFrame from the web."""
-    if url is None:
-        url = QUESTION_RESPONSE_PAIRS_URL
-    return pd.read_excel(url)
-
-def fetch_quora_question_list_xlsx(url: Optional[str] = None) -> pd.DataFrame:
-    """Fetch quora question list.xlsx as a pandas DataFrame from the web."""
-    if url is None:
-        url = QUORA_QUESTION_LIST_URL
-    return pd.read_excel(url)
 
 def fetch_transphobia_awareness_dataset(
     ratings_url=RATINGS_URL,
@@ -46,8 +29,9 @@ def fetch_transphobia_awareness_dataset(
     Zenodo. https://doi.org/10.5281/zenodo.15482694
     
     This dataset is detailed in the paper cited below.
-    Scheuerman, Morgan, Katy Weathington, Adrian Petterson, Dylan Thomas Doyle, Dipto Das, 
-    Michael Ann DeVito, and Jed R. Brubaker. "Transphobia is in the Eye of the Prompter: 
+    Morgan Klaus Scheuerman, Katy Weathington, Adrian Petterson, 
+    Dylan Doyle, Dipto Das, Michael Ann DeVito, Jed Brubaker. 
+    "Transphobia is in the Eye of the Prompter: 
     Trans-Centered Perspectives on Large Language Models." 
     ACM Transactions on Computer-Human Interaction (2018).
     
@@ -66,15 +50,8 @@ def fetch_transphobia_awareness_dataset(
         - Harm categories are populated from unique keyword values.
     """
     # Always fetch from URLs
-    ratings_df = fetch_ratings_xlsx(ratings_url)
-    try:
-        qrpairs_df = fetch_question_response_pairs_xlsx(question_response_pairs_url)
-    except Exception:
-        qrpairs_df = None
-    try:
-        quora_df = fetch_quora_question_list_xlsx(quora_question_list_url)
-    except Exception:
-        quora_df = None
+    ratings_df = pd.read_excel(RATINGS_URL, header=1)
+    
 
     seed_prompts: List[SeedPrompt] = []
 
@@ -88,16 +65,7 @@ def fetch_transphobia_awareness_dataset(
     harm_categories = ["transphobia"] + unique_keywords
 
     for _, row in ratings_df.iterrows():
-        # Extract main fields - using the correct column names from the dataset
-        question = row.get("Quora Question", "")
-        keyword = row.get("keyword", "transphobia")
-        chatgpt_response = row.get("ChatGPT Response", "")
-        llama2_response = row.get("Llama 2 Response", "")
-        
-        # Extract ratings and impact scores with proper column mapping
         metadata = {
-            # "fidx": row.get("fidx"),
-            # "initial_coder": row.get("initial coder"),
             "keyword": keyword,
             "question_sentiment": row.get("""Question sentiment: How transphobic is the question?\n\nRate on a scale of 1-6, 
             where 6 is the most transphobic"""),
@@ -113,14 +81,14 @@ def fetch_transphobia_awareness_dataset(
             metadata=metadata,
             source=RATINGS_URL,
             authors = [
-    "Morgan Scheuerman",
-    "Katy Weathington",
-    "Adrian Petterson",
-    "Dylan Thomas Doyle",
-    "Dipto Das",
-    "Michael Ann DeVito",
-    "Jed R. Brubaker"
-],
+            "Morgan Klaus Scheuerman",
+            "Katy Weathington",
+            "Adrian Petterson",
+            "Dylan Thomas Doyle",
+            "Dipto Das",
+            "Michael Ann DeVito",
+            "Jed R. Brubaker"
+        ],
         )
         seed_prompts.append(prompt)
 
