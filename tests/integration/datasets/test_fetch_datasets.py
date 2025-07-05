@@ -23,6 +23,7 @@ from pyrit.datasets import (
     fetch_seclists_bias_testing_dataset,
     fetch_sosbench_dataset,
     fetch_tdc23_redteaming_dataset,
+    fetch_transphobia_awareness_dataset,
     fetch_wmdp_dataset,
     fetch_xstest_dataset,
 )
@@ -51,6 +52,7 @@ from pyrit.models.seed_prompt import SeedPromptDataset
         (fetch_seclists_bias_testing_dataset, True),
         (fetch_sosbench_dataset, True),
         (fetch_tdc23_redteaming_dataset, True),
+        (fetch_transphobia_awareness_dataset, True),
         (fetch_wmdp_dataset, False),
         (fetch_xstest_dataset, True),
     ],
