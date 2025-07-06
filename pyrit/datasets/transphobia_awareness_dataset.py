@@ -12,11 +12,7 @@ QUESTION_RESPONSE_PAIRS_URL = "https://zenodo.org/records/15482694/files/Questio
 QUORA_QUESTION_LIST_URL = "https://zenodo.org/records/15482694/files/Quora%20Question%20List.xlsx?download=1"
 
 
-def fetch_transphobia_awareness_dataset(
-    ratings_url=RATINGS_URL,
-    question_response_pairs_url=QUESTION_RESPONSE_PAIRS_URL,
-    quora_question_list_url=QUORA_QUESTION_LIST_URL,
-) -> SeedPromptDataset:
+def fetch_transphobia_awareness_dataset() -> SeedPromptDataset:
     """
     Load the Transphobia-Awareness Dataset from web URLs and return as a SeedPromptDataset.
     
