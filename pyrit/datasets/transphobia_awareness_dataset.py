@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import List, Optional
+from typing import List
 
 import pandas as pd
 
@@ -32,11 +32,6 @@ def fetch_transphobia_awareness_dataset() -> SeedPromptDataset:
     "Transphobia is in the Eye of the Prompter:
     Trans-Centered Perspectives on Large Language Models."
     ACM Transactions on Computer-Human Interaction (2018).
-
-    Args:
-        ratings_url (str, optional): URL to ratings.xlsx (main annotated dataset).
-        question_response_pairs_url (str, optional): URL to question_response_pairs.xlsx (optional, for enrichment).
-        quora_question_list_url (str, optional): URL to quora question list.xlsx (optional, for enrichment).
 
     Returns:
         SeedPromptDataset: A dataset of prompts with transphobia awareness metadata.
