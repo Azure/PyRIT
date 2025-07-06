@@ -1,8 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pandas as pd
 from typing import List, Optional
+
+import pandas as pd
+
 from pyrit.models import SeedPromptDataset
 from pyrit.models.seed_prompt import SeedPrompt
 
@@ -15,22 +17,22 @@ QUORA_QUESTION_LIST_URL = "https://zenodo.org/records/15482694/files/Quora%20Que
 def fetch_transphobia_awareness_dataset() -> SeedPromptDataset:
     """
     Load the Transphobia-Awareness Dataset from web URLs and return as a SeedPromptDataset.
-    
+
     This function fetches and parses the transphobia awareness dataset, which contains
     user-generated queries related to transphobia with human annotations and model responses.
 
     Transphobia dataset is loaded from the source cited below.
-    Scheuerman, M., Weathington, K., Petterson, A., Doyle, D. T., Das, D., DeVito, M. A., & Brubaker, J. 
-    (2025). Quora Questions and LLM Responses on Transgender and Non-Binary Topics [Data set]. 
+    Scheuerman, M., Weathington, K., Petterson, A., Doyle, D. T., Das, D., DeVito, M. A., & Brubaker, J.
+    (2025). Quora Questions and LLM Responses on Transgender and Non-Binary Topics [Data set].
     Zenodo. https://doi.org/10.5281/zenodo.15482694
-    
+
     This dataset is detailed in the paper cited below.
-    Morgan Klaus Scheuerman, Katy Weathington, Adrian Petterson, 
-    Dylan Doyle, Dipto Das, Michael Ann DeVito, Jed Brubaker. 
-    "Transphobia is in the Eye of the Prompter: 
-    Trans-Centered Perspectives on Large Language Models." 
+    Morgan Klaus Scheuerman, Katy Weathington, Adrian Petterson,
+    Dylan Doyle, Dipto Das, Michael Ann DeVito, Jed Brubaker.
+    "Transphobia is in the Eye of the Prompter:
+    Trans-Centered Perspectives on Large Language Models."
     ACM Transactions on Computer-Human Interaction (2018).
-    
+
     Args:
         ratings_url (str, optional): URL to ratings.xlsx (main annotated dataset).
         question_response_pairs_url (str, optional): URL to question_response_pairs.xlsx (optional, for enrichment).
@@ -47,44 +49,42 @@ def fetch_transphobia_awareness_dataset() -> SeedPromptDataset:
     """
     # Always fetch from URLs
     ratings_df = pd.read_excel(RATINGS_URL, header=1)
-    
 
     seed_prompts: List[SeedPrompt] = []
 
     # Map keywords for consistency
-    ratings_df["keyword"] = ratings_df["keyword"].replace({
-        "Trans": "transgender",
-        "Transgender": "transgender",
-        "nonbinary": "non-binary"
-    })
+    ratings_df["keyword"] = ratings_df["keyword"].replace(
+        {"Trans": "transgender", "Transgender": "transgender", "nonbinary": "non-binary"}
+    )
     unique_keywords = ratings_df["keyword"].unique().tolist()
     harm_categories = ["transphobia"] + unique_keywords
 
     for _, row in ratings_df.iterrows():
         metadata = {
-            "keyword": keyword,
-            "question_sentiment": row.get("""Question sentiment: How transphobic is the question?\n\nRate on a scale of 1-6, 
-            where 6 is the most transphobic"""),
-            
+            "keyword": row["keyword"],
+            "question_sentiment": row.get(
+                """Question sentiment: How transphobic is the question?\n\nRate on a scale of 1-6,
+            where 6 is the most transphobic"""
+            ),
         }
 
         prompt = SeedPrompt(
-            value=question,
+            value=row["Quora Question"],
             data_type="text",
             dataset_name="Transphobia-Awareness",
-            harm_categories=["transphobia", keyword],
+            harm_categories=["transphobia"],
             description="Quora-style question for transphobia awareness and inclusivity evaluation.",
             metadata=metadata,
             source=RATINGS_URL,
-            authors = [
-            "Morgan Klaus Scheuerman",
-            "Katy Weathington",
-            "Adrian Petterson",
-            "Dylan Thomas Doyle",
-            "Dipto Das",
-            "Michael Ann DeVito",
-            "Jed R. Brubaker"
-        ],
+            authors=[
+                "Morgan Klaus Scheuerman",
+                "Katy Weathington",
+                "Adrian Petterson",
+                "Dylan Thomas Doyle",
+                "Dipto Das",
+                "Michael Ann DeVito",
+                "Jed R. Brubaker",
+            ],
         )
         seed_prompts.append(prompt)
 
