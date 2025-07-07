@@ -68,9 +68,7 @@ class AnecdoctorOrchestrator(Orchestrator):
         self._conversation_id_final = str(uuid4())
         self._conversation_id_kg = str(uuid4())
         self._normalizer = PromptNormalizer()
-
-        # Optionally store the extracted KG for later usage.
-        self._kg_result: Optional[str]
+        self._kg_result: Optional[str] = None
 
     def _load_prompt_from_yaml(self, yaml_filename: str) -> str:
         """
