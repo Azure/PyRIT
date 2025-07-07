@@ -79,7 +79,7 @@ class SeedPrompt(YamlLoadable):
         sent in the same turn. This is useful for multimodal prompts where multiple prompts need to be sent
         together in a single request. If not set, the prompt is assumed to be a single prompt that does not
         require grouping with other prompts.
-    prompt_group_alias_id (Optional[uuid.UUID]): A unique identifier for the prompt group alias.
+    prompt_seed_alias_id (Optional[uuid.UUID]): A unique identifier for the prompt seed alias.
     """
 
     value: str
@@ -268,7 +268,7 @@ class SeedPromptGroup(YamlLoadable):
 
     This class is useful when a target requires multiple prompts to be grouped
     and sent together. All prompts in the group should share the same `prompt_group_id`. Within the group,
-    there can be multiple prompts with the same `prompt_seed_alias`, which will be sent together in a single request.
+    there can be multiple prompts with the same `prompt_seed_alias`, which will be sent together in a single turn.
 
     """
 
@@ -341,21 +341,23 @@ class SeedPromptGroup(YamlLoadable):
 
     def _enforce_consistent_role(self):
         """
-        Ensures that all prompts in the group have the same role.
+        Ensures that all prompts with the same prompt_seed_id have the same role.
+        SeedPrompts that have the same prompt_seed_id are part of the same turn which
+        is why they should have the same role.
         If they do not, raises a ValueError.
 
         Raises:
             ValueError: If multiple different roles exist among the prompts.
         """
-        alias_id_to_role = {}
+        prompt_seed_id_to_role = {}
         for prompt in self.prompts:
             role = prompt.role
-            alias_id = prompt.prompt_seed_id
-            if alias_id in alias_id_to_role:
-                if alias_id_to_role[alias_id] != role:
+            prompt_seed_id = prompt.prompt_seed_id
+            if prompt_seed_id in prompt_seed_id_to_role:
+                if prompt_seed_id_to_role[prompt_seed_id] != role:
                     raise ValueError(f"Inconsistent roles found across prompts: {role}")
             else:
-                alias_id_to_role[alias_id] = role
+                prompt_seed_id_to_role[prompt_seed_id] = role
 
     def is_single_request(self) -> bool:
         unique_sequences = {prompt.sequence for prompt in self.prompts}
@@ -551,9 +553,9 @@ class SeedPromptDataset(YamlLoadable):
     def _set_prompt_seed_id_by_alias(seed_prompts: Sequence[dict]):
         """
         Sets all seed_prompt_ids based on prompt_seed_alias matches
-        This is important so the prompt_group_id_alias can be set in yaml to group prompts
+        This is important so the prompt_seed_id_alias can be set in yaml to group prompts
         """
-        SeedPromptDataset._set_id_by_alias(seed_prompts, alias_field="prompt_group_alias", id_field="prompt_group_id")
+        SeedPromptDataset._set_id_by_alias(seed_prompts, alias_field="prompt_seed_alias", id_field="prompt_seed_id")
 
     @staticmethod
     def group_seed_prompts_by_prompt_group_id(seed_prompts: Sequence[SeedPrompt]) -> Sequence[SeedPromptGroup]:
