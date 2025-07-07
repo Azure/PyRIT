@@ -48,6 +48,7 @@ chapters:
       - file: code/orchestrators/role_playing_orchestrator
       - file: code/orchestrators/tree_of_attacks_with_pruning
       - file: code/orchestrators/violent_durian
+      - file: code/orchestrators/anecdoctor_orchestrator
     - file: code/targets/0_prompt_targets
       sections:
       - file: code/targets/1_openai_chat_target
