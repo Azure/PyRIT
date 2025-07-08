@@ -286,6 +286,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             executed_turns=context.executed_turns,
             last_response=context.last_response.get_piece() if context.last_response else None,
             last_score=context.last_score,
+            attack_generation_conversation_ids=context.attack_generation_conversation_ids,
         )
 
     async def _teardown_async(self, *, context: MultiTurnAttackContext) -> None:

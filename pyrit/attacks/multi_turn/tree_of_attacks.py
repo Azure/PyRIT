@@ -1401,9 +1401,11 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         nodes_to_keep = completed_nodes[: self._tree_width]
         nodes_to_prune = completed_nodes[self._tree_width :]
 
-        # Mark pruned nodes in visualization
+        # Mark pruned nodes in visualization and track their conversation IDs
         for node in nodes_to_prune:
             context.tree_visualization[node.node_id].tag += " Pruned (width)"
+            # Add the conversation ID to the pruned list
+            context.attack_generation_conversation_ids.pruned_conversation_ids.append(node.objective_target_conversation_id)
 
         # Update context with remaining nodes
         context.nodes = nodes_to_keep
@@ -1683,6 +1685,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
             executed_turns=context.current_iteration,
             last_response=last_response,
             last_score=context.best_objective_score,
+            attack_generation_conversation_ids=context.attack_generation_conversation_ids,
         )
 
         # Set attack-specific metadata using properties

@@ -12,6 +12,7 @@ from typing import Dict, List, Optional, TypeVar, Union
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.models.score import Score
 from pyrit.models.seed_prompt import SeedPromptGroup
+from pyrit.models.attack_result import AttackConversationIds
 
 ContextT = TypeVar("ContextT", bound="AttackContext")
 
@@ -25,6 +26,9 @@ class AttackContext(ABC):
 
     # Additional labels that can be applied to the prompts throughout the attack
     memory_labels: Dict[str, str] = field(default_factory=dict)
+
+    # List of conversation IDs that were used to generate the attack
+    attack_generation_conversation_ids : AttackConversationIds = field(default_factory=AttackConversationIds)
 
     @classmethod
     @abstractmethod
@@ -94,6 +98,8 @@ class MultiTurnAttackContext(AttackContext):
 
     # Optional custom prompt that overrides the default one for the next turn
     custom_prompt: Optional[str] = None
+
+
 
     @classmethod
     def create_from_params(
