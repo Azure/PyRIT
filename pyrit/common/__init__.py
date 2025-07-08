@@ -3,6 +3,7 @@
 
 """This module contains common utilities for PyRIT."""
 
+from pyrit.common.data_url_converter import convert_local_image_to_data_url
 from pyrit.common.default_values import get_non_required_value, get_required_value
 from pyrit.common.display_response import display_image_response
 from pyrit.common.download_hf_model import (
@@ -32,6 +33,7 @@ __all__ = [
     "IN_MEMORY",
     "combine_dict",
     "combine_list",
+    "convert_local_image_to_data_url",
     "display_image_response",
     "download_chunk",
     "download_file",
