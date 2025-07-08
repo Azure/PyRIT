@@ -293,11 +293,12 @@ class SeedPromptEntry(Base):
         parameters (List[str]): The parameters included in the value.
             Note that seed prompts do not have parameters, only prompt templates do.
             However, they are stored in the same table.
-        prompt_group_id (uuid.UUID): The ID of a group the seed prompt belongs to.
-            Groups are used to organize prompts for multi-turn conversations prompts.
-        sequence (int): The turn of the seed prompt in a turn. When multi-modal turns
+        prompt_group_id (uuid.UUID): The ID of a group the seed prompt belongs to. A group represents a turn in a
+            conversation. Groups can be used to group prompts together and are used to organize prompts for multi-turn
+            conversations prompts.
+        sequence (int): The sequence of the seed prompt in a turn. When multi-modal turns
             are stored, this is used to order the prompts.
-        prompt_seed_alias (uuid.UUID): The ID of that relates other seed prompts to this one.
+        prompt_seed_id (uuid.UUID): The ID of that correlates other seed prompts to this one.
             This is useful for multi-modal prompts that need to be sent in the same turn.
 
     Methods:

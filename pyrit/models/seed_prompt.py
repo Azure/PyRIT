@@ -72,13 +72,12 @@ class SeedPrompt(YamlLoadable):
     prompt_group_alias (Optional[str]): user set alias for the prompt group. Prompts in the same group will be
         sent together. If the group alias is not set, the prompt is assumed to be the only prompt in the group.
     sequence (Optional[int]): Sequence number for ordering prompts with the same seed alias. Relevant only if the prompt
-        seed alias is set and there is more than one prompt in the prompt associated with that alias. Defaults to 0.
+        seed alias is set and there is more than one prompt associated with that alias. Defaults to 0.
     role: (ChatMessageRole): The role of the prompt in a chat context--"system", "user", or "assistant". Defaults
         to "user".
     prompt_seed_alias (Optional[str]): An alias for the seed prompt, used to identify which seed prompts should be
         sent in the same turn. This is useful for multimodal prompts where multiple prompts need to be sent
-        together in a single request. If not set, the prompt is assumed to be a single prompt that does not
-        require grouping with other prompts.
+        together in a single turn. If not set, the prompt is assumed to be the only prompt in the turn.
     prompt_seed_alias_id (Optional[uuid.UUID]): A unique identifier for the prompt seed alias.
     """
 
