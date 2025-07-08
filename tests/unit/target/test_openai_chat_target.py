@@ -513,6 +513,23 @@ def test_is_json_response_supported(target: OpenAIChatTarget):
     assert target.is_json_response_supported() is True
 
 
+def test_inheritance_from_prompt_chat_target(target: OpenAIChatTarget):
+    """Test that OpenAIChatTarget properly inherits from PromptChatTarget."""
+    from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
+
+    assert isinstance(target, PromptChatTarget), "OpenAIChatTarget must inherit from PromptChatTarget"
+
+
+def test_inheritance_from_prompt_chat_target_base():
+    """Test that OpenAIChatTargetBase properly inherits from PromptChatTarget."""
+    from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
+    from pyrit.prompt_target.openai.openai_chat_target_base import OpenAIChatTargetBase
+
+    # Create a minimal instance to test inheritance
+    target = OpenAIChatTargetBase(model_name="test-model", endpoint="https://test.com", api_key="test-key")
+    assert isinstance(target, PromptChatTarget), "OpenAIChatTargetBase must inherit from PromptChatTarget"
+
+
 def test_is_response_format_json_supported(target: OpenAIChatTarget):
 
     request_piece = PromptRequestPiece(
