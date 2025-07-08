@@ -11,9 +11,14 @@ from unit.mocks import MockPromptTarget, get_image_request_piece
 
 from pyrit.exceptions import EmptyResponseException
 from pyrit.memory import CentralMemory
-from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse
+from pyrit.models import (
+    PromptDataType,
+    PromptRequestPiece,
+    PromptRequestResponse,
+    SeedPrompt,
+    SeedPromptGroup,
+)
 from pyrit.models.filter_criteria import PromptFilterCriteria
-from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
 from pyrit.prompt_converter import (
     Base64Converter,
     ConverterResult,

@@ -8,7 +8,8 @@ from typing import Optional
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
+from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models.seed_prompt_group import SeedPromptGroup
 from pyrit.orchestrator import OrchestratorResult, PromptSendingOrchestrator
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,

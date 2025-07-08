@@ -268,7 +268,7 @@ class TestHelpers:
         mock_dataset = MagicMock()
         mock_dataset.prompts = mock_seed_prompts
 
-        with patch("pyrit.models.seed_prompt.SeedPromptDataset.from_yaml_file", return_value=mock_dataset):
+        with patch("pyrit.models.seed_prompt_dataset.SeedPromptDataset.from_yaml_file", return_value=mock_dataset):
             attack._load_adversarial_prompts()
 
 
