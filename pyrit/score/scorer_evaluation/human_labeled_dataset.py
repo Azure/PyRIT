@@ -6,7 +6,7 @@ import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Union, get_args
+from typing import List, Optional, Union, cast, get_args
 
 import pandas as pd
 
@@ -174,7 +174,9 @@ class HumanLabeledDataset:
                 PromptRequestResponse(
                     request_pieces=[
                         PromptRequestPiece(
-                            role="assistant", original_value=response_to_score, original_value_data_type=data_type
+                            role="assistant", 
+                            original_value=response_to_score, 
+                            original_value_data_type=cast(PromptDataType, data_type)
                         )
                     ],
                 )

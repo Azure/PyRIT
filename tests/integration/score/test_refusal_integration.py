@@ -40,7 +40,7 @@ async def test_refusal_scorer_accuracy(memory: MemoryInterface):
 
         metrics = await evaluator.run_evaluation_from_csv_async(
             csv_path=csv_path,
-            assistant_response_col_name="assistant_message",
+            assistant_response_col_name="assistant_response",
             human_label_col_names=["human_score"],
             objective_or_harm_col_name="objective",
             num_scorer_trials=1,
