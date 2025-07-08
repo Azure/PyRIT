@@ -9,7 +9,7 @@ import json
 import logging
 import uuid
 from abc import abstractmethod
-from typing import Dict, List, Literal, Optional, Sequence
+from typing import Dict, List, Optional, Sequence
 
 from pyrit.exceptions import (
     InvalidJsonException,
@@ -28,6 +28,7 @@ from pyrit.models import (
 from pyrit.models.literals import ChatMessageRole
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
+from pyrit.score.scorer_evaluation.metrics_type import MetricsType
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +71,7 @@ class Scorer(abc.ABC):
         """
         raise NotImplementedError("score_async method not implemented")
 
-    def get_scorer_metrics(self, dataset_name: str, metrics_type: Optional[Literal["harm", "objective"]] = None):
+    def get_scorer_metrics(self, dataset_name: str, metrics_type: Optional[MetricsType] = None):
         """
         Returns evaluation statistics for the scorer using the dataset_name of the human labeled dataset that this
         scorer was run against. If you did not evaluate the scorer against your own human labeled dataset, you can
@@ -84,20 +85,17 @@ class Scorer(abc.ABC):
         Args:
             dataset_name (str): The name of the dataset on which the scorer evaluation was run. This is used to
                 inform the name of the metrics file to read in the `scorer_evals` directory.
-            metrics_type (Literal["harm", "objective"], optional): The type of metrics to retrieve, either "harm"
-                or "objective". If not provided, it will default to "objective" for true/false scorers
-                and "harm" for all other scorers.
+            metrics_type (MetricsType, optional): The type of metrics to retrieve, either HARM
+                or OBJECTIVE. If not provided, it will default to OBJECTIVE for true/false scorers
+                and HARM for all other scorers.
 
         Returns:
             ScorerMetrics: A ScorerMetrics object containing the saved evaluation statistics for the scorer.
         """
-        # Importing ScorerEvaluator here to avoid circular imports
-        from pyrit.score.scorer_evaluator import ScorerEvaluator
+        # Import ScorerEvaluator here to avoid circular imports
+        from pyrit.score import ScorerEvaluator
 
-        if not metrics_type:
-            metrics_type = "objective" if self.scorer_type == "true_false" else "harm"
         scorer_evaluator = ScorerEvaluator.from_scorer(self, metrics_type=metrics_type)
-
         return scorer_evaluator.get_scorer_metrics(dataset_name=dataset_name)
 
     async def score_text_async(self, text: str, *, task: Optional[str] = None) -> list[Score]:

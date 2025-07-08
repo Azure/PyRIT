@@ -8,20 +8,20 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import numpy as np
 import pytest
 
+from pyrit.common.path import SCORER_EVALS_HARM_PATH, SCORER_EVALS_OBJECTIVE_PATH
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
-from pyrit.score import HumanLabeledDataset, Scorer
-from pyrit.score.human_labeled_dataset import (
+from pyrit.score import (
     HarmHumanLabeledEntry,
-    ObjectiveHumanLabeledEntry,
-)
-from pyrit.score.scorer_evaluator import (
-    SCORER_EVALS_HARM_PATH,
-    SCORER_EVALS_OBJECTIVE_PATH,
     HarmScorerEvaluator,
     HarmScorerMetrics,
+    HumanLabeledDataset,
+    MetricsType,
+    ObjectiveHumanLabeledEntry,
     ObjectiveScorerEvaluator,
     ObjectiveScorerMetrics,
+    Scorer,
+    ScorerEvaluator,
 )
 
 
@@ -93,16 +93,16 @@ def test_objective_metrics_to_json_and_from_json(tmp_path):
 
 
 def test_from_scorer_harm(mock_harm_scorer):
-    evaluator = HarmScorerEvaluator.from_scorer(mock_harm_scorer, metrics_type="harm")
+    evaluator = ScorerEvaluator.from_scorer(mock_harm_scorer, metrics_type=MetricsType.HARM)
     assert isinstance(evaluator, HarmScorerEvaluator)
-    evaluator2 = HarmScorerEvaluator.from_scorer(mock_harm_scorer)
+    evaluator2 = ScorerEvaluator.from_scorer(mock_harm_scorer)
     assert isinstance(evaluator2, HarmScorerEvaluator)
 
 
 def test_from_scorer_objective(mock_objective_scorer):
-    evaluator = ObjectiveScorerEvaluator.from_scorer(mock_objective_scorer, metrics_type="objective")
+    evaluator = ScorerEvaluator.from_scorer(mock_objective_scorer, metrics_type=MetricsType.OBJECTIVE)
     assert isinstance(evaluator, ObjectiveScorerEvaluator)
-    evaluator2 = ObjectiveScorerEvaluator.from_scorer(mock_objective_scorer)
+    evaluator2 = ScorerEvaluator.from_scorer(mock_objective_scorer)
     assert isinstance(evaluator2, ObjectiveScorerEvaluator)
 
 
@@ -155,7 +155,9 @@ def test_get_scorer_metrics_objective(tmp_path, mock_objective_scorer):
 
 
 @pytest.mark.asyncio
-@patch("pyrit.score.scorer_evaluator.HarmScorerEvaluator.run_evaluation_async", new_callable=AsyncMock)
+@patch(
+    "pyrit.score.scorer_evaluation.scorer_evaluator.HarmScorerEvaluator.run_evaluation_async", new_callable=AsyncMock
+)
 async def test_run_evaluation_from_csv_async_harm(mock_run_eval, sample_harm_csv_path, mock_harm_scorer):
     evaluator = HarmScorerEvaluator(mock_harm_scorer)
     expected_metrics = HarmScorerMetrics(
@@ -171,7 +173,7 @@ async def test_run_evaluation_from_csv_async_harm(mock_run_eval, sample_harm_csv
 
     result = await evaluator.run_evaluation_from_csv_async(
         csv_path=sample_harm_csv_path,
-        assistant_response_col="assistant_response",
+        assistant_response_col_name="assistant_response",
         human_label_col_names=["human_score_1", "human_score_2", "human_score_3"],
         objective_or_harm_col_name="category",
         num_scorer_trials=2,
@@ -184,7 +186,10 @@ async def test_run_evaluation_from_csv_async_harm(mock_run_eval, sample_harm_csv
 
 
 @pytest.mark.asyncio
-@patch("pyrit.score.scorer_evaluator.ObjectiveScorerEvaluator.run_evaluation_async", new_callable=AsyncMock)
+@patch(
+    "pyrit.score.scorer_evaluation.scorer_evaluator.ObjectiveScorerEvaluator.run_evaluation_async",
+    new_callable=AsyncMock,
+)
 async def test_run_evaluation_from_csv_async_objective(mock_run_eval, sample_objective_csv_path, mock_objective_scorer):
     evaluator = ObjectiveScorerEvaluator(mock_objective_scorer)
     expected_metrics = ObjectiveScorerMetrics(
@@ -198,9 +203,10 @@ async def test_run_evaluation_from_csv_async_objective(mock_run_eval, sample_obj
 
     result = await evaluator.run_evaluation_from_csv_async(
         csv_path=sample_objective_csv_path,
-        assistant_response_col="assistant_response",
+        assistant_response_col_name="assistant_response",
         human_label_col_names=["human_score"],
         objective_or_harm_col_name="objective",
+        assistant_response_data_type_col_name="data_type",
         num_scorer_trials=2,
         save_results=False,
         dataset_name="SAMPLE_mixed_objective_refusal",
@@ -259,7 +265,7 @@ async def test_run_evaluation_async_harm(mock_harm_scorer):
     ]
     entry1 = HarmHumanLabeledEntry(responses, [0.1, 0.3], "hate_speech")
     entry2 = HarmHumanLabeledEntry(responses, [0.2, 0.6], "hate_speech")
-    mock_dataset = HumanLabeledDataset(name="test_dataset", metrics_type="harm", entries=[entry1, entry2])
+    mock_dataset = HumanLabeledDataset(name="test_dataset", metrics_type=MetricsType.HARM, entries=[entry1, entry2])
     # Patch scorer to return fixed scores
     entry_values = [MagicMock(get_value=lambda: 0.2), MagicMock(get_value=lambda: 0.4)]
     mock_harm_scorer.score_responses_inferring_tasks_batch_async = AsyncMock(return_value=entry_values)
@@ -283,7 +289,7 @@ async def test_run_evaluation_async_objective(mock_objective_scorer):
         )
     ]
     entry = ObjectiveHumanLabeledEntry(responses, [True], "Test objective")
-    mock_dataset = HumanLabeledDataset(name="test_dataset", metrics_type="objective", entries=[entry])
+    mock_dataset = HumanLabeledDataset(name="test_dataset", metrics_type=MetricsType.OBJECTIVE, entries=[entry])
     # Patch scorer to return fixed scores
     mock_objective_scorer.score_prompts_with_tasks_batch_async = AsyncMock(
         return_value=[MagicMock(get_value=lambda: False)]
@@ -303,7 +309,7 @@ def test_compute_objective_metrics_perfect_agreement(mock_objective_scorer):
     # 2 responses, 3 human scores each, all agree (all 1s), model also all 1s
     all_human_scores = np.array([[1, 1], [1, 1], [1, 1]])
     all_model_scores = np.array([[1, 1], [1, 1]])
-    metrics = evaluator._compute_objective_metrics(all_human_scores, all_model_scores)
+    metrics = evaluator._compute_objective_metrics(all_human_scores=all_human_scores, all_model_scores=all_model_scores)
     assert metrics.accuracy == 1.0
     assert metrics.f1_score == 1.0
     assert metrics.precision == 1.0
@@ -315,7 +321,7 @@ def test_compute_objective_metrics_partial_agreement(mock_objective_scorer):
     # 2 responses, 3 human scores each, mixed labels, model gets one right, one wrong
     all_human_scores = np.array([[1, 0], [1, 0], [0, 1]])  # gold: [1, 0]
     all_model_scores = np.array([[1, 1]])
-    metrics = evaluator._compute_objective_metrics(all_human_scores, all_model_scores)
+    metrics = evaluator._compute_objective_metrics(all_human_scores=all_human_scores, all_model_scores=all_model_scores)
     # gold: [1, 0], model: [1, 1]
     # TP=1 (first), FP=1 (second), TN=0, FN=0
     assert metrics.accuracy == 0.5
@@ -331,7 +337,7 @@ def test_compute_harm_metrics_perfect_agreement(mock_harm_scorer):
     # 2 model trials
     all_model_scores = np.array([[0.1, 0.2], [0.1, 0.2]])
     # Patch krippendorff.alpha to return 1.0 for all calls
-    metrics = evaluator._compute_harm_metrics(all_human_scores, all_model_scores)
+    metrics = evaluator._compute_harm_metrics(all_human_scores=all_human_scores, all_model_scores=all_model_scores)
     assert metrics.mean_absolute_error == 0.0
     assert metrics.mae_standard_error == 0.0
     assert metrics.krippendorff_alpha_combined == 1.0
@@ -344,5 +350,5 @@ def test_compute_harm_metrics_partial_agreement(mock_harm_scorer):
     # 2 responses, 3 human scores each, model is off by 0.1 for each
     all_human_scores = np.array([[0.1, 0.2], [0.1, 0.2], [0.1, 0.2]])
     all_model_scores = np.array([[0.2, 0.3], [0.2, 0.3]])
-    metrics = evaluator._compute_harm_metrics(all_human_scores, all_model_scores)
+    metrics = evaluator._compute_harm_metrics(all_human_scores=all_human_scores, all_model_scores=all_model_scores)
     assert np.isclose(metrics.mean_absolute_error, 0.1)

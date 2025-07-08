@@ -7,7 +7,7 @@ import logging
 import os
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import List, Literal, Optional, Type, TypeVar, Union
+from typing import List, Optional, Type, TypeVar, Union
 
 import krippendorff
 import numpy as np
@@ -18,12 +18,13 @@ from pyrit.common.path import (
     SCORER_EVALS_HARM_PATH,
     SCORER_EVALS_OBJECTIVE_PATH,
 )
-from pyrit.score import (
+from pyrit.score import Scorer
+from pyrit.score.scorer_evaluation.human_labeled_dataset import (
     HarmHumanLabeledEntry,
     HumanLabeledDataset,
     ObjectiveHumanLabeledEntry,
-    Scorer,
 )
+from pyrit.score.scorer_evaluation.metrics_type import MetricsType
 
 logger = logging.getLogger(__name__)
 
@@ -131,27 +132,26 @@ class ScorerEvaluator(abc.ABC):
         self.scorer = scorer
 
     @classmethod
-    def from_scorer(
-        cls, scorer: Scorer, metrics_type: Optional[Literal["harm", "objective"]] = None
-    ) -> Union["HarmScorerEvaluator", "ObjectiveScorerEvaluator"]:
+    def from_scorer(cls, scorer: Scorer, metrics_type: Optional[MetricsType] = None) -> "ScorerEvaluator":
         """
         Factory method to create a ScorerEvaluator based on the type of scoring.
 
         Args:
             scorer (Scorer): The scorer to evaluate.
-            metrics_type (Literal["harm", "objective"]): The type of scoring, either "harm" or "objective".
-                If not provided, it will default to "objective" for true/false scorers and "harm" for all other
+            metrics_type (MetricsType): The type of scoring, either HARM or OBJECTIVE.
+                If not provided, it will default to OBJECTIVE for true/false scorers and HARM for all other
                 scorers.
 
         Returns:
             ScorerEvaluator: An instance of HarmScorerEvaluator or ObjectiveScorerEvaluator.
         """
         if not metrics_type:
-            metrics_type = "objective" if scorer.scorer_type == "true_false" else "harm"
-        if metrics_type == "harm":
-            return HarmScorerEvaluator(scorer=scorer)
-        elif metrics_type == "objective":
-            return ObjectiveScorerEvaluator(scorer=scorer)
+            metrics_type = MetricsType.OBJECTIVE if scorer.scorer_type == "true_false" else MetricsType.HARM
+
+        _EVALUATOR_MAP = {MetricsType.HARM: HarmScorerEvaluator, MetricsType.OBJECTIVE: ObjectiveScorerEvaluator}
+
+        evaluator = _EVALUATOR_MAP.get(metrics_type, HarmScorerEvaluator)
+        return evaluator(scorer=scorer)
 
     @abc.abstractmethod
     def get_scorer_metrics(self, dataset_name: str) -> ScorerMetrics:
@@ -170,9 +170,10 @@ class ScorerEvaluator(abc.ABC):
     async def run_evaluation_from_csv_async(
         self,
         csv_path: Union[str, Path],
-        assistant_response_col: str,
+        assistant_response_col_name: str,
         human_label_col_names: List[str],
         objective_or_harm_col_name: str,
+        assistant_response_data_type_col_name: Optional[str] = None,
         num_scorer_trials: int = 1,
         save_results: bool = True,
         dataset_name: Optional[str] = None,
@@ -183,10 +184,13 @@ class ScorerEvaluator(abc.ABC):
         Args:
             csv_path (str): The path to the CSV file, which will be used to construct the HumanLabeledDataset
                 object.
-            assistant_response_col (str): The name of the column in the CSV file that contains the assistant responses.
+            assistant_response_col_name (str): The name of the column in the CSV file that contains the assistant
+                responses.
             human_label_col_names (List[str]): The names of the columns in the CSV file that contain the human labels.
             objective_or_harm_col_name (str): The name of the column in the CSV file that contains the objective or harm
                 category associated with each response.
+            assistant_response_data_type_col_name (str, Optional): The name of the column containing the data type of
+                the assistant responses. If not specified, it is assumed that the responses are text.
             num_scorer_trials (int): The number of trials to run the scorer on all responses.
             save_results (bool): Whether to save the metrics in a JSON file and the model score(s) for each response
                 in a CSV file. Defaults to True.
@@ -212,7 +216,7 @@ class ScorerEvaluator(abc.ABC):
                 in a CSV file. Defaults to True.
         Returns:
             ScorerMetrics: The metrics for the scorer. This will be either HarmScorerMetrics or ObjectiveScorerMetrics
-            depending on the type of the HumanLabeledDataset ('harm' or 'objective').
+                depending on the type of the HumanLabeledDataset (HARM or OBJECTIVE).
         """
         pass
 
@@ -242,7 +246,7 @@ class ScorerEvaluator(abc.ABC):
 
 class HarmScorerEvaluator(ScorerEvaluator):
     """
-    A class that evaluates a harm scorer against HumanLabeledDatasets of type 'harm'.
+    A class that evaluates a harm scorer against HumanLabeledDatasets of type HARM.
     """
 
     def get_scorer_metrics(self, dataset_name) -> HarmScorerMetrics:
@@ -256,19 +260,21 @@ class HarmScorerEvaluator(ScorerEvaluator):
     async def run_evaluation_from_csv_async(
         self,
         csv_path: Union[str, Path],
-        assistant_response_col: str,
+        assistant_response_col_name: str,
         human_label_col_names: List[str],
         objective_or_harm_col_name: str,
+        assistant_response_data_type_col_name: Optional[str] = None,
         num_scorer_trials: int = 1,
         save_results: bool = True,
         dataset_name: Optional[str] = None,
     ) -> HarmScorerMetrics:
         labeled_dataset = HumanLabeledDataset.from_csv(
             csv_path=csv_path,
-            metrics_type="harm",
-            assistant_responses_col_name=assistant_response_col,
+            metrics_type=MetricsType.HARM,
+            assistant_response_col_name=assistant_response_col_name,
             human_label_col_names=human_label_col_names,
             objective_or_harm_col_name=objective_or_harm_col_name,
+            assistant_response_data_type_col_name=assistant_response_data_type_col_name,
             dataset_name=dataset_name,
         )
         metrics = await self.run_evaluation_async(
@@ -284,7 +290,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
         save_results: bool = True,
     ) -> HarmScorerMetrics:
         """
-        Evaluate the scorer against a HumanLabeledDataset of type 'harm'. If save_results is True, the evaluation
+        Evaluate the scorer against a HumanLabeledDataset of type HARM. If save_results is True, the evaluation
         metrics and CSV file containing the LLM-produced scores across all trials will be saved in the
         'dataset/score/scorer_evals/harm' directory based on the name of the HumanLabeledDataset.
 
@@ -296,8 +302,8 @@ class HarmScorerEvaluator(ScorerEvaluator):
         Returns:
             HarmScorerMetrics: The metrics for the harm scorer.
         """
-        if labeled_dataset.metrics_type != "harm":
-            raise ValueError("The HumanLabeledDataset must be of type 'harm' to evaluate a harm scorer.")
+        if labeled_dataset.metrics_type != MetricsType.HARM:
+            raise ValueError("The HumanLabeledDataset must be of type HARM to evaluate a harm scorer.")
 
         if len({entry.harm_category for entry in labeled_dataset.entries}) > 1:  # type: ignore
             raise ValueError("Evaluating a dataset with multiple harm categories is not currently supported.")
@@ -307,12 +313,12 @@ class HarmScorerEvaluator(ScorerEvaluator):
             if not isinstance(entry, HarmHumanLabeledEntry):
                 raise ValueError(
                     f"Entry at index {index} is not a HarmHumanLabeledEntry,"
-                    " but the HumanLabeledDataset type is 'harm'."
+                    " but the HumanLabeledDataset type is HARM."
                 )
-            for request_response in entry.responses_to_score:
+            for request_response in entry.conversation:
                 self.scorer._memory.add_request_response_to_memory(request=request_response)
                 # Logic may need to change for multi-turn scoring
-                assistant_responses.append(request_response.request_pieces[0])
+                assistant_responses.append(request_response.get_piece())
             human_scores_list.append(entry.human_scores)
             harms.append(entry.harm_category)
 
@@ -352,6 +358,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
 
     def _compute_harm_metrics(
         self,
+        *,
         all_human_scores: np.ndarray,
         all_model_scores: np.ndarray,
     ) -> HarmScorerMetrics:
@@ -414,7 +421,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
 
 class ObjectiveScorerEvaluator(ScorerEvaluator):
     """
-    A class that evaluates an objective scorer against HumanLabeledDatasets of type 'objective'.
+    A class that evaluates an objective scorer against HumanLabeledDatasets of type OBJECTIVE.
     """
 
     def get_scorer_metrics(self, dataset_name: str) -> ObjectiveScorerMetrics:
@@ -428,19 +435,21 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
     async def run_evaluation_from_csv_async(
         self,
         csv_path: Union[str, Path],
-        assistant_response_col: str,
+        assistant_response_col_name: str,
         human_label_col_names: List[str],
         objective_or_harm_col_name: str,
+        assistant_response_data_type_col_name: Optional[str] = None,
         num_scorer_trials: int = 1,
         save_results: bool = True,
         dataset_name: Optional[str] = None,
     ) -> ObjectiveScorerMetrics:
         labeled_dataset = HumanLabeledDataset.from_csv(
             csv_path=csv_path,
-            metrics_type="objective",
-            assistant_responses_col_name=assistant_response_col,
+            metrics_type=MetricsType.OBJECTIVE,
+            assistant_response_col_name=assistant_response_col_name,
             human_label_col_names=human_label_col_names,
             objective_or_harm_col_name=objective_or_harm_col_name,
+            assistant_response_data_type_col_name=assistant_response_data_type_col_name,
             dataset_name=dataset_name,
         )
         metrics = await self.run_evaluation_async(
@@ -453,7 +462,7 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
         self, labeled_dataset: HumanLabeledDataset, num_scorer_trials: int = 1, save_results: bool = True
     ) -> ObjectiveScorerMetrics:
         """
-        Evaluate the scorer against a HumanLabeledDataset of type 'objective'. If save_results is True, the evaluation
+        Evaluate the scorer against a HumanLabeledDataset of type OBJECTIVE. If save_results is True, the evaluation
         metrics and CSV file containing the LLM-produced scores across all trials will be saved in the
         'dataset/score/scorer_evals/objective' directory based on the name of the HumanLabeledDataset.
 
@@ -464,16 +473,16 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
         Returns:
             ObjectiveScorerMetrics: The metrics for the objective scorer.
         """
-        if labeled_dataset.metrics_type != "objective":
-            raise ValueError("The HumanLabeledDataset must be of type 'objective' to evaluate an objective scorer.")
+        if labeled_dataset.metrics_type != MetricsType.OBJECTIVE:
+            raise ValueError("The HumanLabeledDataset must be of type OBJECTIVE to evaluate an objective scorer.")
         assistant_responses, human_scores_list, objectives = [], [], []
         for index, entry in enumerate(labeled_dataset.entries):
             if not isinstance(entry, ObjectiveHumanLabeledEntry):
                 raise ValueError(
                     f"Entry at index {index} is not an ObjectiveHumanLabeledEntry,"
-                    " but the HumanLabeledDataset type is 'objective'."
+                    " but the HumanLabeledDataset type is OBJECTIVE."
                 )
-            for request_response in entry.responses_to_score:
+            for request_response in entry.conversation:
                 self.scorer._memory.add_request_response_to_memory(request=request_response)
                 # Logic may need to change for multi-turn scoring
                 assistant_responses.append(request_response.request_pieces[0])
@@ -515,6 +524,7 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
 
     def _compute_objective_metrics(
         self,
+        *,
         all_human_scores: np.ndarray,
         all_model_scores: np.ndarray,
     ) -> ObjectiveScorerMetrics:
@@ -546,7 +556,7 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
         Get the path to save the metrics file.
 
         Args:
-            metrics_type (Literal["harm", "objective"]): The type of the scorer metrics, either "harm" or "objective".
+            metrics_type (MetricsType): The type of the scorer metrics, either HARM or OBJECTIVE.
             dataset_name (str): The name of the HumanLabeledDataset on which evaluation was run.
 
         Returns:
@@ -560,7 +570,7 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
         Get the path to save the CSV results file.
 
         Args:
-            metrics_type (Literal["harm", "objective"]): The type of the scorer metrics, either "harm" or "objective".
+            metrics_type (MetricsType): The type of the scorer metrics, either HARM or OBJECTIVE.
             dataset_name (str): The name of the HumanLabeledDataset on which evaluation was run.
 
         Returns:

@@ -1139,7 +1139,10 @@ async def test_score_response_with_objective_async_mixed_roles():
 
 def test_get_scorer_metrics(tmp_path):
     from pyrit.score import Scorer
-    from pyrit.score.scorer_evaluator import HarmScorerEvaluator, HarmScorerMetrics
+    from pyrit.score.scorer_evaluation.scorer_evaluator import (
+        HarmScorerEvaluator,
+        HarmScorerMetrics,
+    )
 
     # Create a fake metrics file
     metrics = HarmScorerMetrics(
