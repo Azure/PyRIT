@@ -174,9 +174,9 @@ class HumanLabeledDataset:
                 PromptRequestResponse(
                     request_pieces=[
                         PromptRequestPiece(
-                            role="assistant", 
-                            original_value=response_to_score, 
-                            original_value_data_type=cast(PromptDataType, data_type)
+                            role="assistant",
+                            original_value=response_to_score,
+                            original_value_data_type=cast(PromptDataType, data_type),
                         )
                     ],
                 )
