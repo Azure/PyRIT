@@ -320,6 +320,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         request_piece: PromptRequestPiece,
     ) -> PromptRequestResponse:
 
+        response = ""
         try:
             response = json.loads(open_ai_str_response)
         except json.JSONDecodeError as e:
