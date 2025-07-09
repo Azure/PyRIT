@@ -11,9 +11,14 @@ from unit.mocks import MockPromptTarget, get_image_request_piece
 
 from pyrit.exceptions import EmptyResponseException
 from pyrit.memory import CentralMemory
-from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse
+from pyrit.models import (
+    PromptDataType,
+    PromptRequestPiece,
+    PromptRequestResponse,
+    SeedPrompt,
+    SeedPromptGroup,
+)
 from pyrit.models.filter_criteria import PromptFilterCriteria
-from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
 from pyrit.prompt_converter import (
     Base64Converter,
     ConverterResult,
@@ -211,22 +216,20 @@ async def test_send_prompt_async_empty_exception(mock_memory_instance, seed_prom
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_adds_memory_twice(
-    mock_memory_instance, seed_prompt_group, response: PromptRequestResponse
-):
+async def test_send_prompt_async_adds_memory_twice(mock_memory_instance, seed_prompt_group, response: PromptRequestResponse):
     prompt_target = MagicMock()
     prompt_target.send_prompt_async = AsyncMock(return_value=response)
 
     normalizer = PromptNormalizer()
 
-    response = await normalizer.send_prompt_async(seed_prompt_group=seed_prompt_group, target=prompt_target)
+    response = await normalizer.send_prompt_async(
+        seed_prompt_group=seed_prompt_group, target=prompt_target
+    )
     assert mock_memory_instance.add_request_response_to_memory.call_count == 2
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_no_converters_response(
-    mock_memory_instance, seed_prompt_group, response: PromptRequestResponse
-):
+async def test_send_prompt_async_no_converters_response(seed_prompt_group, response: PromptRequestResponse):
 
     prompt_target = MagicMock()
     prompt_target.send_prompt_async = AsyncMock(return_value=response)
@@ -234,7 +237,9 @@ async def test_send_prompt_async_no_converters_response(
     normalizer = PromptNormalizer()
 
     # Send prompt async and check the response
-    response = await normalizer.send_prompt_async(seed_prompt_group=seed_prompt_group, target=prompt_target)
+    response = await normalizer.send_prompt_async(
+        seed_prompt_group=seed_prompt_group, target=prompt_target
+    )
     assert response.get_value() == "Hello", "There were no response converters"
 
 
@@ -358,7 +363,6 @@ async def test_build_prompt_request_response(mock_memory_instance, seed_prompt_g
         conversation_id=conversation_id,
         request_converter_configurations=request_converters,
         target=prompt_target,
-        sequence=2,
         labels=labels,
         orchestrator_identifier=orchestrator_identifier,
     )

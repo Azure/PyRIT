@@ -10,7 +10,8 @@ from typing import Dict, List, Optional, Union
 from pyrit.common import default_values
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import Identifier, PromptDataType
-from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
+from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models.seed_prompt_group import SeedPromptGroup
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
 from pyrit.prompt_normalizer.prompt_converter_configuration import (

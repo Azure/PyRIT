@@ -242,6 +242,31 @@ def test_group_id_set_unequally_raises():
     assert "Inconsistent group IDs found across prompts" in str(exc_info.value)
 
 
+def test_alias_id_from_empty_group_set_equally():
+    id = uuid.uuid4()
+    group = SeedPromptGroup(
+        prompts=[
+            SeedPrompt(value="Hello", data_type="text", prompt_seed_id=id, prompt_group_alias="test_alias"),
+            SeedPrompt(value="World", data_type="text", prompt_seed_id=id, prompt_group_alias="test_alias"),
+        ]
+    )
+
+    assert group.prompts[0].prompt_seed_id
+    assert group.prompts[1].prompt_seed_id == group.prompts[0].prompt_seed_id
+
+
+def test_unequal_role_for_equal_alias_raises():
+    with pytest.raises(ValueError) as exc_info:
+        SeedPromptGroup(
+            prompts=[
+                SeedPrompt(value="Hello", data_type="text", prompt_seed_alias="test_alias", role="system"),
+                SeedPrompt(value="World", data_type="text", prompt_seed_alias="test_alias"),
+            ]
+        )
+
+    assert "Inconsistent roles found across prompts" in str(exc_info.value)
+
+
 @pytest.mark.asyncio
 async def test_hashes_generated():
     entry = SeedPrompt(
