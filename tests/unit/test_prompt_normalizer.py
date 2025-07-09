@@ -216,20 +216,20 @@ async def test_send_prompt_async_empty_exception(mock_memory_instance, seed_prom
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_adds_memory_twice(mock_memory_instance, seed_prompt, response: PromptRequestResponse):
+async def test_send_prompt_async_adds_memory_twice(mock_memory_instance, seed_prompt_group, response: PromptRequestResponse):
     prompt_target = MagicMock()
     prompt_target.send_prompt_async = AsyncMock(return_value=response)
 
     normalizer = PromptNormalizer()
 
     response = await normalizer.send_prompt_async(
-        seed_prompt_group=SeedPromptGroup(prompts=[seed_prompt]), target=prompt_target
+        seed_prompt_group=seed_prompt_group, target=prompt_target
     )
     assert mock_memory_instance.add_request_response_to_memory.call_count == 2
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_no_converters_response(seed_prompt, response: PromptRequestResponse):
+async def test_send_prompt_async_no_converters_response(seed_prompt_group, response: PromptRequestResponse):
 
     prompt_target = MagicMock()
     prompt_target.send_prompt_async = AsyncMock(return_value=response)
@@ -238,14 +238,14 @@ async def test_send_prompt_async_no_converters_response(seed_prompt, response: P
 
     # Send prompt async and check the response
     response = await normalizer.send_prompt_async(
-        seed_prompt_group=SeedPromptGroup(prompts=[seed_prompt]), target=prompt_target
+        seed_prompt_group=seed_prompt_group, target=prompt_target
     )
     assert response.get_value() == "Hello", "There were no response converters"
 
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_converters_response(
-    mock_memory_instance, seed_prompt, response: PromptRequestResponse
+    mock_memory_instance, seed_prompt_group, response: PromptRequestResponse
 ):
 
     prompt_target = MagicMock()
@@ -256,7 +256,7 @@ async def test_send_prompt_async_converters_response(
     normalizer = PromptNormalizer()
 
     response = await normalizer.send_prompt_async(
-        seed_prompt_group=SeedPromptGroup(prompts=[seed_prompt]),
+        seed_prompt_group=seed_prompt_group,
         response_converter_configurations=[response_converter],
         target=prompt_target,
     )
@@ -363,7 +363,6 @@ async def test_build_prompt_request_response(mock_memory_instance, seed_prompt_g
         conversation_id=conversation_id,
         request_converter_configurations=request_converters,
         target=prompt_target,
-        sequence=2,
         labels=labels,
         orchestrator_identifier=orchestrator_identifier,
     )
