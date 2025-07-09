@@ -16,7 +16,7 @@ from pyrit.models import (
     construct_response_from_request,
 )
 from pyrit.models.filter_criteria import PromptConverterState, PromptFilterCriteria
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models.seed_prompt_group import SeedPromptGroup
 from pyrit.prompt_normalizer import NormalizerRequest, PromptConverterConfiguration
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
@@ -42,7 +42,7 @@ class PromptNormalizer:
     async def send_prompt_async(
         self,
         *,
-        seed_prompts: list[SeedPrompt],
+        seed_prompt_group: SeedPromptGroup,
         target: PromptTarget,
         conversation_id: Optional[str] = None,
         request_converter_configurations: list[PromptConverterConfiguration] = [],
@@ -54,7 +54,7 @@ class PromptNormalizer:
         Sends a single request to a target.
 
         Args:
-            seed_prompts (list[SeedPrompt]): The seed prompts to be sent.
+            seed_prompt_group (SeedPromptGroup): The seed prompt group to be sent.
             target (PromptTarget): The target to which the prompt is sent.
             conversation_id (str, optional): The ID of the conversation. Defaults to None.
             request_converter_configurations (list[PromptConverterConfiguration], optional): Configurations for
@@ -74,7 +74,7 @@ class PromptNormalizer:
         """
 
         request = await self._build_prompt_request_response(
-            seed_prompts=seed_prompts,
+            seed_prompt_group=seed_prompt_group,
             conversation_id=conversation_id,
             request_converter_configurations=request_converter_configurations,
             target=target,
@@ -295,7 +295,7 @@ class PromptNormalizer:
     async def _build_prompt_request_response(
         self,
         *,
-        seed_prompts: list[SeedPrompt],
+        seed_prompt_group: SeedPromptGroup,
         conversation_id: str,
         request_converter_configurations: list[PromptConverterConfiguration],
         target: PromptTarget,
@@ -324,7 +324,7 @@ class PromptNormalizer:
 
         # All prompt request pieces within PromptRequestResponse needs to have same conversation ID.
         conversation_id = conversation_id if conversation_id else str(uuid4())
-        for seed_prompt in seed_prompts:
+        for seed_prompt in seed_prompt_group.prompts:
 
             prompt_request_piece = PromptRequestPiece(
                 role=seed_prompt.role,

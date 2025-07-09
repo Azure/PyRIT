@@ -35,6 +35,7 @@ from pyrit.models import (
     PromptRequestResponse,
     Score,
     SeedPrompt,
+    SeedPromptGroup,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
@@ -471,10 +472,12 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
         """
         # Set JSON format in metadata
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
-        seed_prompts = [SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)]
+        seed_prompt_group = SeedPromptGroup(
+            prompts=[SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)]
+        )
 
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_prompts=seed_prompts,
+            seed_prompt_group=seed_prompt_group,
             conversation_id=context.session.adversarial_chat_conversation_id,
             target=self._adversarial_chat,
             orchestrator_identifier=self.get_identifier(),
@@ -543,14 +546,14 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
         Raises:
             ValueError: If no response is received from the objective target.
         """
-        seed_prompts = [SeedPrompt(value=attack_prompt, data_type="text")]
+        seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=attack_prompt, data_type="text")])
         objective_target_type = self._objective_target.get_identifier()["__type__"]
 
         # Send the generated prompt to the objective target
         self._logger.debug(f"Sending prompt to {objective_target_type}: {attack_prompt[:100]}...")
 
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_prompts=seed_prompts,
+            seed_prompt_group=seed_prompt_group,
             target=self._objective_target,
             conversation_id=context.session.conversation_id,
             request_converter_configurations=self._request_converters,

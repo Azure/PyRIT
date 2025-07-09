@@ -14,7 +14,7 @@ from pyrit.exceptions import (
     pyrit_json_retry,
     remove_markdown_json,
 )
-from pyrit.models import PromptRequestPiece, Score, SeedPrompt
+from pyrit.models import PromptRequestPiece, Score, SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import MultiTurnOrchestrator, OrchestratorResult
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -350,11 +350,13 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             )
 
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
-        seed_prompts = [SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)]
+        seed_prompt_group = SeedPromptGroup(
+            prompts=[SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)]
+        )
 
         response_text = (
             await self._prompt_normalizer.send_prompt_async(
-                seed_prompts=seed_prompts,
+                seed_prompt_group=seed_prompt_group,
                 conversation_id=adversarial_chat_conversation_id,
                 target=self._adversarial_chat,
                 orchestrator_identifier=self.get_identifier(),
@@ -392,13 +394,13 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
         # Sends the attack prompt to the objective target and returns the response
 
-        seed_prompts = [SeedPrompt(value=attack_prompt, data_type="text")]
+        seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=attack_prompt, data_type="text")])
 
         converter_configuration = PromptConverterConfiguration(converters=self._prompt_converters)
 
         return (
             await self._prompt_normalizer.send_prompt_async(
-                seed_prompts=seed_prompts,
+                seed_prompt_group=seed_prompt_group,
                 target=self._objective_target,
                 conversation_id=objective_target_conversation_id,
                 request_converter_configurations=[converter_configuration],

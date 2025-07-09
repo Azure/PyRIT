@@ -38,7 +38,8 @@ target = RealtimeTarget()
 # %%
 from pathlib import Path
 
-from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
+from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models.seed_prompt_group import SeedPromptGroup
 from pyrit.orchestrator import PromptSendingOrchestrator
 
 # This is audio asking how to cut down a tree

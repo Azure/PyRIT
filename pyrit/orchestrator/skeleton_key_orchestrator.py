@@ -13,6 +13,7 @@ from pyrit.models import (
     PromptRequestResponse,
     SeedPrompt,
     SeedPromptDataset,
+    SeedPromptGroup,
 )
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter import PromptConverter
@@ -96,12 +97,14 @@ class SkeletonKeyOrchestrator(Orchestrator):
 
         conversation_id = str(uuid4())
 
-        skeleton_key_prompts = [SeedPrompt(value=self._skeleton_key_prompt, data_type="text")]
+        skeleton_key_prompt_group = SeedPromptGroup(
+            prompts=[SeedPrompt(value=self._skeleton_key_prompt, data_type="text")]
+        )
 
         converter_configuration = PromptConverterConfiguration(converters=self._prompt_converters)
 
         await self._prompt_normalizer.send_prompt_async(
-            seed_prompts=skeleton_key_prompts,
+            seed_prompt_group=skeleton_key_prompt_group,
             conversation_id=conversation_id,
             request_converter_configurations=[converter_configuration],
             target=self._prompt_target,
@@ -109,10 +112,10 @@ class SkeletonKeyOrchestrator(Orchestrator):
             orchestrator_identifier=self.get_identifier(),
         )
 
-        objective_prompts = [SeedPrompt(value=prompt, data_type="text")]
+        objective_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=prompt, data_type="text")])
 
         return await self._prompt_normalizer.send_prompt_async(
-            seed_prompts=objective_prompts,
+            seed_prompt_group=objective_prompt_group,
             conversation_id=conversation_id,
             request_converter_configurations=[converter_configuration],
             target=self._prompt_target,

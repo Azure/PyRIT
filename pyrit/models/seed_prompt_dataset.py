@@ -12,10 +12,9 @@ from typing import Any, Dict, Optional, Sequence, Union
 from pydantic.types import PositiveInt
 
 from pyrit.common import utils
-
 from pyrit.common.yaml_loadable import YamlLoadable
-from pyrit.models.literals import PromptDataType
 from pyrit.models import SeedPrompt, SeedPromptGroup
+from pyrit.models.literals import PromptDataType
 
 logger = logging.getLogger(__name__)
 

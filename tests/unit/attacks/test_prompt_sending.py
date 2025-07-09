@@ -301,18 +301,18 @@ class TestPromptSending:
             ),
         )
 
-        prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value="Test prompt", data_type="text")])
+        seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value="Test prompt", data_type="text")])
         basic_context.memory_labels = {"test": "label"}
         mock_response = MagicMock()
         mock_prompt_normalizer.send_prompt_async.return_value = mock_response
 
-        result = await attack._send_prompt_to_objective_target_async(prompt_group=prompt_group, context=basic_context)
+        result = await attack._send_prompt_to_objective_target_async(seed_prompt_group=seed_prompt_group, context=basic_context)
 
         assert result == mock_response
 
         # Verify all parameters were passed correctly
         call_args = mock_prompt_normalizer.send_prompt_async.call_args
-        assert call_args.kwargs["seed_prompt_group"] == prompt_group
+        assert call_args.kwargs["seed_prompt_group"] == seed_prompt_group
         assert call_args.kwargs["target"] == mock_target
         assert call_args.kwargs["conversation_id"] == basic_context.conversation_id
         assert call_args.kwargs["request_converter_configurations"] == request_converters
@@ -324,10 +324,10 @@ class TestPromptSending:
     async def test_send_prompt_handles_none_response(self, mock_target, mock_prompt_normalizer, basic_context):
         attack = PromptSendingAttack(objective_target=mock_target, prompt_normalizer=mock_prompt_normalizer)
 
-        prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value="Test prompt", data_type="text")])
+        seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value="Test prompt", data_type="text")])
         mock_prompt_normalizer.send_prompt_async.return_value = None
 
-        result = await attack._send_prompt_to_objective_target_async(prompt_group=prompt_group, context=basic_context)
+        result = await attack._send_prompt_to_objective_target_async(seed_prompt_group=seed_prompt_group, context=basic_context)
 
         assert result is None
 
@@ -1007,7 +1007,7 @@ class TestEdgeCasesAndErrorHandling:
         # Verify it still executes
         assert result.executed_turns == 1
         attack._send_prompt_to_objective_target_async.assert_called_with(
-            prompt_group=minimal_group, context=basic_context
+            seed_prompt_group=minimal_group, context=basic_context
         )
 
     @pytest.mark.asyncio

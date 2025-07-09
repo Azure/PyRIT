@@ -13,8 +13,6 @@ from pyrit.models.seed_prompt import SeedPrompt
 logger = logging.getLogger(__name__)
 
 
-SeedPromptTurn = [SeedPrompt]
-
 class SeedPromptGroup(YamlLoadable):
     """
     A group of prompts that need to be sent together, along with an objective.
@@ -25,7 +23,7 @@ class SeedPromptGroup(YamlLoadable):
 
     """
 
-    prompts: Sequence[SeedPrompt]
+    prompts: list[SeedPrompt]
 
     def __init__(
         self,

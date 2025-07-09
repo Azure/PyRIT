@@ -11,7 +11,7 @@ import yaml
 from colorama import Fore, Style
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import SeedPrompt
+from pyrit.models import SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -106,16 +106,18 @@ class AnecdoctorOrchestrator(Orchestrator):
         formatted_examples = "### examples\n" + "\n".join(self._evaluation_data)
 
         # 4. Create the SeedPromptGroup with the formatted examples
-        seed_prompts = [
-            SeedPrompt(
-                value=formatted_examples,
-                data_type="text",
-            )
-        ]
+        seed_prompt_group = SeedPromptGroup(
+            prompts=[
+                SeedPrompt(
+                    value=formatted_examples,
+                    data_type="text",
+                )
+            ]
+        )
 
         # 5. Send the seed prompt group to the normalizer, which will forward it to the model
         response = await self._normalizer.send_prompt_async(
-            seed_prompts=seed_prompts,
+            seed_prompt_group=seed_prompt_group,
             conversation_id=self._conversation_id_kg,
             target=self._processing_model,
             labels=self._global_memory_labels,
@@ -162,16 +164,18 @@ class AnecdoctorOrchestrator(Orchestrator):
         )
 
         # 4. Create the SeedPromptGroup with the formatted examples
-        seed_prompts = [
-            SeedPrompt(
-                value=formatted_examples,
-                data_type="text",
-            )
-        ]
+        seed_prompt_group = SeedPromptGroup(
+            prompts=[
+                SeedPrompt(
+                    value=formatted_examples,
+                    data_type="text",
+                )
+            ]
+        )
 
         # 5. Send the seed prompt group to the normalizer, which will forward it to the model
         response = await self._normalizer.send_prompt_async(
-            seed_prompts=seed_prompts,
+            seed_prompt_group=seed_prompt_group,
             conversation_id=self._conversation_id_final,
             target=self._chat_model_under_evaluation,
             labels=self._global_memory_labels,

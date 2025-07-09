@@ -173,16 +173,18 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
         ]
 
     async def _get_benign_question_answer(self, benign_user_query: str) -> str:
-        seed_prompts_to_get_user_turn_answer = [
-            SeedPrompt(
-                value=self._answer_user_turn.render_template_value(benign_request=benign_user_query),
-                data_type="text",
-            )
-        ]
+        seed_prompt_group_to_get_user_turn_answer = SeedPromptGroup(
+            prompts=[
+                SeedPrompt(
+                    value=self._answer_user_turn.render_template_value(benign_request=benign_user_query),
+                    data_type="text",
+                )
+            ]
+        )
 
         user_turn_answer = (
             await self._prompt_normalizer.send_prompt_async(
-                seed_prompts=seed_prompts_to_get_user_turn_answer,
+                seed_prompt_group=seed_prompt_group_to_get_user_turn_answer,
                 target=self._adversarial_chat,
             )
         ).get_value()
@@ -190,16 +192,18 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
         return user_turn_answer
 
     async def _get_objective_as_more_benign_question(self, objective: str) -> str:
-        seed_prompts_to_get_user_turn = [
-            SeedPrompt(
-                value=self._rephrase_objective_to_user_turn.render_template_value(objective=objective),
-                data_type="text",
-            )
-        ]
+        seed_prompt_group_to_get_user_turn = SeedPromptGroup(
+            prompts=[
+                SeedPrompt(
+                    value=self._rephrase_objective_to_user_turn.render_template_value(objective=objective),
+                    data_type="text",
+                )
+            ]
+        )
 
         user_turn = (
             await self._prompt_normalizer.send_prompt_async(
-                seed_prompts=seed_prompts_to_get_user_turn,
+                seed_prompt_group=seed_prompt_group_to_get_user_turn,
                 target=self._adversarial_chat,
             )
         ).get_value()
@@ -207,16 +211,18 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
         return user_turn
 
     async def _get_objective_as_question(self, objective: str) -> str:
-        seed_prompts_to_get_objective_as_a_question = [
-            SeedPrompt(
-                value=self._rephrase_objective_to_question.render_template_value(objective=objective),
-                data_type="text",
-            )
-        ]
+        seed_prompt_group_to_get_objective_as_a_question = SeedPromptGroup(
+            prompts=[
+                SeedPrompt(
+                    value=self._rephrase_objective_to_question.render_template_value(objective=objective),
+                    data_type="text",
+                )
+            ]
+        )
 
         objective_as_question = (
             await self._prompt_normalizer.send_prompt_async(
-                seed_prompts=seed_prompts_to_get_objective_as_a_question,
+                seed_prompt_group=seed_prompt_group_to_get_objective_as_a_question,
                 target=self._adversarial_chat,
             )
         ).get_value()

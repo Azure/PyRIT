@@ -137,15 +137,34 @@ class MockNodeFactory:
 class AttackBuilder:
     """Builder for creating TreeOfAttacksWithPruningAttack instances with common configurations."""
 
-    def __init__(self):
-        self.objective_target: Optional[PromptTarget] = None
-        self.adversarial_chat: Optional[PromptChatTarget] = None
-        self.objective_scorer: Optional[Scorer] = None
-        self.auxiliary_scorers: List[Scorer] = []
-        self.tree_params: Dict[str, Any] = {}
-        self.converters: Optional[AttackConverterConfig] = None
-        self.successful_threshold: float = 0.8
-        self.prompt_normalizer: Optional[PromptNormalizer] = None
+    objective_target: PromptTarget
+    adversarial_chat: PromptChatTarget
+    objective_scorer: Scorer
+    auxiliary_scorers: List[Scorer]
+    tree_params: Dict[str, Any]
+    converters: Optional[AttackConverterConfig]
+    successful_threshold: float
+    prompt_normalizer: Optional[PromptNormalizer]
+
+    def __init__(
+        self,
+        objective_target: Optional[PromptTarget] = None,
+        adversarial_chat: Optional[PromptChatTarget] = None,
+        objective_scorer: Optional[Scorer] = None,
+        auxiliary_scorers: List[Scorer] = [],
+        tree_params: Dict[str, Any] = {},
+        converters: Optional[AttackConverterConfig] = None,
+        successful_threshold: float = 0.8,
+        prompt_normalizer: Optional[PromptNormalizer] = None,
+    ):
+        self.objective_target = objective_target
+        self.adversarial_chat = adversarial_chat
+        self.objective_scorer = objective_scorer
+        self.auxiliary_scorers = auxiliary_scorers
+        self.tree_params = tree_params
+        self.converters = converters
+        self.successful_threshold = successful_threshold
+        self.prompt_normalizer = prompt_normalizer
 
     def with_default_mocks(self):
         """Set up default mocks for all required components."""

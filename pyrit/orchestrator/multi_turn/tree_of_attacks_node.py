@@ -14,7 +14,7 @@ from pyrit.exceptions import (
     remove_markdown_json,
 )
 from pyrit.memory import CentralMemory, MemoryInterface
-from pyrit.models import Score, SeedPrompt
+from pyrit.models import Score, SeedPrompt, SeedPromptGroup
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
@@ -101,12 +101,12 @@ class TreeOfAttacksNode:
                 self.off_topic = True
                 return
 
-        seed_prompts = [SeedPrompt(value=prompt, data_type="text")]
+        seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=prompt, data_type="text")])
         converters = PromptConverterConfiguration(converters=self._prompt_converters)
 
         response = (
             await self._prompt_normalizer.send_prompt_async(
-                seed_prompts=seed_prompts,
+                seed_prompt_group=seed_prompt_group,
                 request_converter_configurations=[converters],
                 conversation_id=self.objective_target_conversation_id,
                 target=self._objective_target,
@@ -205,11 +205,13 @@ class TreeOfAttacksNode:
             )
 
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
-        seed_prompts = [SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)]
+        seed_prompt_group = SeedPromptGroup(
+            prompts=[SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)]
+        )
 
         adversarial_chat_response = (
             await self._prompt_normalizer.send_prompt_async(
-                seed_prompts=seed_prompts,
+                seed_prompt_group=seed_prompt_group,
                 conversation_id=self.adversarial_chat_conversation_id,
                 target=self._adversarial_chat,
                 labels=self._global_memory_labels,

@@ -32,8 +32,8 @@ from pyrit.models.prompt_response import PromptResponse
 from pyrit.models.question_answering import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
 from pyrit.models.score import Score, ScoreType, UnvalidatedScore
 from pyrit.models.seed_prompt import SeedPrompt
-from pyrit.models.seed_prompt_dataset import SeedPromptDataset
 from pyrit.models.seed_prompt_group import SeedPromptGroup
+from pyrit.models.seed_prompt_dataset import SeedPromptDataset
 from pyrit.models.storage_io import AzureBlobStorageIO, DiskStorageIO, StorageIO
 
 __all__ = [
@@ -74,7 +74,6 @@ __all__ = [
     "SeedPrompt",
     "SeedPromptDataset",
     "SeedPromptGroup",
-    "SeedPromptTurn",
     "StorageIO",
     "TextDataTypeSerializer",
     "UnvalidatedScore",
