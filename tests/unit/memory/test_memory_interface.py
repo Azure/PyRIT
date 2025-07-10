@@ -26,7 +26,7 @@ from pyrit.models import (
     SeedPrompt,
     SeedPromptGroup,
 )
-from pyrit.models.attack_result import AttackOutcome, AttackResult
+from pyrit.models.attack_result import AttackOutcome, AttackResult, AttackConversationIds
 from pyrit.orchestrator import Orchestrator
 
 
@@ -2642,3 +2642,70 @@ def test_attack_result_objective_sha256_always_calculated(duckdb_instance: Memor
 
     # Verify the database stored the correct SHA256
     assert all_entries[0].objective_sha256 == expected_sha256
+
+
+def test_attack_result_with_attack_generation_conversation_ids(duckdb_instance: MemoryInterface):
+    """Test attack result with attack_generation_conversation_ids."""
+
+    # Create attack result with attack_generation_conversation_ids
+    attack_generation_conversation_ids = AttackConversationIds(
+        pruned_conversation_ids={"pruned_conv_1", "pruned_conv_2"},
+        adversarial_chat_conversation_ids={"adv_conv_1", "adv_conv_2", "adv_conv_3"}
+    )
+
+    attack_result = AttackResult(
+        conversation_id="conv_1",
+        objective="Test objective with conversation IDs",
+        attack_identifier={"name": "test_attack"},
+        executed_turns=5,
+        execution_time_ms=1000,
+        outcome=AttackOutcome.SUCCESS,
+        attack_generation_conversation_ids=attack_generation_conversation_ids,
+    )
+
+    # Add attack result to memory
+    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
+
+    # Retrieve and verify the conversation IDs were stored correctly
+    all_entries: Sequence[AttackResultEntry] = duckdb_instance._query_entries(AttackResultEntry)
+    assert len(all_entries) == 1
+
+    # Verify the database stored the conversation IDs correctly
+    entry = all_entries[0]
+    assert set(entry.pruned_conversation_ids) == {"pruned_conv_1", "pruned_conv_2"}
+    assert set(entry.adversarial_chat_conversation_ids) == {"adv_conv_1", "adv_conv_2", "adv_conv_3"}
+
+    # Verify the get_attack_result method reconstructs the data correctly
+    retrieved_result = entry.get_attack_result()
+    assert retrieved_result.attack_generation_conversation_ids is not None
+    assert set(retrieved_result.attack_generation_conversation_ids.pruned_conversation_ids) == {"pruned_conv_1", "pruned_conv_2"}
+    assert set(retrieved_result.attack_generation_conversation_ids.adversarial_chat_conversation_ids) == {"adv_conv_1", "adv_conv_2", "adv_conv_3"}
+
+
+def test_attack_result_without_attack_generation_conversation_ids(duckdb_instance: MemoryInterface):
+    """Test attack result without attack_generation_conversation_ids."""
+    attack_result = AttackResult(
+        conversation_id="conv_1",
+        objective="Test objective without conversation IDs",
+        attack_identifier={"name": "test_attack"},
+        executed_turns=5,
+        execution_time_ms=1000,
+        outcome=AttackOutcome.SUCCESS,
+        # No attack_generation_conversation_ids
+    )
+
+    # Add attack result to memory
+    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
+
+    # Retrieve and verify the conversation IDs are None or empty
+    all_entries: Sequence[AttackResultEntry] = duckdb_instance._query_entries(AttackResultEntry)
+    assert len(all_entries) == 1
+
+    # Accept both None and [] for pruned_conversation_ids and adversarial_chat_conversation_ids
+    entry = all_entries[0]
+    assert not entry.pruned_conversation_ids
+    assert not entry.adversarial_chat_conversation_ids
+
+    # Verify the get_attack_result method returns None for attack_generation_conversation_ids
+    retrieved_result = entry.get_attack_result()
+    assert retrieved_result.attack_generation_conversation_ids is None
