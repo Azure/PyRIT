@@ -85,6 +85,21 @@ class HarmCategory(StrEnum):
             "violent": cls.VIOLENT_CONTENT,
             "bullying": cls.HARASSMENT,
             "illegal": cls.ILLEGAL,
+            "chemistry": cls.CBRN,
+            "biology": cls.CBRN,
+            "medicine": cls.PUBLIC_HEALTH,
+            "pharmacology": cls.PSEUDO_PHARMA,
+            "physics": cls.HIGH_RISK_GOVERNMENT,
+            "psychology": cls.MENTAL_HEALTH,
+            "stereotyping": cls.REPRESENTATIONAL,
+            "discrimination": cls.REPRESENTATIONAL,
+            "bias": cls.REPRESENTATIONAL,
+            "sexism": cls.REPRESENTATIONAL,
+            "racism": cls.REPRESENTATIONAL,
+            "homophobia": cls.REPRESENTATIONAL,
+            "misogyny": cls.REPRESENTATIONAL,
+            "ableism": cls.REPRESENTATIONAL,
+            "religious discrimination": cls.REPRESENTATIONAL,
         })
 
     @classmethod
