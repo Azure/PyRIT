@@ -1878,3 +1878,26 @@ class TestEdgeCases:
                 unknown_param="should be ignored",
             )
             assert result.outcome == AttackOutcome.SUCCESS
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestCrescendoConversationTracking:
+    @pytest.mark.asyncio
+    async def test_setup_tracks_adversarial_chat_conversation_id(
+        self,
+        mock_objective_target: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        basic_context: CrescendoAttackContext,
+    ):
+        attack = CrescendoAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=AttackAdversarialConfig(target=mock_adversarial_chat),
+        )
+        with patch.object(attack._conversation_manager, 'update_conversation_state_async', new_callable=AsyncMock) as mock_update:
+            mock_update.return_value = ConversationState(
+                turn_count=0,
+                last_user_message=None,
+                last_assistant_message_scores=[]
+            )
+            await attack._setup_async(context=basic_context)
+            assert basic_context.session.adversarial_chat_conversation_id in basic_context.attack_generation_conversation_ids.adversarial_chat_conversation_ids
