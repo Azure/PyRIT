@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, TypeVar
+from typing import Any, Dict, Optional, TypeVar
 
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.score import Score
@@ -38,10 +38,9 @@ class AttackConversationIds:
 
     # Set of conversation IDs used to score the attack
     # scored_conversation_ids: set[str] = field(default_factory=set)
-    
+
     # Set of conversation IDs used to convert the attack
     # converter_conversation_ids: set[str] = field(default_factory=set)
-
 
 
 @dataclass
@@ -88,4 +87,3 @@ class AttackResult:
 
     def __str__(self):
         return f"AttackResult: {self.conversation_id}: {self.outcome.value}: {self.objective[:50]}..."
-    

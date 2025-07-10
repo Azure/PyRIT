@@ -240,7 +240,9 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
         context.session = ConversationSession()
 
         # Track the adversarial chat conversation ID
-        context.attack_generation_conversation_ids.adversarial_chat_conversation_ids.add(context.session.adversarial_chat_conversation_id)
+        context.attack_generation_conversation_ids.adversarial_chat_conversation_ids.add(
+            context.session.adversarial_chat_conversation_id
+        )
 
         self._logger.debug(f"Conversation session ID: {context.session.conversation_id}")
         self._logger.debug(f"Adversarial chat conversation ID: {context.session.adversarial_chat_conversation_id}")

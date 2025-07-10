@@ -26,7 +26,11 @@ from pyrit.models import (
     SeedPrompt,
     SeedPromptGroup,
 )
-from pyrit.models.attack_result import AttackOutcome, AttackResult, AttackConversationIds
+from pyrit.models.attack_result import (
+    AttackConversationIds,
+    AttackOutcome,
+    AttackResult,
+)
 from pyrit.orchestrator import Orchestrator
 
 
@@ -2650,7 +2654,7 @@ def test_attack_result_with_attack_generation_conversation_ids(duckdb_instance: 
     # Create attack result with attack_generation_conversation_ids
     attack_generation_conversation_ids = AttackConversationIds(
         pruned_conversation_ids={"pruned_conv_1", "pruned_conv_2"},
-        adversarial_chat_conversation_ids={"adv_conv_1", "adv_conv_2", "adv_conv_3"}
+        adversarial_chat_conversation_ids={"adv_conv_1", "adv_conv_2", "adv_conv_3"},
     )
 
     attack_result = AttackResult(
@@ -2678,8 +2682,15 @@ def test_attack_result_with_attack_generation_conversation_ids(duckdb_instance: 
     # Verify the get_attack_result method reconstructs the data correctly
     retrieved_result = entry.get_attack_result()
     assert retrieved_result.attack_generation_conversation_ids is not None
-    assert set(retrieved_result.attack_generation_conversation_ids.pruned_conversation_ids) == {"pruned_conv_1", "pruned_conv_2"}
-    assert set(retrieved_result.attack_generation_conversation_ids.adversarial_chat_conversation_ids) == {"adv_conv_1", "adv_conv_2", "adv_conv_3"}
+    assert set(retrieved_result.attack_generation_conversation_ids.pruned_conversation_ids) == {
+        "pruned_conv_1",
+        "pruned_conv_2",
+    }
+    assert set(retrieved_result.attack_generation_conversation_ids.adversarial_chat_conversation_ids) == {
+        "adv_conv_1",
+        "adv_conv_2",
+        "adv_conv_3",
+    }
 
 
 def test_attack_result_without_attack_generation_conversation_ids(duckdb_instance: MemoryInterface):

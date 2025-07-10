@@ -28,9 +28,11 @@ from sqlalchemy.types import Uuid  # type: ignore
 
 from pyrit.common.utils import to_sha256
 from pyrit.models import PromptDataType, PromptRequestPiece, Score, SeedPrompt
-from pyrit.models.attack_result import AttackOutcome, AttackResult
-from pyrit.models.attack_result import AttackConversationIds
-
+from pyrit.models.attack_result import (
+    AttackConversationIds,
+    AttackOutcome,
+    AttackResult,
+)
 
 
 class Base(DeclarativeBase):
@@ -442,15 +444,17 @@ class AttackResultEntry(Base):
         self.outcome = entry.outcome.value  # type: ignore
         self.outcome_reason = entry.outcome_reason
         self.attack_metadata = self.filter_json_serializable_metadata(entry.metadata)
-        
+
         # Handle attack_generation_conversation_ids
         if entry.attack_generation_conversation_ids:
             self.pruned_conversation_ids = list(entry.attack_generation_conversation_ids.pruned_conversation_ids)
-            self.adversarial_chat_conversation_ids = list(entry.attack_generation_conversation_ids.adversarial_chat_conversation_ids)
+            self.adversarial_chat_conversation_ids = list(
+                entry.attack_generation_conversation_ids.adversarial_chat_conversation_ids
+            )
         else:
             self.pruned_conversation_ids = None
             self.adversarial_chat_conversation_ids = None
-            
+
         self.timestamp = datetime.now()
 
     @staticmethod
@@ -506,8 +510,7 @@ class AttackResultEntry(Base):
         attack_generation_conversation_ids = None
         if pruned or adv:
             attack_generation_conversation_ids = AttackConversationIds(
-                pruned_conversation_ids=pruned,
-                adversarial_chat_conversation_ids=adv
+                pruned_conversation_ids=pruned, adversarial_chat_conversation_ids=adv
             )
 
         return AttackResult(

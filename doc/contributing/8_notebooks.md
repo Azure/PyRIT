@@ -17,4 +17,4 @@ Here are contributor guidelines:
   - Some contributors use jupytext to generate `.py` files from `.ipynb` files. This is also acceptable. `jupytext --to py:percent ./doc/affected_file.ipynb`
   - Before a release, re-generate all notebooks by using [pct_to_ipynb.py](../generate_docs/pct_to_ipynb.py). Because this executes against real systems, it can detect many issues.
 - Please do not re-commit updated generated `.ipynb` files with slight changes if nothing has changed in the source
-- We use [Jupyter-Book](https://jupyterbook.org/en/stable/intro.html) with [Markedly Structured Text (MyST)](https://jupyterbook.org/en/stable/content/myst.html).
+- We use [Jupyter-Book](https://jupyterbook.org/) with Markedly Structured Text (MyST).

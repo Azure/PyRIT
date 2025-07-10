@@ -1351,18 +1351,19 @@ class TestRedTeamingConversationTracking:
         )
 
         # Mock the conversation manager to return a state
-        with patch.object(attack._conversation_manager, 'update_conversation_state_async') as mock_update:
+        with patch.object(attack._conversation_manager, "update_conversation_state_async") as mock_update:
             mock_update.return_value = ConversationState(
-                turn_count=0,
-                last_user_message=None,
-                last_assistant_message_scores=[]
+                turn_count=0, last_user_message=None, last_assistant_message_scores=[]
             )
 
             # Run setup
             await attack._setup_async(context=basic_context)
 
             # Verify the adversarial chat conversation ID is tracked
-            assert basic_context.session.adversarial_chat_conversation_id in basic_context.attack_generation_conversation_ids.adversarial_chat_conversation_ids
+            assert (
+                basic_context.session.adversarial_chat_conversation_id
+                in basic_context.attack_generation_conversation_ids.adversarial_chat_conversation_ids
+            )
 
     @pytest.mark.asyncio
     async def test_attack_result_includes_adversarial_chat_conversation_ids(
@@ -1381,14 +1382,14 @@ class TestRedTeamingConversationTracking:
             attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
-        with patch.object(attack._conversation_manager, 'update_conversation_state_async') as mock_update, \
-             patch.object(attack._prompt_normalizer, 'send_prompt_async', new_callable=AsyncMock) as mock_send, \
-             patch.object(Scorer, 'score_response_with_objective_async', new_callable=AsyncMock) as mock_score, \
-             patch.object(attack, '_generate_next_prompt_async', new_callable=AsyncMock) as mock_generate:
+        with (
+            patch.object(attack._conversation_manager, "update_conversation_state_async") as mock_update,
+            patch.object(attack._prompt_normalizer, "send_prompt_async", new_callable=AsyncMock) as mock_send,
+            patch.object(Scorer, "score_response_with_objective_async", new_callable=AsyncMock) as mock_score,
+            patch.object(attack, "_generate_next_prompt_async", new_callable=AsyncMock) as mock_generate,
+        ):
             mock_update.return_value = ConversationState(
-                turn_count=0,
-                last_user_message=None,
-                last_assistant_message_scores=[]
+                turn_count=0, last_user_message=None, last_assistant_message_scores=[]
             )
             mock_send.return_value = sample_response
             mock_score.return_value = {"objective_scores": [success_score]}
@@ -1399,7 +1400,10 @@ class TestRedTeamingConversationTracking:
             result = await attack._perform_attack_async(context=basic_context)
 
             # Verify the result includes the adversarial chat conversation IDs
-            assert basic_context.session.adversarial_chat_conversation_id in result.attack_generation_conversation_ids.adversarial_chat_conversation_ids
+            assert (
+                basic_context.session.adversarial_chat_conversation_id
+                in result.attack_generation_conversation_ids.adversarial_chat_conversation_ids
+            )
 
     @pytest.mark.asyncio
     async def test_adversarial_chat_conversation_id_uniqueness(
@@ -1417,11 +1421,9 @@ class TestRedTeamingConversationTracking:
         )
 
         # Mock the conversation manager
-        with patch.object(attack._conversation_manager, 'update_conversation_state_async') as mock_update:
+        with patch.object(attack._conversation_manager, "update_conversation_state_async") as mock_update:
             mock_update.return_value = ConversationState(
-                turn_count=0,
-                last_user_message=None,
-                last_assistant_message_scores=[]
+                turn_count=0, last_user_message=None, last_assistant_message_scores=[]
             )
 
             # Run setup
