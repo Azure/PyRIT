@@ -774,8 +774,8 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
             conversation_id=context.session.conversation_id
         )
 
-        # Add the old conversation ID to the pruned list
-        context.attack_generation_conversation_ids.pruned_conversation_ids.append(old_conversation_id)
+        # Add the old conversation ID to the pruned set
+        context.attack_generation_conversation_ids.pruned_conversation_ids.add(old_conversation_id)
 
         context.backtrack_count += 1
         self._logger.debug(f"Backtrack count increased to {context.backtrack_count}")

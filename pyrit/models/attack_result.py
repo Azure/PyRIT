@@ -30,17 +30,17 @@ class AttackOutcome(Enum):
 
 @dataclass
 class AttackConversationIds:
-    # List of conversation IDs to the objective target that were pruned from the attack
-    pruned_conversation_ids: List[str] = field(default_factory=list)
+    # Set of conversation IDs to the objective target that were pruned from the attack
+    pruned_conversation_ids: set[str] = field(default_factory=set)
 
-    # List of conversation IDs to the adversarial chat that were used for the attack
-    adversarial_chat_conversation_ids: List[str] = field(default_factory=list)
+    # Set of conversation IDs to the adversarial chat that were used for the attack
+    adversarial_chat_conversation_ids: set[str] = field(default_factory=set)
 
-    # List of conversation IDs used to score the attack
-    scored_conversation_ids: List[str] = field(default_factory=list)
+    # Set of conversation IDs used to score the attack
+    # scored_conversation_ids: set[str] = field(default_factory=set)
     
-    # List of conversation IDs used to convert the attack
-    converter_conversation_ids: List[str] = field(default_factory=list)
+    # Set of conversation IDs used to convert the attack
+    # converter_conversation_ids: set[str] = field(default_factory=set)
 
 
 
