@@ -18,12 +18,16 @@ from pyrit.models import (
     PromptRequestPiece,
     PromptRequestResponse,
 )
-from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
+from pyrit.prompt_target import (
+    OpenAITarget,
+    PromptChatTarget,
+    limit_requests_per_minute,
+)
 
 logger = logging.getLogger(__name__)
 
 
-class OpenAIChatTargetBase(OpenAITarget):
+class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
     """
     This is the base class for multimodal (image and text) input and text output generation.
 
