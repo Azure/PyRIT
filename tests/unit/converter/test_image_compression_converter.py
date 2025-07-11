@@ -359,3 +359,32 @@ async def test_image_compression_converter_invalid_url():
     for invalid_url in invalid_urls:
         with pytest.raises(ValueError, match="Invalid URL"):
             await converter.convert_async(prompt=invalid_url, input_type="url")
+
+
+@pytest.mark.asyncio
+async def test_image_compression_converter_corrupted_image_bytes():
+    """Test handling of corrupted image bytes."""
+    converter = ImageCompressionConverter()
+    corrupted_bytes = b"notanimagefile"
+    with patch("pyrit.prompt_converter.image_compression_converter.data_serializer_factory") as mock_factory:
+        mock_serializer = AsyncMock()
+        mock_serializer.read_data.return_value = corrupted_bytes
+        mock_factory.return_value = mock_serializer
+        with pytest.raises(Exception):
+            await converter.convert_async(prompt="corrupted.png", input_type="image_path")
+
+
+@pytest.mark.asyncio
+async def test_image_compression_converter_output_format_fallback(sample_image_bytes):
+    """Test fallback to JPEG when original format is unsupported (and no output_format specified)."""
+    img = Image.new("RGB", (100, 100), color=(123, 123, 123))
+    img_bytes = BytesIO()
+    img.save(img_bytes, format="TIFF")
+    img_bytes = img_bytes.getvalue()
+    converter = ImageCompressionConverter(output_format=None)
+    with patch("pyrit.prompt_converter.image_compression_converter.data_serializer_factory") as mock_factory:
+        mock_serializer = AsyncMock()
+        mock_factory.return_value = mock_serializer
+        mock_serializer.read_data.return_value = img_bytes
+        await converter.convert_async(prompt="test.tiff", input_type="image_path")
+        assert mock_serializer.file_extension == "jpeg"
