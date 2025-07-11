@@ -307,6 +307,7 @@ API Reference
     FuzzerShortenConverter
     FuzzerSimilarConverter
     HumanInTheLoopConverter
+    ImageCompressionConverter
     InsertPunctuationConverter
     LeetspeakConverter
     LLMGenericTextConverter
