@@ -91,6 +91,7 @@ chapters:
       - file: code/scoring/true_false_batch_scoring
       - file: code/scoring/human_in_the_loop_scorer_gradio
       - file: code/scoring/generic_scorers
+      - file: code/scoring/scorer_evals
     - file: code/memory/0_memory
       sections:
       - file: code/memory/1_duck_db_memory
