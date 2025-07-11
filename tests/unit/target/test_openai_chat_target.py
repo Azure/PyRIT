@@ -23,7 +23,7 @@ from pyrit.exceptions.exception_classes import (
 )
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 
 
 def fake_construct_response_from_request(request, response_text_pieces):
@@ -511,6 +511,21 @@ def test_validate_request_unsupported_data_types(target: OpenAIChatTarget):
 
 def test_is_json_response_supported(target: OpenAIChatTarget):
     assert target.is_json_response_supported() is True
+
+
+def test_inheritance_from_prompt_chat_target(target: OpenAIChatTarget):
+    """Test that OpenAIChatTarget properly inherits from PromptChatTarget."""
+    assert isinstance(target, PromptChatTarget), "OpenAIChatTarget must inherit from PromptChatTarget"
+
+
+def test_inheritance_from_prompt_chat_target_base():
+    """Test that OpenAIChatTargetBase properly inherits from PromptChatTarget."""
+
+    # Create a minimal instance to test inheritance
+    target = OpenAIChatTarget(model_name="test-model", endpoint="https://test.com", api_key="test-key")
+    assert isinstance(
+        target, PromptChatTarget
+    ), "OpenAIChatTarget must inherit from PromptChatTarget through OpenAIChatTargetBase"
 
 
 def test_is_response_format_json_supported(target: OpenAIChatTarget):
