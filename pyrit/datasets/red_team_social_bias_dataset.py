@@ -6,8 +6,7 @@ from uuid import uuid4
 
 from datasets import load_dataset
 
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import HarmCategory, SeedPrompt, SeedPromptDataset
 
 
 def fetch_red_team_social_bias_dataset() -> SeedPromptDataset:
@@ -60,14 +59,21 @@ def fetch_red_team_social_bias_dataset() -> SeedPromptDataset:
         if prompt_type is None:
             continue
 
+        raw_categories = item.get("categorization", [])
+        if isinstance(raw_categories, str):
+            raw_categories = [raw_categories]
+
+        harm_categories = []
+        for cat in raw_categories:
+            try:
+                harm_categories.append(HarmCategory.parse(cat))
+            except Exception:
+                harm_categories.append(HarmCategory.OTHER)
+                
         # Dictionary of metadata for the current prompt
         prompt_metadata = {
             **common_metadata,
-            "harm_categories": (
-                [item["categorization"]]
-                if not isinstance(item.get("categorization"), list)
-                else item.get("categorization", [])
-            ),
+            "harm_categories": harm_categories,
             "groups": [item.get("organization", "")],
             "metadata": {
                 "prompt_type": prompt_type,
