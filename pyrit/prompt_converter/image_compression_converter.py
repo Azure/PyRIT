@@ -47,12 +47,12 @@ class ImageCompressionConverter(PromptConverter):
         self,
         *,
         output_format: Optional[Literal["JPEG", "PNG", "WEBP"]] = None,
-        quality: int = None,
-        optimize: bool = None,
-        progressive: bool = None,
-        compress_level: int = None,
-        lossless: bool = None,
-        method: int = None,
+        quality: Optional[int] = None,
+        optimize: Optional[bool] = None,
+        progressive: Optional[bool] = None,
+        compress_level: Optional[int] = None,
+        lossless: Optional[bool] = None,
+        method: Optional[int] = None,
         background_color: tuple[int, int, int] = (0, 0, 0),
         min_compression_threshold: int = 1024,
         fallback_to_original: bool = True,
@@ -62,18 +62,18 @@ class ImageCompressionConverter(PromptConverter):
 
         Args:
             output_format (str, optional): Output image format. If None, keeps original format (if supported).
-            quality (int): General quality setting for JPEG and WEBP formats (0-100).\n
+            quality (int, optional): General quality setting for JPEG and WEBP formats (0-100).\n
                 For JPEG format, it represents the image quality, on a scale from 0 (worst) to 95 (best).\n
                 For WEBP format, the value ranges from 0 to 100; for lossy compression: 0-smallest file size and
                 100-largest; for ``lossless``: 0-fastest/less efficient, and 100 gives the best compression.
-            optimize (bool): Whether to optimize the image during compression. \n
+            optimize (bool, optional): Whether to optimize the image during compression. \n
                 For JPEG: makes the encoder perform an extra pass over the image to select optimal settings.\n
                 For PNG: instructs the PNG writer to make the output file as small as possible.
-            progressive (bool): Whether to save JPEG images as progressive.
-            compress_level (int): ZLIB compression level (0-9): 1=fastest, 9=best, 0=none.
+            progressive (bool, optional): Whether to save JPEG images as progressive.
+            compress_level (int, optional): ZLIB compression level (0-9): 1=fastest, 9=best, 0=none.
                 Ignored if ``optimize`` is True (then it is forced to 9).
-            lossless (bool): Whether to use lossless compression for WEBP format.
-            method (int): Quality/speed trade-off for WEBP format (0=fast, 6=slower-better).
+            lossless (bool, optional): Whether to use lossless compression for WEBP format.
+            method (int, optional): Quality/speed trade-off for WEBP format (0=fast, 6=slower-better).
             background_color (tuple[int, int, int]): RGB color tuple for background when converting
                 transparent images to JPEG. Defaults to black.
             min_compression_threshold (int): Minimum file size threshold for compression. Defaults to 1024 bytes.
