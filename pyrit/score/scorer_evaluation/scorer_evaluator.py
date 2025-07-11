@@ -7,7 +7,7 @@ import logging
 import os
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import List, Optional, Type, TypeVar, Union
+from typing import List, Optional, Set, Type, TypeVar, Union
 
 import krippendorff
 import numpy as np
@@ -305,7 +305,10 @@ class HarmScorerEvaluator(ScorerEvaluator):
         if labeled_dataset.metrics_type != MetricsType.HARM:
             raise ValueError("The HumanLabeledDataset must be of type HARM to evaluate a harm scorer.")
 
-        if len({entry.harm_category for entry in labeled_dataset.entries}) > 1:  # type: ignore
+        harm_categories: Set[str] = {
+            entry.harm_category for entry in labeled_dataset.entries if isinstance(entry, HarmHumanLabeledEntry)
+        }
+        if len(harm_categories) > 1:
             raise ValueError("Evaluating a dataset with multiple harm categories is not currently supported.")
 
         assistant_responses, human_scores_list, harms = [], [], []
