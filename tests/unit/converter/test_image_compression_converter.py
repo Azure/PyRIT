@@ -36,28 +36,128 @@ def sample_transparent_image_bytes():
     return _create_image
 
 
-def test_image_compression_converter_initialization():
-    """Constructor/Initialization Tests"""
-
-    for unsupported_format in ["GIF", "BMP", "TIFF", "ICO", "WEBM", "SVG"]:
-        with pytest.raises(ValueError):
+def test_image_compression_converter_initialization_output_format_validation():
+    """Test validation of output_format parameter."""
+    for unsupported_format in ["GIF", "BMP", "TIFF", "ICO", "WEBM", "SVG", "jpg", "png"]:
+        with pytest.raises(ValueError, match="Output format must be one of 'JPEG', 'PNG', or 'WEBP'"):
             ImageCompressionConverter(output_format=unsupported_format)  # type: ignore
 
-    for invalid_quality in [-1, 101]:
-        with pytest.raises(ValueError):
+    supported_formats = ["JPEG", "PNG", "WEBP"]
+    for supported_format in supported_formats:
+        converter = ImageCompressionConverter(output_format=supported_format)  # type: ignore
+        assert converter._output_format == supported_format
+
+    converter = ImageCompressionConverter(output_format=None)
+    assert converter._output_format is None
+
+
+def test_image_compression_converter_initialization_quality_validation():
+    """Test validation of quality parameter."""
+    for invalid_quality in [-1, -10, 101, 150, 999]:
+        with pytest.raises(ValueError, match="Quality must be between 0 and 100"):
             ImageCompressionConverter(quality=invalid_quality)
 
-    for invalid_compress_level in [-1, 10]:
-        with pytest.raises(ValueError):
-            ImageCompressionConverter(compress_level=invalid_compress_level)
+    for valid_quality in [0, 1, 50, 95, 100]:
+        converter = ImageCompressionConverter(quality=valid_quality)
+        assert converter._quality == valid_quality
 
-    for invalid_method in [-1, 7]:
-        with pytest.raises(ValueError):
+    converter = ImageCompressionConverter(quality=None)
+    assert converter._quality is None
+
+
+def test_image_compression_converter_initialization_compress_level_validation():
+    """Test validation of compress_level parameter."""
+    for invalid_level in [-1, -5, 10, 15, 100]:
+        with pytest.raises(ValueError, match="Compress level must be between 0 and 9"):
+            ImageCompressionConverter(compress_level=invalid_level)
+
+    for valid_level in [0, 1, 5, 9]:
+        converter = ImageCompressionConverter(compress_level=valid_level)
+        assert converter._compress_level == valid_level
+
+    converter = ImageCompressionConverter(compress_level=None)
+    assert converter._compress_level is None
+
+
+def test_image_compression_converter_initialization_method_validation():
+    """Test validation of method parameter for WEBP format."""
+    for invalid_method in [-1, -5, 7, 10, 100]:
+        with pytest.raises(ValueError, match="Method must be between 0 and 6 for WEBP format"):
             ImageCompressionConverter(method=invalid_method)
 
-    for invalid_min_compression_threshold in [-1, -100]:
-        with pytest.raises(ValueError):
-            ImageCompressionConverter(min_compression_threshold=invalid_min_compression_threshold)
+    for valid_method in [0, 1, 3, 6]:
+        converter = ImageCompressionConverter(method=valid_method)
+        assert converter._method == valid_method
+
+    converter = ImageCompressionConverter(method=None)
+    assert converter._method is None
+
+
+def test_image_compression_converter_initialization_min_compression_threshold_validation():
+    """Test validation of min_compression_threshold parameter."""
+    for invalid_threshold in [-1, -10, -100, -1024]:
+        with pytest.raises(ValueError, match="Minimum compression threshold must be a non-negative integer"):
+            ImageCompressionConverter(min_compression_threshold=invalid_threshold)
+
+    for valid_threshold in [0, 1, 512, 1024, 2048]:
+        converter = ImageCompressionConverter(min_compression_threshold=valid_threshold)
+        assert converter._min_compression_threshold == valid_threshold
+
+
+def test_image_compression_converter_initialization_background_color_validation():
+    """Test validation of background_color parameter."""
+    invalid_colors = [
+        "black",
+        [0, 0, 0],
+        (0, 0),
+        (0, 0, 256),
+        (-0.5, 0, 0),
+        (None, 0, 0),
+    ]
+
+    for invalid_color in invalid_colors:
+        with pytest.raises(ValueError, match="Background color must be a tuple of three integers between 0 and 255"):
+            ImageCompressionConverter(background_color=invalid_color)  # type: ignore
+
+    valid_colors = [
+        (0, 0, 0),
+        (255, 255, 255),
+        (255, 0, 0),
+        (0, 255, 0),
+        (0, 0, 255),
+        (128, 128, 128),
+    ]
+
+    for valid_color in valid_colors:
+        converter = ImageCompressionConverter(background_color=valid_color)
+        assert converter._background_color == valid_color
+
+
+def test_image_compression_converter_initialization_valid_combinations():
+    """Test that valid parameter combinations work correctly."""
+    converter = ImageCompressionConverter(
+        output_format="JPEG",
+        quality=85,
+        optimize=True,
+        progressive=True,
+        compress_level=6,
+        lossless=False,
+        method=4,
+        background_color=(255, 255, 255),
+        min_compression_threshold=2048,
+        fallback_to_original=False,
+    )
+
+    assert converter._output_format == "JPEG"
+    assert converter._quality == 85
+    assert converter._optimize is True
+    assert converter._progressive is True
+    assert converter._compress_level == 6
+    assert converter._lossless is False
+    assert converter._method == 4
+    assert converter._background_color == (255, 255, 255)
+    assert converter._min_compression_threshold == 2048
+    assert converter._fallback_to_original is False
 
 
 def test_image_compression_converter_quality_warning():
