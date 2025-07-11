@@ -239,6 +239,11 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
         # Ensure the context has a session
         context.session = ConversationSession()
 
+        # Track the adversarial chat conversation ID
+        context.attack_generation_conversation_ids.adversarial_chat_conversation_ids.add(
+            context.session.adversarial_chat_conversation_id
+        )
+
         self._logger.debug(f"Conversation session ID: {context.session.conversation_id}")
         self._logger.debug(f"Adversarial chat conversation ID: {context.session.adversarial_chat_conversation_id}")
 
@@ -362,6 +367,7 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
             executed_turns=context.executed_turns,
             last_response=context.last_response.get_piece() if context.last_response else None,
             last_score=context.last_score,
+            attack_generation_conversation_ids=context.attack_generation_conversation_ids,
         )
         # setting metadata for backtrack count
         result.backtrack_count = context.backtrack_count
@@ -765,10 +771,16 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
         # Store refused text for next iteration
         context.refused_text = prompt_sent
 
+        # Track the conversation ID that will be pruned
+        old_conversation_id = context.session.conversation_id
+
         # Backtrack conversation by duplicating without last turn
         context.session.conversation_id = await self._backtrack_memory_async(
             conversation_id=context.session.conversation_id
         )
+
+        # Add the old conversation ID to the pruned set
+        context.attack_generation_conversation_ids.pruned_conversation_ids.add(old_conversation_id)
 
         context.backtrack_count += 1
         self._logger.debug(f"Backtrack count increased to {context.backtrack_count}")
