@@ -15,6 +15,7 @@ from pyrit.datasets.llm_latent_adversarial_training_harmful_dataset import (
     fetch_llm_latent_adversarial_training_harmful_dataset,
 )
 from pyrit.datasets.many_shot_jailbreaking_dataset import fetch_many_shot_jailbreaking_dataset
+from pyrit.datasets.medsafetybench import fetch_medsafetybench
 from pyrit.datasets.mlcommons_ailuminate_demo_dataset import fetch_mlcommons_ailuminate_demo_dataset
 from pyrit.datasets.pku_safe_rlhf_dataset import fetch_pku_safe_rlhf_dataset
 from pyrit.datasets.red_team_social_bias_dataset import fetch_red_team_social_bias_dataset
@@ -26,6 +27,7 @@ from pyrit.datasets.xstest_dataset import fetch_xstest_dataset
 from pyrit.datasets.equitymedqa_dataset import fetch_equitymedqa_dataset_unique_values
 from pyrit.datasets.text_jailbreak import TextJailBreak
 from pyrit.datasets.ccp_sensitive_prompts_dataset import fetch_ccp_sensitive_prompts_dataset
+
 
 __all__ = [
     "fetch_adv_bench_dataset",
@@ -42,6 +44,7 @@ __all__ = [
     "fetch_librAI_do_not_answer_dataset",
     "fetch_llm_latent_adversarial_training_harmful_dataset",
     "fetch_many_shot_jailbreaking_dataset",
+    "fetch_medsafetybench",
     "fetch_mlcommons_ailuminate_demo_dataset",
     "fetch_pku_safe_rlhf_dataset",
     "fetch_red_team_social_bias_dataset",
