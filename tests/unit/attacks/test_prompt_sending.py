@@ -551,7 +551,7 @@ class TestAttackExecution:
 
         # Verify only one attempt was made (no retries without scorer)
         attack._send_prompt_to_objective_target_async.assert_called_once()
-        
+
         # Verify that _evaluate_response_async was called even without objective scorer
         # This ensures auxiliary scores are still collected
         attack._evaluate_response_async.assert_called_once_with(
