@@ -110,9 +110,10 @@ async def test_gandalf_scorer_set_system_prompt(
     mocked_post.assert_called_once()
 
 
+@patch("requests.post")
 @pytest.mark.parametrize("level", [GandalfLevel.LEVEL_1, GandalfLevel.LEVEL_2, GandalfLevel.LEVEL_3])
 @pytest.mark.asyncio
-async def test_gandalf_scorer_adds_to_memory(level: GandalfLevel, duckdb_instance: MemoryInterface):
+async def test_gandalf_scorer_adds_to_memory(mocked_post, level: GandalfLevel, duckdb_instance: MemoryInterface):
     conversation_id = str(uuid.uuid4())
     generated_request = generate_request(conversation_id=conversation_id)
     duckdb_instance.add_request_response_to_memory(request=generated_request)
@@ -121,6 +122,10 @@ async def test_gandalf_scorer_adds_to_memory(level: GandalfLevel, duckdb_instanc
 
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=response)
+    
+    # Mock the requests.post call to return a successful response
+    mocked_post.return_value = MagicMock(status_code=200, json=lambda: {"success": True, "message": "Message"})
+    
     with patch.object(duckdb_instance, "get_prompt_request_pieces", return_value=[generated_request.request_pieces[0]]):
         scorer = GandalfScorer(level=level, chat_target=chat_target)
 
