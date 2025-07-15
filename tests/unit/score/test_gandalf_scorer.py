@@ -122,10 +122,10 @@ async def test_gandalf_scorer_adds_to_memory(mocked_post, level: GandalfLevel, d
 
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=response)
-    
+
     # Mock the requests.post call to return a successful response
     mocked_post.return_value = MagicMock(status_code=200, json=lambda: {"success": True, "message": "Message"})
-    
+
     with patch.object(duckdb_instance, "get_prompt_request_pieces", return_value=[generated_request.request_pieces[0]]):
         scorer = GandalfScorer(level=level, chat_target=chat_target)
 
