@@ -9,8 +9,9 @@ from uuid import uuid4
 
 from aioconsole import ainput
 
-from pyrit.models import Score, SeedPrompt, SeedPromptGroup
-from pyrit.orchestrator import Orchestrator
+from pyrit.memory import CentralMemory
+from pyrit.models import SeedPromptGroup, PromptRequestResponse, PromptRequestPiece
+from pyrit.orchestrator import Orchestrator, OrchestratorResult
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptTarget
@@ -24,7 +25,6 @@ class XPIAOrchestrator(Orchestrator):
     def __init__(
         self,
         *,
-        attack_content: str,
         attack_setup_target: PromptTarget,
         processing_callback: Callable[[], Awaitable[str]],
         scorer: Optional[Scorer] = None,
@@ -40,7 +40,6 @@ class XPIAOrchestrator(Orchestrator):
         The scorer scores the processing response to determine the success of the attack.
 
         Args:
-            attack_content: The content to attack the processing target with, e.g., a jailbreak.
             attack_setup_target: The target that generates the attack prompt and gets it into the attack location.
             processing_callback: The callback to execute after the attack prompt is positioned in the attack location.
                 This is generic on purpose to allow for flexibility.
@@ -60,55 +59,95 @@ class XPIAOrchestrator(Orchestrator):
         self._prompt_normalizer = PromptNormalizer()
         self._attack_setup_target_conversation_id = attack_setup_target_conversation_id or str(uuid4())
         self._processing_conversation_id = str(uuid4())
-        self._attack_content = str(attack_content)
 
-    async def execute_async(self) -> Union[str, Score, None]:
-        """Executes the entire XPIA operation.
+    async def run_attack_async(
+        self,
+        *,
+        seed_prompt: SeedPromptGroup,
+        memory_labels: Optional[dict[str, str]] = None,
+    ) -> OrchestratorResult:
+        """
+        Runs the entire XPIA attack from setup to processing and scoring.
 
         This method sends the attack content to the prompt target, processes the response
         using the processing callback, and scores the processing response using the scorer.
         If no scorer was provided, the method will skip scoring.
+
+        Args:
+            seed_prompt (SeedPromptGroup): The seed prompt group to start the conversation.
+            memory_labels (dict[str, str], Optional): The memory labels to use for the attack.
         """
+        self._validate_seed_prompt(seed_prompt)
+        piece = seed_prompt.prompts[0]
+    
         logger.info(
             "Sending the following prompt to the prompt target (after applying prompt "
-            f'converter operations) "{self._attack_content}"',
+            f'converter operations) "{piece.value}"',
         )
 
         converters = PromptConverterConfiguration(converters=self._prompt_converters)
 
-        seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=self._attack_content, data_type="text")])
-
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_prompt_group=seed_prompt_group,
+            seed_prompt_group=seed_prompt,
             request_converter_configurations=[converters],
             target=self._attack_setup_target,
-            labels=self._global_memory_labels,
+            labels=memory_labels,
             orchestrator_identifier=self.get_identifier(),
         )
 
         logger.info(f'Received the following response from the prompt target "{response}"')
 
         processing_response = await self._processing_callback()
+        # manually adding this response to the memory since it's not handled by the normalizer
+        memory = CentralMemory.get_memory_instance()
+        memory.add_request_response_to_memory(
+            request=PromptRequestResponse(
+                request_pieces=[
+                    PromptRequestPiece(
+                        conversation_id=self._processing_conversation_id,
+                        original_value=processing_response,
+                        original_value_data_type="text",
+                        role="assistant",
+                        orchestrator_identifier=self.get_identifier(),
+                    )
+                ],
+            )
+        )
 
         logger.info(f'Received the following response from the processing target "{processing_response}"')
 
         if not self._scorer:
-            logger.info("No scorer provided. Returning the raw processing response.")
-            return processing_response
+            logger.info("No scorer provided.")
+            return OrchestratorResult(
+                conversation_id=self._processing_conversation_id,
+                objective=piece.value,
+                status="unknown"
+            )
 
         pool = concurrent.futures.ThreadPoolExecutor()
         score = pool.submit(asyncio.run, self._scorer.score_text_async(processing_response)).result()[0]
 
         logger.info(f"Score of the processing response: {score}")
-        return score
+        return OrchestratorResult(
+            conversation_id=self._processing_conversation_id,
+            objective=piece.value,
+            status="success" if score.get_value() else "failure",
+            objective_score=score,
+        )
+
+    def _validate_seed_prompt(self, seed_prompt: SeedPromptGroup) -> None:
+        if not seed_prompt.prompts or len(seed_prompt.prompts) != 1:
+            raise ValueError("Exactly one seed prompt must be provided.")
+        prompt = seed_prompt.prompts[0]
+        if prompt.data_type != "text":
+            raise ValueError(f"Seed prompt must be of type 'text'. Received: {prompt.data_type}")
 
 
 class XPIATestOrchestrator(XPIAOrchestrator):
     def __init__(
         self,
         *,
-        attack_content: str,
-        processing_prompt: str,
+        processing_prompt: SeedPromptGroup,
         processing_target: PromptTarget,
         attack_setup_target: PromptTarget,
         scorer: Scorer,
@@ -125,9 +164,8 @@ class XPIATestOrchestrator(XPIAOrchestrator):
         The scorer scores the processing response to determine the success of the attack.
 
         Args:
-            attack_content: The content to attack the processing target with, e.g., a jailbreak.
             processing_prompt: The prompt to send to the processing target. This should include
-                placeholders to invoke plugins (if any).
+                prompt request pieces to invoke tools such as input_file or similar.
             processing_target: The target of the attack which processes the processing prompt.
             attack_setup_target: The target that generates the attack prompt and gets it into the attack location.
             scorer: The scorer to use to score the processing response.
@@ -137,7 +175,6 @@ class XPIATestOrchestrator(XPIAOrchestrator):
                 If not provided, a new one will be generated.
         """
         super().__init__(
-            attack_content=attack_content,
             attack_setup_target=attack_setup_target,
             scorer=scorer,
             processing_callback=self._process_async,  # type: ignore
@@ -148,16 +185,12 @@ class XPIATestOrchestrator(XPIAOrchestrator):
 
         self._processing_target = processing_target
         self._processing_conversation_id = str(uuid4())
-        self._processing_prompt = SeedPrompt(value=processing_prompt, data_type="text")
+        self._processing_prompt = processing_prompt
 
     async def _process_async(self) -> str:
-
-        seed_prompt_group = SeedPromptGroup(prompts=[self._processing_prompt])
-
         processing_response = await self._prompt_normalizer.send_prompt_async(
-            seed_prompt_group=seed_prompt_group,
+            seed_prompt_group=self._processing_prompt,
             target=self._processing_target,
-            labels=self._global_memory_labels,
             orchestrator_identifier=self.get_identifier(),
         )
 
@@ -168,7 +201,6 @@ class XPIAManualProcessingOrchestrator(XPIAOrchestrator):
     def __init__(
         self,
         *,
-        attack_content: str,
         attack_setup_target: PromptTarget,
         scorer: Scorer,
         prompt_converters: Optional[list[PromptConverter]] = None,
@@ -184,7 +216,6 @@ class XPIAManualProcessingOrchestrator(XPIAOrchestrator):
         Finally, the scorer scores the processing response to determine the success of the attack.
 
         Args:
-            attack_content: The content to attack the processing target with, e.g., a jailbreak.
             attack_setup_target: The target that generates the attack prompt and gets it into the attack location.
             scorer: The scorer to use to score the processing response.
             prompt_converters: The converters to apply to the attack content before sending it to the prompt target.
@@ -193,7 +224,6 @@ class XPIAManualProcessingOrchestrator(XPIAOrchestrator):
                 If not provided, a new one will be generated.
         """
         super().__init__(
-            attack_content=attack_content,
             attack_setup_target=attack_setup_target,
             scorer=scorer,
             processing_callback=self._input_async,
