@@ -537,7 +537,7 @@ class TestAttackExecution:
             return_value=SeedPromptGroup(prompts=[SeedPrompt(value="Test prompt", data_type="text")])
         )
         attack._send_prompt_to_objective_target_async = AsyncMock(return_value=sample_response)
-        attack._evaluate_response_async = AsyncMock()
+        attack._evaluate_response_async = AsyncMock(return_value=None)
 
         # Execute the attack
         result = await attack._perform_attack_async(context=basic_context)
@@ -551,7 +551,12 @@ class TestAttackExecution:
 
         # Verify only one attempt was made (no retries without scorer)
         attack._send_prompt_to_objective_target_async.assert_called_once()
-        attack._evaluate_response_async.assert_not_called()
+
+        # Verify that _evaluate_response_async was called even without objective scorer
+        # This ensures auxiliary scores are still collected
+        attack._evaluate_response_async.assert_called_once_with(
+            response=sample_response, objective=basic_context.objective
+        )
 
     @pytest.mark.asyncio
     async def test_perform_attack_without_scorer_retries_on_filtered_response(
