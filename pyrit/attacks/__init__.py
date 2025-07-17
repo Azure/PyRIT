@@ -20,7 +20,7 @@ from pyrit.attacks.multi_turn.tree_of_attacks import (
     TAPAttackResult,
 )
 from pyrit.attacks.single_turn.prompt_sending import PromptSendingAttack
-
+from pyrit.attacks.fuzzer_attack import FuzzerAttack, FuzzerAttackContext, FuzzerAttackResult
 
 __all__ = [
     "AttackAdversarialConfig",
@@ -42,4 +42,7 @@ __all__ = [
     "TAPAttackContext",
     "TAPAttackResult",
     "PromptSendingAttack",
+    "FuzzerAttack",
+    "FuzzerAttackContext",
+    "FuzzerAttackResult",
 ]
