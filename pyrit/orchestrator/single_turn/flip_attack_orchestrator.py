@@ -2,9 +2,12 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Optional
+from typing import Optional, cast
+
+from typing_extensions import LiteralString, deprecated
 
 from pyrit.attacks import AttackConverterConfig, AttackScoringConfig, FlipAttack
+from pyrit.common import deprecation_message
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.orchestrator.models.orchestrator_result import OrchestratorResult
 from pyrit.prompt_normalizer import PromptConverterConfiguration
@@ -14,6 +17,16 @@ from pyrit.score import Scorer
 logger = logging.getLogger(__name__)
 
 
+@deprecated(
+    cast(
+        LiteralString,
+        deprecation_message(
+            old_item="FlipAttackOrchestrator",
+            new_item=FlipAttack,
+            removed_in="v0.12.0",
+        ),
+    ),
+)
 class FlipAttackOrchestrator(PromptSendingOrchestrator):
     """
     This orchestrator implements the Flip Attack method found here:
