@@ -15,7 +15,6 @@ from pyrit.attacks import (
     AttackAdversarialConfig,
     AttackConverterConfig,
     AttackScoringConfig,
-    MultiTurnAttackContext,
     RedTeamingAttack,
 )
 from pyrit.common import deprecation_message
@@ -147,13 +146,11 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         self, *, objective: str, memory_labels: Optional[dict[str, str]] = None
     ) -> OrchestratorResult:
 
-        # Transitions to the new attack model
-        context = MultiTurnAttackContext(
+        result = await self._attack.execute_async(
             objective=objective,
-            memory_labels=memory_labels or {},
+            prepended_conversation=self._prepended_conversation,
+            memory_labels=memory_labels,
         )
-
-        result = await self._attack.execute_with_context_async(context=context)
         objective_achieved = result.outcome == AttackOutcome.SUCCESS
 
         # Translating the result back to the orchestrator result format
