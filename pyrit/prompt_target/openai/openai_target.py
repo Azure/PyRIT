@@ -6,6 +6,8 @@ import logging
 from abc import abstractmethod
 from typing import Optional
 
+import httpx
+
 from pyrit.auth.azure_auth import (
     AzureAuth,
     get_default_scope,
@@ -114,6 +116,29 @@ class OpenAITarget(PromptChatTarget):
         where tokens need to be refreshed periodically."""
         if self._azure_auth:
             self._headers["Authorization"] = f"Bearer {self._azure_auth.refresh_token()}"
+
+    async def _send_request_async(self, body: dict) -> str:
+        """
+        Send an HTTP POST request to the OpenAI endpoint and return the response string.
+
+        Args:
+            body (dict): JSON-serializable request body.
+
+        Returns:
+            str: The raw response text from the endpoint.
+
+        Raises:
+            httpx.HTTPStatusError: If the response status code indicates an error.
+        """
+        async with httpx.AsyncClient(**self._httpx_client_kwargs) as client:
+            response = await client.post(
+                self._endpoint,
+                headers=self._headers,
+                params={"api-version": self._api_version} if self._api_version else {},
+                json=body,
+            )
+            response.raise_for_status()
+            return response.text
 
     @abstractmethod
     def _set_openai_env_configuration_vars(self) -> None:
