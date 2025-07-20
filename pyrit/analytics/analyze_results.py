@@ -1,4 +1,9 @@
-from pyrit.models import AttackResult, AttackOutcome
+import logging
+
+logger = logging.getLogger(__name__)
+
+from pyrit.models import AttackOutcome, AttackResult
+
 
 def analyze_results(attack_results: list[AttackResult]) -> dict:
     """
@@ -19,16 +24,19 @@ def analyze_results(attack_results: list[AttackResult]) -> dict:
     if not attack_results:
         return {
             "Attack success rate": None,
-            "Total_decided": 0,
+            "Total decided": 0,
             "Successes": 0,
             "Failures": 0,
             "Undetermined": 0,
         }
 
-    n_successes = n_failures = n_undetermined = 0
+    n_successes = 0
+    n_failures = 0
+    n_undetermined = 0
 
     for attack in attack_results:
         if not isinstance(attack, AttackResult):
+            logger.info(f"Skipping non-AttackResult object: {type(attack)}")
             continue
 
         outcome = attack.outcome
@@ -44,7 +52,7 @@ def analyze_results(attack_results: list[AttackResult]) -> dict:
 
     return {
         "Attack success rate": success_rate,
-        "Total_decided": total_decided,
+        "Total decided": total_decided,
         "Successes": n_successes,
         "Failures": n_failures,
         "Undetermined": n_undetermined,
