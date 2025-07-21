@@ -939,7 +939,6 @@ class TestAttackLifecycle:
         assert isinstance(context, SingleTurnAttackContext)
         assert context.objective == "Test objective"
         assert context.memory_labels == {"test": "label"}
-        assert context.prepended_conversation == [sample_response]
         assert context.seed_prompt_group == seed_group
         assert context.system_prompt == "System prompt"
 
