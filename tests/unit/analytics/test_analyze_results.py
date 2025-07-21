@@ -1,7 +1,7 @@
 import pytest
-import logging
+
 from pyrit.analytics.analyze_results import analyze_results
-from pyrit.models.attack_result import AttackResult, AttackOutcome
+from pyrit.models.attack_result import AttackOutcome, AttackResult
 
 
 def make_attack(outcome: AttackOutcome) -> AttackResult:
@@ -87,9 +87,9 @@ def test_invalid_object_raises_error():
 def test_typical_majority_success():
     # 10 attacks: 6 successes, 3 failures, 1 undetermined
     attacks = (
-        [make_attack(AttackOutcome.SUCCESS)] * 6 +
-        [make_attack(AttackOutcome.FAILURE)] * 3 +
-        [make_attack(AttackOutcome.UNDETERMINED)]
+        [make_attack(AttackOutcome.SUCCESS)] * 6
+        + [make_attack(AttackOutcome.FAILURE)] * 3
+        + [make_attack(AttackOutcome.UNDETERMINED)]
     )
     result = analyze_results(attacks)
     assert result["Attack success rate"] == 6 / 9
@@ -102,9 +102,9 @@ def test_typical_majority_success():
 def test_typical_majority_failure():
     # 8 attacks: 2 successes, 5 failures, 1 undetermined
     attacks = (
-        [make_attack(AttackOutcome.SUCCESS)] * 2 +
-        [make_attack(AttackOutcome.FAILURE)] * 5 +
-        [make_attack(AttackOutcome.UNDETERMINED)]
+        [make_attack(AttackOutcome.SUCCESS)] * 2
+        + [make_attack(AttackOutcome.FAILURE)] * 5
+        + [make_attack(AttackOutcome.UNDETERMINED)]
     )
     result = analyze_results(attacks)
     assert result["Attack success rate"] == 2 / 7
@@ -116,10 +116,7 @@ def test_typical_majority_failure():
 
 def test_typical_no_undetermined():
     # 7 attacks: 4 success, 3 failure
-    attacks = (
-        [make_attack(AttackOutcome.SUCCESS)] * 4 +
-        [make_attack(AttackOutcome.FAILURE)] * 3
-    )
+    attacks = [make_attack(AttackOutcome.SUCCESS)] * 4 + [make_attack(AttackOutcome.FAILURE)] * 3
     result = analyze_results(attacks)
     assert result["Attack success rate"] == 4 / 7
     assert result["Total decided"] == 7
