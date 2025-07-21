@@ -36,8 +36,7 @@ def analyze_results(attack_results: list[AttackResult]) -> dict:
 
     for attack in attack_results:
         if not isinstance(attack, AttackResult):
-            logger.info(f"Skipping non-AttackResult object: {type(attack)}")
-            continue
+            raise ValueError(f"Expected AttackResult but got {type(attack)}")
 
         outcome = attack.outcome
         if outcome == AttackOutcome.SUCCESS:

@@ -22,7 +22,8 @@ def test_empty_list_returns_none():
     assert result["Undetermined"] == 0
 
 
-def test_all_successes():
+@pytest.mark.parametrize("n", [1, 2, 3, 10, 100])
+def test_all_successes(n):
     attacks = [make_attack(AttackOutcome.SUCCESS) for _ in range(5)]
     result = analyze_results(attacks)
     assert result["Attack success rate"] == 1.0
@@ -32,7 +33,8 @@ def test_all_successes():
     assert result["Undetermined"] == 0
 
 
-def test_all_failures():
+@pytest.mark.parametrize("n", [1, 2, 5, 20])
+def test_all_failures(n):
     attacks = [make_attack(AttackOutcome.FAILURE) for _ in range(3)]
     result = analyze_results(attacks)
     assert result["Attack success rate"] == 0.0
@@ -42,7 +44,8 @@ def test_all_failures():
     assert result["Undetermined"] == 0
 
 
-def test_all_undetermined():
+@pytest.mark.parametrize("n", [1, 3, 7])
+def test_all_undetermined(n):
     attacks = [make_attack(AttackOutcome.UNDETERMINED) for _ in range(4)]
     result = analyze_results(attacks)
     assert result["Attack success rate"] is None
@@ -67,7 +70,7 @@ def test_mixed_outcomes():
     assert result["Undetermined"] == 1
 
 
-def test_invalid_objects_are_skipped(caplog):
+def test_invalid_object_raises_error():
     class NotAnAttack:
         pass
 
@@ -77,17 +80,11 @@ def test_invalid_objects_are_skipped(caplog):
         make_attack(AttackOutcome.FAILURE),
     ]
 
-    with caplog.at_level(logging.INFO):
-        result = analyze_results(attacks)
+    with pytest.raises(ValueError, match="Expected AttackResult"):
+        analyze_results(attacks)
 
-    assert result["Successes"] == 1
-    assert result["Failures"] == 1
-    assert result["Undetermined"] == 0
-    assert result["Total decided"] == 2
 
-    assert any("Skipping non-AttackResult object" in msg for msg in caplog.messages)
-
-def test_typical_success_bias():
+def test_typical_majority_success():
     # 10 attacks: 6 successes, 3 failures, 1 undetermined
     attacks = (
         [make_attack(AttackOutcome.SUCCESS)] * 6 +
@@ -102,7 +99,7 @@ def test_typical_success_bias():
     assert result["Undetermined"] == 1
 
 
-def test_typical_failure_bias():
+def test_typical_majority_failure():
     # 8 attacks: 2 successes, 5 failures, 1 undetermined
     attacks = (
         [make_attack(AttackOutcome.SUCCESS)] * 2 +
