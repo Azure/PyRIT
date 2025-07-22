@@ -90,18 +90,6 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
             many_shot_examples=many_shot_examples,
         )
 
-        # # Template for the faux dialogue to be prepended
-        # template_path = Path(DATASETS_PATH) / "jailbreak" / "multi_parameter" / "many_shot_template.yaml"
-        # self._template = SeedPrompt.from_yaml_file(template_path)
-        # # Fetch the Many Shot Jailbreaking example dataset
-        # self._examples = (
-        #     many_shot_examples[:example_count]
-        #     if (many_shot_examples is not None)
-        #     else fetch_many_shot_jailbreaking_dataset()[:example_count]
-        # )
-        # if not self._examples:
-        #     raise ValueError("Many shot examples must be provided.")
-
     async def run_attack_async(  # type: ignore[override]
         self,
         *,
