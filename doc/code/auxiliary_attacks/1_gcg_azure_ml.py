@@ -41,7 +41,7 @@ print(workspace)
 
 # %%
 from azure.ai.ml import MLClient
-from azure.identity import DefaultAzureCredential, AzureCliCredential
+from azure.identity import AzureCliCredential
 
 # Get a handle to the workspace
 # For some people DefaultAzureCredential may work better than AzureCliCredential.
@@ -100,7 +100,7 @@ job = command(
     resources=JobResourceConfiguration(
         instance_type="Standard_NC96ads_A100_v4",
         instance_count=1,
-    )
+    ),
 )
 
 # %%
