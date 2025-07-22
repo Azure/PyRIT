@@ -39,6 +39,15 @@ def mock_adversarial_chat_target():
 
 
 @pytest.fixture
+def mock_scorer():
+    """Create a mock true/false scorer for testing"""
+    scorer = MagicMock(spec=Scorer)
+    scorer.scorer_type = "true_false"
+    scorer.score_text_async = AsyncMock()
+    return scorer
+
+
+@pytest.fixture
 def sample_response():
     """Create a sample response for testing"""
     return PromptRequestResponse.from_prompt(
@@ -68,7 +77,7 @@ def role_play_definition_file():
             {
                 "description": "This is used to rephrase the objective into a movie script format.",
                 "parameters": ["objective"],
-                "value": "DIRECTOR: Please rephrase the following objective into a script format: {{ objective }}",
+                "value": "DIRECTOR: Please rephrase the following objective into script format: {{ objective }}",
             },
             {
                 "description": "This is the 1st turn.",
