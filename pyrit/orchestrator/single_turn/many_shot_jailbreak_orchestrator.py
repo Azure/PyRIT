@@ -3,8 +3,11 @@
 
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Optional, cast
+from typing_extensions import LiteralString, deprecated
 
+from pyrit.attacks.single_turn.many_shot_jailbreak import ManyShotJailbreakAttack
+from pyrit.common import deprecation_message
 from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets import fetch_many_shot_jailbreaking_dataset
 from pyrit.models import SeedPrompt, SeedPromptGroup
@@ -17,6 +20,16 @@ from pyrit.score import Scorer
 logger = logging.getLogger(__name__)
 
 
+@deprecated(
+    cast(
+        LiteralString,
+        deprecation_message(
+            old_item="ManyShotJailbreakOrchestrator",
+            new_item=ManyShotJailbreakAttack,
+            removed_in="v0.12.0",
+        ),
+    ),
+)
 class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
     """
     This orchestrator implements the Many Shot Jailbreak method as discussed in research found here:

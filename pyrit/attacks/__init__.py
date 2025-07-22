@@ -20,6 +20,7 @@ from pyrit.attacks.multi_turn.tree_of_attacks import (
     TAPAttackResult,
 )
 from pyrit.attacks.single_turn.prompt_sending import PromptSendingAttack
+from pyrit.attacks.single_turn.many_shot_jailbreak import ManyShotJailbreakAttack
 
 
 __all__ = [
@@ -37,6 +38,7 @@ __all__ = [
     "RedTeamingAttack",
     "RTOSystemPromptPaths",
     "CrescendoAttack",
+    "ManyShotJailbreakAttack",
     "TreeOfAttacksWithPruningAttack",
     "TAPAttack",
     "TAPAttackContext",
