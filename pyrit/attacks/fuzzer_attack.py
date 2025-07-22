@@ -175,7 +175,6 @@ class FuzzerAttackContext(AttackContext):
     ensuring thread safety by isolating state per execution.
     """
 
-    # Execution state only - removed configuration parameters
     # Tracking state
     total_target_query_count: int = 0
     total_jailbreak_count: int = 0
@@ -209,7 +208,6 @@ class FuzzerAttackContext(AttackContext):
         Returns:
             FuzzerAttackContext: A new instance of FuzzerAttackContext.
         """
-        # No need to pass configuration parameters to context anymore
         return cls(
             objective=objective,
             memory_labels=memory_labels,
@@ -490,12 +488,12 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
         Validate input parameters.
 
         Args:
-            prompt_templates: List of prompt templates.
-            prompts: List of prompts.
-            template_converters: List of template converters.
-            batch_size: Batch size for sending prompts.
-            max_query_limit: Maximum query limit.
-            attack_scoring_config: Attack scoring configuration.
+            prompt_templates (List[str]): List of prompt templates.
+            prompts (List[str]): List of prompts to use.
+            template_converters (List[FuzzerConverter]): List of template converters.
+            batch_size (int): The batch size for sending prompts.
+            max_query_limit (Optional[int]): Maximum number of queries to the target.
+            attack_scoring_config (Optional[AttackScoringConfig]): Configuration for attack scoring.
 
         Raises:
             ValueError: If validation fails.
@@ -528,7 +526,7 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
         Calculate the query limit based on input or default formula.
 
         Args:
-            max_query_limit: User-provided limit or None.
+            max_query_limit (Optional[int]): Maximum query limit provided by user.
 
         Returns:
             Calculated query limit.
@@ -601,7 +599,7 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
         Execute one iteration of the fuzzer attack.
 
         Args:
-            context: The attack context.
+            context (FuzzerAttackContext): The attack context.
         """
         # Select template using MCTS
         current_seed, path = self._select_template_with_mcts(context)
@@ -734,7 +732,7 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
         Get templates not in the current MCTS path.
 
         Args:
-            context: The attack context.
+            context (FuzzerAttackContext): The attack context.
 
         Returns:
             List of template strings.
@@ -798,7 +796,7 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
         Create normalizer requests from prompts.
 
         Args:
-            prompts: List of prompt strings.
+            prompts (List[str]): The prompts to create requests for.
 
         Returns:
             List of normalizer requests.
@@ -889,7 +887,7 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
         Determine if a score indicates a successful jailbreak.
 
         Args:
-            score: The score to evaluate.
+            score (Score): The score to evaluate.
 
         Returns:
             True if this is a successful jailbreak.
@@ -905,9 +903,9 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
         Add a successful template to the node tree.
 
         Args:
-            context: The attack context.
-            template_node: The successful template node.
-            parent_seed: The parent seed node.
+            context (FuzzerAttackContext): The attack context.
+            template_node (_PromptNode): The successful template node.
+            parent_seed (_PromptNode): The parent seed node.
         """
         # Check if template_node already exists to avoid duplicates
         for existing_node in context.new_prompt_nodes:
@@ -1007,7 +1005,7 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
         Get a descriptive failure reason based on context.
 
         Args:
-            context: The attack context.
+            context (FuzzerAttackContext): The attack context.
 
         Returns:
             Failure reason string.
@@ -1028,7 +1026,7 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
         Get the last response from successful jailbreaks.
 
         Args:
-            context: The attack context.
+            context (FuzzerAttackContext): The attack context.
 
         Returns:
             Last response piece or None.
