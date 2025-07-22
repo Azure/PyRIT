@@ -18,6 +18,6 @@ RUN conda list
 
 RUN git clone https://github.com/Azure/PyRIT.git
 
-RUN cd PyRIT && pip install -e .[dev,gcg] && pip install git+https://github.com/lm-sys/FastChat.git@2c68a13bfe10b86f40e3eefc3fcfacb32c00b02a && pip install sentencepiece
+RUN cd PyRIT && pip install -e .[dev,gcg] && pip install git+https://github.com/lm-sys/FastChat.git@2c68a13bfe10b86f40e3eefc3fcfacb32c00b02a
 
 RUN pip freeze
