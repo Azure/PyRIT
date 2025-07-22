@@ -9,17 +9,14 @@ from typing import Optional, cast
 from typing_extensions import LiteralString, deprecated
 
 from pyrit.attacks.base.attack_config import AttackConverterConfig, AttackScoringConfig
-from pyrit.attacks.base.attack_context import SingleTurnAttackContext
 from pyrit.attacks.single_turn.role_play import RolePlayAttack
 from pyrit.common import deprecation_message
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import AttackOutcome, PromptRequestResponse, SeedPromptDataset
-from pyrit.orchestrator import OrchestratorResult, OrchestratorResultStatus, PromptSendingOrchestrator
-from pyrit.prompt_converter import LLMGenericTextConverter
+from pyrit.models import SeedPromptDataset
+from pyrit.orchestrator import OrchestratorResult, PromptSendingOrchestrator
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer
-
 
 logger = logging.getLogger(__name__)
 
