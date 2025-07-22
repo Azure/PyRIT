@@ -7,7 +7,7 @@ import logging
 import random
 import uuid
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Union, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -22,17 +22,16 @@ from pyrit.exceptions import MissingPromptPlaceholderException, pyrit_placeholde
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    PromptRequestResponse,
     PromptRequestPiece,
+    PromptRequestResponse,
     Score,
     SeedPrompt,
     SeedPromptGroup,
 )
 from pyrit.prompt_converter import FuzzerConverter
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
-from pyrit.prompt_target import PromptTarget
+from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import FloatScaleThresholdScorer, SelfAskScaleScorer
-from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
 
@@ -104,12 +103,7 @@ class _MCTSExplorer:
         self.minimum_reward = minimum_reward
         self.non_leaf_node_probability = non_leaf_node_probability
 
-    def select_node(
-        self,
-        *,
-        initial_nodes: List[_PromptNode],
-        step: int
-    ) -> Tuple[_PromptNode, List[_PromptNode]]:
+    def select_node(self, *, initial_nodes: List[_PromptNode], step: int) -> Tuple[_PromptNode, List[_PromptNode]]:
         """
         Select a node using MCTS-explore algorithm.
 
@@ -120,16 +114,19 @@ class _MCTSExplorer:
         Returns:
             Tuple of (selected_node, path_to_node).
         """
-        node_utc_step_score_lambda = lambda n: self._calculate_uct_score(node=n, step=step)
+
+        def node_uct_step_score(n: _PromptNode) -> float:
+            return self._calculate_uct_score(node=n, step=step)
+
         # Select initial node with best UCT score
-        current = max(initial_nodes, key=node_utc_step_score_lambda)
+        current = max(initial_nodes, key=node_uct_step_score)
         path = [current]
 
         # Traverse tree to find node to explore
         while len(current.children) > 0:
             if np.random.rand() < self.non_leaf_node_probability:
                 break
-            current = max(current.children, key=node_utc_step_score_lambda)
+            current = max(current.children, key=node_uct_step_score)
             path.append(current)
 
         return current, path
@@ -148,19 +145,12 @@ class _MCTSExplorer:
         # Handle step = 0 to avoid log(0)
         if step == 0:
             step = 1
-            
+
         exploitation = node.rewards / (node.visited_num + 1)
-        exploration = self.frequency_weight * np.sqrt(
-            2 * np.log(step) / (node.visited_num + 0.01)
-        )
+        exploration = self.frequency_weight * np.sqrt(2 * np.log(step) / (node.visited_num + 0.01))
         return exploitation + exploration
 
-    def update_rewards(
-        self,
-        path: List[_PromptNode],
-        reward: float,
-        last_node: Optional[_PromptNode] = None
-    ) -> None:
+    def update_rewards(self, path: List[_PromptNode], reward: float, last_node: Optional[_PromptNode] = None) -> None:
         """
         Update rewards for nodes in the path.
 
@@ -172,10 +162,7 @@ class _MCTSExplorer:
         for node in reversed(path):
             # Apply reward with penalty based on tree depth
             level = last_node.level if last_node else node.level
-            adjusted_reward = reward * max(
-                self.minimum_reward,
-                (1 - self.reward_penalty * level)
-            )
+            adjusted_reward = reward * max(self.minimum_reward, (1 - self.reward_penalty * level))
             node.rewards += adjusted_reward
 
 
@@ -362,7 +349,7 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
             scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
             system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
         )
-        
+
         objective_scorer = FloatScaleThresholdScorer(
             scorer=scale_scorer,
             threshold=0.8,
@@ -420,7 +407,8 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
                 At each iteration, a seed will be selected using the MCTS-explore algorithm.
             template_converters (List[FuzzerConverter]): The converters to apply on the selected jailbreak template.
                 In each iteration, one converter is chosen at random.
-            attack_converter_config (Optional[AttackConverterConfig]): Configuration for attack converters. Defaults to None.
+            attack_converter_config (Optional[AttackConverterConfig]): Configuration for attack converters.
+                Defaults to None.
             attack_scoring_config (Optional[AttackScoringConfig]): Configuration for attack scoring. Defaults to None.
             prompt_normalizer (Optional[PromptNormalizer]): The prompt normalizer to use. Defaults to None.
             frequency_weight (float): Constant that balances between high reward and selection frequency.
@@ -449,7 +437,7 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
             template_converters=template_converters,
             batch_size=batch_size,
             max_query_limit=max_query_limit,
-            attack_scoring_config=attack_scoring_config
+            attack_scoring_config=attack_scoring_config,
         )
 
         # Store configuration
@@ -463,7 +451,7 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
             frequency_weight=frequency_weight,
             reward_penalty=reward_penalty,
             minimum_reward=minimum_reward,
-            non_leaf_node_probability=non_leaf_node_probability
+            non_leaf_node_probability=non_leaf_node_probability,
         )
 
         # Execution parameters
@@ -496,7 +484,7 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
         template_converters: List[FuzzerConverter],
         batch_size: int,
         max_query_limit: Optional[int],
-        attack_scoring_config: Optional[AttackScoringConfig]
+        attack_scoring_config: Optional[AttackScoringConfig],
     ) -> None:
         """
         Validate input parameters.
@@ -570,10 +558,7 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
             context (FuzzerAttackContext): The attack context containing configuration.
         """
         # Update memory labels
-        context.memory_labels = combine_dict(
-            existing_dict=self._memory_labels,
-            new_dict=context.memory_labels
-        )
+        context.memory_labels = combine_dict(existing_dict=self._memory_labels, new_dict=context.memory_labels)
 
         # Initialize only tracking state - removed configuration parameter initialization
         context.total_target_query_count = 0
@@ -631,24 +616,14 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
             raise
 
         # Create template node for tracking
-        target_template = SeedPrompt(
-            value=target_seed,
-            data_type="text", 
-            parameters=["prompt"]
-        )
+        target_template = SeedPrompt(value=target_seed, data_type="text", parameters=["prompt"])
         target_template_node = _PromptNode(template=target_seed, parent=None)
 
         # Generate prompts from template
-        jailbreak_prompts = self._generate_prompts_from_template(
-            template=target_template,
-            prompts=self._prompts
-        )
+        jailbreak_prompts = self._generate_prompts_from_template(template=target_template, prompts=self._prompts)
 
         # Send prompts to target
-        responses = await self._send_prompts_to_target_async(
-            context=context,
-            prompts=jailbreak_prompts
-        )
+        responses = await self._send_prompts_to_target_async(context=context, prompts=jailbreak_prompts)
 
         # Score responses
         scores = await self._score_responses_async(responses=responses)
@@ -659,15 +634,11 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
             scores=scores,
             responses=responses,
             template_node=target_template_node,
-            current_seed=current_seed
+            current_seed=current_seed,
         )
 
         # Update MCTS rewards
-        self._update_mcts_rewards(
-            context=context,
-            jailbreak_count=jailbreak_count,
-            num_queries=len(scores)
-        )
+        self._update_mcts_rewards(context=context, jailbreak_count=jailbreak_count, num_queries=len(scores))
 
     async def _teardown_async(self, *, context: FuzzerAttackContext) -> None:
         """
@@ -715,8 +686,7 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
 
         # Use MCTS explorer to select node
         selected_node, path = self._mcts_explorer.select_node(
-            initial_nodes=context.initial_prompt_nodes,
-            step=context.executed_turns
+            initial_nodes=context.initial_prompt_nodes, step=context.executed_turns
         )
 
         # Update visit counts
@@ -726,12 +696,7 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
         return selected_node, path
 
     @pyrit_placeholder_retry
-    async def _apply_template_converter_async(
-        self,
-        *,
-        context: FuzzerAttackContext,
-        current_seed: _PromptNode
-    ) -> str:
+    async def _apply_template_converter_async(self, *, context: FuzzerAttackContext, current_seed: _PromptNode) -> str:
         """
         Apply a random template converter to the selected template.
 
@@ -756,12 +721,12 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
 
         # Apply converter
         converted = await template_converter.convert_async(prompt=current_seed.template)
-        
+
         if self._TEMPLATE_PLACEHOLDER not in converted.output_text:
             raise MissingPromptPlaceholderException(
                 message=f"Converted template missing placeholder: {converted.output_text[:50]}..."
             )
-        
+
         return converted.output_text
 
     def _get_other_templates(self, context: FuzzerAttackContext) -> List[str]:
@@ -776,19 +741,14 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
         """
         other_templates = []
         node_ids_on_path = {node.id for node in context.mcts_selected_path}
-        
+
         for prompt_node in context.initial_prompt_nodes + context.new_prompt_nodes:
             if prompt_node.id not in node_ids_on_path:
                 other_templates.append(prompt_node.template)
-                
+
         return other_templates
 
-    def _generate_prompts_from_template(
-        self,
-        *,
-        template: SeedPrompt,
-        prompts: List[str]
-    ) -> List[str]:
+    def _generate_prompts_from_template(self, *, template: SeedPrompt, prompts: List[str]) -> List[str]:
         """
         Generate jailbreak prompts by filling template with prompts.
 
@@ -804,17 +764,12 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
         """
         # Validate that the template has the required parameter
         if not template.parameters or "prompt" not in template.parameters:
-            raise ValueError(
-                f"Template must have 'prompt' parameter. Current parameters: {template.parameters}"
-            )
-        
+            raise ValueError(f"Template must have 'prompt' parameter. Current parameters: {template.parameters}")
+
         return [template.render_template_value(prompt=prompt) for prompt in prompts]
 
     async def _send_prompts_to_target_async(
-        self,
-        *,
-        context: FuzzerAttackContext,
-        prompts: List[str]
+        self, *, context: FuzzerAttackContext, prompts: List[str]
     ) -> List[PromptRequestResponse]:
         """
         Send prompts to the target in batches.
@@ -849,7 +804,7 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
             List of normalizer requests.
         """
         requests: List[NormalizerRequest] = []
-        
+
         for prompt in prompts:
             request = NormalizerRequest(
                 seed_prompt_group=SeedPromptGroup(prompts=[SeedPrompt(value=prompt, data_type="text")]),
@@ -857,14 +812,10 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
                 response_converter_configurations=self._response_converters,
             )
             requests.append(request)
-            
+
         return requests
 
-    async def _score_responses_async(
-        self,
-        *,
-        responses: List[PromptRequestResponse]
-    ) -> List[Score]:
+    async def _score_responses_async(self, *, responses: List[PromptRequestResponse]) -> List[Score]:
         """
         Score the responses from the target.
 
@@ -876,21 +827,19 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
         """
         if not responses:
             return []
-            
+
         response_pieces = [response.request_pieces[0] for response in responses]
-        
+
         # Score with objective scorer
         scores = await self._objective_scorer.score_prompts_with_tasks_batch_async(
-            request_responses=response_pieces,
-            tasks=self._prompts
+            request_responses=response_pieces, tasks=self._prompts
         )
 
         # Score with auxiliary scorers if provided
         if self._auxiliary_scorers:
             for scorer in self._auxiliary_scorers:
                 await scorer.score_prompts_with_tasks_batch_async(
-                    request_responses=response_pieces,
-                    tasks=self._prompts
+                    request_responses=response_pieces, tasks=self._prompts
                 )
 
         return scores
@@ -902,7 +851,7 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
         scores: List[Score],
         responses: List[PromptRequestResponse],
         template_node: _PromptNode,
-        current_seed: _PromptNode
+        current_seed: _PromptNode,
     ) -> int:
         """
         Process scoring results and track jailbreaks.
@@ -950,10 +899,7 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
         return normalized_score >= self._successful_objective_threshold
 
     def _add_successful_template(
-        self,
-        context: FuzzerAttackContext,
-        template_node: _PromptNode,
-        parent_seed: _PromptNode
+        self, context: FuzzerAttackContext, template_node: _PromptNode, parent_seed: _PromptNode
     ) -> None:
         """
         Add a successful template to the node tree.
@@ -967,17 +913,11 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
         for existing_node in context.new_prompt_nodes:
             if existing_node.template == template_node.template:
                 return
-                
+
         context.new_prompt_nodes.append(template_node)
         template_node.add_parent(parent_seed)
 
-    def _update_mcts_rewards(
-        self,
-        *,
-        context: FuzzerAttackContext,
-        jailbreak_count: int,
-        num_queries: int
-    ) -> None:
+    def _update_mcts_rewards(self, *, context: FuzzerAttackContext, jailbreak_count: int, num_queries: int) -> None:
         """
         Update rewards for nodes in the MCTS path.
 
@@ -989,15 +929,13 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
         # Handle division by zero
         if num_queries == 0:
             return
-            
+
         # Calculate reward (normalized by number of prompts tested)
         reward = jailbreak_count / (len(self._prompts) * 1)
-        
+
         # Use MCTS explorer to update rewards
         self._mcts_explorer.update_rewards(
-            path=context.mcts_selected_path,
-            reward=reward,
-            last_node=context.last_choice_node
+            path=context.mcts_selected_path, reward=reward, last_node=context.last_choice_node
         )
 
     def _normalize_score_to_float(self, score_value) -> float:
@@ -1031,10 +969,12 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
         """
         # Determine outcome
         success = context.total_jailbreak_count >= self._target_jailbreak_goal_count
-        
+
         if success:
             outcome = AttackOutcome.SUCCESS
-            outcome_reason = f"Found {context.total_jailbreak_count} jailbreaks (target: {self._target_jailbreak_goal_count})"
+            outcome_reason = (
+                f"Found {context.total_jailbreak_count} jailbreaks (target: {self._target_jailbreak_goal_count})"
+            )
         else:
             outcome = AttackOutcome.FAILURE
             outcome_reason = self._get_failure_reason(context)
@@ -1077,7 +1017,9 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
             return f"Query limit ({self._max_query_limit}) reached"
         # Then check if we didn't reach the jailbreak goal
         elif context.total_jailbreak_count < self._target_jailbreak_goal_count:
-            return f"Only found {context.total_jailbreak_count} jailbreaks (target: {self._target_jailbreak_goal_count})"
+            return (
+                f"Only found {context.total_jailbreak_count} jailbreaks (target: {self._target_jailbreak_goal_count})"
+            )
         else:
             return "Attack failed for unknown reason"
 
@@ -1093,14 +1035,14 @@ class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
         """
         if not context.jailbreak_conversation_ids:
             return None
-            
+
         last_conversation_id = context.jailbreak_conversation_ids[-1]
         responses = self._memory.get_prompt_request_pieces(conversation_id=str(last_conversation_id))
-        
+
         if responses:
             # Get the assistant's response, not the user's prompt
             for response in reversed(responses):
                 if response.role == "assistant":
                     return response
-            
+
         return None
