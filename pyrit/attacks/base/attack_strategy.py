@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import ast
+import copy
 import logging
 import time
 import uuid
@@ -308,9 +309,12 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, AttackResultT]):
             AttackResultT: The result of the attack execution, including outcome and reason.
         """
 
+        # Deep copy the prepended conversation to avoid modifying the original
+        prepended_conversation_copy = copy.deepcopy(prepended_conversation) if prepended_conversation else []
+
         context = self._context_type.create_from_params(
             objective=objective,
-            prepended_conversation=prepended_conversation or [],
+            prepended_conversation=prepended_conversation_copy,
             memory_labels=memory_labels or {},
             **attack_params,
         )
