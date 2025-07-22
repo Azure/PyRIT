@@ -3,24 +3,20 @@
 
 import logging
 import pathlib
-import uuid
 from typing import Optional
 
 from pyrit.attacks.base.attack_config import AttackConverterConfig, AttackScoringConfig
 from pyrit.attacks.base.attack_context import SingleTurnAttackContext
 from pyrit.attacks.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.common.path import DATASETS_PATH
-from pyrit.common.utils import combine_dict
 from pyrit.datasets import fetch_many_shot_jailbreaking_dataset
 from pyrit.models import (
     AttackResult,
-    PromptRequestResponse,
     SeedPrompt,
     SeedPromptGroup,
 )
-from pyrit.prompt_converter import FlipConverter
-from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
-from pyrit.prompt_target import PromptChatTarget
+from pyrit.prompt_normalizer import PromptNormalizer
+from pyrit.prompt_target import PromptTarget
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +33,7 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
 
     def __init__(
         self,
-        objective_target: PromptChatTarget,
+        objective_target: PromptTarget,
         attack_converter_config: Optional[AttackConverterConfig] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
@@ -47,13 +43,13 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
     ) -> None:
         """
         Args:
-            objective_target (PromptChatTarget): The target system to attack.
+            objective_target (PromptTarget): The target system to attack.
             attack_converter_config (AttackConverterConfig, Optional): Configuration for the prompt converters.
             attack_scoring_config (AttackScoringConfig, Optional): Configuration for scoring components.
             prompt_normalizer (PromptNormalizer, Optional): Normalizer for handling prompts.
             max_attempts_on_failure (int, Optional): Maximum number of attempts to retry on failure.
-            example_count (int): The number of examples to include from the examples dataset.
-                Defaults to the first 100.
+            example_count (int): The number of examples to include from many_shot_examples or the Many
+                Shot Jailbreaking dataset. Defaults to the first 100.
             many_shot_examples (list[dict[str, str]], Optional): The many shot jailbreaking examples to use.
                 If not provided, takes the first `example_count` examples from Many Shot Jailbreaking dataset.
         """
