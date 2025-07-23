@@ -14,13 +14,12 @@ from typing_extensions import LiteralString, deprecated
 from pyrit.attacks import (
     AttackAdversarialConfig,
     AttackConverterConfig,
-    AttackOutcome,
     AttackScoringConfig,
-    MultiTurnAttackContext,
     RedTeamingAttack,
 )
 from pyrit.common import deprecation_message
 from pyrit.common.path import RED_TEAM_ORCHESTRATOR_PATH
+from pyrit.models import AttackOutcome
 from pyrit.orchestrator import MultiTurnOrchestrator, OrchestratorResult
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -147,13 +146,11 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         self, *, objective: str, memory_labels: Optional[dict[str, str]] = None
     ) -> OrchestratorResult:
 
-        # Transitions to the new attack model
-        context = MultiTurnAttackContext(
+        result = await self._attack.execute_async(
             objective=objective,
+            prepended_conversation=self._prepended_conversation,
             memory_labels=memory_labels or {},
         )
-
-        result = await self._attack.execute_with_context_async(context=context)
         objective_achieved = result.outcome == AttackOutcome.SUCCESS
 
         # Translating the result back to the orchestrator result format

@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import ast
+import copy
 import logging
 import time
 import uuid
@@ -10,7 +11,6 @@ from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator, Dict, Generic, List, MutableMapping, Optional
 
 from pyrit.attacks.base.attack_context import ContextT
-from pyrit.attacks.base.attack_result import AttackOutcome, ResultT
 from pyrit.common import default_values
 from pyrit.common.logger import logger
 from pyrit.exceptions.exception_classes import (
@@ -18,7 +18,7 @@ from pyrit.exceptions.exception_classes import (
     AttackValidationException,
 )
 from pyrit.memory.central_memory import CentralMemory
-from pyrit.models import Identifier, PromptRequestResponse
+from pyrit.models import AttackOutcome, AttackResultT, Identifier, PromptRequestResponse
 
 
 class AttackStrategyLogAdapter(logging.LoggerAdapter):
@@ -36,13 +36,13 @@ class AttackStrategyLogAdapter(logging.LoggerAdapter):
         strategy_id = self.extra.get("strategy_id")
 
         if strategy_name and strategy_id:
-            strategy_info = f"[{strategy_name} (ID: {strategy_id})]"
+            strategy_info = f"[{strategy_name} (ID: {str(strategy_id)})]"
             return f"{strategy_info} {msg}", kwargs
 
         return msg, kwargs
 
 
-class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
+class AttackStrategy(ABC, Identifier, Generic[ContextT, AttackResultT]):
     """
     Abstract base class for attack strategies with enforced lifecycle management.
 
@@ -118,11 +118,15 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
     @abstractmethod
     def _validate_context(self, *, context: ContextT) -> None:
         """
-        Validate the context before executing the attack.
-        This method should be implemented by subclasses to ensure the context is suitable for the attack.
+        Validate the attack context before execution.
+        This method should be implemented by subclasses to validate that the context
+        is suitable for the attack strategy.
 
         Args:
             context (ContextT): The context to validate.
+
+        Raises:
+            AttackValidationException: If the context is invalid for this attack strategy.
         """
         pass
 
@@ -139,7 +143,7 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
         pass
 
     @abstractmethod
-    async def _perform_attack_async(self, *, context: ContextT) -> ResultT:
+    async def _perform_attack_async(self, *, context: ContextT) -> AttackResultT:
         """
         Core attack implementation to be defined by subclasses.
         This contains the actual attack logic that subclasses must implement.
@@ -148,7 +152,7 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
             context (ContextT): The context for the attack.
 
         Returns:
-            ResultT: The result of the attack execution.
+            AttackResultT: The result of the attack execution.
         """
         pass
 
@@ -164,12 +168,12 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
         """
         pass
 
-    def _log_attack_outcome(self, result: ResultT) -> None:
+    def _log_attack_outcome(self, result: AttackResultT) -> None:
         """
         Log the outcome of the attack.
 
         Args:
-            result (ResultT): The result of the attack containing outcome and reason.
+            result (AttackResultT): The result of the attack containing outcome and reason.
         """
         attack_name = self.__class__.__name__
 
@@ -209,7 +213,7 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
             self._logger.debug(f"Tearing down attack strategy for objective: '{context.objective}'")
             await self._teardown_async(context=context)
 
-    async def execute_with_context_async(self, *, context: ContextT) -> ResultT:
+    async def execute_with_context_async(self, *, context: ContextT) -> AttackResultT:
         """
         Execute attack with complete lifecycle management.
 
@@ -219,7 +223,7 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
             context (ContextT): The context for the attack, containing configuration and state.
 
         Returns:
-            ResultT: The result of the attack execution, including outcome and reason.
+            AttackResultT: The result of the attack execution, including outcome and reason.
 
         Raises:
             AttackValidationError: If context validation fails.
@@ -264,6 +268,9 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
                 # Log the attack outcome
                 self._log_attack_outcome(result)
 
+                # Add the result to memory
+                self._memory.add_attack_results_to_memory(attack_results=[result])
+
                 return result
 
         except (AttackExecutionException, AttackValidationException):
@@ -286,7 +293,7 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
         prepended_conversation: Optional[List[PromptRequestResponse]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
         **attack_params,
-    ) -> ResultT:
+    ) -> AttackResultT:
         """
         Execute the attack strategy asynchronously with provided parameters.
         This method creates the context from the provided parameters and executes the attack.
@@ -299,12 +306,15 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, ResultT]):
             **attack_params: Additional parameters specific to the attack strategy.
 
         Returns:
-            ResultT: The result of the attack execution, including outcome and reason.
+            AttackResultT: The result of the attack execution, including outcome and reason.
         """
+
+        # Deep copy the prepended conversation to avoid modifying the original
+        prepended_conversation_copy = copy.deepcopy(prepended_conversation) if prepended_conversation else []
 
         context = self._context_type.create_from_params(
             objective=objective,
-            prepended_conversation=prepended_conversation or [],
+            prepended_conversation=prepended_conversation_copy,
             memory_labels=memory_labels or {},
             **attack_params,
         )

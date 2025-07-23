@@ -10,11 +10,12 @@ from pyrit.attacks.base.attack_config import (
     AttackScoringConfig,
 )
 from pyrit.attacks.base.attack_context import SingleTurnAttackContext
-from pyrit.attacks.base.attack_result import AttackOutcome, AttackResult
 from pyrit.attacks.base.attack_strategy import AttackStrategy
 from pyrit.attacks.components.conversation_manager import ConversationManager
 from pyrit.common.utils import combine_dict
 from pyrit.models import (
+    AttackOutcome,
+    AttackResult,
     PromptRequestResponse,
     Score,
     SeedPrompt,
@@ -179,12 +180,12 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
                 self._logger.warning(f"No response received on attempt {attempt+1} (likely filtered)")
                 continue  # Retry if no response (filtered or error)
 
-            # If no objective scorer, we have a response but can't determine success
+            # Score the response including auxiliary and objective scoring
+            score = await self._evaluate_response_async(response=response, objective=context.objective)
+
+            # If there is no objective, we have a response but can't determine success
             if not self._objective_scorer:
                 break
-
-            # Score the response
-            score = await self._evaluate_response_async(response=response, objective=context.objective)
 
             # On success, return immediately
             if bool(score and score.get_value()):

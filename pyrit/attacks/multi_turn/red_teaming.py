@@ -17,7 +17,6 @@ from pyrit.attacks.base.attack_context import (
     ConversationSession,
     MultiTurnAttackContext,
 )
-from pyrit.attacks.base.attack_result import AttackOutcome, AttackResult
 from pyrit.attacks.base.attack_strategy import AttackStrategy
 from pyrit.attacks.components.conversation_manager import (
     ConversationManager,
@@ -27,6 +26,8 @@ from pyrit.attacks.components.objective_evaluator import ObjectiveEvaluator
 from pyrit.common.path import RED_TEAM_ORCHESTRATOR_PATH
 from pyrit.common.utils import combine_dict
 from pyrit.models import (
+    AttackOutcome,
+    AttackResult,
     PromptRequestResponse,
     Score,
     SeedPrompt,
@@ -297,7 +298,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         Generate the next prompt to be sent to the target during the red teaming attack.
 
         This method is called each turn to obtain fresh adversarial text based on previous feedback,
-        error states, or the custom prompt if it is the first turn. It integrates feedback from the
+        error states, or the custom prompt if it is available. It integrates feedback from the
         scorer when available, and handles blocked or error responses by returning fallback prompts.
 
         Args:
@@ -306,10 +307,13 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         Returns:
             str: The generated prompt to be sent to the adversarial chat.
         """
-        # If first turn and custom prompt provided, use it
-        if context.executed_turns == 0 and context.custom_prompt:
-            logger.debug("Using custom prompt for first turn")
-            return context.custom_prompt
+        # If custom prompt provided, use it and clear it
+        if context.custom_prompt:
+            logger.debug("Using custom prompt")
+            prompt = context.custom_prompt
+            # Clear to prevent reuse
+            context.custom_prompt = None
+            return prompt
 
         # Generate prompt using adversarial chat
         logger.debug(f"Generating prompt for turn {context.executed_turns + 1}")

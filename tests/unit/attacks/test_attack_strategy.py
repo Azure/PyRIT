@@ -9,12 +9,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from pyrit.attacks.base.attack_result import AttackOutcome
 from pyrit.attacks.base.attack_strategy import AttackStrategy, AttackStrategyLogAdapter
 from pyrit.exceptions.exception_classes import (
     AttackExecutionException,
     AttackValidationException,
 )
+from pyrit.models import AttackOutcome
 
 
 @pytest.fixture
@@ -55,6 +55,10 @@ def mock_attack_strategy(mock_default_values):
         _teardown_async = AsyncMock()
 
     strategy = TestableAttackStrategy()
+
+    # Mock the memory to avoid any issues with the real memory system
+    mock_memory = MagicMock()
+    strategy._memory = mock_memory
 
     # Configure default return value for _perform_attack_async with required attributes
     mock_result = MagicMock()
@@ -157,6 +161,7 @@ class TestAttackExecution:
         mock_attack_strategy._validate_context.assert_called_once_with(context=basic_context)
         mock_attack_strategy._setup_async.assert_called_once_with(context=basic_context)
         mock_attack_strategy._perform_attack_async.assert_called_once_with(context=basic_context)
+        mock_attack_strategy._memory.add_attack_results_to_memory.assert_called_once()
         mock_attack_strategy._teardown_async.assert_called_once_with(context=basic_context)
 
         # Verify result
@@ -183,6 +188,7 @@ class TestAttackExecution:
         mock_attack_strategy._setup_async.assert_not_called()
         mock_attack_strategy._perform_attack_async.assert_not_called()
         mock_attack_strategy._teardown_async.assert_not_called()
+        mock_attack_strategy._memory.add_attack_results_to_memory.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_execute_async_setup_failure_calls_teardown(self, mock_attack_strategy, basic_context):
@@ -197,11 +203,12 @@ class TestAttackExecution:
         assert exc_info.value.attack_name == "TestableAttackStrategy"
         assert exc_info.value.objective == "Test objective"
 
-        # Verify lifecycle - teardown should still be called
+        # Verify lifecycle - teardown should still be called, but memory should not be called
         mock_attack_strategy._validate_context.assert_called_once()
         mock_attack_strategy._setup_async.assert_called_once()
         mock_attack_strategy._perform_attack_async.assert_not_called()
         mock_attack_strategy._teardown_async.assert_called_once()
+        mock_attack_strategy._memory.add_attack_results_to_memory.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_execute_async_perform_failure_calls_teardown(self, mock_attack_strategy, basic_context):
@@ -211,11 +218,12 @@ class TestAttackExecution:
         with pytest.raises(AttackExecutionException):
             await mock_attack_strategy.execute_async(objective="Test objective")
 
-        # Verify lifecycle - teardown should still be called
+        # Verify lifecycle - teardown should still be called, but memory should not be called since attack failed
         mock_attack_strategy._validate_context.assert_called_once()
         mock_attack_strategy._setup_async.assert_called_once()
         mock_attack_strategy._perform_attack_async.assert_called_once()
         mock_attack_strategy._teardown_async.assert_called_once()
+        mock_attack_strategy._memory.add_attack_results_to_memory.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_execute_async_teardown_failure_propagates(self, mock_attack_strategy, basic_context):
@@ -226,11 +234,12 @@ class TestAttackExecution:
         with pytest.raises(AttackExecutionException):
             await mock_attack_strategy.execute_async(objective="Test objective")
 
-        # All methods should have been called
+        # All methods should have been called, including memory since attack completed
         mock_attack_strategy._validate_context.assert_called_once()
         mock_attack_strategy._setup_async.assert_called_once()
         mock_attack_strategy._perform_attack_async.assert_called_once()
         mock_attack_strategy._teardown_async.assert_called_once()
+        mock_attack_strategy._memory.add_attack_results_to_memory.assert_called_once()
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -312,6 +321,7 @@ class TestAttackExecution:
 
         # Verify all lifecycle methods were called
         mock_attack_strategy._validate_context.assert_called_once_with(context=basic_context)
+        mock_attack_strategy._memory.add_attack_results_to_memory.assert_called_once()
         mock_attack_strategy._setup_async.assert_called_once_with(context=basic_context)
         mock_attack_strategy._perform_attack_async.assert_called_once_with(context=basic_context)
         mock_attack_strategy._teardown_async.assert_called_once_with(context=basic_context)
@@ -420,6 +430,11 @@ class TestConcurrency:
                 _teardown_async = AsyncMock()
 
             strategy = ConcreteStrategy(context_type=mock_context_type)
+
+            # Mock the memory to avoid any issues with the real memory system
+            mock_memory = MagicMock()
+            strategy._memory = mock_memory
+
             # Configure mock result with required attributes
             mock_result = MagicMock()
             mock_result.outcome = AttackOutcome.SUCCESS
@@ -521,6 +536,128 @@ class TestConcurrency:
             await mock_attack_strategy.execute_async(objective="Test objective")
         assert any("outcome is undetermined" in record.message for record in caplog.records)
         assert any("Not specified" in record.message for record in caplog.records)
+
+    @pytest.mark.asyncio
+    async def test_execute_async_deep_copies_prepended_conversation(self, mock_attack_strategy, basic_context):
+        """Test that execute_async deep copies prepended_conversation to avoid modifying the original"""
+        # Create original prepended conversation with mutable objects
+        original_piece = MagicMock()
+        original_piece.original_value = "Original message"
+        original_piece.labels = {"original": "label"}
+        original_piece.prompt_metadata = {"key": "value"}
+
+        original_response = MagicMock()
+        original_response.request_pieces = [original_piece]
+
+        prepended_conversation = [original_response]
+
+        # Store references to verify they're not modified
+        original_piece_id = id(original_piece)
+        original_response_id = id(original_response)
+        original_labels_id = id(original_piece.labels)
+        original_metadata_id = id(original_piece.prompt_metadata)
+
+        # Configure context type to capture the passed conversation
+        captured_conversation = None
+
+        def capture_conversation(**kwargs):
+            nonlocal captured_conversation
+            captured_conversation = kwargs.get("prepended_conversation")
+            return basic_context
+
+        mock_attack_strategy._context_type.create_from_params.side_effect = capture_conversation
+
+        # Execute the attack
+        await mock_attack_strategy.execute_async(
+            objective="Test objective", prepended_conversation=prepended_conversation
+        )
+
+        # Verify deep copy was made
+        assert captured_conversation is not None
+        assert captured_conversation is not prepended_conversation  # Different list object
+        assert len(captured_conversation) == 1
+
+        # Verify the conversation was deep copied (different object references)
+        copied_response = captured_conversation[0]
+        assert id(copied_response) != original_response_id
+
+        # Check that it's a different object instance
+        assert copied_response is not original_response
+
+        # Verify original objects weren't modified
+        assert original_piece.original_value == "Original message"
+        assert original_piece.labels == {"original": "label"}
+        assert original_piece.prompt_metadata == {"key": "value"}
+        assert id(original_piece) == original_piece_id
+        assert id(original_piece.labels) == original_labels_id
+        assert id(original_piece.prompt_metadata) == original_metadata_id
+
+    @pytest.mark.asyncio
+    async def test_execute_async_handles_none_prepended_conversation(self, mock_attack_strategy, basic_context):
+        """Test that execute_async handles None prepended_conversation correctly"""
+        # Configure context type to capture the passed conversation
+        captured_conversation = None
+
+        def capture_conversation(**kwargs):
+            nonlocal captured_conversation
+            captured_conversation = kwargs.get("prepended_conversation")
+            return basic_context
+
+        mock_attack_strategy._context_type.create_from_params.side_effect = capture_conversation
+
+        # Execute with None prepended_conversation
+        await mock_attack_strategy.execute_async(objective="Test objective", prepended_conversation=None)
+
+        # Verify empty list was passed
+        assert captured_conversation == []
+
+    @pytest.mark.asyncio
+    async def test_execute_async_deep_copy_with_complex_structure(self, mock_attack_strategy, basic_context):
+        """Test deep copy with more complex prepended conversation structure"""
+        # Create a more complex conversation structure
+        piece1 = MagicMock()
+        piece1.labels = {"label1": "value1", "nested": {"key": "value"}}
+        piece1.prompt_metadata = {"meta1": ["item1", "item2"]}
+
+        piece2 = MagicMock()
+        piece2.labels = {"label2": "value2"}
+        piece2.prompt_metadata = {"meta2": {"nested": "data"}}
+
+        response1 = MagicMock()
+        response1.request_pieces = [piece1, piece2]
+
+        response2 = MagicMock()
+        response2.request_pieces = [MagicMock()]
+
+        prepended_conversation = [response1, response2]
+
+        # Capture the conversation passed to create_from_params
+        captured_args = None
+
+        def capture_args(**kwargs):
+            nonlocal captured_args
+            captured_args = kwargs
+            return basic_context
+
+        mock_attack_strategy._context_type.create_from_params.side_effect = capture_args
+
+        # Execute the attack
+        await mock_attack_strategy.execute_async(
+            objective="Test objective", prepended_conversation=prepended_conversation
+        )
+
+        # Verify the conversation was passed but as a different object
+        assert captured_args is not None
+        assert "prepended_conversation" in captured_args
+        passed_conversation = captured_args["prepended_conversation"]
+
+        # Verify it's a different object (deep copy)
+        assert passed_conversation is not prepended_conversation
+        assert len(passed_conversation) == 2
+
+        # The responses should be different objects
+        assert passed_conversation[0] is not response1
+        assert passed_conversation[1] is not response2
 
 
 @pytest.mark.usefixtures("patch_central_database")

@@ -11,13 +11,14 @@ from pyrit.attacks.base.attack_config import (
     AttackScoringConfig,
 )
 from pyrit.attacks.base.attack_context import SingleTurnAttackContext
-from pyrit.attacks.base.attack_result import AttackOutcome, AttackResult
 from pyrit.attacks.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.exceptions.exception_classes import (
     AttackExecutionException,
     AttackValidationException,
 )
 from pyrit.models import (
+    AttackOutcome,
+    AttackResult,
     PromptRequestPiece,
     PromptRequestResponse,
     Score,
@@ -536,7 +537,7 @@ class TestAttackExecution:
             return_value=SeedPromptGroup(prompts=[SeedPrompt(value="Test prompt", data_type="text")])
         )
         attack._send_prompt_to_objective_target_async = AsyncMock(return_value=sample_response)
-        attack._evaluate_response_async = AsyncMock()
+        attack._evaluate_response_async = AsyncMock(return_value=None)
 
         # Execute the attack
         result = await attack._perform_attack_async(context=basic_context)
@@ -550,7 +551,12 @@ class TestAttackExecution:
 
         # Verify only one attempt was made (no retries without scorer)
         attack._send_prompt_to_objective_target_async.assert_called_once()
-        attack._evaluate_response_async.assert_not_called()
+
+        # Verify that _evaluate_response_async was called even without objective scorer
+        # This ensures auxiliary scores are still collected
+        attack._evaluate_response_async.assert_called_once_with(
+            response=sample_response, objective=basic_context.objective
+        )
 
     @pytest.mark.asyncio
     async def test_perform_attack_without_scorer_retries_on_filtered_response(
@@ -898,7 +904,8 @@ class TestAttackLifecycle:
         """Test execute_async creates context using factory method and executes attack"""
         attack = PromptSendingAttack(objective_target=mock_target, max_attempts_on_failure=3)
 
-        # Mock the attack execution methods
+        attack._memory = MagicMock()
+
         attack._validate_context = MagicMock()
         attack._setup_async = AsyncMock()
         mock_result = AttackResult(
@@ -932,7 +939,6 @@ class TestAttackLifecycle:
         assert isinstance(context, SingleTurnAttackContext)
         assert context.objective == "Test objective"
         assert context.memory_labels == {"test": "label"}
-        assert context.prepended_conversation == [sample_response]
         assert context.seed_prompt_group == seed_group
         assert context.system_prompt == "System prompt"
 

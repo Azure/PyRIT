@@ -17,13 +17,14 @@ from pyrit.attacks.base.attack_context import (
     ConversationSession,
     MultiTurnAttackContext,
 )
-from pyrit.attacks.base.attack_result import AttackOutcome, AttackResult
 from pyrit.attacks.components.conversation_manager import ConversationState
 from pyrit.attacks.multi_turn.red_teaming import RedTeamingAttack, RTOSystemPromptPaths
 from pyrit.exceptions.exception_classes import (
     AttackValidationException,
 )
 from pyrit.models import (
+    AttackOutcome,
+    AttackResult,
     PromptRequestPiece,
     PromptRequestResponse,
     Score,
@@ -643,7 +644,7 @@ class TestPromptGeneration:
         mock_prompt_normalizer: MagicMock,
         basic_context: MultiTurnAttackContext,
     ):
-        """Test that custom prompt is used on first turn when provided."""
+        """Test that custom prompt is used when provided and cleared after use."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
         scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
 
@@ -661,6 +662,38 @@ class TestPromptGeneration:
         result = await attack._generate_next_prompt_async(context=basic_context)
 
         assert result == first_prompt
+        assert basic_context.custom_prompt is None  # Should be cleared after use
+        # Should not call adversarial chat
+        mock_prompt_normalizer.send_prompt_async.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_generate_next_prompt_uses_custom_prompt_regardless_of_turn(
+        self,
+        mock_objective_target: MagicMock,
+        mock_objective_scorer: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        mock_prompt_normalizer: MagicMock,
+        basic_context: MultiTurnAttackContext,
+    ):
+        """Test that custom prompt is used even when executed_turns > 0."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+            prompt_normalizer=mock_prompt_normalizer,
+        )
+
+        custom_prompt = "Custom prompt at turn 1"
+        basic_context.executed_turns = 1  # Not first turn
+        basic_context.custom_prompt = custom_prompt
+
+        result = await attack._generate_next_prompt_async(context=basic_context)
+
+        assert result == custom_prompt
+        assert basic_context.custom_prompt is None  # Should be cleared after use
         # Should not call adversarial chat
         mock_prompt_normalizer.send_prompt_async.assert_not_called()
 
@@ -674,7 +707,7 @@ class TestPromptGeneration:
         basic_context: MultiTurnAttackContext,
         sample_response: PromptRequestResponse,
     ):
-        """Test that adversarial chat is used to generate prompts after first turn."""
+        """Test that adversarial chat is used to generate prompts when no custom prompt."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
         scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
 
@@ -686,6 +719,7 @@ class TestPromptGeneration:
         )
 
         basic_context.executed_turns = 1
+        basic_context.custom_prompt = None  # No custom prompt
         mock_prompt_normalizer.send_prompt_async.return_value = sample_response
 
         # Mock build_adversarial_prompt
@@ -1197,6 +1231,8 @@ class TestAttackLifecycle:
             max_turns=5,
         )
 
+        attack._memory = MagicMock()
+
         # Mock all lifecycle methods
         with patch.object(attack, "_validate_context"):
             with patch.object(attack, "_setup_async", new_callable=AsyncMock):
@@ -1278,6 +1314,8 @@ class TestAttackLifecycle:
             attack_adversarial_config=adversarial_config,
             attack_scoring_config=scoring_config,
         )
+
+        attack._memory = MagicMock()
 
         # Mock all lifecycle methods
         with patch.object(attack, "_validate_context"):
