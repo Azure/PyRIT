@@ -2,13 +2,16 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Optional
+from typing import Optional, cast
+
+from typing_extensions import LiteralString, deprecated
 
 from pyrit.attacks import (
     AttackConverterConfig,
     AttackScoringConfig,
     ManyShotJailbreakAttack,
 )
+from pyrit.common import deprecation_message
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.orchestrator.models.orchestrator_result import OrchestratorResult
 from pyrit.prompt_normalizer import PromptConverterConfiguration
@@ -18,8 +21,22 @@ from pyrit.score import Scorer
 logger = logging.getLogger(__name__)
 
 
+@deprecated(
+    cast(
+        LiteralString,
+        deprecation_message(
+            old_item="ManyShotJailbreakOrchestrator",
+            new_item=ManyShotJailbreakAttack,
+            removed_in="v0.12.0",
+        ),
+    ),
+)
 class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
     """
+    .. warning::
+        `PromptSendingOrchestrator` is deprecated and will be removed in **v0.12.0**;
+        use `pyrit.attacks.PromptSendingAttack` instead.
+
     This orchestrator implements the Many Shot Jailbreak method as discussed in research found here:
     https://www.anthropic.com/research/many-shot-jailbreaking
 
