@@ -196,7 +196,7 @@ class ScoreEntry(Base):  # type: ignore
     score_value = mapped_column(String, nullable=False)
     score_value_description = mapped_column(String, nullable=True)
     score_type: Mapped[Literal["true_false", "float_scale"]] = mapped_column(String, nullable=False)
-    score_category = mapped_column(String, nullable=False)
+    score_category = mapped_column(String, nullable=True)
     score_rationale = mapped_column(String, nullable=True)
     score_metadata = mapped_column(String, nullable=True)
     scorer_class_identifier: Mapped[dict[str, str]] = mapped_column(JSON)
