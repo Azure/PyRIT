@@ -17,7 +17,7 @@ from pyrit.score import Scorer
 
 
 class MockScorer(Scorer):
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         return []
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
