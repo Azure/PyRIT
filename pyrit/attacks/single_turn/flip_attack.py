@@ -111,7 +111,7 @@ class FlipAttack(PromptSendingAttack):
             OrchestratorResult: The result of the orchestrated attack.
         """
         initial_prompt = "TASK is '⟪" + context.objective.replace("'", "") + "⟫'"
-        seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=initial_prompt, data_type="text")])
-        context.seed_prompt_group = seed_prompt_group
+        seed_prompt = SeedPromptGroup(prompts=[SeedPrompt(value=initial_prompt, data_type="text")])
+        context.seed_prompt_group = seed_prompt
 
         return await super()._perform_attack_async(context=context)
