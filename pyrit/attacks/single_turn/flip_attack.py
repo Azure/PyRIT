@@ -26,10 +26,6 @@ logger = logging.getLogger(__name__)
 
 class FlipAttack(PromptSendingAttack):
     """
-    .. warning::
-        `FlipAttackOrchestrator` is deprecated and will be removed in **v0.12.0**;
-        use `pyrit.attacks.FlipAttack` instead.
-
     This attack implements the FlipAttack method found here:
     https://arxiv.org/html/2410.02832v1.
 

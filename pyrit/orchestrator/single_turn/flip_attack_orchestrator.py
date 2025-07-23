@@ -29,6 +29,10 @@ logger = logging.getLogger(__name__)
 )
 class FlipAttackOrchestrator(PromptSendingOrchestrator):
     """
+    .. warning::
+        `FlipAttackOrchestrator` is deprecated and will be removed in **v0.12.0**;
+        use `pyrit.attacks.FlipAttack` instead.
+
     This orchestrator implements the Flip Attack method found here:
     https://arxiv.org/html/2410.02832v1.
 
