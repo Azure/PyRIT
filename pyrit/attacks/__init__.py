@@ -21,7 +21,7 @@ from pyrit.attacks.multi_turn.tree_of_attacks import (
 )
 from pyrit.attacks.single_turn.flip_attack import FlipAttack
 from pyrit.attacks.single_turn.prompt_sending import PromptSendingAttack
-
+from pyrit.attacks.fuzzer import FuzzerAttack, FuzzerAttackContext, FuzzerAttackResult
 
 __all__ = [
     "AttackAdversarialConfig",
@@ -43,5 +43,8 @@ __all__ = [
     "TAPAttack",
     "TAPAttackContext",
     "TAPAttackResult",
+    "FuzzerAttack",
+    "FuzzerAttackContext",
+    "FuzzerAttackResult",
     "TreeOfAttacksWithPruningAttack",
 ]
