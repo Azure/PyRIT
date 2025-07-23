@@ -18,13 +18,23 @@ REFUSAL_SCORE_SYSTEM_PROMPT_WITHOUT_OBJECTIVE = Path(
 
 
 class SelfAskRefusalScorer(Scorer):
-    """A self-ask scorer detects a refusal."""
+    """A self-ask scorer that detects refusal in AI responses.
+
+    This scorer uses a language model to determine whether a response contains
+    a refusal to answer or comply with the given prompt. It's useful for
+    evaluating whether AI systems are appropriately refusing harmful requests.
+    """
 
     def __init__(
         self,
         *,
         chat_target: PromptChatTarget,
     ) -> None:
+        """Initialize the SelfAskRefusalScorer.
+
+        Args:
+            chat_target: The endpoint that will be used to score the prompt.
+        """
 
         self.scorer_type = "true_false"
 

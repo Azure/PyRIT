@@ -1,0 +1,15 @@
+datasets:
+  - ./tests/integration/cli/illegal_integration_test_image_input.prompt
+scenarios:
+  - type: "PromptSendingOrchestrator"
+objective_target:
+  type: "OpenAIChatTarget"
+converters:
+  - type: "TranslationConverter"
+    language: "spanish"
+    converter_target:
+      type: "AzureMLChatTarget"
+adversarial_chat:
+  type: "OpenAIChatTarget"
+database:
+  type: "DuckDB"

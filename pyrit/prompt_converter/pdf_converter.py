@@ -16,40 +16,51 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 class PDFConverter(PromptConverter):
     """
-    Converts a text prompt into a PDF file. Supports various modes:
-    1. Template-Based Generation: If a `SeedPrompt` is provided, dynamic data can be injected into the
-       template using the `SeedPrompt.render_template_value` method, and the resulting content is converted to a PDF.
-    2. Direct Text-Based Generation: If no template is provided, the raw string prompt is converted directly
-       into a PDF.
-    3. Modify Existing PDFs (Overlay approach): Enables injecting text into existing PDFs at specified
-       coordinates, merging a new "overlay layer" onto the original PDF.
+    Converts a text prompt into a PDF file.
 
-    Args:
-        prompt_template (Optional[SeedPrompt], optional): A `SeedPrompt` object representing a template.
-        font_type (Optional[str], optional): Font type for the PDF. Defaults to "Helvetica".
-        font_size (Optional[int], optional): Font size for the PDF. Defaults to 12.
-        font_color (Optional[tuple], optional): Font color for the PDF in RGB format. Defaults to (255, 255, 255).
-        page_width (Optional[int], optional): Width of the PDF page in mm. Defaults to 210 (A4 width).
-        page_height (Optional[int], optional): Height of the PDF page in mm. Defaults to 297 (A4 height).
-        column_width (Optional[int], optional): Width of each column in the PDF. Defaults to 0 (full page width).
-        row_height (Optional[int], optional): Height of each row in the PDF. Defaults to 10.
-        existing_pdf (Optional[Path], optional): Path to an existing PDF file. Defaults to None.
-        injection_items (Optional[List[Dict]], optional): A list of injection items for modifying an existing PDF.
+    Supports various modes:
+        - Template-Based Generation:
+            If a ``SeedPrompt`` is provided, dynamic data can be injected into the template using
+            the ``SeedPrompt.render_template_value`` method, and the resulting content is converted to a PDF.
+        - Direct Text-Based Generation:
+            If no template is provided, the raw string prompt is converted directly into a PDF.
+        - Modify Existing PDFs (Overlay approach):
+            Enables injecting text into existing PDFs at specified coordinates, merging a new "overlay layer"
+            onto the original PDF.
     """
 
     def __init__(
         self,
         prompt_template: Optional[SeedPrompt] = None,
-        font_type: Optional[str] = "Helvetica",
-        font_size: Optional[int] = 12,
-        font_color: Optional[tuple] = (255, 255, 255),
-        page_width: Optional[int] = 210,
-        page_height: Optional[int] = 297,
-        column_width: Optional[int] = 0,
-        row_height: Optional[int] = 10,
+        font_type: str = "Helvetica",
+        font_size: int = 12,
+        font_color: tuple = (255, 255, 255),
+        page_width: int = 210,
+        page_height: int = 297,
+        column_width: int = 0,
+        row_height: int = 10,
         existing_pdf: Optional[Path] = None,
         injection_items: Optional[List[Dict]] = None,
     ) -> None:
+        """
+        Initializes the converter with the specified parameters.
+
+        Args:
+            prompt_template (Optional[SeedPrompt], optional): A ``SeedPrompt`` object representing a template.
+            font_type (str): Font type for the PDF. Defaults to "Helvetica".
+            font_size (int): Font size for the PDF. Defaults to 12.
+            font_color (tuple): Font color for the PDF in RGB format. Defaults to (255, 255, 255).
+            page_width (int): Width of the PDF page in mm. Defaults to 210 (A4 width).
+            page_height (int): Height of the PDF page in mm. Defaults to 297 (A4 height).
+            column_width (int): Width of each column in the PDF. Defaults to 0 (full page width).
+            row_height (int): Height of each row in the PDF. Defaults to 10.
+            existing_pdf (Optional[Path], optional): Path to an existing PDF file. Defaults to None.
+            injection_items (Optional[List[Dict]], optional): A list of injection items for modifying an existing PDF.
+
+        Raises:
+            ValueError: If the font color is invalid or the injection items are not provided as a list of dictionaries.
+            FileNotFoundError: If the provided PDF file does not exist.
+        """
         self._prompt_template = prompt_template
         self._font_type = font_type
         self._font_size = font_size
@@ -93,7 +104,7 @@ class PDFConverter(PromptConverter):
 
         Args:
             prompt (str): The prompt to be embedded in the PDF.
-            input_type (PromptDataType): The type of the input data (default: "text").
+            input_type (PromptDataType): The type of input data.
 
         Returns:
             ConverterResult: The result containing the full file path to the generated PDF.
@@ -323,8 +334,13 @@ class PDFConverter(PromptConverter):
         Returns:
             DataTypeSerializer: The serializer object containing metadata about the saved file.
         """
+        original_filename_ending = self._existing_pdf_path.stem if self._existing_pdf_path else ""
+
         pdf_serializer = data_serializer_factory(
-            category="prompt-memory-entries", data_type="url", value=content, extension="pdf"
+            category="prompt-memory-entries",
+            data_type="url",
+            value=content,
+            extension=f"{original_filename_ending}.pdf",
         )
         await pdf_serializer.save_data(pdf_bytes)
         return pdf_serializer

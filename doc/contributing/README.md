@@ -11,28 +11,37 @@ For a more detailed overview on how to contribute read below.
 ## Ways to contribute
 
 ```{mermaid}
+%%{
+  init: {
+    'theme': 'base',
+    'themeVariables': {
+      'lineColor': '#f39e3d',
+      'secondaryColor': '#f6bb77',
+      'primaryBorderColor': '#f39e3d'
+    }
+  }
+}%%
 flowchart TB
   Start(You are here!) --> PathSplit{Do you already have a specific problem/feature request/bug that you want to fix/address?}
-  PathSplit -- yes --> IssueCheck
-  IssueCheck{Is there a GitHub issue for this problem?} -- yes --> IssueExists
-  IssueCheck -- no --> CreateIssue
+  PathSplit -- "&nbsp;&nbsp;yes&nbsp;&nbsp;" --> IssueCheck
+  IssueCheck{Is there a GitHub issue for this problem?} -- "&nbsp;&nbsp;yes&nbsp;&nbsp;" --> IssueExists
+  IssueCheck -- "&nbsp;&nbsp;no&nbsp;&nbsp;" --> CreateIssue
   CreateIssue(Create a GitHub issue) --> IssueCuration
   IssueCuration(Wait for response from maintainers) --> IssueExists
-  IssueExists{Is the issue marked as *help wanted* and/or *good first issue*} -- yes --> IssueClaimedCheck
-  IssueExists -- no --> IssueNotReady(Feel free to comment on the issue to raise awareness.)
-  IssueClaimedCheck{Is the issue already claimed by someone?} -- yes --> IssueClaimed(If there hasn't been progress for a while feel free to comment on the issue. In the meantime, feel free to pick up a different issue.)
-  IssueClaimedCheck -- no --> ClaimIssue(Claim the issue for yourself by commenting *I would like to take this.* If anything is unclear ask on the issue.)
+  IssueExists{Is the issue marked as *help wanted* and/or *good first issue*} -- "&nbsp;&nbsp;yes&nbsp;&nbsp;" --> IssueClaimedCheck
+  IssueExists -- "&nbsp;&nbsp;no&nbsp;&nbsp;" --> IssueNotReady(Feel free to comment on the issue to raise awareness.)
+  IssueClaimedCheck{Is the issue already claimed by someone?} -- "&nbsp;&nbsp;yes&nbsp;&nbsp;" --> IssueClaimed(If there hasn't been progress for a while feel free to comment on the issue. In the meantime, feel free to pick up a different issue.)
+  IssueClaimedCheck -- "&nbsp;&nbsp;no&nbsp;&nbsp;" --> ClaimIssue(Claim the issue for yourself by commenting *I would like to take this.* If anything is unclear ask on the issue.)
   ClaimIssue --> SubmitPR(Submit pull request)
-  SubmitPR -- PR feedback --> PR(Address feedback)
-  PR -- PR feedback --> PR
-  PR -- maintainer merges PR ----> Merged(PR completed! Thank you!)
-  PathSplit -- no --> ContribOrUse{Do you want to contribute right away or use PyRIT first?}
-  ContribOrUse -- use --> UseIssue{Is something not working? Do you want additional features?}
-  UseIssue -- yes --> IssueCheck
-  UseIssue -- no --> NoProblems(Nice! Let us know how it goes.)
-  ContribOrUse -- contribute --> CheckIssueList(Check our GitHub issues with tags *help wanted* and *good first issue*)
-  CheckIssueList -- find interesting issue --> IssueClaimedCheck
-
+  SubmitPR -- "&nbsp;&nbsp;PR feedback&nbsp;&nbsp;" --> PR(Address feedback)
+  PR -- "&nbsp;&nbsp;PR feedback&nbsp;&nbsp;" --> PR
+  PR -- "&nbsp;&nbsp;maintainer merges PR&nbsp;&nbsp;" ----> Merged(PR completed! Thank you!)
+  PathSplit -- "&nbsp;&nbsp;no&nbsp;&nbsp;" --> ContribOrUse{Do you want to contribute right away or use PyRIT first?}
+  ContribOrUse -- "&nbsp;&nbsp;use&nbsp;&nbsp;" --> UseIssue{Is something not working? Do you want additional features?}
+  UseIssue -- "&nbsp;&nbsp;yes&nbsp;&nbsp;" --> IssueCheck
+  UseIssue -- "&nbsp;&nbsp;no&nbsp;&nbsp;" --> NoProblems(Nice! Let us know how it goes.)
+  ContribOrUse -- "&nbsp;&nbsp;contribute&nbsp;&nbsp;" --> CheckIssueList(Check our GitHub issues with tags *help wanted* and *good first issue*)
+  CheckIssueList -- "&nbsp;&nbsp;find interesting issue&nbsp;&nbsp;" --> IssueClaimedCheck
 ```
 
 Contributions come in many forms such as *writing code* or *adding examples*.

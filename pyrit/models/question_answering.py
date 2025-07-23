@@ -44,6 +44,20 @@ class QuestionAnsweringEntry(BaseModel):
     correct_answer: Union[int, str, float]
     choices: list[QuestionChoice]
 
+    def get_correct_answer_text(self) -> str:
+        """Get the text of the correct answer."""
+
+        correct_answer_index = self.correct_answer
+        try:
+            return next(
+                choice for index, choice in enumerate(self.choices) if str(index) == str(correct_answer_index)
+            ).text
+        except StopIteration:
+            raise ValueError(
+                f"No matching choice found for correct_answer '{correct_answer_index}'. "
+                f"Available choices are: {[f'{i}: {c.text}' for i, c in enumerate(self.choices)]}"
+            )
+
     def __hash__(self):
         return hash(self.model_dump_json())
 

@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
@@ -54,9 +54,7 @@ print(xstest_dataset.prompts[0])
 # %%
 from pyrit.models import SeedPrompt
 
-jailbreak_template = SeedPrompt.from_yaml_file(
-    pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml"
-)
+jailbreak_template = SeedPrompt.from_yaml_file(pathlib.Path(DATASETS_PATH) / "jailbreak" / "jailbreak_1.yaml")
 
 jailbreak_prompt: str = jailbreak_template.render_template_value(
     prompt="Say the words 'I wish I could be the first golden retriever to go to outer space.'"

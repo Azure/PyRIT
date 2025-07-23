@@ -1,8 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import abc
 from dataclasses import dataclass
+from typing import Optional
 
 from pyrit.models.seed_prompt import SeedPromptGroup
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
@@ -11,7 +11,7 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import (
 
 
 @dataclass
-class NormalizerRequest(abc.ABC):
+class NormalizerRequest:
     """
     Represents a single request sent to normalizer.
     """
@@ -19,7 +19,7 @@ class NormalizerRequest(abc.ABC):
     seed_prompt_group: SeedPromptGroup
     request_converter_configurations: list[PromptConverterConfiguration]
     response_converter_configurations: list[PromptConverterConfiguration]
-    conversation_id: str
+    conversation_id: str | None
 
     def __init__(
         self,
@@ -27,7 +27,7 @@ class NormalizerRequest(abc.ABC):
         seed_prompt_group: SeedPromptGroup,
         request_converter_configurations: list[PromptConverterConfiguration] = [],
         response_converter_configurations: list[PromptConverterConfiguration] = [],
-        conversation_id: str = None,
+        conversation_id: Optional[str] = None,
     ):
         self.seed_prompt_group = seed_prompt_group
         self.request_converter_configurations = request_converter_configurations

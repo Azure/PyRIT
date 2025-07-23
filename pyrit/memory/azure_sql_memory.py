@@ -5,7 +5,7 @@ import logging
 import struct
 from contextlib import closing
 from datetime import datetime, timedelta, timezone
-from typing import MutableSequence, Optional, Sequence, TypeVar, Union
+from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
 
 from azure.core.credentials import AccessToken
 from azure.identity import DefaultAzureCredential
@@ -18,8 +18,16 @@ from sqlalchemy.orm.session import Session
 from pyrit.common import default_values
 from pyrit.common.singleton import Singleton
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry
-from pyrit.models import AzureBlobStorageIO, PromptRequestPiece
+from pyrit.memory.memory_models import (
+    AttackResultEntry,
+    Base,
+    EmbeddingDataEntry,
+    PromptMemoryEntry,
+)
+from pyrit.models import (
+    AzureBlobStorageIO,
+    PromptRequestPiece,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +90,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         super(AzureSQLMemory, self).__init__()
 
     @staticmethod
-    def _resolve_sas_token(env_var_name: str, passed_value: Optional[str]) -> Optional[str]:
+    def _resolve_sas_token(env_var_name: str, passed_value: Optional[str] = None) -> Optional[str]:
         """
         Resolve the SAS token value, allowing a fallback to None for delegation SAS.
 
@@ -283,7 +291,12 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         return self.SessionFactory()
 
     def _query_entries(
-        self, Model, *, conditions: Optional = None, distinct: bool = False, join_scores: bool = False  # type: ignore
+        self,
+        Model,
+        *,
+        conditions: Optional[Any] = None,  # type: ignore
+        distinct: bool = False,
+        join_scores: bool = False,
     ) -> MutableSequence[Model]:
         """
         Fetches data from the specified table model with optional conditions.
@@ -302,6 +315,11 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 query = session.query(Model)
                 if join_scores and Model == PromptMemoryEntry:
                     query = query.options(joinedload(PromptMemoryEntry.scores))
+                elif Model == AttackResultEntry:
+                    query = query.options(
+                        joinedload(AttackResultEntry.last_response).joinedload(PromptMemoryEntry.scores),
+                        joinedload(AttackResultEntry.last_score),
+                    )
                 if conditions is not None:
                     query = query.filter(conditions)
                 if distinct:

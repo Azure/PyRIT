@@ -1,27 +1,18 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.models import PromptDataType
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 
 
-class TextToHexConverter(PromptConverter):
+class TextToHexConverter(WordLevelConverter):
+    """
+    Converts text to a hexadecimal encoded utf-8 string.
+    """
 
-    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
-        """
-        Converts text to a hexadecimal encoded utf-8 string.
-        """
-        hex_representation = ""
+    async def convert_word_async(self, word: str) -> str:
+        return word.encode("utf-8").hex().upper()
 
-        if not self.input_supported(input_type):
-            raise ValueError("Input type not supported")
-
-        hex_representation += prompt.encode("utf-8").hex().upper()
-
-        return ConverterResult(output_text=hex_representation, output_type="text")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"
+    def join_words(self, words: list[str]) -> str:
+        if self._mode == "all":
+            return "20".join(words)  # 20 is the hex representation of space
+        return super().join_words(words)

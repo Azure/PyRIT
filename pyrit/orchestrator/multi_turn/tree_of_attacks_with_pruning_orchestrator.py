@@ -11,8 +11,12 @@ from treelib import Tree
 from pyrit.common.path import DATASETS_PATH
 from pyrit.common.utils import combine_dict
 from pyrit.memory import MemoryInterface
-from pyrit.models import SeedPrompt
-from pyrit.orchestrator import MultiTurnAttackResult, MultiTurnOrchestrator
+from pyrit.models import Score, SeedPrompt
+from pyrit.orchestrator import (
+    MultiTurnOrchestrator,
+    OrchestratorResult,
+    OrchestratorResultStatus,
+)
 from pyrit.orchestrator.multi_turn.tree_of_attacks_node import TreeOfAttacksNode
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_target import PromptChatTarget
@@ -22,18 +26,21 @@ from pyrit.score.scorer import Scorer
 logger = logging.getLogger(__name__)
 
 
-class TAPAttackResult(MultiTurnAttackResult):
+class TAPOrchestratorResult(OrchestratorResult):
     def __init__(
         self,
+        *,
         conversation_id: str,
-        achieved_objective: bool,
         objective: str,
+        status: OrchestratorResultStatus,
+        objective_score: Score,
         tree_visualization: Tree,
     ):
         super().__init__(
             conversation_id=conversation_id,
-            achieved_objective=achieved_objective,
             objective=objective,
+            status=status,
+            objective_score=objective_score,
         )
         self.tree_visualization = tree_visualization
 
@@ -44,30 +51,6 @@ class TAPAttackResult(MultiTurnAttackResult):
 class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
     """
     TreeOfAttacksWithPruningOrchestrator follows the TAP alogrithm to attack a chat target.
-
-    Args:
-        objective_target (PromptChatTarget): The target for the objective prompt. Must be a PromptChatTarget.
-        adversarial_chat (PromptChatTarget): The target for the adversarial chat prompt.
-        scoring_target (PromptChatTarget): The target for scoring the responses.
-        adversarial_chat_seed_prompt (Optional[SeedPrompt], optional): The seed prompt for adversarial chat. Defaults
-        to None.
-        adversarial_chat_system_prompt_path (Optional[Path], optional): The path to the system prompt for adversarial
-        chat. Defaults to None.
-        width (int, optional): The width of the attack tree. Defaults to 3.
-        depth (int, optional): The depth of the attack tree. Defaults to 5.
-        branching_factor (int, optional): The branching factor of the attack tree. Defaults to 2.
-        on_topic_checking_enabled (bool, optional): Flag to enable on-topic checking. Defaults to True.
-        prompt_converters (Optional[list[PromptConverter]], optional): List of prompt converters. Defaults to None.
-        objective_achieved_score_threshold (float, optional): The score threshold to determine if the objective is
-        achieved. Defaults to 0.8.
-        desired_response_prefix (str, optional): The desired prefix for responses. Defaults to "Sure, here is".
-        verbose (bool, optional): Flag to enable verbose logging. Defaults to False.
-    Raises:
-        ValueError: If the adversarial seed prompt does not have a desired_prefix.
-            ValueError: If the width of the tree is less than 1.
-            ValueError: If the depth of the tree is less than 1.
-            ValueError: If the branching factor of the tree is less than 1.
-            ValueError: If the objective achieved score threshold is not between 0 and 1.
     """
 
     _memory: MemoryInterface
@@ -88,7 +71,36 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         objective_achieved_score_threshold: float = 0.8,
         desired_response_prefix="Sure, here is",
         verbose: bool = False,
+        batch_size: int = 1,
     ) -> None:
+        """Initialize the TreeOfAttacksWithPruningOrchestrator.
+
+        Args:
+            objective_target (PromptChatTarget): The target for the objective prompt. Must be a PromptChatTarget.
+            adversarial_chat (PromptChatTarget): The target for the adversarial chat prompt.
+            scoring_target (PromptChatTarget): The target for scoring the responses.
+            adversarial_chat_seed_prompt (Optional[SeedPrompt], optional): The seed prompt for adversarial chat.
+                Defaults to None.
+            adversarial_chat_system_prompt_path (Optional[Path], optional): The path to the system prompt for
+                adversarial chat. Defaults to None.
+            width (int, optional): The width of the attack tree. Defaults to 3.
+            depth (int, optional): The depth of the attack tree. Defaults to 5.
+            branching_factor (int, optional): The branching factor of the attack tree. Defaults to 2.
+            on_topic_checking_enabled (bool, optional): Flag to enable on-topic checking. Defaults to True.
+            prompt_converters (Optional[list[PromptConverter]], optional): List of prompt converters. Defaults to None.
+            objective_achieved_score_threshold (float, optional): The score threshold to determine if the objective is
+                achieved. Defaults to 0.8.
+            desired_response_prefix (str, optional): The desired prefix for responses. Defaults to "Sure, here is".
+            verbose (bool, optional): Flag to enable verbose logging. Defaults to False.
+            batch_size (int, optional): The batch size. Defaults to 1.
+
+        Raises:
+            ValueError: If the adversarial seed prompt does not have a desired_prefix.
+            ValueError: If the width of the tree is less than 1.
+            ValueError: If the depth of the tree is less than 1.
+            ValueError: If the branching factor of the tree is less than 1.
+            ValueError: If the objective achieved score threshold is not between 0 and 1.
+        """
 
         adversarial_chat_seed_prompt = adversarial_chat_seed_prompt or SeedPrompt.from_yaml_file(
             Path(DATASETS_PATH / "orchestrators" / "tree_of_attacks" / "adversarial_seed_prompt.yaml")
@@ -111,6 +123,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
             adversarial_chat_seed_prompt=adversarial_chat_seed_prompt,
             objective_scorer=objective_scorer,
             verbose=verbose,
+            batch_size=batch_size,
         )
 
         if "desired_prefix" not in self._adversarial_chat_system_seed_prompt.parameters:
@@ -146,7 +159,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
 
     async def run_attack_async(
         self, *, objective: str, memory_labels: Optional[dict[str, str]] = None
-    ) -> TAPAttackResult:
+    ) -> TAPOrchestratorResult:
         """
         Applies the TAP attack strategy asynchronously.
 
@@ -158,10 +171,13 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
                 the passed-in labels take precedence. Defaults to None.
 
         Returns:
-            MultiTurnAttackResult: Contains the outcome of the attack, including:
-                - conversation_id (UUID): The ID associated with the final conversation state.
-                - achieved_objective (bool): Indicates whether the orchestrator successfully met the objective.
+            TAPOrchestratorResult: Contains the outcome of the attack, including:
+                - conversation_id (str): The ID associated with the final conversation state.
                 - objective (str): The intended goal of the attack.
+                - status (OrchestratorResultStatus): The status of the attack ("success", "failure", "pruned", etc.)
+                - score (Score): The score evaluating the attack outcome.
+                - confidence (float): The confidence level of the result.
+                - tree_visualization (Tree): A visualization of the attack tree.
         """
 
         tree_visualization = Tree()
@@ -170,6 +186,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         nodes: list[TreeOfAttacksNode] = []
 
         best_conversation_id = None
+        best_objective_score = None
 
         updated_memory_labels = combine_dict(existing_dict=self._global_memory_labels, new_dict=memory_labels)
 
@@ -216,12 +233,17 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
 
             if len(nodes) > 0:
                 best_conversation_id = nodes[0].objective_target_conversation_id
+                best_objective_score = nodes[0].objective_score
 
-                if nodes[0].score >= self._objective_achieved_score_threshhold:
+                if (
+                    best_objective_score
+                    and best_objective_score.get_value() >= self._objective_achieved_score_threshhold
+                ):
                     logger.info("The conversation has been stopped because the response is jailbroken.")
-                    return TAPAttackResult(
+                    return TAPOrchestratorResult(
                         conversation_id=best_conversation_id,
-                        achieved_objective=True,
+                        objective_score=best_objective_score,
+                        status="success",
                         objective=objective,
                         tree_visualization=tree_visualization,
                     )
@@ -232,11 +254,12 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
 
         logger.info("Could not achieve the conversation goal.")
 
-        return TAPAttackResult(
+        return TAPOrchestratorResult(
             conversation_id=best_conversation_id,
-            achieved_objective=False,
+            status="failure",
             objective=objective,
             tree_visualization=tree_visualization,
+            objective_score=best_objective_score if best_objective_score else None,
         )
 
     async def _send_prompt_to_nodes_async(
@@ -251,9 +274,17 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
 
     def _get_completed_on_topic_results_in_order(self, nodes: list[TreeOfAttacksNode]):
         completed_nodes = [
-            node for node in nodes if node and node.completed and (not node.off_topic) and isinstance(node.score, float)
+            node
+            for node in nodes
+            if node
+            and node.completed
+            and (not node.off_topic)
+            and node.objective_score
+            and isinstance(node.objective_score.get_value(), float)
         ]
-        completed_nodes.sort(key=lambda x: (x.score, random.random()), reverse=True)
+        completed_nodes.sort(
+            key=lambda x: (x.objective_score.get_value() if x.objective_score else 0.0, random.random()), reverse=True
+        )
         return completed_nodes
 
     def _prune_nodes_over_width(
@@ -293,5 +324,5 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         if not result.completed:
             return "Pruned (no score available)"
         # get score into human-readable format by adding min value and multiplying by (max-min)
-        unnormalized_score = round(1 + result.score * 9)
+        unnormalized_score = round(1 + result.objective_score.get_value() * 9)
         return f"Score: {unnormalized_score}/10 || "

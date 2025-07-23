@@ -2,21 +2,31 @@
 # Licensed under the MIT license.
 
 import logging
-import pathlib
-from typing import Optional, Union
+from typing import Optional, cast
 
-from pyrit.common.path import DATASETS_PATH
-from pyrit.models import PromptRequestResponse, SeedPrompt
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from typing_extensions import LiteralString, deprecated
+
+from pyrit.attacks import AttackConverterConfig, AttackScoringConfig, FlipAttack
+from pyrit.common import deprecation_message
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_converter import FlipConverter, PromptConverter
-from pyrit.prompt_normalizer import NormalizerRequest
+from pyrit.orchestrator.models.orchestrator_result import OrchestratorResult
+from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
 
 
+@deprecated(
+    cast(
+        LiteralString,
+        deprecation_message(
+            old_item="FlipAttackOrchestrator",
+            new_item=FlipAttack,
+            removed_in="v0.12.0",
+        ),
+    ),
+)
 class FlipAttackOrchestrator(PromptSendingOrchestrator):
     """
     This orchestrator implements the Flip Attack method found here:
@@ -28,84 +38,76 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
     def __init__(
         self,
         objective_target: PromptChatTarget,
-        prompt_converters: Optional[list[PromptConverter]] = None,
-        scorers: Optional[list[Scorer]] = None,
+        request_converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
+        response_converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
+        objective_scorer: Optional[Scorer] = None,
+        auxiliary_scorers: Optional[list[Scorer]] = None,
         batch_size: int = 10,
+        retries_on_objective_failure: int = 0,
         verbose: bool = False,
     ) -> None:
         """
         Args:
             objective_target (PromptChatTarget): The target for sending prompts.
-            prompt_converters (list[PromptConverter], Optional): List of prompt converters. These are stacked in
-                order on top of the flip converter.
-            scorers (list[Scorer], Optional): List of scorers to use for each prompt request response, to be
-                scored immediately after receiving response. Default is None.
+            request_converter_configurations (list[PromptConverterConfiguration], Optional): List of prompt converters.
+                These are stacked in order on top of the flip converter.
+            response_converter_configurations (list[PromptConverterConfiguration], Optional): List of response
+                converters.
+            objective_scorer (Scorer, Optional): Scorer to use for evaluating if the objective was achieved.
+            auxiliary_scorers (list[Scorer], Optional): List of additional scorers to use for each prompt request
+                response.
             batch_size (int, Optional): The (max) batch size for sending prompts. Defaults to 10.
                 Note: If providing max requests per minute on the objective_target, this should be set to 1 to
-                ensure proper rate limit management.\
+                ensure proper rate limit management.
+            retries_on_objective_failure (int, Optional): Number of retries to attempt if objective fails. Defaults to
+                0.
             verbose (bool, Optional): Whether to log debug information. Defaults to False.
         """
 
         super().__init__(
             objective_target=objective_target,
-            prompt_converters=[FlipConverter()] + (prompt_converters or []),
-            scorers=scorers,
+            request_converter_configurations=request_converter_configurations,
+            response_converter_configurations=response_converter_configurations,
+            objective_scorer=objective_scorer,
+            auxiliary_scorers=auxiliary_scorers,
+            should_convert_prepended_conversation=False,
             batch_size=batch_size,
+            retries_on_objective_failure=retries_on_objective_failure,
             verbose=verbose,
         )
 
-        # This is sent to the target
-        system_prompt_path = pathlib.Path(DATASETS_PATH) / "orchestrators" / "flip_attack.yaml"
-        self.system_prompt = SeedPrompt.from_yaml_file(system_prompt_path).value
-
-        system_prompt = PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(
-                    role="system",
-                    original_value=self.system_prompt,
-                )
-            ]
+        self._attack = FlipAttack(
+            objective_target=objective_target,
+            attack_converter_config=AttackConverterConfig(
+                request_converters=self._request_converter_configurations,
+                response_converters=self._response_converter_configurations,
+            ),
+            attack_scoring_config=AttackScoringConfig(
+                objective_scorer=self._objective_scorer,
+                auxiliary_scorers=self._auxiliary_scorers,
+            ),
+            prompt_normalizer=self._prompt_normalizer,
+            max_attempts_on_failure=retries_on_objective_failure,
         )
 
-        super().set_prepended_conversation(prepended_conversation=[system_prompt])
-
-    async def send_prompts_async(  # type: ignore[override]
+    async def run_attack_async(  # type: ignore[override]
         self,
         *,
-        prompt_list: list[str],
+        objective: str,
         memory_labels: Optional[dict[str, str]] = None,
-        metadata: Optional[dict[str, Union[str, int]]] = None,
-    ) -> list[PromptRequestResponse]:
-        """
-        Sends the prompts to the prompt target using flip attack.
-
-        Args:
-            prompt_list (list[str]): The list of prompts to be sent.
-            memory_labels (dict[str, str], Optional): A free-form dictionary of additional labels to apply to the
-                prompts. Any labels passed in will be combined with self._global_memory_labels with the passed
-                in labels taking precedence in the case of collisions. Defaults to None.
-            metadata (Optional(dict[str, str | int]): Any additional information to be added to the memory entry
-                corresponding to the prompts sent.
-
-        Returns:
-            list[PromptRequestResponse]: The responses from sending the prompts.
-        """
-
-        # Format follows the paper https://github.com/yueliu1999/FlipAttack/blob/main/result/FlipAttack-gpt-4.json
-
-        for i in range(0, len(prompt_list)):
-            prompt_list[i] = "TASK is '⟪" + prompt_list[i].replace("'", "") + "⟫'"
-
-        return await super().send_prompts_async(
-            prompt_list=prompt_list, prompt_type="text", memory_labels=memory_labels, metadata=metadata
+    ) -> OrchestratorResult:
+        return await super().run_attack_async(
+            objective=objective,
+            memory_labels=memory_labels,
         )
 
-    def validate_normalizer_requests(self, *, prompt_request_list: list[NormalizerRequest]):
-        if not prompt_request_list:
-            raise ValueError("No normalizer requests provided")
-
-        for request in prompt_request_list:
-            if len(request.seed_prompt_group.prompts) > 1:
-                raise ValueError("Multi-part messages not supported")
-            if request.seed_prompt_group.prompts[0].data_type != "text":
-                raise ValueError("Non text messages not supported")
+    async def run_attacks_async(  # type: ignore[override]
+        self,
+        *,
+        objectives: list[str],
+        memory_labels: Optional[dict[str, str]] = None,
+    ) -> list[OrchestratorResult]:
+        return await super()._run_attacks_with_only_objectives_async(
+            objectives=objectives,
+            memory_labels=memory_labels,
+        )

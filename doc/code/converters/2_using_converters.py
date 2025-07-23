@@ -5,9 +5,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.17.0
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit-dev
 #     language: python
 #     name: python3
 # ---
@@ -21,7 +21,7 @@
 #
 # ## Stacking Converters with PromptSendingOrchestrator
 #
-# In the following example, a TextTarget is used so these prompts are simply printed and added to memory. This can be useful if you are red teaming something and need to manually enter prompts. However, the target can be replaced with any other [target](../targets/README.md. E.g., if you have API access you can add a target there.
+# In the following example, a TextTarget is used so these prompts are simply printed and added to memory. This can be useful if you are red teaming something and need to manually enter prompts. However, the target can be replaced with any other [target](../targets/0_prompt_targets.md). E.g., if you have API access you can add a target there.
 #
 # In this example the converters are stacked. First a variation is found using `VariationConverter`, and then `StringJoinConverter` is used to add a dash between letters. Remember that order matters. If `StringJoinConverter` came first, we would be asking the LLM to make variations of the prompt:
 # "t-e-l-l- - m-e- -h-o-w- -t-o- -c-u-t- -d-o-w-n - a- -t-r-e-e"
@@ -30,21 +30,23 @@
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import StringJoinConverter, VariationConverter
+from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import OpenAIChatTarget, TextTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
-prompts = ["tell me how to cut down a tree"]
+objective = "tell me how to cut down a tree"
 
 # converter target to send prompt to; in this case configured to the Azure OpenAI GPT-4o Chat model
 converter_target = OpenAIChatTarget()
 prompt_variation_converter = VariationConverter(converter_target=converter_target)
 
-
-target = TextTarget()
-orchestrator = PromptSendingOrchestrator(
-    objective_target=target, prompt_converters=[prompt_variation_converter, StringJoinConverter()]
+converters = PromptConverterConfiguration.from_converters(
+    converters=[prompt_variation_converter, StringJoinConverter()]
 )
 
-await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
-orchestrator.dispose_db_engine()
+
+target = TextTarget()
+orchestrator = PromptSendingOrchestrator(objective_target=target, request_converter_configurations=converters)
+
+await orchestrator.run_attack_async(objective=objective)  # type: ignore

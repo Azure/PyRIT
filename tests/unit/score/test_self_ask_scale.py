@@ -14,8 +14,10 @@ from pyrit.score.self_ask_scale_scorer import SelfAskScaleScorer
 
 tree_scale_path = SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value
 task_scale_path = SelfAskScaleScorer.ScalePaths.TASK_ACHIEVED_SCALE.value
+criteria_scale_path = SelfAskScaleScorer.ScalePaths.CRITERIA_SCALE.value
 general_system_prompt_path = SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value
 red_teamer_system_prompt_path = SelfAskScaleScorer.SystemPaths.RED_TEAMER_SYSTEM_PROMPT.value
+criteria_system_prompt_path = SelfAskScaleScorer.SystemPaths.CRITERIA_SYSTEM_PROMPT.value
 
 
 @pytest.fixture
@@ -54,6 +56,7 @@ def scale_scorer(patch_central_database) -> SelfAskScaleScorer:
         (task_scale_path, red_teamer_system_prompt_path),
         (tree_scale_path, red_teamer_system_prompt_path),
         (task_scale_path, general_system_prompt_path),
+        (criteria_scale_path, criteria_system_prompt_path),
     ],
 )
 async def test_scale_scorer_set_system_prompt(

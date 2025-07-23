@@ -84,6 +84,7 @@ API Reference
 
     combine_dict
     combine_list
+    convert_local_image_to_data_url
     display_image_response
     download_chunk
     download_file
@@ -92,6 +93,7 @@ API Reference
     get_available_files
     get_httpx_client
     get_non_required_value
+    get_random_indices
     get_required_value
     initialize_pyrit
     is_in_ipython_session
@@ -114,8 +116,10 @@ API Reference
     fetch_adv_bench_dataset
     fetch_aya_redteaming_dataset
     fetch_babelscape_alert_dataset
+    fetch_ccp_sensitive_prompts_dataset
     fetch_darkbench_dataset
     fetch_decoding_trust_stereotypes_dataset
+    fetch_equitymedqa_dataset_unique_values
     fetch_examples
     fetch_forbidden_questions_dataset
     fetch_harmbench_dataset
@@ -123,11 +127,14 @@ API Reference
     fetch_llm_latent_adversarial_training_harmful_dataset
     fetch_many_shot_jailbreaking_dataset
     fetch_mlcommons_ailuminate_demo_dataset
+    fetch_multilingual_vulnerability_dataset
     fetch_pku_safe_rlhf_dataset
     fetch_seclists_bias_testing_dataset
+    fetch_sosbench_dataset
     fetch_tdc23_redteaming_dataset
     fetch_wmdp_dataset
     fetch_xstest_dataset
+
 
 :py:mod:`pyrit.embedding`
 =========================
@@ -247,11 +254,12 @@ API Reference
     CrescendoOrchestrator
     FlipAttackOrchestrator
     FuzzerOrchestrator
-    MultiTurnAttackResult
     MultiTurnOrchestrator
     Orchestrator
+    OrchestratorResult
     PAIROrchestrator
     PromptSendingOrchestrator
+    QuestionAnsweringBenchmarkOrchestrator
     RedTeamingOrchestrator
     ScoringOrchestrator
     SkeletonKeyOrchestrator
@@ -272,17 +280,25 @@ API Reference
     :toctree: _autosummary/
 
     AddImageTextConverter
+    AddImageVideoConverter
     AddTextImageConverter
+    AnsiAttackConverter
     AsciiArtConverter
+    AsciiSmugglerConverter
     AtbashConverter
     AudioFrequencyConverter
     AzureSpeechAudioToTextConverter
     AzureSpeechTextToAudioConverter
     Base64Converter
+    BinaryConverter
     CaesarConverter
     CharacterSpaceConverter
+    CharSwapConverter
     CodeChameleonConverter
+    ColloquialWordswapConverter
     ConverterResult
+    DenylistConverter
+    DiacriticConverter
     EmojiConverter
     FlipConverter
     FuzzerCrossOverConverter
@@ -291,12 +307,15 @@ API Reference
     FuzzerShortenConverter
     FuzzerSimilarConverter
     HumanInTheLoopConverter
+    ImageCompressionConverter
+    InsertPunctuationConverter
     LeetspeakConverter
     LLMGenericTextConverter
     MaliciousQuestionGeneratorConverter
     MathPromptConverter
     MorseConverter
     NoiseConverter
+    PDFConverter
     PersuasionConverter
     PromptConverter
     QRCodeConverter
@@ -304,15 +323,25 @@ API Reference
     RepeatTokenConverter
     ROT13Converter
     SearchReplaceConverter
+    SneakyBitsSmugglerConverter
     StringJoinConverter
     SuffixAppendConverter
+    SuperscriptConverter
+    TemplateSegmentConverter
     TenseConverter
+    TextJailbreakConverter
+    TextToHexConverter
     ToneConverter
+    ToxicSentenceGeneratorConverter
     TranslationConverter
     UnicodeConfusableConverter
+    UnicodeReplacementConverter
     UnicodeSubstitutionConverter
     UrlConverter
     VariationConverter
+    VariationSelectorSmugglerConverter
+    ZalgoConverter
+    ZeroWidthConverter
 
 .. automodule:: pyrit.prompt_converter.fuzzer_converter
     :no-members:
@@ -357,6 +386,7 @@ API Reference
     OpenAICompletionTarget
     OpenAIDALLETarget
     OpenAIChatTarget
+    OpenAIResponseTarget
     OpenAITTSTarget
     OpenAITarget
     PromptChatTarget
@@ -377,19 +407,24 @@ API Reference
 
     AzureContentFilterScorer
     ContentClassifierPaths
+    CompositeScorer
     FloatScaleThresholdScorer
     GandalfScorer
     HumanInTheLoopScorer
     HumanInTheLoopScorerGradio
     LikertScalePaths
+    LookBackScorer
     MarkdownInjectionScorer
     PromptShieldScorer
+    QuestionAnswerScorer
     Scorer
+    ScoreAggregator
     SelfAskCategoryScorer
     SelfAskLikertScorer
     SelfAskRefusalScorer
     SelfAskScaleScorer
     SelfAskTrueFalseScorer
+    SelfAskQuestionAnswerScorer
     SubStringScorer
     TrueFalseInverterScorer
     TrueFalseQuestion

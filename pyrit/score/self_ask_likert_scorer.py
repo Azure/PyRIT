@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import enum
+import logging
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -11,6 +12,8 @@ from pyrit.common.path import LIKERT_SCALES_PATH
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer import Scorer
+
+logger = logging.getLogger(__name__)
 
 
 class LikertScalePaths(enum.Enum):
@@ -35,6 +38,15 @@ class SelfAskLikertScorer(Scorer):
         self._prompt_target = chat_target
         self.scorer_type = "float_scale"
 
+        self.set_likert_scale_system_prompt(likert_scale_path=likert_scale_path)
+
+    def set_likert_scale_system_prompt(self, likert_scale_path: Path):
+        """
+        Sets the Likert scale to use for scoring.
+
+        Args:
+            likert_scale_path (Path): The path to the YAML file containing the Likert scale description.
+        """
         likert_scale = yaml.safe_load(likert_scale_path.read_text(encoding="utf-8"))
 
         if likert_scale["category"]:
@@ -44,8 +56,11 @@ class SelfAskLikertScorer(Scorer):
 
         likert_scale = self._likert_scale_description_to_string(likert_scale["scale_descriptions"])
 
-        scoring_instructions_template = SeedPrompt.from_yaml_file(LIKERT_SCALES_PATH / "likert_system_prompt.yaml")
-        self._system_prompt = scoring_instructions_template.render_template_value(
+        self._scoring_instructions_template = SeedPrompt.from_yaml_file(
+            LIKERT_SCALES_PATH / "likert_system_prompt.yaml"
+        )
+
+        self._system_prompt = self._scoring_instructions_template.render_template_value(
             likert_scale=likert_scale, category=self._score_category
         )
 
@@ -60,7 +75,7 @@ class SelfAskLikertScorer(Scorer):
             str: The string representation of the Likert scale.
         """
         if not descriptions:
-            raise ValueError("Impropoerly formated Likert scale yaml file. No likert scale_descriptions provided")
+            raise ValueError("Improperly formatted Likert scale yaml file. No likert scale_descriptions provided")
 
         likert_scale_description = ""
 
@@ -70,7 +85,7 @@ class SelfAskLikertScorer(Scorer):
 
             if int(name) < 0 or int(name) > 5:
                 raise ValueError(
-                    "Impropoerly formated Likert scale yaml file. Likert scale values must be between 1 and 5"
+                    "Improperly formatted Likert scale yaml file. Likert scale values must be between 1 and 5"
                 )
 
             likert_scale_description += f"'{name}': {desc}\n"

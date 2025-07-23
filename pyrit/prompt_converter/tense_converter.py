@@ -13,12 +13,18 @@ logger = logging.getLogger(__name__)
 
 
 class TenseConverter(LLMGenericTextConverter):
+    """
+    Converts a conversation to a different tense using an LLM.
+
+    An existing ``PromptChatTarget`` is used to perform the conversion (like Azure OpenAI).
+    """
+
     def __init__(self, *, converter_target: PromptChatTarget, tense: str, prompt_template: SeedPrompt = None):
         """
-        Converts a conversation to a different tense
+        Initializes the converter with the target chat support, tense, and optional prompt template.
 
         Args:
-            converter_target (PromptChatTarget): The target chat support for the conversion which will translate
+            converter_target (PromptChatTarget): The target chat support for the conversion which will translate.
             tone (str): The tense the converter should convert the prompt to. E.g. past, present, future.
             prompt_template (SeedPrompt, Optional): The prompt template for the conversion.
 

@@ -4,6 +4,7 @@
 import logging
 import os
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 
@@ -26,22 +27,29 @@ video_encoding_map = {
 class AddImageVideoConverter(PromptConverter):
     """
     Adds an image to a video at a specified position.
-    Also, currently the image is placed in the whole video, not at a specific timepoint
 
-    Args:
-        video_path (str): File path of video to add image to
-        output_path (str, Optional): File path of output video. Defaults to None.
-        img_position (tuple, Optional): Position to place image in video. Defaults to (10, 10).
-        img_resize_size (tuple, Optional): Size to resize image to. Defaults to (500, 500).
+    Currently the image is placed in the whole video, not at a specific timepoint.
     """
 
     def __init__(
         self,
         video_path: str,
-        output_path: str = None,
+        output_path: Optional[str] = None,
         img_position: tuple = (10, 10),
         img_resize_size: tuple = (500, 500),
     ):
+        """
+        Initializes the converter with the video path and image properties.
+
+        Args:
+            video_path (str): File path of video to add image to.
+            output_path (str, Optional): File path of output video. Defaults to None.
+            img_position (tuple): Position to place image in video. Defaults to (10, 10).
+            img_resize_size (tuple): Size to resize image to. Defaults to (500, 500).
+
+        Raises:
+            ValueError: If ``video_path`` is empty or invalid.
+        """
 
         if not video_path:
             raise ValueError("Please provide valid video path")
@@ -53,13 +61,14 @@ class AddImageVideoConverter(PromptConverter):
 
     async def _add_image_to_video(self, image_path: str, output_path: str) -> str:
         """
-        Adds image to video
+        Adds an image to video.
+
         Args:
             image_path (str): The image path to add to video.
             output_path (str): The output video path.
 
         Returns:
-            output_path (str): The output video path.
+            str: The output video path.
         """
 
         try:
@@ -157,13 +166,17 @@ class AddImageVideoConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "image_path") -> ConverterResult:
         """
-        Converter that adds an image to a video
+        Converts the given prompt (image) by adding it to a video.
 
         Args:
-            prompt (str): The image file name to be added to the video.
-            input_type (PromptDataType): type of data
+            prompt (str): The image path to be added to the video.
+            input_type (PromptDataType): The type of input data.
+
         Returns:
-            ConverterResult: The filename of the converted video as a ConverterResult Object
+            ConverterResult: The result containing filename of the converted video.
+
+        Raises:
+            ValueError: If the input type is not supported.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")

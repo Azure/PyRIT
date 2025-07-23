@@ -10,6 +10,7 @@ import pytest
 from unit.mocks import get_sample_conversations
 
 from pyrit.memory.central_memory import CentralMemory
+from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import OpenAICompletionTarget
 
@@ -154,4 +155,38 @@ async def test_openai_completion_target_default_api_version(sample_conversations
 
         called_params = mock_request.call_args[1]["params"]
         assert "api-version" in called_params
-        assert called_params["api-version"] == "2024-06-01"
+        assert called_params["api-version"] == "2024-10-21"
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_calls_refresh_auth_headers(azure_completion_target: OpenAICompletionTarget):
+    mock_memory = MagicMock(spec=MemoryInterface)
+    mock_memory.get_conversation.return_value = []
+    mock_memory.add_request_response_to_memory = AsyncMock()
+
+    azure_completion_target._memory = mock_memory
+
+    with (
+        patch.object(azure_completion_target, "refresh_auth_headers") as mock_refresh,
+        patch.object(azure_completion_target, "_validate_request"),
+        patch.object(azure_completion_target, "_construct_request_body", new_callable=AsyncMock) as mock_construct,
+    ):
+
+        mock_construct.return_value = {}
+
+        with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock_make_request:
+            mock_make_request.return_value = MagicMock(text='{"choices": [{"text": "test response"}]}')
+
+            prompt_request = PromptRequestResponse(
+                request_pieces=[
+                    PromptRequestPiece(
+                        role="user",
+                        original_value="test prompt",
+                        converted_value="test prompt",
+                        converted_value_data_type="text",
+                    )
+                ]
+            )
+            await azure_completion_target.send_prompt_async(prompt_request=prompt_request)
+
+            mock_refresh.assert_called_once()

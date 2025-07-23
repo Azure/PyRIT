@@ -1,10 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import abc
 import asyncio
+import copy
 import logging
-from typing import Any, List, Optional
+import traceback
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 from pyrit.exceptions import EmptyResponseException
@@ -23,7 +24,7 @@ from pyrit.prompt_target.batch_helper import batch_task_async
 logger = logging.getLogger(__name__)
 
 
-class PromptNormalizer(abc.ABC):
+class PromptNormalizer:
     _memory: MemoryInterface = None
 
     def __init__(self, start_token: str = "⟪", end_token: str = "⟫") -> None:
@@ -43,7 +44,7 @@ class PromptNormalizer(abc.ABC):
         *,
         seed_prompt_group: SeedPromptGroup,
         target: PromptTarget,
-        conversation_id: str = None,
+        conversation_id: Optional[str] = None,
         request_converter_configurations: list[PromptConverterConfiguration] = [],
         response_converter_configurations: list[PromptConverterConfiguration] = [],
         sequence: int = -1,
@@ -110,7 +111,7 @@ class PromptNormalizer(abc.ABC):
 
             error_response = construct_response_from_request(
                 request=request.request_pieces[0],
-                response_text_pieces=[str(ex)],
+                response_text_pieces=[f"{ex}\n{repr(ex)}\n{traceback.format_exc()}"],
                 response_type="error",
                 error="processing",
             )
@@ -219,7 +220,9 @@ class PromptNormalizer(abc.ABC):
                 piece.converted_value = converted_text
                 piece.converted_value_data_type = converted_text_data_type
 
-    def set_skip_criteria(self, skip_criteria: PromptFilterCriteria, skip_value_type: PromptConverterState) -> None:
+    def set_skip_criteria(
+        self, skip_criteria: PromptFilterCriteria, skip_value_type: PromptConverterState, ensure_response=True
+    ) -> None:
         """
         Sets the skip criteria for the orchestrator.
 
@@ -229,20 +232,32 @@ class PromptNormalizer(abc.ABC):
         """
         self._skip_criteria = skip_criteria
 
-        prompts_to_skip = self._memory.get_prompt_request_pieces(
-            role="user",
-            orchestrator_id=self._skip_criteria.orchestrator_id,
-            conversation_id=self._skip_criteria.conversation_id,
-            prompt_ids=self._skip_criteria.prompt_ids,
-            labels=self._skip_criteria.labels,
-            sent_after=self._skip_criteria.sent_after,
-            sent_before=self._skip_criteria.sent_before,
-            original_values=self._skip_criteria.original_values,
-            converted_values=self._skip_criteria.converted_values,
-            data_type=self._skip_criteria.data_type,
-            not_data_type=self._skip_criteria.not_data_type,
-            converted_value_sha256=self._skip_criteria.converted_value_sha256,
-        )
+        skip_args: Dict[str, Any] = {
+            "orchestrator_id": self._skip_criteria.orchestrator_id,
+            "conversation_id": self._skip_criteria.conversation_id,
+            "prompt_ids": self._skip_criteria.prompt_ids,
+            "labels": self._skip_criteria.labels,
+            "sent_after": self._skip_criteria.sent_after,
+            "sent_before": self._skip_criteria.sent_before,
+            "original_values": self._skip_criteria.original_values,
+            "converted_values": self._skip_criteria.converted_values,
+            "data_type": self._skip_criteria.data_type,
+            "not_data_type": self._skip_criteria.not_data_type,
+            "converted_value_sha256": self._skip_criteria.converted_value_sha256,
+        }
+
+        prompts_to_skip = self._memory.get_prompt_request_pieces(role="user", **skip_args)
+
+        if ensure_response:
+            # If a request was sent but we don't have a response we need to retry
+            # so remove such requests from the prompts to skip list.
+            responses = self._memory.get_prompt_request_pieces(role="assistant", **skip_args)
+            response_conversation_ids = {response.conversation_id for response in responses}
+            prompt_conversation_ids = {prompt.conversation_id for prompt in prompts_to_skip}
+            missing_response_conversation_ids = prompt_conversation_ids - response_conversation_ids
+            prompts_to_skip = [
+                prompt for prompt in prompts_to_skip if prompt.conversation_id not in missing_response_conversation_ids
+            ]
 
         self._original_sha256_prompts_to_skip = [
             prompt.original_value_sha256 for prompt in prompts_to_skip if prompt.original_value_sha256
@@ -288,7 +303,7 @@ class PromptNormalizer(abc.ABC):
         target: PromptTarget,
         sequence: int,
         labels: dict[str, str],
-        orchestrator_identifier: Optional[dict[str, str]],
+        orchestrator_identifier: Optional[dict[str, str]] = None,
     ) -> PromptRequestResponse:
         """
         Builds a prompt request response based on the given parameters.
@@ -333,3 +348,47 @@ class PromptNormalizer(abc.ABC):
 
         await self.convert_values(converter_configurations=request_converter_configurations, request_response=response)
         return response
+
+    async def add_prepended_conversation_to_memory(
+        self,
+        conversation_id: str,
+        should_convert: bool = True,
+        converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
+        orchestrator_identifier: Optional[dict[str, str]] = None,
+        prepended_conversation: Optional[list[PromptRequestResponse]] = None,
+    ) -> Optional[list[PromptRequestResponse]]:
+        """
+        Processes the prepended conversation by converting it if needed and adding it to memory.
+
+        Args:
+            conversation_id (str): The conversation ID to use for the request pieces
+            should_convert (bool): Whether to convert the prepended conversation
+            converter_configurations (Optional[list[PromptConverterConfiguration]]): Configurations for converting the
+                request
+            orchestrator_identifier (Optional[dict[str, str]]): Identifier for the orchestrator
+            prepended_conversation (Optional[list[PromptRequestResponse]]): The conversation to prepend
+
+        Returns:
+            Optional[list[PromptRequestResponse]]: The processed prepended conversation
+        """
+        if not prepended_conversation:
+            return None
+
+        # Create a deep copy of the prepended conversation to avoid modifying the original
+        prepended_conversation = copy.deepcopy(prepended_conversation)
+
+        for request in prepended_conversation:
+            if should_convert and converter_configurations:
+                await self.convert_values(request_response=request, converter_configurations=converter_configurations)
+            for piece in request.request_pieces:
+                piece.conversation_id = conversation_id
+                if orchestrator_identifier:
+                    piece.orchestrator_identifier = orchestrator_identifier
+
+                # if the piece is retrieved from somewhere else, it needs to be unique
+                # and if not, this won't hurt anything
+                piece.id = uuid4()
+
+            self._memory.add_request_response_to_memory(request=request)
+
+        return prepended_conversation

@@ -44,24 +44,26 @@ class AzureContentFilterScorer(Scorer):
     def __init__(
         self,
         *,
-        endpoint: str = None,
-        api_key: str = None,
+        endpoint: Optional[str] = None,
+        api_key: Optional[str] = None,
         use_aad_auth: bool = False,
-        harm_categories: list[TextCategory] = None,
+        harm_categories: Optional[list[TextCategory]] = None,
     ) -> None:
         """
         Class that initializes an Azure Content Filter Scorer
 
         Args:
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-                Defaults to the API_KEY_ENVIRONMENT_VARIABLE environment variable.
+                Defaults to the `API_KEY_ENVIRONMENT_VARIABLE` environment variable.
             endpoint (str, Optional): The endpoint URL for the Azure OpenAI service.
-                Defaults to the ENDPOINT_URI_ENVIRONMENT_VARIABLE environment variable.
+                Defaults to the `ENDPOINT_URI_ENVIRONMENT_VARIABLE` environment variable.
             use_aad_auth (bool, Optional): Attempt to use DefaultAzureCredential
                 If set to true, attempt to use DefaultAzureCredential for auth
             harm_categories: The harm categories you want to query for as per defined in
                 azure.ai.contentsafety.models.TextCategory.
         """
+
+        self.scorer_type = "float_scale"
 
         if harm_categories:
             self._score_categories = [category.value for category in harm_categories]

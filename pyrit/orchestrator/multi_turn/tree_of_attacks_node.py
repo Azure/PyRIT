@@ -14,7 +14,7 @@ from pyrit.exceptions import (
     remove_markdown_json,
 )
 from pyrit.memory import CentralMemory, MemoryInterface
-from pyrit.models import SeedPrompt, SeedPromptGroup
+from pyrit.models import Score, SeedPrompt, SeedPromptGroup
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
@@ -72,7 +72,7 @@ class TreeOfAttacksNode:
 
         self.prompt_sent = False
         self.completed = False
-        self.score = 0.0
+        self.objective_score: Score = None  # Initialize as None since we don't have a score yet
         self.off_topic = False
 
     async def send_prompt_async(self, objective: str):
@@ -117,12 +117,12 @@ class TreeOfAttacksNode:
 
         logger.debug(f"saving score with prompt_request_response_id: {response.id}")
 
-        self.score = (
+        self.objective_score = (
             await self._objective_scorer.score_async(
                 request_response=response,
                 task=objective,
             )
-        )[0].get_value()
+        )[0]
 
         self.completed = True
 
@@ -243,7 +243,7 @@ class TreeOfAttacksNode:
         return (
             "TreeOfAttackNode("
             f"completed={self.completed}, "
-            f"score={self.score}, "
+            f"objective_score={self.objective_score.get_value()}, "
             f"node_id={self.node_id}, "
             f"objective_target_conversation_id={self.objective_target_conversation_id})"
         )

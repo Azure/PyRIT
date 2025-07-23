@@ -6,7 +6,6 @@ import logging
 import string
 import textwrap
 from io import BytesIO
-from typing import Optional
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -19,27 +18,34 @@ logger = logging.getLogger(__name__)
 class AddImageTextConverter(PromptConverter):
     """
     Adds a string to an image and wraps the text into multiple lines if necessary.
-    This class is similar to AddImageTextConverter except
-    we pass in an image file path as an argument to the constructor as opposed to text.
 
-    Args:
-        img_to_add (str): File path of image to add text to
-        font_name (str, Optional): Path of font to use. Must be a TrueType font (.ttf). Defaults to "helvetica.ttf".
-        color (tuple, Optional): Color to print text in, using RGB values. Defaults to (0, 0, 0).
-        font_size (float, Optional): Size of font to use. Defaults to 15.
-        x_pos (int, Optional): X coordinate to place text in (0 is left most). Defaults to 10.
-        y_pos (int, Optional): Y coordinate to place text in (0 is upper most). Defaults to 10.
+    This class is similar to :class:`AddTextImageConverter` except
+    we pass in an image file path as an argument to the constructor as opposed to text.
     """
 
     def __init__(
         self,
         img_to_add: str,
-        font_name: Optional[str] = "helvetica.ttf",
-        color: Optional[tuple[int, int, int]] = (0, 0, 0),
-        font_size: Optional[int] = 15,
-        x_pos: Optional[int] = 10,
-        y_pos: Optional[int] = 10,
+        font_name: str = "helvetica.ttf",
+        color: tuple[int, int, int] = (0, 0, 0),
+        font_size: int = 15,
+        x_pos: int = 10,
+        y_pos: int = 10,
     ):
+        """
+        Initializes the converter with the image file path and text properties.
+
+        Args:
+            img_to_add (str): File path of image to add text to.
+            font_name (str): Path of font to use. Must be a TrueType font (.ttf). Defaults to "helvetica.ttf".
+            color (tuple): Color to print text in, using RGB values. Defaults to (0, 0, 0).
+            font_size (float): Size of font to use. Defaults to 15.
+            x_pos (int): X coordinate to place text in (0 is left most). Defaults to 10.
+            y_pos (int): Y coordinate to place text in (0 is upper most). Defaults to 10.
+
+        Raises:
+            ValueError: If ``img_to_add`` is empty or invalid, or if ``font_name`` does not end with ".ttf".
+        """
         if not img_to_add:
             raise ValueError("Please provide valid image path")
         if not font_name.endswith(".ttf"):
@@ -54,11 +60,11 @@ class AddImageTextConverter(PromptConverter):
 
     def _load_font(self):
         """
-        Load the font for a given font name and font size
+        Loads the font for a given font name and font size.
 
         Returns:
-        ImageFont.FreeTypeFont or ImageFont.ImageFont: The loaded font object. If the specified font
-        cannot be loaded, the default font is returned.
+            ImageFont.FreeTypeFont or ImageFont.ImageFont: The loaded font object. If the specified font
+            cannot be loaded, the default font is returned.
 
         Raises:
             OSError: If the font resource cannot be loaded, a warning is logged and the default font is used instead.
@@ -73,7 +79,7 @@ class AddImageTextConverter(PromptConverter):
 
     def _add_text_to_image(self, text: str) -> Image.Image:
         """
-        Adds wrapped text to the image at self._img_to_add.
+        Adds wrapped text to the image at `self._img_to_add`.
 
         Args:
             text (str): The text to add to the image.
@@ -112,13 +118,17 @@ class AddImageTextConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Converter that overlays input text on the img_to_add.
+        Converts the given prompt by adding it as text to the image.
 
         Args:
-            prompt (str): The prompt to be added to the image.
-            input_type (PromptDataType): type of data
+            prompt (str): The text to be added to the image.
+            input_type (PromptDataType): The type of input data.
+
         Returns:
-            ConverterResult: The filename of the converted image as a ConverterResult Object
+            ConverterResult: The result containing path to the updated image.
+
+        Raises:
+            ValueError: If the input type is not supported.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")

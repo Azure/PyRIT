@@ -3,8 +3,10 @@
 
 import logging
 import time
+from typing import TYPE_CHECKING, Any, Optional
 
-import azure.cognitiveservices.speech as speechsdk
+if TYPE_CHECKING:
+    import azure.cognitiveservices.speech as speechsdk  # noqa: F401
 
 from pyrit.common import default_values
 from pyrit.models import PromptDataType
@@ -16,26 +18,32 @@ logger = logging.getLogger(__name__)
 
 class AzureSpeechAudioToTextConverter(PromptConverter):
     """
-    The AzureSpeechAudioTextConverter takes a .wav file and transcribes it into text.
-    https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-to-text
+    Transcribes a .wav audio file into text using Azure AI Speech service.
 
-    Args:
-        azure_speech_region (str): The name of the Azure region.
-        azure_speech_key (str): The API key for accessing the service.
-        recognition_language (str): Recognition voice language. Defaults to "en-US".
-            For more on supported languages, see the following link
-            https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support
+    https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-to-text
     """
 
+    #: The name of the Azure region.
     AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_REGION"
+    #: The API key for accessing the service.
     AZURE_SPEECH_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_KEY"
 
     def __init__(
         self,
-        azure_speech_region: str = None,
-        azure_speech_key: str = None,
+        azure_speech_region: Optional[str] = None,
+        azure_speech_key: Optional[str] = None,
         recognition_language: str = "en-US",
     ) -> None:
+        """
+        Initializes the converter with Azure Speech service credentials and recognition language.
+
+        Args:
+            azure_speech_region (str, Optional): The name of the Azure region.
+            azure_speech_key (str, Optional): The API key for accessing the service.
+            recognition_language (str): Recognition voice language. Defaults to "en-US".
+                For more on supported languages, see the following link:
+                https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support
+        """
 
         self._azure_speech_region: str = default_values.get_required_value(
             env_var_name=self.AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE, passed_value=azure_speech_region
@@ -57,13 +65,17 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "audio_path") -> ConverterResult:
         """
-        Converter that transcribes audio to text.
+        Converts the given audio file into its text representation.
 
         Args:
-            prompt (str): File path to audio file
-            input_type (PromptDataType): Type of data
+            prompt (str): File path to the audio file to be transcribed.
+            input_type (PromptDataType): The type of input data.
+
         Returns:
-            ConverterResult: The transcribed text as a ConverterResult Object
+            ConverterResult: The result containing the transcribed text.
+
+        Raises:
+            ValueError: If the input type is not supported or if the provided file is not a .wav file.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
@@ -85,13 +97,23 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
 
     def recognize_audio(self, audio_bytes: bytes) -> str:
         """
-        Recognize audio file and return transcribed text.
+        Recognizes audio file and returns transcribed text.
 
         Args:
             audio_bytes (bytes): Audio bytes input.
+
         Returns:
-            str: Transcribed text
+            str: Transcribed text.
         """
+        try:
+            import azure.cognitiveservices.speech as speechsdk  # noqa: F811
+        except ModuleNotFoundError as e:
+            logger.error(
+                "Could not import azure.cognitiveservices.speech. "
+                + "You may need to install it via 'pip install pyrit[speech]'"
+            )
+            raise e
+
         speech_config = speechsdk.SpeechConfig(
             subscription=self._azure_speech_key,
             region=self._azure_speech_region,
@@ -131,25 +153,34 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
 
         return "".join(transcribed_text)
 
-    def transcript_cb(self, evt: speechsdk.SpeechRecognitionEventArgs, transcript: list[str]) -> None:
+    def transcript_cb(self, evt: Any, transcript: list[str]) -> None:
         """
-        Callback function that appends transcribed text upon receiving a "recognized" event
+        Callback function that appends transcribed text upon receiving a "recognized" event.
 
         Args:
-            evt (SpeechRecognitionEventArgs): event
-            transcript (list): list to store transcribed text
+            evt (speechsdk.SpeechRecognitionEventArgs): Event.
+            transcript (list): List to store transcribed text.
         """
         logger.info("RECOGNIZED: {}".format(evt.result.text))
         transcript.append(evt.result.text)
 
-    def stop_cb(self, evt: speechsdk.SpeechRecognitionEventArgs, recognizer: speechsdk.SpeechRecognizer) -> None:
+    def stop_cb(self, evt: Any, recognizer: Any) -> None:
         """
-        Callback function that stops continuous recognition upon receiving an event 'evt'
+        Callback function that stops continuous recognition upon receiving an event 'evt'.
 
         Args:
-            evt (SpeechRecognitionEventArgs): event
-            recognizer (SpeechRecognizer): speech recognizer object
+            evt (speechsdk.SpeechRecognitionEventArgs): Event.
+            recognizer (speechsdk.SpeechRecognizer): Speech recognizer object.
         """
+        try:
+            import azure.cognitiveservices.speech as speechsdk  # noqa: F811
+        except ModuleNotFoundError as e:
+            logger.error(
+                "Could not import azure.cognitiveservices.speech. "
+                + "You may need to install it via 'pip install pyrit[speech]'"
+            )
+            raise e
+
         logger.info("CLOSING on {}".format(evt))
         recognizer.stop_continuous_recognition_async()
         self.done = True

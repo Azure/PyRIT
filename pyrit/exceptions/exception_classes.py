@@ -5,12 +5,13 @@ import json
 import logging
 import os
 from abc import ABC
-from typing import Callable
+from typing import Callable, Optional
 
 from openai import RateLimitError
 from tenacity import (
     retry,
     retry_if_exception_type,
+    retry_if_result,
     stop_after_attempt,
     wait_random_exponential,
 )
@@ -22,6 +23,8 @@ from pyrit.models.prompt_request_response import (
     construct_response_from_request,
 )
 
+# Used with pyrit_custom_result_retry, as this function may be used in conjunction with other decorators
+CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS = int(os.getenv("CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS", 10))
 RETRY_MAX_NUM_ATTEMPTS = int(os.getenv("RETRY_MAX_NUM_ATTEMPTS", 10))
 RETRY_WAIT_MIN_SECONDS = int(os.getenv("RETRY_WAIT_MIN_SECONDS", 5))
 RETRY_WAIT_MAX_SECONDS = int(os.getenv("RETRY_WAIT_MAX_SECONDS", 220))
@@ -60,6 +63,14 @@ class RateLimitException(PyritException):
         super().__init__(status_code, message=message)
 
 
+class ServerErrorException(PyritException):
+    """Exception class for opaque 5xx errors returned by the server."""
+
+    def __init__(self, status_code: int = 500, *, message: str = "Server Error", body: Optional[str] = None):
+        super().__init__(status_code, message=message)
+        self.body = body
+
+
 class EmptyResponseException(BadRequestException):
     """Exception class for empty response errors."""
 
@@ -79,6 +90,97 @@ class MissingPromptPlaceholderException(PyritException):
 
     def __init__(self, *, message: str = "No prompt placeholder"):
         super().__init__(message=message)
+
+
+class AttackValidationException(PyritException):
+    """Raised when attack context validation fails"""
+
+    def __init__(self, *, message: str = "Attack context validation failed", context_info: Optional[dict] = None):
+        # 400-like status code for validation errors (client error)
+        super().__init__(status_code=400, message=message)
+        self.context_info = context_info or {}
+
+    def process_exception(self) -> str:
+        """Enhanced logging with context information"""
+        log_message = (
+            f"{self.__class__.__name__} encountered: "
+            f"Status Code: {self.status_code}, "
+            f"Message: {self.message}, "
+            f"Context: {self.context_info}"
+        )
+        logger.error(log_message)
+
+        return json.dumps({"status_code": self.status_code, "message": self.message, "context_info": self.context_info})
+
+
+class AttackExecutionException(PyritException):
+    """Raised when attack execution fails"""
+
+    def __init__(
+        self,
+        *,
+        message: str = "Attack execution failed",
+        attack_name: Optional[str] = None,
+        objective: Optional[str] = None,
+    ):
+        super().__init__(status_code=500, message=message)
+        self.attack_name = attack_name
+        self.objective = objective
+
+    def process_exception(self) -> str:
+        """Enhanced logging with attack details"""
+        log_message = (
+            f"{self.__class__.__name__} encountered: "
+            f"Status Code: {self.status_code}, "
+            f"Message: {self.message}, "
+            f"Attack: {self.attack_name}, "
+            f"Objective: {self.objective}"
+        )
+        logger.error(log_message)
+
+        return json.dumps(
+            {
+                "status_code": self.status_code,
+                "message": self.message,
+                "attack_name": self.attack_name,
+                "objective": self.objective,
+            }
+        )
+
+
+def pyrit_custom_result_retry(
+    retry_function: Callable, retry_max_num_attempts: int = CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS
+) -> Callable:
+    """
+    A decorator to apply retry logic with exponential backoff to a function.
+
+    Retries the function if the result of the retry_function is True,
+    with a wait time between retries that follows an exponential backoff strategy.
+    Logs retry attempts at the INFO level and stops after a maximum number of attempts.
+
+    Args:
+        retry_function (Callable): The boolean function to determine if a retry should occur based
+            on the result of the decorated function.
+        retry_max_num_attempts (Optional, int): The maximum number of retry attempts. Defaults to
+            CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS.
+        func (Callable): The function to be decorated.
+
+    Returns:
+        Callable: The decorated function with retry logic applied.
+    """
+
+    def inner_retry(func):
+        global RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS
+
+        return retry(
+            reraise=True,
+            retry=retry_if_result(retry_function),
+            wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS),
+            after=log_exception,
+            stop=stop_after_attempt(retry_max_num_attempts),
+        )(func)
+
+    return inner_retry
 
 
 def pyrit_target_retry(func: Callable) -> Callable:
