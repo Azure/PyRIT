@@ -38,7 +38,7 @@ class CompositeScorer(Scorer):
 
         self._scorers = scorers
 
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> List[Score]:
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> List[Score]:
         """Scores the request response by combining results from all constituent scorers.
 
         Args:
@@ -48,7 +48,6 @@ class CompositeScorer(Scorer):
         Returns:
             List containing a single Score object representing the combined result
         """
-        self.validate(request_response, task=task)
         scores = await self._score_all_async(request_response, task=task)
 
         identifier_dict = self.get_identifier()

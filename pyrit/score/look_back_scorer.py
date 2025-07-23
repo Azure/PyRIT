@@ -40,7 +40,7 @@ class LookBackScorer(Scorer):
             step_description=behavior_change_scale
         )
 
-    async def score_async(self, request_piece: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_async(self, request_piece: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Scores the entire conversation based on detected behavior change.
 
@@ -87,7 +87,6 @@ class LookBackScorer(Scorer):
         )
 
         score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value)
-        self._memory.add_scores_to_memory(scores=[score])
 
         # Output score results
         print("LookBackScorer:", score.score_value, score.score_value_description, "Rationale: ", score.score_rationale)

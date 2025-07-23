@@ -80,7 +80,7 @@ class GandalfScorer(Scorer):
             return ""
         return response_text
 
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """Scores the text based on the password found in the text.
 
         Args:
@@ -150,7 +150,6 @@ class GandalfScorer(Scorer):
                     task=task,
                 )
 
-        self._memory.add_scores_to_memory(scores=[score])
         return [score]
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
