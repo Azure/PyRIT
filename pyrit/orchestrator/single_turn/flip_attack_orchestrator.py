@@ -32,7 +32,7 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
     This orchestrator implements the Flip Attack method found here:
     https://arxiv.org/html/2410.02832v1.
 
-    Essentially, adds a system prompt to the beginning of the conversation to flip each word in the prompt.
+    Essentially, it adds a system prompt to the beginning of the conversation to flip each word in the prompt.
     """
 
     def __init__(
