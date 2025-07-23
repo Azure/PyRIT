@@ -5,6 +5,7 @@ from pyrit.score.scorer import Scorer
 
 from pyrit.score.azure_content_filter_scorer import AzureContentFilterScorer
 from pyrit.score.composite_scorer import CompositeScorer
+from pyrit.score.ensemble_scorer import EnsembleScorer, WeakScorerSpec
 from pyrit.score.float_scale_threshold_scorer import FloatScaleThresholdScorer
 from pyrit.score.general_scorer import SelfAskGeneralScorer
 from pyrit.score.gandalf_scorer import GandalfScorer
@@ -45,6 +46,8 @@ __all__ = [
     "AzureContentFilterScorer",
     "ContentClassifierPaths",
     "CompositeScorer",
+    "EnsembleScorer",
+    "ContentClassifierPaths",
     "FloatScaleThresholdScorer",
     "GandalfScorer",
     "HumanLabeledDataset",
@@ -73,6 +76,7 @@ __all__ = [
     "ScorerMetrics",
     "SelfAskCategoryScorer",
     "SelfAskLikertScorer",
+    "SelfAskQuestionAnswerScorer",
     "SelfAskRefusalScorer",
     "SelfAskScaleScorer",
     "SelfAskTrueFalseScorer",
@@ -80,5 +84,5 @@ __all__ = [
     "TrueFalseInverterScorer",
     "TrueFalseQuestion",
     "TrueFalseQuestionPaths",
-    "SelfAskQuestionAnswerScorer",
+    "WeakScorerSpec",
 ]

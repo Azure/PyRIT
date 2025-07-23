@@ -33,6 +33,9 @@ __all__ = [
     "ContextComplianceOrchestrator",
     "ContextDescriptionPaths",
     "CrescendoOrchestrator",
+
+    "CrescendoEnsembleOrchestrator",
+
     "FlipAttackOrchestrator",
     "FuzzerOrchestrator",
     "OrchestratorResult",
