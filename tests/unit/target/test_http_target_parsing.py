@@ -74,3 +74,19 @@ def test_parse_regex_response_match():
     parse_html_response = get_http_target_regex_matching_callback_function(r"Match: (\d+)")
     result = parse_html_response(mock_response)
     assert result == "Match: 1234"
+
+
+def test_parse_json_response_positive_array_index():
+    mock_response = MagicMock()
+    mock_response.content = b'{"data": [{"items": ["a", "b", "c"]}, {"items": ["x", "y", "z"]}]}'
+    parse_json_response = get_http_target_json_response_callback_function(key="data[0].items[1]")
+    result = parse_json_response(mock_response)
+    assert result == "b"
+
+
+def test_parse_json_response_negative_array_index():
+    mock_response = MagicMock()
+    mock_response.content = b'{"data": [{"items": ["a", "b", "c"]}, {"items": ["x", "y", "z"]}]}'
+    parse_json_response = get_http_target_json_response_callback_function(key="data[0].items[-1]")
+    result = parse_json_response(mock_response)
+    assert result == "c"

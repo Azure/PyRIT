@@ -69,13 +69,13 @@ def _fetch_key(data: dict, key: str):
     Returns:
         str: The fetched value.
     """
-    pattern = re.compile(r"([a-zA-Z_]+)|\[(\d+)\]")
+    pattern = re.compile(r"([a-zA-Z_]+)|\[(-?\d+)\]")
     keys = pattern.findall(key)
     for key_part, index_part in keys:
         if key_part:
             data = data.get(key_part, None)
         elif index_part and isinstance(data, list):
-            data = data[int(index_part)] if len(data) > int(index_part) else None
+            data = data[int(index_part)] if -len(data) <= int(index_part) < len(data) else None
         if data is None:
             return ""
     return data
