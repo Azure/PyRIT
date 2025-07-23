@@ -475,8 +475,8 @@ class TestFuzzerAttackFactoryMethods:
         mock_scoring_target,
     ):
         """Verify SelfAskScaleScorer is created with correct parameters and FloatScaleThresholdScorer wrapper."""
-        with patch("pyrit.attacks.fuzzer_attack.SelfAskScaleScorer") as mock_self_ask_scorer_class:
-            with patch("pyrit.attacks.fuzzer_attack.FloatScaleThresholdScorer") as mock_threshold_scorer_class:
+        with patch("pyrit.attacks.fuzzer.SelfAskScaleScorer") as mock_self_ask_scorer_class:
+            with patch("pyrit.attacks.fuzzer.FloatScaleThresholdScorer") as mock_threshold_scorer_class:
                 # Setup mocks
                 mock_self_ask_scorer = MagicMock()
                 mock_threshold_scorer = MagicMock()
@@ -523,8 +523,8 @@ class TestFuzzerAttackFactoryMethods:
         mock_prompt_normalizer,
     ):
         """Verify all parameters are passed through correctly to the FuzzerAttack constructor."""
-        with patch("pyrit.attacks.fuzzer_attack.SelfAskScaleScorer"):
-            with patch("pyrit.attacks.fuzzer_attack.FloatScaleThresholdScorer"):
+        with patch("pyrit.attacks.fuzzer.SelfAskScaleScorer"):
+            with patch("pyrit.attacks.fuzzer.FloatScaleThresholdScorer"):
                 # Create fuzzer with all optional parameters
                 fuzzer = FuzzerAttack.with_default_scorer(
                     objective_target=mock_objective_target,
@@ -568,8 +568,8 @@ class TestFuzzerAttackFactoryMethods:
         sample_converters,
     ):
         """Test default query limit calculation (prompts * templates * 10) when not provided."""
-        with patch("pyrit.attacks.fuzzer_attack.SelfAskScaleScorer"):
-            with patch("pyrit.attacks.fuzzer_attack.FloatScaleThresholdScorer"):
+        with patch("pyrit.attacks.fuzzer.SelfAskScaleScorer"):
+            with patch("pyrit.attacks.fuzzer.FloatScaleThresholdScorer"):
                 # Test with different prompt and template counts
                 test_cases = [
                     (["p1", "p2"], ["t1: {{ prompt }}", "t2: {{ prompt }}", "t3: {{ prompt }}"], 60),  # 2 * 3 * 10
@@ -596,8 +596,8 @@ class TestFuzzerAttackFactoryMethods:
         mock_scoring_target,
     ):
         """Test that provided query limit overrides default calculation."""
-        with patch("pyrit.attacks.fuzzer_attack.SelfAskScaleScorer"):
-            with patch("pyrit.attacks.fuzzer_attack.FloatScaleThresholdScorer"):
+        with patch("pyrit.attacks.fuzzer.SelfAskScaleScorer"):
+            with patch("pyrit.attacks.fuzzer.FloatScaleThresholdScorer"):
                 custom_limit = 500
                 fuzzer = FuzzerAttack.with_default_scorer(
                     objective_target=mock_objective_target,
@@ -618,8 +618,8 @@ class TestFuzzerAttackFactoryMethods:
         mock_scoring_target,
     ):
         """Test that invalid parameters still raise appropriate errors."""
-        with patch("pyrit.attacks.fuzzer_attack.SelfAskScaleScorer"):
-            with patch("pyrit.attacks.fuzzer_attack.FloatScaleThresholdScorer"):
+        with patch("pyrit.attacks.fuzzer.SelfAskScaleScorer"):
+            with patch("pyrit.attacks.fuzzer.FloatScaleThresholdScorer"):
                 # Test empty prompts
                 with pytest.raises(ValueError, match="The initial prompts cannot be empty"):
                     FuzzerAttack.with_default_scorer(
@@ -660,8 +660,8 @@ class TestFuzzerAttackFactoryMethods:
         mock_scoring_target,
     ):
         """Test that a default PromptNormalizer is created when not provided."""
-        with patch("pyrit.attacks.fuzzer_attack.SelfAskScaleScorer"):
-            with patch("pyrit.attacks.fuzzer_attack.FloatScaleThresholdScorer"):
+        with patch("pyrit.attacks.fuzzer.SelfAskScaleScorer"):
+            with patch("pyrit.attacks.fuzzer.FloatScaleThresholdScorer"):
                 fuzzer = FuzzerAttack.with_default_scorer(
                     objective_target=mock_objective_target,
                     prompts=sample_prompts,
@@ -681,8 +681,8 @@ class TestFuzzerAttackFactoryMethods:
         mock_prompt_normalizer,
     ):
         """Test that provided PromptNormalizer is used instead of creating a new one."""
-        with patch("pyrit.attacks.fuzzer_attack.SelfAskScaleScorer"):
-            with patch("pyrit.attacks.fuzzer_attack.FloatScaleThresholdScorer"):
+        with patch("pyrit.attacks.fuzzer.SelfAskScaleScorer"):
+            with patch("pyrit.attacks.fuzzer.FloatScaleThresholdScorer"):
                 fuzzer = FuzzerAttack.with_default_scorer(
                     objective_target=mock_objective_target,
                     prompts=sample_prompts,
