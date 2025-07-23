@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from pyrit.attacks.base.attack_config import AttackConverterConfig, AttackScoringConfig
-from pyrit.attacks.fuzzer_attack import (
+from pyrit.attacks.fuzzer import (
     FuzzerAttack,
     FuzzerAttackContext,
     FuzzerAttackResult,
