@@ -47,7 +47,7 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
             attack_converter_config (AttackConverterConfig, Optional): Configuration for the prompt converters.
             attack_scoring_config (AttackScoringConfig, Optional): Configuration for scoring components.
             prompt_normalizer (PromptNormalizer, Optional): Normalizer for handling prompts.
-            max_attempts_on_failure (int, Optional): Maximum number of attempts to retry on failure.
+            max_attempts_on_failure (int, Optional): Maximum number of attempts to retry on failure. Defaults to 0.
             example_count (int): The number of examples to include from many_shot_examples or the Many
                 Shot Jailbreaking dataset. Defaults to the first 100.
             many_shot_examples (list[dict[str, str]], Optional): The many shot jailbreaking examples to use.
@@ -94,8 +94,8 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
             OrchestratorResult: The result of the orchestrated attack.
         """
         many_shot_prompt = self._template.render_template_value(prompt=context.objective, examples=self._examples)
-        seed_prompt = SeedPromptGroup(prompts=[SeedPrompt(value=many_shot_prompt, data_type="text")])
+        seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=many_shot_prompt, data_type="text")])
 
-        context.seed_prompt_group = seed_prompt
+        context.seed_prompt_group = seed_prompt_group
 
         return await super()._perform_attack_async(context=context)

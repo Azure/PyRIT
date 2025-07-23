@@ -17,7 +17,8 @@ from pyrit.models import (
     PromptRequestResponse,
     SeedPrompt,
 )
-from pyrit.prompt_normalizer import PromptNormalizer
+from pyrit.prompt_converter import Base64Converter
+from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.score import Scorer
 
@@ -385,3 +386,58 @@ class TestManyShotJailbreakAttackLifecycle:
         attack._setup_async.assert_not_called()
         attack._perform_attack_async.assert_not_called()
         attack._teardown_async.assert_not_called()
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestManyShotJailbreakAttackWithConverters:
+    """Tests for attack with converters"""
+
+    @patch("pyrit.attacks.single_turn.many_shot_jailbreak.SeedPrompt.from_yaml_file")
+    @patch("pyrit.attacks.single_turn.many_shot_jailbreak.fetch_many_shot_jailbreaking_dataset")
+    @pytest.mark.asyncio
+    async def test_attack_with_request_converters(
+        self,
+        mock_fetch_dataset,
+        mock_from_yaml,
+        mock_objective_target,
+        mock_template,
+        sample_many_shot_examples,
+        basic_context,
+    ):
+        """Test that the attack works with request converters"""
+        mock_from_yaml.return_value = mock_template
+        mock_fetch_dataset.return_value = sample_many_shot_examples
+
+        converter_config = AttackConverterConfig(
+            request_converters=PromptConverterConfiguration.from_converters(converters=[Base64Converter()])
+        )
+
+        attack = ManyShotJailbreakAttack(
+            objective_target=mock_objective_target, attack_converter_config=converter_config
+        )
+
+        # Verify converter configuration was preserved
+        assert len(attack._request_converters) == 1
+        assert isinstance(attack._request_converters[0].converters[0], Base64Converter)
+
+        # Mock the parent's perform_attack_async to verify it gets called
+        with patch.object(
+            ManyShotJailbreakAttack.__bases__[0], "_perform_attack_async", new_callable=AsyncMock
+        ) as mock_perform:
+            mock_result = AttackResult(
+                conversation_id=basic_context.conversation_id,
+                objective=basic_context.objective,
+                attack_identifier=attack.get_identifier(),
+                outcome=AttackOutcome.SUCCESS,
+            )
+            mock_perform.return_value = mock_result
+
+            result = await attack._perform_attack_async(context=basic_context)
+
+            # Verify seed prompt group was created
+            assert basic_context.seed_prompt_group is not None
+            assert len(basic_context.seed_prompt_group.prompts) == 1
+
+            # Verify parent method was called
+            mock_perform.assert_called_once_with(context=basic_context)
+            assert result == mock_result
