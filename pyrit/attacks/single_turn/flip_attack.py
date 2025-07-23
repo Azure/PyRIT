@@ -26,6 +26,10 @@ logger = logging.getLogger(__name__)
 
 class FlipAttack(PromptSendingAttack):
     """
+    .. warning::
+        `FlipAttackOrchestrator` is deprecated and will be removed in **v0.12.0**;
+        use `pyrit.attacks.FlipAttack` instead.
+
     This attack implements the FlipAttack method found here:
     https://arxiv.org/html/2410.02832v1.
 
@@ -111,7 +115,7 @@ class FlipAttack(PromptSendingAttack):
             OrchestratorResult: The result of the orchestrated attack.
         """
         initial_prompt = "TASK is '⟪" + context.objective.replace("'", "") + "⟫'"
-        seed_prompt = SeedPromptGroup(prompts=[SeedPrompt(value=initial_prompt, data_type="text")])
-        context.seed_prompt_group = seed_prompt
+        seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=initial_prompt, data_type="text")])
+        context.seed_prompt_group = seed_prompt_group
 
         return await super()._perform_attack_async(context=context)
