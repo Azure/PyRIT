@@ -34,8 +34,8 @@ logger = logging.getLogger(__name__)
 class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
     """
     .. warning::
-        `PromptSendingOrchestrator` is deprecated and will be removed in **v0.12.0**;
-        use `pyrit.attacks.PromptSendingAttack` instead.
+        `ManyShotJailbreakOrchestrator` is deprecated and will be removed in **v0.12.0**;
+        use `pyrit.attacks.ManyShotJailbreakAttack` instead.
 
     This orchestrator implements the Many Shot Jailbreak method as discussed in research found here:
     https://www.anthropic.com/research/many-shot-jailbreaking
