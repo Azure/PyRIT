@@ -83,6 +83,20 @@ class RolePlayAttack(PromptSendingAttack):
 
         # Load role-play definitions
         role_play_definition = SeedPromptDataset.from_yaml_file(role_play_definition_path)
+
+        # Validate role-play definition structure
+        if len(role_play_definition.prompts) != 3:
+            raise ValueError(
+                f"Role-play definition must contain 3 prompts, but found {len(role_play_definition.prompts)}. "
+                "Expected: [rephrase_instructions, user_start_turn, assistant_start_turn]"
+            )
+
+        # Validate that none of the prompts are empty
+        for i, prompt in enumerate(role_play_definition.prompts):
+            if not prompt.value or not prompt.value.strip():
+                prompt_names = ["rephrase_instructions", "user_start_turn", "assistant_start_turn"]
+                raise ValueError(f"Role-play definition prompt '{prompt_names[i]}' cannot be empty")
+
         self._rephrase_instructions = role_play_definition.prompts[0]
         self._user_start_turn = role_play_definition.prompts[1]
         self._assistant_start_turn = role_play_definition.prompts[2]
@@ -123,14 +137,17 @@ class RolePlayAttack(PromptSendingAttack):
         Args:
             context (SingleTurnAttackContext): The attack context containing attack parameters.
         """
-        # Get role-play conversation start and combine with any existing prepended conversation
+        # Get role-play conversation start (only use role-play start, no custom prepended conversation)
         role_play_start = await self._get_conversation_start()
-        if role_play_start:
-            combined_prepended_conversation = (context.prepended_conversation or []) + role_play_start
-            context.prepended_conversation = combined_prepended_conversation
+        context.prepended_conversation = role_play_start or []
 
         # Call parent setup which handles conversation ID generation, memory labels, etc.
-        await super()._setup_async(context=context)
+        # await super()._setup_async(context=context)
+        await self._conversation_manager.update_conversation_state_async(
+            conversation_id=context.conversation_id,
+            prepended_conversation=context.prepended_conversation,
+            converter_configurations=[],
+        )
 
     async def _get_conversation_start(self) -> Optional[list[PromptRequestResponse]]:
         """
