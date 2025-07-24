@@ -159,30 +159,6 @@ class ContextComplianceAttack(PromptSendingAttack):
 
         await super()._setup_async(context=context)
 
-    def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
-        """
-        Validate the context before executing the attack.
-
-        Args:
-            context (SingleTurnAttackContext): The attack context containing parameters and objective.
-
-        Raises:
-            ValueError: If the context is invalid.
-        """
-        if not context.prepended_conversation:
-            raise ValueError("Prepended conversation must be provided in the context")
-
-        if not len(context.prepended_conversation) == 2:
-            raise ValueError("Prepended conversation must contain a user and assistant message")
-
-        if not context.seed_prompt_group or not len(context.seed_prompt_group.prompts) == 1:
-            raise ValueError("Seed prompt group must contain exactly one prompt")
-
-        if not context.seed_prompt_group.prompts[0].value == self._affirmative_response:
-            raise ValueError("Seed prompt group must match the affirmative response")
-
-        super()._validate_context(context=context)
-
     async def _build_benign_context_conversation_async(
         self, *, objective: str, context: SingleTurnAttackContext
     ) -> list[PromptRequestResponse]:

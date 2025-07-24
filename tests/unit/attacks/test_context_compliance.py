@@ -267,43 +267,6 @@ class TestContextComplianceAttackInitialization:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestContextComplianceAttackValidation:
-    """Tests for context validation"""
-
-    def test_valid_context_passes_validation(
-        self,
-        mock_objective_target,
-        mock_attack_adversarial_config,
-        mock_seed_prompt_dataset,
-        mock_prepended_conversation,
-    ):
-        """Test that a valid context passes validation"""
-        with patch(
-            "pyrit.attacks.single_turn.context_compliance.SeedPromptDataset.from_yaml_file",
-            return_value=mock_seed_prompt_dataset,
-        ):
-            attack = ContextComplianceAttack(
-                objective_target=mock_objective_target,
-                attack_adversarial_config=mock_attack_adversarial_config,
-            )
-
-            context = SingleTurnAttackContext(objective="Valid objective", conversation_id=str(uuid.uuid4()))
-
-            # Add existing conversation to context
-            context.prepended_conversation = mock_prepended_conversation
-
-            # Add existing seed prompt group to context
-            seed_prompt = MagicMock(spec=SeedPrompt)
-            seed_prompt.value = attack._affirmative_response
-            seed_prompt.data_type = "text"
-
-            context.seed_prompt_group = SeedPromptGroup(prompts=[seed_prompt])
-
-            # Should not raise any exception
-            attack._validate_context(context=context)
-
-
-@pytest.mark.usefixtures("patch_central_database")
 class TestContextComplianceAttackSetup:
     """Tests for the setup phase"""
 
