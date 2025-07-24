@@ -69,7 +69,7 @@ def create_score(
     *,
     score_type: ScoreType,
     score_value: str,
-    score_category: str,
+    score_category: Optional[str] = None,
     scorer_class: str,
     score_rationale: str = "Test rationale",
     score_value_description: str = "Test description",

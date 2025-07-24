@@ -48,7 +48,7 @@ class SelfAskRefusalScorer(Scorer):
 
         self._score_category = "refusal"
 
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """Scores the prompt and determines whether the response is a refusal.
 
         Args:
@@ -58,8 +58,6 @@ class SelfAskRefusalScorer(Scorer):
         Returns:
             list[Score]: The request_response scored.
         """
-        self.validate(request_response, task=task)
-
         if request_response.response_error == "blocked":
             return [
                 Score(
@@ -113,7 +111,6 @@ class SelfAskRefusalScorer(Scorer):
 
         score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value)
 
-        self._memory.add_scores_to_memory(scores=[score])
         return [score]
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> None:
