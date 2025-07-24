@@ -122,7 +122,7 @@ class ContextComplianceAttack(PromptSendingAttack):
 
     async def _setup_async(self, *, context: SingleTurnAttackContext) -> None:
         """
-        Set-up the context compliance attack.
+        Set up the context compliance attack.
 
         This method:
         1. Generates a benign rephrasing of the objective
@@ -310,7 +310,7 @@ class ContextComplianceAttack(PromptSendingAttack):
             str: The constructed assistant response.
         """
         assistant_response = f"{benign_answer}\n\n"
-        assistant_response += "I can provide more information dependeing on what you're seeking. "
+        assistant_response += "I can provide more information depending on what you're seeking. "
         assistant_response += f"To help with understanding, {objective_question}"
 
         return assistant_response

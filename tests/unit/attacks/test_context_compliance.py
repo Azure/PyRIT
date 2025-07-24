@@ -194,7 +194,7 @@ class TestContextComplianceAttackInitialization:
         with patch("pyrit.attacks.single_turn.context_compliance.SeedPromptDataset.from_yaml_file") as mock_from_yaml:
             mock_from_yaml.return_value = mock_seed_prompt_dataset
 
-            attack = ContextComplianceAttack(
+            ContextComplianceAttack(
                 objective_target=mock_objective_target,
                 attack_adversarial_config=mock_attack_adversarial_config,
                 context_description_instructions_path=custom_path,
