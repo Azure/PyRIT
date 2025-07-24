@@ -14,7 +14,6 @@ from pyrit.attacks.base.attack_context import SingleTurnAttackContext
 from pyrit.attacks.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import (
-    AttackResult,
     PromptRequestPiece,
     PromptRequestResponse,
     SeedPrompt,
@@ -160,6 +159,30 @@ class ContextComplianceAttack(PromptSendingAttack):
 
         await super()._setup_async(context=context)
 
+    def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
+        """
+        Validate the context before executing the attack.
+
+        Args:
+            context (SingleTurnAttackContext): The attack context containing parameters and objective.
+
+        Raises:
+            ValueError: If the context is invalid.
+        """
+        if not context.prepended_conversation:
+            raise ValueError("Prepended conversation must be provided in the context")
+
+        if not len(context.prepended_conversation) == 2:
+            raise ValueError("Prepended conversation must contain a user and assistant message")
+
+        if not context.seed_prompt_group or not len(context.seed_prompt_group.prompts) == 1:
+            raise ValueError("Seed prompt group must contain exactly one prompt")
+
+        if not context.seed_prompt_group.prompts[0].value == self._affirmative_response:
+            raise ValueError("Seed prompt group must match the affirmative response")
+
+        super()._validate_context(context=context)
+
     async def _build_benign_context_conversation_async(
         self, *, objective: str, context: SingleTurnAttackContext
     ) -> list[PromptRequestResponse]:
@@ -174,9 +197,7 @@ class ContextComplianceAttack(PromptSendingAttack):
             list[PromptRequestResponse]: The constructed conversation with benign context.
         """
         # Step 1: Rephrase objective as a benign question
-        benign_user_query = await self._get_objective_as_benign_question_async(
-            objective=objective, context=context
-        )
+        benign_user_query = await self._get_objective_as_benign_question_async(objective=objective, context=context)
 
         # Step 2: Generate an answer to the benign question
         benign_answer = await self._get_benign_question_answer_async(
@@ -184,9 +205,7 @@ class ContextComplianceAttack(PromptSendingAttack):
         )
 
         # Step 3: Rephrase objective as a follow-up question
-        objective_as_question = await self._get_objective_as_question_async(
-            objective=objective, context=context
-        )
+        objective_as_question = await self._get_objective_as_question_async(objective=objective, context=context)
 
         # Construct the assistant response that includes the context
         assistant_response = self._construct_assistant_response(
@@ -214,9 +233,7 @@ class ContextComplianceAttack(PromptSendingAttack):
             ),
         ]
 
-    async def _get_objective_as_benign_question_async(
-        self, *, objective: str, context: SingleTurnAttackContext
-    ) -> str:
+    async def _get_objective_as_benign_question_async(self, *, objective: str, context: SingleTurnAttackContext) -> str:
         """
         Rephrase the objective as a more benign question.
 
@@ -276,9 +293,7 @@ class ContextComplianceAttack(PromptSendingAttack):
 
         return response.get_value()
 
-    async def _get_objective_as_question_async(
-        self, *, objective: str, context: SingleTurnAttackContext
-    ) -> str:
+    async def _get_objective_as_question_async(self, *, objective: str, context: SingleTurnAttackContext) -> str:
         """
         Rephrase the objective as a question.
 
