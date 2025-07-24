@@ -216,51 +216,6 @@ class TestSkeletonKeyPromptLoading:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestSkeletonKeyAttackSetup:
-    """Test skeleton key attack setup functionality."""
-
-    @pytest.mark.asyncio
-    async def test_setup_raises_error_with_prepended_conversation(self, mock_target, basic_context):
-        """Test that setup raises ValueError when prepended conversations exist."""
-        attack = SkeletonKeyAttack(objective_target=mock_target)
-
-        # Add some prepended conversation to context
-        mock_response = MagicMock()
-        basic_context.prepended_conversation = [mock_response]
-
-        # Verify that ValueError is raised
-        with pytest.raises(ValueError, match="Skeleton key attack does not support prepended conversations"):
-            await attack._setup_async(context=basic_context)
-
-    @pytest.mark.asyncio
-    async def test_setup_succeeds_when_no_prepended_conversation(self, mock_target, basic_context):
-        """Test that setup succeeds when no prepended conversation exists."""
-        attack = SkeletonKeyAttack(objective_target=mock_target)
-
-        # Ensure no prepended conversation
-        basic_context.prepended_conversation = []
-
-        # Mock the parent _setup_async method
-        with patch.object(attack.__class__.__bases__[0], "_setup_async", new_callable=AsyncMock) as mock_parent_setup:
-            await attack._setup_async(context=basic_context)
-
-            # Verify parent setup was called
-            mock_parent_setup.assert_called_once_with(context=basic_context)
-
-    @pytest.mark.asyncio
-    async def test_setup_calls_parent_setup_with_context(self, mock_target, basic_context):
-        """Test that setup properly calls parent setup method with the context."""
-        attack = SkeletonKeyAttack(objective_target=mock_target)
-
-        # Mock the parent _setup_async method
-        with patch.object(attack.__class__.__bases__[0], "_setup_async", new_callable=AsyncMock) as mock_parent_setup:
-            await attack._setup_async(context=basic_context)
-
-            # Verify parent setup was called with the correct context
-            mock_parent_setup.assert_called_once_with(context=basic_context)
-
-
-@pytest.mark.usefixtures("patch_central_database")
 class TestSkeletonKeyPromptSending:
     """Test skeleton key prompt sending functionality."""
 
@@ -523,3 +478,64 @@ class TestSkeletonKeyAttackParameterValidation:
 
         with pytest.raises(ValueError, match="Objective scorer must be a true/false scorer"):
             SkeletonKeyAttack(objective_target=mock_target, attack_scoring_config=attack_scoring_config)
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestSkeletonKeyAttackContextValidation:
+    """Test skeleton key attack context validation functionality."""
+
+    def test_validate_context_raises_error_with_prepended_conversation(self, mock_target, basic_context):
+        """Test that context validation raises ValueError when prepended conversations exist."""
+        attack = SkeletonKeyAttack(objective_target=mock_target)
+
+        # Add some prepended conversation to context
+        mock_response = MagicMock()
+        basic_context.prepended_conversation = [mock_response]
+
+        # Verify that ValueError is raised
+        with pytest.raises(ValueError, match="Skeleton key attack does not support prepended conversations"):
+            attack._validate_context(context=basic_context)
+
+    def test_validate_context_succeeds_when_no_prepended_conversation(self, mock_target, basic_context):
+        """Test that context validation succeeds when no prepended conversation exists."""
+        attack = SkeletonKeyAttack(objective_target=mock_target)
+
+        # Ensure no prepended conversation
+        basic_context.prepended_conversation = []
+
+        # Mock the parent _validate_context method
+        with patch.object(attack.__class__.__bases__[0], "_validate_context") as mock_parent_validate:
+            # Should not raise any exception
+            attack._validate_context(context=basic_context)
+
+            # Verify parent validation was called
+            mock_parent_validate.assert_called_once_with(context=basic_context)
+
+    def test_validate_context_calls_parent_validation(self, mock_target, basic_context):
+        """Test that validate_context properly calls parent validation method."""
+        attack = SkeletonKeyAttack(objective_target=mock_target)
+
+        # Ensure no prepended conversation
+        basic_context.prepended_conversation = []
+
+        # Mock the parent _validate_context method
+        with patch.object(attack.__class__.__bases__[0], "_validate_context") as mock_parent_validate:
+            attack._validate_context(context=basic_context)
+
+            # Verify parent validation was called with the correct context
+            mock_parent_validate.assert_called_once_with(context=basic_context)
+
+    def test_validate_context_parent_validation_errors_propagate(self, mock_target, basic_context):
+        """Test that parent validation errors are properly propagated."""
+        attack = SkeletonKeyAttack(objective_target=mock_target)
+
+        # Ensure no prepended conversation
+        basic_context.prepended_conversation = []
+
+        # Mock the parent _validate_context method to raise an error
+        with patch.object(attack.__class__.__bases__[0], "_validate_context") as mock_parent_validate:
+            mock_parent_validate.side_effect = ValueError("Parent validation error")
+
+            # Verify that parent validation error is propagated
+            with pytest.raises(ValueError, match="Parent validation error"):
+                attack._validate_context(context=basic_context)
