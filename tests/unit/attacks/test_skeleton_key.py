@@ -220,34 +220,21 @@ class TestSkeletonKeyAttackSetup:
     """Test skeleton key attack setup functionality."""
 
     @pytest.mark.asyncio
-    async def test_setup_clears_prepended_conversation_with_warning(self, mock_target, basic_context):
-        """Test that setup clears prepended conversations and logs a warning."""
+    async def test_setup_raises_error_with_prepended_conversation(self, mock_target, basic_context):
+        """Test that setup raises ValueError when prepended conversations exist."""
         attack = SkeletonKeyAttack(objective_target=mock_target)
 
         # Add some prepended conversation to context
         mock_response = MagicMock()
         basic_context.prepended_conversation = [mock_response]
 
-        # Mock the parent _setup_async method
-        with patch.object(attack.__class__.__bases__[0], "_setup_async", new_callable=AsyncMock) as mock_parent_setup:
-            with patch.object(attack._logger, "warning") as mock_warning:
-                await attack._setup_async(context=basic_context)
-
-                # Verify warning was logged
-                mock_warning.assert_called_once_with(
-                    "Skeleton key attack does not support prepended conversations. "
-                    "The attack will be performed on the current conversation state."
-                )
-
-                # Verify prepended conversation was cleared
-                assert basic_context.prepended_conversation == []
-
-                # Verify parent setup was called
-                mock_parent_setup.assert_called_once_with(context=basic_context)
+        # Verify that ValueError is raised
+        with pytest.raises(ValueError, match="Skeleton key attack does not support prepended conversations"):
+            await attack._setup_async(context=basic_context)
 
     @pytest.mark.asyncio
-    async def test_setup_does_not_warn_when_no_prepended_conversation(self, mock_target, basic_context):
-        """Test that setup does not log warning when no prepended conversation exists."""
+    async def test_setup_succeeds_when_no_prepended_conversation(self, mock_target, basic_context):
+        """Test that setup succeeds when no prepended conversation exists."""
         attack = SkeletonKeyAttack(objective_target=mock_target)
 
         # Ensure no prepended conversation
@@ -255,17 +242,10 @@ class TestSkeletonKeyAttackSetup:
 
         # Mock the parent _setup_async method
         with patch.object(attack.__class__.__bases__[0], "_setup_async", new_callable=AsyncMock) as mock_parent_setup:
-            with patch.object(attack._logger, "warning") as mock_warning:
-                await attack._setup_async(context=basic_context)
+            await attack._setup_async(context=basic_context)
 
-                # Verify no warning was logged
-                mock_warning.assert_not_called()
-
-                # Verify prepended conversation remains empty
-                assert basic_context.prepended_conversation == []
-
-                # Verify parent setup was called
-                mock_parent_setup.assert_called_once_with(context=basic_context)
+            # Verify parent setup was called
+            mock_parent_setup.assert_called_once_with(context=basic_context)
 
     @pytest.mark.asyncio
     async def test_setup_calls_parent_setup_with_context(self, mock_target, basic_context):

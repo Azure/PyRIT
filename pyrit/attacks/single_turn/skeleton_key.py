@@ -110,11 +110,10 @@ class SkeletonKeyAttack(PromptSendingAttack):
         """
 
         if context.prepended_conversation:
-            self._logger.warning(
+            raise ValueError(
                 "Skeleton key attack does not support prepended conversations. "
-                "The attack will be performed on the current conversation state."
+                "Please clear the prepended conversation before starting the attack."
             )
-            context.prepended_conversation = []
 
         return await super()._setup_async(context=context)
 
@@ -173,14 +172,8 @@ class SkeletonKeyAttack(PromptSendingAttack):
         )
 
         # Send skeleton key prompt
-        skeleton_response = await self._prompt_normalizer.send_prompt_async(
-            seed_prompt_group=skeleton_key_prompt_group,
-            conversation_id=context.conversation_id,
-            request_converter_configurations=self._request_converters,
-            response_converter_configurations=self._response_converters,
-            target=self._objective_target,
-            labels=context.memory_labels,
-            orchestrator_identifier=self.get_identifier(),
+        skeleton_response = await self._send_prompt_to_objective_target_async(
+            prompt_group=skeleton_key_prompt_group, context=context
         )
 
         if skeleton_response:
