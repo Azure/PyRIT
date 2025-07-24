@@ -41,7 +41,7 @@ class InsecureCodeScorer(Scorer):
         # Render the system prompt with the harm category
         self._system_prompt = scoring_instructions_template.render_template_value(harm_categories=self._harm_category)
 
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Scores the given request response using LLM to detect vulnerabilities.
 
@@ -52,9 +52,6 @@ class InsecureCodeScorer(Scorer):
         Returns:
             list[Score]: A list of Score objects.
         """
-        # Validate the input piece
-        self.validate(request_response, task=task)
-
         # Use _score_value_with_llm to interact with the LLM and retrieve an UnvalidatedScore
         unvalidated_score = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
@@ -78,9 +75,6 @@ class InsecureCodeScorer(Scorer):
         score = unvalidated_score.to_score(
             score_value=str(self.scale_value_float(raw_score_value, 0, 1)),
         )
-
-        # Add the score to memory
-        self._memory.add_scores_to_memory(scores=[score])
 
         return [score]
 

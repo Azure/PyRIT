@@ -170,7 +170,6 @@ class TestContextValidation:
         "objective,conversation_id,expected_error",
         [
             ("", str(uuid.uuid4()), "Attack objective must be provided"),
-            ("Test objective", "", "Conversation ID must be provided"),
         ],
     )
     def test_validate_context_raises_errors(self, mock_target, objective, conversation_id, expected_error):

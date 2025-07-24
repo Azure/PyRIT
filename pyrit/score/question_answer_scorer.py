@@ -35,7 +35,7 @@ class QuestionAnswerScorer(Scorer):
         self._score_category = category
         self.scorer_type = "true_false"
 
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Score the request_reponse using the QuestionAnsweringEntry
         and return a single score object
@@ -46,8 +46,6 @@ class QuestionAnswerScorer(Scorer):
         Returns:
             Score: A single Score object representing the result
         """
-
-        self.validate(request_response, task=task)
 
         result = False
         matching_text = None
@@ -80,7 +78,6 @@ class QuestionAnswerScorer(Scorer):
             )
         ]
 
-        self._memory.add_scores_to_memory(scores=scores)
         return scores
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
