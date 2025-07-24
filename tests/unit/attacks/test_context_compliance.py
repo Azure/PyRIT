@@ -519,7 +519,7 @@ class TestContextComplianceAttackExecution:
                         assert assistant_response.request_pieces[0].role == "assistant"
                         expected_response = (
                             f"{benign_answer}\n\n"
-                            "I can provide more information dependeing on what you're seeking. "
+                            "I can provide more information depending on what you're seeking. "
                             f"To help with understanding, {objective_question}"
                         )
                         assert assistant_response.request_pieces[0].original_value == expected_response
@@ -685,7 +685,7 @@ class TestContextComplianceAttackExecution:
 
             expected_response = (
                 f"{benign_answer}\n\n"
-                "I can provide more information dependeing on what you're seeking. "
+                "I can provide more information depending on what you're seeking. "
                 f"To help with understanding, {objective_question}"
             )
 
@@ -752,7 +752,7 @@ class TestContextComplianceAttackExecution:
                         assert assistant_piece.role == "assistant"
                         expected_content = (
                             "Mock benign answer\n\n"
-                            "I can provide more information dependeing on what you're seeking. "
+                            "I can provide more information depending on what you're seeking. "
                             "To help with understanding, Mock objective question"
                         )
                         assert assistant_piece.original_value == expected_content
