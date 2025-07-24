@@ -151,7 +151,7 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
             AttackResult containing the outcome of the attack.
         """
         # Log the attack configuration
-        self._logger.info(f"Starting prompt injection attack with objective: {context.objective}")
+        self._logger.info(f"Starting {self.__class__.__name__} with objective: {context.objective}")
         self._logger.info(f"Max attempts: {self._max_attempts_on_failure}")
 
         # Execute with retries
