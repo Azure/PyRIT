@@ -130,10 +130,9 @@ class Score:
         }
 
     def __str__(self):
+        category_str = f": {self.score_category or ''}"
         if self.scorer_class_identifier:
-            category_str = f": {self.score_category}" if self.score_category else ""
             return f"{self.scorer_class_identifier['__type__']}{category_str}: {self.score_value}"
-        category_str = f": {self.score_category}" if self.score_category else ""
         return f"{category_str}: {self.score_value}"
 
     __repr__ = __str__
