@@ -194,6 +194,11 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         logger.debug(f"Conversation session ID: {context.session.conversation_id}")
         logger.debug(f"Adversarial chat conversation ID: {context.session.adversarial_chat_conversation_id}")
 
+        # Track the adversarial chat conversation ID
+        context.attack_generation_conversation_ids.adversarial_chat_conversation_ids.add(
+            context.session.adversarial_chat_conversation_id
+        )
+
         # Update the conversation state with the current context
         conversation_state: ConversationState = await self._conversation_manager.update_conversation_state_async(
             target=self._objective_target,
@@ -286,6 +291,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             executed_turns=context.executed_turns,
             last_response=context.last_response.get_piece() if context.last_response else None,
             last_score=context.last_score,
+            attack_generation_conversation_ids=context.attack_generation_conversation_ids,
         )
 
     async def _teardown_async(self, *, context: MultiTurnAttackContext) -> None:

@@ -29,6 +29,21 @@ class AttackOutcome(Enum):
 
 
 @dataclass
+class AttackConversationIds:
+    # Set of conversation IDs to the objective target that were pruned from the attack
+    pruned_conversation_ids: set[str] = field(default_factory=set)
+
+    # Set of conversation IDs to the adversarial chat that were used for the attack
+    adversarial_chat_conversation_ids: set[str] = field(default_factory=set)
+
+    # Set of conversation IDs used to score the attack
+    # scored_conversation_ids: set[str] = field(default_factory=set)
+
+    # Set of conversation IDs used to convert the attack
+    # converter_conversation_ids: set[str] = field(default_factory=set)
+
+
+@dataclass
 class AttackResult:
     """Base class for all attack results"""
 
@@ -62,6 +77,9 @@ class AttackResult:
 
     # Optional reason for the outcome, providing additional context
     outcome_reason: Optional[str] = None
+
+    # Conversation IDs used to generate the attack
+    attack_generation_conversation_ids: AttackConversationIds = field(default_factory=AttackConversationIds)
 
     # Additional information
     # Metadata can be included as key-value pairs to provide extra context
