@@ -44,7 +44,6 @@ class Scorer(abc.ABC):
     def _memory(self) -> MemoryInterface:
         return CentralMemory.get_memory_instance()
 
-    @abstractmethod
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Score the request_response, add the results to the database
@@ -57,6 +56,13 @@ class Scorer(abc.ABC):
         Returns:
             list[Score]: A list of Score objects representing the results.
         """
+        self.validate(request_response, task=task)
+        scores = await self._score_async(request_response, task=task)
+        self._memory.add_scores_to_memory(scores=scores)
+        return scores
+
+    @abstractmethod
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         raise NotImplementedError("score_async method not implemented")
 
     @abstractmethod

@@ -23,11 +23,10 @@ class HumanInTheLoopScorerGradio(Scorer):
         self._rpc_server = AppRPCServer(open_browser=open_browser)
         self._rpc_server.start()
 
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         self.validate(request_response=request_response)
         try:
             score = await asyncio.to_thread(self.retrieve_score, request_response, task=task)
-            self._memory.add_scores_to_memory(scores=score)
             return score
         except asyncio.CancelledError:
             self._rpc_server.stop()
