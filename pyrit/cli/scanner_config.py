@@ -123,7 +123,7 @@ class ScenarioConfig(BaseModel, extra="allow"):
             raise ValueError(f"Failed to instantiate scenario '{self.scenario_type}': {ex}") from ex
 
 
-class TargetConfig(BaseModel):
+class TargetConfig(BaseModel, extra="allow"):
     """
     Configuration for a prompt target (e.g. OpenAIChatTarget).
     """
@@ -142,7 +142,7 @@ class TargetConfig(BaseModel):
         return target_class(**init_kwargs)
 
 
-class ObjectiveScorerConfig(BaseModel):
+class ObjectiveScorerConfig(BaseModel, extra="allow"):
     """
     Configuration for an objective scorer
     """
@@ -171,7 +171,7 @@ class ObjectiveScorerConfig(BaseModel):
         return scorer_class(**init_kwargs)
 
 
-class ScoringConfig(BaseModel):
+class ScoringConfig(BaseModel, extra="allow"):
     """
     Configuration for the scoring setup, including optional
     override of the default adversarial chat with a 'scoring_target'
