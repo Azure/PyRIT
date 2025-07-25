@@ -120,6 +120,24 @@ class ContextComplianceAttack(PromptSendingAttack):
         self._answer_user_turn = context_description_instructions.prompts[1]
         self._rephrase_objective_to_question = context_description_instructions.prompts[2]
 
+    def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
+        """
+        Validate the context for the attack.
+        This attack does not support prepended conversations, so it raises an error if one exists.
+        Args:
+            context (SingleTurnAttackContext): The attack context to validate.
+        Raises:
+            ValueError: If the context has a prepended conversation.
+        """
+        # Call parent validation first
+        super()._validate_context(context=context)
+
+        if context.prepended_conversation:
+            raise ValueError(
+                "This attack does not support prepended conversations. "
+                "Please clear the prepended conversation before starting the attack."
+            )
+
     async def _setup_async(self, *, context: SingleTurnAttackContext) -> None:
         """
         Set up the context compliance attack.
