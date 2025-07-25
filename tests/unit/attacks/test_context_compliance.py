@@ -856,8 +856,7 @@ class TestContextComplianceAttackContextValidation:
     ):
         """Test that context validation raises ValueError when prepended conversations exist."""
         attack = ContextComplianceAttack(
-            objective_target=mock_objective_target,
-            attack_adversarial_config=mock_attack_adversarial_config
+            objective_target=mock_objective_target, attack_adversarial_config=mock_attack_adversarial_config
         )
 
         # Add some prepended conversation to context
@@ -873,8 +872,7 @@ class TestContextComplianceAttackContextValidation:
     ):
         """Test that context validation succeeds when no prepended conversation exists."""
         attack = ContextComplianceAttack(
-            objective_target=mock_objective_target,
-            attack_adversarial_config=mock_attack_adversarial_config
+            objective_target=mock_objective_target, attack_adversarial_config=mock_attack_adversarial_config
         )
 
         # Ensure no prepended conversation
