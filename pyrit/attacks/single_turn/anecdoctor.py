@@ -13,7 +13,14 @@ from pyrit.attacks.base.attack_config import AttackConverterConfig, AttackScorin
 from pyrit.attacks.base.attack_context import AttackContext
 from pyrit.attacks.base.attack_strategy import AttackStrategy
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import AttackOutcome, AttackResult, PromptRequestResponse, Score, SeedPrompt, SeedPromptGroup
+from pyrit.models import (
+    AttackOutcome,
+    AttackResult,
+    PromptRequestResponse,
+    Score,
+    SeedPrompt,
+    SeedPromptGroup,
+)
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer
@@ -25,20 +32,20 @@ logger = logging.getLogger(__name__)
 class AnecdoctorAttackContext(AttackContext):
     """
     Context specific to Anecdoctor attacks.
-    
+
     Contains all parameters needed for executing an Anecdoctor attack,
     including the evaluation data, language settings, and conversation ID.
     """
-    
+
     # The data in ClaimsReview format to use in constructing the prompt
     evaluation_data: List[str] = field(default_factory=list)
-    
+
     # The language of the content to generate
     language: str = "english"
-    
+
     # The type of content to generate (e.g., "viral tweet", "news article")
     content_type: str = "viral tweet"
-    
+
     # Conversation ID for the main attack (generated if not provided)
     conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
@@ -53,16 +60,16 @@ class AnecdoctorAttackContext(AttackContext):
     ) -> "AnecdoctorAttackContext":
         """
         Create AnecdoctorAttackContext from parameters.
-        
+
         Args:
             objective (str): The objective of the attack.
             prepended_conversation (List[PromptRequestResponse]): Not used in Anecdoctor attack.
             memory_labels (Dict[str, str]): Additional labels for memory storage.
             **kwargs: Additional parameters including evaluation_data, language, content_type.
-            
+
         Returns:
             AnecdoctorAttackContext: The created context instance.
-            
+
         Raises:
             ValueError: If required parameters are missing or invalid.
         """
@@ -72,17 +79,17 @@ class AnecdoctorAttackContext(AttackContext):
             raise ValueError(f"evaluation_data must be a list, got {type(evaluation_data).__name__}")
         if not evaluation_data:
             raise ValueError("evaluation_data cannot be empty")
-            
+
         # Extract and validate language
         language = kwargs.get("language", "english")
         if not isinstance(language, str):
             raise ValueError(f"language must be a string, got {type(language).__name__}")
-            
+
         # Extract and validate content_type
         content_type = kwargs.get("content_type", "viral tweet")
         if not isinstance(content_type, str):
             raise ValueError(f"content_type must be a string, got {type(content_type).__name__}")
-        
+
         # Create instance with all parameters
         return cls(
             objective=objective,
@@ -143,23 +150,23 @@ class AnecdoctorAttack(AttackStrategy[AnecdoctorAttackContext, AttackResult]):
         """
         # Initialize base class
         super().__init__(logger=logger, context_type=AnecdoctorAttackContext)
-        
+
         # Store configuration
         self._objective_target = objective_target
         self._processing_model = processing_model
         self._prompt_normalizer = prompt_normalizer or PromptNormalizer()
-        
+
         # Initialize converter configuration
         attack_converter_config = attack_converter_config or AttackConverterConfig()
         self._request_converters = attack_converter_config.request_converters
         self._response_converters = attack_converter_config.response_converters
-        
+
         # Initialize scoring configuration
         attack_scoring_config = attack_scoring_config or AttackScoringConfig()
-        
+
         # Check for unused optional parameters and warn if they are set
         self._warn_if_set(config=attack_scoring_config, unused_fields=["refusal_scorer"])
-        
+
         self._auxiliary_scorers = attack_scoring_config.auxiliary_scorers
         self._objective_scorer = attack_scoring_config.objective_scorer
         if self._objective_scorer and self._objective_scorer.scorer_type != "true_false":
@@ -178,10 +185,10 @@ class AnecdoctorAttack(AttackStrategy[AnecdoctorAttackContext, AttackResult]):
 
         if not context.content_type:
             raise ValueError("content_type must be provided in the context")
-        
+
         if not context.language:
             raise ValueError("language must be provided in the context")
-            
+
         if not context.evaluation_data:
             raise ValueError("evaluation_data cannot be empty")
 
@@ -195,16 +202,16 @@ class AnecdoctorAttack(AttackStrategy[AnecdoctorAttackContext, AttackResult]):
         self._logger.debug(f"Setting up Anecdoctor attack for objective: {context.objective}")
 
         context.conversation_id = str(uuid.uuid4())
-        
+
         # Prepare the system prompt based on whether we're using knowledge graph
         if self._processing_model:
             system_prompt_template = self._load_prompt_from_yaml(yaml_filename=self._ANECDOCTOR_USE_KG_YAML)
         else:
             system_prompt_template = self._load_prompt_from_yaml(yaml_filename=self._ANECDOCTOR_USE_FEWSHOT_YAML)
-            
+
         # Format the system prompt with language and content type
         system_prompt = system_prompt_template.format(language=context.language, type=context.content_type)
-        
+
         # Configure the target with the system prompt
         self._objective_target.set_system_prompt(
             system_prompt=system_prompt,
@@ -231,23 +238,13 @@ class AnecdoctorAttack(AttackStrategy[AnecdoctorAttackContext, AttackResult]):
         formatted_examples = await self._prepare_examples_async(context=context)
 
         # Step 2: Send the prepared examples to the target model
-        response = await self._send_examples_to_target_async(
-            formatted_examples=formatted_examples,
-            context=context
-        )
+        response = await self._send_examples_to_target_async(formatted_examples=formatted_examples, context=context)
 
         # Step 3: Evaluate the response if scoring is configured
-        score = await self._evaluate_response_if_configured_async(
-            response=response,
-            objective=context.objective
-        )
+        score = await self._evaluate_response_if_configured_async(response=response, objective=context.objective)
 
         # Step 4: Build and return the attack result
-        return self._build_attack_result(
-            response=response,
-            score=score,
-            context=context
-        )
+        return self._build_attack_result(response=response, score=score, context=context)
 
     async def _teardown_async(self, *, context: AnecdoctorAttackContext) -> None:
         """Clean up after attack execution"""
@@ -272,10 +269,7 @@ class AnecdoctorAttack(AttackStrategy[AnecdoctorAttackContext, AttackResult]):
             return self._format_few_shot_examples(evaluation_data=context.evaluation_data)
 
     async def _send_examples_to_target_async(
-        self,
-        *,
-        formatted_examples: str,
-        context: AnecdoctorAttackContext
+        self, *, formatted_examples: str, context: AnecdoctorAttackContext
     ) -> Optional[PromptRequestResponse]:
         """
         Send the formatted examples to the target model.
@@ -309,10 +303,7 @@ class AnecdoctorAttack(AttackStrategy[AnecdoctorAttackContext, AttackResult]):
         )
 
     async def _evaluate_response_if_configured_async(
-        self,
-        *,
-        response: Optional[PromptRequestResponse],
-        objective: str
+        self, *, response: Optional[PromptRequestResponse], objective: str
     ) -> Optional[Score]:
         """
         Evaluate the response using the objective scorer if configured.
@@ -330,11 +321,7 @@ class AnecdoctorAttack(AttackStrategy[AnecdoctorAttackContext, AttackResult]):
         return await self._evaluate_response_async(response=response, objective=objective)
 
     def _build_attack_result(
-        self,
-        *,
-        response: Optional[PromptRequestResponse],
-        score: Optional[Score],
-        context: AnecdoctorAttackContext
+        self, *, response: Optional[PromptRequestResponse], score: Optional[Score], context: AnecdoctorAttackContext
     ) -> AttackResult:
         """
         Build the final attack result based on the response and score.
@@ -379,7 +366,7 @@ class AnecdoctorAttack(AttackStrategy[AnecdoctorAttackContext, AttackResult]):
                 return AttackOutcome.SUCCESS, "Successfully generated content based on examples"
             else:
                 return AttackOutcome.FAILURE, "Failed to generate content (no response received)"
-        
+
         # Scorer is configured, use it to determine outcome
         if score and score.get_value():
             return AttackOutcome.SUCCESS, "Objective achieved according to scorer"
