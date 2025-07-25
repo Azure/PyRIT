@@ -25,6 +25,8 @@ from pyrit.attacks.single_turn.many_shot_jailbreak import ManyShotJailbreakAttac
 from pyrit.attacks.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.attacks.single_turn.skeleton_key import SkeletonKeyAttack
 from pyrit.attacks.fuzzer import FuzzerAttack, FuzzerAttackContext, FuzzerAttackResult
+from pyrit.attacks.single_turn.role_play import RolePlayAttack
+
 
 __all__ = [
     "AttackAdversarialConfig",
@@ -44,6 +46,7 @@ __all__ = [
     "PromptSendingAttack",
     "RTOSystemPromptPaths",
     "RedTeamingAttack",
+    "RolePlayAttack",
     "SingleTurnAttackContext",
     "TAPAttack",
     "TAPAttackContext",
