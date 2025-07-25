@@ -97,9 +97,9 @@ class SelfAskTrueFalseScorer(Scorer):
             true_description=true_category, false_description=false_category, metadata=metadata
         )
 
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
-        Scores the given request_response using "self-ask" for the chat target and adds score to memory.
+        Scores the given request_response using "self-ask" for the chat target.
 
         Args:
             request_response (PromptRequestPiece): The prompt request piece containing the text to be scored.
@@ -113,8 +113,6 @@ class SelfAskTrueFalseScorer(Scorer):
                          metadata can be configured to provide additional information.
         """
 
-        self.validate(request_response, task=task)
-
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=self._system_prompt,
@@ -127,8 +125,6 @@ class SelfAskTrueFalseScorer(Scorer):
         )
 
         score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value)
-
-        self._memory.add_scores_to_memory(scores=[score])
         return [score]
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):

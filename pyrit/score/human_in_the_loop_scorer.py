@@ -93,7 +93,7 @@ class HumanInTheLoopScorer(Scorer):
 
         return [score]
 
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Score the prompt with a human in the loop.
 

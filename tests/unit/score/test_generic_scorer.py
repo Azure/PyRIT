@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.score.general_scorer import SelfAskGeneralScorer
+from pyrit.score import SelfAskGeneralScorer
 
 
 @pytest.fixture
