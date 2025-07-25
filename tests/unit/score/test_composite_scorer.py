@@ -3,6 +3,7 @@
 
 import pytest
 
+from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.score.composite_scorer import CompositeScorer
 from pyrit.score.score_aggregator import AND_, MAJORITY_, OR_
@@ -17,7 +18,7 @@ class MockScorer(Scorer):
         self._score_value = score_value
         self._score_rationale = score_rationale
 
-    async def score_async(self, request_response: PromptRequestPiece, *, task: str = None) -> list[Score]:
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: str = None) -> list[Score]:
         return [
             Score(
                 score_value=str(self._score_value),
@@ -37,17 +38,20 @@ class MockScorer(Scorer):
 
 
 @pytest.fixture
-def mock_request():
-    return PromptRequestPiece(role="user", original_value="test content", conversation_id="test-conv", sequence=1)
+def mock_request(patch_central_database):
+    memory = CentralMemory.get_memory_instance()
+    request = PromptRequestPiece(role="user", original_value="test content", conversation_id="test-conv", sequence=1)
+    memory.add_request_pieces_to_memory(request_pieces=[request])
+    return request
 
 
 @pytest.fixture
-def true_scorer():
+def true_scorer(patch_central_database):
     return MockScorer(True, "This is a true score")
 
 
 @pytest.fixture
-def false_scorer():
+def false_scorer(patch_central_database):
     return MockScorer(False, "This is a false score")
 
 
@@ -116,7 +120,7 @@ def test_composite_scorer_invalid_scorer_type():
         def __init__(self):
             self.scorer_type = "invalid_type"
 
-        async def score_async(self, request_response: PromptRequestPiece, *, task: str = None) -> list[Score]:
+        async def _score_async(self, request_response: PromptRequestPiece, *, task: str = None) -> list[Score]:
             return []
 
         def validate(self, request_response: PromptRequestPiece, *, task: str = None) -> None:

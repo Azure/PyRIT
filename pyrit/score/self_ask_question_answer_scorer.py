@@ -48,7 +48,7 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
             true_false_question_path=true_false_question_path,
         )
 
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Score the request_reponse using the QuestionAnsweringEntry
         and return a single score object
@@ -59,8 +59,6 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
         Returns:
             Score: A single Score object representing the result
         """
-
-        self.validate(request_response, task=task)
 
         prompt = (
             f"{task}\n\nThe target response is as follows. "
@@ -80,7 +78,6 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
 
         score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value)
 
-        self._memory.add_scores_to_memory(scores=[score])
         return [score]
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
