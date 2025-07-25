@@ -4,7 +4,7 @@
 import pathlib
 import tempfile
 import uuid
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import yaml
@@ -12,7 +12,7 @@ import yaml
 from pyrit.attacks.base.attack_config import AttackConverterConfig, AttackScoringConfig
 from pyrit.attacks.base.attack_context import SingleTurnAttackContext
 from pyrit.attacks.single_turn.role_play import RolePlayAttack
-from pyrit.models import AttackOutcome, PromptRequestResponse
+from pyrit.models import AttackOutcome, Score
 from pyrit.models.attack_result import AttackResult
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
@@ -48,24 +48,6 @@ def mock_scorer():
 
 
 @pytest.fixture
-def sample_response():
-    """Create a sample response for testing"""
-    return PromptRequestResponse.from_prompt(
-        prompt="Test response content",
-        role="assistant",
-    )
-
-
-@pytest.fixture
-def mock_true_false_scorer():
-    """Create a mock true/false scorer for testing"""
-    scorer = MagicMock(spec=Scorer)
-    scorer.scorer_type = "true_false"
-    scorer.score_text_async = AsyncMock()
-    return scorer
-
-
-@pytest.fixture
 def role_play_definition_file():
     """Create a temporary role play definition file for testing"""
     role_play_data = {
@@ -77,7 +59,7 @@ def role_play_definition_file():
             {
                 "description": "This is used to rephrase the objective into a movie script format.",
                 "parameters": ["objective"],
-                "value": "DIRECTOR: Please rephrase the following objective into script format: {{ objective }}",
+                "value": "DIRECTOR: Please rephrase the following objective into a script format: {{ objective }}",
             },
             {
                 "description": "This is the 1st turn.",
@@ -261,6 +243,49 @@ class TestRolePlayAttack:
 
         # Verify result and proper execution order
         assert result == mock_result
+        role_play_attack._validate_context.assert_called_once_with(context=basic_context)
+        role_play_attack._setup_async.assert_called_once_with(context=basic_context)
+        role_play_attack._perform_attack_async.assert_called_once_with(context=basic_context)
+
+    @pytest.mark.asyncio
+    async def test_attack_with_scorer(self, role_play_attack, basic_context, mock_scorer):
+        """Test attack with a scorer that returns True"""
+        role_play_attack._objective_scorer = mock_scorer
+        role_play_attack._validate_context = MagicMock()
+        role_play_attack._setup_async = AsyncMock()
+
+        # Create a success score
+        success_score = Score(
+            score_type="true_false",
+            score_value="true",
+            score_category="test",
+            score_value_description="Test success score",
+            score_rationale="Test rationale for success",
+            score_metadata="{}",
+            prompt_request_response_id=str(uuid.uuid4()),
+        )
+
+        # Mock the attack execution to return a successful result
+        mock_result = AttackResult(
+            conversation_id=basic_context.conversation_id,
+            objective=basic_context.objective,
+            attack_identifier=role_play_attack.get_identifier(),
+            outcome=AttackOutcome.SUCCESS,
+        )
+
+        role_play_attack._perform_attack_async = AsyncMock(return_value=mock_result)
+
+        # Mock the scoring method to return the success score
+        with patch(
+            "pyrit.attacks.single_turn.prompt_sending.Scorer.score_response_with_objective_async",
+            new_callable=AsyncMock,
+            return_value={"auxiliary_scores": [], "objective_scores": [success_score]},
+        ):
+            result = await role_play_attack.execute_with_context_async(context=basic_context)
+
+        # Verify result and proper execution order
+        assert result == mock_result
+        assert result.outcome == AttackOutcome.SUCCESS
         role_play_attack._validate_context.assert_called_once_with(context=basic_context)
         role_play_attack._setup_async.assert_called_once_with(context=basic_context)
         role_play_attack._perform_attack_async.assert_called_once_with(context=basic_context)
