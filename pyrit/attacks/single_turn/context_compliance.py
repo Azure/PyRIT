@@ -55,6 +55,7 @@ class ContextComplianceAttack(PromptSendingAttack):
         attack_converter_config: Optional[AttackConverterConfig] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
+        max_attempts_on_failure: int = 0,
         context_description_instructions_path: Optional[Path] = None,
         affirmative_response: Optional[str] = None,
     ) -> None:
@@ -69,6 +70,7 @@ class ContextComplianceAttack(PromptSendingAttack):
                 including request and response converters.
             attack_scoring_config (Optional[AttackScoringConfig]): Configuration for attack scoring.
             prompt_normalizer (Optional[PromptNormalizer]): The prompt normalizer to use for sending prompts.
+            max_attempts_on_failure (int): Maximum number of attempts to retry on failure.
             context_description_instructions_path (Optional[Path]): Path to the context description
                 instructions YAML file. If not provided, uses the default path.
             affirmative_response (Optional[str]): The affirmative response to be used in the conversation history.
@@ -83,6 +85,7 @@ class ContextComplianceAttack(PromptSendingAttack):
             attack_converter_config=attack_converter_config,
             attack_scoring_config=attack_scoring_config,
             prompt_normalizer=prompt_normalizer,
+            max_attempts_on_failure=max_attempts_on_failure,
         )
 
         # Store adversarial chat target
