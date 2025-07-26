@@ -91,7 +91,7 @@ class AzureContentFilterScorer(Scorer):
         else:
             raise ValueError("Please provide the Azure Content Safety endpoint")
 
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """Evaluating the input text or image using the Azure Content Filter API
 
         Args:
@@ -113,8 +113,6 @@ class AzureContentFilterScorer(Scorer):
         Raises:
             ValueError if converted_value_data_type is not "text" or "image_path" or image isn't in supported format
         """
-        self.validate(request_response, task=task)
-
         filter_result: dict[str, list] = {}
         if request_response.converted_value_data_type == "text":
             text_request_options = AnalyzeTextOptions(
@@ -155,7 +153,6 @@ class AzureContentFilterScorer(Scorer):
                 prompt_request_response_id=request_response.id,
                 task=task,
             )
-            self._memory.add_scores_to_memory(scores=[score])
             scores.append(score)
 
         return scores

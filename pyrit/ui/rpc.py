@@ -223,7 +223,7 @@ class AppRPCServer:
         score = Score(
             score_value=score_ref.score_value,
             score_type=score_ref.score_type,
-            score_category=str(score_ref.score_category),
+            score_category=score_ref.score_category,
             score_value_description=score_ref.score_value_description,
             score_rationale=score_ref.score_rationale,
             score_metadata=score_ref.score_metadata,

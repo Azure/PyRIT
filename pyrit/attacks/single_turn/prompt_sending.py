@@ -114,11 +114,8 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
         Raises:
             ValueError: If the context is invalid.
         """
-        if not context.objective:
-            raise ValueError("Attack objective must be provided in the context")
-
-        if not context.conversation_id:
-            raise ValueError("Conversation ID must be provided in the context")
+        if not context.objective or context.objective.isspace():
+            raise ValueError("Attack objective must be provided and non-empty in the context")
 
     async def _setup_async(self, *, context: SingleTurnAttackContext) -> None:
         """
