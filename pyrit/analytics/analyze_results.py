@@ -1,6 +1,5 @@
-import logging
-
-logger = logging.getLogger(__name__)
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
 
 from pyrit.models import AttackOutcome, AttackResult
 

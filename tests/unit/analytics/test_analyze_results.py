@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import pytest
 
 from pyrit.analytics.analyze_results import analyze_results
@@ -24,35 +27,35 @@ def test_empty_list_returns_none():
 
 @pytest.mark.parametrize("n", [1, 2, 3, 10, 100])
 def test_all_successes(n):
-    attacks = [make_attack(AttackOutcome.SUCCESS) for _ in range(5)]
+    attacks = [make_attack(AttackOutcome.SUCCESS) for _ in range(n)]
     result = analyze_results(attacks)
     assert result["Attack success rate"] == 1.0
-    assert result["Total decided"] == 5
-    assert result["Successes"] == 5
+    assert result["Total decided"] == n
+    assert result["Successes"] == n
     assert result["Failures"] == 0
     assert result["Undetermined"] == 0
 
 
 @pytest.mark.parametrize("n", [1, 2, 5, 20])
 def test_all_failures(n):
-    attacks = [make_attack(AttackOutcome.FAILURE) for _ in range(3)]
+    attacks = [make_attack(AttackOutcome.FAILURE) for _ in range(n)]
     result = analyze_results(attacks)
     assert result["Attack success rate"] == 0.0
-    assert result["Total decided"] == 3
+    assert result["Total decided"] == n
     assert result["Successes"] == 0
-    assert result["Failures"] == 3
+    assert result["Failures"] == n
     assert result["Undetermined"] == 0
 
 
 @pytest.mark.parametrize("n", [1, 3, 7])
 def test_all_undetermined(n):
-    attacks = [make_attack(AttackOutcome.UNDETERMINED) for _ in range(4)]
+    attacks = [make_attack(AttackOutcome.UNDETERMINED) for _ in range(n)]
     result = analyze_results(attacks)
     assert result["Attack success rate"] is None
     assert result["Total decided"] == 0
     assert result["Successes"] == 0
     assert result["Failures"] == 0
-    assert result["Undetermined"] == 4
+    assert result["Undetermined"] == n
 
 
 def test_mixed_outcomes():
