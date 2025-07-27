@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import ast
-import logging
 from uuid import uuid4
 
 from datasets import load_dataset
@@ -97,8 +96,6 @@ def fetch_red_team_social_bias_dataset() -> SeedPromptDataset:
             cleaned_value = item.get("prompt", "").replace("### Response:", "").replace("### Instruction:", "").strip()
             # some entries have contents that trip up jinja2, so we escape them
             escaped_cleaned_value = f"{{% raw %}}{cleaned_value}{{% endraw %}}"
-            logging.debug(f"Single Turn Prompt: {cleaned_value}")
-            logging.debug(prompt_metadata)
             seed_prompts.append(
                 SeedPrompt(
                     value=escaped_cleaned_value,
