@@ -24,6 +24,8 @@ concurrency:
 jobs:
   pre-commit-linux:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     env:
       PIP_CACHE_DIR: ${{ github.workspace }}/.cache/pip
