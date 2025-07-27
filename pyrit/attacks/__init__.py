@@ -19,9 +19,12 @@ from pyrit.attacks.multi_turn.tree_of_attacks import (
     TAPAttackResult,
     TreeOfAttacksWithPruningAttack,
 )
+from pyrit.attacks.single_turn.context_compliance import ContextComplianceAttack
 from pyrit.attacks.single_turn.flip_attack import FlipAttack
+from pyrit.attacks.single_turn.many_shot_jailbreak import ManyShotJailbreakAttack
 from pyrit.attacks.single_turn.prompt_sending import PromptSendingAttack
-
+from pyrit.attacks.single_turn.skeleton_key import SkeletonKeyAttack
+from pyrit.attacks.fuzzer import FuzzerAttack, FuzzerAttackContext, FuzzerAttackResult
 
 __all__ = [
     "AttackAdversarialConfig",
@@ -32,9 +35,11 @@ __all__ = [
     "AttackStrategy",
     "AttackStrategyLogAdapter",
     "ContextT",
+    "ContextComplianceAttack",
     "ConversationSession",
     "CrescendoAttack",
     "FlipAttack",
+    "ManyShotJailbreakAttack",
     "MultiTurnAttackContext",
     "PromptSendingAttack",
     "RTOSystemPromptPaths",
@@ -43,5 +48,9 @@ __all__ = [
     "TAPAttack",
     "TAPAttackContext",
     "TAPAttackResult",
+    "FuzzerAttack",
+    "FuzzerAttackContext",
+    "FuzzerAttackResult",
     "TreeOfAttacksWithPruningAttack",
+    "SkeletonKeyAttack",
 ]

@@ -29,10 +29,14 @@ logger = logging.getLogger(__name__)
 )
 class FlipAttackOrchestrator(PromptSendingOrchestrator):
     """
+    .. warning::
+        `FlipAttackOrchestrator` is deprecated and will be removed in **v0.12.0**;
+        use `pyrit.attacks.FlipAttack` instead.
+
     This orchestrator implements the Flip Attack method found here:
     https://arxiv.org/html/2410.02832v1.
 
-    Essentially, adds a system prompt to the beginning of the conversation to flip each word in the prompt.
+    Essentially, it adds a system prompt to the beginning of the conversation to flip each word in the prompt.
     """
 
     def __init__(
