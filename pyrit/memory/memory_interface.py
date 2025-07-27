@@ -11,7 +11,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import MutableSequence, Optional, Sequence, TypeVar, Union
 
-from sqlalchemy import and_
+from sqlalchemy import Engine, MetaData, and_
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql.elements import ColumnElement
 
@@ -62,6 +62,7 @@ class MemoryInterface(abc.ABC):
     memory_embedding: MemoryEmbedding = None
     results_storage_io: StorageIO = None
     results_path: str = None
+    engine: Engine = None
 
     def __init__(self, embedding_model=None):
         """Initialize the MemoryInterface.
@@ -946,3 +947,14 @@ class MemoryInterface(abc.ABC):
         except Exception as e:
             logger.exception(f"Failed to retrieve attack results with error {e}")
             return []
+
+    def print_schema(self):
+        """Prints the schema of all tables in the database."""
+        metadata = MetaData()
+        metadata.reflect(bind=self.engine)
+
+        for table_name in metadata.tables:
+            table = metadata.tables[table_name]
+            print(f"Schema for {table_name}:")
+            for column in table.columns:
+                print(f"  Column {column.name} ({column.type})")

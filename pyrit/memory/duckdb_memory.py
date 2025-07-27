@@ -6,7 +6,7 @@ from contextlib import closing
 from pathlib import Path
 from typing import MutableSequence, Optional, Sequence, TypeVar, Union
 
-from sqlalchemy import MetaData, and_, create_engine
+from sqlalchemy import and_, create_engine
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload, sessionmaker
@@ -259,16 +259,6 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             file_extension = f".{export_type}"
             file_path = DB_DATA_PATH / f"{table_name}{file_extension}"
             self.exporter.export_data(data, file_path=file_path, export_type=export_type)
-
-    def print_schema(self):
-        metadata = MetaData()
-        metadata.reflect(bind=self.engine)
-
-        for table_name in metadata.tables:
-            table = metadata.tables[table_name]
-            print(f"Schema for {table_name}:")
-            for column in table.columns:
-                print(f"  Column {column.name} ({column.type})")
 
     def dispose_engine(self):
         """

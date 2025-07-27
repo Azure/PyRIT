@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import ast
+import logging
 from uuid import uuid4
 
 from datasets import load_dataset
@@ -75,32 +76,29 @@ def fetch_red_team_social_bias_dataset() -> SeedPromptDataset:
         }
 
         if prompt_type in ["Multi Turn"]:
-            try:
-                # Safely parse the user prompts, remove the unwanted ones such as "assistant" and "system"
-                user_prompts = [
-                    turn["body"] for turn in ast.literal_eval(item.get("prompt", "")) if turn["role"].startswith("user")
-                ]
+            # Safely parse the user prompts, remove the unwanted ones such as "assistant" and "system"
+            user_prompts = [
+                turn["body"] for turn in ast.literal_eval(item.get("prompt", "")) if turn["role"].startswith("user")
+            ]
 
-                group_id = uuid4()
-                for i, user_prompt in enumerate(user_prompts):
-                    seed_prompts.append(
-                        SeedPrompt(
-                            value=user_prompt,
-                            data_type="text",
-                            prompt_group_id=group_id,
-                            sequence=i,
-                            **prompt_metadata,  # type: ignore
-                        )
+            group_id = uuid4()
+            for i, user_prompt in enumerate(user_prompts):
+                seed_prompts.append(
+                    SeedPrompt(
+                        value=user_prompt,
+                        data_type="text",
+                        prompt_group_id=group_id,
+                        sequence=i,
+                        **prompt_metadata,  # type: ignore
                     )
-            except Exception as e:
-                print(f"Error processing Multi-Turn Prompt: {e}")
+                )
         else:
             # Clean up single turn prompts that contain unwanted lines of text
             cleaned_value = item.get("prompt", "").replace("### Response:", "").replace("### Instruction:", "").strip()
             # some entries have contents that trip up jinja2, so we escape them
             escaped_cleaned_value = f"{{% raw %}}{cleaned_value}{{% endraw %}}"
-            print(f"Single Turn Prompt: {cleaned_value}")
-            print(prompt_metadata)
+            logging.debug(f"Single Turn Prompt: {cleaned_value}")
+            logging.debug(prompt_metadata)
             seed_prompts.append(
                 SeedPrompt(
                     value=escaped_cleaned_value,
