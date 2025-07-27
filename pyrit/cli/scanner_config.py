@@ -2,8 +2,10 @@
 # Licensed under the MIT License.
 
 import inspect
+import re
 from copy import deepcopy
 from importlib import import_module
+from pathlib import Path
 from typing import Any, List, Literal, Optional, Type, get_args
 
 import yaml
@@ -167,6 +169,15 @@ class ObjectiveScorerConfig(BaseModel, extra="allow"):
                     "but none was provided."
                 )
             init_kwargs[chat_target_key] = scoring_target_obj
+
+        for param_name, param in signature.parameters.items():
+            # Check for Path or Optional[Path]
+            if param_name in init_kwargs and isinstance(init_kwargs[param_name], str):
+                # Use regex to check for 'pathlib' and 'Path' in the annotation string
+                annotation_str = str(param.annotation)
+                if re.search(r"pathlib.*Path", annotation_str):
+                    print(f"Converting {param_name} to Path")
+                    init_kwargs[param_name] = Path(init_kwargs[param_name])
 
         return scorer_class(**init_kwargs)
 
