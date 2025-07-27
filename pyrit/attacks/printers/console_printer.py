@@ -131,7 +131,7 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
                     # System message header (not counted as a turn)
                     print()
                     self._print_colored("─" * self._width, Fore.MAGENTA)
-                    self._print_colored(f"🔧 SYSTEM", Style.BRIGHT, Fore.MAGENTA)
+                    self._print_colored("🔧 SYSTEM", Style.BRIGHT, Fore.MAGENTA)
                     self._print_colored("─" * self._width, Fore.MAGENTA)
 
                     self._print_wrapped_text(piece.converted_value, Fore.MAGENTA)
