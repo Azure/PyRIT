@@ -26,6 +26,8 @@ from pyrit.attacks.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.attacks.single_turn.skeleton_key import SkeletonKeyAttack
 from pyrit.attacks.fuzzer import FuzzerAttack, FuzzerAttackContext, FuzzerAttackResult
 
+from pyrit.attacks.printers import ConsoleAttackResultPrinter
+
 __all__ = [
     "AttackAdversarialConfig",
     "AttackContext",
@@ -53,4 +55,5 @@ __all__ = [
     "FuzzerAttackResult",
     "TreeOfAttacksWithPruningAttack",
     "SkeletonKeyAttack",
+    "ConsoleAttackResultPrinter",
 ]
