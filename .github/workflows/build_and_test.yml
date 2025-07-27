@@ -70,6 +70,8 @@ jobs:
 
   pre-commit-windows:
     runs-on: windows-latest
+    permissions:
+      contents: read
     env:
       PIP_CACHE_DIR: ${{ github.workspace }}\.cache\pip
     defaults:
