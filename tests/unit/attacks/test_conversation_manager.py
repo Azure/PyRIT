@@ -289,7 +289,7 @@ class TestConversationStateUpdate:
         )
 
         assert isinstance(state, ConversationState)
-        assert state.turn_count == 1
+        assert state.turn_count == 0
         assert state.last_user_message == ""
         assert state.last_assistant_message_scores == []
 
@@ -310,7 +310,7 @@ class TestConversationStateUpdate:
         assert len(stored_conversation) == 2
 
         # State should remain default in single-turn mode
-        assert state.turn_count == 1
+        assert state.turn_count == 0
         assert state.last_user_message == ""
 
     @pytest.mark.asyncio
@@ -402,8 +402,7 @@ class TestConversationStateUpdate:
             conversation_id=conversation_id, prepended_conversation=conversation, max_turns=5
         )
 
-        # Should count 2 assistant messages = 2 turns
-        assert state.turn_count == 3  # Starts at 1, plus 2 assistant messages
+        assert state.turn_count == 2
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_exceeds_max_turns_raises_error(
@@ -556,7 +555,7 @@ class TestEdgeCasesAndErrorHandling:
         )
 
         # Should handle gracefully
-        assert state.turn_count == 1
+        assert state.turn_count == 0
         stored_conversation = manager.get_conversation(conversation_id)
         assert len(stored_conversation) == 0
 
@@ -573,7 +572,7 @@ class TestEdgeCasesAndErrorHandling:
             conversation_id=conversation_id, prepended_conversation=conversation  # type: ignore
         )
 
-        assert state.turn_count == 1
+        assert state.turn_count == 0
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_preserves_piece_metadata(
@@ -603,7 +602,7 @@ class TestEdgeCasesAndErrorHandling:
         # Test ConversationState initialization with defaults
         state = ConversationState()
 
-        assert state.turn_count == 1
+        assert state.turn_count == 0
         assert state.last_user_message == ""
         assert state.last_assistant_message_scores == []
 

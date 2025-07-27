@@ -12,23 +12,26 @@ from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult, Score
 
 
-class ColoredConsoleAttackResultPrinter(AttackResultPrinter):
+class ConsoleAttackResultPrinter(AttackResultPrinter):
     """
-    Colored console printer for attack results with enhanced formatting.
+    Console printer for attack results with enhanced formatting.
 
-    This printer formats attack results for console display with color coding,
-    proper indentation, text wrapping, and visual separators.
+    This printer formats attack results for console display with optional color coding,
+    proper indentation, text wrapping, and visual separators. Colors can be disabled
+    for consoles that don't support ANSI characters.
     """
 
-    def __init__(self, width: int = 100, indent_size: int = 2):
+    def __init__(self, *, width: int = 100, indent_size: int = 2, enable_colors: bool = True):
         """
-        Initialize the colored console printer.
+        Initialize the console printer.
 
         Args:
             width (int): Maximum width for text wrapping. Must be positive.
                 Defaults to 100.
             indent_size (int): Number of spaces for indentation. Must be non-negative.
                 Defaults to 2.
+            enable_colors (bool): Whether to enable ANSI color output. When False,
+                all output will be plain text without colors. Defaults to True.
 
         Raises:
             ValueError: If width <= 0 or indent_size < 0.
@@ -36,6 +39,21 @@ class ColoredConsoleAttackResultPrinter(AttackResultPrinter):
         self._memory = CentralMemory.get_memory_instance()
         self._width = width
         self._indent = " " * indent_size
+        self._enable_colors = enable_colors
+
+    def _print_colored(self, text: str, *colors: str) -> None:
+        """
+        Print text with color formatting if colors are enabled.
+
+        Args:
+            text (str): The text to print.
+            *colors: Variable number of colorama color constants to apply.
+        """
+        if self._enable_colors and colors:
+            color_prefix = "".join(colors)
+            print(f"{color_prefix}{text}{Style.RESET_ALL}")
+        else:
+            print(text)
 
     async def print_result_async(self, result: AttackResult, *, include_auxiliary_scores: bool = False) -> None:
         """
@@ -86,9 +104,7 @@ class ColoredConsoleAttackResultPrinter(AttackResultPrinter):
         messages = self._memory.get_conversation(conversation_id=result.conversation_id)
 
         if not messages:
-            print(
-                f"{self._indent}{Fore.YELLOW} No conversation found for ID: {result.conversation_id}{Style.RESET_ALL}"
-            )
+            self._print_colored(f"{self._indent} No conversation found for ID: {result.conversation_id}", Fore.YELLOW)
             return
 
         turn_number = 0
@@ -97,23 +113,34 @@ class ColoredConsoleAttackResultPrinter(AttackResultPrinter):
                 if piece.role == "user":
                     turn_number += 1
                     # User message header
-                    print(f"\n{Fore.BLUE}{'─' * self._width}{Style.RESET_ALL}")
-                    print(f"{Style.BRIGHT}{Fore.BLUE}🔹 Turn {turn_number} - USER{Style.RESET_ALL}")
-                    print(f"{Fore.BLUE}{'─' * self._width}{Style.RESET_ALL}")
+                    print()
+                    self._print_colored("─" * self._width, Fore.BLUE)
+                    self._print_colored(f"🔹 Turn {turn_number} - USER", Style.BRIGHT, Fore.BLUE)
+                    self._print_colored("─" * self._width, Fore.BLUE)
 
                     # Handle converted values
                     if piece.converted_value != piece.original_value:
-                        print(f"{Fore.CYAN}{self._indent} Original:{Style.RESET_ALL}")
+                        self._print_colored(f"{self._indent} Original:", Fore.CYAN)
                         self._print_wrapped_text(piece.original_value, Fore.WHITE)
-                        print(f"\n{Fore.CYAN}{self._indent} Converted:{Style.RESET_ALL}")
+                        print()
+                        self._print_colored(f"{self._indent} Converted:", Fore.CYAN)
                         self._print_wrapped_text(piece.converted_value, Fore.WHITE)
                     else:
                         self._print_wrapped_text(piece.converted_value, Fore.BLUE)
+                elif piece.role == "system":
+                    # System message header (not counted as a turn)
+                    print()
+                    self._print_colored("─" * self._width, Fore.MAGENTA)
+                    self._print_colored(f"🔧 SYSTEM", Style.BRIGHT, Fore.MAGENTA)
+                    self._print_colored("─" * self._width, Fore.MAGENTA)
+
+                    self._print_wrapped_text(piece.converted_value, Fore.MAGENTA)
                 else:
                     # Assistant message header
-                    print(f"\n{Fore.YELLOW}{'─' * self._width}{Style.RESET_ALL}")
-                    print(f"{Style.BRIGHT}{Fore.YELLOW}🔸 {piece.role.upper()}{Style.RESET_ALL}")
-                    print(f"{Fore.YELLOW}{'─' * self._width}{Style.RESET_ALL}")
+                    print()
+                    self._print_colored("─" * self._width, Fore.YELLOW)
+                    self._print_colored(f"🔸 {piece.role.upper()}", Style.BRIGHT, Fore.YELLOW)
+                    self._print_colored("─" * self._width, Fore.YELLOW)
 
                     self._print_wrapped_text(piece.converted_value, Fore.YELLOW)
 
@@ -124,11 +151,13 @@ class ColoredConsoleAttackResultPrinter(AttackResultPrinter):
                 if include_auxiliary_scores:
                     scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(piece.id)])
                     if scores:
-                        print(f"\n{Style.DIM}{Fore.MAGENTA}{self._indent}📊 Scores:{Style.RESET_ALL}")
+                        print()
+                        self._print_colored(f"{self._indent}📊 Scores:", Style.DIM, Fore.MAGENTA)
                         for score in scores:
                             self._print_score(score)
 
-        print(f"\n{Fore.BLUE}{'─' * self._width}{Style.RESET_ALL}")
+        print()
+        self._print_colored("─" * self._width, Fore.BLUE)
 
     async def print_summary_async(self, result: AttackResult) -> None:
         """
@@ -149,8 +178,8 @@ class ColoredConsoleAttackResultPrinter(AttackResultPrinter):
         self._print_section_header("Attack Summary")
 
         # Basic information
-        print(f"{self._indent}{Style.BRIGHT}📋 Basic Information{Style.RESET_ALL}")
-        print(f"{self._indent * 2}• Objective: {Fore.CYAN}{result.objective}{Style.RESET_ALL}")
+        self._print_colored(f"{self._indent}📋 Basic Information", Style.BRIGHT)
+        self._print_colored(f"{self._indent * 2}• Objective: {result.objective}", Fore.CYAN)
 
         # Extract attack type name from attack_identifier
         attack_type = "Unknown"
@@ -159,31 +188,31 @@ class ColoredConsoleAttackResultPrinter(AttackResultPrinter):
         elif isinstance(result.attack_identifier, str):
             attack_type = result.attack_identifier
 
-        print(f"{self._indent * 2}• Attack Type: {Fore.CYAN}{attack_type}{Style.RESET_ALL}")
-        print(f"{self._indent * 2}• Conversation ID: {Fore.CYAN}{result.conversation_id}{Style.RESET_ALL}")
+        self._print_colored(f"{self._indent * 2}• Attack Type: {attack_type}", Fore.CYAN)
+        self._print_colored(f"{self._indent * 2}• Conversation ID: {result.conversation_id}", Fore.CYAN)
 
         # Execution metrics
-        print(f"\n{self._indent}{Style.BRIGHT}⚡ Execution Metrics{Style.RESET_ALL}")
-        print(f"{self._indent * 2}• Turns Executed: {Fore.GREEN}{result.executed_turns}{Style.RESET_ALL}")
-        print(
-            f"{self._indent * 2}• Execution Time: "
-            f"{Fore.GREEN}{self._format_time(result.execution_time_ms)}{Style.RESET_ALL}"
+        print()
+        self._print_colored(f"{self._indent}⚡ Execution Metrics", Style.BRIGHT)
+        self._print_colored(f"{self._indent * 2}• Turns Executed: {result.executed_turns}", Fore.GREEN)
+        self._print_colored(
+            f"{self._indent * 2}• Execution Time: {self._format_time(result.execution_time_ms)}", Fore.GREEN
         )
 
         # Outcome information
-        print(f"\n{self._indent}{Style.BRIGHT}🎯 Outcome{Style.RESET_ALL}")
+        print()
+        self._print_colored(f"{self._indent}🎯 Outcome", Style.BRIGHT)
         outcome_icon = self._get_outcome_icon(result.outcome)
         outcome_color = self._get_outcome_color(result.outcome)
-        print(
-            f"{self._indent * 2}• Status: {outcome_color}{outcome_icon} {result.outcome.value.upper()}{Style.RESET_ALL}"
-        )
+        self._print_colored(f"{self._indent * 2}• Status: {outcome_icon} {result.outcome.value.upper()}", outcome_color)
 
         if result.outcome_reason:
-            print(f"{self._indent * 2}• Reason: {Fore.WHITE}{result.outcome_reason}{Style.RESET_ALL}")
+            self._print_colored(f"{self._indent * 2}• Reason: {result.outcome_reason}", Fore.WHITE)
 
         # Final score
         if result.last_score:
-            print(f"\n{self._indent}{Style.BRIGHT} Final Score{Style.RESET_ALL}")
+            print()
+            self._print_colored(f"{self._indent} Final Score", Style.BRIGHT)
             self._print_score(result.last_score, indent_level=2)
 
     def _print_header(self, result: AttackResult) -> None:
@@ -200,13 +229,13 @@ class ColoredConsoleAttackResultPrinter(AttackResultPrinter):
         color = self._get_outcome_color(result.outcome)
         icon = self._get_outcome_icon(result.outcome)
 
-        print(f"\n{color}{'═' * self._width}{Style.RESET_ALL}")
-        print(
-            f"{Style.BRIGHT}{color}{icon} ATTACK RESULT: {result.outcome.value.upper()} {icon}{Style.RESET_ALL}".center(
-                self._width + 20
-            )
-        )
-        print(f"{color}{'═' * self._width}{Style.RESET_ALL}")
+        print()
+        self._print_colored("═" * self._width, color)
+
+        # Center the header text
+        header_text = f"{icon} ATTACK RESULT: {result.outcome.value.upper()} {icon}"
+        self._print_colored(header_text.center(self._width), Style.BRIGHT, color)
+        self._print_colored("═" * self._width, color)
 
     def _print_footer(self) -> None:
         """
@@ -215,8 +244,10 @@ class ColoredConsoleAttackResultPrinter(AttackResultPrinter):
         Displays the current timestamp when the report was generated.
         """
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"\n{Style.DIM}{Fore.WHITE}{'─' * self._width}{Style.RESET_ALL}")
-        print(f"{Style.DIM}{Fore.WHITE}Report generated at: {timestamp}{Style.RESET_ALL}".center(self._width))
+        print()
+        self._print_colored("─" * self._width, Style.DIM, Fore.WHITE)
+        footer_text = f"Report generated at: {timestamp}"
+        self._print_colored(footer_text.center(self._width), Style.DIM, Fore.WHITE)
 
     def _print_section_header(self, title: str) -> None:
         """
@@ -228,8 +259,9 @@ class ColoredConsoleAttackResultPrinter(AttackResultPrinter):
         Args:
             title (str): The title text to display in the section header.
         """
-        print(f"\n{Style.BRIGHT}{Back.BLUE}{Fore.WHITE} {title} {Style.RESET_ALL}")
-        print(f"{Fore.BLUE}{'─' * self._width}{Style.RESET_ALL}")
+        print()
+        self._print_colored(f" {title} ", Style.BRIGHT, Back.BLUE, Fore.WHITE)
+        self._print_colored("─" * self._width, Fore.BLUE)
 
     def _print_metadata(self, metadata: dict) -> None:
         """
@@ -244,7 +276,7 @@ class ColoredConsoleAttackResultPrinter(AttackResultPrinter):
         """
         self._print_section_header("Additional Metadata")
         for key, value in metadata.items():
-            print(f"{self._indent}• {key}: {Fore.CYAN}{value}{Style.RESET_ALL}")
+            self._print_colored(f"{self._indent}• {key}: {value}", Fore.CYAN)
 
     def _print_score(self, score: Score, indent_level: int = 3) -> None:
         """
@@ -258,7 +290,7 @@ class ColoredConsoleAttackResultPrinter(AttackResultPrinter):
             indent_level (int): Number of indent units to apply. Defaults to 3.
         """
         indent = self._indent * indent_level
-        print(f"{indent}• Type: {Fore.CYAN}{score.score_type}{Style.RESET_ALL}")
+        self._print_colored(f"{indent}• Type: {score.score_type}", Fore.CYAN)
 
         # Determine color based on score type and value
         if score.score_type == "true_false":
@@ -266,9 +298,9 @@ class ColoredConsoleAttackResultPrinter(AttackResultPrinter):
         else:
             score_color = Fore.YELLOW
 
-        print(f"{indent}• Value: {score_color}{score.score_value}{Style.RESET_ALL}")
+        self._print_colored(f"{indent}• Value: {score.score_value}", score_color)
 
-        if hasattr(score, "score_rationale") and score.score_rationale:
+        if score.score_rationale:
             print(f"{indent}• Rationale:")
             # Create a custom wrapper for rationale with proper indentation
             rationale_wrapper = textwrap.TextWrapper(
@@ -284,9 +316,9 @@ class ColoredConsoleAttackResultPrinter(AttackResultPrinter):
                 if line.strip():  # Only wrap non-empty lines
                     wrapped_lines = rationale_wrapper.wrap(line)
                     for wrapped_line in wrapped_lines:
-                        print(f"{Fore.WHITE}{wrapped_line}{Style.RESET_ALL}")
+                        self._print_colored(wrapped_line, Fore.WHITE)
                 else:  # Print empty lines as-is to preserve formatting
-                    print(f"{indent}  {Fore.WHITE}{Style.RESET_ALL}")
+                    self._print_colored(f"{indent}  ")
 
     def _print_wrapped_text(self, text: str, color: str) -> None:
         """
@@ -318,11 +350,11 @@ class ColoredConsoleAttackResultPrinter(AttackResultPrinter):
                 wrapped_lines = text_wrapper.wrap(line)
                 for i, wrapped_line in enumerate(wrapped_lines):
                     if line_num == 0 and i == 0:
-                        print(f"{self._indent}{color}{wrapped_line}{Style.RESET_ALL}")
+                        self._print_colored(f"{self._indent}{wrapped_line}", color)
                     else:
-                        print(f"{self._indent * 2}{color}{wrapped_line}{Style.RESET_ALL}")
+                        self._print_colored(f"{self._indent * 2}{wrapped_line}", color)
             else:  # Print empty lines as-is to preserve formatting
-                print(f"{self._indent}{color}{Style.RESET_ALL}")
+                self._print_colored(f"{self._indent}", color)
 
     def _get_outcome_color(self, outcome: AttackOutcome) -> str:
         """
@@ -379,9 +411,10 @@ class ColoredConsoleAttackResultPrinter(AttackResultPrinter):
         """
         if milliseconds < 1000:
             return f"{milliseconds}ms"
-        elif milliseconds < 60000:
+
+        if milliseconds < 60000:
             return f"{milliseconds / 1000:.2f}s"
-        else:
-            minutes = milliseconds // 60000
-            seconds = (milliseconds % 60000) / 1000
-            return f"{minutes}m {seconds:.0f}s"
+
+        minutes = milliseconds // 60000
+        seconds = (milliseconds % 60000) / 1000
+        return f"{minutes}m {seconds:.0f}s"
