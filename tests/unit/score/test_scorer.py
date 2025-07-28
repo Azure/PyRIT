@@ -17,7 +17,7 @@ from pyrit.score import Scorer
 
 
 class MockScorer(Scorer):
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         return []
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
@@ -1135,3 +1135,31 @@ async def test_score_response_with_objective_async_mixed_roles():
 
     assert len(result["auxiliary_scores"]) == 1
     assert len(result["objective_scores"]) == 1
+
+
+def test_get_scorer_metrics(tmp_path):
+    from pyrit.score import Scorer
+    from pyrit.score.scorer_evaluation.scorer_evaluator import (
+        HarmScorerEvaluator,
+        HarmScorerMetrics,
+    )
+
+    # Create a fake metrics file
+    metrics = HarmScorerMetrics(
+        mean_absolute_error=0.1,
+        mae_standard_error=0.01,
+        t_statistic=1.0,
+        p_value=0.05,
+        krippendorff_alpha_combined=0.8,
+        krippendorff_alpha_humans=0.7,
+        krippendorff_alpha_model=0.9,
+    )
+    metrics_path = tmp_path / "metrics.json"
+    with open(metrics_path, "w") as f:
+        f.write(metrics.to_json())
+    scorer = MagicMock(spec=Scorer)
+    evaluator = HarmScorerEvaluator(scorer)
+    # Patch _get_metrics_path to return our temp file
+    with patch.object(evaluator, "_get_metrics_path", return_value=metrics_path):
+        loaded = evaluator.get_scorer_metrics("any_dataset")
+        assert loaded == metrics

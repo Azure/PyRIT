@@ -114,11 +114,8 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
         Raises:
             ValueError: If the context is invalid.
         """
-        if not context.objective:
-            raise ValueError("Attack objective must be provided in the context")
-
-        if not context.conversation_id:
-            raise ValueError("Conversation ID must be provided in the context")
+        if not context.objective or context.objective.isspace():
+            raise ValueError("Attack objective must be provided and non-empty in the context")
 
     async def _setup_async(self, *, context: SingleTurnAttackContext) -> None:
         """
@@ -180,12 +177,12 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
                 self._logger.warning(f"No response received on attempt {attempt+1} (likely filtered)")
                 continue  # Retry if no response (filtered or error)
 
-            # If no objective scorer, we have a response but can't determine success
+            # Score the response including auxiliary and objective scoring
+            score = await self._evaluate_response_async(response=response, objective=context.objective)
+
+            # If there is no objective, we have a response but can't determine success
             if not self._objective_scorer:
                 break
-
-            # Score the response
-            score = await self._evaluate_response_async(response=response, objective=context.objective)
 
             # On success, return immediately
             if bool(score and score.get_value()):
