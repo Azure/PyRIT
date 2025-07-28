@@ -85,21 +85,9 @@ class RolePlayAttack(PromptSendingAttack):
         role_play_definition = SeedPromptDataset.from_yaml_file(role_play_definition_path)
 
         # Validate role-play definition structure
-        if len(role_play_definition.prompts) != 3:
-            raise ValueError(
-                f"Role-play definition must contain 3 prompts, but found {len(role_play_definition.prompts)}. "
-                "Expected: [rephrase_instructions, user_start_turn, assistant_start_turn]"
-            )
-
-        # Validate that none of the prompts are empty
-        for i, prompt in enumerate(role_play_definition.prompts):
-            if not prompt.value or not prompt.value.strip():
-                prompt_names = ["rephrase_instructions", "user_start_turn", "assistant_start_turn"]
-                raise ValueError(f"Role-play definition prompt '{prompt_names[i]}' cannot be empty")
-
-        self._rephrase_instructions = role_play_definition.prompts[0]
-        self._user_start_turn = role_play_definition.prompts[1]
-        self._assistant_start_turn = role_play_definition.prompts[2]
+        self._rephrase_instructions, self._user_start_turn, self._assistant_start_turn = (
+            self.parse_role_play_definition(role_play_definition)
+        )
 
         # Create the rephrase converter configuration
         rephrase_converter = PromptConverterConfiguration.from_converters(
@@ -141,12 +129,7 @@ class RolePlayAttack(PromptSendingAttack):
         context.prepended_conversation = await self._get_conversation_start() or []
 
         # Call parent setup which handles conversation ID generation, memory labels, etc.
-        # await super()._setup_async(context=context)
-        await self._conversation_manager.update_conversation_state_async(
-            conversation_id=context.conversation_id,
-            prepended_conversation=context.prepended_conversation,
-            converter_configurations=[],
-        )
+        await super()._setup_async(context=context)
 
     async def _get_conversation_start(self) -> Optional[list[PromptRequestResponse]]:
         """
@@ -178,3 +161,28 @@ class RolePlayAttack(PromptSendingAttack):
         if context.prepended_conversation:
             raise ValueError("RolePlayAttack does not support prepended conversations.")
         super()._validate_context(context=context)
+
+    def parse_role_play_definition(self, role_play_definition: SeedPromptDataset):
+        """
+        Parse and validate the role-play definition structure.
+
+        Args:
+            role_play_definition (SeedPromptDataset): The role-play definition dataset to validate.
+
+        Raises:
+            ValueError: If the definition does not contain exactly 3 prompts or if any prompt is empty.
+
+        Returns:
+            Tuple[SeedPrompt, SeedPrompt, SeedPrompt]: The rephrase instructions, user start turn, and assistant start turn prompts.
+        """
+        if len(role_play_definition.prompts) != 3:
+            raise ValueError(
+                f"Role-play definition must contain 3 prompts, but found {len(role_play_definition.prompts)}. "
+                "Expected: [rephrase_instructions, user_start_turn, assistant_start_turn]"
+            )
+        for i, prompt in enumerate(role_play_definition.prompts):
+            if not prompt.value or not prompt.value.strip():
+                prompt_names = ["rephrase_instructions", "user_start_turn", "assistant_start_turn"]
+                raise ValueError(f"Role-play definition prompt '{prompt_names[i]}' cannot be empty")
+
+        return role_play_definition.prompts[0], role_play_definition.prompts[1], role_play_definition.prompts[2]
