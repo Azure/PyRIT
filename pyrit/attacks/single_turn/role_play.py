@@ -111,7 +111,7 @@ class RolePlayAttack(PromptSendingAttack):
 
     async def _setup_async(self, *, context: SingleTurnAttackContext) -> None:
         """
-        Set up the attack by preparing conversation context with role-play start.
+        Sets up the attack by preparing conversation context with role-play start.
 
         Args:
             context (SingleTurnAttackContext): The attack context containing attack parameters.
@@ -172,8 +172,7 @@ class RolePlayAttack(PromptSendingAttack):
             if not prompt.value or not prompt.value.strip():
                 prompt_names = ["rephrase_instructions", "user_start_turn", "assistant_start_turn"]
                 raise ValueError(f"Role-play definition prompt '{prompt_names[i]}' cannot be empty")
-            
+
         self._rephrase_instructions = role_play_definition.prompts[0]
         self._user_start_turn = role_play_definition.prompts[1]
         self._assistant_start_turn = role_play_definition.prompts[2]
-     
