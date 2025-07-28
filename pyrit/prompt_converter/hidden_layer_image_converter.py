@@ -3,11 +3,11 @@
 
 import base64
 import logging
-from io import BytesIO
-from typing import Any, Tuple
-
 import numpy
+
+from io import BytesIO
 from PIL import Image
+from typing import Any, Tuple
 
 from pyrit.models import PromptDataType, data_serializer_factory
 from pyrit.prompt_converter import ConverterResult, PromptConverter
@@ -94,16 +94,21 @@ class HiddenLayerConverter(PromptConverter):
             ValueError: If the benign image path is invalid or is not in JPEG format.
         """
         self.benign_image_path = benign_image_path
+        self.learning_rate = learning_rate
         self.size = size
         self.steps = steps
-        self.learning_rate = learning_rate
-        # TODO: validate the parameters
 
         if not self.benign_image_path or not isinstance(self.benign_image_path, str):
             raise ValueError("Invalid benign image path provided.")
-
         if not self.benign_image_path.lower().endswith((".jpg", ".jpeg")):
             raise ValueError("Benign image path must be a JPEG file.")
+
+        if learning_rate <= 0:
+            raise ValueError("Learning rate must be a positive float.")
+        if size[0] <= 0 or size[1] <= 0:
+            raise ValueError("Image size must be positive integers.")
+        if steps <= 0:
+            raise ValueError("Steps must be a positive integer.")
 
     def _load_and_preprocess_image(self, path: str) -> numpy.ndarray:
         """Loads image, converts to grayscale, resizes, and normalizes for optimization."""
@@ -117,10 +122,6 @@ class HiddenLayerConverter(PromptConverter):
         except Exception as e:
             logger.error(f"Error loading image {path}: {e}")
             raise
-
-    def _initialize_tensor_with_ones(self, tensor: numpy.ndarray) -> numpy.ndarray:
-        """Initializes tensor with ones-like structure."""
-        return numpy.ones_like(tensor)
 
     def _compute_mse_loss(self, blended_image: numpy.ndarray, target_tensor: numpy.ndarray) -> numpy.floating[Any]:
         """Computes Mean Squared Error (MSE) loss between blended and target images."""
@@ -174,10 +175,13 @@ class HiddenLayerConverter(PromptConverter):
             ConverterResult: The result containing path to the manipulated image with transparency.
 
         Raises:
-            ValueError: If the input type is not supported.
+            ValueError: If the input type is not supported or if the prompt is invalid.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
+
+        if not prompt or not isinstance(prompt, str):
+            raise ValueError("Invalid attack image path provided.")
 
         background_image = self._load_and_preprocess_image(prompt)
         foreground_image = self._load_and_preprocess_image(self.benign_image_path)
