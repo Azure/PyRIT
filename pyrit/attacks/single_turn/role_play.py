@@ -122,6 +122,18 @@ class RolePlayAttack(PromptSendingAttack):
         # Call parent setup which handles conversation ID generation, memory labels, etc.
         await super()._setup_async(context=context)
 
+    def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
+        """
+        Validate the context before executing the attack.
+        Args:
+            context (SingleTurnAttackContext): The attack context containing parameters and objective.
+        Raises:
+            ValueError: If the context is invalid.
+        """
+        if context.prepended_conversation:
+            raise ValueError("RolePlayAttack does not support prepended conversations.")
+        super()._validate_context(context=context)
+
     async def _get_conversation_start(self) -> Optional[list[PromptRequestResponse]]:
         """
         Get the role-play conversation start messages.
@@ -140,18 +152,6 @@ class RolePlayAttack(PromptSendingAttack):
                 role="assistant",
             ),
         ]
-
-    def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
-        """
-        Validate the context before executing the attack.
-        Args:
-            context (SingleTurnAttackContext): The attack context containing parameters and objective.
-        Raises:
-            ValueError: If the context is invalid.
-        """
-        if context.prepended_conversation:
-            raise ValueError("RolePlayAttack does not support prepended conversations.")
-        super()._validate_context(context=context)
 
     def _parse_role_play_definition(self, role_play_definition: SeedPromptDataset):
         """
