@@ -173,7 +173,8 @@ class RolePlayAttack(PromptSendingAttack):
             ValueError: If the definition does not contain exactly 3 prompts or if any prompt is empty.
 
         Returns:
-            Tuple[SeedPrompt, SeedPrompt, SeedPrompt]: The rephrase instructions, user start turn, and assistant start turn prompts.
+            Tuple[SeedPrompt, SeedPrompt, SeedPrompt]: 
+                The rephrase instructions, user start turn, and assistant start turn prompts.
         """
         if len(role_play_definition.prompts) != 3:
             raise ValueError(
