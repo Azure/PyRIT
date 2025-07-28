@@ -74,8 +74,14 @@ class HiddenLayerConverter(PromptConverter):
 
             return params
 
+    @staticmethod
+    def _validate_input_image(path: str) -> bool:
+        """Validates input image to ensure it is a valid JPEG file."""
+        return isinstance(path, str) and path.lower().endswith((".jpg", ".jpeg"))
+
     def __init__(
         self,
+        *,
         benign_image_path: str,
         size: Tuple[int, int] = (256, 256),
         steps: int = 1000,
@@ -98,15 +104,13 @@ class HiddenLayerConverter(PromptConverter):
         self.size = size
         self.steps = steps
 
-        if not self.benign_image_path or not isinstance(self.benign_image_path, str):
-            raise ValueError("Invalid benign image path provided.")
-        if not self.benign_image_path.lower().endswith((".jpg", ".jpeg")):
-            raise ValueError("Benign image path must be a JPEG file.")
+        if not self._validate_input_image(benign_image_path):
+            raise ValueError("Invalid benign image path provided. Only JPEG files are supported as input.")
 
         if learning_rate <= 0:
             raise ValueError("Learning rate must be a positive float.")
-        if size[0] <= 0 or size[1] <= 0:
-            raise ValueError("Image size must be positive integers.")
+        if not isinstance(size, tuple) or len(size) != 2 or any(dim <= 0 for dim in size):
+            raise ValueError("Size must be a tuple of two positive integers (width, height).")
         if steps <= 0:
             raise ValueError("Steps must be a positive integer.")
 
@@ -120,8 +124,7 @@ class HiddenLayerConverter(PromptConverter):
 
                 return numpy.array(img_rgb, dtype=numpy.float32) / 255.0  # normalize to [0, 1]
         except Exception as e:
-            logger.error(f"Error loading image {path}: {e}")
-            raise
+            raise ValueError(f"Failed to load and preprocess image from {path}: {e}")
 
     def _compute_mse_loss(self, blended_image: numpy.ndarray, target_tensor: numpy.ndarray) -> numpy.floating[Any]:
         """Computes Mean Squared Error (MSE) loss between blended and target images."""
@@ -140,11 +143,8 @@ class HiddenLayerConverter(PromptConverter):
         grad_blended_alpha = background_image - white_background
         return grad_loss_blended * grad_blended_alpha
 
-    async def _save_blended_image(self, attack_image: numpy.ndarray, alpha: numpy.ndarray) -> str:
-        """Saves the attack image with optimized transparency to create the dual perception effect."""
-        img_serializer = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
-        img_serializer.file_extension = "png"
-
+    def _create_blended_image(self, attack_image: numpy.ndarray, alpha: numpy.ndarray) -> numpy.ndarray:
+        """Creates a blended image using the attack image and alpha transparency."""
         attack_image_uint8 = (attack_image * 255).astype(numpy.uint8)
         transparency_uint8 = (alpha * 255).astype(numpy.uint8)
 
@@ -154,6 +154,14 @@ class HiddenLayerConverter(PromptConverter):
         rgba_image[:, :, :3] = attack_image_uint8
         rgba_image[:, :, 3] = transparency_uint8[:, :, 0]
 
+        return rgba_image
+
+    async def _save_blended_image(self, attack_image: numpy.ndarray, alpha: numpy.ndarray) -> str:
+        """Saves the blended image with transparency as a PNG file."""
+        img_serializer = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
+        img_serializer.file_extension = "png"
+
+        rgba_image = self._create_blended_image(attack_image, alpha)
         rgba_pil = Image.fromarray(rgba_image, mode="RGBA")
         image_buffer = BytesIO()
         rgba_pil.save(image_buffer, format="PNG")
@@ -180,8 +188,8 @@ class HiddenLayerConverter(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
-        if not prompt or not isinstance(prompt, str):
-            raise ValueError("Invalid attack image path provided.")
+        if not self._validate_input_image(prompt):
+            raise ValueError("Invalid attack image path provided. Only JPEG files are supported as input.")
 
         background_image = self._load_and_preprocess_image(prompt)
         foreground_image = self._load_and_preprocess_image(self.benign_image_path)
