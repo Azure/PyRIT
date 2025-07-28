@@ -164,7 +164,7 @@ class RolePlayAttack(PromptSendingAttack):
 
     def parse_role_play_definition(self, role_play_definition: SeedPromptDataset):
         """
-        Parse and validate the role-play definition structure.
+        Parses and validates the role-play definition structure.
 
         Args:
             role_play_definition (SeedPromptDataset): The role-play definition dataset to validate.
@@ -173,7 +173,7 @@ class RolePlayAttack(PromptSendingAttack):
             ValueError: If the definition does not contain exactly 3 prompts or if any prompt is empty.
 
         Returns:
-            Tuple[SeedPrompt, SeedPrompt, SeedPrompt]: 
+            Tuple[SeedPrompt, SeedPrompt, SeedPrompt]:
                 The rephrase instructions, user start turn, and assistant start turn prompts.
         """
         if len(role_play_definition.prompts) != 3:
