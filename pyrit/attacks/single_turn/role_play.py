@@ -78,6 +78,15 @@ class RolePlayAttack(PromptSendingAttack):
             ValueError: If the objective scorer is not a true/false scorer.
             FileNotFoundError: If the role_play_definition_path does not exist.
         """
+        # Initialize the parent class first
+        super().__init__(
+            objective_target=objective_target,
+            attack_converter_config=attack_converter_config,
+            attack_scoring_config=attack_scoring_config,
+            prompt_normalizer=prompt_normalizer,
+            max_attempts_on_failure=max_attempts_on_failure,
+        )
+
         # Store the adversarial chat for role-play rephrasing
         self._adversarial_chat = adversarial_chat
 
@@ -85,9 +94,7 @@ class RolePlayAttack(PromptSendingAttack):
         role_play_definition = SeedPromptDataset.from_yaml_file(role_play_definition_path)
 
         # Validate role-play definition structure
-        self._rephrase_instructions, self._user_start_turn, self._assistant_start_turn = (
-            self.parse_role_play_definition(role_play_definition)
-        )
+        self._parse_role_play_definition(role_play_definition)
 
         # Create the rephrase converter configuration
         rephrase_converter = PromptConverterConfiguration.from_converters(
@@ -99,24 +106,8 @@ class RolePlayAttack(PromptSendingAttack):
             ]
         )
 
-        # Initialize the converter configuration with role-play rephrase converter
-        attack_converter_config = attack_converter_config or AttackConverterConfig()
-        combined_request_converters = rephrase_converter + attack_converter_config.request_converters
-
-        # Create combined converter config
-        combined_converter_config = AttackConverterConfig(
-            request_converters=combined_request_converters,
-            response_converters=attack_converter_config.response_converters,
-        )
-
-        # Initialize the parent class with role-play enhanced configuration
-        super().__init__(
-            objective_target=objective_target,
-            attack_converter_config=combined_converter_config,
-            attack_scoring_config=attack_scoring_config,
-            prompt_normalizer=prompt_normalizer,
-            max_attempts_on_failure=max_attempts_on_failure,
-        )
+        # Prepend the rephrase converter to existing request converters
+        self._request_converters = rephrase_converter + self._request_converters
 
     async def _setup_async(self, *, context: SingleTurnAttackContext) -> None:
         """
@@ -162,7 +153,7 @@ class RolePlayAttack(PromptSendingAttack):
             raise ValueError("RolePlayAttack does not support prepended conversations.")
         super()._validate_context(context=context)
 
-    def parse_role_play_definition(self, role_play_definition: SeedPromptDataset):
+    def _parse_role_play_definition(self, role_play_definition: SeedPromptDataset):
         """
         Parses and validates the role-play definition structure.
 
@@ -171,10 +162,6 @@ class RolePlayAttack(PromptSendingAttack):
 
         Raises:
             ValueError: If the definition does not contain exactly 3 prompts or if any prompt is empty.
-
-        Returns:
-            Tuple[SeedPrompt, SeedPrompt, SeedPrompt]:
-                The rephrase instructions, user start turn, and assistant start turn prompts.
         """
         if len(role_play_definition.prompts) != 3:
             raise ValueError(
@@ -185,5 +172,8 @@ class RolePlayAttack(PromptSendingAttack):
             if not prompt.value or not prompt.value.strip():
                 prompt_names = ["rephrase_instructions", "user_start_turn", "assistant_start_turn"]
                 raise ValueError(f"Role-play definition prompt '{prompt_names[i]}' cannot be empty")
-
-        return role_play_definition.prompts[0], role_play_definition.prompts[1], role_play_definition.prompts[2]
+            
+        self._rephrase_instructions = role_play_definition.prompts[0]
+        self._user_start_turn = role_play_definition.prompts[1]
+        self._assistant_start_turn = role_play_definition.prompts[2]
+     
