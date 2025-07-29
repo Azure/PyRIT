@@ -5,8 +5,7 @@ from typing import Literal, Sequence
 
 from datasets import load_dataset
 
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import HarmCategory, SeedPrompt, SeedPromptDataset
 
 # These are the available subsets of the EquityMedQA dataset
 DATA_SUBSETS: list[str] = [
@@ -89,7 +88,7 @@ def fetch_equitymedqa_dataset_unique_values(
             name="katielink/EquityMedQA",
             dataset_name="katielink/EquityMedQA",
             description="This dataset contains prompts used to assess medical biases in AI systems",
-            harm_categories=["health_bias"],
+            harm_categories=[HarmCategory.parse("health_bias")],
             source="https://huggingface.co/datasets/katielink/EquityMedQA",
         )
         for prompt in prompts

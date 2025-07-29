@@ -5,8 +5,7 @@ from pathlib import Path
 from typing import Literal, Optional
 
 from pyrit.datasets.dataset_helper import FILE_TYPE_HANDLERS, fetch_examples
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import HarmCategory, SeedPrompt, SeedPromptDataset
 
 
 def fetch_xstest_dataset(
@@ -41,21 +40,27 @@ def fetch_xstest_dataset(
     # Fetch the examples using the provided `fetch_examples` function
     examples = fetch_examples(source, source_type, cache, data_home)
 
-    # Extract prompts, harm categories, and other relevant data from the fetched examples
-    prompts = [example["prompt"] for example in examples]
-    harm_categories = [example["note"] for example in examples]
+    seed_prompts = []
 
-    seed_prompts = [
-        SeedPrompt(
-            value=example,
-            data_type="text",
-            name="XSTest Examples",
-            dataset_name="XSTest Examples",
-            harm_categories=harm_categories,
-            description="A dataset of XSTest examples containing various categories such as violence, drugs, etc.",
+    for example in examples:
+        prompt_text = example["prompt"]
+        note = example.get("note", "")
+
+        try:
+            harm_category = HarmCategory.parse(note)
+        except Exception:
+            harm_category = HarmCategory.OTHER
+
+        seed_prompts.append(
+            SeedPrompt(
+                value=prompt_text,
+                data_type="text",
+                name="XSTest Examples",
+                dataset_name="XSTest Examples",
+                harm_categories=[harm_category],
+                description="A dataset of XSTest examples containing various categories such as violence, drugs, etc.",
+            )
         )
-        for example in prompts
-    ]
 
     seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
 
