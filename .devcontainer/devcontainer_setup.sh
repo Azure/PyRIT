@@ -27,6 +27,7 @@ else
 fi
 
 # cleanup old extensions
+sudo rm -rf /vscode/vscode-server/extensionsCache/github.copilot-*
 rm -rf /home/vscode/.vscode-server/extensions/{*,.[!.]*,..?*}
 
 # Path to store the hash
