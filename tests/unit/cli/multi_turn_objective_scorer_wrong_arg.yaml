@@ -1,0 +1,16 @@
+datasets:
+  - ./pyrit/datasets/seed_prompts/illegal.prompt
+scenarios:
+  - type: "CrescendoOrchestrator"
+objective_target:
+  type: "OpenAIChatTarget"
+adversarial_chat:
+  type: "OpenAIChatTarget"
+scoring:
+  scoring_target:
+    type: "OpenAIChatTarget"
+  objective_scorer:
+    type: "SelfAskTrueFalseScorer"
+    nonsense_arg: "This is an invalid argument"
+database:
+  type: "DuckDB"
