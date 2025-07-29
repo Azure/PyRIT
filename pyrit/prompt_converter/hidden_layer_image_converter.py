@@ -3,11 +3,11 @@
 
 import base64
 import logging
-import numpy
-
 from io import BytesIO
-from PIL import Image
 from typing import Any, Tuple
+
+import numpy
+from PIL import Image
 
 from pyrit.models import PromptDataType, data_serializer_factory
 from pyrit.prompt_converter import ConverterResult, PromptConverter
