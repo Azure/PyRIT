@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 class ConversationState:
     """Container for conversation state data shared between attack components."""
 
-    turn_count: int = 1
+    turn_count: int = 0
     last_user_message: str = ""
     last_assistant_message_scores: List[Score] = field(default_factory=list)
 
