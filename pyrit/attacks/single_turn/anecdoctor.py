@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 import logging
 import uuid
 from dataclasses import dataclass, field
@@ -57,7 +59,7 @@ class AnecdoctorAttackContext(AttackContext):
         prepended_conversation: List[PromptRequestResponse],
         memory_labels: Dict[str, str],
         **kwargs,
-    ) -> "AnecdoctorAttackContext":
+    ) -> AnecdoctorAttackContext:
         """
         Create AnecdoctorAttackContext from parameters.
 
