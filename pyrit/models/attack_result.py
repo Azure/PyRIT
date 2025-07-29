@@ -71,7 +71,15 @@ class AttackResult:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def get_conversations_by_type(self, conversation_type: ConversationType):
-        """Return all related conversations of the requested type."""
+        """
+        Return all related conversations of the requested type.
+
+        Args:
+            conversation_type (ConversationType): The type of conversation to filter by.
+
+        Returns:
+            list: A list of related conversations matching the specified type.
+        """
         return [ref for ref in self.related_conversations if ref.conversation_type == conversation_type]
 
     def __str__(self):

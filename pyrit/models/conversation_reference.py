@@ -15,7 +15,6 @@ class ConversationType(Enum):
     PRUNED = "pruned"
     SCORE = "score"
     CONVERTER = "converter"
-    OTHER = "other"
 
 
 @dataclass(frozen=True)
