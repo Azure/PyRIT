@@ -36,6 +36,8 @@ from pyrit.models import (
     Score,
     SeedPrompt,
     SeedPromptGroup,
+    ConversationReference,
+    ConversationType,
 )
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
@@ -1331,8 +1333,11 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
                     f"{context.current_iteration}: ", cloned_node.node_id, parent=cloned_node.parent_id
                 )
                 # Add the adversarial chat conversation ID of the duplicated node to the context's tracking
-                context.attack_generation_conversation_ids.adversarial_chat_conversation_ids.add(
-                    cloned_node.adversarial_chat_conversation_id
+                context.related_conversations.add(
+                    ConversationReference(
+                        conversation_id=cloned_node.adversarial_chat_conversation_id,
+                        conversation_type=ConversationType.ADVERSARIAL,
+                    )
                 )
                 cloned_nodes.append(cloned_node)
 
@@ -1409,8 +1414,11 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         for node in nodes_to_prune:
             context.tree_visualization[node.node_id].tag += " Pruned (width)"
             # Add the conversation ID to the pruned set
-            context.attack_generation_conversation_ids.pruned_conversation_ids.add(
-                node.objective_target_conversation_id
+            context.related_conversations.add(
+                ConversationReference(
+                    conversation_id=node.objective_target_conversation_id,
+                    conversation_type=ConversationType.PRUNED,
+                )
             )
 
         # Update context with remaining nodes
@@ -1478,8 +1486,11 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         )
 
         # Add the adversarial chat conversation ID to the context's tracking (ensuring uniqueness)
-        context.attack_generation_conversation_ids.adversarial_chat_conversation_ids.add(
-            node.adversarial_chat_conversation_id
+        context.related_conversations.add(
+            ConversationReference(
+                conversation_id=node.adversarial_chat_conversation_id,
+                conversation_type=ConversationType.ADVERSARIAL,
+            )
         )
 
         return node
@@ -1698,7 +1709,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
             executed_turns=context.current_iteration,
             last_response=last_response,
             last_score=context.best_objective_score,
-            attack_generation_conversation_ids=context.attack_generation_conversation_ids,
+            related_conversations=context.related_conversations,  # Use related_conversations here
         )
 
         # Set attack-specific metadata using properties

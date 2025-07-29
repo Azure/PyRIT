@@ -5,7 +5,7 @@ import json
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 from pyrit.attacks.base.attack_config import (
     AttackAdversarialConfig,
@@ -37,6 +37,7 @@ from pyrit.models import (
     SeedPrompt,
     SeedPromptGroup,
 )
+from pyrit.models.conversation_reference import ConversationReference, ConversationType
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import (
@@ -129,15 +130,10 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
                 including the adversarial chat target and optional system prompt path.
             attack_converter_config (Optional[AttackConverterConfig]): Configuration for attack converters,
                 including request and response converters.
-            attack_scoring_config (Optional[AttackScoringConfig]): Configuration for attack scoring, including:
-                - objective_scorer: If not provided, creates a default `FloatScaleThresholdScorer`.
-                - refusal_scorer: If not provided, creates a default `SelfAskRefusalScorer`.
-            prompt_normalizer (Optional[PromptNormalizer]): The prompt normalizer to use for sending prompts.
-            max_backtracks (int): Maximum number of backtracks allowed during the attack. Default is 10.
-            max_turns (int): Maximum number of turns allowed in the attack. Default is 10.
-
-        Raises:
-            ValueError: If objective_target is not a PromptChatTarget.
+            attack_scoring_config (Optional[AttackScoringConfig]): Configuration for scoring responses.
+            prompt_normalizer (Optional[PromptNormalizer]): Normalizer for prompts.
+            max_backtracks (int): Maximum number of backtracks allowed.
+            max_turns (int): Maximum number of turns allowed.
         """
         # Initialize base class
         super().__init__(logger=logger, context_type=CrescendoAttackContext)
@@ -239,9 +235,12 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
         # Ensure the context has a session
         context.session = ConversationSession()
 
-        # Track the adversarial chat conversation ID
-        context.attack_generation_conversation_ids.adversarial_chat_conversation_ids.add(
-            context.session.adversarial_chat_conversation_id
+        # Track the adversarial chat conversation ID using related_conversations
+        context.related_conversations.add(
+            ConversationReference(
+                conversation_id=context.session.adversarial_chat_conversation_id,
+                conversation_type=ConversationType.ADVERSARIAL,
+            )
         )
 
         self._logger.debug(f"Conversation session ID: {context.session.conversation_id}")
@@ -367,7 +366,7 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
             executed_turns=context.executed_turns,
             last_response=context.last_response.get_piece() if context.last_response else None,
             last_score=context.last_score,
-            attack_generation_conversation_ids=context.attack_generation_conversation_ids,
+            related_conversations=context.related_conversations,  # Use related_conversations here
         )
         # setting metadata for backtrack count
         result.backtrack_count = context.backtrack_count
@@ -780,7 +779,12 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
         )
 
         # Add the old conversation ID to the pruned set
-        context.attack_generation_conversation_ids.pruned_conversation_ids.add(old_conversation_id)
+        context.related_conversations.add(
+            ConversationReference(
+                conversation_id=old_conversation_id,
+                conversation_type=ConversationType.PRUNED,
+            )
+        )
 
         context.backtrack_count += 1
         self._logger.debug(f"Backtrack count increased to {context.backtrack_count}")

@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, Optional, TypeVar
 
+from pyrit.models.conversation_reference import ConversationReference, ConversationType
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.score import Score
 
@@ -26,21 +27,6 @@ class AttackOutcome(Enum):
 
     # The outcome of the attack is unknown or could not be determined
     UNDETERMINED = "undetermined"
-
-
-@dataclass
-class AttackConversationIds:
-    # Set of conversation IDs to the objective target that were pruned from the attack
-    pruned_conversation_ids: set[str] = field(default_factory=set)
-
-    # Set of conversation IDs to the adversarial chat that were used for the attack
-    adversarial_chat_conversation_ids: set[str] = field(default_factory=set)
-
-    # Set of conversation IDs used to score the attack
-    # scored_conversation_ids: set[str] = field(default_factory=set)
-
-    # Set of conversation IDs used to convert the attack
-    # converter_conversation_ids: set[str] = field(default_factory=set)
 
 
 @dataclass
@@ -78,12 +64,21 @@ class AttackResult:
     # Optional reason for the outcome, providing additional context
     outcome_reason: Optional[str] = None
 
-    # Conversation IDs used to generate the attack
-    attack_generation_conversation_ids: AttackConversationIds = field(default_factory=AttackConversationIds)
+    # Flexible conversation refs (nothing unused)
+    related_conversations: set[ConversationReference] = field(default_factory=set)
 
-    # Additional information
-    # Metadata can be included as key-value pairs to provide extra context
+    # Arbitrary metadata
     metadata: Dict[str, Any] = field(default_factory=dict)
 
+    def get_conversations_by_type(self, conversation_type: ConversationType):
+        """Return all related conversations of the requested type."""
+        return [
+            ref for ref in self.related_conversations
+            if ref.conversation_type == conversation_type
+        ]
+
     def __str__(self):
-        return f"AttackResult: {self.conversation_id}: {self.outcome.value}: {self.objective[:50]}..."
+        return (
+            f"AttackResult: {self.conversation_id}: {self.outcome.value}: "
+            f"{self.objective[:50]}..."
+        )

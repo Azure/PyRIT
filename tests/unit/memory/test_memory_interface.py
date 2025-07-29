@@ -26,11 +26,8 @@ from pyrit.models import (
     SeedPrompt,
     SeedPromptGroup,
 )
-from pyrit.models.attack_result import (
-    AttackConversationIds,
-    AttackOutcome,
-    AttackResult,
-)
+from pyrit.models.conversation_reference import ConversationReference, ConversationType
+from pyrit.models.attack_result import AttackOutcome, AttackResult
 from pyrit.orchestrator import Orchestrator
 
 
@@ -2649,13 +2646,14 @@ def test_attack_result_objective_sha256_always_calculated(duckdb_instance: Memor
 
 
 def test_attack_result_with_attack_generation_conversation_ids(duckdb_instance: MemoryInterface):
-    """Test attack result with attack_generation_conversation_ids."""
+    """Test attack result with related_conversations (PRUNED / ADVERSARIAL)."""
+    pruned_ids = {"pruned_conv_1", "pruned_conv_2"}
+    adversarial_ids = {"adv_conv_1", "adv_conv_2", "adv_conv_3"}
 
-    # Create attack result with attack_generation_conversation_ids
-    attack_generation_conversation_ids = AttackConversationIds(
-        pruned_conversation_ids={"pruned_conv_1", "pruned_conv_2"},
-        adversarial_chat_conversation_ids={"adv_conv_1", "adv_conv_2", "adv_conv_3"},
-    )
+    related_conversations: set[ConversationReference] = {
+        *(ConversationReference(cid, ConversationType.PRUNED) for cid in pruned_ids),
+        *(ConversationReference(cid, ConversationType.ADVERSARIAL) for cid in adversarial_ids),
+    }
 
     attack_result = AttackResult(
         conversation_id="conv_1",
@@ -2664,37 +2662,25 @@ def test_attack_result_with_attack_generation_conversation_ids(duckdb_instance: 
         executed_turns=5,
         execution_time_ms=1000,
         outcome=AttackOutcome.SUCCESS,
-        attack_generation_conversation_ids=attack_generation_conversation_ids,
+        related_conversations=related_conversations,
     )
 
-    # Add attack result to memory
     duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
 
-    # Retrieve and verify the conversation IDs were stored correctly
-    all_entries: Sequence[AttackResultEntry] = duckdb_instance._query_entries(AttackResultEntry)
-    assert len(all_entries) == 1
+    entry: AttackResultEntry = duckdb_instance._query_entries(AttackResultEntry)[0]
 
-    # Verify the database stored the conversation IDs correctly
-    entry = all_entries[0]
-    assert set(entry.pruned_conversation_ids) == {"pruned_conv_1", "pruned_conv_2"}
-    assert set(entry.adversarial_chat_conversation_ids) == {"adv_conv_1", "adv_conv_2", "adv_conv_3"}
+    assert set(entry.pruned_conversation_ids) == pruned_ids # type: ignore
+    assert set(entry.adversarial_chat_conversation_ids) == adversarial_ids # type: ignore
 
-    # Verify the get_attack_result method reconstructs the data correctly
     retrieved_result = entry.get_attack_result()
-    assert retrieved_result.attack_generation_conversation_ids is not None
-    assert set(retrieved_result.attack_generation_conversation_ids.pruned_conversation_ids) == {
-        "pruned_conv_1",
-        "pruned_conv_2",
-    }
-    assert set(retrieved_result.attack_generation_conversation_ids.adversarial_chat_conversation_ids) == {
-        "adv_conv_1",
-        "adv_conv_2",
-        "adv_conv_3",
-    }
+    assert {r.conversation_id for r in retrieved_result.get_conversations_by_type(ConversationType.PRUNED)} == pruned_ids
+    assert {
+        r.conversation_id for r in retrieved_result.get_conversations_by_type(ConversationType.ADVERSARIAL)
+    } == adversarial_ids
 
 
 def test_attack_result_without_attack_generation_conversation_ids(duckdb_instance: MemoryInterface):
-    """Test attack result without attack_generation_conversation_ids."""
+    """Test attack result without related_conversations."""
     attack_result = AttackResult(
         conversation_id="conv_1",
         objective="Test objective without conversation IDs",
@@ -2702,21 +2688,14 @@ def test_attack_result_without_attack_generation_conversation_ids(duckdb_instanc
         executed_turns=5,
         execution_time_ms=1000,
         outcome=AttackOutcome.SUCCESS,
-        # No attack_generation_conversation_ids
     )
 
-    # Add attack result to memory
     duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
 
-    # Retrieve and verify the conversation IDs are None or empty
-    all_entries: Sequence[AttackResultEntry] = duckdb_instance._query_entries(AttackResultEntry)
-    assert len(all_entries) == 1
-
-    # Accept both None and [] for pruned_conversation_ids and adversarial_chat_conversation_ids
-    entry = all_entries[0]
+    entry: AttackResultEntry = duckdb_instance._query_entries(AttackResultEntry)[0]
     assert not entry.pruned_conversation_ids
     assert not entry.adversarial_chat_conversation_ids
 
-    # Verify the get_attack_result method returns None for attack_generation_conversation_ids
     retrieved_result = entry.get_attack_result()
-    assert retrieved_result.attack_generation_conversation_ids is None
+    assert not retrieved_result.get_conversations_by_type(ConversationType.PRUNED)
+    assert not retrieved_result.get_conversations_by_type(ConversationType.ADVERSARIAL)

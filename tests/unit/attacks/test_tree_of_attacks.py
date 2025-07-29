@@ -26,6 +26,8 @@ from pyrit.attacks.multi_turn.tree_of_attacks import (
 from pyrit.exceptions import InvalidJsonException
 from pyrit.models import (
     AttackOutcome,
+    ConversationReference,
+    ConversationType,
     PromptRequestPiece,
     PromptRequestResponse,
     Score,
@@ -1146,10 +1148,12 @@ class TestTreeOfAttacksConversationTracking:
 
         # Verify the adversarial chat conversation ID is tracked
         assert (
-            node.adversarial_chat_conversation_id
-            in context.attack_generation_conversation_ids.adversarial_chat_conversation_ids
+            ConversationReference(
+                conversation_id=node.adversarial_chat_conversation_id,
+                conversation_type=ConversationType.ADVERSARIAL,
+            ) in context.related_conversations
         )
-        assert len(context.attack_generation_conversation_ids.adversarial_chat_conversation_ids) == 1
+        assert len(context.related_conversations) == 1
 
     def test_branch_existing_nodes_tracks_adversarial_chat_conversation_ids(self, basic_attack, node_factory, helpers):
         """Test that branching nodes adds their adversarial chat conversation IDs to the context."""
@@ -1171,20 +1175,25 @@ class TestTreeOfAttacksConversationTracking:
 
         # Manually add all node adversarial chat conversation IDs to the set (simulating real code behavior)
         for node in context.nodes:
-            context.attack_generation_conversation_ids.adversarial_chat_conversation_ids.add(
-                node.adversarial_chat_conversation_id
+            context.related_conversations.add(
+                ConversationReference(
+                    conversation_id=node.adversarial_chat_conversation_id,
+                    conversation_type=ConversationType.ADVERSARIAL,
+                )
             )
 
         # Verify that adversarial chat conversation IDs are tracked for duplicated nodes
         expected_count = 6  # 2 originals + 4 unique duplicates (2 nodes * (3-1) branching factor)
-        assert len(context.attack_generation_conversation_ids.adversarial_chat_conversation_ids) == expected_count
+        assert len(context.related_conversations) == expected_count
 
         # Verify all nodes have their adversarial chat conversation IDs tracked
         all_nodes = context.nodes
         for node in all_nodes:
             assert (
-                node.adversarial_chat_conversation_id
-                in context.attack_generation_conversation_ids.adversarial_chat_conversation_ids
+                ConversationReference(
+                    conversation_id=node.adversarial_chat_conversation_id,
+                    conversation_type=ConversationType.ADVERSARIAL,
+                ) in context.related_conversations
             )
 
     def test_initialize_first_level_nodes_tracks_adversarial_chat_conversation_ids(self, basic_attack, helpers):
@@ -1198,13 +1207,15 @@ class TestTreeOfAttacksConversationTracking:
         asyncio.run(basic_attack._initialize_first_level_nodes_async(context))
 
         # Verify that adversarial chat conversation IDs are tracked
-        assert len(context.attack_generation_conversation_ids.adversarial_chat_conversation_ids) == 3
+        assert len(context.related_conversations) == 3
 
         # Verify all nodes have their adversarial chat conversation IDs tracked
         for node in context.nodes:
             assert (
-                node.adversarial_chat_conversation_id
-                in context.attack_generation_conversation_ids.adversarial_chat_conversation_ids
+                ConversationReference(
+                    conversation_id=node.adversarial_chat_conversation_id,
+                    conversation_type=ConversationType.ADVERSARIAL,
+                ) in context.related_conversations
             )
 
     def test_attack_result_includes_adversarial_chat_conversation_ids(self, attack_builder, helpers):
@@ -1213,7 +1224,10 @@ class TestTreeOfAttacksConversationTracking:
         context = helpers.create_basic_context()
 
         # Create some nodes to populate the tracking
-        context.attack_generation_conversation_ids.adversarial_chat_conversation_ids = {"adv_conv_1", "adv_conv_2"}
+        context.related_conversations = {
+            ConversationReference(conversation_id="adv_conv_1", conversation_type=ConversationType.ADVERSARIAL),
+            ConversationReference(conversation_id="adv_conv_2", conversation_type=ConversationType.ADVERSARIAL),
+        }
         context.best_conversation_id = "best_conv"
         context.best_objective_score = helpers.create_score(0.9)
 
@@ -1223,10 +1237,18 @@ class TestTreeOfAttacksConversationTracking:
         )
 
         # Verify the adversarial chat conversation IDs are included in the result
-        assert result.attack_generation_conversation_ids.adversarial_chat_conversation_ids == {
-            "adv_conv_1",
-            "adv_conv_2",
-        }
+        assert (
+            ConversationReference(
+                conversation_id="adv_conv_1",
+                conversation_type=ConversationType.ADVERSARIAL,
+            ) in result.related_conversations
+        )
+        assert (
+            ConversationReference(
+                conversation_id="adv_conv_2",
+                conversation_type=ConversationType.ADVERSARIAL,
+            ) in result.related_conversations
+        )
 
     def test_add_adversarial_chat_conversation_id_ensures_uniqueness(self, basic_attack, helpers):
         """Test that adding adversarial chat conversation IDs ensures uniqueness."""
@@ -1234,23 +1256,53 @@ class TestTreeOfAttacksConversationTracking:
 
         # Add a conversation ID
         conversation_id = "test_conv_id"
-        context.attack_generation_conversation_ids.adversarial_chat_conversation_ids.add(conversation_id)
+        context.related_conversations.add(
+            ConversationReference(
+                conversation_id=conversation_id,
+                conversation_type=ConversationType.ADVERSARIAL,
+            )
+        )
 
         # Verify it was added
-        assert conversation_id in context.attack_generation_conversation_ids.adversarial_chat_conversation_ids
-        assert len(context.attack_generation_conversation_ids.adversarial_chat_conversation_ids) == 1
+        assert (
+            ConversationReference(
+                conversation_id=conversation_id,
+                conversation_type=ConversationType.ADVERSARIAL,
+            ) in context.related_conversations
+        )
+        assert len(context.related_conversations) == 1
 
         # Try to add the same ID again
-        context.attack_generation_conversation_ids.adversarial_chat_conversation_ids.add(conversation_id)
+        context.related_conversations.add(
+            ConversationReference(
+                conversation_id=conversation_id,
+                conversation_type=ConversationType.ADVERSARIAL,
+            )
+        )
 
-        # Verify it wasn't added again (set automatically handles uniqueness)
-        assert len(context.attack_generation_conversation_ids.adversarial_chat_conversation_ids) == 1
+        # Verify it's still only one entry
+        assert len(context.related_conversations) == 1
 
         # Add a different ID
         different_id = "different_conv_id"
-        context.attack_generation_conversation_ids.adversarial_chat_conversation_ids.add(different_id)
+        context.related_conversations.add(
+            ConversationReference(
+                conversation_id=different_id,
+                conversation_type=ConversationType.ADVERSARIAL,
+            )
+        )
 
         # Verify both IDs are present
-        assert len(context.attack_generation_conversation_ids.adversarial_chat_conversation_ids) == 2
-        assert conversation_id in context.attack_generation_conversation_ids.adversarial_chat_conversation_ids
-        assert different_id in context.attack_generation_conversation_ids.adversarial_chat_conversation_ids
+        assert len(context.related_conversations) == 2
+        assert (
+            ConversationReference(
+                conversation_id=conversation_id,
+                conversation_type=ConversationType.ADVERSARIAL,
+            ) in context.related_conversations
+        )
+        assert (
+            ConversationReference(
+                conversation_id=different_id,
+                conversation_type=ConversationType.ADVERSARIAL,
+            ) in context.related_conversations
+        )

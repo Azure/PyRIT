@@ -9,7 +9,7 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, TypeVar, Union
 
-from pyrit.models.attack_result import AttackConversationIds
+from pyrit.models.conversation_reference import ConversationReference, ConversationType
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.models.score import Score
 from pyrit.models.seed_prompt import SeedPromptGroup
@@ -27,8 +27,8 @@ class AttackContext(ABC):
     # Additional labels that can be applied to the prompts throughout the attack
     memory_labels: Dict[str, str] = field(default_factory=dict)
 
-    # List of conversation IDs that were used to generate the attack
-    attack_generation_conversation_ids: AttackConversationIds = field(default_factory=AttackConversationIds)
+    # Conversations relevant while the attack is running
+    related_conversations: set[ConversationReference] = field(default_factory=set)
 
     @classmethod
     @abstractmethod

@@ -29,6 +29,7 @@ from pyrit.exceptions import (
 from pyrit.models import (
     AttackOutcome,
     ChatMessageRole,
+    ConversationType,
     PromptRequestPiece,
     PromptRequestResponse,
     Score,
@@ -1897,10 +1898,13 @@ class TestCrescendoConversationTracking:
             attack._conversation_manager, "update_conversation_state_async", new_callable=AsyncMock
         ) as mock_update:
             mock_update.return_value = ConversationState(
-                turn_count=0, last_user_message=None, last_assistant_message_scores=[]
+                turn_count=0, last_user_message="Test message", last_assistant_message_scores=[]
             )
             await attack._setup_async(context=basic_context)
-            assert (
-                basic_context.session.adversarial_chat_conversation_id
-                in basic_context.attack_generation_conversation_ids.adversarial_chat_conversation_ids
+
+            # Validate that the conversation ID is added to related_conversations
+            assert any(
+                ref.conversation_id == basic_context.session.adversarial_chat_conversation_id
+                and ref.conversation_type == ConversationType.ADVERSARIAL
+                for ref in basic_context.related_conversations
             )

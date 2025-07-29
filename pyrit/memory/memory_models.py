@@ -28,11 +28,8 @@ from sqlalchemy.types import Uuid  # type: ignore
 
 from pyrit.common.utils import to_sha256
 from pyrit.models import PromptDataType, PromptRequestPiece, Score, SeedPrompt
-from pyrit.models.attack_result import (
-    AttackConversationIds,
-    AttackOutcome,
-    AttackResult,
-)
+from pyrit.models.attack_result import AttackOutcome, AttackResult
+from pyrit.models.conversation_reference import ConversationReference, ConversationType
 
 
 class Base(DeclarativeBase):
@@ -445,15 +442,21 @@ class AttackResultEntry(Base):
         self.outcome_reason = entry.outcome_reason
         self.attack_metadata = self.filter_json_serializable_metadata(entry.metadata)
 
-        # Handle attack_generation_conversation_ids
-        if entry.attack_generation_conversation_ids:
-            self.pruned_conversation_ids = list(entry.attack_generation_conversation_ids.pruned_conversation_ids)
-            self.adversarial_chat_conversation_ids = list(
-                entry.attack_generation_conversation_ids.adversarial_chat_conversation_ids
-            )
-        else:
-            self.pruned_conversation_ids = None
-            self.adversarial_chat_conversation_ids = None
+        # ───────────────────────────── NEW ──────────────────────────────
+        # Persist conversation references by type
+        pruned_ids = [
+            ref.conversation_id
+            for ref in entry.related_conversations
+            if ref.conversation_type == ConversationType.PRUNED
+        ]
+        adversarial_ids = [
+            ref.conversation_id
+            for ref in entry.related_conversations
+            if ref.conversation_type == ConversationType.ADVERSARIAL
+        ]
+        self.pruned_conversation_ids = pruned_ids or None
+        self.adversarial_chat_conversation_ids = adversarial_ids or None
+        # ────────────────────────────────────────────────────────────────
 
         self.timestamp = datetime.now()
 
@@ -504,14 +507,28 @@ class AttackResultEntry(Base):
         return filtered_metadata
 
     def get_attack_result(self) -> AttackResult:
-        # Only construct if there are any IDs present
-        pruned = set(self.pruned_conversation_ids or [])
-        adv = set(self.adversarial_chat_conversation_ids or [])
-        attack_generation_conversation_ids = None
-        if pruned or adv:
-            attack_generation_conversation_ids = AttackConversationIds(
-                pruned_conversation_ids=pruned, adversarial_chat_conversation_ids=adv
+        # ───────────────────────────── NEW ──────────────────────────────
+        # reconstruct ConversationReference set
+        related_conversations: set[ConversationReference] = set()
+
+        for cid in self.pruned_conversation_ids or []:
+            related_conversations.add(
+                ConversationReference(
+                    conversation_id=cid,
+                    conversation_type=ConversationType.PRUNED,
+                    description="pruned conversation",
+                )
             )
+
+        for cid in self.adversarial_chat_conversation_ids or []:
+            related_conversations.add(
+                ConversationReference(
+                    conversation_id=cid,
+                    conversation_type=ConversationType.ADVERSARIAL,
+                    description="adversarial chat conversation",
+                )
+            )
+        # ────────────────────────────────────────────────────────────────
 
         return AttackResult(
             conversation_id=self.conversation_id,
@@ -523,6 +540,6 @@ class AttackResultEntry(Base):
             execution_time_ms=self.execution_time_ms,
             outcome=AttackOutcome(self.outcome),
             outcome_reason=self.outcome_reason,
-            attack_generation_conversation_ids=attack_generation_conversation_ids,
+            related_conversations=related_conversations,
             metadata=self.attack_metadata or {},
         )

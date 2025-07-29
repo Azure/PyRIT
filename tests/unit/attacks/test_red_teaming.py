@@ -25,6 +25,8 @@ from pyrit.exceptions.exception_classes import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
+    ConversationReference,
+    ConversationType,
     PromptRequestPiece,
     PromptRequestResponse,
     Score,
@@ -1394,8 +1396,10 @@ class TestRedTeamingConversationTracking:
 
             # Verify the adversarial chat conversation ID is tracked
             assert (
-                basic_context.session.adversarial_chat_conversation_id
-                in basic_context.attack_generation_conversation_ids.adversarial_chat_conversation_ids
+                ConversationReference(
+                    conversation_id=basic_context.session.adversarial_chat_conversation_id,
+                    conversation_type=ConversationType.ADVERSARIAL,
+                ) in basic_context.related_conversations
             )
 
     @pytest.mark.asyncio
@@ -1434,8 +1438,10 @@ class TestRedTeamingConversationTracking:
 
             # Verify the result includes the adversarial chat conversation IDs
             assert (
-                basic_context.session.adversarial_chat_conversation_id
-                in result.attack_generation_conversation_ids.adversarial_chat_conversation_ids
+                ConversationReference(
+                    conversation_id=basic_context.session.adversarial_chat_conversation_id,
+                    conversation_type=ConversationType.ADVERSARIAL,
+                ) in result.related_conversations
             )
 
     @pytest.mark.asyncio
@@ -1466,11 +1472,21 @@ class TestRedTeamingConversationTracking:
             conversation_id = basic_context.session.adversarial_chat_conversation_id
 
             # Verify it was added
-            assert conversation_id in basic_context.attack_generation_conversation_ids.adversarial_chat_conversation_ids
-            assert len(basic_context.attack_generation_conversation_ids.adversarial_chat_conversation_ids) == 1
+            assert (
+                ConversationReference(
+                    conversation_id=conversation_id,
+                    conversation_type=ConversationType.ADVERSARIAL,
+                ) in basic_context.related_conversations
+            )
+            assert len(basic_context.related_conversations) == 1
 
             # Try to add the same ID again (should not affect the set)
-            basic_context.attack_generation_conversation_ids.adversarial_chat_conversation_ids.add(conversation_id)
+            basic_context.related_conversations.add(
+                ConversationReference(
+                    conversation_id=conversation_id,
+                    conversation_type=ConversationType.ADVERSARIAL,
+                )
+            )
 
             # Verify it's still only one entry
-            assert len(basic_context.attack_generation_conversation_ids.adversarial_chat_conversation_ids) == 1
+            assert len(basic_context.related_conversations) == 1
