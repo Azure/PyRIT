@@ -1399,7 +1399,8 @@ class TestRedTeamingConversationTracking:
                 ConversationReference(
                     conversation_id=basic_context.session.adversarial_chat_conversation_id,
                     conversation_type=ConversationType.ADVERSARIAL,
-                ) in basic_context.related_conversations
+                )
+                in basic_context.related_conversations
             )
 
     @pytest.mark.asyncio
@@ -1441,7 +1442,8 @@ class TestRedTeamingConversationTracking:
                 ConversationReference(
                     conversation_id=basic_context.session.adversarial_chat_conversation_id,
                     conversation_type=ConversationType.ADVERSARIAL,
-                ) in result.related_conversations
+                )
+                in result.related_conversations
             )
 
     @pytest.mark.asyncio
@@ -1476,7 +1478,8 @@ class TestRedTeamingConversationTracking:
                 ConversationReference(
                     conversation_id=conversation_id,
                     conversation_type=ConversationType.ADVERSARIAL,
-                ) in basic_context.related_conversations
+                )
+                in basic_context.related_conversations
             )
             assert len(basic_context.related_conversations) == 1
 

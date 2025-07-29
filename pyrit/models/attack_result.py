@@ -72,13 +72,7 @@ class AttackResult:
 
     def get_conversations_by_type(self, conversation_type: ConversationType):
         """Return all related conversations of the requested type."""
-        return [
-            ref for ref in self.related_conversations
-            if ref.conversation_type == conversation_type
-        ]
+        return [ref for ref in self.related_conversations if ref.conversation_type == conversation_type]
 
     def __str__(self):
-        return (
-            f"AttackResult: {self.conversation_id}: {self.outcome.value}: "
-            f"{self.objective[:50]}..."
-        )
+        return f"AttackResult: {self.conversation_id}: {self.outcome.value}: " f"{self.objective[:50]}..."

@@ -189,18 +189,17 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
             # On success, return immediately
             if bool(score and score.get_value()):
                 break
-            else:
-                # On failure, store and create new conversation if there are more attempts remaining
-                if attempt < self._max_attempts_on_failure:
-                    context.related_conversations.add(
-                        ConversationReference(
-                            conversation_id=context.conversation_id,
-                            conversation_type=ConversationType.PRUNED,
-                        )
+
+            # On failure, store and create new conversation if there are more attempts remaining
+            if attempt < self._max_attempts_on_failure:
+                context.related_conversations.add(
+                    ConversationReference(
+                        conversation_id=context.conversation_id,
+                        conversation_type=ConversationType.PRUNED,
                     )
+                )
 
-                    context.conversation_id = str(uuid.uuid4())
-
+                context.conversation_id = str(uuid.uuid4())
 
         # Determine the outcome
         outcome, outcome_reason = self._determine_attack_outcome(response=response, score=score, context=context)

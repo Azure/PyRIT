@@ -31,13 +31,13 @@ from pyrit.memory import CentralMemory
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
+    ConversationReference,
+    ConversationType,
     PromptRequestPiece,
     PromptRequestResponse,
     Score,
     SeedPrompt,
     SeedPromptGroup,
-    ConversationReference,
-    ConversationType,
 )
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget

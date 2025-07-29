@@ -26,8 +26,8 @@ from pyrit.models import (
     SeedPrompt,
     SeedPromptGroup,
 )
-from pyrit.models.conversation_reference import ConversationReference, ConversationType
 from pyrit.models.attack_result import AttackOutcome, AttackResult
+from pyrit.models.conversation_reference import ConversationReference, ConversationType
 from pyrit.orchestrator import Orchestrator
 
 
@@ -2669,11 +2669,13 @@ def test_attack_result_with_attack_generation_conversation_ids(duckdb_instance: 
 
     entry: AttackResultEntry = duckdb_instance._query_entries(AttackResultEntry)[0]
 
-    assert set(entry.pruned_conversation_ids) == pruned_ids # type: ignore
-    assert set(entry.adversarial_chat_conversation_ids) == adversarial_ids # type: ignore
+    assert set(entry.pruned_conversation_ids) == pruned_ids  # type: ignore
+    assert set(entry.adversarial_chat_conversation_ids) == adversarial_ids  # type: ignore
 
     retrieved_result = entry.get_attack_result()
-    assert {r.conversation_id for r in retrieved_result.get_conversations_by_type(ConversationType.PRUNED)} == pruned_ids
+    assert {
+        r.conversation_id for r in retrieved_result.get_conversations_by_type(ConversationType.PRUNED)
+    } == pruned_ids
     assert {
         r.conversation_id for r in retrieved_result.get_conversations_by_type(ConversationType.ADVERSARIAL)
     } == adversarial_ids

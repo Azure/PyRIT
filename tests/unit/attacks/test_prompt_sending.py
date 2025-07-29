@@ -19,7 +19,6 @@ from pyrit.exceptions.exception_classes import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    ConversationReference,
     ConversationType,
     PromptRequestPiece,
     PromptRequestResponse,
@@ -1068,7 +1067,7 @@ class TestEdgeCasesAndErrorHandling:
         # Setup to return response on first two attempts but fail scoring, succeed on third
         responses = [sample_response, sample_response, sample_response]
         scores = [failure_score, failure_score, failure_score]  # All attempts fail
-        
+
         attack._send_prompt_to_objective_target_async = AsyncMock(side_effect=responses)
         attack._evaluate_response_async = AsyncMock(side_effect=scores)
 

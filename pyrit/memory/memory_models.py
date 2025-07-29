@@ -442,21 +442,14 @@ class AttackResultEntry(Base):
         self.outcome_reason = entry.outcome_reason
         self.attack_metadata = self.filter_json_serializable_metadata(entry.metadata)
 
-        # ───────────────────────────── NEW ──────────────────────────────
         # Persist conversation references by type
-        pruned_ids = [
-            ref.conversation_id
-            for ref in entry.related_conversations
-            if ref.conversation_type == ConversationType.PRUNED
-        ]
-        adversarial_ids = [
-            ref.conversation_id
-            for ref in entry.related_conversations
-            if ref.conversation_type == ConversationType.ADVERSARIAL
-        ]
-        self.pruned_conversation_ids = pruned_ids or None
-        self.adversarial_chat_conversation_ids = adversarial_ids or None
-        # ────────────────────────────────────────────────────────────────
+        self.pruned_conversation_ids = [
+            ref.conversation_id for ref in entry.get_conversations_by_type(ConversationType.PRUNED)
+        ] or None
+
+        self.adversarial_chat_conversation_ids = [
+            ref.conversation_id for ref in entry.get_conversations_by_type(ConversationType.ADVERSARIAL)
+        ] or None
 
         self.timestamp = datetime.now()
 
@@ -507,8 +500,7 @@ class AttackResultEntry(Base):
         return filtered_metadata
 
     def get_attack_result(self) -> AttackResult:
-        # ───────────────────────────── NEW ──────────────────────────────
-        # reconstruct ConversationReference set
+
         related_conversations: set[ConversationReference] = set()
 
         for cid in self.pruned_conversation_ids or []:
@@ -528,7 +520,6 @@ class AttackResultEntry(Base):
                     description="adversarial chat conversation",
                 )
             )
-        # ────────────────────────────────────────────────────────────────
 
         return AttackResult(
             conversation_id=self.conversation_id,

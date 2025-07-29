@@ -9,7 +9,7 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, TypeVar, Union
 
-from pyrit.models.conversation_reference import ConversationReference, ConversationType
+from pyrit.models.conversation_reference import ConversationReference
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.models.score import Score
 from pyrit.models.seed_prompt import SeedPromptGroup

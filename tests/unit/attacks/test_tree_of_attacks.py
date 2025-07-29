@@ -1151,7 +1151,8 @@ class TestTreeOfAttacksConversationTracking:
             ConversationReference(
                 conversation_id=node.adversarial_chat_conversation_id,
                 conversation_type=ConversationType.ADVERSARIAL,
-            ) in context.related_conversations
+            )
+            in context.related_conversations
         )
         assert len(context.related_conversations) == 1
 
@@ -1193,7 +1194,8 @@ class TestTreeOfAttacksConversationTracking:
                 ConversationReference(
                     conversation_id=node.adversarial_chat_conversation_id,
                     conversation_type=ConversationType.ADVERSARIAL,
-                ) in context.related_conversations
+                )
+                in context.related_conversations
             )
 
     def test_initialize_first_level_nodes_tracks_adversarial_chat_conversation_ids(self, basic_attack, helpers):
@@ -1215,7 +1217,8 @@ class TestTreeOfAttacksConversationTracking:
                 ConversationReference(
                     conversation_id=node.adversarial_chat_conversation_id,
                     conversation_type=ConversationType.ADVERSARIAL,
-                ) in context.related_conversations
+                )
+                in context.related_conversations
             )
 
     def test_attack_result_includes_adversarial_chat_conversation_ids(self, attack_builder, helpers):
@@ -1241,13 +1244,15 @@ class TestTreeOfAttacksConversationTracking:
             ConversationReference(
                 conversation_id="adv_conv_1",
                 conversation_type=ConversationType.ADVERSARIAL,
-            ) in result.related_conversations
+            )
+            in result.related_conversations
         )
         assert (
             ConversationReference(
                 conversation_id="adv_conv_2",
                 conversation_type=ConversationType.ADVERSARIAL,
-            ) in result.related_conversations
+            )
+            in result.related_conversations
         )
 
     def test_add_adversarial_chat_conversation_id_ensures_uniqueness(self, basic_attack, helpers):
@@ -1268,7 +1273,8 @@ class TestTreeOfAttacksConversationTracking:
             ConversationReference(
                 conversation_id=conversation_id,
                 conversation_type=ConversationType.ADVERSARIAL,
-            ) in context.related_conversations
+            )
+            in context.related_conversations
         )
         assert len(context.related_conversations) == 1
 
@@ -1298,11 +1304,13 @@ class TestTreeOfAttacksConversationTracking:
             ConversationReference(
                 conversation_id=conversation_id,
                 conversation_type=ConversationType.ADVERSARIAL,
-            ) in context.related_conversations
+            )
+            in context.related_conversations
         )
         assert (
             ConversationReference(
                 conversation_id=different_id,
                 conversation_type=ConversationType.ADVERSARIAL,
-            ) in context.related_conversations
+            )
+            in context.related_conversations
         )
