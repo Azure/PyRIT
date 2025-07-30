@@ -76,9 +76,14 @@ class HiddenLayerConverter(PromptConverter):
             return params
 
     @staticmethod
-    def _validate_input_image(path: str) -> bool:
+    def _validate_input_image(path: str) -> None:
         """Validates input image to ensure it is a valid JPEG file."""
-        return isinstance(path, str) and path.lower().endswith((".jpg", ".jpeg"))
+        if not path:
+            raise ValueError("The image path cannot be empty.")
+        if not path.lower().endswith((".jpg", ".jpeg")):
+            raise ValueError(f"The file is not a JPEG: {path}")
+        if not Path(path).exists():
+            raise FileNotFoundError(f"The file does not exist: {path}")
 
     def __init__(
         self,
@@ -92,7 +97,7 @@ class HiddenLayerConverter(PromptConverter):
         Initializes the converter with the path to a benign image and parameters for blending.
 
         Args:
-            benign_image_path (str): Path to the benign image file. Must be a JPEG file (.jpg or .jpeg).
+            benign_image_path (Path): Path to the benign image file. Must be a JPEG file (.jpg or .jpeg).
             size (tuple): Size that the images will be resized to (width, height).
                 It is recommended to use a size that matches aspect ratio of both attack and benign images.
                 Since the original study resizes images to 150x150 pixels, this is the default size used.
@@ -115,8 +120,7 @@ class HiddenLayerConverter(PromptConverter):
         self.size = size
         self.steps = steps
 
-        if not self._validate_input_image(str(benign_image_path)):
-            raise ValueError("Invalid benign image path provided. Only JPEG files are supported as input.")
+        self._validate_input_image(str(benign_image_path))
 
         if learning_rate <= 0:
             raise ValueError("Learning rate must be a positive float.")
@@ -199,8 +203,7 @@ class HiddenLayerConverter(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
-        if not self._validate_input_image(prompt):
-            raise ValueError("Invalid attack image path provided. Only JPEG files are supported as input.")
+        self._validate_input_image(prompt)
 
         background_image = self._load_and_preprocess_image(prompt)
         foreground_image = self._load_and_preprocess_image(str(self.benign_image_path))

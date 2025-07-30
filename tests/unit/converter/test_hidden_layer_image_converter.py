@@ -72,11 +72,14 @@ class TestHiddenLayerConverter:
             with pytest.raises(ValueError):
                 HiddenLayerConverter(benign_image_path=sample_benign_image, learning_rate=learning_rate)
 
-    def test_validate_input_image(self):
+    def test_validate_input_image(self, sample_benign_image):
         for invalid_path in [None, "", "invalid_path.txt", "image.png", "image.gif"]:
-            assert not HiddenLayerConverter._validate_input_image(path=invalid_path)
-        for valid_path in ["image.jpg", "image.jpeg", "IMAGE.JPG"]:
-            assert HiddenLayerConverter._validate_input_image(path=valid_path)
+            with pytest.raises(ValueError):
+                HiddenLayerConverter._validate_input_image(path=invalid_path)
+        for nonexistent_path in ["image.jpg", "image.jpeg", "IMAGE.JPG"]:
+            with pytest.raises(FileNotFoundError):
+                HiddenLayerConverter._validate_input_image(path=nonexistent_path)
+        HiddenLayerConverter._validate_input_image(path=sample_benign_image)  # should pass validation
 
     def test_load_and_preprocess_image(self, sample_benign_image):
         converter = HiddenLayerConverter(benign_image_path=sample_benign_image, size=(50, 50))
