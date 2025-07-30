@@ -162,7 +162,6 @@ class TestFlipAttackSetup:
         flip_attack._conversation_manager.update_conversation_state_async.assert_called_once_with(
             conversation_id=basic_context.conversation_id,
             prepended_conversation=[flip_attack._system_prompt],
-            converter_configurations=[],  # Empty list - no converters for system prompt
         )
 
 
