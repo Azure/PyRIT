@@ -68,7 +68,7 @@ class TestHiddenLayerConverter:
         for steps in [-1, 0]:
             with pytest.raises(ValueError):
                 HiddenLayerConverter(benign_image_path=sample_benign_image, steps=steps)
-        for learning_rate in [-0.01, 0]:
+        for learning_rate in [-0.01, 0, 1, 1.5]:
             with pytest.raises(ValueError):
                 HiddenLayerConverter(benign_image_path=sample_benign_image, learning_rate=learning_rate)
 

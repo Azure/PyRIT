@@ -111,7 +111,7 @@ class HiddenLayerConverter(PromptConverter):
 
         Raises:
             ValueError: If the benign image is invalid or is not in JPEG format.
-            ValueError: If the learning rate is not a positive float.
+            ValueError: If the learning rate is outside the range (0, 1).
             ValueError: If the size is not a tuple of two positive integers (width, height).
             ValueError: If the steps is not a positive integer.
         """
@@ -122,8 +122,8 @@ class HiddenLayerConverter(PromptConverter):
 
         self._validate_input_image(str(benign_image_path))
 
-        if learning_rate <= 0:
-            raise ValueError("Learning rate must be a positive float.")
+        if learning_rate <= 0 or learning_rate >= 1:
+            raise ValueError("Learning rate must be a float between 0 and 1.")
         if not isinstance(size, tuple) or len(size) != 2 or any(dim <= 0 for dim in size):
             raise ValueError(f"Size must be a tuple of two positive integers (width, height). Received {size}")
         if steps <= 0:
@@ -192,7 +192,7 @@ class HiddenLayerConverter(PromptConverter):
 
         Args:
             prompt (str): The image file path to the attack image.
-            input_type (PromptDataType): The type of input data.
+            input_type (PromptDataType): The type of input data. Must be "image_path".
 
         Returns:
             ConverterResult: The result containing path to the manipulated image with transparency.
