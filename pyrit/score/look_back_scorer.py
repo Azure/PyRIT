@@ -1,5 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+import logging
 import re
 from pathlib import Path
 from typing import Optional
@@ -11,6 +12,8 @@ from pyrit.models import PromptRequestPiece, SeedPrompt
 from pyrit.models.score import Score, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer import Scorer
+
+logger = logging.getLogger(__name__)
 
 
 class LookBackScorer(Scorer):
@@ -89,7 +92,9 @@ class LookBackScorer(Scorer):
         score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value)
 
         # Output score results
-        print("LookBackScorer:", score.score_value, score.score_value_description, "Rationale: ", score.score_rationale)
+        logger.info(
+            "LookBackScorer:", score.score_value, score.score_value_description, "Rationale: ", score.score_rationale
+        )
         return [score]
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
