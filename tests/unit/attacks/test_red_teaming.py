@@ -25,6 +25,8 @@ from pyrit.exceptions.exception_classes import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
+    ConversationReference,
+    ConversationType,
     PromptRequestPiece,
     PromptRequestResponse,
     Score,
@@ -644,7 +646,7 @@ class TestPromptGeneration:
         mock_prompt_normalizer: MagicMock,
         basic_context: MultiTurnAttackContext,
     ):
-        """Test that custom prompt is used on first turn when provided."""
+        """Test that custom prompt is used when provided and cleared after use."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
         scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
 
@@ -662,6 +664,38 @@ class TestPromptGeneration:
         result = await attack._generate_next_prompt_async(context=basic_context)
 
         assert result == first_prompt
+        assert basic_context.custom_prompt is None  # Should be cleared after use
+        # Should not call adversarial chat
+        mock_prompt_normalizer.send_prompt_async.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_generate_next_prompt_uses_custom_prompt_regardless_of_turn(
+        self,
+        mock_objective_target: MagicMock,
+        mock_objective_scorer: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        mock_prompt_normalizer: MagicMock,
+        basic_context: MultiTurnAttackContext,
+    ):
+        """Test that custom prompt is used even when executed_turns > 0."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+            prompt_normalizer=mock_prompt_normalizer,
+        )
+
+        custom_prompt = "Custom prompt at turn 1"
+        basic_context.executed_turns = 1  # Not first turn
+        basic_context.custom_prompt = custom_prompt
+
+        result = await attack._generate_next_prompt_async(context=basic_context)
+
+        assert result == custom_prompt
+        assert basic_context.custom_prompt is None  # Should be cleared after use
         # Should not call adversarial chat
         mock_prompt_normalizer.send_prompt_async.assert_not_called()
 
@@ -675,7 +709,7 @@ class TestPromptGeneration:
         basic_context: MultiTurnAttackContext,
         sample_response: PromptRequestResponse,
     ):
-        """Test that adversarial chat is used to generate prompts after first turn."""
+        """Test that adversarial chat is used to generate prompts when no custom prompt."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
         scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
 
@@ -687,6 +721,7 @@ class TestPromptGeneration:
         )
 
         basic_context.executed_turns = 1
+        basic_context.custom_prompt = None  # No custom prompt
         mock_prompt_normalizer.send_prompt_async.return_value = sample_response
 
         # Mock build_adversarial_prompt
@@ -1329,3 +1364,132 @@ class TestAttackLifecycle:
         # Should complete without error
         await attack._teardown_async(context=basic_context)
         # No assertions needed - we just want to ensure it runs without exceptions
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestRedTeamingConversationTracking:
+    """Test that adversarial chat conversation IDs are properly tracked."""
+
+    @pytest.mark.asyncio
+    async def test_setup_tracks_adversarial_chat_conversation_id(
+        self,
+        mock_objective_target: MagicMock,
+        mock_objective_scorer: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        basic_context: MultiTurnAttackContext,
+    ):
+        """Test that setup adds the adversarial chat conversation ID to the context's tracking."""
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=AttackAdversarialConfig(target=mock_adversarial_chat),
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
+        )
+
+        # Mock the conversation manager to return a state
+        with patch.object(attack._conversation_manager, "update_conversation_state_async") as mock_update:
+            mock_update.return_value = ConversationState(
+                turn_count=0, last_user_message=None, last_assistant_message_scores=[]
+            )
+
+            # Run setup
+            await attack._setup_async(context=basic_context)
+
+            # Verify the adversarial chat conversation ID is tracked
+            assert (
+                ConversationReference(
+                    conversation_id=basic_context.session.adversarial_chat_conversation_id,
+                    conversation_type=ConversationType.ADVERSARIAL,
+                )
+                in basic_context.related_conversations
+            )
+
+    @pytest.mark.asyncio
+    async def test_attack_result_includes_adversarial_chat_conversation_ids(
+        self,
+        mock_objective_target: MagicMock,
+        mock_objective_scorer: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        basic_context: MultiTurnAttackContext,
+        sample_response: PromptRequestResponse,
+        success_score: Score,
+    ):
+        """Test that the attack result includes the tracked adversarial chat conversation IDs."""
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=AttackAdversarialConfig(target=mock_adversarial_chat),
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
+        )
+
+        with (
+            patch.object(attack._conversation_manager, "update_conversation_state_async") as mock_update,
+            patch.object(attack._prompt_normalizer, "send_prompt_async", new_callable=AsyncMock) as mock_send,
+            patch.object(Scorer, "score_response_with_objective_async", new_callable=AsyncMock) as mock_score,
+            patch.object(attack, "_generate_next_prompt_async", new_callable=AsyncMock) as mock_generate,
+        ):
+            mock_update.return_value = ConversationState(
+                turn_count=0, last_user_message=None, last_assistant_message_scores=[]
+            )
+            mock_send.return_value = sample_response
+            mock_score.return_value = {"objective_scores": [success_score]}
+            mock_generate.return_value = "Test prompt"
+
+            # Run setup and attack
+            await attack._setup_async(context=basic_context)
+            result = await attack._perform_attack_async(context=basic_context)
+
+            # Verify the result includes the adversarial chat conversation IDs
+            assert (
+                ConversationReference(
+                    conversation_id=basic_context.session.adversarial_chat_conversation_id,
+                    conversation_type=ConversationType.ADVERSARIAL,
+                )
+                in result.related_conversations
+            )
+
+    @pytest.mark.asyncio
+    async def test_adversarial_chat_conversation_id_uniqueness(
+        self,
+        mock_objective_target: MagicMock,
+        mock_objective_scorer: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        basic_context: MultiTurnAttackContext,
+    ):
+        """Test that adversarial chat conversation IDs are unique when added to the set."""
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=AttackAdversarialConfig(target=mock_adversarial_chat),
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
+        )
+
+        # Mock the conversation manager
+        with patch.object(attack._conversation_manager, "update_conversation_state_async") as mock_update:
+            mock_update.return_value = ConversationState(
+                turn_count=0, last_user_message=None, last_assistant_message_scores=[]
+            )
+
+            # Run setup
+            await attack._setup_async(context=basic_context)
+
+            # Get the conversation ID
+            conversation_id = basic_context.session.adversarial_chat_conversation_id
+
+            # Verify it was added
+            assert (
+                ConversationReference(
+                    conversation_id=conversation_id,
+                    conversation_type=ConversationType.ADVERSARIAL,
+                )
+                in basic_context.related_conversations
+            )
+            assert len(basic_context.related_conversations) == 1
+
+            # Try to add the same ID again (should not affect the set)
+            basic_context.related_conversations.add(
+                ConversationReference(
+                    conversation_id=conversation_id,
+                    conversation_type=ConversationType.ADVERSARIAL,
+                )
+            )
+
+            # Verify it's still only one entry
+            assert len(basic_context.related_conversations) == 1

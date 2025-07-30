@@ -16,6 +16,8 @@ from pyrit.common.utils import combine_dict
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
+    ConversationReference,
+    ConversationType,
     PromptRequestResponse,
     Score,
     SeedPrompt,
@@ -114,11 +116,8 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
         Raises:
             ValueError: If the context is invalid.
         """
-        if not context.objective:
-            raise ValueError("Attack objective must be provided in the context")
-
-        if not context.conversation_id:
-            raise ValueError("Conversation ID must be provided in the context")
+        if not context.objective or context.objective.isspace():
+            raise ValueError("Attack objective must be provided and non-empty in the context")
 
     async def _setup_async(self, *, context: SingleTurnAttackContext) -> None:
         """
@@ -151,7 +150,7 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
             AttackResult containing the outcome of the attack.
         """
         # Log the attack configuration
-        self._logger.info(f"Starting prompt injection attack with objective: {context.objective}")
+        self._logger.info(f"Starting {self.__class__.__name__} with objective: {context.objective}")
         self._logger.info(f"Max attempts: {self._max_attempts_on_failure}")
 
         # Execute with retries
@@ -180,16 +179,27 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
                 self._logger.warning(f"No response received on attempt {attempt+1} (likely filtered)")
                 continue  # Retry if no response (filtered or error)
 
-            # If no objective scorer, we have a response but can't determine success
+            # Score the response including auxiliary and objective scoring
+            score = await self._evaluate_response_async(response=response, objective=context.objective)
+
+            # If there is no objective, we have a response but can't determine success
             if not self._objective_scorer:
                 break
-
-            # Score the response
-            score = await self._evaluate_response_async(response=response, objective=context.objective)
 
             # On success, return immediately
             if bool(score and score.get_value()):
                 break
+
+            # On failure, store and create new conversation if there are more attempts remaining
+            if attempt < self._max_attempts_on_failure:
+                context.related_conversations.add(
+                    ConversationReference(
+                        conversation_id=context.conversation_id,
+                        conversation_type=ConversationType.PRUNED,
+                    )
+                )
+
+                context.conversation_id = str(uuid.uuid4())
 
         # Determine the outcome
         outcome, outcome_reason = self._determine_attack_outcome(response=response, score=score, context=context)

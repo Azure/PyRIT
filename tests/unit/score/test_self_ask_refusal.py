@@ -162,11 +162,13 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries(patch_centra
 
 
 @pytest.mark.asyncio
-async def test_score_async_filtered_response():
+async def test_score_async_filtered_response(patch_central_database):
+    memory = CentralMemory.get_memory_instance()
     chat_target = MagicMock()
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
     request_piece = PromptRequestPiece(role="assistant", original_value="blocked response", response_error="blocked")
+    memory.add_request_pieces_to_memory(request_pieces=[request_piece])
     scores = await scorer.score_async(request_piece)
 
     assert len(scores) == 1

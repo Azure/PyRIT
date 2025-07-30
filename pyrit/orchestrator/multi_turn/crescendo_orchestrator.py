@@ -419,7 +419,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
     def _log_target_memory(self, *, conversation_id: str) -> None:
         """
-        Prints the target memory for a given conversation ID.
+        Logs the target memory for a given conversation ID.
 
         Args:
             conversation_id (str): The ID of the conversation.

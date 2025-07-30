@@ -93,7 +93,7 @@ class HumanInTheLoopScorer(Scorer):
 
         return [score]
 
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Score the prompt with a human in the loop.
 
@@ -185,11 +185,10 @@ class HumanInTheLoopScorer(Scorer):
             import tkinter as tk
             from tkinter import simpledialog
         except ImportError as e:
-            print(
+            raise RuntimeError(
                 "To use HumanInTheLoopScorer, you need to install tkinter. "
                 "See https://stackoverflow.com/a/74607246 for more information."
-            )
-            raise e
+            ) from e
         root = tk.Tk()
         root.withdraw()
         user_input = simpledialog.askstring("Score Prompt", message).strip()

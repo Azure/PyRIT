@@ -19,6 +19,7 @@ from pyrit.exceptions.exception_classes import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
+    ConversationType,
     PromptRequestPiece,
     PromptRequestResponse,
     Score,
@@ -170,7 +171,6 @@ class TestContextValidation:
         "objective,conversation_id,expected_error",
         [
             ("", str(uuid.uuid4()), "Attack objective must be provided"),
-            ("Test objective", "", "Conversation ID must be provided"),
         ],
     )
     def test_validate_context_raises_errors(self, mock_target, objective, conversation_id, expected_error):
@@ -537,7 +537,7 @@ class TestAttackExecution:
             return_value=SeedPromptGroup(prompts=[SeedPrompt(value="Test prompt", data_type="text")])
         )
         attack._send_prompt_to_objective_target_async = AsyncMock(return_value=sample_response)
-        attack._evaluate_response_async = AsyncMock()
+        attack._evaluate_response_async = AsyncMock(return_value=None)
 
         # Execute the attack
         result = await attack._perform_attack_async(context=basic_context)
@@ -551,7 +551,12 @@ class TestAttackExecution:
 
         # Verify only one attempt was made (no retries without scorer)
         attack._send_prompt_to_objective_target_async.assert_called_once()
-        attack._evaluate_response_async.assert_not_called()
+
+        # Verify that _evaluate_response_async was called even without objective scorer
+        # This ensures auxiliary scores are still collected
+        attack._evaluate_response_async.assert_called_once_with(
+            response=sample_response, objective=basic_context.objective
+        )
 
     @pytest.mark.asyncio
     async def test_perform_attack_without_scorer_retries_on_filtered_response(
@@ -934,7 +939,6 @@ class TestAttackLifecycle:
         assert isinstance(context, SingleTurnAttackContext)
         assert context.objective == "Test objective"
         assert context.memory_labels == {"test": "label"}
-        assert context.prepended_conversation == [sample_response]
         assert context.seed_prompt_group == seed_group
         assert context.system_prompt == "System prompt"
 
@@ -1042,3 +1046,56 @@ class TestEdgeCasesAndErrorHandling:
         # Verify uniqueness
         assert id1["id"] != id2["id"]
         assert id1["__type__"] == id2["__type__"] == "PromptSendingAttack"
+
+    @pytest.mark.asyncio
+    async def test_retry_stores_unsuccessful_conversation_and_updates_id(
+        self, mock_target, mock_true_false_scorer, basic_context, sample_response, failure_score
+    ):
+        """Test that retries store unsuccessful conversations and update the conversation ID"""
+        attack_scoring_config = AttackScoringConfig(objective_scorer=mock_true_false_scorer)
+        attack = PromptSendingAttack(
+            objective_target=mock_target,
+            attack_scoring_config=attack_scoring_config,
+            max_attempts_on_failure=2,  # Allow 2 retries
+        )
+
+        # Mock the internal methods
+        attack._get_prompt_group = MagicMock(
+            return_value=SeedPromptGroup(prompts=[SeedPrompt(value="Test prompt", data_type="text")])
+        )
+
+        # Setup to return response on first two attempts but fail scoring, succeed on third
+        responses = [sample_response, sample_response, sample_response]
+        scores = [failure_score, failure_score, failure_score]  # All attempts fail
+
+        attack._send_prompt_to_objective_target_async = AsyncMock(side_effect=responses)
+        attack._evaluate_response_async = AsyncMock(side_effect=scores)
+
+        # Store original conversation ID to verify it changes
+        original_conversation_id = basic_context.conversation_id
+
+        # Execute the attack
+        result = await attack._perform_attack_async(context=basic_context)
+
+        # Verify that 3 attempts were made (initial + 2 retries)
+        assert attack._send_prompt_to_objective_target_async.call_count == 3
+        assert attack._evaluate_response_async.call_count == 3
+
+        # Verify that related conversations were stored
+        assert len(basic_context.related_conversations) == 2  # Two failed attempts stored
+
+        # Verify the conversation references have correct type and different IDs
+        related_conv_ids = {ref.conversation_id for ref in basic_context.related_conversations}
+        assert len(related_conv_ids) == 2  # Two unique conversation IDs stored
+        assert original_conversation_id in related_conv_ids  # Original ID should be in related conversations
+
+        # Verify all stored conversations are marked as PRUNED
+        for ref in basic_context.related_conversations:
+            assert ref.conversation_type == ConversationType.PRUNED
+
+        # Verify the final conversation ID is different from the original
+        assert basic_context.conversation_id != original_conversation_id
+        assert basic_context.conversation_id not in related_conv_ids
+
+        # Verify attack still fails overall (since all attempts failed)
+        assert result.outcome == AttackOutcome.FAILURE

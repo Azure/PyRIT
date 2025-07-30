@@ -19,7 +19,7 @@ class TrueFalseInverterScorer(Scorer):
 
         self.scorer_type = "true_false"
 
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """Scores the piece using the underlying true-false scorer and returns the opposite score.
 
         Args:
@@ -40,7 +40,6 @@ class TrueFalseInverterScorer(Scorer):
             score.scorer_class_identifier = self.get_identifier()
             score.scorer_class_identifier["sub_identifier"] = self._scorer.get_identifier()
 
-        self._memory.add_scores_to_memory(scores=scores)
         return scores
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> None:

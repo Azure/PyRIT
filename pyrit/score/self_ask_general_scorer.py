@@ -79,8 +79,7 @@ class SelfAskGeneralScorer(Scorer):
         self._metadata_output_key = metadata_output_key
         self._category_output_key = category_output_key
 
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
-        self.validate(request_response, task=task)
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         prompt = request_response.converted_value
 
         system_prompt = self._system_prompt.format(task=task, prompt=prompt, request_response=request_response)
@@ -116,7 +115,6 @@ class SelfAskGeneralScorer(Scorer):
                 )
             )
 
-        self._memory.add_scores_to_memory(scores=[score])
         return [score]
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> None:

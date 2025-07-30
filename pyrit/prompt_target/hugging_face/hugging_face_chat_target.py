@@ -84,8 +84,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
         try:
             import torch
         except ModuleNotFoundError as e:
-            logger.error("Could not import torch. You may need to install it via 'pip install pyrit[all]'")
-            raise e
+            raise RuntimeError("Could not import torch. You may need to install it via 'pip install pyrit[all]'") from e
 
         # Determine the device
         self.device = "cuda" if self.use_cuda and torch.cuda.is_available() else "cpu"

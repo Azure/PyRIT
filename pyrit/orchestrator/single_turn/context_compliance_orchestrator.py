@@ -4,11 +4,18 @@
 import enum
 import logging
 import pathlib
-from typing import Optional
+from typing import Optional, cast
 
+from typing_extensions import LiteralString, deprecated
+
+from pyrit.attacks import (
+    AttackAdversarialConfig,
+    AttackConverterConfig,
+    AttackScoringConfig,
+    ContextComplianceAttack,
+)
+from pyrit.common import deprecation_message
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import OrchestratorResult, PromptSendingOrchestrator
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
@@ -23,8 +30,22 @@ class ContextDescriptionPaths(enum.Enum):
     GENERAL = pathlib.Path(DATASETS_PATH) / "orchestrators" / "context_compliance" / "context_description.yaml"
 
 
+@deprecated(
+    cast(
+        LiteralString,
+        deprecation_message(
+            old_item="ContextComplianceOrchestrator",
+            new_item=ContextComplianceAttack,
+            removed_in="v0.12.0",
+        ),
+    ),
+)
 class ContextComplianceOrchestrator(PromptSendingOrchestrator):
     """
+    .. warning::
+        `ContextComplianceOrchestrator` is deprecated and will be removed in **v0.12.0**;
+        use `pyrit.attacks.ContextComplianceAttack` instead.
+
     This orchestrator implements a context compliance attack that attempts to bypass safety measures by
     rephrasing the objective into a more benign context. It uses an adversarial chat target to:
     1. Rephrase the objective as a more benign question
@@ -69,27 +90,6 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
             verbose (bool, Optional): Whether to log debug information. Defaults to False.
         """
 
-        self._adversarial_chat = adversarial_chat
-
-        if context_description_instructions_path is None:
-            context_description_instructions_path = ContextDescriptionPaths.GENERAL.value
-
-        context_description_instructions: SeedPromptDataset = SeedPromptDataset.from_yaml_file(
-            context_description_instructions_path
-        )
-        self._rephrase_objective_to_user_turn = context_description_instructions.prompts[0]
-        self._answer_user_turn = context_description_instructions.prompts[1]
-        self._rephrase_objective_to_question = context_description_instructions.prompts[2]
-
-        self._affirmative_seed_prompt = SeedPromptGroup(
-            prompts=[
-                SeedPrompt(
-                    value=affirmative_response,
-                    data_type="text",
-                )
-            ]
-        )
-
         super().__init__(
             objective_target=objective_target,
             request_converter_configurations=request_converter_configurations,
@@ -102,18 +102,35 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
             verbose=verbose,
         )
 
+        # Use default path if not provided
+        if context_description_instructions_path is None:
+            context_description_instructions_path = ContextDescriptionPaths.GENERAL.value
+
+        self._attack = ContextComplianceAttack(
+            objective_target=objective_target,
+            attack_adversarial_config=AttackAdversarialConfig(target=adversarial_chat),
+            attack_converter_config=AttackConverterConfig(
+                request_converters=self._request_converter_configurations,
+                response_converters=self._response_converter_configurations,
+            ),
+            attack_scoring_config=AttackScoringConfig(
+                objective_scorer=self._objective_scorer,
+                auxiliary_scorers=self._auxiliary_scorers,
+            ),
+            prompt_normalizer=self._prompt_normalizer,
+            context_description_instructions_path=context_description_instructions_path,
+            affirmative_response=affirmative_response,
+            max_attempts_on_failure=self._retries_on_objective_failure,
+        )
+
     async def run_attack_async(  # type: ignore[override]
         self,
         *,
         objective: str,
         memory_labels: Optional[dict[str, str]] = None,
     ) -> OrchestratorResult:
-
-        prepended_conversation = await self._get_conversation_start(objective=objective)
         return await super().run_attack_async(
             objective=objective,
-            seed_prompt=self._affirmative_seed_prompt,
-            prepended_conversation=prepended_conversation,
             memory_labels=memory_labels,
         )
 
@@ -127,103 +144,3 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
             objectives=objectives,
             memory_labels=memory_labels,
         )
-
-    async def _get_conversation_start(self, objective: str) -> Optional[list[PromptRequestResponse]]:
-        """
-        Returns the user turn prompts for the given list of prompts.
-
-        This works better if broken into three prompts. One to rephrase the objective as more benign. One to answer
-        the more benign objective. And one to rephrase the objective as a question. Ultimately these are assembled into
-        a fake context that we send to the objective target.
-
-        Args:
-            prompt_list (list[str]): The list of prompts to be role played.
-
-        Returns:
-            list[str]: The role playing prompts.
-        """
-
-        benign_user_query = await self._get_objective_as_more_benign_question(objective=objective)
-        benign_user_query_answer = await self._get_benign_question_answer(benign_user_query=benign_user_query)
-        objective_as_question = await self._get_objective_as_question(objective=objective)
-
-        assistant_response = f"{benign_user_query_answer}\n\n"
-        assistant_response += "I can provide more information dependeing on what you're seeking. "
-        assistant_response += f"To help with understanding, {objective_as_question}"
-
-        return [
-            PromptRequestResponse(
-                request_pieces=[
-                    PromptRequestPiece(
-                        role="user",
-                        original_value=objective,
-                        converted_value=benign_user_query,
-                    ),
-                ],
-            ),
-            PromptRequestResponse(
-                request_pieces=[
-                    PromptRequestPiece(
-                        role="assistant",
-                        original_value=assistant_response,
-                    ),
-                ],
-            ),
-        ]
-
-    async def _get_benign_question_answer(self, benign_user_query: str) -> str:
-        seed_prompt_to_get_user_turn_answer = SeedPromptGroup(
-            prompts=[
-                SeedPrompt(
-                    value=self._answer_user_turn.render_template_value(benign_request=benign_user_query),
-                    data_type="text",
-                )
-            ]
-        )
-
-        user_turn_answer = (
-            await self._prompt_normalizer.send_prompt_async(
-                seed_prompt_group=seed_prompt_to_get_user_turn_answer,
-                target=self._adversarial_chat,
-            )
-        ).get_value()
-
-        return user_turn_answer
-
-    async def _get_objective_as_more_benign_question(self, objective: str) -> str:
-        seed_prompt_to_get_user_turn = SeedPromptGroup(
-            prompts=[
-                SeedPrompt(
-                    value=self._rephrase_objective_to_user_turn.render_template_value(objective=objective),
-                    data_type="text",
-                )
-            ]
-        )
-
-        user_turn = (
-            await self._prompt_normalizer.send_prompt_async(
-                seed_prompt_group=seed_prompt_to_get_user_turn,
-                target=self._adversarial_chat,
-            )
-        ).get_value()
-
-        return user_turn
-
-    async def _get_objective_as_question(self, objective: str) -> str:
-        seed_prompt_to_get_objective_as_a_question = SeedPromptGroup(
-            prompts=[
-                SeedPrompt(
-                    value=self._rephrase_objective_to_question.render_template_value(objective=objective),
-                    data_type="text",
-                )
-            ]
-        )
-
-        objective_as_question = (
-            await self._prompt_normalizer.send_prompt_async(
-                seed_prompt_group=seed_prompt_to_get_objective_as_a_question,
-                target=self._adversarial_chat,
-            )
-        ).get_value()
-
-        return objective_as_question
