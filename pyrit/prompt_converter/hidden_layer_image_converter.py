@@ -4,6 +4,7 @@
 import base64
 import logging
 from io import BytesIO
+from pathlib import Path
 from typing import Any, Tuple
 
 import numpy
@@ -82,8 +83,8 @@ class HiddenLayerConverter(PromptConverter):
     def __init__(
         self,
         *,
-        benign_image_path: str,
-        size: Tuple[int, int] = (256, 256),
+        benign_image_path: Path,
+        size: Tuple[int, int] = (150, 150),
         steps: int = 1000,
         learning_rate: float = 0.001,
     ):
@@ -91,26 +92,36 @@ class HiddenLayerConverter(PromptConverter):
         Initializes the converter with the path to a benign image and parameters for blending.
 
         Args:
-            benign_image_path (str): Path to the benign image file.
+            benign_image_path (str): Path to the benign image file. Must be a JPEG file (.jpg or .jpeg).
             size (tuple): Size that the images will be resized to (width, height).
+                It is recommended to use a size that matches aspect ratio of both attack and benign images.
+                Since the original study resizes images to 150x150 pixels, this is the default size used.
+                Bigger values may significantly increase computation time.
             steps (int): Number of optimization steps to perform.
-            learning_rate (float): Learning rate for the optimization algorithm.
+                Recommended range: 100-2000 steps. Default is 1000. Generally, the higher the steps, the
+                better end result you can achieve, but at the cost of increased computation time.
+            learning_rate (float): Controls the magnitude of adjustments in each step (used by the Adam optimizer).
+                Recommended range: 0.0001-0.01. Default is 0.001. Values close to 1 may lead to instability and
+                lower quality blending, while values too low may require more steps to achieve a good blend.
 
         Raises:
-            ValueError: If the benign image path is invalid or is not in JPEG format.
+            ValueError: If the benign image is invalid or is not in JPEG format.
+            ValueError: If the learning rate is not a positive float.
+            ValueError: If the size is not a tuple of two positive integers (width, height).
+            ValueError: If the steps is not a positive integer.
         """
         self.benign_image_path = benign_image_path
         self.learning_rate = learning_rate
         self.size = size
         self.steps = steps
 
-        if not self._validate_input_image(benign_image_path):
+        if not self._validate_input_image(str(benign_image_path)):
             raise ValueError("Invalid benign image path provided. Only JPEG files are supported as input.")
 
         if learning_rate <= 0:
             raise ValueError("Learning rate must be a positive float.")
         if not isinstance(size, tuple) or len(size) != 2 or any(dim <= 0 for dim in size):
-            raise ValueError("Size must be a tuple of two positive integers (width, height).")
+            raise ValueError(f"Size must be a tuple of two positive integers (width, height). Received {size}")
         if steps <= 0:
             raise ValueError("Steps must be a positive integer.")
 
@@ -192,7 +203,7 @@ class HiddenLayerConverter(PromptConverter):
             raise ValueError("Invalid attack image path provided. Only JPEG files are supported as input.")
 
         background_image = self._load_and_preprocess_image(prompt)
-        foreground_image = self._load_and_preprocess_image(self.benign_image_path)
+        foreground_image = self._load_and_preprocess_image(str(self.benign_image_path))
 
         # Scale attack image by 0.5 to darken it for better blending optimization
         background_tensor = background_image * 0.5

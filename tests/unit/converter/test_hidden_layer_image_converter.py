@@ -42,7 +42,7 @@ class TestHiddenLayerConverter:
     def test_initialization_default_params(self, sample_benign_image):
         converter = HiddenLayerConverter(benign_image_path=sample_benign_image)
         assert converter.benign_image_path == sample_benign_image
-        assert converter.size == (256, 256)
+        assert converter.size == (150, 150)
         assert converter.steps == 1000
         assert converter.learning_rate == 0.001
 
