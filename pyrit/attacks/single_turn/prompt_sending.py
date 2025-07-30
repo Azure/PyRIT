@@ -134,9 +134,11 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
 
         # Process prepended conversation if provided
         await self._conversation_manager.update_conversation_state_async(
+            target=self._objective_target,
             conversation_id=context.conversation_id,
             prepended_conversation=context.prepended_conversation,
-            converter_configurations=self._request_converters,
+            request_converters=self._request_converters,
+            response_converters=self._response_converters,
         )
 
     async def _perform_attack_async(self, *, context: SingleTurnAttackContext) -> AttackResult:
@@ -198,8 +200,7 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
                         conversation_type=ConversationType.PRUNED,
                     )
                 )
-
-                context.conversation_id = str(uuid.uuid4())
+                await self._setup_async(context=context)  # Reset conversation for next attempt
 
         # Determine the outcome
         outcome, outcome_reason = self._determine_attack_outcome(response=response, score=score, context=context)

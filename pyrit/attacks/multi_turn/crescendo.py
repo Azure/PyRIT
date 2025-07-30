@@ -252,7 +252,8 @@ class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResu
             max_turns=self._max_turns,
             conversation_id=context.session.conversation_id,
             prepended_conversation=context.prepended_conversation,
-            converter_configurations=self._request_converters,
+            request_converters=self._request_converters,
+            response_converters=self._response_converters,
         )
 
         # Update turns based on prepended conversation
