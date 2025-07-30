@@ -29,6 +29,7 @@ from pyrit.exceptions import (
 from pyrit.models import (
     AttackOutcome,
     ChatMessageRole,
+    ConversationType,
     PromptRequestPiece,
     PromptRequestResponse,
     Score,
@@ -1878,3 +1879,32 @@ class TestEdgeCases:
                 unknown_param="should be ignored",
             )
             assert result.outcome == AttackOutcome.SUCCESS
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestCrescendoConversationTracking:
+    @pytest.mark.asyncio
+    async def test_setup_tracks_adversarial_chat_conversation_id(
+        self,
+        mock_objective_target: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        basic_context: CrescendoAttackContext,
+    ):
+        attack = CrescendoAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=AttackAdversarialConfig(target=mock_adversarial_chat),
+        )
+        with patch.object(
+            attack._conversation_manager, "update_conversation_state_async", new_callable=AsyncMock
+        ) as mock_update:
+            mock_update.return_value = ConversationState(
+                turn_count=0, last_user_message="Test message", last_assistant_message_scores=[]
+            )
+            await attack._setup_async(context=basic_context)
+
+            # Validate that the conversation ID is added to related_conversations
+            assert any(
+                ref.conversation_id == basic_context.session.adversarial_chat_conversation_id
+                and ref.conversation_type == ConversationType.ADVERSARIAL
+                for ref in basic_context.related_conversations
+            )

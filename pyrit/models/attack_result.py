@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, Optional, TypeVar
 
+from pyrit.models.conversation_reference import ConversationReference, ConversationType
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.score import Score
 
@@ -63,9 +64,23 @@ class AttackResult:
     # Optional reason for the outcome, providing additional context
     outcome_reason: Optional[str] = None
 
-    # Additional information
-    # Metadata can be included as key-value pairs to provide extra context
+    # Flexible conversation refs (nothing unused)
+    related_conversations: set[ConversationReference] = field(default_factory=set)
+
+    # Arbitrary metadata
     metadata: Dict[str, Any] = field(default_factory=dict)
 
+    def get_conversations_by_type(self, conversation_type: ConversationType):
+        """
+        Return all related conversations of the requested type.
+
+        Args:
+            conversation_type (ConversationType): The type of conversation to filter by.
+
+        Returns:
+            list: A list of related conversations matching the specified type.
+        """
+        return [ref for ref in self.related_conversations if ref.conversation_type == conversation_type]
+
     def __str__(self):
-        return f"AttackResult: {self.conversation_id}: {self.outcome.value}: {self.objective[:50]}..."
+        return f"AttackResult: {self.conversation_id}: {self.outcome.value}: " f"{self.objective[:50]}..."

@@ -63,6 +63,9 @@ RUN mkdir -p /home/vscode/.cache/pre-commit \
  && chmod -R 755 /home/vscode/.vscode-server
 
 USER vscode
+RUN /opt/conda/bin/conda init bash && \
+    echo "conda activate pyrit-dev" >> /home/vscode/.bashrc
+RUN echo "source /opt/conda/etc/profile.d/conda.sh && conda activate pyrit-dev" >> /home/vscode/.bash_profile
 
 # Configure Git for better performance with bind mounts
 RUN git config --global core.preloadindex true \

@@ -66,6 +66,12 @@ test_cases_success = [
             RedTeamingOrchestrator,
         ],
     ),
+    (
+        "--config-file 'tests/unit/cli/multi_turn_target_and_scorer_args_success.yaml'",
+        [
+            CrescendoOrchestrator,
+        ],
+    ),
 ]
 
 
@@ -167,6 +173,26 @@ test_cases_error = [
         "--config-file 'tests/unit/cli/prompt_send_no_db.yaml'",
         "database\n  Field required",
         ValidationError,
+    ),
+    (
+        "--config-file 'tests/unit/cli/multi_turn_scoring_target_wrong_arg.yaml'",
+        "OpenAITarget.__init__() got an unexpected keyword argument 'nonsense_arg'",
+        TypeError,
+    ),
+    (
+        "--config-file 'tests/unit/cli/multi_turn_objective_scorer_wrong_arg.yaml'",
+        "SelfAskTrueFalseScorer.__init__() got an unexpected keyword argument 'nonsense_arg'",
+        TypeError,
+    ),
+    (
+        "--config-file 'tests/unit/cli/multi_turn_adversarial_target_wrong_arg.yaml'",
+        "OpenAITarget.__init__() got an unexpected keyword argument 'nonsense_arg'",
+        TypeError,
+    ),
+    (
+        "--config-file 'tests/unit/cli/multi_turn_objective_target_wrong_arg.yaml'",
+        "OpenAITarget.__init__() got an unexpected keyword argument 'nonsense_arg'",
+        TypeError,
     ),
 ]
 

@@ -120,6 +120,7 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
             prompt_normalizer=self._prompt_normalizer,
             context_description_instructions_path=context_description_instructions_path,
             affirmative_response=affirmative_response,
+            max_attempts_on_failure=self._retries_on_objective_failure,
         )
 
     async def run_attack_async(  # type: ignore[override]
