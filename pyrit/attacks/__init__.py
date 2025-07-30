@@ -27,6 +27,8 @@ from pyrit.attacks.single_turn import (
     SkeletonKeyAttack,
 )
 from pyrit.attacks.fuzzer import FuzzerAttack, FuzzerAttackContext, FuzzerAttackResult
+from pyrit.attacks.single_turn.role_play import RolePlayAttack
+
 
 from pyrit.attacks.printers import ConsoleAttackResultPrinter
 
@@ -48,6 +50,7 @@ __all__ = [
     "PromptSendingAttack",
     "RTOSystemPromptPaths",
     "RedTeamingAttack",
+    "RolePlayAttack",
     "SingleTurnAttackContext",
     "TAPAttack",
     "TAPAttackContext",
