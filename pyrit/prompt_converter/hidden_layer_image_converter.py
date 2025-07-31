@@ -169,8 +169,7 @@ class HiddenLayerConverter(PromptConverter):
 
     def _compute_mse_loss(self, blended_image: numpy.ndarray, target_tensor: numpy.ndarray) -> numpy.floating[Any]:
         """Computes Mean Squared Error (MSE) loss between blended and target images."""
-        diff = blended_image - target_tensor
-        return numpy.mean(diff**2)
+        return numpy.mean(numpy.square(blended_image - target_tensor))
 
     def _compute_gradients_alpha_layer(
         self,
