@@ -137,7 +137,7 @@ class HiddenLayerConverter(PromptConverter):
 
         Raises:
             ValueError: If the benign image is invalid or is not in JPEG format.
-            ValueError: If the learning rate is outside the range (0, 1).
+            ValueError: If the learning rate is outside the valid range (0, 1).
             ValueError: If the size is not a tuple of two positive integers (width, height).
             ValueError: If the steps is not a positive integer.
         """
@@ -148,12 +148,12 @@ class HiddenLayerConverter(PromptConverter):
 
         self._validate_input_image(str(benign_image_path))
 
-        if learning_rate <= 0 or learning_rate >= 1:
-            raise ValueError("Learning rate must be a float between 0 and 1.")
+        if not (0 < learning_rate < 1):
+            raise ValueError(f"Learning rate must be between 0 and 1, got {learning_rate}")
         if not isinstance(size, tuple) or len(size) != 2 or any(dim <= 0 for dim in size):
             raise ValueError(f"Size must be a tuple of two positive integers (width, height). Received {size}")
-        if steps <= 0:
-            raise ValueError("Steps must be a positive integer.")
+        if not isinstance(steps, int) or steps <= 0:
+            raise ValueError(f"Steps must be a positive integer, got {steps}")
 
         self._cached_benign_image = self._load_and_preprocess_image(str(benign_image_path))
 
@@ -161,7 +161,7 @@ class HiddenLayerConverter(PromptConverter):
         """Loads image, converts to grayscale, resizes, and normalizes for optimization."""
         try:
             with Image.open(path) as img:
-                img_gray = img.convert("L")  # read as grayscale
+                img_gray = img.convert("L") if img.mode != "L" else img  # read as grayscale
                 img_resized = img_gray.resize(self.size, Image.Resampling.LANCZOS)
                 return numpy.array(img_resized, dtype=numpy.float32) / 255.0  # normalize to [0, 1]
         except Exception as e:
@@ -186,17 +186,20 @@ class HiddenLayerConverter(PromptConverter):
 
     async def _save_blended_image(self, attack_image: numpy.ndarray, alpha: numpy.ndarray) -> str:
         """Saves the blended image with transparency as a PNG file."""
-        img_serializer = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
-        img_serializer.file_extension = "png"
+        try:
+            img_serializer = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
+            img_serializer.file_extension = "png"
 
-        la_image = self._create_blended_image(attack_image, alpha)
-        la_pil = Image.fromarray(la_image, mode="LA")
-        image_buffer = BytesIO()
-        la_pil.save(image_buffer, format="PNG")
-        image_str = base64.b64encode(image_buffer.getvalue())
+            la_image = self._create_blended_image(attack_image, alpha)
+            la_pil = Image.fromarray(la_image, mode="LA")
+            image_buffer = BytesIO()
+            la_pil.save(image_buffer, format="PNG")
+            image_str = base64.b64encode(image_buffer.getvalue())
 
-        await img_serializer.save_b64_image(data=image_str.decode())
-        return img_serializer.value
+            await img_serializer.save_b64_image(data=image_str.decode())
+            return img_serializer.value
+        except Exception as e:
+            raise ValueError(f"Failed to save blended image: {e}")
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "image_path") -> ConverterResult:
         """
@@ -214,7 +217,7 @@ class HiddenLayerConverter(PromptConverter):
             ValueError: If the input type is not supported or if the prompt is invalid.
         """
         if not self.input_supported(input_type):
-            raise ValueError("Input type not supported")
+            raise ValueError(f"Input type '{input_type}' not supported. Only 'image_path' is supported.")
 
         self._validate_input_image(prompt)
 
