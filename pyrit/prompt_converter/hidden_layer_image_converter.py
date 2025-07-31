@@ -118,6 +118,8 @@ class HiddenLayerConverter(PromptConverter):
         size: Tuple[int, int] = (150, 150),
         steps: int = 1000,
         learning_rate: float = 0.001,
+        convergence_threshold: float = 1e-6,
+        convergence_patience: int = 10,
     ):
         """
         Initializes the converter with the path to a benign image and parameters for blending.
@@ -134,17 +136,25 @@ class HiddenLayerConverter(PromptConverter):
             learning_rate (float): Controls the magnitude of adjustments in each step (used by the Adam optimizer).
                 Recommended range: 0.0001-0.01. Default is 0.001. Values close to 1 may lead to instability and
                 lower quality blending, while values too low may require more steps to achieve a good blend.
+            convergence_threshold (float): Minimum change in loss required to consider improvement.
+                If the change in loss between steps is below this value, it's counted as no improvement.
+                Default is 1e-6. Recommended range: 1e-6 to 1e-3.
+            convergence_patience (int): Number of consecutive steps with no improvement before stopping. Default is 10.
 
         Raises:
             ValueError: If the benign image is invalid or is not in JPEG format.
             ValueError: If the learning rate is outside the valid range (0, 1).
             ValueError: If the size is not a tuple of two positive integers (width, height).
             ValueError: If the steps is not a positive integer.
+            ValueError: If convergence threshold is not a positive float.
+            ValueError: If convergence patience is not a positive integer.
         """
         self.benign_image_path = benign_image_path
         self.learning_rate = learning_rate
         self.size = size
         self.steps = steps
+        self.convergence_threshold = convergence_threshold
+        self.convergence_patience = convergence_patience
 
         self._validate_input_image(str(benign_image_path))
 
@@ -154,6 +164,10 @@ class HiddenLayerConverter(PromptConverter):
             raise ValueError(f"Size must be a tuple of two positive integers (width, height). Received {size}")
         if not isinstance(steps, int) or steps <= 0:
             raise ValueError(f"Steps must be a positive integer, got {steps}")
+        if not (0 < convergence_threshold < 1):
+            raise ValueError(f"Convergence threshold must be a float between 0 and 1, got {convergence_threshold}")
+        if not isinstance(convergence_patience, int) or convergence_patience <= 0:
+            raise ValueError(f"Convergence patience must be a positive integer, got {convergence_patience}")
 
         self._cached_benign_image = self._load_and_preprocess_image(str(benign_image_path))
 
@@ -222,8 +236,7 @@ class HiddenLayerConverter(PromptConverter):
         self._validate_input_image(prompt)
 
         background_image = self._load_and_preprocess_image(prompt)
-        # Scale attack image by 0.5 to darken it for better blending optimization
-        background_tensor = background_image * 0.5
+        background_tensor = background_image * 0.5  # darkening for better blending optimization
 
         alpha = numpy.ones_like(background_tensor)  # optimized to determine transparency pattern
         white_background = numpy.ones_like(background_tensor)  # white canvas for blending simulation
@@ -231,15 +244,28 @@ class HiddenLayerConverter(PromptConverter):
         optimizer = self.AdamOptimizer(learning_rate=self.learning_rate)
         grad_blended_alpha_constant = background_tensor - white_background
 
+        prev_loss = float("inf")
+        no_improvement_count = 0
+
         for step in range(self.steps):
             # Simulate blending: alpha=1 uses darkened attack image, alpha=0 uses white
             blended_image = alpha * background_tensor + (1 - alpha) * white_background
 
-            loss = self._compute_mse_loss(blended_image, self._cached_benign_image)
+            current_loss = self._compute_mse_loss(blended_image, self._cached_benign_image)
             if step % 100 == 0:
-                logger.debug(f"Step {step}/{self.steps}, Loss: {loss:.4f}")
+                logger.debug(f"Step {step}/{self.steps}, Loss: {current_loss:.6f}")
 
-            # Update alpha to minimize difference between blended and benign image
+            if abs(prev_loss - current_loss) < self.convergence_threshold:
+                no_improvement_count += 1
+                if no_improvement_count >= self.convergence_patience:
+                    logger.info(
+                        f"Convergence detected at step {step} with loss {current_loss:.8f}. Stopping optimization."
+                    )
+                    break
+            else:
+                no_improvement_count = 0  # count only consecutive steps with no improvement
+            prev_loss = current_loss
+
             grad_loss_blended = 2 * (blended_image - self._cached_benign_image) / blended_image.size
             grad_alpha = grad_loss_blended * grad_blended_alpha_constant
             alpha = optimizer.update(params=alpha, grads=grad_alpha)

@@ -45,6 +45,8 @@ class TestHiddenLayerConverter:
         assert converter.size == (150, 150)
         assert converter.steps == 1000
         assert converter.learning_rate == 0.001
+        assert converter.convergence_threshold == 1e-6
+        assert converter.convergence_patience == 10
 
     def test_initialization_valid_params(self, sample_benign_image):
         converter = HiddenLayerConverter(
@@ -52,11 +54,15 @@ class TestHiddenLayerConverter:
             size=(128, 128),
             steps=500,
             learning_rate=0.01,
+            convergence_threshold=1e-5,
+            convergence_patience=5,
         )
         assert converter.benign_image_path == sample_benign_image
         assert converter.size == (128, 128)
         assert converter.steps == 500
         assert converter.learning_rate == 0.01
+        assert converter.convergence_threshold == 1e-5
+        assert converter.convergence_patience == 5
 
     def test_initialization_invalid_params(self, sample_benign_image):
         for path in [None, "", "invalid_path.txt", "image.png", "image.gif"]:
@@ -71,6 +77,12 @@ class TestHiddenLayerConverter:
         for learning_rate in [-0.01, 0, 1, 1.5]:
             with pytest.raises(ValueError):
                 HiddenLayerConverter(benign_image_path=sample_benign_image, learning_rate=learning_rate)
+        for convergence_threshold in [-1e-6, 0, 1]:
+            with pytest.raises(ValueError):
+                HiddenLayerConverter(benign_image_path=sample_benign_image, convergence_threshold=convergence_threshold)
+        for convergence_patience in [-1, 0]:
+            with pytest.raises(ValueError):
+                HiddenLayerConverter(benign_image_path=sample_benign_image, convergence_patience=convergence_patience)
 
     def test_validate_input_image(self, sample_benign_image):
         for invalid_path in [None, "", "invalid_path.txt", "image.png", "image.gif"]:
@@ -159,3 +171,35 @@ class TestHiddenLayerConverter:
             assert result.output_text == "output_image_path.png"
             assert result.output_type == "image_path"
             mock_serializer.save_b64_image.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_convert_async_early_convergence(self, sample_benign_image, sample_attack_image):
+        with patch("pyrit.prompt_converter.hidden_layer_image_converter.data_serializer_factory") as mock_factory:
+            mock_serializer = MagicMock()
+            mock_serializer.file_extension = "png"
+            mock_serializer.value = "output_image_path.png"
+            mock_serializer.save_b64_image = AsyncMock()
+            mock_factory.return_value = mock_serializer
+
+            # Use parameters that should trigger early convergence
+            converter = HiddenLayerConverter(
+                benign_image_path=sample_benign_image,
+                size=(16, 16),
+                steps=1000,
+                learning_rate=0.001,
+                convergence_threshold=1e-3,
+                convergence_patience=3,
+            )
+
+            # Mock the logger to capture convergence message
+            with patch("pyrit.prompt_converter.hidden_layer_image_converter.logger") as mock_logger:
+                result = await converter.convert_async(prompt=sample_attack_image, input_type="image_path")
+
+                assert isinstance(result, ConverterResult)
+                assert result.output_text == "output_image_path.png"
+                assert result.output_type == "image_path"
+
+                # Check if convergence message was logged (indicating early stopping occurred)
+                info_calls = [call for call in mock_logger.info.call_args_list if call[0]]
+                convergence_logged = any("Convergence detected" in str(call[0][0]) for call in info_calls)
+                assert convergence_logged, "Expected early convergence to be detected and logged"
