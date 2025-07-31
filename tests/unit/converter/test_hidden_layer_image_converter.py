@@ -85,7 +85,7 @@ class TestHiddenLayerConverter:
         converter = HiddenLayerConverter(benign_image_path=sample_benign_image, size=(50, 50))
         processed_image = converter._load_and_preprocess_image(sample_benign_image)
 
-        assert processed_image.shape == (50, 50, 3)  # height, width, channels
+        assert processed_image.shape == (50, 50)  # height, width (single channel grayscale)
         assert processed_image.dtype == numpy.float32
         assert numpy.all(processed_image >= 0.0) and numpy.all(processed_image <= 1.0)
 
@@ -108,17 +108,16 @@ class TestHiddenLayerConverter:
 
     def test_create_blended_image(self, sample_benign_image):
         converter = HiddenLayerConverter(benign_image_path=sample_benign_image)
-        attack_image = numpy.array([[[0.2, 0.4, 0.6]]], dtype=numpy.float32)  # 1x1x3 image
-        alpha = numpy.array([[[0.8]]], dtype=numpy.float32)  # 1x1x1 alpha
+        attack_image = numpy.array([[0.2]], dtype=numpy.float32)  # 1x1 grayscale image
+        alpha = numpy.array([[0.8]], dtype=numpy.float32)  # 1x1 alpha
 
-        rgba_image = converter._create_blended_image(attack_image, alpha)
+        la_image = converter._create_blended_image(attack_image, alpha)
 
-        assert rgba_image.shape == (1, 1, 4)  # RGBA
-        assert rgba_image.dtype == numpy.uint8
-        assert rgba_image[0, 0, 0] == int(0.2 * 255)  # R
-        assert rgba_image[0, 0, 1] == int(0.4 * 255)  # G
-        assert rgba_image[0, 0, 2] == int(0.6 * 255)  # B
-        assert rgba_image[0, 0, 3] == int(0.8 * 255)  # A
+        assert la_image.shape == (1, 1, 2)  # LA (Luminance + Alpha)
+        assert la_image.dtype == numpy.uint8
+        expected_gray_value = int(0.2 * 255)
+        assert la_image[0, 0, 0] == expected_gray_value  # L (Luminance)
+        assert la_image[0, 0, 1] == int(0.8 * 255)  # A (Alpha)
 
     @pytest.mark.asyncio
     async def test_save_blended_image(self, sample_benign_image):
@@ -130,8 +129,8 @@ class TestHiddenLayerConverter:
             mock_factory.return_value = mock_serializer
 
             converter = HiddenLayerConverter(benign_image_path=sample_benign_image)
-            attack_image = numpy.ones((10, 10, 3), dtype=numpy.float32) * 0.5
-            alpha = numpy.ones((10, 10, 1), dtype=numpy.float32) * 0.7
+            attack_image = numpy.ones((10, 10), dtype=numpy.float32) * 0.5
+            alpha = numpy.ones((10, 10), dtype=numpy.float32) * 0.7
 
             result_path = await converter._save_blended_image(attack_image, alpha)
 

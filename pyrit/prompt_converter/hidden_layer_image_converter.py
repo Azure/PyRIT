@@ -161,9 +161,7 @@ class HiddenLayerConverter(PromptConverter):
             with Image.open(path) as img:
                 img_gray = img.convert("L")  # read as grayscale
                 img_resized = img_gray.resize(self.size, Image.Resampling.LANCZOS)
-                img_rgb = img_resized.convert("RGB")
-
-                return numpy.array(img_rgb, dtype=numpy.float32) / 255.0  # normalize to [0, 1]
+                return numpy.array(img_resized, dtype=numpy.float32) / 255.0  # normalize to [0, 1]
         except Exception as e:
             raise ValueError(f"Failed to load and preprocess image from {path}: {e}")
 
@@ -176,23 +174,23 @@ class HiddenLayerConverter(PromptConverter):
         attack_image_uint8 = (attack_image * 255).astype(numpy.uint8)
         transparency_uint8 = (alpha * 255).astype(numpy.uint8)
 
-        # Create RGBA image: 'RGB' from attack image, 'A' creates transparency pattern
+        # Create LA image: Luminance + Alpha (grayscale with transparency)
         height, width = attack_image_uint8.shape[:2]
-        rgba_image = numpy.zeros((height, width, 4), dtype=numpy.uint8)
-        rgba_image[:, :, :3] = attack_image_uint8
-        rgba_image[:, :, 3] = transparency_uint8[:, :, 0]
+        la_image = numpy.zeros((height, width, 2), dtype=numpy.uint8)
+        la_image[:, :, 0] = attack_image_uint8  # L (Luminance)
+        la_image[:, :, 1] = transparency_uint8  # A (Alpha)
 
-        return rgba_image
+        return la_image
 
     async def _save_blended_image(self, attack_image: numpy.ndarray, alpha: numpy.ndarray) -> str:
         """Saves the blended image with transparency as a PNG file."""
         img_serializer = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
         img_serializer.file_extension = "png"
 
-        rgba_image = self._create_blended_image(attack_image, alpha)
-        rgba_pil = Image.fromarray(rgba_image, mode="RGBA")
+        la_image = self._create_blended_image(attack_image, alpha)
+        la_pil = Image.fromarray(la_image, mode="LA")
         image_buffer = BytesIO()
-        rgba_pil.save(image_buffer, format="PNG")
+        la_pil.save(image_buffer, format="PNG")
         image_str = base64.b64encode(image_buffer.getvalue())
 
         await img_serializer.save_b64_image(data=image_str.decode())
