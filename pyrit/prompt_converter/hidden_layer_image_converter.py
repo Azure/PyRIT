@@ -179,7 +179,7 @@ class HiddenLayerConverter(PromptConverter):
         white_background: numpy.ndarray,
     ) -> numpy.ndarray:
         """Computes gradients to optimize alpha for making the blend resemble the benign image."""
-        grad_loss_blended = 2 * (blended_image - foreground_image) / numpy.prod(blended_image.shape)
+        grad_loss_blended = 2 * (blended_image - foreground_image) / blended_image.size
         grad_blended_alpha = background_image - white_background
         return grad_loss_blended * grad_blended_alpha
 
