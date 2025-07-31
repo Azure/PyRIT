@@ -76,7 +76,7 @@ class _AdamOptimizer:
         return params
 
 
-class HiddenLayerConverter(PromptConverter):
+class TransparencyAttackConverter(PromptConverter):
     """
     Creates a transparency attack by optimizing an alpha channel to blend attack and benign images.
 

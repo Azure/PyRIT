@@ -9,7 +9,7 @@ import numpy
 import pytest
 from PIL import Image
 
-from pyrit.prompt_converter import ConverterResult, HiddenLayerConverter
+from pyrit.prompt_converter import ConverterResult, TransparencyAttackConverter
 
 
 @pytest.fixture
@@ -38,9 +38,9 @@ def sample_invalid_image():
     os.unlink(tmp.name)
 
 
-class TestHiddenLayerConverter:
+class TestTransparencyAttackConverter:
     def test_initialization_default_params(self, sample_benign_image):
-        converter = HiddenLayerConverter(benign_image_path=sample_benign_image)
+        converter = TransparencyAttackConverter(benign_image_path=sample_benign_image)
         assert converter.benign_image_path == sample_benign_image
         assert converter.size == (150, 150)
         assert converter.steps == 1000
@@ -49,7 +49,7 @@ class TestHiddenLayerConverter:
         assert converter.convergence_patience == 10
 
     def test_initialization_valid_params(self, sample_benign_image):
-        converter = HiddenLayerConverter(
+        converter = TransparencyAttackConverter(
             benign_image_path=sample_benign_image,
             size=(128, 128),
             steps=500,
@@ -67,34 +67,38 @@ class TestHiddenLayerConverter:
     def test_initialization_invalid_params(self, sample_benign_image):
         for path in [None, "", "invalid_path.txt", "image.png", "image.gif"]:
             with pytest.raises(ValueError):
-                HiddenLayerConverter(benign_image_path=path)
+                TransparencyAttackConverter(benign_image_path=path)
         for size in [(128, 0), (0, 0), 128, -1, (-128, -128), (128,), (128, 128, 128)]:
             with pytest.raises(ValueError):
-                HiddenLayerConverter(benign_image_path=sample_benign_image, size=size)
+                TransparencyAttackConverter(benign_image_path=sample_benign_image, size=size)
         for steps in [-1, 0]:
             with pytest.raises(ValueError):
-                HiddenLayerConverter(benign_image_path=sample_benign_image, steps=steps)
+                TransparencyAttackConverter(benign_image_path=sample_benign_image, steps=steps)
         for learning_rate in [-0.01, 0, 1, 1.5]:
             with pytest.raises(ValueError):
-                HiddenLayerConverter(benign_image_path=sample_benign_image, learning_rate=learning_rate)
+                TransparencyAttackConverter(benign_image_path=sample_benign_image, learning_rate=learning_rate)
         for convergence_threshold in [-1e-6, 0, 1]:
             with pytest.raises(ValueError):
-                HiddenLayerConverter(benign_image_path=sample_benign_image, convergence_threshold=convergence_threshold)
+                TransparencyAttackConverter(
+                    benign_image_path=sample_benign_image, convergence_threshold=convergence_threshold
+                )
         for convergence_patience in [-1, 0]:
             with pytest.raises(ValueError):
-                HiddenLayerConverter(benign_image_path=sample_benign_image, convergence_patience=convergence_patience)
+                TransparencyAttackConverter(
+                    benign_image_path=sample_benign_image, convergence_patience=convergence_patience
+                )
 
     def test_validate_input_image(self, sample_benign_image):
         for invalid_path in [None, "", "invalid_path.txt", "image.png", "image.gif"]:
             with pytest.raises(ValueError):
-                HiddenLayerConverter._validate_input_image(path=invalid_path)
+                TransparencyAttackConverter._validate_input_image(path=invalid_path)
         for nonexistent_path in ["image.jpg", "image.jpeg", "IMAGE.JPG"]:
             with pytest.raises(FileNotFoundError):
-                HiddenLayerConverter._validate_input_image(path=nonexistent_path)
-        HiddenLayerConverter._validate_input_image(path=sample_benign_image)  # should pass validation
+                TransparencyAttackConverter._validate_input_image(path=nonexistent_path)
+        TransparencyAttackConverter._validate_input_image(path=sample_benign_image)  # should pass validation
 
     def test_load_and_preprocess_image(self, sample_benign_image):
-        converter = HiddenLayerConverter(benign_image_path=sample_benign_image, size=(50, 50))
+        converter = TransparencyAttackConverter(benign_image_path=sample_benign_image, size=(50, 50))
         processed_image = converter._load_and_preprocess_image(sample_benign_image)
 
         assert processed_image.shape == (50, 50)  # height, width (single channel grayscale)
@@ -109,7 +113,7 @@ class TestHiddenLayerConverter:
             converter._load_and_preprocess_image(str(sample_invalid_image))
 
     def test_compute_mse_loss(self, sample_benign_image):
-        converter = HiddenLayerConverter(benign_image_path=sample_benign_image)
+        converter = TransparencyAttackConverter(benign_image_path=sample_benign_image)
         blended = numpy.array([[1.0, 2.0], [3.0, 4.0]])
         target = numpy.array([[2.0, 3.0], [4.0, 5.0]])
         expected_loss = 1.0
@@ -119,7 +123,7 @@ class TestHiddenLayerConverter:
         assert isinstance(loss, numpy.floating)
 
     def test_create_blended_image(self, sample_benign_image):
-        converter = HiddenLayerConverter(benign_image_path=sample_benign_image)
+        converter = TransparencyAttackConverter(benign_image_path=sample_benign_image)
         attack_image = numpy.array([[0.2]], dtype=numpy.float32)  # 1x1 grayscale image
         alpha = numpy.array([[0.8]], dtype=numpy.float32)  # 1x1 alpha
 
@@ -140,7 +144,7 @@ class TestHiddenLayerConverter:
             mock_serializer.save_b64_image = AsyncMock()
             mock_factory.return_value = mock_serializer
 
-            converter = HiddenLayerConverter(benign_image_path=sample_benign_image)
+            converter = TransparencyAttackConverter(benign_image_path=sample_benign_image)
             attack_image = numpy.ones((10, 10), dtype=numpy.float32) * 0.5
             alpha = numpy.ones((10, 10), dtype=numpy.float32) * 0.7
 
@@ -159,7 +163,7 @@ class TestHiddenLayerConverter:
             mock_serializer.save_b64_image = AsyncMock()
             mock_factory.return_value = mock_serializer
 
-            converter = HiddenLayerConverter(
+            converter = TransparencyAttackConverter(
                 benign_image_path=sample_benign_image,
                 size=(32, 32),
                 steps=5,
@@ -182,7 +186,7 @@ class TestHiddenLayerConverter:
             mock_factory.return_value = mock_serializer
 
             # Use parameters that should trigger early convergence
-            converter = HiddenLayerConverter(
+            converter = TransparencyAttackConverter(
                 benign_image_path=sample_benign_image,
                 size=(16, 16),
                 steps=1000,

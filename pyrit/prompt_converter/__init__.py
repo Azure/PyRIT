@@ -35,7 +35,6 @@ from pyrit.prompt_converter.fuzzer_converter import (
     FuzzerShortenConverter,
     FuzzerSimilarConverter,
 )
-from pyrit.prompt_converter.hidden_layer_image_converter import HiddenLayerConverter
 from pyrit.prompt_converter.human_in_the_loop_converter import HumanInTheLoopConverter
 from pyrit.prompt_converter.image_compression_converter import ImageCompressionConverter
 from pyrit.prompt_converter.insert_punctuation_converter import InsertPunctuationConverter
@@ -59,6 +58,7 @@ from pyrit.prompt_converter.tense_converter import TenseConverter
 from pyrit.prompt_converter.text_to_hex_converter import TextToHexConverter
 from pyrit.prompt_converter.tone_converter import ToneConverter
 from pyrit.prompt_converter.translation_converter import TranslationConverter
+from pyrit.prompt_converter.transparency_attack_converter import TransparencyAttackConverter
 from pyrit.prompt_converter.unicode_confusable_converter import UnicodeConfusableConverter
 from pyrit.prompt_converter.unicode_replacement_converter import UnicodeReplacementConverter
 from pyrit.prompt_converter.unicode_sub_converter import UnicodeSubstitutionConverter
@@ -101,7 +101,6 @@ __all__ = [
     "FuzzerRephraseConverter",
     "FuzzerShortenConverter",
     "FuzzerSimilarConverter",
-    "HiddenLayerConverter",
     "HumanInTheLoopConverter",
     "ImageCompressionConverter",
     "InsertPunctuationConverter",
@@ -129,6 +128,7 @@ __all__ = [
     "TenseConverter",
     "ToneConverter",
     "TranslationConverter",
+    "TransparencyAttackConverter",
     "UnicodeConfusableConverter",
     "UnicodeReplacementConverter",
     "UnicodeSubstitutionConverter",
