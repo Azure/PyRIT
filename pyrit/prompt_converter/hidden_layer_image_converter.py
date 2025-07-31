@@ -70,8 +70,8 @@ class HiddenLayerConverter(PromptConverter):
             self.beta_1 = beta_1
             self.beta_2 = beta_2
             self.epsilon = epsilon
-            self.m = None  # initialize 1st moment vector
-            self.v = None  # initialize 2nd moment vector
+            self.m: numpy.ndarray  # first moment vector
+            self.v: numpy.ndarray  # second moment vector
             self.t = 0  # initialize timestep
 
         def update(self, *, params: numpy.ndarray, grads: numpy.ndarray) -> numpy.ndarray:
@@ -85,10 +85,9 @@ class HiddenLayerConverter(PromptConverter):
             Returns:
                 numpy.ndarray: Updated parameter values after applying the Adam optimization step.
             """
-            if self.m is None:
+            if self.t == 0:
                 self.m = numpy.zeros_like(params)
                 self.v = numpy.zeros_like(params)
-
             self.t += 1
 
             # Update biased first and second raw moment estimates
