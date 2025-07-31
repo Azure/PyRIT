@@ -12,6 +12,7 @@ from pyrit.attacks.base.attack_context import (
 from pyrit.attacks.base.attack_executor import AttackExecutor
 from pyrit.attacks.base.attack_strategy import AttackStrategy, AttackStrategyLogAdapter
 from pyrit.attacks.multi_turn.crescendo import CrescendoAttack
+from pyrit.attacks.multi_turn.pair import PAIRAttack
 from pyrit.attacks.multi_turn.red_teaming import RedTeamingAttack, RTOSystemPromptPaths
 from pyrit.attacks.multi_turn.tree_of_attacks import (
     TAPAttack,
@@ -47,6 +48,7 @@ __all__ = [
     "FlipAttack",
     "ManyShotJailbreakAttack",
     "MultiTurnAttackContext",
+    "PAIRAttack",
     "PromptSendingAttack",
     "RTOSystemPromptPaths",
     "RedTeamingAttack",
