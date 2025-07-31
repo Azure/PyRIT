@@ -138,7 +138,7 @@ class HiddenLayerConverter(PromptConverter):
                 lower quality blending, while values too low may require more steps to achieve a good blend.
             convergence_threshold (float): Minimum change in loss required to consider improvement.
                 If the change in loss between steps is below this value, it's counted as no improvement.
-                Default is 1e-6. Recommended range: 1e-6 to 1e-3.
+                Default is 1e-6. Recommended range: 1e-6 to 1e-4.
             convergence_patience (int): Number of consecutive steps with no improvement before stopping. Default is 10.
 
         Raises:
@@ -146,7 +146,7 @@ class HiddenLayerConverter(PromptConverter):
             ValueError: If the learning rate is outside the valid range (0, 1).
             ValueError: If the size is not a tuple of two positive integers (width, height).
             ValueError: If the steps is not a positive integer.
-            ValueError: If convergence threshold is not a positive float.
+            ValueError: If convergence threshold is not a float between 0 and 1.
             ValueError: If convergence patience is not a positive integer.
         """
         self.benign_image_path = benign_image_path
