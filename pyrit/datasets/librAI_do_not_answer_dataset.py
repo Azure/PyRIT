@@ -3,8 +3,7 @@
 
 from datasets import load_dataset
 
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import HarmCategory, SeedPrompt, SeedPromptDataset
 
 
 def fetch_librAI_do_not_answer_dataset() -> SeedPromptDataset:
@@ -34,7 +33,11 @@ def fetch_librAI_do_not_answer_dataset() -> SeedPromptDataset:
             data_type="text",
             name="",
             dataset_name="LibrAI/Do-Not-Answer",
-            harm_categories=[entry["risk_area"], entry["types_of_harm"], entry["specific_harms"]],
+            harm_categories=[
+                HarmCategory.parse(entry.get("risk_area", "")) or HarmCategory.OTHER,
+                HarmCategory.parse(entry.get("types_of_harm", "")) or HarmCategory.OTHER,
+                HarmCategory.parse(entry.get("specific_harms", "")) or HarmCategory.OTHER,
+            ],
             description=(
                 f"This is a prompt from the 'Do Not Answer' dataset under the risk area: {entry['risk_area']}, "
                 f"harm type: {entry['types_of_harm']}, and specific harm: {entry['specific_harms']}."
