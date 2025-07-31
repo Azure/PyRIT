@@ -155,6 +155,8 @@ class HiddenLayerConverter(PromptConverter):
         if steps <= 0:
             raise ValueError("Steps must be a positive integer.")
 
+        self._cached_benign_image = self._load_and_preprocess_image(str(benign_image_path))
+
     def _load_and_preprocess_image(self, path: str) -> numpy.ndarray:
         """Loads image, converts to grayscale, resizes, and normalizes for optimization."""
         try:
@@ -217,8 +219,6 @@ class HiddenLayerConverter(PromptConverter):
         self._validate_input_image(prompt)
 
         background_image = self._load_and_preprocess_image(prompt)
-        foreground_image = self._load_and_preprocess_image(str(self.benign_image_path))
-
         # Scale attack image by 0.5 to darken it for better blending optimization
         background_tensor = background_image * 0.5
 
@@ -232,12 +232,12 @@ class HiddenLayerConverter(PromptConverter):
             # Simulate blending: alpha=1 uses darkened attack image, alpha=0 uses white
             blended_image = alpha * background_tensor + (1 - alpha) * white_background
 
-            loss = self._compute_mse_loss(blended_image, foreground_image)
+            loss = self._compute_mse_loss(blended_image, self._cached_benign_image)
             if step % 100 == 0:
                 logger.debug(f"Step {step}/{self.steps}, Loss: {loss:.4f}")
 
             # Update alpha to minimize difference between blended and benign image
-            grad_loss_blended = 2 * (blended_image - foreground_image) / blended_image.size
+            grad_loss_blended = 2 * (blended_image - self._cached_benign_image) / blended_image.size
             grad_alpha = grad_loss_blended * grad_blended_alpha_constant
             alpha = optimizer.update(params=alpha, grads=grad_alpha)
             alpha = numpy.clip(alpha, 0.0, 1.0)
