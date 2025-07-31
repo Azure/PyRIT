@@ -106,18 +106,6 @@ class TestHiddenLayerConverter:
         assert loss == expected_loss
         assert isinstance(loss, numpy.floating)
 
-    def test_compute_gradients_alpha_layer(self, sample_benign_image):
-        converter = HiddenLayerConverter(benign_image_path=sample_benign_image)
-        blended = numpy.array([[2.0, 3.0], [4.0, 5.0]])
-        foreground = numpy.array([[1.0, 2.0], [3.0, 4.0]])
-        background = numpy.array([[5.0, 6.0], [7.0, 8.0]])
-        white_bg = numpy.array([[1.0, 1.0], [1.0, 1.0]])
-
-        gradients = converter._compute_gradients_alpha_layer(blended, foreground, background, white_bg)
-        expected = numpy.array([[2.0, 2.5], [3.0, 3.5]])
-        numpy.testing.assert_array_almost_equal(gradients, expected)
-        assert gradients.shape == blended.shape
-
     def test_create_blended_image(self, sample_benign_image):
         converter = HiddenLayerConverter(benign_image_path=sample_benign_image)
         attack_image = numpy.array([[[0.2, 0.4, 0.6]]], dtype=numpy.float32)  # 1x1x3 image

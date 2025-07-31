@@ -171,18 +171,6 @@ class HiddenLayerConverter(PromptConverter):
         """Computes Mean Squared Error (MSE) loss between blended and target images."""
         return numpy.mean(numpy.square(blended_image - target_tensor))
 
-    def _compute_gradients_alpha_layer(
-        self,
-        blended_image: numpy.ndarray,
-        foreground_image: numpy.ndarray,
-        background_image: numpy.ndarray,
-        white_background: numpy.ndarray,
-    ) -> numpy.ndarray:
-        """Computes gradients to optimize alpha for making the blend resemble the benign image."""
-        grad_loss_blended = 2 * (blended_image - foreground_image) / blended_image.size
-        grad_blended_alpha = background_image - white_background
-        return grad_loss_blended * grad_blended_alpha
-
     def _create_blended_image(self, attack_image: numpy.ndarray, alpha: numpy.ndarray) -> numpy.ndarray:
         """Creates a blended image using the attack image and alpha transparency."""
         attack_image_uint8 = (attack_image * 255).astype(numpy.uint8)
@@ -240,6 +228,7 @@ class HiddenLayerConverter(PromptConverter):
         white_background = numpy.ones_like(background_tensor)  # white canvas for blending simulation
 
         optimizer = self.AdamOptimizer(learning_rate=self.learning_rate)
+        grad_blended_alpha_constant = background_tensor - white_background
 
         for step in range(self.steps):
             # Simulate blending: alpha=1 uses darkened attack image, alpha=0 uses white
@@ -250,9 +239,8 @@ class HiddenLayerConverter(PromptConverter):
                 logger.debug(f"Step {step}/{self.steps}, Loss: {loss:.4f}")
 
             # Update alpha to minimize difference between blended and benign image
-            grad_alpha = self._compute_gradients_alpha_layer(
-                blended_image, foreground_image, background_tensor, white_background
-            )
+            grad_loss_blended = 2 * (blended_image - foreground_image) / blended_image.size
+            grad_alpha = grad_loss_blended * grad_blended_alpha_constant
             alpha = optimizer.update(params=alpha, grads=grad_alpha)
             alpha = numpy.clip(alpha, 0.0, 1.0)
 
