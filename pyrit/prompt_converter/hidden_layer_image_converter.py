@@ -54,7 +54,9 @@ class HiddenLayerConverter(PromptConverter):
             https://github.com/xbeat/Machine-Learning/blob/main/Adam%20Optimizer%20in%20Python.md
         """
 
-        def __init__(self, learning_rate=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-8):
+        def __init__(
+            self, *, learning_rate: float = 0.001, beta_1: float = 0.9, beta_2: float = 0.999, epsilon: float = 1e-8
+        ):
             """
             Initializes the Adam optimizer with specified hyperparameters.
 
@@ -72,8 +74,17 @@ class HiddenLayerConverter(PromptConverter):
             self.v = None  # initialize 2nd moment vector
             self.t = 0  # initialize timestep
 
-        def update(self, params, grads):
-            """Performs a single update step using the Adam optimization algorithm."""
+        def update(self, *, params: numpy.ndarray, grads: numpy.ndarray) -> numpy.ndarray:
+            """
+            Performs a single update step using the Adam optimization algorithm.
+
+            Args:
+                params (numpy.ndarray): Current parameter values to be optimized.
+                grads (numpy.ndarray): Gradients w.r.t. stochastic objective.
+
+            Returns:
+                numpy.ndarray: Updated parameter values after applying the Adam optimization step.
+            """
             if self.m is None:
                 self.m = numpy.zeros_like(params)
                 self.v = numpy.zeros_like(params)
@@ -82,7 +93,7 @@ class HiddenLayerConverter(PromptConverter):
 
             # Update biased first and second raw moment estimates
             self.m = self.beta_1 * self.m + (1 - self.beta_1) * grads
-            self.v = self.beta_2 * self.v + (1 - self.beta_2) * (grads**2)  # type: ignore
+            self.v = self.beta_2 * self.v + (1 - self.beta_2) * (grads**2)
 
             # Compute bias-corrected first and second raw moment estimates
             m_hat = self.m / (1 - self.beta_1**self.t)
@@ -244,7 +255,7 @@ class HiddenLayerConverter(PromptConverter):
             grad_alpha = self._compute_gradients_alpha_layer(
                 blended_image, foreground_image, background_tensor, white_background
             )
-            alpha = optimizer.update(alpha, grad_alpha)
+            alpha = optimizer.update(params=alpha, grads=grad_alpha)
             alpha = numpy.clip(alpha, 0.0, 1.0)
 
         image_path = await self._save_blended_image(background_tensor, alpha)
