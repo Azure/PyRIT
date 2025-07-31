@@ -67,7 +67,7 @@ explanation, or additional text. Output only the word "test" and nothing else.
         ("AZURE_FOUNDRY_PHI4_ENDPOINT", "AZURE_CHAT_PHI4_KEY", "", False, True),
         ("AZURE_FOUNDRY_MINSTRAL3B_ENDPOINT", "AZURE_CHAT_MINSTRAL3B_KEY", "", False, False),
         ("GOOGLE_GEMINI_ENDPOINT", "GOOGLE_GEMINI_API_KEY", "GOOGLE_GEMINI_MODEL", True, False),
-        ("ANTHROPIC_CHAT_ENDPOINT", "ANTHROPIC_CHAT_KEY", "ANTHROPIC_CHAT_MODEL", True, False)
+        ("ANTHROPIC_CHAT_ENDPOINT", "ANTHROPIC_CHAT_KEY", "ANTHROPIC_CHAT_MODEL", True, False),
     ],
 )
 async def test_connect_required_openai_text_targets(
