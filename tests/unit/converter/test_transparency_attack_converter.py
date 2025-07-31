@@ -137,7 +137,7 @@ class TestTransparencyAttackConverter:
 
     @pytest.mark.asyncio
     async def test_save_blended_image(self, sample_benign_image):
-        with patch("pyrit.prompt_converter.hidden_layer_image_converter.data_serializer_factory") as mock_factory:
+        with patch("pyrit.prompt_converter.transparency_attack_converter.data_serializer_factory") as mock_factory:
             mock_serializer = MagicMock()
             mock_serializer.file_extension = "png"
             mock_serializer.value = "mock_image_path.png"
@@ -156,7 +156,7 @@ class TestTransparencyAttackConverter:
 
     @pytest.mark.asyncio
     async def test_convert_async_successful(self, sample_benign_image, sample_attack_image):
-        with patch("pyrit.prompt_converter.hidden_layer_image_converter.data_serializer_factory") as mock_factory:
+        with patch("pyrit.prompt_converter.transparency_attack_converter.data_serializer_factory") as mock_factory:
             mock_serializer = MagicMock()
             mock_serializer.file_extension = "png"
             mock_serializer.value = "output_image_path.png"
@@ -178,7 +178,7 @@ class TestTransparencyAttackConverter:
 
     @pytest.mark.asyncio
     async def test_convert_async_early_convergence(self, sample_benign_image, sample_attack_image):
-        with patch("pyrit.prompt_converter.hidden_layer_image_converter.data_serializer_factory") as mock_factory:
+        with patch("pyrit.prompt_converter.transparency_attack_converter.data_serializer_factory") as mock_factory:
             mock_serializer = MagicMock()
             mock_serializer.file_extension = "png"
             mock_serializer.value = "output_image_path.png"
@@ -196,7 +196,7 @@ class TestTransparencyAttackConverter:
             )
 
             # Mock the logger to capture convergence message
-            with patch("pyrit.prompt_converter.hidden_layer_image_converter.logger") as mock_logger:
+            with patch("pyrit.prompt_converter.transparency_attack_converter.logger") as mock_logger:
                 result = await converter.convert_async(prompt=sample_attack_image, input_type="image_path")
 
                 assert isinstance(result, ConverterResult)
