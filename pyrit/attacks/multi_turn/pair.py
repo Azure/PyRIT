@@ -15,7 +15,7 @@ from pyrit.attacks.base.attack_context import MultiTurnAttackContext
 from pyrit.attacks.base.attack_strategy import AttackStrategy
 from pyrit.attacks.multi_turn.tree_of_attacks import TreeOfAttacksWithPruningAttack
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import AttackOutcome, AttackResult, SeedPrompt
+from pyrit.models import AttackOutcome, AttackResult
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
 
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class PAIRAttackContext(MultiTurnAttackContext):
     """Context for the PAIR attack strategy."""
-    
+
     # PAIR-specific parameters
     depth: int = 3
     desired_response_prefix: str = "Sure, here is"
@@ -41,7 +41,7 @@ class PAIRAttackContext(MultiTurnAttackContext):
         depth: int = 3,
         desired_response_prefix: str = "Sure, here is",
         objective_achieved_score_threshold: float = 0.8,
-        **kwargs
+        **kwargs,
     ) -> "PAIRAttackContext":
         """Create PAIRAttackContext from parameters."""
         return cls(
@@ -57,27 +57,27 @@ class PAIRAttackContext(MultiTurnAttackContext):
 @dataclass
 class PAIRAttackResult(AttackResult):
     """Result of the PAIR attack strategy execution."""
-    
+
     def __post_init__(self):
         """Initialize metadata after dataclass construction."""
-        if not hasattr(self, 'metadata') or self.metadata is None:
+        if not hasattr(self, "metadata") or self.metadata is None:
             self.metadata = {}
-    
+
     @property
     def depth_reached(self) -> int:
         """
         Get the depth reached during the attack.
-        
+
         Returns:
             int: The maximum depth reached.
         """
         return self.metadata.get("depth_reached", 0)
-    
+
     @depth_reached.setter
     def depth_reached(self, value: int) -> None:
         """
         Set the depth reached during the attack.
-        
+
         Args:
             value (int): The depth reached to set.
         """
@@ -91,7 +91,7 @@ class PAIRAttack(AttackStrategy[PAIRAttackContext, PAIRAttackResult]):
     This algorithm was published and described in the paper: Chao, Patrick, et al. Jailbreaking Black Box Large
     Language Models in Twenty Queries. arXiv:2310.08419, arXiv, 13 Oct. 2023. arXiv.org, http://arxiv.org/abs/2310.08419
 
-    A reference implementation is found in this following repository: 
+    A reference implementation is found in this following repository:
         https://github.com/patrickrchao/JailbreakingLLMs/blob/main/system_prompts.py
 
     The PAIR attack uses a tree-based approach with pruning to iteratively refine prompts.
@@ -173,8 +173,7 @@ class PAIRAttack(AttackStrategy[PAIRAttackContext, PAIRAttackResult]):
         # Initialize adversarial configuration
         self._adversarial_chat = attack_adversarial_config.target
         system_prompt_path = (
-            attack_adversarial_config.system_prompt_path
-            or PAIRAttack.DEFAULT_ADVERSARIAL_CHAT_SYSTEM_PROMPT_PATH
+            attack_adversarial_config.system_prompt_path or PAIRAttack.DEFAULT_ADVERSARIAL_CHAT_SYSTEM_PROMPT_PATH
         )
         self._adversarial_chat_system_prompt_path = system_prompt_path
 
@@ -187,7 +186,7 @@ class PAIRAttack(AttackStrategy[PAIRAttackContext, PAIRAttackResult]):
         self._prompt_normalizer = prompt_normalizer or PromptNormalizer()
 
         # Initialize the underlying tree attack
-        self._tree_attack = None
+        self._tree_attack: Optional[TreeOfAttacksWithPruningAttack] = None
 
     def _validate_context(self, *, context: PAIRAttackContext) -> None:
         """
@@ -216,24 +215,28 @@ class PAIRAttack(AttackStrategy[PAIRAttackContext, PAIRAttackResult]):
             context (PAIRAttackContext): The context for the attack.
         """
         # Create adversarial config
-        from pyrit.attacks.base.attack_config import AttackAdversarialConfig, AttackConverterConfig, AttackScoringConfig
-        
+        from pyrit.attacks.base.attack_config import (
+            AttackAdversarialConfig,
+            AttackConverterConfig,
+            AttackScoringConfig,
+        )
+
         adversarial_config = AttackAdversarialConfig(
             target=self._adversarial_chat,
             system_prompt_path=self._adversarial_chat_system_prompt_path,
         )
-        
+
         converter_config = AttackConverterConfig(
             request_converters=self._request_converters,
             response_converters=self._response_converters,
         )
-        
+
         scoring_config = AttackScoringConfig(
             objective_scorer=self._objective_scorer,
             auxiliary_scorers=self._auxiliary_scorers,
             successful_objective_threshold=context.objective_achieved_score_threshold,
         )
-        
+
         # Create the underlying TreeOfAttacksWithPruningAttack with PAIR-specific configuration
         self._tree_attack = TreeOfAttacksWithPruningAttack(
             objective_target=self._objective_target,
@@ -263,7 +266,7 @@ class PAIRAttack(AttackStrategy[PAIRAttackContext, PAIRAttackResult]):
             # Ensure tree_attack was initialized in setup
             if self._tree_attack is None:
                 raise ValueError("TreeOfAttacksWithPruningAttack was not initialized properly in setup phase")
-                
+
             # Run the underlying tree attack using the attack strategy interface
             tree_result = await self._tree_attack.execute_async(
                 objective=context.objective,
@@ -300,6 +303,9 @@ class PAIRAttack(AttackStrategy[PAIRAttackContext, PAIRAttackResult]):
 
             return result
 
+        except ValueError:
+            # Re-raise ValueError for proper error handling (e.g., setup validation errors)
+            raise
         except Exception as e:
             self._logger.error(f"PAIR attack failed with error: {str(e)}")
             return PAIRAttackResult(
