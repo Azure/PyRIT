@@ -5,7 +5,7 @@ import base64
 import logging
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Tuple
+from typing import Tuple
 
 import numpy
 from PIL import Image
@@ -182,9 +182,9 @@ class TransparencyAttackConverter(PromptConverter):
         except Exception as e:
             raise ValueError(f"Failed to load and preprocess image from {path}: {e}")
 
-    def _compute_mse_loss(self, blended_image: numpy.ndarray, target_tensor: numpy.ndarray) -> numpy.floating[Any]:
+    def _compute_mse_loss(self, blended_image: numpy.ndarray, target_tensor: numpy.ndarray) -> float:
         """Computes Mean Squared Error (MSE) loss between blended and target images."""
-        return numpy.mean(numpy.square(blended_image - target_tensor))
+        return float(numpy.mean(numpy.square(blended_image - target_tensor)))
 
     def _create_blended_image(self, attack_image: numpy.ndarray, alpha: numpy.ndarray) -> numpy.ndarray:
         """Creates a blended image using the attack image and alpha transparency."""
