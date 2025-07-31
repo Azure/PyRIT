@@ -211,6 +211,7 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
             attack_identifier=self.get_identifier(),
             last_response=response.get_piece() if response else None,
             last_score=score,
+            related_conversations=context.related_conversations,
             outcome=outcome,
             outcome_reason=outcome_reason,
             executed_turns=1,
