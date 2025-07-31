@@ -44,35 +44,51 @@ class HiddenLayerConverter(PromptConverter):
 
     class AdamOptimizer:
         """
-        Implementation of the Adam Optimizer using NumPy.
-        The code for this class is taken from the following source:
-        https://github.com/xbeat/Machine-Learning/blob/main/Adam%20Optimizer%20in%20Python.md
+        Implementation of the Adam Optimizer using NumPy. Adam optimization is a stochastic gradient
+        descent method that is based on adaptive estimation of first-order and second-order moments.
+        For further details, see the original paper: `"Adam: A Method for Stochastic Optimization"`
+        by D. P. Kingma and J. Ba, 2014: https://arxiv.org/abs/1412.6980
+
+        Note:
+            The code is inspired by the implementation found at:
+            https://github.com/xbeat/Machine-Learning/blob/main/Adam%20Optimizer%20in%20Python.md
         """
 
-        def __init__(self, learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-8):
+        def __init__(self, learning_rate=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-8):
+            """
+            Initializes the Adam optimizer with specified hyperparameters.
+
+            Args:
+                learning_rate (float): The step size for each update/iteration. Default is 0.001
+                beta1 (float): The exponential decay rate for the first moment estimates. Default is 0.9
+                beta2 (float): The exponential decay rate for the second moment estimates. Default is 0.999
+                epsilon (float): A small constant for numerical stability (to prevent division by zero).
+            """
             self.learning_rate = learning_rate
-            self.beta1 = beta1
-            self.beta2 = beta2
+            self.beta_1 = beta_1
+            self.beta_2 = beta_2
             self.epsilon = epsilon
-            self.m = None
-            self.v = None
-            self.t = 0
+            self.m = None  # initialize 1st moment vector
+            self.v = None  # initialize 2nd moment vector
+            self.t = 0  # initialize timestep
 
         def update(self, params, grads):
+            """Performs a single update step using the Adam optimization algorithm."""
             if self.m is None:
                 self.m = numpy.zeros_like(params)
                 self.v = numpy.zeros_like(params)
 
             self.t += 1
 
-            self.m = self.beta1 * self.m + (1 - self.beta1) * grads
-            self.v = self.beta2 * self.v + (1 - self.beta2) * (grads**2)  # type: ignore
+            # Update biased first and second raw moment estimates
+            self.m = self.beta_1 * self.m + (1 - self.beta_1) * grads
+            self.v = self.beta_2 * self.v + (1 - self.beta_2) * (grads**2)  # type: ignore
 
-            m_hat = self.m / (1 - self.beta1**self.t)
-            v_hat = self.v / (1 - self.beta2**self.t)
+            # Compute bias-corrected first and second raw moment estimates
+            m_hat = self.m / (1 - self.beta_1**self.t)
+            v_hat = self.v / (1 - self.beta_2**self.t)
 
             params -= self.learning_rate * m_hat / (numpy.sqrt(v_hat) + self.epsilon)
-
             return params
 
     @staticmethod
