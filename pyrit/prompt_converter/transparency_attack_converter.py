@@ -117,7 +117,7 @@ class TransparencyAttackConverter(PromptConverter):
         *,
         benign_image_path: Path,
         size: Tuple[int, int] = (150, 150),
-        steps: int = 1000,
+        steps: int = 1500,
         learning_rate: float = 0.001,
         convergence_threshold: float = 1e-6,
         convergence_patience: int = 10,
@@ -132,7 +132,7 @@ class TransparencyAttackConverter(PromptConverter):
                 Since the original study resizes images to 150x150 pixels, this is the default size used.
                 Bigger values may significantly increase computation time.
             steps (int): Number of optimization steps to perform.
-                Recommended range: 100-2000 steps. Default is 1000. Generally, the higher the steps, the
+                Recommended range: 100-2000 steps. Default is 1500. Generally, the higher the steps, the
                 better end result you can achieve, but at the cost of increased computation time.
             learning_rate (float): Controls the magnitude of adjustments in each step (used by the Adam optimizer).
                 Recommended range: 0.0001-0.01. Default is 0.001. Values close to 1 may lead to instability and

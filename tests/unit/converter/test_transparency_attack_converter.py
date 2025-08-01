@@ -43,7 +43,7 @@ class TestTransparencyAttackConverter:
         converter = TransparencyAttackConverter(benign_image_path=sample_benign_image)
         assert converter.benign_image_path == sample_benign_image
         assert converter.size == (150, 150)
-        assert converter.steps == 1000
+        assert converter.steps == 1500
         assert converter.learning_rate == 0.001
         assert converter.convergence_threshold == 1e-6
         assert converter.convergence_patience == 10
@@ -120,7 +120,7 @@ class TestTransparencyAttackConverter:
 
         loss = converter._compute_mse_loss(blended, target)
         assert loss == expected_loss
-        assert isinstance(loss, numpy.floating)
+        assert isinstance(loss, float)
 
     def test_create_blended_image(self, sample_benign_image):
         converter = TransparencyAttackConverter(benign_image_path=sample_benign_image)

@@ -218,3 +218,7 @@ fixable = [
     "UP",
     "YTT",
 ]
+[tool.ruff.lint.per-file-ignores]
+# ignores "`await` statement outside of a function"
+# and "Module level import not at top of file"
+"doc/**.py" = ["F704", "E402"]
