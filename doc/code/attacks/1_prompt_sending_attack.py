@@ -163,7 +163,7 @@ await printer.print_conversation_async(result=result, include_auxiliary_scores=T
 # %% [markdown]
 # ## Prepending Conversations
 #
-# If you prepend all or part of a conversation with `PromptSendingAttackr`, that is also supported. You can call `set_prepended_conversation` to customize the beginning part of any message. For example, you could use this to do a multi-turn conversation. Below sets the system prompt for many messages.
+# If you prepend all or part of a conversation with `PromptSendingAttack`, that is also supported. You can call `set_prepended_conversation` to customize the beginning part of any message. For example, you could use this to do a multi-turn conversation. Below sets the system prompt for many messages.
 # %%
 from pyrit.attacks import PromptSendingAttack, AttackExecutor
 from pyrit.datasets import TextJailBreak
