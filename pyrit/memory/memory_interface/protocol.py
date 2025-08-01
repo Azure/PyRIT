@@ -3,17 +3,17 @@
 
 """Protocol defining the interface that mixins can depend on."""
 
-from typing import Protocol, Sequence, MutableSequence, Optional, Union
 import uuid
 from datetime import datetime
+from typing import MutableSequence, Optional, Protocol, Sequence, Union
 
-from pyrit.memory.memory_models import Base, ScoreEntry
-from pyrit.models import PromptRequestPiece, Score
+from pyrit.memory.memory_models import Base
+from pyrit.models import PromptRequestPiece
 
 
 class MemoryInterfaceProtocol(Protocol):
     """Protocol defining the interface that memory mixins can depend on."""
-    
+
     def get_prompt_request_pieces(
         self,
         *,
@@ -33,11 +33,11 @@ class MemoryInterfaceProtocol(Protocol):
     ) -> Sequence[PromptRequestPiece]:
         """Retrieves a list of PromptRequestPiece objects based on the specified filters."""
         ...
-    
+
     def _insert_entries(self, *, entries: Sequence[Base]) -> None:
         """Inserts multiple entries into the database."""
         ...
-    
+
     def _query_entries(
         self, Model, *, conditions: Optional = None, distinct: bool = False, join_scores: bool = False
     ) -> MutableSequence:

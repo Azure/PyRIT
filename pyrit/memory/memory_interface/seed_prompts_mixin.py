@@ -11,7 +11,13 @@ from typing import MutableSequence, Optional, Sequence, Union
 from sqlalchemy import and_
 
 from pyrit.memory.memory_models import SeedPromptEntry
-from pyrit.models import DataTypeSerializer, SeedPrompt, SeedPromptDataset, SeedPromptGroup, data_serializer_factory
+from pyrit.models import (
+    DataTypeSerializer,
+    SeedPrompt,
+    SeedPromptDataset,
+    SeedPromptGroup,
+    data_serializer_factory,
+)
 
 logger = logging.getLogger(__name__)
 

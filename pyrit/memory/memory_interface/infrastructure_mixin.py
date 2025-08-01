@@ -12,7 +12,10 @@ from typing import MutableSequence, Optional, Sequence, TypeVar, Union
 from sqlalchemy import Engine
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 
-from pyrit.memory.memory_embedding import MemoryEmbedding, default_memory_embedding_factory
+from pyrit.memory.memory_embedding import (
+    MemoryEmbedding,
+    default_memory_embedding_factory,
+)
 from pyrit.memory.memory_exporter import MemoryExporter
 from pyrit.memory.memory_models import Base, EmbeddingDataEntry
 from pyrit.models import StorageIO
@@ -139,11 +142,11 @@ class MemoryInfrastructureMixin(abc.ABC):
     def print_schema(self):
         """Prints the schema of all tables in the database."""
         from sqlalchemy import MetaData
-        
+
         if not self.engine:
             print("No engine available to print schema")
             return
-            
+
         metadata = MetaData()
         metadata.reflect(bind=self.engine)
 
