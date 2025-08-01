@@ -196,6 +196,16 @@ class TestContextValidation:
 
         attack._validate_context(context=context)  # Should not raise
 
+    def test_singleturn_attack_context_create_from_params_invalid_attack_input_type(self):
+        """Test that SingleTurnAttackContext.create_from_params raises ValueError for non-string attack_input."""
+        # Should raise ValueError during context creation
+        with pytest.raises(ValueError, match="SingleTurnAttackContext expects attack_input to be a string"):
+            SingleTurnAttackContext.create_from_params(
+                attack_input={"not": "a string"},  # Invalid type - dict instead of string
+                prepended_conversation=[],
+                memory_labels={"test": "label"},
+            )
+
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestSetupPhase:

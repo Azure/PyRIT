@@ -4,7 +4,7 @@
 from pyrit.attacks.base.attack_config import AttackAdversarialConfig, AttackConverterConfig, AttackScoringConfig
 from pyrit.attacks.base.attack_context import (
     AttackContext,
-    ContextT,
+    AttackContextT,
     ConversationSession,
     MultiTurnAttackContext,
     SingleTurnAttackContext,
@@ -35,12 +35,12 @@ from pyrit.attacks.printers import ConsoleAttackResultPrinter
 __all__ = [
     "AttackAdversarialConfig",
     "AttackContext",
+    "AttackContextT",
     "AttackConverterConfig",
     "AttackExecutor",
     "AttackScoringConfig",
     "AttackStrategy",
     "AttackStrategyLogAdapter",
-    "ContextT",
     "ContextComplianceAttack",
     "ConversationSession",
     "CrescendoAttack",

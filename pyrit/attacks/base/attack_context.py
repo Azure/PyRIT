@@ -14,7 +14,7 @@ from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.models.score import Score
 from pyrit.models.seed_prompt import SeedPromptGroup
 
-ContextT = TypeVar("ContextT", bound="AttackContext")
+AttackContextT = TypeVar("AttackContextT", bound="AttackContext")
 
 
 @dataclass
@@ -33,13 +33,13 @@ class AttackContext(ABC):
     @classmethod
     @abstractmethod
     def create_from_params(
-        cls: type[ContextT],
+        cls: type[AttackContextT],
         *,
         attack_input: Any,
         prepended_conversation: List[PromptRequestResponse],
         memory_labels: Dict[str, str],
         **kwargs,
-    ) -> ContextT:
+    ) -> AttackContextT:
         """
         Factory method to create context from standard parameters.
 
@@ -56,7 +56,7 @@ class AttackContext(ABC):
         """
         pass
 
-    def duplicate(self: ContextT) -> ContextT:
+    def duplicate(self: AttackContextT) -> AttackContextT:
         """
         Create a deep copy of the context to avoid concurrency issues.
 

@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from pyrit.attacks.base.attack_context import ContextT
+from pyrit.attacks.base.attack_context import AttackContextT
 from pyrit.attacks.base.attack_strategy import AttackStrategy, AttackStrategyLogAdapter
 from pyrit.exceptions.exception_classes import (
     AttackExecutionException,
@@ -44,7 +44,7 @@ def mock_attack_strategy(mock_default_values):
     mock_context_type.create_from_params = MagicMock()
 
     # Create a concrete subclass with mocked abstract methods
-    class TestableAttackStrategy(AttackStrategy[ContextT, AttackResultT, str]):
+    class TestableAttackStrategy(AttackStrategy[AttackContextT, AttackResultT, str]):
         def __init__(self, **kwargs):
             # Use the root logger to ensure caplog can capture the logs
             super().__init__(context_type=mock_context_type, logger=logging.getLogger(), **kwargs)
@@ -82,7 +82,7 @@ class TestAttackStrategyInitialization:
     def test_init_with_default_parameters(self, mock_default_values):
         mock_context_type = MagicMock()
 
-        class ConcreteStrategy(AttackStrategy[ContextT, AttackResultT, str]):
+        class ConcreteStrategy(AttackStrategy[AttackContextT, AttackResultT, str]):
             _validate_context = MagicMock()
             _setup_async = AsyncMock()
             _perform_attack_async = AsyncMock()
@@ -100,7 +100,7 @@ class TestAttackStrategyInitialization:
     def test_init_with_custom_logger(self, mock_default_values):
         mock_context_type = MagicMock()
 
-        class ConcreteStrategy(AttackStrategy[ContextT, AttackResultT, str]):
+        class ConcreteStrategy(AttackStrategy[AttackContextT, AttackResultT, str]):
             _validate_context = MagicMock()
             _setup_async = AsyncMock()
             _perform_attack_async = AsyncMock()
