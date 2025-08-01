@@ -1,8 +1,11 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Optional
+from typing import DefaultDict, Optional
 
-from pyrit.models import AttackResult, AttackOutcome
+from pyrit.models import AttackOutcome, AttackResult
 
 
 @dataclass
@@ -17,25 +20,12 @@ class AttackStats:
 def _compute_stats(successes: int, failures: int, undetermined: int) -> AttackStats:
     total_decided = successes + failures
     success_rate = successes / total_decided if total_decided > 0 else None
-    return AttackStats(
-        success_rate=success_rate,
-        total_decided=total_decided,
-        successes=successes,
-        failures=failures,
-        undetermined=undetermined,
-    )
+    return AttackStats(success_rate, total_decided, successes, failures, undetermined)
 
 
 def analyze_results(attack_results: list[AttackResult]) -> dict:
     """
-    Analyze a list of AttackResult objects and return both overall and grouped statistics.
-
-    Grouping is currently done by `attack_identifier["type"]`.
-
-    Returns:
-        dict with:
-            - "Overall": AttackStats
-            - "By_attack_identifier": dict[str, AttackStats]
+    Analyze a list of AttackResult objects and return overall and grouped statistics.
     """
     if not attack_results:
         empty_stats = AttackStats(None, 0, 0, 0, 0)
@@ -44,9 +34,8 @@ def analyze_results(attack_results: list[AttackResult]) -> dict:
             "By_attack_identifier": {},
         }
 
-    # Track overall and per-type counters
-    overall_counts = defaultdict(int)
-    by_type_counts = defaultdict(lambda: defaultdict(int))
+    overall_counts: DefaultDict[str, int] = defaultdict(int)
+    by_type_counts: DefaultDict[str, DefaultDict[str, int]] = defaultdict(lambda: defaultdict(int))
 
     for attack in attack_results:
         if not isinstance(attack, AttackResult):
@@ -55,7 +44,6 @@ def analyze_results(attack_results: list[AttackResult]) -> dict:
         outcome = attack.outcome
         attack_type = attack.attack_identifier.get("type", "unknown")
 
-        # Update overall counters
         if outcome == AttackOutcome.SUCCESS:
             overall_counts["successes"] += 1
             by_type_counts[attack_type]["successes"] += 1
@@ -66,7 +54,6 @@ def analyze_results(attack_results: list[AttackResult]) -> dict:
             overall_counts["undetermined"] += 1
             by_type_counts[attack_type]["undetermined"] += 1
 
-    # Compute stats
     overall_stats = _compute_stats(
         successes=overall_counts["successes"],
         failures=overall_counts["failures"],

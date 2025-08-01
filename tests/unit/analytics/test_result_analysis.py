@@ -1,15 +1,14 @@
-import pytest
-from pyrit.analytics.result_analysis import analyze_results, AttackStats
-from pyrit.models import AttackResult, AttackOutcome
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+from pyrit.analytics.result_analysis import AttackStats, analyze_results
+from pyrit.models import AttackOutcome, AttackResult
 
 
 # Helper to create mock AttackResult with just enough fields
 def make_attack(outcome: AttackOutcome, attack_type: str = "default") -> AttackResult:
     return AttackResult(
-        conversation_id="1",
-        objective="test objective",
-        attack_identifier={"type": attack_type},
-        outcome=outcome
+        conversation_id="1", objective="test objective", attack_identifier={"type": attack_type}, outcome=outcome
     )
 
 
@@ -26,7 +25,7 @@ def test_overall_success_rate_only():
         make_attack(AttackOutcome.SUCCESS),
         make_attack(AttackOutcome.FAILURE),
         make_attack(AttackOutcome.SUCCESS),
-        make_attack(AttackOutcome.UNDETERMINED)
+        make_attack(AttackOutcome.UNDETERMINED),
     ]
     result = analyze_results(attacks)
     overall = result["Overall"]
@@ -43,7 +42,7 @@ def test_grouped_by_attack_type():
         make_attack(AttackOutcome.FAILURE, attack_type="crescendo"),
         make_attack(AttackOutcome.UNDETERMINED, attack_type="crescendo"),
         make_attack(AttackOutcome.SUCCESS, attack_type="red_teaming"),
-        make_attack(AttackOutcome.FAILURE, attack_type="red_teaming")
+        make_attack(AttackOutcome.FAILURE, attack_type="red_teaming"),
     ]
     result = analyze_results(attacks)
 
@@ -66,12 +65,7 @@ def test_unknown_attack_type_fallback():
 
 
 def test_skips_invalid_objects():
-    attacks = [
-        make_attack(AttackOutcome.SUCCESS),
-        "not_an_attack_result",
-        123,
-        None
-    ]
+    attacks = [make_attack(AttackOutcome.SUCCESS), "not_an_attack_result", 123, None]
     result = analyze_results(attacks)
     assert result["Overall"].successes == 1
     assert result["Overall"].failures == 0
