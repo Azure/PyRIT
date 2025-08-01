@@ -691,7 +691,9 @@ class TestEndToEndExecution:
             with patch.object(attack._memory, "get_conversation", return_value=[]):
                 with patch.object(attack._memory, "get_prompt_request_pieces", return_value=[]):
                     with patch.object(attack._memory, "add_attack_results_to_memory", return_value=None):
-                        result = await attack.execute_async(objective="Test objective", memory_labels={"test": "label"})
+                        result = await attack.execute_async(
+                            attack_input="Test objective", memory_labels={"test": "label"}
+                        )
 
         assert result.outcome == AttackOutcome.SUCCESS
         assert result.objective == "Test objective"

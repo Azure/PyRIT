@@ -7,7 +7,7 @@ import logging
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from treelib.tree import Tree
 
@@ -80,7 +80,7 @@ class TAPAttackContext(AttackContext):
     def create_from_params(
         cls,
         *,
-        objective: str,
+        attack_input: Any,
         prepended_conversation: List[PromptRequestResponse],
         memory_labels: Dict[str, str],
         **kwargs,
@@ -89,7 +89,7 @@ class TAPAttackContext(AttackContext):
         Factory method to create context from standard parameters.
 
         Args:
-            objective (str): The attack objective to achieve.
+            attack_input (Any): The attack input, expected to be the objective string for TAP attacks.
             prepended_conversation (List[PromptRequestResponse]): Initial conversation history to prepend.
             memory_labels (Dict[str, str]): Memory labels for the attack context.
             **kwargs: Additional parameters for future extensibility.
@@ -97,6 +97,14 @@ class TAPAttackContext(AttackContext):
         Returns:
             TAPAttackContext: A new instance of TAPAttackContext initialized with the provided parameters.
         """
+        # For TAP attacks, attack_input is expected to be the objective string
+        if not isinstance(attack_input, str):
+            raise ValueError(
+                f"TAPAttackContext expects attack_input to be a string (objective), got {type(attack_input).__name__}"
+            )
+
+        objective = attack_input
+
         return cls(
             objective=objective,
             memory_labels=memory_labels,
@@ -888,7 +896,7 @@ class _TreeOfAttacksNode:
     __repr__ = __str__
 
 
-class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackResult]):
+class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackResult, str]):
     """
     Implementation of the Tree of Attacks with Pruning (TAP) attack strategy.
 

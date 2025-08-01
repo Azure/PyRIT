@@ -321,7 +321,7 @@ class TestContextCreation:
 
                         # Execute
                         await attack.execute_async(
-                            objective="Test objective",
+                            attack_input="Test objective",
                             memory_labels={"test": "label"},
                         )
 
@@ -369,7 +369,7 @@ class TestContextCreation:
 
                         # Execute with custom prompt
                         await attack.execute_async(
-                            objective="Test objective",
+                            attack_input="Test objective",
                             custom_prompt="My custom prompt",
                         )
 
@@ -394,7 +394,7 @@ class TestContextCreation:
         # Should raise ValueError during context creation
         with pytest.raises(ValueError, match="custom_prompt must be a string"):
             await attack.execute_async(
-                objective="Test objective",
+                attack_input="Test objective",
                 custom_prompt=123,  # Invalid type
             )
 
@@ -1253,7 +1253,7 @@ class TestAttackLifecycle:
 
                         # Execute using execute_async
                         result = await attack.execute_async(
-                            objective="Test objective",
+                            attack_input="Test objective",
                         )
 
         # Verify result and proper execution order
@@ -1285,7 +1285,7 @@ class TestAttackLifecycle:
                         # Should raise AttackValidationException
                         with pytest.raises(AttackValidationException) as exc_info:
                             await attack.execute_async(
-                                objective="Test objective",
+                                attack_input="Test objective",
                             )
 
         # Verify error details

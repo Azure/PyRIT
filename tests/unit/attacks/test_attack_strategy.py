@@ -9,12 +9,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from pyrit.attacks.base.attack_context import ContextT
 from pyrit.attacks.base.attack_strategy import AttackStrategy, AttackStrategyLogAdapter
 from pyrit.exceptions.exception_classes import (
     AttackExecutionException,
     AttackValidationException,
 )
-from pyrit.models import AttackOutcome
+from pyrit.models import AttackOutcome, AttackResultT
 
 
 @pytest.fixture
@@ -43,7 +44,7 @@ def mock_attack_strategy(mock_default_values):
     mock_context_type.create_from_params = MagicMock()
 
     # Create a concrete subclass with mocked abstract methods
-    class TestableAttackStrategy(AttackStrategy):
+    class TestableAttackStrategy(AttackStrategy[ContextT, AttackResultT, str]):
         def __init__(self, **kwargs):
             # Use the root logger to ensure caplog can capture the logs
             super().__init__(context_type=mock_context_type, logger=logging.getLogger(), **kwargs)
@@ -81,7 +82,7 @@ class TestAttackStrategyInitialization:
     def test_init_with_default_parameters(self, mock_default_values):
         mock_context_type = MagicMock()
 
-        class ConcreteStrategy(AttackStrategy):
+        class ConcreteStrategy(AttackStrategy[ContextT, AttackResultT, str]):
             _validate_context = MagicMock()
             _setup_async = AsyncMock()
             _perform_attack_async = AsyncMock()
@@ -99,7 +100,7 @@ class TestAttackStrategyInitialization:
     def test_init_with_custom_logger(self, mock_default_values):
         mock_context_type = MagicMock()
 
-        class ConcreteStrategy(AttackStrategy):
+        class ConcreteStrategy(AttackStrategy[ContextT, AttackResultT, str]):
             _validate_context = MagicMock()
             _setup_async = AsyncMock()
             _perform_attack_async = AsyncMock()
@@ -152,7 +153,7 @@ class TestAttackExecution:
         # Configure context type's create_from_params to return the basic_context
         mock_attack_strategy._context_type.create_from_params.return_value = basic_context
 
-        result = await mock_attack_strategy.execute_async(objective="Test objective")
+        result = await mock_attack_strategy.execute_async(attack_input="Test objective")
 
         # Verify context creation was called
         mock_attack_strategy._context_type.create_from_params.assert_called_once()
@@ -176,7 +177,7 @@ class TestAttackExecution:
         mock_attack_strategy._validate_context.side_effect = ValueError("Validation failed")
 
         with pytest.raises(AttackValidationException) as exc_info:
-            await mock_attack_strategy.execute_async(objective="Test objective")
+            await mock_attack_strategy.execute_async(attack_input="Test objective")
 
         # Verify error details
         assert "Context validation failed" in str(exc_info.value)
@@ -196,7 +197,7 @@ class TestAttackExecution:
         mock_attack_strategy._setup_async.side_effect = RuntimeError("Setup failed")
 
         with pytest.raises(AttackExecutionException) as exc_info:
-            await mock_attack_strategy.execute_async(objective="Test objective")
+            await mock_attack_strategy.execute_async(attack_input="Test objective")
 
         # Verify error details
         assert "Unexpected error during attack execution" in str(exc_info.value)
@@ -216,7 +217,7 @@ class TestAttackExecution:
         mock_attack_strategy._perform_attack_async.side_effect = RuntimeError("Attack failed")
 
         with pytest.raises(AttackExecutionException):
-            await mock_attack_strategy.execute_async(objective="Test objective")
+            await mock_attack_strategy.execute_async(attack_input="Test objective")
 
         # Verify lifecycle - teardown should still be called, but memory should not be called since attack failed
         mock_attack_strategy._validate_context.assert_called_once()
@@ -232,7 +233,7 @@ class TestAttackExecution:
 
         # Teardown failures should still propagate but after being called
         with pytest.raises(AttackExecutionException):
-            await mock_attack_strategy.execute_async(objective="Test objective")
+            await mock_attack_strategy.execute_async(attack_input="Test objective")
 
         # All methods should have been called, including memory since attack completed
         mock_attack_strategy._validate_context.assert_called_once()
@@ -256,7 +257,7 @@ class TestAttackExecution:
         mock_attack_strategy._perform_attack_async.side_effect = existing_exception
 
         with pytest.raises(type(existing_exception)) as exc_info:
-            await mock_attack_strategy.execute_async(objective="Test objective")
+            await mock_attack_strategy.execute_async(attack_input="Test objective")
 
         # Should preserve the original exception type
         assert exc_info.value is existing_exception
@@ -280,7 +281,7 @@ class TestAttackExecution:
         mock_attack_strategy._perform_attack_async = delayed_attack
 
         # Execute the attack
-        result = await mock_attack_strategy.execute_async(objective="Test objective")
+        result = await mock_attack_strategy.execute_async(attack_input="Test objective")
 
         # Verify execution time is set and reasonable
         assert result.execution_time_ms is not None
@@ -307,7 +308,7 @@ class TestAttackExecution:
         cast(AsyncMock, mock_attack_strategy._perform_attack_async).return_value = mock_result
 
         # Execute the attack
-        result = await mock_attack_strategy.execute_async(objective="Test objective")
+        result = await mock_attack_strategy.execute_async(attack_input="Test objective")
 
         # Verify execution time was overwritten
         assert result.execution_time_ms is not None
@@ -341,7 +342,7 @@ class TestAttackExecution:
         mock_attack_strategy._context_type.create_from_params.return_value = basic_context
 
         result = await mock_attack_strategy.execute_async(
-            objective="Test objective",
+            attack_input="Test objective",
             prepended_conversation=prepended_conv,
             memory_labels=memory_labels,
             custom_param="custom_value",
@@ -349,7 +350,7 @@ class TestAttackExecution:
 
         # Verify context type's create_from_params was called with all parameters
         mock_attack_strategy._context_type.create_from_params.assert_called_once_with(
-            objective="Test objective",
+            attack_input="Test objective",
             prepended_conversation=prepended_conv,
             memory_labels=memory_labels,
             custom_param="custom_value",
@@ -368,7 +369,7 @@ class TestLogging:
 
         # Ensure we're capturing at the root logger level
         with caplog.at_level(logging.DEBUG, logger=""):
-            await mock_attack_strategy.execute_async(objective="Test objective")
+            await mock_attack_strategy.execute_async(attack_input="Test objective")
 
         # Check for expected log messages
         log_messages = [record.message for record in caplog.records]
@@ -451,7 +452,7 @@ class TestConcurrency:
             strategies.append(strategy)
 
         # Execute concurrently
-        tasks = [strategy.execute_async(objective=f"Objective {i}") for i, strategy in enumerate(strategies)]
+        tasks = [strategy.execute_async(attack_input=f"Objective {i}") for i, strategy in enumerate(strategies)]
         results = await asyncio.gather(*tasks)
 
         # All should complete successfully
@@ -463,8 +464,8 @@ class TestConcurrency:
     async def test_concurrent_execution_isolation(self, mock_attack_strategy):
         """Ensure concurrent executions don't interfere with each other"""
         # Create contexts with different objectives
-        context1 = MagicMock(objective="Objective 1")
-        context2 = MagicMock(objective="Objective 2")
+        context1 = MagicMock(attack_input="Objective 1")
+        context2 = MagicMock(attack_input="Objective 2")
 
         # Configure return values with required attributes
         result1 = MagicMock(id="result1")
@@ -487,8 +488,8 @@ class TestConcurrency:
 
         # Execute concurrently
         results = await asyncio.gather(
-            mock_attack_strategy.execute_async(objective="Objective 1"),
-            mock_attack_strategy.execute_async(objective="Objective 2"),
+            mock_attack_strategy.execute_async(attack_input="Objective 1"),
+            mock_attack_strategy.execute_async(attack_input="Objective 2"),
         )
 
         # Both should succeed with correct results
@@ -507,7 +508,7 @@ class TestConcurrency:
 
         # Test SUCCESS outcome
         with caplog.at_level(logging.INFO, logger=""):
-            await mock_attack_strategy.execute_async(objective="Test objective")
+            await mock_attack_strategy.execute_async(attack_input="Test objective")
         assert any("achieved the objective" in record.message for record in caplog.records)
 
         # Test FAILURE outcome
@@ -523,7 +524,7 @@ class TestConcurrency:
         cast(AsyncMock, mock_attack_strategy._perform_attack_async).return_value = mock_result
 
         with caplog.at_level(logging.INFO, logger=""):
-            await mock_attack_strategy.execute_async(objective="Test objective")
+            await mock_attack_strategy.execute_async(attack_input="Test objective")
         assert any("did not achieve the objective" in record.message for record in caplog.records)
         assert any("Target refused" in record.message for record in caplog.records)
 
@@ -533,7 +534,7 @@ class TestConcurrency:
         mock_result.outcome_reason = None
 
         with caplog.at_level(logging.INFO, logger=""):
-            await mock_attack_strategy.execute_async(objective="Test objective")
+            await mock_attack_strategy.execute_async(attack_input="Test objective")
         assert any("outcome is undetermined" in record.message for record in caplog.records)
         assert any("Not specified" in record.message for record in caplog.records)
 
@@ -569,7 +570,7 @@ class TestConcurrency:
 
         # Execute the attack
         await mock_attack_strategy.execute_async(
-            objective="Test objective", prepended_conversation=prepended_conversation
+            attack_input="Test objective", prepended_conversation=prepended_conversation
         )
 
         # Verify deep copy was made
@@ -606,7 +607,7 @@ class TestConcurrency:
         mock_attack_strategy._context_type.create_from_params.side_effect = capture_conversation
 
         # Execute with None prepended_conversation
-        await mock_attack_strategy.execute_async(objective="Test objective", prepended_conversation=None)
+        await mock_attack_strategy.execute_async(attack_input="Test objective", prepended_conversation=None)
 
         # Verify empty list was passed
         assert captured_conversation == []
@@ -643,7 +644,7 @@ class TestConcurrency:
 
         # Execute the attack
         await mock_attack_strategy.execute_async(
-            objective="Test objective", prepended_conversation=prepended_conversation
+            attack_input="Test objective", prepended_conversation=prepended_conversation
         )
 
         # Verify the conversation was passed but as a different object

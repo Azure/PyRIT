@@ -30,7 +30,7 @@ from pyrit.score import Scorer
 logger = logging.getLogger(__name__)
 
 
-class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult]):
+class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult, str]):
     """
     Implementation of single-turn prompt sending attack strategy.
 

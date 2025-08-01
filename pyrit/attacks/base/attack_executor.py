@@ -2,11 +2,13 @@
 # Licensed under the MIT license.
 
 import asyncio
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, TypeVar
 
 from pyrit.attacks.base.attack_context import ContextT
 from pyrit.attacks.base.attack_strategy import AttackStrategy
 from pyrit.models import AttackResultT, PromptRequestResponse
+
+InputT = TypeVar("InputT")
 
 
 class AttackExecutor:
@@ -36,7 +38,7 @@ class AttackExecutor:
     async def execute_multi_objective_attack_async(
         self,
         *,
-        attack: AttackStrategy[ContextT, AttackResultT],
+        attack: AttackStrategy[ContextT, AttackResultT, str],
         objectives: List[str],
         prepended_conversation: Optional[List[PromptRequestResponse]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
@@ -50,7 +52,7 @@ class AttackExecutor:
         which accepts parameters directly.
 
         Args:
-            attack (AttackStrategy[ContextT, AttackResultT]): The attack strategy to use for all objectives.
+            attack (AttackStrategy[ContextT, AttackResultT, str]): The attack strategy to use for all objectives.
             objectives (List[str]): List of attack objectives to test.
             prepended_conversation (Optional[List[PromptRequestResponse]]): Conversation to prepend to the target model.
             memory_labels (Optional[Dict[str, str]]): Additional labels that can be applied to the prompts.
@@ -71,7 +73,7 @@ class AttackExecutor:
         async def execute_with_semaphore(objective: str) -> AttackResultT:
             async with semaphore:
                 return await attack.execute_async(
-                    objective=objective,
+                    attack_input=objective,
                     prepended_conversation=prepended_conversation,
                     memory_labels=memory_labels,
                     **attack_params,
@@ -81,7 +83,7 @@ class AttackExecutor:
         return await asyncio.gather(*tasks)
 
     async def execute_multi_objective_attack_with_context_async(
-        self, attack: AttackStrategy[ContextT, AttackResultT], context_template: ContextT, objectives: List[str]
+        self, attack: AttackStrategy[ContextT, AttackResultT, InputT], context_template: ContextT, objectives: List[str]
     ) -> List[AttackResultT]:
         """
         Execute the same attack strategy with multiple objectives using context objects.
@@ -91,7 +93,7 @@ class AttackExecutor:
         or have an existing context template to reuse.
 
         Args:
-            attack (AttackStrategy[ContextT, AttackResultT]): The attack strategy to use for all objectives
+            attack (AttackStrategy[ContextT, AttackResultT, InputT]): The attack strategy to use for all objectives
             context_template (ContextT): Template context that will be duplicated for each objective.
                 Must have a 'duplicate()' method and an 'objective' attribute.
             objectives (List[str]): List of attack objectives to test. Each objective will be
@@ -130,7 +132,7 @@ class AttackExecutor:
         return results
 
     async def _execute_parallel_async(
-        self, *, attack: AttackStrategy[ContextT, AttackResultT], contexts: List[ContextT]
+        self, *, attack: AttackStrategy[ContextT, AttackResultT, InputT], contexts: List[ContextT]
     ) -> List[AttackResultT]:
         """
         Execute the same attack strategy against multiple contexts in parallel with concurrency control.
@@ -138,7 +140,7 @@ class AttackExecutor:
         This method uses asyncio semaphores to limit the number of concurrent executions.
 
         Args:
-            attack (AttackStrategy[ContextT, AttackResultT]): The attack strategy to execute
+            attack (AttackStrategy[ContextT, AttackResultT, InputT]): The attack strategy to execute
                 against all contexts.
             contexts (List[ContextT]): List of attack contexts to execute the strategy against.
 
@@ -154,7 +156,7 @@ class AttackExecutor:
 
         # anonymous function to execute strategy with semaphore
         async def execute_with_semaphore(
-            attack: AttackStrategy[ContextT, AttackResultT], ctx: ContextT
+            attack: AttackStrategy[ContextT, AttackResultT, InputT], ctx: ContextT
         ) -> AttackResultT:
             async with semaphore:
                 return await attack.execute_with_context_async(context=ctx)

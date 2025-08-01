@@ -1259,7 +1259,7 @@ class TestContextCreation:
     def test_create_context_with_basic_params(self):
         """Test creating context with basic parameters."""
         context = CrescendoAttackContext.create_from_params(
-            objective="Test objective",
+            attack_input="Test objective",
             prepended_conversation=[],
             memory_labels={"test": "label"},
         )
@@ -1272,7 +1272,7 @@ class TestContextCreation:
     def test_create_context_with_custom_prompt(self):
         """Test creating context with custom prompt."""
         context = CrescendoAttackContext.create_from_params(
-            objective="Test objective",
+            attack_input="Test objective",
             prepended_conversation=[],
             memory_labels={},
             custom_prompt="My custom prompt",
@@ -1288,7 +1288,7 @@ class TestContextCreation:
         for invalid_prompt in invalid_prompts:
             with pytest.raises(ValueError, match="custom_prompt must be a string"):
                 CrescendoAttackContext.create_from_params(
-                    objective="Test objective",
+                    attack_input="Test objective",
                     prepended_conversation=[],
                     memory_labels={},
                     custom_prompt=invalid_prompt,
@@ -1301,7 +1301,7 @@ class TestContextCreation:
         """Test context creation with prepended conversation."""
         prepended_conversation = [sample_response]
         context = CrescendoAttackContext.create_from_params(
-            objective="Test objective",
+            attack_input="Test objective",
             prepended_conversation=prepended_conversation,
             memory_labels={},
         )
@@ -1422,7 +1422,7 @@ class TestAttackLifecycle:
 
         with patch.object(attack, "execute_with_context_async", new_callable=AsyncMock, return_value=mock_result):
             result = await attack.execute_async(
-                objective="Test objective",
+                attack_input="Test objective",
                 memory_labels={"test": "label"},
                 custom_prompt="Custom prompt",
             )
@@ -1452,11 +1452,11 @@ class TestAttackLifecycle:
             mock_create.return_value = mock_context
 
             with patch.object(attack, "execute_with_context_async", new_callable=AsyncMock) as mock_execute:
-                await attack.execute_async(objective="Test objective")
+                await attack.execute_async(attack_input="Test objective")
 
         # Verify create_from_params was called with correct defaults
         mock_create.assert_called_once_with(
-            objective="Test objective",
+            attack_input="Test objective",
             prepended_conversation=[],
             memory_labels={},
         )
@@ -1841,7 +1841,7 @@ class TestEdgeCases:
                 ):
                     # Use the execute_async method with parameters
                     result = await attack.execute_async(
-                        objective="Test objective",
+                        attack_input="Test objective",
                         memory_labels={"test": "label"},
                     )
 
@@ -1875,7 +1875,7 @@ class TestEdgeCases:
         with patch.object(attack, "execute_with_context_async", new_callable=AsyncMock, return_value=mock_result):
             # Unknown parameters should be ignored, not raise an error
             result = await attack.execute_async(
-                objective="Test objective",
+                attack_input="Test objective",
                 unknown_param="should be ignored",
             )
             assert result.outcome == AttackOutcome.SUCCESS

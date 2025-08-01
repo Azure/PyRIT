@@ -8,7 +8,16 @@ import time
 import uuid
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Dict, Generic, List, MutableMapping, Optional
+from typing import (
+    Any,
+    AsyncIterator,
+    Dict,
+    Generic,
+    List,
+    MutableMapping,
+    Optional,
+    TypeVar,
+)
 
 from pyrit.attacks.base.attack_context import ContextT
 from pyrit.common import default_values
@@ -19,6 +28,8 @@ from pyrit.exceptions.exception_classes import (
 )
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResultT, Identifier, PromptRequestResponse
+
+InputT = TypeVar("InputT")
 
 
 class AttackStrategyLogAdapter(logging.LoggerAdapter):
@@ -42,7 +53,7 @@ class AttackStrategyLogAdapter(logging.LoggerAdapter):
         return msg, kwargs
 
 
-class AttackStrategy(ABC, Identifier, Generic[ContextT, AttackResultT]):
+class AttackStrategy(ABC, Identifier, Generic[ContextT, AttackResultT, InputT]):
     """
     Abstract base class for attack strategies with enforced lifecycle management.
 
@@ -289,7 +300,7 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, AttackResultT]):
     async def execute_async(
         self,
         *,
-        objective: str,
+        attack_input: InputT,
         prepended_conversation: Optional[List[PromptRequestResponse]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
         **attack_params,
@@ -299,7 +310,7 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, AttackResultT]):
         This method creates the context from the provided parameters and executes the attack.
 
         Args:
-            objective (str): The objective of the attack.
+            attack_input (InputT): The input to the attack strategy.
             prepended_conversation (Optional[List[PromptRequestResponse]]): Conversation to prepend to the target model.
             memory_labels (Optional[Dict[str, str]]): Additional labels that can be applied to the prompts
                                             throughout the attack.
@@ -313,7 +324,7 @@ class AttackStrategy(ABC, Identifier, Generic[ContextT, AttackResultT]):
         prepended_conversation_copy = copy.deepcopy(prepended_conversation) if prepended_conversation else []
 
         context = self._context_type.create_from_params(
-            objective=objective,
+            attack_input=attack_input,
             prepended_conversation=prepended_conversation_copy,
             memory_labels=memory_labels or {},
             **attack_params,

@@ -7,7 +7,7 @@ import uuid
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, TypeVar, Union
+from typing import Any, Dict, List, Optional, TypeVar, Union
 
 from pyrit.models.conversation_reference import ConversationReference
 from pyrit.models.prompt_request_response import PromptRequestResponse
@@ -35,7 +35,7 @@ class AttackContext(ABC):
     def create_from_params(
         cls: type[ContextT],
         *,
-        objective: str,
+        attack_input: Any,
         prepended_conversation: List[PromptRequestResponse],
         memory_labels: Dict[str, str],
         **kwargs,
@@ -103,12 +103,21 @@ class MultiTurnAttackContext(AttackContext):
     def create_from_params(
         cls,
         *,
-        objective: str,
+        attack_input: Any,
         prepended_conversation: List[PromptRequestResponse],
         memory_labels: Dict[str, str],
         **kwargs,
     ) -> "MultiTurnAttackContext":
         """Create MultiTurnAttackContext from parameters."""
+
+        # For multi-turn attacks, attack_input is expected to be the objective string
+        if not isinstance(attack_input, str):
+            raise ValueError(
+                "MultiTurnAttackContext expects attack_input to be a string (objective), "
+                f"got {type(attack_input).__name__}"
+            )
+
+        objective = attack_input
 
         custom_prompt = kwargs.get("custom_prompt")
 
@@ -147,12 +156,21 @@ class SingleTurnAttackContext(AttackContext):
     def create_from_params(
         cls,
         *,
-        objective: str,
+        attack_input: Any,
         prepended_conversation: List[PromptRequestResponse],
         memory_labels: Dict[str, str],
         **kwargs,
     ) -> "SingleTurnAttackContext":
         """Create SingleTurnAttackContext from parameters."""
+
+        # For single-turn attacks, attack_input is expected to be the objective string
+        if not isinstance(attack_input, str):
+            raise ValueError(
+                "SingleTurnAttackContext expects attack_input to be a string (objective), "
+                f"got {type(attack_input).__name__}"
+            )
+
+        objective = attack_input
 
         # Extract and validate optional parameters
         seed_prompt_group = kwargs.get("seed_prompt_group")

@@ -680,7 +680,7 @@ class TestExecuteMultiObjectiveAttackAsync:
 
         # Verify execute_async was called with correct parameters for each objective
         for i, call in enumerate(mock_attack_strategy.execute_async.call_args_list):
-            assert call.kwargs["objective"] == objectives[i]
+            assert call.kwargs["attack_input"] == objectives[i]
             assert call.kwargs["memory_labels"] == memory_labels
 
     @pytest.mark.asyncio

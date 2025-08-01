@@ -118,7 +118,7 @@ class TestAnecdoctorAttackContext:
     def test_create_from_params_success(self, sample_evaluation_data):
         """Test successful creation from parameters."""
         context = AnecdoctorAttackContext.create_from_params(
-            objective="test objective",
+            attack_input="test objective",
             prepended_conversation=[],
             memory_labels={"test": "label"},
             evaluation_data=sample_evaluation_data,
@@ -136,7 +136,7 @@ class TestAnecdoctorAttackContext:
         """Test creation from parameters with default values."""
         evaluation_data = ["test claim"]
         context = AnecdoctorAttackContext.create_from_params(
-            objective="test objective",
+            attack_input="test objective",
             prepended_conversation=[],
             memory_labels={"test": "label"},
             evaluation_data=evaluation_data,
@@ -149,7 +149,7 @@ class TestAnecdoctorAttackContext:
         """Test creation fails with empty evaluation data."""
         with pytest.raises(ValueError, match="evaluation_data cannot be empty"):
             AnecdoctorAttackContext.create_from_params(
-                objective="test objective",
+                attack_input="test objective",
                 prepended_conversation=[],
                 memory_labels={"test": "label"},
                 evaluation_data=[],
@@ -159,7 +159,7 @@ class TestAnecdoctorAttackContext:
         """Test creation fails with invalid evaluation data type."""
         with pytest.raises(ValueError, match="evaluation_data must be a list, got str"):
             AnecdoctorAttackContext.create_from_params(
-                objective="test objective",
+                attack_input="test objective",
                 prepended_conversation=[],
                 memory_labels={"test": "label"},
                 evaluation_data="not a list",
@@ -169,7 +169,7 @@ class TestAnecdoctorAttackContext:
         """Test creation fails with invalid language type."""
         with pytest.raises(ValueError, match="language must be a string, got int"):
             AnecdoctorAttackContext.create_from_params(
-                objective="test objective",
+                attack_input="test objective",
                 prepended_conversation=[],
                 memory_labels={"test": "label"},
                 evaluation_data=sample_evaluation_data,
@@ -180,7 +180,7 @@ class TestAnecdoctorAttackContext:
         """Test creation fails with invalid content type."""
         with pytest.raises(ValueError, match="content_type must be a string, got list"):
             AnecdoctorAttackContext.create_from_params(
-                objective="test objective",
+                attack_input="test objective",
                 prepended_conversation=[],
                 memory_labels={"test": "label"},
                 evaluation_data=sample_evaluation_data,
@@ -1129,13 +1129,13 @@ class TestAnecdoctorAttackValidationEdgeCases:
         # Test with None evaluation_data
         with pytest.raises(ValueError, match="evaluation_data must be a list"):
             AnecdoctorAttackContext.create_from_params(
-                objective="test", prepended_conversation=[], memory_labels={}, evaluation_data=None
+                attack_input="test", prepended_conversation=[], memory_labels={}, evaluation_data=None
             )
 
         # Test with tuple instead of list (should fail)
         with pytest.raises(ValueError, match="evaluation_data must be a list"):
             AnecdoctorAttackContext.create_from_params(
-                objective="test",
+                attack_input="test",
                 prepended_conversation=[],
                 memory_labels={},
                 evaluation_data=("item1", "item2"),  # tuple instead of list
@@ -1144,7 +1144,7 @@ class TestAnecdoctorAttackValidationEdgeCases:
     def test_context_create_from_params_with_extra_kwargs(self, sample_evaluation_data):
         """Test create_from_params ignores extra unknown kwargs."""
         context = AnecdoctorAttackContext.create_from_params(
-            objective="test objective",
+            attack_input="test objective",
             prepended_conversation=[],
             memory_labels={"test": "label"},
             evaluation_data=sample_evaluation_data,
@@ -1173,7 +1173,7 @@ class TestAnecdoctorAttackLifecycle:
             mock_load.return_value = "System prompt for {language} {type}"
 
             result = await attack.execute_async(
-                objective="Generate misleading content",
+                attack_input="Generate misleading content",
                 memory_labels={"test": "lifecycle"},
                 evaluation_data=sample_evaluation_data,
                 language="spanish",
@@ -1214,7 +1214,7 @@ class TestAnecdoctorAttackLifecycle:
             mock_load.side_effect = lambda yaml_filename: f"Prompt from {yaml_filename}"
 
             result = await attack.execute_async(
-                objective="Generate content using KG",
+                attack_input="Generate content using KG",
                 memory_labels={"test": "kg_lifecycle"},
                 evaluation_data=sample_evaluation_data,
                 language="french",
@@ -1240,7 +1240,7 @@ class TestAnecdoctorAttackLifecycle:
         # Use empty evaluation_data which will fail validation in create_from_params
         with pytest.raises(ValueError, match="evaluation_data cannot be empty"):
             await attack.execute_async(
-                objective="Test objective", evaluation_data=[]  # This will cause validation to fail
+                attack_input="Test objective", evaluation_data=[]  # This will cause validation to fail
             )
 
     @pytest.mark.asyncio
@@ -1260,7 +1260,7 @@ class TestAnecdoctorAttackLifecycle:
             from pyrit.exceptions.exception_classes import AttackExecutionException
 
             with pytest.raises(AttackExecutionException, match="Unexpected error during attack execution"):
-                await attack.execute_async(objective="Test objective", evaluation_data=sample_evaluation_data)
+                await attack.execute_async(attack_input="Test objective", evaluation_data=sample_evaluation_data)
 
             # Verify setup was attempted and teardown was called
             mock_validate.assert_called_once()
@@ -1285,7 +1285,7 @@ class TestAnecdoctorAttackLifecycle:
             from pyrit.exceptions.exception_classes import AttackExecutionException
 
             with pytest.raises(AttackExecutionException, match="Unexpected error during attack execution"):
-                await attack.execute_async(objective="Test objective", evaluation_data=sample_evaluation_data)
+                await attack.execute_async(attack_input="Test objective", evaluation_data=sample_evaluation_data)
 
             # Verify all phases were attempted and teardown was called
             mock_validate.assert_called_once()
@@ -1315,7 +1315,9 @@ class TestAnecdoctorAttackLifecycle:
 
             mock_load.return_value = "System prompt"
 
-            result = await attack.execute_async(objective="Test with scoring", evaluation_data=sample_evaluation_data)
+            result = await attack.execute_async(
+                attack_input="Test with scoring", evaluation_data=sample_evaluation_data
+            )
 
             # Verify scoring was integrated
             mock_eval.assert_called_once()
