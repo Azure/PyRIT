@@ -21,6 +21,7 @@ class MemoryExporter:
             "json": self.export_to_json,
             "csv": self.export_to_csv,
             "md": self.export_to_markdown,
+            # Future formats can be added here
         }
 
     def export_data(
@@ -111,15 +112,10 @@ class MemoryExporter:
             raise ValueError("Please provide a valid file path for exporting data.")
         if not data:
             raise ValueError("No data to export.")
-
         export_data = [piece.to_dict() for piece in data]
         fieldnames = list(export_data[0].keys())
-
         with open(file_path, "w", newline="") as f:
-            # Write table header
             f.write(f"| {' | '.join(fieldnames)} |\n")
-            # Write markdown table separator
             f.write(f"| {' | '.join(['---'] * len(fieldnames))} |\n")
-            # Write table rows
             for row in export_data:
                 f.write(f"| {' | '.join(str(row[field]) for field in fieldnames)} |\n")
