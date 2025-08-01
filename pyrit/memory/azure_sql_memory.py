@@ -9,7 +9,7 @@ from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
 
 from azure.core.credentials import AccessToken
 from azure.identity import DefaultAzureCredential
-from sqlalchemy import MetaData, create_engine, event, text
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload, sessionmaker
@@ -372,14 +372,3 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Base.metadata.drop_all(self.engine)
         # Recreate the tables
         Base.metadata.create_all(self.engine, checkfirst=True)
-
-    def print_schema(self):
-        """Prints the schema of all tables in the Azure SQL database."""
-        metadata = MetaData()
-        metadata.reflect(bind=self.engine)
-
-        for table_name in metadata.tables:
-            table = metadata.tables[table_name]
-            print(f"Schema for {table_name}:")
-            for column in table.columns:
-                print(f"  Column {column.name} ({column.type})")

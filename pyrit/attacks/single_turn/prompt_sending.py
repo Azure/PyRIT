@@ -16,6 +16,8 @@ from pyrit.common.utils import combine_dict
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
+    ConversationReference,
+    ConversationType,
     PromptRequestResponse,
     Score,
     SeedPrompt,
@@ -132,9 +134,11 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
 
         # Process prepended conversation if provided
         await self._conversation_manager.update_conversation_state_async(
+            target=self._objective_target,
             conversation_id=context.conversation_id,
             prepended_conversation=context.prepended_conversation,
-            converter_configurations=self._request_converters,
+            request_converters=self._request_converters,
+            response_converters=self._response_converters,
         )
 
     async def _perform_attack_async(self, *, context: SingleTurnAttackContext) -> AttackResult:
@@ -148,7 +152,7 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
             AttackResult containing the outcome of the attack.
         """
         # Log the attack configuration
-        self._logger.info(f"Starting prompt injection attack with objective: {context.objective}")
+        self._logger.info(f"Starting {self.__class__.__name__} with objective: {context.objective}")
         self._logger.info(f"Max attempts: {self._max_attempts_on_failure}")
 
         # Execute with retries
@@ -188,6 +192,16 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
             if bool(score and score.get_value()):
                 break
 
+            # On failure, store and create new conversation if there are more attempts remaining
+            if attempt < self._max_attempts_on_failure:
+                context.related_conversations.add(
+                    ConversationReference(
+                        conversation_id=context.conversation_id,
+                        conversation_type=ConversationType.PRUNED,
+                    )
+                )
+                await self._setup_async(context=context)  # Reset conversation for next attempt
+
         # Determine the outcome
         outcome, outcome_reason = self._determine_attack_outcome(response=response, score=score, context=context)
 
@@ -197,6 +211,7 @@ class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult])
             attack_identifier=self.get_identifier(),
             last_response=response.get_piece() if response else None,
             last_score=score,
+            related_conversations=context.related_conversations,
             outcome=outcome,
             outcome_reason=outcome_reason,
             executed_turns=1,
