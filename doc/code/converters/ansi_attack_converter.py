@@ -16,7 +16,7 @@ from pyrit.attacks import (
     AttackConverterConfig,
     AttackExecutor,
     ConsoleAttackResultPrinter,
-    PromptSendingAttack
+    PromptSendingAttack,
 )
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_converter import AnsiAttackConverter
