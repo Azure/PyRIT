@@ -38,18 +38,17 @@ chapters:
       - file: code/orchestrators/4_scoring_orchestrator
       - file: code/orchestrators/5_crescendo_orchestrator
       - file: code/orchestrators/6_skeleton_key_attack
-      - file: code/orchestrators/advbench_prompt_sending_orchestrator
       - file: code/orchestrators/context_compliance_orchestrator
       - file: code/orchestrators/flip_orchestrator
       - file: code/orchestrators/fuzzing_jailbreak_templates
       - file: code/orchestrators/HITL_Scoring_Orchestrator
-      - file: code/orchestrators/librAI_do_not_answer
       - file: code/orchestrators/many_shot_jailbreak
       - file: code/orchestrators/pair_orchestrator
       - file: code/orchestrators/qa_benchmark_orchestrator
       - file: code/orchestrators/role_playing_orchestrator
       - file: code/orchestrators/tree_of_attacks_with_pruning
       - file: code/orchestrators/violent_durian
+      - file: code/orchestrators/anecdoctor_orchestrator
     - file: code/targets/0_prompt_targets
       sections:
       - file: code/targets/1_openai_chat_target
@@ -59,6 +58,7 @@ chapters:
       - file: code/targets/5_multi_modal_targets
       - file: code/targets/6_rate_limiting
       - file: code/targets/7_http_target
+      - file: code/targets/8_openai_responses_target
       - file: code/targets/open_ai_completions
       - file: code/targets/playwright_target
       - file: code/targets/prompt_shield_target
@@ -74,7 +74,7 @@ chapters:
         - file: code/converters/6_human_converter
         - file: code/converters/7_video_converters
         - file: code/converters/ansi_attack_converter
-        - file: code/converters/char_swap_attack_generator
+        - file: code/converters/char_swap_attack_converter
         - file: code/converters/pdf_converter
         - file: code/converters/math_prompt_converter
     - file: code/scoring/0_scoring
@@ -86,10 +86,12 @@ chapters:
       - file: code/scoring/5_human_scorers
       - file: code/scoring/6_refusal_scorer
       - file: code/scoring/insecure_code_scorer
+      - file: code/scoring/look_back_scorer
       - file: code/scoring/prompt_shield_scorer
       - file: code/scoring/true_false_batch_scoring
       - file: code/scoring/human_in_the_loop_scorer_gradio
       - file: code/scoring/generic_scorers
+      - file: code/scoring/scorer_evals
     - file: code/memory/0_memory
       sections:
       - file: code/memory/1_duck_db_memory
@@ -101,6 +103,7 @@ chapters:
       - file: code/memory/7_azure_sql_memory_orchestrators
       - file: code/memory/8_seed_prompt_database
       - file: code/memory/9_exporting_data
+      - file: code/memory/10_schema_diagram.md
       - file: code/memory/azure_embeddings
       - file: code/memory/chat_message
     - file: code/auxiliary_attacks/0_auxiliary_attacks
@@ -116,6 +119,7 @@ chapters:
   - file: api.rst
   - file: blog/README
     sections:
+    - file: blog/2025_06_06
     - file: blog/2025_03_03
     - file: blog/2025_02_11
     - file: blog/2025_01_27

@@ -6,7 +6,7 @@ from contextlib import closing
 from pathlib import Path
 from typing import MutableSequence, Optional, Sequence, TypeVar, Union
 
-from sqlalchemy import MetaData, and_, create_engine
+from sqlalchemy import and_, create_engine
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload, sessionmaker
@@ -16,6 +16,7 @@ from pyrit.common.path import DB_DATA_PATH
 from pyrit.common.singleton import Singleton
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.memory.memory_models import (
+    AttackResultEntry,
     Base,
     EmbeddingDataEntry,
     PromptMemoryEntry,
@@ -41,7 +42,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
     def __init__(
         self,
         *,
-        db_path: Union[Path, str] = None,
+        db_path: Optional[Union[Path, str]] = None,
         verbose: bool = False,
     ):
         super(DuckDBMemory, self).__init__()
@@ -190,6 +191,11 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 query = session.query(Model)
                 if join_scores and Model == PromptMemoryEntry:
                     query = query.options(joinedload(PromptMemoryEntry.scores))
+                elif Model == AttackResultEntry:
+                    query = query.options(
+                        joinedload(AttackResultEntry.last_response).joinedload(PromptMemoryEntry.scores),
+                        joinedload(AttackResultEntry.last_score),
+                    )
                 if conditions is not None:
                     query = query.filter(conditions)
                 if distinct:
@@ -253,16 +259,6 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             file_extension = f".{export_type}"
             file_path = DB_DATA_PATH / f"{table_name}{file_extension}"
             self.exporter.export_data(data, file_path=file_path, export_type=export_type)
-
-    def print_schema(self):
-        metadata = MetaData()
-        metadata.reflect(bind=self.engine)
-
-        for table_name in metadata.tables:
-            table = metadata.tables[table_name]
-            print(f"Schema for {table_name}:")
-            for column in table.columns:
-                print(f"  Column {column.name} ({column.type})")
 
     def dispose_engine(self):
         """

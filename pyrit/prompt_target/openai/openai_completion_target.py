@@ -39,7 +39,7 @@ class OpenAICompletionTarget(OpenAITarget):
             model_name (str, Optional): The name of the model.
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-                Defaults to the OPENAI_CHAT_KEY environment variable.
+                Defaults to the `OPENAI_CHAT_KEY` environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
             use_aad_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
@@ -50,8 +50,6 @@ class OpenAICompletionTarget(OpenAITarget):
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
-            httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
-                httpx.AsyncClient() constructor.
             max_tokens (int, Optional): The maximum number of tokens that can be generated in the
               completion. The token count of your prompt plus `max_tokens` cannot exceed the model's
               context length.
@@ -65,7 +63,7 @@ class OpenAICompletionTarget(OpenAITarget):
                 talk about new topics.
             n (int, Optional): How many completions to generate for each prompt.
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
-                httpx.AsyncClient() constructor.
+                `httpx.AsyncClient()` constructor.
                 For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
         """
 
@@ -162,17 +160,22 @@ class OpenAICompletionTarget(OpenAITarget):
         return construct_response_from_request(request=request_piece, response_text_pieces=extracted_response)
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
-        if len(prompt_request.request_pieces) != 1:
-            raise ValueError("This target only supports a single prompt request piece.")
+        n_pieces = len(prompt_request.request_pieces)
+        if n_pieces != 1:
+            raise ValueError(f"This target only supports a single prompt request piece. Received: {n_pieces} pieces.")
 
-        if prompt_request.request_pieces[0].converted_value_data_type != "text":
-            raise ValueError("This target only supports text prompt input.")
+        piece_type = prompt_request.request_pieces[0].converted_value_data_type
+        if piece_type != "text":
+            raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
         request = prompt_request.request_pieces[0]
         messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
-
-        if len(messages) > 0:
-            raise ValueError("This target only supports a single turn conversation.")
+        n_messages = len(messages)
+        if n_messages > 0:
+            raise ValueError(
+                "This target only supports a single turn conversation. "
+                f"Received: {n_messages} messages which indicates a prior turn."
+            )
 
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""

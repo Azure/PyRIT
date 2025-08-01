@@ -16,6 +16,7 @@ from pyrit.models import (
     PromptRequestPiece,
     PromptRequestResponse,
     Score,
+    construct_response_from_request,
     group_conversation_request_pieces_by_sequence,
 )
 from pyrit.models.prompt_request_piece import sort_request_pieces
@@ -624,3 +625,115 @@ def test_prompt_request_piece_to_dict():
     assert result["originator"] == entry.originator
     assert result["original_prompt_id"] == str(entry.original_prompt_id)
     assert result["scores"] == [score.to_dict() for score in entry.scores]
+
+
+def test_construct_response_from_request_combines_metadata():
+    # Create a request piece with metadata
+    request = PromptRequestPiece(
+        role="user", original_value="test prompt", conversation_id="123", prompt_metadata={"key1": "value1", "key2": 2}
+    )
+
+    additional_metadata = {"key2": 3, "key3": "value3"}
+
+    response = construct_response_from_request(
+        request=request, response_text_pieces=["test response"], prompt_metadata=additional_metadata
+    )
+
+    assert len(response.request_pieces) == 1
+    response_piece = response.request_pieces[0]
+
+    assert response_piece.prompt_metadata["key1"] == "value1"  # Original value preserved
+    assert response_piece.prompt_metadata["key2"] == 3  # Overridden by additional metadata
+    assert response_piece.prompt_metadata["key3"] == "value3"  # Added from additional metadata
+
+    assert response_piece.role == "assistant"
+    assert response_piece.original_value == "test response"
+    assert response_piece.conversation_id == "123"
+    assert response_piece.original_value_data_type == "text"
+    assert response_piece.converted_value_data_type == "text"
+    assert response_piece.response_error == "none"
+
+
+def test_construct_response_from_request_no_metadata():
+    request = PromptRequestPiece(role="user", original_value="test prompt", conversation_id="123")
+
+    response = construct_response_from_request(request=request, response_text_pieces=["test response"])
+
+    assert len(response.request_pieces) == 1
+    response_piece = response.request_pieces[0]
+
+    assert not response_piece.prompt_metadata
+
+    assert response_piece.role == "assistant"
+    assert response_piece.original_value == "test response"
+    assert response_piece.conversation_id == "123"
+    assert response_piece.original_value_data_type == "text"
+    assert response_piece.converted_value_data_type == "text"
+    assert response_piece.response_error == "none"
+
+
+@pytest.mark.parametrize(
+    "response_error,expected_has_error",
+    [
+        ("none", False),
+        ("blocked", True),
+        ("processing", True),
+        ("unknown", True),
+        ("empty", True),
+    ],
+)
+def test_prompt_request_piece_has_error(response_error, expected_has_error):
+    entry = PromptRequestPiece(
+        role="assistant",
+        original_value="Test response",
+        response_error=response_error,
+    )
+    assert entry.has_error() == expected_has_error
+
+
+@pytest.mark.parametrize(
+    "response_error,expected_is_blocked",
+    [
+        ("none", False),
+        ("blocked", True),
+        ("processing", False),
+        ("unknown", False),
+        ("empty", False),
+    ],
+)
+def test_prompt_request_piece_is_blocked(response_error, expected_is_blocked):
+    entry = PromptRequestPiece(
+        role="assistant",
+        original_value="Test response",
+        response_error=response_error,
+    )
+    assert entry.is_blocked() == expected_is_blocked
+
+
+def test_prompt_request_piece_has_error_and_is_blocked_consistency():
+    # Test that is_blocked implies has_error
+    blocked_entry = PromptRequestPiece(
+        role="assistant",
+        original_value="Blocked response",
+        response_error="blocked",
+    )
+    assert blocked_entry.is_blocked() is True
+    assert blocked_entry.has_error() is True
+
+    # Test that not all errors are blocks
+    error_entry = PromptRequestPiece(
+        role="assistant",
+        original_value="Error response",
+        response_error="unknown",
+    )
+    assert error_entry.is_blocked() is False
+    assert error_entry.has_error() is True
+
+    # Test that no error means not blocked
+    no_error_entry = PromptRequestPiece(
+        role="assistant",
+        original_value="Success response",
+        response_error="none",
+    )
+    assert no_error_entry.is_blocked() is False
+    assert no_error_entry.has_error() is False

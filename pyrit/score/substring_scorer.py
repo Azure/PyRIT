@@ -8,20 +8,35 @@ from pyrit.score.scorer import Scorer
 
 
 class SubStringScorer(Scorer):
-    """
-    Scorer that checks if a given substring is present in the text.
+    """Scorer that checks if a given substring is present in the text.
+
+    This scorer performs simple substring matching to determine if specific
+    text patterns are present in the response. It's useful for detecting
+    specific phrases, keywords, or patterns in generated content.
     """
 
-    def __init__(self, *, substring: str, category: str = None) -> None:
+    def __init__(self, *, substring: str, category: str = "") -> None:
+        """Initialize the SubStringScorer.
 
+        Args:
+            substring: The substring to search for in the text.
+            category: Optional category for the score. Defaults to empty string.
+        """
         self._substring = substring
         self._score_category = category
         self.scorer_type = "true_false"
 
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+        """Score the given request_response based on presence of the substring.
 
-        self.validate(request_response, task=task)
+        Args:
+            request_response: The piece to score.
+            task: The task based on which the text should be scored (unused).
 
+        Returns:
+            A list containing a single Score object with a boolean value indicating
+            whether the substring is present in the text.
+        """
         expected_output_substring_present = self._substring in request_response.converted_value
 
         score = [
@@ -38,7 +53,6 @@ class SubStringScorer(Scorer):
             )
         ]
 
-        self._memory.add_scores_to_memory(scores=score)
         return score
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):

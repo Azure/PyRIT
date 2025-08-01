@@ -47,7 +47,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
         hf_access_token: Optional[str] = None,
         use_cuda: bool = False,
         tensor_format: str = "pt",
-        necessary_files: list = None,
+        necessary_files: Optional[list] = None,
         max_new_tokens: int = 20,
         temperature: float = 1.0,
         top_p: float = 1.0,
@@ -84,8 +84,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
         try:
             import torch
         except ModuleNotFoundError as e:
-            logger.error("Could not import torch. You may need to install it via 'pip install pyrit[all]'")
-            raise e
+            raise RuntimeError("Could not import torch. You may need to install it via 'pip install pyrit[all]'") from e
 
         # Determine the device
         self.device = "cuda" if self.use_cuda and torch.cuda.is_available() else "cpu"
@@ -309,11 +308,13 @@ class HuggingFaceChatTarget(PromptChatTarget):
         """
         Validates the provided prompt request response.
         """
-        if len(prompt_request.request_pieces) != 1:
-            raise ValueError("This target only supports a single prompt request piece.")
+        n_pieces = len(prompt_request.request_pieces)
+        if n_pieces != 1:
+            raise ValueError(f"This target only supports a single prompt request piece. Received: {n_pieces} pieces.")
 
-        if prompt_request.request_pieces[0].converted_value_data_type != "text":
-            raise ValueError("This target only supports text prompt input.")
+        piece_type = prompt_request.request_pieces[0].converted_value_data_type
+        if piece_type != "text":
+            raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""

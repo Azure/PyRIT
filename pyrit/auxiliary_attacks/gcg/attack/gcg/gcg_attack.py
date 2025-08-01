@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import gc
+import logging
 
 import numpy as np
 import torch
@@ -15,6 +16,8 @@ from pyrit.auxiliary_attacks.gcg.attack.base.attack_manager import (
     get_embedding_matrix,
     get_embeddings,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def token_gradients(model, input_ids, input_slice, target_slice, loss_slice):
@@ -193,7 +196,7 @@ class GCGMultiPromptAttack(MultiPromptAttack):
         del control_cands, loss
         gc.collect()
 
-        print("Current length:", len(self.workers[0].tokenizer(next_control).input_ids[1:]))
-        print(next_control)
+        logger.info(f"Current length: {len(self.workers[0].tokenizer(next_control).input_ids[1:])}")
+        logger.info(next_control)
 
         return next_control, cand_loss.item() / len(self.prompts[0]) / len(self.workers)

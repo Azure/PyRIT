@@ -54,7 +54,7 @@ repos:
     hooks:
       - id: flake8
         additional_dependencies: ['flake8-copyright']
-        exclude: (doc/|.github/|pyrit/prompt_converter/morse_converter.py|tests/unit/converter/test_prompt_converter.py|pyrit/prompt_converter/emoji_converter.py)
+        exclude: (doc/|.github/|pyrit/prompt_converter/morse_converter.py|tests/unit/converter/test_prompt_converter.py|pyrit/prompt_converter/emoji_converter.py|tests/unit/models/test_seed_prompt.py|tests/unit/converter/test_unicode_confusable_converter.py)
 
   - repo: local
     hooks:
@@ -67,8 +67,7 @@ repos:
       exclude: (release_process.md|git.md|^doc/deployment/|tests|pyrit/prompt_converter/morse_converter.py|.github|pyrit/prompt_converter/emoji_converter.py|pyrit/score/markdown_injection.py|^pyrit/datasets/|^pyrit/auxiliary_attacks/gcg/)
 
   - repo: https://github.com/pycqa/pylint
-    # update rev after pylint includes this https://github.com/Azure/PyRIT/issues/809
-    rev: c8c96d20cde3552a79858c7456bb1483bf83d633
+    rev: v3.3.7
     hooks:
       - id: pylint
         args: [--disable=all, --enable=unused-import]

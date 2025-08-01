@@ -26,18 +26,23 @@ logger = logging.getLogger(__name__)
 
 
 class PromptNode:
+    """
+    Class to maintain the tree information for each prompt template
+    """
+
     def __init__(
         self,
         template: str,
         parent: Optional[PromptNode] = None,
     ):
-        """Class to maintain the tree information for each prompt template
+        """
+        Creates the PromptNode instance.
 
         Args:
             template: Prompt template.
             parent: Parent node.
-
         """
+
         self.id = uuid.uuid4()
         self.template: str = template
         self.children: list[PromptNode] = []
@@ -113,6 +118,15 @@ class FuzzerResult:
 
 
 class FuzzerOrchestrator(Orchestrator):
+    """
+    An orchestrator that explores a variety of jailbreak options via fuzzing.
+
+    Paper - GPTFUZZER - Red Teaming Large Language Models with Auto-Generated Jailbreak Prompts.
+    Link - https://arxiv.org/pdf/2309.10253
+    Authors - Jiahao Yu, Xingwei Lin, Zheng Yu, Xinyu Xing
+    GitHub - https://github.com/sherdencooper/GPTFuzz
+    """
+
     _memory: MemoryInterface
 
     def __init__(
@@ -133,16 +147,10 @@ class FuzzerOrchestrator(Orchestrator):
         target_jailbreak_goal_count: int = 1,
         max_query_limit: Optional[int] = None,
     ) -> None:
-        """Creates an orchestrator that explores a variety of jailbreak options via fuzzing.
-
-        Paper: GPTFUZZER: Red Teaming Large Language Models with Auto-Generated Jailbreak Prompts.
-
-            Link: https://arxiv.org/pdf/2309.10253
-            Authors: Jiahao Yu, Xingwei Lin, Zheng Yu, Xinyu Xing
-            GitHub: https://github.com/sherdencooper/GPTFuzz
+        """
+        Creates the FuzzerOrchestrator instance.
 
         Args:
-
             prompts: The prompts will be the questions to the target.
             prompt_target: The target to send the prompts to.
             prompt_templates: List of all the jailbreak templates which will act as the seed pool.

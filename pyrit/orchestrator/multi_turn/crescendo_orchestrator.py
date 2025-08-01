@@ -68,6 +68,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         max_turns: int = 10,
         prompt_converters: Optional[list[PromptConverter]] = None,
         max_backtracks: int = 10,
+        batch_size: int = 1,
         verbose: bool = False,
     ) -> None:
 
@@ -92,6 +93,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             max_turns=max_turns,
             objective_scorer=objective_scorer,
             prompt_converters=prompt_converters,
+            batch_size=batch_size,
             verbose=verbose,
         )
 
@@ -304,7 +306,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             conversation_id=objective_target_conversation_id,
             objective=objective,
             status="success" if achieved_objective else "failure",
-            score=objective_score,
+            objective_score=objective_score,
             confidence=1.0 if achieved_objective else 0.0,
         )
 
@@ -317,7 +319,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         refused_text: str,
         turn_num: int,
         max_turns: int,
-        objective_score: Score = None,
+        objective_score: Optional[Score] = None,
         memory_labels: Optional[dict[str, str]] = None,
     ) -> str:
 
@@ -417,7 +419,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
     def _log_target_memory(self, *, conversation_id: str) -> None:
         """
-        Prints the target memory for a given conversation ID.
+        Logs the target memory for a given conversation ID.
 
         Args:
             conversation_id (str): The ID of the conversation.

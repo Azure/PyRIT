@@ -44,19 +44,19 @@ class AzureContentFilterScorer(Scorer):
     def __init__(
         self,
         *,
-        endpoint: str = None,
-        api_key: str = None,
+        endpoint: Optional[str] = None,
+        api_key: Optional[str] = None,
         use_aad_auth: bool = False,
-        harm_categories: list[TextCategory] = None,
+        harm_categories: Optional[list[TextCategory]] = None,
     ) -> None:
         """
         Class that initializes an Azure Content Filter Scorer
 
         Args:
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-                Defaults to the API_KEY_ENVIRONMENT_VARIABLE environment variable.
+                Defaults to the `API_KEY_ENVIRONMENT_VARIABLE` environment variable.
             endpoint (str, Optional): The endpoint URL for the Azure OpenAI service.
-                Defaults to the ENDPOINT_URI_ENVIRONMENT_VARIABLE environment variable.
+                Defaults to the `ENDPOINT_URI_ENVIRONMENT_VARIABLE` environment variable.
             use_aad_auth (bool, Optional): Attempt to use DefaultAzureCredential
                 If set to true, attempt to use DefaultAzureCredential for auth
             harm_categories: The harm categories you want to query for as per defined in
@@ -91,7 +91,7 @@ class AzureContentFilterScorer(Scorer):
         else:
             raise ValueError("Please provide the Azure Content Safety endpoint")
 
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """Evaluating the input text or image using the Azure Content Filter API
 
         Args:
@@ -113,8 +113,6 @@ class AzureContentFilterScorer(Scorer):
         Raises:
             ValueError if converted_value_data_type is not "text" or "image_path" or image isn't in supported format
         """
-        self.validate(request_response, task=task)
-
         filter_result: dict[str, list] = {}
         if request_response.converted_value_data_type == "text":
             text_request_options = AnalyzeTextOptions(
@@ -155,7 +153,6 @@ class AzureContentFilterScorer(Scorer):
                 prompt_request_response_id=request_response.id,
                 task=task,
             )
-            self._memory.add_scores_to_memory(scores=[score])
             scores.append(score)
 
         return scores

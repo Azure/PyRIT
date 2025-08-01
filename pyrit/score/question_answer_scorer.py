@@ -3,13 +3,11 @@
 
 from __future__ import annotations
 
-import json
-from typing import Optional, Sequence
+from typing import Optional
 
-from pyrit.models import PromptRequestResponse, QuestionAnsweringEntry, Score
+from pyrit.models import Score
 from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.prompt_target.batch_helper import batch_task_async
-from pyrit.score.scorer import Scorer
+from pyrit.score import Scorer
 
 
 class QuestionAnswerScorer(Scorer):
@@ -17,83 +15,70 @@ class QuestionAnswerScorer(Scorer):
     A class that represents a question answering scorer.
     """
 
+    CORRECT_ANSWER_MATCHING_PATTERNS = ["{correct_answer_index}:", "{correct_answer}"]
+
     def __init__(
         self,
         *,
+        correct_answer_matching_patterns: list[str] = CORRECT_ANSWER_MATCHING_PATTERNS,
         category: str = "",
     ) -> None:
         """
-        Initializes the QuestionAnswerScorer object.
+        Scores PromptRequestResponse objects that contain correct_answer_index and/or correct_answer metadata
 
         Args:
-            category (str): an optional parameter to the category metadata
+            correct_answer_matching_patterns (list[str]): A list of patterns to check for in the response. If any
+                pattern is found in the response, the score will be True. These patterns should be format strings
+                that will be formatted with the correct answer metadata.
         """
+        self._correct_answer_matching_patterns = correct_answer_matching_patterns
         self._score_category = category
         self.scorer_type = "true_false"
 
-    async def score_async(  # type: ignore[override]
-        self, *, request_response: PromptRequestPiece, task: QuestionAnsweringEntry
-    ) -> list[Score]:
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Score the request_reponse using the QuestionAnsweringEntry
         and return a single score object
 
         Args:
             request_response (PromptRequestPiece): The answer given by the target
-            task (QuestionAnsweringEntry): The entry containing the original prompt and the correct answer
+            task (QuestionAnsweringEntry): The entry containing the original question and the correct answer
         Returns:
             Score: A single Score object representing the result
         """
-        answer = request_response.converted_value
-        try:
-            # This is the case where the model response is an integer, which is the index of the answer.
-            answer = task.choices[int(answer)].text
-        except ValueError:
-            # If the model response is not an integer, then the model might have returned the answer as a string
-            pass
 
-        correct_answer = task.choices[int(task.correct_answer)].text
-        metadata_json = {"question": str(task.question), "correct_answer": correct_answer, "scored_answer": answer}
-        metadata = json.dumps(metadata_json)
+        result = False
+        matching_text = None
 
-        score = [
+        correct_index = request_response.prompt_metadata["correct_answer_index"]
+        correct_answer = request_response.prompt_metadata["correct_answer"]
+
+        for pattern in self._correct_answer_matching_patterns:
+            text = pattern.format(correct_answer_index=correct_index, correct_answer=correct_answer).lower()
+            if text in request_response.converted_value.lower():
+                result = True
+                matching_text = text
+                break
+
+        scores = [
             Score(
-                score_value=str(correct_answer in answer),
+                score_value=str(result),
+                score_value_description=None,
+                score_metadata=None,
                 score_type=self.scorer_type,
-                score_value_description="",
-                score_metadata=metadata,
                 score_category=self._score_category,
-                score_rationale="",
+                score_rationale=(
+                    f"Found matching text '{matching_text}' in response"
+                    if matching_text
+                    else "No matching text found in response"
+                ),
                 scorer_class_identifier=self.get_identifier(),
                 prompt_request_response_id=request_response.id,
-                task=task.question,
+                task=task,
             )
         ]
-        request_response.scores = score
-        return score
 
-    async def score_prompts_with_tasks_batch_async(  # type: ignore[override]
-        self,
-        *,
-        request_responses: Sequence[PromptRequestPiece],
-        tasks: Sequence[QuestionAnsweringEntry],
-        batch_size=10,
-    ) -> list[Score]:
-        if not tasks:
-            raise ValueError("Tasks must be provided.")
-        if len(request_responses) != len(tasks):
-            raise ValueError(
-                f"Number of tasks ({len(tasks)}) must match number of provided answers ({len(request_responses)})."
-            )
-        prompt_target = getattr(self, "_prompt_target", None)
-        results = await batch_task_async(
-            task_func=self.score_async,
-            task_arguments=["request_response", "task"],
-            prompt_target=prompt_target,
-            batch_size=batch_size,
-            items_to_batch=[request_responses, tasks],
-        )
-        return results
+        return scores
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
         """
@@ -107,25 +92,10 @@ class QuestionAnswerScorer(Scorer):
         if request_response.converted_value_data_type != "text":
             raise ValueError("Question Answer Scorer only supports text data type")
 
-    def report_scores(self, responses: list[PromptRequestResponse]) -> None:
-        """
-        Reports the score values from the list of prompt request responses
-        Checks for presence of scores in reponse before scoring
-
-        Args:
-            responses (list[PromptRequestResponse]): The list of responses to be reported on
-        """
-        correct_count = 0
-        if any(not response.request_pieces[0].scores for response in responses):
-            raise ValueError("Not all responses have scores, please score all responses before reporting")
-        if any(response.request_pieces[0].scores[0].score_type != "true_false" for response in responses):
-            raise ValueError("Score types are not 'true_false'")
-        for response in responses:
-            score_metadata = json.loads(response.request_pieces[0].scores[0].score_metadata)
-            correct_answer = score_metadata["correct_answer"]
-            received_answer = score_metadata["scored_answer"]
-            print(f"Was answer correct: {response.request_pieces[0].scores[0].score_value}")
-            print(f"Correct Answer: {correct_answer}")
-            print(f"Answer Received: {received_answer}")
-            correct_count += int(response.request_pieces[0].scores[0].score_value == "True")
-        print(f"Correct / Total: {correct_count} / {len(responses)}")
+        if not request_response.prompt_metadata or (
+            "correct_answer_index" not in request_response.prompt_metadata
+            and "correct_answer" not in request_response.prompt_metadata
+        ):
+            raise ValueError(
+                "Question Answer Scorer requires metadata with either correct_answer_index or correct_answer"
+            )

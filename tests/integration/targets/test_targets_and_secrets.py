@@ -11,6 +11,8 @@ from pyrit.prompt_target import (
     OpenAIChatTarget,
     OpenAICompletionTarget,
     OpenAIDALLETarget,
+    OpenAIResponseTarget,
+    OpenAISoraTarget,
     OpenAITTSTarget,
     RealtimeTarget,
 )
@@ -33,8 +35,12 @@ explanation, or additional text. Output only the word "test" and nothing else.
 
     attempt = 0
     while attempt < max_retries:
-        result = await orchestrator.send_prompts_async(prompt_list=[simple_prompt])
-        response = result[0].get_value() if result else ""
+        result = await orchestrator.run_attack_async(objective=simple_prompt)
+
+        if result:
+            response = orchestrator._memory.get_conversation(conversation_id=result.conversation_id)[-1].get_value()
+        else:
+            response = ""
 
         if valid_response(response):
             return response
@@ -59,8 +65,9 @@ explanation, or additional text. Output only the word "test" and nothing else.
         ("AZURE_OPENAI_GPTV_CHAT_ENDPOINT", "AZURE_OPENAI_GPTV_CHAT_KEY", "", False, True),
         ("AZURE_FOUNDRY_DEEPSEEK_ENDPOINT", "AZURE_FOUNDRY_DEEPSEEK_KEY", "", False, True),
         ("AZURE_FOUNDRY_PHI4_ENDPOINT", "AZURE_CHAT_PHI4_KEY", "", False, True),
-        ("AZURE_FOUNDRY_MINSTRAL3B_ENDPOINT", "AZURE_CHAT_MINSTRAL3B_KEY", "", False, True),
+        ("AZURE_FOUNDRY_MINSTRAL3B_ENDPOINT", "AZURE_CHAT_MINSTRAL3B_KEY", "", False, False),
         ("GOOGLE_GEMINI_ENDPOINT", "GOOGLE_GEMINI_API_KEY", "GOOGLE_GEMINI_MODEL", True, False),
+        ("ANTHROPIC_CHAT_ENDPOINT", "ANTHROPIC_CHAT_KEY", "ANTHROPIC_CHAT_MODEL", True, False),
     ],
 )
 async def test_connect_required_openai_text_targets(
@@ -79,6 +86,28 @@ async def test_connect_required_openai_text_targets(
         args["seed"] = 42
 
     target = OpenAIChatTarget(**args)
+
+    await _assert_can_send_prompt(target)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("endpoint", "api_key", "model_name", "no_api_version"),
+    [
+        ("OPENAI_RESPONSES_ENDPOINT", "OPENAI_RESPONSES_KEY", "OPENAI_RESPONSES_MODEL", True),
+        ("AZURE_OPENAI_RESPONSES_ENDPOINT", "AZURE_OPENAI_RESPONSES_KEY", "AZURE_OPENAI_RESPONSES_MODEL", False),
+    ],
+)
+async def test_connect_required_openai_response_targets(duckdb_instance, endpoint, api_key, model_name, no_api_version):
+    args = {
+        "endpoint": os.getenv(endpoint),
+        "api_key": os.getenv(api_key),
+        "model_name": os.getenv(model_name),
+    }
+    if no_api_version:
+        args["api_version"] = None
+
+    target = OpenAIResponseTarget(**args)
 
     await _assert_can_send_prompt(target)
 
@@ -160,6 +189,17 @@ async def test_connect_tts(duckdb_instance, endpoint, api_key):
     target = OpenAITTSTarget(
         endpoint=os.getenv(endpoint),
         api_key=os.getenv(api_key),
+    )
+
+    await _assert_can_send_prompt(target, check_if_llm_interpreted_request=False)
+
+
+@pytest.mark.asyncio
+async def test_connect_sora(duckdb_instance):
+    target = OpenAISoraTarget(
+        endpoint=os.getenv("OPENAI_SORA_ENDPOINT"),
+        api_key=os.getenv("OPENAI_SORA_KEY"),
+        model_name=os.getenv("OPENAI_SORA_MODEL"),
     )
 
     await _assert_can_send_prompt(target, check_if_llm_interpreted_request=False)
