@@ -171,29 +171,35 @@ class TestBatchScorerScoreResponsesByFilters:
 
             batch_scorer = BatchScorer()
 
-            test_filters = {
-                "orchestrator_id": str(uuid.uuid4()),
-                "conversation_id": str(uuid.uuid4()),
-                "prompt_ids": ["id1", "id2"],
-                "labels": {"test": "value"},
-                "data_type": "text",
-                "not_data_type": "image",
-            }
+            test_orchestrator_id = str(uuid.uuid4())
+            test_conversation_id = str(uuid.uuid4())
+            test_prompt_ids = ["id1", "id2"]
+            test_labels = {"test": "value"}
+            test_data_type = "text"
+            test_not_data_type = "image"
 
-            await batch_scorer.score_responses_by_filters_async(scorer=scorer, **test_filters)
+            await batch_scorer.score_responses_by_filters_async(
+                scorer=scorer,
+                orchestrator_id=test_orchestrator_id,
+                conversation_id=test_conversation_id,
+                prompt_ids=test_prompt_ids,
+                labels=test_labels,
+                data_type=test_data_type,
+                not_data_type=test_not_data_type,
+            )
 
             # Should call memory with all parameters including None for unspecified ones
             memory.get_prompt_request_pieces.assert_called_once_with(
-                orchestrator_id=test_filters["orchestrator_id"],
-                conversation_id=test_filters["conversation_id"],
-                prompt_ids=test_filters["prompt_ids"],
-                labels=test_filters["labels"],
+                orchestrator_id=test_orchestrator_id,
+                conversation_id=test_conversation_id,
+                prompt_ids=test_prompt_ids,
+                labels=test_labels,
                 sent_after=None,
                 sent_before=None,
                 original_values=None,
                 converted_values=None,
-                data_type=test_filters["data_type"],
-                not_data_type=test_filters["not_data_type"],
+                data_type=test_data_type,
+                not_data_type=test_not_data_type,
                 converted_value_sha256=None,
             )
 
