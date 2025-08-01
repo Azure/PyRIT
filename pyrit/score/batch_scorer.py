@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Optional, Sequence
 
-from pyrit.memory import CentralMemory, MemoryInterface
+from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.score.scorer import Scorer
 
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class BatchScorer:
     """
     A utility class for scoring prompts in batches in a parallelizable and convenient way.
-    
+
     This class provides functionality to score existing prompts stored in memory
     without any target interaction, making it a pure scoring utility.
     """
@@ -28,7 +28,7 @@ class BatchScorer:
     ) -> None:
         """
         Initialize the BatchScorer.
-        
+
         Args:
             batch_size (int): The (max) batch size for sending prompts. Defaults to 10.
                 Note: If using a scorer that takes a prompt target, and providing max requests per
@@ -47,7 +47,7 @@ class BatchScorer:
     ) -> list[Score]:
         """
         Score prompts using the Scorer for prompts with the prompt_ids.
-        
+
         Use this function if you want to score prompt requests as well as prompt responses,
         or if you want more fine-grained control over the scorer tasks. If you only want to
         score prompt responses, use the `score_responses_by_filters_async` function.
@@ -109,10 +109,10 @@ class BatchScorer:
             not_data_type (Optional[str]): The data type to exclude. Defaults to None.
             converted_value_sha256 (Optional[list[str]]): A list of SHA256 hashes of converted values.
                 Defaults to None.
-                
+
         Returns:
             list[Score]: A list of Score objects for responses that match the specified filters.
-            
+
         Raises:
             ValueError: If no entries match the provided filters.
         """
@@ -143,10 +143,10 @@ class BatchScorer:
     def _extract_responses_only(self, request_responses: Sequence[PromptRequestPiece]) -> list[PromptRequestPiece]:
         """
         Extract the responses from the list of PromptRequestPiece objects.
-        
+
         Args:
             request_responses (Sequence[PromptRequestPiece]): The request responses to filter.
-            
+
         Returns:
             list[PromptRequestPiece]: A list containing only assistant responses.
         """
@@ -155,13 +155,13 @@ class BatchScorer:
     def _remove_duplicates(self, request_responses: Sequence[PromptRequestPiece]) -> list[PromptRequestPiece]:
         """
         Remove duplicates from the list of PromptRequestPiece objects.
-        
+
         This ensures that identical prompts are not scored twice by filtering
         to only include original prompts (where original_prompt_id == id).
-        
+
         Args:
             request_responses (Sequence[PromptRequestPiece]): The request responses to deduplicate.
-            
+
         Returns:
             list[PromptRequestPiece]: A list with duplicates removed.
         """

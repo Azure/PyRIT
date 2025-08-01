@@ -39,7 +39,7 @@ class TestBatchScorerInitialization:
         mock_memory = MagicMock()
         with patch.object(CentralMemory, "get_memory_instance", return_value=mock_memory) as mock_get_memory:
             batch_scorer = BatchScorer()
-            
+
             mock_get_memory.assert_called_once()
             assert batch_scorer._memory == mock_memory
 
@@ -63,7 +63,7 @@ class TestBatchScorerScorePromptsById:
             batch_scorer = BatchScorer()
 
             await batch_scorer.score_prompts_by_id_async(scorer=scorer, prompt_ids=["id1"])
-            
+
             memory.get_prompt_request_pieces.assert_called_once_with(prompt_ids=["id1"])
             scorer.score_prompts_with_tasks_batch_async.assert_called_once()
 
@@ -81,9 +81,7 @@ class TestBatchScorerScorePromptsById:
 
             batch_scorer = BatchScorer()
 
-            await batch_scorer.score_prompts_by_id_async(
-                scorer=scorer, prompt_ids=["id1"], responses_only=True
-            )
+            await batch_scorer.score_prompts_by_id_async(scorer=scorer, prompt_ids=["id1"], responses_only=True)
 
             # Verify that only assistant responses are passed to scorer
             _, kwargs = scorer.score_prompts_with_tasks_batch_async.call_args
@@ -105,9 +103,7 @@ class TestBatchScorerScorePromptsById:
             batch_scorer = BatchScorer()
             test_task = "custom task"
 
-            await batch_scorer.score_prompts_by_id_async(
-                scorer=scorer, prompt_ids=["id1"], task=test_task
-            )
+            await batch_scorer.score_prompts_by_id_async(scorer=scorer, prompt_ids=["id1"], task=test_task)
 
             _, kwargs = scorer.score_prompts_with_tasks_batch_async.call_args
             tasks = kwargs["tasks"]
