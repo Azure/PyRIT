@@ -4,18 +4,28 @@
 """Attack results mixin for MemoryInterface containing attack result-related operations."""
 
 import logging
-from typing import Optional, Sequence
+from typing import TYPE_CHECKING, Optional, Sequence
 
 from sqlalchemy import and_
 from sqlalchemy.sql.elements import ColumnElement
 
+from pyrit.memory.memory_interface.protocol import MemoryInterfaceProtocol
 from pyrit.memory.memory_models import AttackResultEntry
 from pyrit.models.attack_result import AttackResult
 
 logger = logging.getLogger(__name__)
 
+# Use protocol inheritance only during type checking to avoid metaclass conflicts.
+# The protocol uses typing._ProtocolMeta which conflicts with the Singleton metaclass
+# used by concrete memory classes. This conditional inheritance provides full type
+# checking and IDE support while avoiding runtime metaclass conflicts.
+if TYPE_CHECKING:
+    _MixinBase = MemoryInterfaceProtocol
+else:
+    _MixinBase = object
 
-class MemoryAttackResultsMixin:
+
+class MemoryAttackResultsMixin(_MixinBase):
     """Mixin providing attack result-related methods for memory management."""
 
     def add_attack_results_to_memory(self, *, attack_results: Sequence[AttackResult]) -> None:

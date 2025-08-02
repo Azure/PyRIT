@@ -7,7 +7,7 @@ import abc
 import atexit
 import logging
 import weakref
-from typing import MutableSequence, Optional, Sequence, TypeVar, Union
+from typing import TYPE_CHECKING, MutableSequence, Optional, Sequence, TypeVar, Union
 
 from sqlalchemy import Engine
 from sqlalchemy.orm.attributes import InstrumentedAttribute
@@ -18,20 +18,40 @@ from pyrit.memory.memory_embedding import (
 )
 from pyrit.memory.memory_exporter import MemoryExporter
 from pyrit.memory.memory_models import Base, EmbeddingDataEntry
+from pyrit.memory.memory_interface.protocol import MemoryInterfaceProtocol
 from pyrit.models import StorageIO
 
 logger = logging.getLogger(__name__)
 Model = TypeVar("Model")
 
+# Use protocol inheritance only during type checking to avoid metaclass conflicts.
+# The protocol uses typing._ProtocolMeta which conflicts with the Singleton metaclass
+# used by concrete memory classes. This conditional inheritance provides full type
+# checking and IDE support while avoiding runtime metaclass conflicts.
+if TYPE_CHECKING:
+    _MixinBase = MemoryInterfaceProtocol
+else:
+    _MixinBase = object
 
-class MemoryInfrastructureMixin(abc.ABC):
+
+class MemoryInfrastructureMixin(_MixinBase):
     """Mixin providing core infrastructure methods for memory management."""
 
-    memory_embedding: Optional[MemoryEmbedding] = None
-    results_storage_io: Optional[StorageIO] = None
-    results_path: Optional[str] = None
-    engine: Optional[Engine] = None
-    exporter: Optional[MemoryExporter] = None
+
+    # TODO TODO can I remove this???
+    if TYPE_CHECKING:
+        # These attributes will be available when used in the final MemoryInterface
+        memory_embedding: Optional[MemoryEmbedding]
+        results_storage_io: Optional[StorageIO]
+        results_path: Optional[str]
+        engine: Optional[Engine]
+        exporter: Optional[MemoryExporter]
+    else:
+        memory_embedding: Optional[MemoryEmbedding] = None
+        results_storage_io: Optional[StorageIO] = None
+        results_path: Optional[str] = None
+        engine: Optional[Engine] = None
+        exporter: Optional[MemoryExporter] = None
 
     def __init__(self, embedding_model=None):
         """Initialize the MemoryInterface.
@@ -49,59 +69,7 @@ class MemoryInfrastructureMixin(abc.ABC):
         # Ensure cleanup at process exit
         self.cleanup()
 
-    # ========================================
-    # Abstract Methods (must be implemented by concrete classes)
-    # ========================================
 
-    @abc.abstractmethod
-    def _init_storage_io(self):
-        """Initialize the storage IO handler results_storage_io."""
-
-    @abc.abstractmethod
-    def _get_prompt_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> list:
-        """Returns a list of conditions for filtering memory entries based on memory labels."""
-
-    @abc.abstractmethod
-    def _get_prompt_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list:
-        """Returns a list of conditions for filtering memory entries based on prompt metadata."""
-
-    @abc.abstractmethod
-    def _get_prompt_pieces_orchestrator_conditions(self, *, orchestrator_id: str):
-        """Returns a condition to retrieve based on orchestrator ID."""
-
-    @abc.abstractmethod
-    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]):
-        """Returns a list of conditions for filtering seed prompt entries based on prompt metadata."""
-
-    @abc.abstractmethod
-    def _query_entries(
-        self, Model, *, conditions: Optional = None, distinct: bool = False, join_scores: bool = False  # type: ignore
-    ) -> MutableSequence[Model]:  # type: ignore
-        """Fetches data from the specified table model with optional conditions."""
-
-    @abc.abstractmethod
-    def _insert_entry(self, entry: Base) -> None:  # type: ignore
-        """Inserts an entry into the Table."""
-
-    @abc.abstractmethod
-    def _insert_entries(self, *, entries: Sequence[Base]) -> None:  # type: ignore
-        """Inserts multiple entries into the database."""
-
-    @abc.abstractmethod
-    def _update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
-        """Updates the given entries with the specified field values."""
-
-    @abc.abstractmethod
-    def _add_embeddings_to_memory(self, *, embedding_data: Sequence[EmbeddingDataEntry]) -> None:
-        """Inserts embedding data into memory storage."""
-
-    @abc.abstractmethod
-    def get_all_embeddings(self) -> Sequence[EmbeddingDataEntry]:
-        """Loads all EmbeddingData from the memory storage handler."""
-
-    @abc.abstractmethod
-    def dispose_engine(self):
-        """Dispose the engine and clean up resources."""
 
     # ========================================
     # Embedding Management

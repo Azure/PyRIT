@@ -8,10 +8,11 @@ import copy
 import logging
 import uuid
 from datetime import datetime
-from typing import MutableSequence, Optional, Sequence, Union
+from typing import TYPE_CHECKING, MutableSequence, Optional, Sequence, Union
 
 from sqlalchemy import and_
 
+from pyrit.memory.memory_interface.protocol import MemoryInterfaceProtocol
 from pyrit.memory.memory_models import PromptMemoryEntry
 from pyrit.models import (
     ChatMessage,
@@ -23,16 +24,20 @@ from pyrit.models import (
 
 logger = logging.getLogger(__name__)
 
+# Use protocol inheritance only during type checking to avoid metaclass conflicts.
+# The protocol uses typing._ProtocolMeta which conflicts with the Singleton metaclass
+# used by concrete memory classes. This conditional inheritance provides full type
+# checking and IDE support while avoiding runtime metaclass conflicts.
+if TYPE_CHECKING:
+    _MixinBase = MemoryInterfaceProtocol
+else:
+    _MixinBase = object
 
-class MemoryPromptsMixin:
+
+class MemoryPromptsMixin(_MixinBase):
     """Mixin providing prompt and conversation-related methods for memory management."""
 
-    @abc.abstractmethod
-    def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
-        """
-        Inserts a list of prompt request pieces into the memory storage.
-        """
-        ...
+
 
     def get_conversation(self, *, conversation_id: str) -> MutableSequence[PromptRequestResponse]:
         """

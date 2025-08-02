@@ -6,12 +6,22 @@
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Sequence
+from typing import TYPE_CHECKING, Optional, Sequence
 
 from pyrit.common.path import DB_DATA_PATH
+from pyrit.memory.memory_interface.protocol import MemoryInterfaceProtocol
+
+# Use protocol inheritance only during type checking to avoid metaclass conflicts.
+# The protocol uses typing._ProtocolMeta which conflicts with the Singleton metaclass
+# used by concrete memory classes. This conditional inheritance provides full type
+# checking and IDE support while avoiding runtime metaclass conflicts.
+if TYPE_CHECKING:
+    _MixinBase = MemoryInterfaceProtocol
+else:
+    _MixinBase = object
 
 
-class MemoryExportMixin:
+class MemoryExportMixin(_MixinBase):
     """Mixin providing export and utility methods for memory management."""
 
     def export_conversations(

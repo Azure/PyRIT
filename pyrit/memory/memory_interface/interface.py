@@ -14,8 +14,6 @@ The functionality is grouped into:
 - Export: Export and utility functions
 """
 
-import abc
-
 from pyrit.memory.memory_interface.attack_results_mixin import MemoryAttackResultsMixin
 from pyrit.memory.memory_interface.export_mixin import MemoryExportMixin
 from pyrit.memory.memory_interface.infrastructure_mixin import MemoryInfrastructureMixin
@@ -31,7 +29,6 @@ class MemoryInterface(
     MemorySeedPromptsMixin,
     MemoryAttackResultsMixin,
     MemoryExportMixin,
-    abc.ABC,
 ):
     """Abstract interface for conversation memory storage systems.
 
@@ -50,4 +47,11 @@ class MemoryInterface(
     ## Export & Utilities (MemoryExportMixin)
     """
 
-    pass
+    def __new__(cls, *args, **kwargs):
+        """Prevent direct instantiation of MemoryInterface."""
+        if cls is MemoryInterface:
+            raise TypeError(
+                f"Cannot instantiate abstract class {cls.__name__} directly. "
+                f"Use a concrete implementation like AzureSQLMemory or DuckDBMemory."
+            )
+        return super().__new__(cls)

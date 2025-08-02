@@ -276,7 +276,7 @@ async def test_get_seed_prompts_with_single_element_list_filters(duckdb_instance
 
 @pytest.mark.asyncio
 async def test_add_seed_prompts_to_memory_empty_list(duckdb_instance: MemoryInterface):
-    prompts = []
+    prompts: list[SeedPrompt] = []
     await duckdb_instance.add_seed_prompts_to_memory_async(prompts=prompts, added_by="tester")
     stored_prompts = duckdb_instance.get_seed_prompts(dataset_name="test_dataset")
     assert len(stored_prompts) == 0

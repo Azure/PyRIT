@@ -4,12 +4,12 @@
 """Seed prompts mixin for MemoryInterface containing seed prompt-related operations."""
 
 import logging
-import uuid
 from datetime import datetime
-from typing import MutableSequence, Optional, Sequence, Union
+from typing import TYPE_CHECKING, MutableSequence, Optional, Sequence, Union
 
 from sqlalchemy import and_
 
+from pyrit.memory.memory_interface.protocol import MemoryInterfaceProtocol
 from pyrit.memory.memory_models import SeedPromptEntry
 from pyrit.models import (
     DataTypeSerializer,
@@ -21,8 +21,17 @@ from pyrit.models import (
 
 logger = logging.getLogger(__name__)
 
+# Use protocol inheritance only during type checking to avoid metaclass conflicts.
+# The protocol uses typing._ProtocolMeta which conflicts with the Singleton metaclass
+# used by concrete memory classes. This conditional inheritance provides full type
+# checking and IDE support while avoiding runtime metaclass conflicts.
+if TYPE_CHECKING:
+    _MixinBase = MemoryInterfaceProtocol
+else:
+    _MixinBase = object
 
-class MemorySeedPromptsMixin:
+
+class MemorySeedPromptsMixin(_MixinBase):
     """Mixin providing seed prompt-related methods for memory management."""
 
     def get_seed_prompts(

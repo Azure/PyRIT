@@ -4,15 +4,25 @@
 """Scores mixin for MemoryInterface containing score-related operations."""
 
 import logging
-from typing import Sequence
+from typing import TYPE_CHECKING, Sequence
 
+from pyrit.memory.memory_interface.protocol import MemoryInterfaceProtocol
 from pyrit.memory.memory_models import ScoreEntry
 from pyrit.models import Score
 
 logger = logging.getLogger(__name__)
 
+# Use protocol inheritance only during type checking to avoid metaclass conflicts.
+# The protocol uses typing._ProtocolMeta which conflicts with the Singleton metaclass
+# used by concrete memory classes. This conditional inheritance provides full type
+# checking and IDE support while avoiding runtime metaclass conflicts.
+if TYPE_CHECKING:
+    _MixinBase = MemoryInterfaceProtocol
+else:
+    _MixinBase = object
 
-class MemoryScoresMixin:
+
+class MemoryScoresMixin(_MixinBase):
     """Mixin providing score-related methods for memory management."""
 
     def add_scores_to_memory(self, *, scores: Sequence[Score]) -> None:
@@ -29,7 +39,7 @@ class MemoryScoresMixin:
                 # auto-link score to the original prompt id if the prompt is a duplicate
                 if prompt_piece[0].original_prompt_id != prompt_piece[0].id:
                     score.prompt_request_response_id = prompt_piece[0].original_prompt_id
-        self._insert_entries(entries=[ScoreEntry(entry=score) for score in scores])
+        self._insert_entries(entries=[ScoreEntry(entry=score) for score in scores])  # type: ignore
 
     def get_scores_by_prompt_ids(self, *, prompt_request_response_ids: Sequence[str]) -> Sequence[Score]:
         """
@@ -38,7 +48,7 @@ class MemoryScoresMixin:
         prompt_pieces = self.get_prompt_request_pieces(prompt_ids=prompt_request_response_ids)
         # Get the original prompt IDs from the prompt pieces so correct scores can be obtained
         prompt_request_response_ids = [str(piece.original_prompt_id) for piece in prompt_pieces]
-        entries: Sequence[ScoreEntry] = self._query_entries(
+        entries: Sequence[ScoreEntry] = self._query_entries(  # type: ignore
             ScoreEntry, conditions=ScoreEntry.prompt_request_response_id.in_(prompt_request_response_ids)
         )
 

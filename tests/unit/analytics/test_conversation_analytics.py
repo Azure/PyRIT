@@ -8,13 +8,13 @@ import pytest
 from unit.mocks import get_sample_conversation_entries
 
 from pyrit.analytics.conversation_analytics import ConversationAnalytics
-from pyrit.memory.memory_interface import MemoryInterface
+from pyrit.memory.memory_interface.protocol import MemoryInterfaceProtocol
 from pyrit.memory.memory_models import EmbeddingDataEntry, PromptMemoryEntry
 
 
 @pytest.fixture
 def mock_memory_interface():
-    memory_interface = MagicMock(spec=MemoryInterface)
+    memory_interface = MagicMock(spec=MemoryInterfaceProtocol)
     return memory_interface
 
 
