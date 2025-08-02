@@ -7,7 +7,7 @@ import logging
 import random
 import uuid
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -191,7 +191,7 @@ class FuzzerAttackContext(AttackContext):
     def create_from_params(
         cls,
         *,
-        objective: str,
+        attack_input: Any,
         prepended_conversation: List[PromptRequestResponse],
         memory_labels: Dict[str, str],
         **kwargs,
@@ -200,7 +200,7 @@ class FuzzerAttackContext(AttackContext):
         Factory method to create context from standard parameters.
 
         Args:
-            objective (str): The attack objective to achieve.
+            attack_input (Any): The attack input, expected to be the objective string for Fuzzer attacks.
             prepended_conversation (List[PromptRequestResponse]): Initial conversation history to prepend.
             memory_labels (Dict[str, str]): Memory labels for the attack context.
             **kwargs: Additional parameters for fuzzer configuration.
@@ -208,6 +208,15 @@ class FuzzerAttackContext(AttackContext):
         Returns:
             FuzzerAttackContext: A new instance of FuzzerAttackContext.
         """
+        # For Fuzzer attacks, attack_input is expected to be the objective string
+        if not isinstance(attack_input, str):
+            raise ValueError(
+                "FuzzerAttackContext expects attack_input to be a string (objective), "
+                f"got {type(attack_input).__name__}"
+            )
+
+        objective = attack_input
+
         return cls(
             objective=objective,
             memory_labels=memory_labels,
@@ -264,7 +273,7 @@ class FuzzerAttackResult(AttackResult):
         self.metadata["templates_explored"] = value
 
 
-class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult]):
+class FuzzerAttack(AttackStrategy[FuzzerAttackContext, FuzzerAttackResult, str]):
     """
     Implementation of the Fuzzer attack strategy using Monte Carlo Tree Search (MCTS).
 

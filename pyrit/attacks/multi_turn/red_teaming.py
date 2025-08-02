@@ -50,7 +50,7 @@ class RTOSystemPromptPaths(enum.Enum):
     CRUCIBLE = Path(RED_TEAM_ORCHESTRATOR_PATH, "crucible.yaml").resolve()
 
 
-class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
+class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult, str]):
     """
     Implementation of multi-turn red teaming attack strategy.
 

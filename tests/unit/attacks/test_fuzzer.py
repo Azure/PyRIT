@@ -839,7 +839,7 @@ class TestFuzzerAttackValidation:
         memory_labels = {"test": "label"}
 
         context = FuzzerAttackContext.create_from_params(
-            objective=objective,
+            attack_input=objective,
             prepended_conversation=prepended_conversation,
             memory_labels=memory_labels,
             # Extra kwargs should be ignored

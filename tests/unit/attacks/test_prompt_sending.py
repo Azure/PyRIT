@@ -196,6 +196,16 @@ class TestContextValidation:
 
         attack._validate_context(context=context)  # Should not raise
 
+    def test_singleturn_attack_context_create_from_params_invalid_attack_input_type(self):
+        """Test that SingleTurnAttackContext.create_from_params raises ValueError for non-string attack_input."""
+        # Should raise ValueError during context creation
+        with pytest.raises(ValueError, match="SingleTurnAttackContext expects attack_input to be a string"):
+            SingleTurnAttackContext.create_from_params(
+                attack_input={"not": "a string"},  # Invalid type - dict instead of string
+                prepended_conversation=[],
+                memory_labels={"test": "label"},
+            )
+
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestSetupPhase:
@@ -924,7 +934,7 @@ class TestAttackLifecycle:
         seed_group = SeedPromptGroup(prompts=[SeedPrompt(value="test", data_type="text")])
 
         result = await attack.execute_async(
-            objective="Test objective",
+            attack_input="Test objective",
             prepended_conversation=[sample_response],
             memory_labels={"test": "label"},
             seed_prompt_group=seed_group,
@@ -952,12 +962,12 @@ class TestAttackLifecycle:
         # Test with invalid seed_prompt_group type
         with pytest.raises(ValueError, match="seed_prompt_group must be a SeedPromptGroup"):
             await attack.execute_async(
-                objective="Test objective", seed_prompt_group="invalid_type"  # Should be SeedPromptGroup
+                attack_input="Test objective", seed_prompt_group="invalid_type"  # Should be SeedPromptGroup
             )
 
         # Test with invalid system_prompt type
         with pytest.raises(ValueError, match="system_prompt must be a string"):
-            await attack.execute_async(objective="Test objective", system_prompt=123)  # Should be string
+            await attack.execute_async(attack_input="Test objective", system_prompt=123)  # Should be string
 
 
 @pytest.mark.usefixtures("patch_central_database")

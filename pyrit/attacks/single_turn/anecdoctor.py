@@ -7,7 +7,7 @@ import logging
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import yaml
 
@@ -55,7 +55,7 @@ class AnecdoctorAttackContext(AttackContext):
     def create_from_params(
         cls,
         *,
-        objective: str,
+        attack_input: Any,
         prepended_conversation: List[PromptRequestResponse],
         memory_labels: Dict[str, str],
         **kwargs,
@@ -64,7 +64,7 @@ class AnecdoctorAttackContext(AttackContext):
         Create AnecdoctorAttackContext from parameters.
 
         Args:
-            objective (str): The objective of the attack.
+            attack_input (Any): The attack input, expected to be the objective string for Anecdoctor attacks.
             prepended_conversation (List[PromptRequestResponse]): Not used in Anecdoctor attack.
             memory_labels (Dict[str, str]): Additional labels for memory storage.
             **kwargs: Additional parameters including evaluation_data, language, content_type.
@@ -75,6 +75,15 @@ class AnecdoctorAttackContext(AttackContext):
         Raises:
             ValueError: If required parameters are missing or invalid.
         """
+        # For Anecdoctor attacks, attack_input is expected to be the objective string
+        if not isinstance(attack_input, str):
+            raise ValueError(
+                "AnecdoctorAttackContext expects attack_input to be a string (objective), "
+                f"got {type(attack_input).__name__}"
+            )
+
+        objective = attack_input
+
         # Extract and validate evaluation_data (required)
         evaluation_data = kwargs.get("evaluation_data", [])
         if not isinstance(evaluation_data, list):
@@ -102,7 +111,7 @@ class AnecdoctorAttackContext(AttackContext):
         )
 
 
-class AnecdoctorAttack(AttackStrategy[AnecdoctorAttackContext, AttackResult]):
+class AnecdoctorAttack(AttackStrategy[AnecdoctorAttackContext, AttackResult, str]):
     """
     Implementation of the Anecdoctor attack strategy.
 

@@ -321,7 +321,7 @@ class TestContextCreation:
 
                         # Execute
                         await attack.execute_async(
-                            objective="Test objective",
+                            attack_input="Test objective",
                             memory_labels={"test": "label"},
                         )
 
@@ -369,7 +369,7 @@ class TestContextCreation:
 
                         # Execute with custom prompt
                         await attack.execute_async(
-                            objective="Test objective",
+                            attack_input="Test objective",
                             custom_prompt="My custom prompt",
                         )
 
@@ -394,8 +394,18 @@ class TestContextCreation:
         # Should raise ValueError during context creation
         with pytest.raises(ValueError, match="custom_prompt must be a string"):
             await attack.execute_async(
-                objective="Test objective",
+                attack_input="Test objective",
                 custom_prompt=123,  # Invalid type
+            )
+
+    def test_multiturn_attack_context_create_from_params_invalid_attack_input_type(self):
+        """Test that MultiTurnAttackContext.create_from_params raises ValueError for non-string attack_input."""
+        # Should raise ValueError during context creation
+        with pytest.raises(ValueError, match="MultiTurnAttackContext expects attack_input to be a string"):
+            MultiTurnAttackContext.create_from_params(
+                attack_input=["not", "a", "string"],  # Invalid type - list instead of string
+                prepended_conversation=[],
+                memory_labels={"test": "label"},
             )
 
 
@@ -1253,7 +1263,7 @@ class TestAttackLifecycle:
 
                         # Execute using execute_async
                         result = await attack.execute_async(
-                            objective="Test objective",
+                            attack_input="Test objective",
                         )
 
         # Verify result and proper execution order
@@ -1285,7 +1295,7 @@ class TestAttackLifecycle:
                         # Should raise AttackValidationException
                         with pytest.raises(AttackValidationException) as exc_info:
                             await attack.execute_async(
-                                objective="Test objective",
+                                attack_input="Test objective",
                             )
 
         # Verify error details
@@ -1388,7 +1398,7 @@ class TestRedTeamingConversationTracking:
         # Mock the conversation manager to return a state
         with patch.object(attack._conversation_manager, "update_conversation_state_async") as mock_update:
             mock_update.return_value = ConversationState(
-                turn_count=0, last_user_message=None, last_assistant_message_scores=[]
+                turn_count=0, last_user_message="", last_assistant_message_scores=[]
             )
 
             # Run setup
@@ -1427,7 +1437,7 @@ class TestRedTeamingConversationTracking:
             patch.object(attack, "_generate_next_prompt_async", new_callable=AsyncMock) as mock_generate,
         ):
             mock_update.return_value = ConversationState(
-                turn_count=0, last_user_message=None, last_assistant_message_scores=[]
+                turn_count=0, last_user_message="", last_assistant_message_scores=[]
             )
             mock_send.return_value = sample_response
             mock_score.return_value = {"objective_scores": [success_score]}
@@ -1464,7 +1474,7 @@ class TestRedTeamingConversationTracking:
         # Mock the conversation manager
         with patch.object(attack._conversation_manager, "update_conversation_state_async") as mock_update:
             mock_update.return_value = ConversationState(
-                turn_count=0, last_user_message=None, last_assistant_message_scores=[]
+                turn_count=0, last_user_message="", last_assistant_message_scores=[]
             )
 
             # Run setup

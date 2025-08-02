@@ -86,7 +86,7 @@ class CrescendoAttackResult(AttackResult):
         self.metadata["backtrack_count"] = value
 
 
-class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResult]):
+class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResult, str]):
     """
     Implementation of the Crescendo attack strategy.
 
