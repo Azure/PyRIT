@@ -131,7 +131,8 @@ class ConversationManager:
         conversation_id: str,
         target: Optional[Union[PromptTarget, PromptChatTarget]] = None,
         prepended_conversation: List[PromptRequestResponse],
-        converter_configurations: Optional[List[PromptConverterConfiguration]] = None,
+        request_converters: Optional[List[PromptConverterConfiguration]] = None,
+        response_converters: Optional[List[PromptConverterConfiguration]] = None,
         max_turns: Optional[int] = None,
     ) -> ConversationState:
         """
@@ -156,8 +157,10 @@ class ConversationManager:
                 applicable).
             prepended_conversation (List[PromptRequestResponse]):
                 List of messages to prepend to the conversation history.
-            converter_configurations (Optional[List[PromptConverterConfiguration]]): List of configurations for
-                converting prompt values.
+            request_converters (Optional[List[PromptConverterConfiguration]]):
+                List of configurations for converting user (request) messages.
+            response_converters (Optional[List[PromptConverterConfiguration]]):
+                List of configurations for converting assistant (response) messages.
             max_turns (Optional[int]): Maximum number of turns allowed in the conversation. If not provided,
                 the function assumes a single-turn context.
 
@@ -201,12 +204,13 @@ class ConversationManager:
                 continue
 
             # Apply converters if needed
-            if converter_configurations:
+            if request_converters or response_converters:
                 logger.debug(f"Converting request {i + 1}/{len(valid_requests)} in conversation {conversation_id}")
-                # Convert the request values using the provided configurations
-                await self._prompt_normalizer.convert_values(
-                    request_response=request,
-                    converter_configurations=converter_configurations,
+                # Apply role-specific converters
+                await self._apply_role_specific_converters_async(
+                    request=request,
+                    request_converters=request_converters,
+                    response_converters=response_converters,
                 )
 
             # Process the request piece
@@ -228,6 +232,46 @@ class ConversationManager:
             )
 
         return state
+
+    async def _apply_role_specific_converters_async(
+        self,
+        *,
+        request: PromptRequestResponse,
+        request_converters: Optional[List[PromptConverterConfiguration]] = None,
+        response_converters: Optional[List[PromptConverterConfiguration]] = None,
+    ) -> None:
+        """
+        Apply role-specific converters to messages.
+
+        - Request converters are applied to 'user' role messages
+        - Response converters are applied to 'assistant' role messages
+        - No converters are applied to 'system' role messages
+
+        Args:
+            request (PromptRequestResponse): The request containing pieces to convert.
+            request_converters (Optional[List[PromptConverterConfiguration]]):
+                Converter configurations to apply to 'user' role messages.
+            response_converters (Optional[List[PromptConverterConfiguration]]):
+                Converter configurations to apply to 'assistant' role messages.
+        """
+        # Determine which converters to apply based on message roles
+        for piece in request.request_pieces:
+            applicable_converters: Optional[List[PromptConverterConfiguration]] = None
+
+            if piece.role == "user" and request_converters:
+                applicable_converters = request_converters
+            elif piece.role == "assistant" and response_converters:
+                applicable_converters = response_converters
+            # System messages get no converters (applicable_converters remains None)
+
+            # Apply the determined converters
+            if applicable_converters:
+                # Create a temporary request with just this piece for conversion
+                temp_request = PromptRequestResponse(request_pieces=[piece])
+                await self._prompt_normalizer.convert_values(
+                    request_response=temp_request,
+                    converter_configurations=applicable_converters,
+                )
 
     async def _process_prepended_message_async(
         self,
@@ -306,12 +350,7 @@ class ConversationManager:
         # Check if multiturn
         is_multi_turn = max_turns is not None
 
-        # Basic checks
-        # we don't exclude any pieces if we are not in multi-turn mode
-        # and we only care about system and assistant roles
-        if not is_multi_turn or piece.role not in ["system", "assistant"]:
-            return
-
+        # Handle system prompts (both single-turn and multi-turn)
         if piece.role == "system":
             if target is None:
                 raise ValueError("Target must be provided to handle system prompts")
@@ -327,8 +366,8 @@ class ConversationManager:
                 labels=piece.labels,
             )
 
-        # Handle assistant messages (count turns)
-        elif piece.role == "assistant" and max_turns is not None:
+        # Handle assistant messages (count turns for multi-turn only)
+        elif piece.role == "assistant" and is_multi_turn:
             # Update turn count
             conversation_state.turn_count += 1
 
@@ -343,7 +382,9 @@ class ConversationManager:
 
     @staticmethod
     def _should_exclude_piece_from_memory(*, piece: PromptRequestPiece, max_turns: Optional[int] = None) -> bool:
-        return max_turns is not None and piece.role == "system"
+        # System pieces should always be excluded from memory because set_system_prompt function
+        # is called on the target, which internally adds them to memory
+        return piece.role == "system"
 
     async def _populate_conversation_state_async(
         self,

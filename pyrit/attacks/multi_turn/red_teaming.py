@@ -28,6 +28,8 @@ from pyrit.common.utils import combine_dict
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
+    ConversationReference,
+    ConversationType,
     PromptRequestResponse,
     Score,
     SeedPrompt,
@@ -194,13 +196,22 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         logger.debug(f"Conversation session ID: {context.session.conversation_id}")
         logger.debug(f"Adversarial chat conversation ID: {context.session.adversarial_chat_conversation_id}")
 
+        # Track the adversarial chat conversation ID using related_conversations
+        context.related_conversations.add(
+            ConversationReference(
+                conversation_id=context.session.adversarial_chat_conversation_id,
+                conversation_type=ConversationType.ADVERSARIAL,
+            )
+        )
+
         # Update the conversation state with the current context
         conversation_state: ConversationState = await self._conversation_manager.update_conversation_state_async(
             target=self._objective_target,
             max_turns=self._max_turns,
             conversation_id=context.session.conversation_id,
             prepended_conversation=context.prepended_conversation,
-            converter_configurations=self._request_converters,
+            request_converters=self._request_converters,
+            response_converters=self._response_converters,
         )
 
         # update the turns based on prepend conversation
@@ -286,6 +297,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             executed_turns=context.executed_turns,
             last_response=context.last_response.get_piece() if context.last_response else None,
             last_score=context.last_score,
+            related_conversations=context.related_conversations,
         )
 
     async def _teardown_async(self, *, context: MultiTurnAttackContext) -> None:
