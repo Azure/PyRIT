@@ -4,6 +4,7 @@
 """Seed prompts mixin for MemoryInterface containing seed prompt-related operations."""
 
 import logging
+import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, MutableSequence, Optional, Sequence, Union
 
@@ -77,9 +78,9 @@ class MemorySeedPromptsMixin(_MixinBase):
 
         # Apply filters for non-list fields
         if value:
-            conditions.append(SeedPromptEntry.value.contains(value))
+            conditions.append(SeedPromptEntry.value.contains(value))  # type: ignore
         if value_sha256:
-            conditions.append(SeedPromptEntry.value_sha256.in_(value_sha256))
+            conditions.append(SeedPromptEntry.value_sha256.in_(value_sha256))  # type: ignore
         if dataset_name:
             conditions.append(SeedPromptEntry.dataset_name == dataset_name)
         if data_types:

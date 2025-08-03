@@ -242,24 +242,6 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 logger.exception(f"Error updating entries: {e}")
                 return False
 
-    def export_all_tables(self, *, export_type: str = "json"):
-        """
-        Exports all table data using the specified exporter.
-
-        Iterates over all tables, retrieves their data, and exports each to a file named after the table.
-
-        Args:
-            export_type (str): The format to export the data in (defaults to "json").
-        """
-        table_models = self.get_all_table_models()
-
-        for model in table_models:
-            data: MutableSequence[Base] = self._query_entries(model)
-            table_name = model.__tablename__
-            file_extension = f".{export_type}"
-            file_path = DB_DATA_PATH / f"{table_name}{file_extension}"
-            self.exporter.export_data(data, file_path=file_path, export_type=export_type)
-
     def dispose_engine(self):
         """
         Dispose the engine and clean up resources.

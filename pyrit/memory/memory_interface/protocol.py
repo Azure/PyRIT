@@ -68,7 +68,9 @@ class MemoryInterfaceProtocol(Protocol):
         """Returns a list of conditions for filtering memory entries based on memory labels."""
         ...
 
-    def _get_prompt_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list[Any]:
+    def _get_prompt_pieces_prompt_metadata_conditions(
+        self, *, prompt_metadata: dict[str, Union[str, int]]
+    ) -> list[Any]:
         """Returns a list of conditions for filtering memory entries based on prompt metadata."""
         ...
 

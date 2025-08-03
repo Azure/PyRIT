@@ -3,11 +3,10 @@
 
 """Infrastructure mixin for MemoryInterface containing core database operations and lifecycle management."""
 
-import abc
 import atexit
 import logging
 import weakref
-from typing import TYPE_CHECKING, MutableSequence, Optional, Sequence, TypeVar, Union
+from typing import TYPE_CHECKING, Optional, Sequence, TypeVar
 
 from sqlalchemy import Engine
 from sqlalchemy.orm.attributes import InstrumentedAttribute
@@ -17,7 +16,6 @@ from pyrit.memory.memory_embedding import (
     default_memory_embedding_factory,
 )
 from pyrit.memory.memory_exporter import MemoryExporter
-from pyrit.memory.memory_models import Base, EmbeddingDataEntry
 from pyrit.memory.memory_interface.protocol import MemoryInterfaceProtocol
 from pyrit.models import StorageIO
 
@@ -37,21 +35,11 @@ else:
 class MemoryInfrastructureMixin(_MixinBase):
     """Mixin providing core infrastructure methods for memory management."""
 
-
-    # TODO TODO can I remove this???
-    if TYPE_CHECKING:
-        # These attributes will be available when used in the final MemoryInterface
-        memory_embedding: Optional[MemoryEmbedding]
-        results_storage_io: Optional[StorageIO]
-        results_path: Optional[str]
-        engine: Optional[Engine]
-        exporter: Optional[MemoryExporter]
-    else:
-        memory_embedding: Optional[MemoryEmbedding] = None
-        results_storage_io: Optional[StorageIO] = None
-        results_path: Optional[str] = None
-        engine: Optional[Engine] = None
-        exporter: Optional[MemoryExporter] = None
+    memory_embedding: Optional[MemoryEmbedding]
+    results_storage_io: Optional[StorageIO]
+    results_path: Optional[str]
+    engine: Optional[Engine]
+    exporter: Optional[MemoryExporter]
 
     def __init__(self, embedding_model=None):
         """Initialize the MemoryInterface.
@@ -68,8 +56,6 @@ class MemoryInfrastructureMixin(_MixinBase):
 
         # Ensure cleanup at process exit
         self.cleanup()
-
-
 
     # ========================================
     # Embedding Management

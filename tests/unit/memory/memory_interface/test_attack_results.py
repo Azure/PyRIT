@@ -2,14 +2,18 @@
 # Licensed under the MIT license.
 
 import uuid
-
 from typing import Sequence
 
+from pyrit.common.utils import to_sha256
 from pyrit.memory import MemoryInterface
 from pyrit.memory.memory_models import AttackResultEntry
 from pyrit.models import PromptRequestPiece, Score
-from pyrit.models.attack_result import AttackOutcome, AttackResult, ConversationReference, ConversationType
-from pyrit.common.utils import to_sha256
+from pyrit.models.attack_result import (
+    AttackOutcome,
+    AttackResult,
+    ConversationReference,
+    ConversationType,
+)
 
 
 def test_add_attack_results_to_memory(duckdb_instance: MemoryInterface):

@@ -4,9 +4,9 @@
 import uuid
 from typing import Sequence
 from unittest.mock import MagicMock, patch
+from uuid import uuid4
 
 import pytest
-from uuid import uuid4
 
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
@@ -238,6 +238,7 @@ def test_duplicate_conversation_pieces_not_score(duckdb_instance: MemoryInterfac
         )
         == 2
     )
+
 
 def test_duplicate_conversation_excluding_last_turn(duckdb_instance: MemoryInterface):
     orchestrator1 = Orchestrator()

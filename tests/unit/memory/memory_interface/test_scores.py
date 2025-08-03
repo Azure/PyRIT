@@ -2,9 +2,9 @@
 # Licensed under the MIT license.
 
 from typing import Literal, Sequence
+from uuid import uuid4
 
 import pytest
-from uuid import uuid4
 
 from pyrit.memory import MemoryInterface, PromptMemoryEntry
 from pyrit.models import PromptRequestPiece, Score

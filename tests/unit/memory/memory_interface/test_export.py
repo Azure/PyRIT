@@ -9,11 +9,9 @@ from unittest.mock import MagicMock, patch
 from pyrit.memory import MemoryExporter, MemoryInterface
 
 
-def test_export_conversation_by_orchestrator_id_file_created(
-    duckdb_instance: MemoryInterface, sample_conversations
-):
+def test_export_conversation_by_orchestrator_id_file_created(duckdb_instance: MemoryInterface, sample_conversations):
     from pyrit.common.path import DB_DATA_PATH
-    
+
     orchestrator1_id = sample_conversations[0].orchestrator_identifier["id"]
 
     # Default path in export_conversations()

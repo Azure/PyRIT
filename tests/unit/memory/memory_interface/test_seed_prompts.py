@@ -322,7 +322,7 @@ async def test_get_seed_prompt_dataset_names_single(duckdb_instance: MemoryInter
     assert duckdb_instance.get_seed_prompt_dataset_names() == [dataset_name]
 
 
-@pytest.mark.asyncio 
+@pytest.mark.asyncio
 async def test_get_seed_prompt_dataset_names_multiple(duckdb_instance: MemoryInterface):
     dataset_names = [f"dataset_{i}" for i in range(5)]
     seed_prompts = [
@@ -781,6 +781,7 @@ async def test_get_seed_prompt_groups_multiple_groups_with_unique_ids(duckdb_ins
     assert len(groups) == 2
     # Check that each group has a unique prompt_group_id
     assert groups[0].prompts[0].prompt_group_id != groups[1].prompts[0].prompt_group_id
+
 
 @pytest.mark.asyncio
 async def test_seed_prompt_hash_stored_and_retrieved(duckdb_instance: MemoryInterface):

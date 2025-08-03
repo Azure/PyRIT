@@ -3,7 +3,6 @@
 
 """Prompts and conversations mixin for MemoryInterface containing prompt and conversation-related operations."""
 
-import abc
 import copy
 import logging
 import uuid
@@ -36,8 +35,6 @@ else:
 
 class MemoryPromptsMixin(_MixinBase):
     """Mixin providing prompt and conversation-related methods for memory management."""
-
-
 
     def get_conversation(self, *, conversation_id: str) -> MutableSequence[PromptRequestResponse]:
         """
