@@ -27,7 +27,11 @@ from pyrit.datasets.equitymedqa_dataset import fetch_equitymedqa_dataset_unique_
 from pyrit.datasets.text_jailbreak import TextJailBreak
 from pyrit.datasets.transphobia_awareness_dataset import fetch_transphobia_awareness_dataset
 from pyrit.datasets.ccp_sensitive_prompts_dataset import fetch_ccp_sensitive_prompts_dataset
-
+from pyrit.datasets.fetch_jbb_behaviors import (
+    fetch_jbb_behaviors_dataset,
+    fetch_jbb_behaviors_by_harm_category,
+    fetch_jbb_behaviors_by_jbb_category,
+)
 __all__ = [
     "fetch_adv_bench_dataset",
     "fetch_aya_redteaming_dataset",
@@ -53,4 +57,7 @@ __all__ = [
     "fetch_wmdp_dataset",
     "fetch_xstest_dataset",
     "TextJailBreak",
+    "fetch_jbb_behaviors_dataset",
+    "fetch_jbb_behaviors_by_harm_category", 
+    "fetch_jbb_behaviors_by_jbb_category",
 ]
