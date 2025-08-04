@@ -518,7 +518,22 @@ class AnecdoctorAttack(AttackStrategy[AnecdoctorAttackContext, AttackResult]):
         evaluation_data: List[str],
         memory_labels: Optional[dict[str, str]] = None,
         **kwargs,
-    ) -> AttackResult: ...
+    ) -> AttackResult:
+        """
+        Execute the attack asynchronously.
+
+        Args:
+            objective (str): The natural-language description of the attack's objective.
+            content_type (str): The content type of the attack, e.g. "viral tweet".
+            language (str): The language of the attack, e.g. "english".
+            evaluation_data (List[str]): The evaluation data for the attack.
+            memory_labels (Optional[dict[str, str]]): Memory labels for the attack.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            AttackResult: The result of the attack.
+        """
+        ...
 
     @overload
     async def execute_async(
@@ -529,7 +544,21 @@ class AnecdoctorAttack(AttackStrategy[AnecdoctorAttackContext, AttackResult]):
         evaluation_data: List[str],
         memory_labels: Optional[dict[str, str]] = None,
         **kwargs,
-    ) -> AttackResult: ...
+    ) -> AttackResult:
+        """
+        Execute the attack asynchronously.
+
+        Args:
+            content_type (str): The content type of the attack, e.g. "viral tweet".
+            language (str): The language of the attack, e.g. "english".
+            evaluation_data (List[str]): The evaluation data for the attack.
+            memory_labels (Optional[dict[str, str]]): Memory labels for the attack.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            AttackResult: The result of the attack.
+        """
+        ...
 
     @overload
     async def execute_async(
