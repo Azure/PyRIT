@@ -5,7 +5,7 @@ import hashlib
 import logging
 import math
 import random
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Type, TypeVar, Union
 
 logger = logging.getLogger(__name__)
 
@@ -91,3 +91,51 @@ def to_sha256(data: str) -> str:
         str: The SHA-256 hash of the input string, represented as a hexadecimal string.
     """
     return hashlib.sha256(data.encode()).hexdigest()
+
+
+T = TypeVar("T")
+
+
+def get_kwarg_param(
+    *,
+    kwargs: Dict[str, Any],
+    param_name: str,
+    expected_type: Type[T],
+    required: bool = True,
+    default_value: Optional[T] = None,
+) -> Optional[T]:
+    """
+    Validate and extract a parameter from kwargs.
+
+    Args:
+        kwargs (Dict[str, Any]): The dictionary containing parameters.
+        param_name (str): The name of the parameter to validate.
+        expected_type (Type[T]): The expected type of the parameter.
+        required (bool): Whether the parameter is required. If True, raises ValueError if missing.
+        default_value (Optional[T]): Default value to return if the parameter is not required and not present.
+
+    Returns:
+        Optional[T]: The validated parameter value if present and valid, otherwise None.
+
+    Raises:
+        ValueError: If the parameter is missing or None.
+        TypeError: If the parameter is not of the expected type.
+    """
+    if param_name not in kwargs:
+        if not required:
+            return default_value
+        raise ValueError(f"Missing required parameter: {param_name}")
+
+    value = kwargs.pop(param_name)
+
+    if not value:
+        if not required:
+            return default_value
+        raise ValueError(f"Parameter '{param_name}' must be provided and non-empty")
+
+    if not isinstance(value, expected_type):
+        raise TypeError(
+            f"Parameter '{param_name}' must be of type {expected_type.__name__}, " f"got {type(value).__name__}"
+        )
+
+    return value

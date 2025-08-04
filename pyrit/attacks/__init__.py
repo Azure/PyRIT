@@ -11,7 +11,7 @@ from pyrit.attacks.base.attack_context import (
 )
 from pyrit.attacks.base.attack_executor import AttackExecutor
 from pyrit.attacks.base.attack_strategy import AttackStrategy, AttackStrategyLogAdapter
-from pyrit.attacks.multi_turn.crescendo import CrescendoAttack
+from pyrit.attacks.multi_turn.crescendo import CrescendoAttack, CrescendoAttackContext
 from pyrit.attacks.multi_turn.red_teaming import RedTeamingAttack, RTOSystemPromptPaths
 from pyrit.attacks.multi_turn.tree_of_attacks import (
     TAPAttack,
@@ -20,6 +20,8 @@ from pyrit.attacks.multi_turn.tree_of_attacks import (
     TreeOfAttacksWithPruningAttack,
 )
 from pyrit.attacks.single_turn import (
+    AnecdoctorAttack,
+    AnecdoctorAttackContext,
     ContextComplianceAttack,
     FlipAttack,
     ManyShotJailbreakAttack,
@@ -33,6 +35,8 @@ from pyrit.attacks.single_turn.role_play import RolePlayAttack
 from pyrit.attacks.printers import ConsoleAttackResultPrinter
 
 __all__ = [
+    "AnecdoctorAttack",
+    "AnecdoctorAttackContext",
     "AttackAdversarialConfig",
     "AttackContext",
     "AttackConverterConfig",
@@ -44,6 +48,7 @@ __all__ = [
     "ContextComplianceAttack",
     "ConversationSession",
     "CrescendoAttack",
+    "CrescendoAttackContext",
     "FlipAttack",
     "ManyShotJailbreakAttack",
     "MultiTurnAttackContext",

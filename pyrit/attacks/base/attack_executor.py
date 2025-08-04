@@ -2,10 +2,13 @@
 # Licensed under the MIT license.
 
 import asyncio
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pyrit.attacks.base.attack_context import ContextT
-from pyrit.attacks.base.attack_strategy import AttackStrategy
+from pyrit.attacks.base.attack_strategy import (
+    AttackStrategy,
+    AttackStrategyWithObjective,
+)
 from pyrit.models import AttackResultT, PromptRequestResponse
 
 
@@ -36,7 +39,7 @@ class AttackExecutor:
     async def execute_multi_objective_attack_async(
         self,
         *,
-        attack: AttackStrategy[ContextT, AttackResultT],
+        attack: AttackStrategyWithObjective[ContextT, AttackResultT],
         objectives: List[str],
         prepended_conversation: Optional[List[PromptRequestResponse]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
@@ -50,9 +53,11 @@ class AttackExecutor:
         which accepts parameters directly.
 
         Args:
-            attack (AttackStrategy[ContextT, AttackResultT]): The attack strategy to use for all objectives.
+            attack (AttackStrategyWithObjective[ContextT, AttackResultT]): The attack strategy to use for all
+                objectives.
             objectives (List[str]): List of attack objectives to test.
-            prepended_conversation (Optional[List[PromptRequestResponse]]): Conversation to prepend to the target model.
+            prepended_conversation (Optional[List[PromptRequestResponse]]): Conversation to prepend to the target
+                model.
             memory_labels (Optional[Dict[str, str]]): Additional labels that can be applied to the prompts.
             **attack_params: Additional parameters specific to the attack strategy.
 
@@ -70,6 +75,7 @@ class AttackExecutor:
 
         async def execute_with_semaphore(objective: str) -> AttackResultT:
             async with semaphore:
+                # Use the overloaded execute_async signature for AttackStrategyWithObjective
                 return await attack.execute_async(
                     objective=objective,
                     prepended_conversation=prepended_conversation,
@@ -78,6 +84,61 @@ class AttackExecutor:
                 )
 
         tasks = [execute_with_semaphore(obj) for obj in objectives]
+        return await asyncio.gather(*tasks)
+
+    async def execute_multi_parameter_attack_async(
+        self,
+        *,
+        attack: AttackStrategy[ContextT, AttackResultT],
+        parameter_sets: List[Dict[str, Any]],
+        prepended_conversation: Optional[List[PromptRequestResponse]] = None,
+        memory_labels: Optional[Dict[str, str]] = None,
+        **common_params,
+    ) -> List[AttackResultT]:
+        """
+        Execute the same attack strategy with multiple parameter sets in parallel.
+
+        This method provides a flexible interface for executing attacks with different parameter
+        combinations. Each parameter set is merged with common parameters before execution.
+
+        Args:
+            attack (AttackStrategy[ContextT, AttackResultT]): The attack strategy to use for all executions.
+            parameter_sets (List[Dict[str, Any]]): List of parameter dictionaries for each attack execution.
+            prepended_conversation (Optional[List[PromptRequestResponse]]): Conversation to prepend to the target model.
+            memory_labels (Optional[Dict[str, str]]): Additional labels that can be applied to the prompts.
+            **common_params: Common parameters applied to all executions.
+
+        Returns:
+            List[AttackResultT]: List of attack results in the same order as the parameter sets.
+
+        Example:
+            >>> executor = AttackExecutor(max_concurrency=3)
+            >>> # For AnecdoctorAttack
+            >>> results = await executor.execute_multi_parameter_attack_async(
+            ...     attack=anecdoctor_attack,
+            ...     parameter_sets=[
+            ...         {"content_type": "viral tweet", "language": "english", "evaluation_data": ["claim1"]},
+            ...         {"content_type": "news article", "language": "spanish", "evaluation_data": ["claim2"]},
+            ...     ],
+            ...     objective="generate misinformation",  # common param
+            ... )
+        """
+        semaphore = asyncio.Semaphore(self._max_concurrency)
+
+        async def execute_with_semaphore(params: Dict[str, Any]) -> AttackResultT:
+            async with semaphore:
+                # Merge common params with specific params (specific params override common)
+                kwargs = {**common_params, **params}
+
+                # Only add optional parameters if they are provided
+                if prepended_conversation is not None:
+                    kwargs["prepended_conversation"] = prepended_conversation
+                if memory_labels is not None:
+                    kwargs["memory_labels"] = memory_labels
+
+                return await attack.execute_async(**kwargs)
+
+        tasks = [execute_with_semaphore(params) for params in parameter_sets]
         return await asyncio.gather(*tasks)
 
     async def execute_multi_objective_attack_with_context_async(
