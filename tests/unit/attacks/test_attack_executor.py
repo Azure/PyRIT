@@ -9,7 +9,10 @@ import pytest
 
 from pyrit.attacks.base.attack_context import SingleTurnAttackContext
 from pyrit.attacks.base.attack_executor import AttackExecutor
-from pyrit.attacks.base.attack_strategy import AttackStrategy
+from pyrit.attacks.base.attack_strategy import (
+    AttackStrategy,
+    AttackStrategyWithObjective,
+)
 from pyrit.exceptions.exception_classes import AttackExecutionException
 from pyrit.models import AttackOutcome, AttackResult
 
@@ -22,6 +25,20 @@ def mock_attack_strategy():
     strategy.execute_with_context_async = AsyncMock()
     strategy.get_identifier.return_value = {
         "__type__": "TestAttack",
+        "__module__": "pyrit.attacks.test_attack",
+        "id": str(uuid.uuid4()),
+    }
+    return strategy
+
+
+@pytest.fixture
+def mock_attack_strategy_with_objective():
+    """Create a mock attack strategy with objective for testing"""
+    strategy = MagicMock(spec=AttackStrategyWithObjective)
+    strategy.execute_async = AsyncMock()
+    strategy.execute_with_context_async = AsyncMock()
+    strategy.get_identifier.return_value = {
+        "__type__": "TestAttackWithObjective",
         "__module__": "pyrit.attacks.test_attack",
         "id": str(uuid.uuid4()),
     }
@@ -644,7 +661,7 @@ class TestExecuteMultiObjectiveAttackAsync:
     """Tests for execute_multi_objective_attack_async method using parameters"""
 
     @pytest.mark.asyncio
-    async def test_execute_with_parameters(self, mock_attack_strategy):
+    async def test_execute_with_parameters(self, mock_attack_strategy_with_objective):
         executor = AttackExecutor(max_concurrency=5)
 
         objectives = ["Test objective 1", "Test objective 2"]
@@ -667,36 +684,373 @@ class TestExecuteMultiObjectiveAttackAsync:
                 )
             )
 
-        mock_attack_strategy.execute_async.side_effect = results
+        mock_attack_strategy_with_objective.execute_async.side_effect = results
 
         actual_results = await executor.execute_multi_objective_attack_async(
-            attack=mock_attack_strategy,
+            attack=mock_attack_strategy_with_objective,
             objectives=objectives,
             memory_labels=memory_labels,
         )
 
         assert len(actual_results) == len(objectives)
-        assert mock_attack_strategy.execute_async.call_count == len(objectives)
+        assert mock_attack_strategy_with_objective.execute_async.call_count == len(objectives)
 
         # Verify execute_async was called with correct parameters for each objective
-        for i, call in enumerate(mock_attack_strategy.execute_async.call_args_list):
+        for i, call in enumerate(mock_attack_strategy_with_objective.execute_async.call_args_list):
             assert call.kwargs["objective"] == objectives[i]
             assert call.kwargs["memory_labels"] == memory_labels
 
     @pytest.mark.asyncio
-    async def test_execute_with_attack_params(self, mock_attack_strategy):
+    async def test_execute_with_attack_params(self, mock_attack_strategy_with_objective):
         executor = AttackExecutor(max_concurrency=3)
 
         objectives = ["Obj1", "Obj2", "Obj3"]
 
-        mock_attack_strategy.execute_async.return_value = MagicMock()
+        mock_attack_strategy_with_objective.execute_async.return_value = MagicMock()
 
         await executor.execute_multi_objective_attack_async(
-            attack=mock_attack_strategy,
+            attack=mock_attack_strategy_with_objective,
             objectives=objectives,
             custom_param="test_value",
         )
 
         # Verify all calls included the custom params
-        for call in mock_attack_strategy.execute_async.call_args_list:
+        for call in mock_attack_strategy_with_objective.execute_async.call_args_list:
             assert call.kwargs["custom_param"] == "test_value"
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestExecuteMultiParameterAttackAsync:
+    """Tests for execute_multi_parameter_attack_async method"""
+
+    @pytest.mark.asyncio
+    async def test_execute_with_single_parameter_set(self, mock_attack_strategy):
+        executor = AttackExecutor(max_concurrency=5)
+
+        parameter_sets = [{"content_type": "viral tweet", "language": "english"}]
+        memory_labels = {"test": "label"}
+        prepended_conversation = []
+
+        # Create expected result
+        result = AttackResult(
+            conversation_id=str(uuid.uuid4()),
+            objective="Test objective",
+            attack_identifier={
+                "__type__": "TestAttack",
+                "__module__": "pyrit.attacks.test_attack",
+                "id": str(uuid.uuid4()),
+            },
+            outcome=AttackOutcome.SUCCESS,
+            executed_turns=1,
+        )
+
+        mock_attack_strategy.execute_async.return_value = result
+
+        actual_results = await executor.execute_multi_parameter_attack_async(
+            attack=mock_attack_strategy,
+            parameter_sets=parameter_sets,
+            memory_labels=memory_labels,
+            prepended_conversation=prepended_conversation,
+            objective="Test objective",  # common param
+        )
+
+        assert len(actual_results) == 1
+        assert actual_results[0] == result
+        assert mock_attack_strategy.execute_async.call_count == 1
+
+        # Verify execute_async was called with correct merged parameters
+        call_kwargs = mock_attack_strategy.execute_async.call_args.kwargs
+        assert call_kwargs["content_type"] == "viral tweet"
+        assert call_kwargs["language"] == "english"
+        assert call_kwargs["objective"] == "Test objective"
+        assert call_kwargs["memory_labels"] == memory_labels
+        assert call_kwargs["prepended_conversation"] == prepended_conversation
+
+    @pytest.mark.asyncio
+    async def test_execute_with_multiple_parameter_sets(self, mock_attack_strategy):
+        executor = AttackExecutor(max_concurrency=3)
+
+        parameter_sets = [
+            {"content_type": "viral tweet", "language": "english", "evaluation_data": ["claim1"]},
+            {"content_type": "news article", "language": "spanish", "evaluation_data": ["claim2"]},
+            {"content_type": "blog post", "language": "french", "evaluation_data": ["claim3"]},
+        ]
+
+        # Create expected results
+        results = []
+        for i, params in enumerate(parameter_sets):
+            results.append(
+                AttackResult(
+                    conversation_id=str(uuid.uuid4()),
+                    objective="Test objective",
+                    attack_identifier={
+                        "__type__": "TestAttack",
+                        "__module__": "pyrit.attacks.test_attack",
+                        "id": str(uuid.uuid4()),
+                    },
+                    outcome=AttackOutcome.SUCCESS,
+                    executed_turns=1,
+                )
+            )
+
+        mock_attack_strategy.execute_async.side_effect = results
+
+        actual_results = await executor.execute_multi_parameter_attack_async(
+            attack=mock_attack_strategy,
+            parameter_sets=parameter_sets,
+            objective="Test objective",  # common param
+        )
+
+        assert len(actual_results) == len(parameter_sets)
+        assert mock_attack_strategy.execute_async.call_count == len(parameter_sets)
+
+        # Verify execute_async was called with correct parameters for each set
+        for i, call in enumerate(mock_attack_strategy.execute_async.call_args_list):
+            expected_params = parameter_sets[i]
+            assert call.kwargs["content_type"] == expected_params["content_type"]
+            assert call.kwargs["language"] == expected_params["language"]
+            assert call.kwargs["evaluation_data"] == expected_params["evaluation_data"]
+            assert call.kwargs["objective"] == "Test objective"
+
+    @pytest.mark.asyncio
+    async def test_parameter_override_behavior(self, mock_attack_strategy):
+        executor = AttackExecutor(max_concurrency=5)
+
+        parameter_sets = [
+            {"objective": "Override objective 1", "custom_param": "value1"},
+            {"objective": "Override objective 2", "custom_param": "value2"},
+        ]
+
+        mock_attack_strategy.execute_async.return_value = MagicMock()
+
+        await executor.execute_multi_parameter_attack_async(
+            attack=mock_attack_strategy,
+            parameter_sets=parameter_sets,
+            objective="Common objective",  # This should be overridden
+            other_param="common_value",
+        )
+
+        # Verify that specific params override common params
+        calls = mock_attack_strategy.execute_async.call_args_list
+
+        # First call should have overridden objective
+        assert calls[0].kwargs["objective"] == "Override objective 1"
+        assert calls[0].kwargs["custom_param"] == "value1"
+        assert calls[0].kwargs["other_param"] == "common_value"
+
+        # Second call should have overridden objective
+        assert calls[1].kwargs["objective"] == "Override objective 2"
+        assert calls[1].kwargs["custom_param"] == "value2"
+        assert calls[1].kwargs["other_param"] == "common_value"
+
+    @pytest.mark.asyncio
+    async def test_execute_with_empty_parameter_sets(self, mock_attack_strategy):
+        executor = AttackExecutor(max_concurrency=5)
+
+        results = await executor.execute_multi_parameter_attack_async(
+            attack=mock_attack_strategy,
+            parameter_sets=[],
+        )
+
+        assert results == []
+        mock_attack_strategy.execute_async.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_optional_parameters_handling(self, mock_attack_strategy):
+        executor = AttackExecutor(max_concurrency=5)
+
+        parameter_sets = [{"content_type": "tweet"}]
+
+        mock_attack_strategy.execute_async.return_value = MagicMock()
+
+        # Test with only some optional parameters provided
+        await executor.execute_multi_parameter_attack_async(
+            attack=mock_attack_strategy,
+            parameter_sets=parameter_sets,
+            memory_labels={"label": "value"},
+            # prepended_conversation not provided
+        )
+
+        call_kwargs = mock_attack_strategy.execute_async.call_args.kwargs
+        assert call_kwargs["memory_labels"] == {"label": "value"}
+        assert "prepended_conversation" not in call_kwargs
+
+        # Reset mock
+        mock_attack_strategy.execute_async.reset_mock()
+
+        # Test with no optional parameters
+        await executor.execute_multi_parameter_attack_async(
+            attack=mock_attack_strategy,
+            parameter_sets=parameter_sets,
+        )
+
+        call_kwargs = mock_attack_strategy.execute_async.call_args.kwargs
+        assert "memory_labels" not in call_kwargs
+        assert "prepended_conversation" not in call_kwargs
+
+    @pytest.mark.asyncio
+    async def test_preserves_result_order(self, mock_attack_strategy):
+        executor = AttackExecutor(max_concurrency=2)
+
+        parameter_sets = [
+            {"delay": 0.1, "result_id": "fast"},
+            {"delay": 0.05, "result_id": "faster"},
+            {"delay": 0.15, "result_id": "slow"},
+        ]
+
+        # Simulate varying execution times but return results that can be identified
+        async def mock_execute(**kwargs):
+            await asyncio.sleep(kwargs["delay"])
+            return AttackResult(
+                conversation_id=kwargs["result_id"],  # Use result_id to identify
+                objective="Test",
+                attack_identifier={"__type__": "Test", "__module__": "test", "id": str(uuid.uuid4())},
+                outcome=AttackOutcome.SUCCESS,
+                executed_turns=1,
+            )
+
+        mock_attack_strategy.execute_async.side_effect = mock_execute
+
+        results = await executor.execute_multi_parameter_attack_async(
+            attack=mock_attack_strategy,
+            parameter_sets=parameter_sets,
+        )
+
+        # Results should be in the same order as parameter_sets despite varying execution times
+        assert len(results) == len(parameter_sets)
+        assert results[0].conversation_id == "fast"
+        assert results[1].conversation_id == "faster"
+        assert results[2].conversation_id == "slow"
+
+    @pytest.mark.asyncio
+    async def test_concurrency_control(self, mock_attack_strategy):
+        executor = AttackExecutor(max_concurrency=2)
+
+        # Track concurrent executions
+        concurrent_count = 0
+        max_concurrent = 0
+
+        async def mock_execute(**kwargs):
+            nonlocal concurrent_count, max_concurrent
+            concurrent_count += 1
+            max_concurrent = max(max_concurrent, concurrent_count)
+            await asyncio.sleep(0.1)  # Simulate work
+            concurrent_count -= 1
+            return MagicMock()
+
+        mock_attack_strategy.execute_async.side_effect = mock_execute
+
+        parameter_sets = [{"id": i} for i in range(5)]
+
+        await executor.execute_multi_parameter_attack_async(
+            attack=mock_attack_strategy,
+            parameter_sets=parameter_sets,
+        )
+
+        assert max_concurrent <= 2
+        assert mock_attack_strategy.execute_async.call_count == len(parameter_sets)
+
+    @pytest.mark.asyncio
+    async def test_error_propagation(self, mock_attack_strategy):
+        executor = AttackExecutor(max_concurrency=5)
+
+        parameter_sets = [
+            {"should_fail": False},
+            {"should_fail": True},  # This one will fail
+            {"should_fail": False},
+        ]
+
+        async def mock_execute(**kwargs):
+            if kwargs["should_fail"]:
+                raise AttackExecutionException(
+                    message="Parameter execution failed", attack_name="MockStrategy", objective="Test objective"
+                )
+            return MagicMock()
+
+        mock_attack_strategy.execute_async.side_effect = mock_execute
+
+        with pytest.raises(AttackExecutionException, match="Parameter execution failed"):
+            await executor.execute_multi_parameter_attack_async(
+                attack=mock_attack_strategy,
+                parameter_sets=parameter_sets,
+            )
+
+    @pytest.mark.asyncio
+    async def test_complex_parameter_merging(self, mock_attack_strategy):
+        executor = AttackExecutor(max_concurrency=5)
+
+        parameter_sets = [
+            {
+                "nested_dict": {"key1": "value1", "key2": "value2"},
+                "list_param": ["item1", "item2"],
+                "simple_param": "simple1",
+            },
+            {
+                "nested_dict": {"key1": "overridden", "key3": "value3"},
+                "list_param": ["item3"],
+                "simple_param": "simple2",
+            },
+        ]
+
+        mock_attack_strategy.execute_async.return_value = MagicMock()
+
+        await executor.execute_multi_parameter_attack_async(
+            attack=mock_attack_strategy,
+            parameter_sets=parameter_sets,
+            common_dict={"common_key": "common_value"},
+            common_list=["common_item"],
+            simple_param="common_simple",  # Should be overridden
+        )
+
+        calls = mock_attack_strategy.execute_async.call_args_list
+
+        # First call - parameter set 0
+        first_kwargs = calls[0].kwargs
+        assert first_kwargs["nested_dict"] == {"key1": "value1", "key2": "value2"}
+        assert first_kwargs["list_param"] == ["item1", "item2"]
+        assert first_kwargs["simple_param"] == "simple1"  # Overridden
+        assert first_kwargs["common_dict"] == {"common_key": "common_value"}
+        assert first_kwargs["common_list"] == ["common_item"]
+
+        # Second call - parameter set 1
+        second_kwargs = calls[1].kwargs
+        assert second_kwargs["nested_dict"] == {"key1": "overridden", "key3": "value3"}
+        assert second_kwargs["list_param"] == ["item3"]
+        assert second_kwargs["simple_param"] == "simple2"  # Overridden
+        assert second_kwargs["common_dict"] == {"common_key": "common_value"}
+        assert second_kwargs["common_list"] == ["common_item"]
+
+    @pytest.mark.asyncio
+    async def test_large_scale_parameter_execution(self, mock_attack_strategy):
+        executor = AttackExecutor(max_concurrency=10)
+
+        # Test with a large number of parameter sets
+        parameter_sets = [{"param_id": i, "value": f"value_{i}"} for i in range(50)]
+
+        async def mock_execute(**kwargs):
+            return AttackResult(
+                conversation_id=str(kwargs["param_id"]),
+                objective="Test",
+                attack_identifier={"__type__": "Test", "__module__": "test", "id": str(uuid.uuid4())},
+                outcome=AttackOutcome.SUCCESS,
+                executed_turns=1,
+            )
+
+        mock_attack_strategy.execute_async.side_effect = mock_execute
+
+        results = await executor.execute_multi_parameter_attack_async(
+            attack=mock_attack_strategy,
+            parameter_sets=parameter_sets,
+            common_objective="Large scale test",
+        )
+
+        assert len(results) == 50
+        assert all(isinstance(r, AttackResult) for r in results)
+
+        # Verify order is preserved
+        for i, result in enumerate(results):
+            assert result.conversation_id == str(i)
+
+        # Verify all calls had the common parameter
+        for call in mock_attack_strategy.execute_async.call_args_list:
+            assert call.kwargs["common_objective"] == "Large scale test"

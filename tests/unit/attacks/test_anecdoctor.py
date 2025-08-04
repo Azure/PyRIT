@@ -138,8 +138,10 @@ class TestAnecdoctorAttackContext:
         context = AnecdoctorAttackContext.create_from_params(
             objective="test objective",
             prepended_conversation=[],
-            memory_labels={"test": "label"},
+            content_type="viral tweet",
+            language="english",
             evaluation_data=evaluation_data,
+            memory_labels={"test": "label"},
         )
 
         assert context.language == "english"
@@ -147,44 +149,50 @@ class TestAnecdoctorAttackContext:
 
     def test_create_from_params_empty_evaluation_data(self):
         """Test creation fails with empty evaluation data."""
-        with pytest.raises(ValueError, match="evaluation_data cannot be empty"):
+        with pytest.raises(ValueError, match="Parameter 'evaluation_data' must be provided and non-empty"):
             AnecdoctorAttackContext.create_from_params(
                 objective="test objective",
                 prepended_conversation=[],
-                memory_labels={"test": "label"},
+                content_type="viral tweet",
+                language="english",
                 evaluation_data=[],
+                memory_labels={"test": "label"},
             )
 
     def test_create_from_params_invalid_evaluation_data_type(self):
         """Test creation fails with invalid evaluation data type."""
-        with pytest.raises(ValueError, match="evaluation_data must be a list, got str"):
+        with pytest.raises(ValueError, match="Parameter 'evaluation_data' must be provided and non-empty"):
             AnecdoctorAttackContext.create_from_params(
                 objective="test objective",
                 prepended_conversation=[],
+                content_type="viral tweet",
+                language="english",
+                evaluation_data=[],
                 memory_labels={"test": "label"},
-                evaluation_data="not a list",
             )
 
     def test_create_from_params_invalid_language_type(self, sample_evaluation_data):
         """Test creation fails with invalid language type."""
-        with pytest.raises(ValueError, match="language must be a string, got int"):
+        with pytest.raises(ValueError, match="Parameter 'language' must be provided and non-empty"):
             AnecdoctorAttackContext.create_from_params(
                 objective="test objective",
                 prepended_conversation=[],
-                memory_labels={"test": "label"},
+                content_type="viral tweet",
+                language="",  # Empty string to trigger validation
                 evaluation_data=sample_evaluation_data,
-                language=123,
+                memory_labels={"test": "label"},
             )
 
     def test_create_from_params_invalid_content_type(self, sample_evaluation_data):
         """Test creation fails with invalid content type."""
-        with pytest.raises(ValueError, match="content_type must be a string, got list"):
+        with pytest.raises(ValueError, match="Parameter 'content_type' must be provided and non-empty"):
             AnecdoctorAttackContext.create_from_params(
                 objective="test objective",
                 prepended_conversation=[],
-                memory_labels={"test": "label"},
+                content_type="",  # Empty string to trigger validation
+                language="english",
                 evaluation_data=sample_evaluation_data,
-                content_type=["not", "a", "string"],
+                memory_labels={"test": "label"},
             )
 
 
@@ -298,14 +306,19 @@ class TestAnecdoctorAttackSetup:
     @pytest.mark.asyncio
     async def test_setup_without_processing_model(self, mock_objective_target, sample_context):
         """Test setup without processing model uses few-shot template."""
-        attack = AnecdoctorAttack(objective_target=mock_objective_target)
 
-        with patch.object(attack, "_load_prompt_from_yaml") as mock_load:
+        with patch("pyrit.attacks.single_turn.anecdoctor.AnecdoctorAttack._load_prompt_from_yaml") as mock_load:
             mock_load.return_value = "System prompt for {language} {type}"
+
+            attack = AnecdoctorAttack(objective_target=mock_objective_target)
 
             await attack._setup_async(context=sample_context)
 
-            mock_load.assert_called_once_with(yaml_filename="anecdoctor_use_fewshot.yaml")
+            # Verify that _load_prompt_from_yaml was called during initialization for the fewshot template
+            # Since it is called multiple times during init, we check that the fewshot call was made
+            fewshot_calls = [call for call in mock_load.call_args_list if "fewshot" in str(call)]
+            assert len(fewshot_calls) > 0, "Expected call to load fewshot template"
+
             mock_objective_target.set_system_prompt.assert_called_once()
 
             # Verify the system prompt was formatted correctly
@@ -315,14 +328,18 @@ class TestAnecdoctorAttackSetup:
     @pytest.mark.asyncio
     async def test_setup_with_processing_model(self, mock_objective_target, mock_processing_model, sample_context):
         """Test setup with processing model uses knowledge graph template."""
-        attack = AnecdoctorAttack(objective_target=mock_objective_target, processing_model=mock_processing_model)
 
-        with patch.object(attack, "_load_prompt_from_yaml") as mock_load:
+        with patch("pyrit.attacks.single_turn.anecdoctor.AnecdoctorAttack._load_prompt_from_yaml") as mock_load:
             mock_load.return_value = "KG prompt for {language} {type}"
+
+            attack = AnecdoctorAttack(objective_target=mock_objective_target, processing_model=mock_processing_model)
 
             await attack._setup_async(context=sample_context)
 
-            mock_load.assert_called_once_with(yaml_filename="anecdoctor_use_knowledge_graph.yaml")
+            # Verify that _load_prompt_from_yaml was called during initialization for the KG template
+            kg_calls = [call for call in mock_load.call_args_list if "knowledge_graph" in str(call)]
+            assert len(kg_calls) > 0, "Expected call to load knowledge graph template"
+
             mock_objective_target.set_system_prompt.assert_called_once()
 
             # Verify the system prompt was formatted correctly
@@ -1126,19 +1143,26 @@ class TestAnecdoctorAttackValidationEdgeCases:
     def test_context_create_from_params_type_validation_edge_cases(self):
         """Test type validation edge cases in create_from_params."""
 
-        # Test with None evaluation_data
-        with pytest.raises(ValueError, match="evaluation_data must be a list"):
-            AnecdoctorAttackContext.create_from_params(
-                objective="test", prepended_conversation=[], memory_labels={}, evaluation_data=None
-            )
-
-        # Test with tuple instead of list (should fail)
-        with pytest.raises(ValueError, match="evaluation_data must be a list"):
+        # Test with empty evaluation_data (now the validation we have)
+        with pytest.raises(ValueError, match="Parameter 'evaluation_data' must be provided and non-empty"):
             AnecdoctorAttackContext.create_from_params(
                 objective="test",
                 prepended_conversation=[],
+                content_type="viral tweet",
+                language="english",
+                evaluation_data=[],
                 memory_labels={},
-                evaluation_data=("item1", "item2"),  # tuple instead of list
+            )
+
+        # Test with empty content_type
+        with pytest.raises(ValueError, match="Parameter 'content_type' must be provided and non-empty"):
+            AnecdoctorAttackContext.create_from_params(
+                objective="test",
+                prepended_conversation=[],
+                content_type="",
+                language="english",
+                evaluation_data=["test"],
+                memory_labels={},
             )
 
     def test_context_create_from_params_with_extra_kwargs(self, sample_evaluation_data):
@@ -1146,8 +1170,10 @@ class TestAnecdoctorAttackValidationEdgeCases:
         context = AnecdoctorAttackContext.create_from_params(
             objective="test objective",
             prepended_conversation=[],
-            memory_labels={"test": "label"},
+            content_type="viral tweet",
+            language="english",
             evaluation_data=sample_evaluation_data,
+            memory_labels={"test": "label"},
             unknown_param="should be ignored",
             another_unknown=123,
         )
@@ -1238,9 +1264,12 @@ class TestAnecdoctorAttackLifecycle:
         attack = AnecdoctorAttack(objective_target=mock_objective_target)
 
         # Use empty evaluation_data which will fail validation in create_from_params
-        with pytest.raises(ValueError, match="evaluation_data cannot be empty"):
+        with pytest.raises(ValueError, match="Parameter 'evaluation_data' must be provided and non-empty"):
             await attack.execute_async(
-                objective="Test objective", evaluation_data=[]  # This will cause validation to fail
+                objective="Test objective",
+                content_type="viral tweet",
+                language="english",
+                evaluation_data=[],  # This will cause validation to fail
             )
 
     @pytest.mark.asyncio
@@ -1260,7 +1289,12 @@ class TestAnecdoctorAttackLifecycle:
             from pyrit.exceptions.exception_classes import AttackExecutionException
 
             with pytest.raises(AttackExecutionException, match="Unexpected error during attack execution"):
-                await attack.execute_async(objective="Test objective", evaluation_data=sample_evaluation_data)
+                await attack.execute_async(
+                    objective="Test objective",
+                    content_type="viral tweet",
+                    language="english",
+                    evaluation_data=sample_evaluation_data,
+                )
 
             # Verify setup was attempted and teardown was called
             mock_validate.assert_called_once()
@@ -1285,7 +1319,12 @@ class TestAnecdoctorAttackLifecycle:
             from pyrit.exceptions.exception_classes import AttackExecutionException
 
             with pytest.raises(AttackExecutionException, match="Unexpected error during attack execution"):
-                await attack.execute_async(objective="Test objective", evaluation_data=sample_evaluation_data)
+                await attack.execute_async(
+                    objective="Test objective",
+                    content_type="viral tweet",
+                    language="english",
+                    evaluation_data=sample_evaluation_data,
+                )
 
             # Verify all phases were attempted and teardown was called
             mock_validate.assert_called_once()
@@ -1315,7 +1354,12 @@ class TestAnecdoctorAttackLifecycle:
 
             mock_load.return_value = "System prompt"
 
-            result = await attack.execute_async(objective="Test with scoring", evaluation_data=sample_evaluation_data)
+            result = await attack.execute_async(
+                objective="Test with scoring",
+                content_type="viral tweet",
+                language="english",
+                evaluation_data=sample_evaluation_data,
+            )
 
             # Verify scoring was integrated
             mock_eval.assert_called_once()

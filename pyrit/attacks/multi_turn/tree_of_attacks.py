@@ -19,7 +19,7 @@ from pyrit.attacks.base.attack_config import (
 from pyrit.attacks.base.attack_context import (
     AttackContext,
 )
-from pyrit.attacks.base.attack_strategy import AttackStrategy
+from pyrit.attacks.base.attack_strategy import AttackStrategyWithObjective
 from pyrit.common.path import DATASETS_PATH
 from pyrit.common.utils import combine_dict
 from pyrit.exceptions import (
@@ -81,7 +81,6 @@ class TAPAttackContext(AttackContext):
         cls,
         *,
         objective: str,
-        prepended_conversation: List[PromptRequestResponse],
         memory_labels: Dict[str, str],
         **kwargs,
     ) -> "TAPAttackContext":
@@ -90,7 +89,6 @@ class TAPAttackContext(AttackContext):
 
         Args:
             objective (str): The attack objective to achieve.
-            prepended_conversation (List[PromptRequestResponse]): Initial conversation history to prepend.
             memory_labels (Dict[str, str]): Memory labels for the attack context.
             **kwargs: Additional parameters for future extensibility.
 
@@ -888,7 +886,7 @@ class _TreeOfAttacksNode:
     __repr__ = __str__
 
 
-class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackResult]):
+class TreeOfAttacksWithPruningAttack(AttackStrategyWithObjective[TAPAttackContext, TAPAttackResult]):
     """
     Implementation of the Tree of Attacks with Pruning (TAP) attack strategy.
 

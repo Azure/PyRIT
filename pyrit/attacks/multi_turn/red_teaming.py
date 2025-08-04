@@ -17,7 +17,7 @@ from pyrit.attacks.base.attack_context import (
     ConversationSession,
     MultiTurnAttackContext,
 )
-from pyrit.attacks.base.attack_strategy import AttackStrategy
+from pyrit.attacks.base.attack_strategy import AttackStrategyWithObjective
 from pyrit.attacks.components.conversation_manager import (
     ConversationManager,
     ConversationState,
@@ -50,7 +50,7 @@ class RTOSystemPromptPaths(enum.Enum):
     CRUCIBLE = Path(RED_TEAM_ORCHESTRATOR_PATH, "crucible.yaml").resolve()
 
 
-class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
+class RedTeamingAttack(AttackStrategyWithObjective[MultiTurnAttackContext, AttackResult]):
     """
     Implementation of multi-turn red teaming attack strategy.
 

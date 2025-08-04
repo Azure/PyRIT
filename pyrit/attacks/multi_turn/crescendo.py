@@ -16,7 +16,7 @@ from pyrit.attacks.base.attack_context import (
     ConversationSession,
     MultiTurnAttackContext,
 )
-from pyrit.attacks.base.attack_strategy import AttackStrategy
+from pyrit.attacks.base.attack_strategy import AttackStrategyWithObjective
 from pyrit.attacks.components.conversation_manager import (
     ConversationManager,
     ConversationState,
@@ -86,7 +86,7 @@ class CrescendoAttackResult(AttackResult):
         self.metadata["backtrack_count"] = value
 
 
-class CrescendoAttack(AttackStrategy[CrescendoAttackContext, CrescendoAttackResult]):
+class CrescendoAttack(AttackStrategyWithObjective[CrescendoAttackContext, CrescendoAttackResult]):
     """
     Implementation of the Crescendo attack strategy.
 

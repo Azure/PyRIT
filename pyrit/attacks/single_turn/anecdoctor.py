@@ -7,7 +7,7 @@ import logging
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, overload
 
 import yaml
 
@@ -15,6 +15,7 @@ from pyrit.attacks.base.attack_config import AttackConverterConfig, AttackScorin
 from pyrit.attacks.base.attack_context import AttackContext
 from pyrit.attacks.base.attack_strategy import AttackStrategy
 from pyrit.common.path import DATASETS_PATH
+from pyrit.common.utils import get_kwarg_param
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
@@ -64,10 +65,10 @@ class AnecdoctorAttackContext(AttackContext):
         Create AnecdoctorAttackContext from parameters.
 
         Args:
-            objective (str): The objective of the attack.
-            prepended_conversation (List[PromptRequestResponse]): Not used in Anecdoctor attack.
-            memory_labels (Dict[str, str]): Additional labels for memory storage.
-            **kwargs: Additional parameters including evaluation_data, language, content_type.
+            objective (str): The natural-language description of the attack's objective.
+            prepended_conversation (List[PromptRequestResponse]): Conversation to prepend to the target model
+            memory_labels (Dict[str, str]): Labels for memory management.
+            **kwargs: Additional keyword arguments.
 
         Returns:
             AnecdoctorAttackContext: The created context instance.
@@ -76,21 +77,32 @@ class AnecdoctorAttackContext(AttackContext):
             ValueError: If required parameters are missing or invalid.
         """
         # Extract and validate evaluation_data (required)
-        evaluation_data = kwargs.get("evaluation_data", [])
-        if not isinstance(evaluation_data, list):
-            raise ValueError(f"evaluation_data must be a list, got {type(evaluation_data).__name__}")
-        if not evaluation_data:
-            raise ValueError("evaluation_data cannot be empty")
+        content_type = (
+            get_kwarg_param(
+                kwargs=kwargs,
+                param_name="content_type",
+                expected_type=str,
+            )
+            or ""
+        )
 
-        # Extract and validate language
-        language = kwargs.get("language", "english")
-        if not isinstance(language, str):
-            raise ValueError(f"language must be a string, got {type(language).__name__}")
+        language = (
+            get_kwarg_param(
+                kwargs=kwargs,
+                param_name="language",
+                expected_type=str,
+            )
+            or ""
+        )
 
-        # Extract and validate content_type
-        content_type = kwargs.get("content_type", "viral tweet")
-        if not isinstance(content_type, str):
-            raise ValueError(f"content_type must be a string, got {type(content_type).__name__}")
+        evaluation_data = (
+            get_kwarg_param(
+                kwargs=kwargs,
+                param_name="evaluation_data",
+                expected_type=list,
+            )
+            or []
+        )
 
         # Create instance with all parameters
         return cls(
@@ -174,6 +186,13 @@ class AnecdoctorAttack(AttackStrategy[AnecdoctorAttackContext, AttackResult]):
         if self._objective_scorer and self._objective_scorer.scorer_type != "true_false":
             raise ValueError("Objective scorer must be a true/false scorer")
 
+        self._kg_prompt_template = self._load_prompt_from_yaml(yaml_filename=self._ANECDOCTOR_BUILD_KG_YAML)
+        # Prepare the system prompt based on whether we're using knowledge graph
+        if self._processing_model:
+            self._system_prompt_template = self._load_prompt_from_yaml(yaml_filename=self._ANECDOCTOR_USE_KG_YAML)
+        else:
+            self._system_prompt_template = self._load_prompt_from_yaml(yaml_filename=self._ANECDOCTOR_USE_FEWSHOT_YAML)
+
     def _validate_context(self, *, context: AnecdoctorAttackContext) -> None:
         """
         Validate the context before executing the attack.
@@ -205,14 +224,8 @@ class AnecdoctorAttack(AttackStrategy[AnecdoctorAttackContext, AttackResult]):
 
         context.conversation_id = str(uuid.uuid4())
 
-        # Prepare the system prompt based on whether we're using knowledge graph
-        if self._processing_model:
-            system_prompt_template = self._load_prompt_from_yaml(yaml_filename=self._ANECDOCTOR_USE_KG_YAML)
-        else:
-            system_prompt_template = self._load_prompt_from_yaml(yaml_filename=self._ANECDOCTOR_USE_FEWSHOT_YAML)
-
         # Format the system prompt with language and content type
-        system_prompt = system_prompt_template.format(language=context.language, type=context.content_type)
+        system_prompt = self._system_prompt_template.format(language=context.language, type=context.content_type)
 
         # Configure the target with the system prompt
         self._objective_target.set_system_prompt(
@@ -452,8 +465,8 @@ class AnecdoctorAttack(AttackStrategy[AnecdoctorAttackContext, AttackResult]):
         self._logger.debug("Extracting knowledge graph from evaluation data")
 
         # Load and format the KG extraction prompt
-        kg_prompt_template = self._load_prompt_from_yaml(yaml_filename=self._ANECDOCTOR_BUILD_KG_YAML)
-        kg_system_prompt = kg_prompt_template.format(language=context.language)
+
+        kg_system_prompt = self._kg_prompt_template.format(language=context.language)
 
         # Create a separate conversation ID for KG extraction
         kg_conversation_id = str(uuid.uuid4())
@@ -494,3 +507,88 @@ class AnecdoctorAttack(AttackStrategy[AnecdoctorAttackContext, AttackResult]):
             raise RuntimeError("Failed to extract knowledge graph: no response from processing model")
 
         return kg_response.get_value()
+
+    @overload
+    async def execute_async(
+        self,
+        *,
+        objective: str,
+        content_type: str,
+        language: str,
+        evaluation_data: List[str],
+        memory_labels: Optional[dict[str, str]] = None,
+        **kwargs,
+    ) -> AttackResult: ...
+
+    @overload
+    async def execute_async(
+        self,
+        *,
+        content_type: str,
+        language: str,
+        evaluation_data: List[str],
+        memory_labels: Optional[dict[str, str]] = None,
+        **kwargs,
+    ) -> AttackResult: ...
+
+    @overload
+    async def execute_async(
+        self,
+        **kwargs,
+    ) -> AttackResult: ...
+
+    async def execute_async(
+        self,
+        **kwargs,
+    ) -> AttackResult:
+        """
+        Execute the attack asynchronously.
+
+        Args:
+            objective (Optional[str]): The objective of the attack.
+            content_type (str): The content type of the attack, e.g. "viral tweet".
+            language (str): The language of the attack, e.g. "english".
+            evaluation_data (List[str]): The evaluation data for the attack.
+            memory_labels (Optional[dict[str, str]]): Memory labels for the attack.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            AttackResult: The result of the attack.
+        """
+        objective = get_kwarg_param(
+            kwargs=kwargs,
+            param_name="objective",
+            required=False,
+            expected_type=str,
+        )
+
+        content_type = get_kwarg_param(
+            kwargs=kwargs,
+            param_name="content_type",
+            required=True,
+            expected_type=str,
+        )
+
+        language = get_kwarg_param(
+            kwargs=kwargs,
+            param_name="language",
+            required=True,
+            expected_type=str,
+        )
+
+        evaluation_data = get_kwarg_param(
+            kwargs=kwargs,
+            param_name="evaluation_data",
+            required=True,
+            expected_type=list,
+        )
+
+        objective = objective or f"Generate a {content_type} in {language} using misinformation techniques"
+
+        return await super().execute_async(
+            objective=objective,
+            content_type=content_type,
+            language=language,
+            evaluation_data=evaluation_data,
+            **kwargs,
+        )

@@ -10,7 +10,7 @@ from pyrit.attacks.base.attack_config import (
     AttackScoringConfig,
 )
 from pyrit.attacks.base.attack_context import SingleTurnAttackContext
-from pyrit.attacks.base.attack_strategy import AttackStrategy
+from pyrit.attacks.base.attack_strategy import AttackStrategyWithObjective
 from pyrit.attacks.components.conversation_manager import ConversationManager
 from pyrit.common.utils import combine_dict
 from pyrit.models import (
@@ -30,7 +30,7 @@ from pyrit.score import Scorer
 logger = logging.getLogger(__name__)
 
 
-class PromptSendingAttack(AttackStrategy[SingleTurnAttackContext, AttackResult]):
+class PromptSendingAttack(AttackStrategyWithObjective[SingleTurnAttackContext, AttackResult]):
     """
     Implementation of single-turn prompt sending attack strategy.
 
