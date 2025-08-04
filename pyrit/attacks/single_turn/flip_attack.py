@@ -94,9 +94,11 @@ class FlipAttack(PromptSendingAttack):
         context.memory_labels = combine_dict(self._memory_labels, context.memory_labels)
 
         # System prompt should not be converted, and the new implementation correctly
-        # skips converters for system messages, so we can pass empty converter lists
+        # skips converters for system messages
         await self._conversation_manager.update_conversation_state_async(
-            conversation_id=context.conversation_id, prepended_conversation=context.prepended_conversation
+            target=self._objective_target,
+            conversation_id=context.conversation_id,
+            prepended_conversation=context.prepended_conversation,
         )
 
     async def _perform_attack_async(self, *, context: SingleTurnAttackContext) -> AttackResult:
