@@ -26,6 +26,7 @@ from pyrit.datasets import (
     fetch_transphobia_awareness_dataset,
     fetch_wmdp_dataset,
     fetch_xstest_dataset,
+    fetch_jbb_behaviors_dataset,
 )
 from pyrit.models.seed_prompt import SeedPromptDataset
 
@@ -55,6 +56,7 @@ from pyrit.models.seed_prompt import SeedPromptDataset
         (fetch_transphobia_awareness_dataset, True),
         (fetch_wmdp_dataset, False),
         (fetch_xstest_dataset, True),
+        (fetch_jbb_behaviors_dataset, True),
     ],
 )
 def test_fetch_datasets(fetch_function, is_seed_prompt_dataset):
@@ -64,3 +66,4 @@ def test_fetch_datasets(fetch_function, is_seed_prompt_dataset):
     if is_seed_prompt_dataset:
         assert isinstance(data, SeedPromptDataset)
         assert len(data.prompts) > 0
+        
