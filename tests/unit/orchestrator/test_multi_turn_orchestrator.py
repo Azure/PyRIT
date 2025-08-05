@@ -75,7 +75,7 @@ def test_prepare_conversation_with_prepended_conversation(orchestrator):
     assistant_piece = orchestrator._prepended_conversation[2].request_pieces[0]
 
     mocked_score = MagicMock()
-    orchestrator._memory.get_scores_by_prompt_ids.return_value = [mocked_score]
+    orchestrator._memory.get_scores.return_value = [mocked_score]
 
     new_conversation_id = str(uuid.uuid4())
     turn_num = orchestrator._prepare_conversation(new_conversation_id=new_conversation_id)
@@ -96,8 +96,8 @@ def test_prepare_conversation_with_prepended_conversation(orchestrator):
 
     # Check globals are set correctly
     assert orchestrator._last_prepended_user_message == user_piece.converted_value
-    orchestrator._memory.get_scores_by_prompt_ids.assert_called_once_with(
-        prompt_request_response_ids=[str(assistant_piece.original_prompt_id)]
+    orchestrator._memory.get_prompt_scores.assert_called_once_with(
+        prompt_ids=[str(assistant_piece.original_prompt_id)]
     )
     assert orchestrator._last_prepended_assistant_message_scores == [mocked_score]
 
@@ -125,14 +125,14 @@ def test_prepare_conversation_with_prepended_conversation_no_assistant_scores(or
     ]
 
     assistant_piece = orchestrator._prepended_conversation[1].request_pieces[0]
-    orchestrator._memory.get_scores_by_prompt_ids.return_value = []
+    orchestrator._memory.get_scores.return_value = []
     orchestrator._prepare_conversation(new_conversation_id=str(uuid.uuid4()))
 
     # Check globals are set correctly
     # Last prepended user message should be none as it is not needed when no scores are returned
     assert orchestrator._last_prepended_user_message == ""
-    orchestrator._memory.get_scores_by_prompt_ids.assert_called_once_with(
-        prompt_request_response_ids=[str(assistant_piece.original_prompt_id)]
+    orchestrator._memory.get_prompt_scores.assert_called_once_with(
+        prompt_ids=[str(assistant_piece.original_prompt_id)]
     )
     assert orchestrator._last_prepended_assistant_message_scores == []
 
@@ -234,19 +234,19 @@ def test_prepare_conversation_exceeds_max_turns(orchestrator):
 async def test_print_conversation_no_messages():
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
-    mock_memory.get_scores_by_prompt_ids.return_value = []
+    mock_memory.get_scores.return_value = []
     with patch("pyrit.memory.CentralMemory.get_memory_instance", return_value=mock_memory):
         result = OrchestratorResult("conversation_id_123", "failure", "Test Objective")
 
     await result.print_conversation_async()
 
     mock_memory.get_conversation.assert_called_once_with(conversation_id="conversation_id_123")
-    mock_memory.get_scores_by_prompt_ids.assert_not_called()
+    mock_memory.get_scores.assert_not_called()
 
 
-@pytest.mark.parametrize("include_auxiliary_scores, get_scores_by_prompt_id_call_count", [(False, 0), (True, 2)])
+@pytest.mark.parametrize("include_auxiliary_scores, get_scores_call_count", [(False, 0), (True, 2)])
 @pytest.mark.asyncio
-async def test_print_conversation_with_messages(include_auxiliary_scores, get_scores_by_prompt_id_call_count):
+async def test_print_conversation_with_messages(include_auxiliary_scores, get_scores_call_count):
 
     id_1 = uuid.uuid4()
 
@@ -288,7 +288,7 @@ async def test_print_conversation_with_messages(include_auxiliary_scores, get_sc
         prompt_request_response_id="123",
     )
 
-    mock_memory.get_scores_by_prompt_ids.return_value = [score]
+    mock_memory.get_scores.return_value = [score]
 
     with patch("pyrit.memory.CentralMemory.get_memory_instance", return_value=mock_memory):
         with patch(
@@ -305,4 +305,4 @@ async def test_print_conversation_with_messages(include_auxiliary_scores, get_sc
 
             mock_memory.get_conversation.assert_called_once_with(conversation_id="conversation_id_123")
             assert mock_display_image_response.call_count == 2
-            assert mock_memory.get_scores_by_prompt_ids.call_count == get_scores_by_prompt_id_call_count
+            assert mock_memory.get_scores.call_count == get_scores_call_count

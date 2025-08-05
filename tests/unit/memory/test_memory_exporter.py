@@ -89,4 +89,4 @@ def test_export_to_json_data_with_conversations(tmp_path, export_type):
     assert content[0]["conversation_id"] == conversation_id
     assert content[1]["role"] == "assistant"
     assert content[1]["converted_value"] == "I'm fine, thank you!"
-    assert content[1]["conversation_id"] == conversation_id
+    assert content[1]["conversation_id"] == conversation_i

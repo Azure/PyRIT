@@ -149,7 +149,7 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
 
                 # Print scores with better formatting (only if auxiliary scores are requested)
                 if include_auxiliary_scores:
-                    scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(piece.id)])
+                    scores = self._memory.get_prompt_scores(prompt_ids=[str(piece.id)])
                     if scores:
                         print()
                         self._print_colored(f"{self._indent}📊 Scores:", Style.DIM, Fore.MAGENTA)
