@@ -4,7 +4,7 @@
 import logging
 import time
 from typing import Union
-
+import torch
 import mlflow
 import numpy as np
 import torch.multiprocessing as mp
@@ -57,9 +57,9 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         verbose: bool = True,
         allow_non_ascii: bool = False,
         num_train_models: int = 1,
-        devices: list = ["cuda:0"],
+        devices: list = ["mps"] if torch.backends.mps.is_available() else ["cuda:0"],
         model_kwargs: list = [{"low_cpu_mem_usage": True, "use_cache": False}],
-        tokenizer_kwargs: list = [{"use_fast": False}],
+        tokenizer_kwargs: list = [{"use_fast": True}],
         n_test_data: int = 0,
         test_data: str = "",
         lr: float = 0.01,
