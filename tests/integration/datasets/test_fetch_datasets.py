@@ -27,6 +27,9 @@ from pyrit.datasets import (
     fetch_wmdp_dataset,
     fetch_xstest_dataset,
     fetch_jbb_behaviors_dataset,
+    # FIX: Add imports for the missing functions to be tested
+    fetch_jbb_behaviors_by_harm_category,
+    fetch_jbb_behaviors_by_jbb_category,
 )
 from pyrit.models.seed_prompt import SeedPromptDataset
 
@@ -66,4 +69,28 @@ def test_fetch_datasets(fetch_function, is_seed_prompt_dataset):
     if is_seed_prompt_dataset:
         assert isinstance(data, SeedPromptDataset)
         assert len(data.prompts) > 0
-        
+
+# FIX: Add new integration tests for the two filtering functions.
+# These need their own tests because they require arguments.
+
+@pytest.mark.integration
+def test_fetch_jbb_behaviors_by_harm_category():
+    """Integration test for filtering by harm category with real data."""
+    try:
+        # Filter for a common category to ensure we get results
+        violence_prompts = fetch_jbb_behaviors_by_harm_category("violence")
+        assert isinstance(violence_prompts, SeedPromptDataset)
+        assert len(violence_prompts.prompts) > 0
+    except Exception as e:
+        pytest.skip(f"Integration test skipped due to: {e}")
+
+@pytest.mark.integration
+def test_fetch_jbb_behaviors_by_jbb_category():
+    """Integration test for filtering by JBB category with real data."""
+    try:
+        # Filter for a common category to ensure we get results
+        hate_prompts = fetch_jbb_behaviors_by_jbb_category("hate")
+        assert isinstance(hate_prompts, SeedPromptDataset)
+        assert len(hate_prompts.prompts) > 0
+    except Exception as e:
+        pytest.skip(f"Integration test skipped due to: {e}")

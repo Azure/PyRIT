@@ -89,6 +89,9 @@ def fetch_jbb_behaviors_dataset(
             
             seed_prompts.append(seed_prompt)
         
+        if not seed_prompts:
+            raise ValueError("SeedPromptDataset cannot be empty.")
+
         logger.info(f"Successfully loaded {len(seed_prompts)} behaviors from JBB-Behaviors dataset")
         
         # Create and return SeedPromptDataset
@@ -176,7 +179,8 @@ def _map_jbb_category_to_harm_category(jbb_category: str) -> list[str]:
         "election": ["political", "election"],
     }
     
-    if not jbb_category:
+    # FIX: Handle None, empty, or whitespace-only strings correctly.
+    if not jbb_category or not jbb_category.strip():
         return ["unknown"]
     
     # Convert to lowercase for case-insensitive matching
@@ -232,6 +236,9 @@ def fetch_jbb_behaviors_by_harm_category(harm_category: str, **kwargs) -> SeedPr
         if any(harm_category.lower() in harm_cat.lower() for harm_cat in prompt.harm_categories)
     ]
     
+    if not filtered_prompts:
+        raise ValueError("SeedPromptDataset cannot be empty.")
+
     logger.info(f"Filtered {len(filtered_prompts)} prompts for harm category '{harm_category}'")
     
     # Create new dataset with filtered prompts
@@ -260,6 +267,9 @@ def fetch_jbb_behaviors_by_jbb_category(jbb_category: str, **kwargs) -> SeedProm
             prompt.metadata.get("jbb_category", "").lower() == jbb_category.lower())
     ]
     
+    if not filtered_prompts:
+        raise ValueError("SeedPromptDataset cannot be empty.")
+
     logger.info(f"Filtered {len(filtered_prompts)} prompts for JBB category '{jbb_category}'")
     
     # Create new dataset with filtered prompts
