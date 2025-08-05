@@ -13,6 +13,9 @@ from pyrit.datasets import (
     fetch_equitymedqa_dataset_unique_values,
     fetch_forbidden_questions_dataset,
     fetch_harmbench_dataset,
+    fetch_jbb_behaviors_by_harm_category,
+    fetch_jbb_behaviors_by_jbb_category,
+    fetch_jbb_behaviors_dataset,
     fetch_librAI_do_not_answer_dataset,
     fetch_llm_latent_adversarial_training_harmful_dataset,
     fetch_many_shot_jailbreaking_dataset,
@@ -26,10 +29,6 @@ from pyrit.datasets import (
     fetch_transphobia_awareness_dataset,
     fetch_wmdp_dataset,
     fetch_xstest_dataset,
-    fetch_jbb_behaviors_dataset,
-    # FIX: Add imports for the missing functions to be tested
-    fetch_jbb_behaviors_by_harm_category,
-    fetch_jbb_behaviors_by_jbb_category,
 )
 from pyrit.models.seed_prompt import SeedPromptDataset
 
@@ -70,8 +69,6 @@ def test_fetch_datasets(fetch_function, is_seed_prompt_dataset):
         assert isinstance(data, SeedPromptDataset)
         assert len(data.prompts) > 0
 
-# FIX: Add new integration tests for the two filtering functions.
-# These need their own tests because they require arguments.
 
 @pytest.mark.integration
 def test_fetch_jbb_behaviors_by_harm_category():
@@ -83,6 +80,7 @@ def test_fetch_jbb_behaviors_by_harm_category():
         assert len(violence_prompts.prompts) > 0
     except Exception as e:
         pytest.skip(f"Integration test skipped due to: {e}")
+
 
 @pytest.mark.integration
 def test_fetch_jbb_behaviors_by_jbb_category():
