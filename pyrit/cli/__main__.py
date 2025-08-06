@@ -13,7 +13,6 @@ from pyrit.memory import CentralMemory
 from pyrit.models.seed_prompt_dataset import SeedPromptDataset
 from pyrit.models.seed_prompt_group import SeedPromptGroup
 
-
 from .scanner_config import ScannerConfig
 
 SCANNER_EXECUTION_START_TIME_MEMORY_LABEL: str = "scanner_execution_start_time"

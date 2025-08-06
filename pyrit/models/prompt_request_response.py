@@ -128,18 +128,18 @@ def group_conversation_request_pieces_by_sequence(
     Example:
     >>> request_pieces = [
     >>>     PromptRequestPiece(conversation_id=1, sequence=1, text="Hello"),
-    >>>     PromptRequestPiece(conversation_id=1, sequence=2, text="How are you?"),
-    >>>     PromptRequestPiece(conversation_id=1, sequence=1, text="Hi"),
+    >>>     PromptRequestPiece(conversation_id=1, sequence=2, text="Hi!"),
+    >>>     PromptRequestPiece(conversation_id=1, sequence=1, text="How are you?"),
     >>>     PromptRequestPiece(conversation_id=1, sequence=2, text="I'm good, thanks!")
     >>> ]
     >>> grouped_responses = group_conversation_request_pieces(request_pieces)
     ... [
     ...     PromptRequestResponse(request_pieces=[
     ...         PromptRequestPiece(conversation_id=1, sequence=1, text="Hello"),
-    ...         PromptRequestPiece(conversation_id=1, sequence=1, text="Hi")
+    ...         PromptRequestPiece(conversation_id=1, sequence=1, text="How are you?")
     ...     ]),
     ...     PromptRequestResponse(request_pieces=[
-    ...         PromptRequestPiece(conversation_id=1, sequence=2, text="How are you?"),
+    ...         PromptRequestPiece(conversation_id=1, sequence=2, text="Hi?"),
     ...         PromptRequestPiece(conversation_id=1, sequence=2, text="I'm good, thanks!")
     ...     ])
     ... ]

@@ -19,6 +19,7 @@ from pyrit.models.seed_prompt_group import SeedPromptGroup
 
 logger = logging.getLogger(__name__)
 
+
 class SeedPromptDataset(YamlLoadable):
     """
     SeedPromptDataset manages seed prompts plus optional top-level defaults.

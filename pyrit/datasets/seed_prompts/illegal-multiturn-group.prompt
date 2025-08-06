@@ -24,4 +24,3 @@ prompts:
     data_type: text
     sequence: 1
     prompt_group_id_alias: group_1
-

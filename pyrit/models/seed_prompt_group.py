@@ -12,6 +12,7 @@ from pyrit.models.seed_prompt import SeedPrompt
 
 logger = logging.getLogger(__name__)
 
+
 class SeedPromptGroup(YamlLoadable):
     """
     A group of prompts that need to be sent together, along with an objective. This can include multiturn and multimodal
@@ -36,14 +37,13 @@ class SeedPromptGroup(YamlLoadable):
             elif isinstance(prompt, dict):
                 self.prompts.append(SeedPrompt(**prompt))
 
-        self._enforce_consistent_group_id()
+        self._validate()
 
         # Check sequence and sort the prompts in the same loop
         if len(self.prompts) >= 1:
             self.prompts = sorted(
                 self.prompts, key=lambda prompt: prompt.sequence if prompt.sequence is not None else 0
             )
-
 
     def render_template_value(self, **kwargs):
         """Renders self.value as a template, applying provided parameters in kwargs
@@ -60,7 +60,55 @@ class SeedPromptGroup(YamlLoadable):
 
         for prompt in self.prompts:
             prompt.value = prompt.render_template_value(**kwargs)
-    
+
+    def _validate(self):
+        """
+        Validates the prompts in the group share a consistent group ID and role.
+
+        """
+        self._enforce_consistent_group_id()
+        self._enforce_consistent_role()
+
+    def _enforce_consistent_attribute(self, attribute_name: str, default_value: Any = None):
+        """
+        Generic function to enforce consistency of an attribute across all prompts in the group.
+
+        Args:
+            attribute_name: The name of the attribute to enforce consistency for.
+            default_value: The default value to use if no values are set. If None and no values exist,
+                         a UUID will be generated (useful for IDs).
+
+        Raises:
+            ValueError: If multiple different values exist for the attribute among the prompts.
+        """
+        existing_values = {
+            getattr(prompt, attribute_name) for prompt in self.prompts if getattr(prompt, attribute_name) is not None
+        }
+
+        if len(existing_values) > 1:
+            raise ValueError(f"Inconsistent {attribute_name}s found across prompts in the group.")
+        elif len(existing_values) == 1:
+            # Exactly one value is set; apply it to all
+            value = existing_values.pop()
+        else:
+            # No values set; use default or generate UUID
+            value = default_value if default_value is not None else uuid.uuid4()
+
+        # Apply the consistent value to all prompts
+        for prompt in self.prompts:
+            setattr(prompt, attribute_name, value)
+
+    def _enforce_consistent_role(self):
+        """
+        Ensures that all prompts in the group have the same role.
+        Raises:
+            ValueError: If multiple different roles exist among the prompts.
+        """
+        self._enforce_consistent_attribute(
+            attribute_name="role",
+            default_value="user",
+        )
+
     def _enforce_consistent_group_id(self):
         """
         Ensures that if any of the prompts already have a group ID set,
@@ -70,21 +118,9 @@ class SeedPromptGroup(YamlLoadable):
         Raises:
             ValueError: If multiple different group IDs exist among the prompts.
         """
-        existing_group_ids = {prompt.prompt_group_id for prompt in self.prompts if prompt.prompt_group_id is not None}
-
-        if len(existing_group_ids) > 1:
-            # More than one distinct group ID found among prompts.
-            raise ValueError("Inconsistent group IDs found across prompts.")
-        elif len(existing_group_ids) == 1:
-            # Exactly one group ID is set; apply it to all.
-            group_id = existing_group_ids.pop()
-            for prompt in self.prompts:
-                prompt.prompt_group_id = group_id
-        else:
-            # No group IDs set; generate a fresh one and assign it to all.
-            new_group_id = uuid.uuid4()
-            for prompt in self.prompts:
-                prompt.prompt_group_id = new_group_id
+        self._enforce_consistent_attribute(
+            attribute_name="prompt_group_id",
+        )
 
     def is_single_request(self) -> bool:
         unique_sequences = {prompt.sequence for prompt in self.prompts}
@@ -95,5 +131,3 @@ class SeedPromptGroup(YamlLoadable):
 
     def __repr__(self):
         return f"<SeedPromptGroup(prompts={len(self.prompts)} prompts)>"
-
-

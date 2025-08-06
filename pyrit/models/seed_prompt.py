@@ -89,12 +89,12 @@ class SeedPrompt(YamlLoadable):
 
     # Unique identifier for the prompt group
     prompt_group_id: Optional[uuid.UUID] = None
-    
+
     # Alias for the prompt group
     prompt_group_alias: Optional[str] = None
 
     # Role of the prompt in a conversation (e.g., "user", "assistant")
-    role: Optional[str] = "user"
+    role: Optional[str] = None
 
     # Sequence number for ordering prompts in a conversation
     sequence: Optional[int] = 0
@@ -243,4 +243,3 @@ class SeedPrompt(YamlLoadable):
             raise ValueError(f"{error_message}: '{sp}'")
 
         return sp
-

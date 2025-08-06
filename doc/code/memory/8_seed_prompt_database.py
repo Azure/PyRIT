@@ -68,7 +68,7 @@ for prompt in prompts:
 # %% [markdown]
 # ## Adding multimodal Seed Prompt Groups to the database
 # In this next example, we will add a Seed Prompt group with prompts across the audio, image, video, and text modalities.
-# The Seed Prompt groups have the same `prompt_group_id`, meaning they will be sent together.
+# The Seed Prompts have the same `prompt_group_alias` and `sequence`, meaning they will be sent together as part of the same turn.
 # When we add non-text seed prompts to memory, encoding data will automatically populate in the seed prompt's
 # `metadata` field, including `format` (i.e. png, mp4, wav, etc.) as well as additional metadata for audio
 # and video files, inclduing `bitrate` (kBits/s as int), `samplerate` (samples/second as int), `bitdepth` (as int),
@@ -86,7 +86,7 @@ seed_prompt_group = SeedPromptGroup.from_yaml_file(
 )
 
 # Render user-defined values for yaml template
-seed_prompt_group.render_template_value(stolen_item="a car")
+seed_prompt_group.render_template_value(blocked_words="sorry, cannot")
 
 await memory.add_seed_prompt_groups_to_memory(prompt_groups=[seed_prompt_group], added_by="test multimodal illegal")  # type: ignore
 
