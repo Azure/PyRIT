@@ -4,7 +4,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from pyrit.models.seed_prompt import SeedPromptGroup
+from pyrit.models.seed_prompt_group import SeedPromptGroup
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
 )
