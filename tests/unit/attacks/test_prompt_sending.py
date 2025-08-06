@@ -1101,3 +1101,7 @@ class TestEdgeCasesAndErrorHandling:
 
         # Verify attack still fails overall (since all attempts failed)
         assert result.outcome == AttackOutcome.FAILURE
+
+        # Verify that the AttackResult includes the related conversations
+        assert result.related_conversations == basic_context.related_conversations
+        assert len(result.related_conversations) == 2

@@ -4,6 +4,7 @@
 from pyrit.score.scorer import Scorer
 
 from pyrit.score.azure_content_filter_scorer import AzureContentFilterScorer
+from pyrit.score.batch_scorer import BatchScorer
 from pyrit.score.composite_scorer import CompositeScorer
 from pyrit.score.float_scale_threshold_scorer import FloatScaleThresholdScorer
 from pyrit.score.self_ask_general_scorer import SelfAskGeneralScorer
@@ -43,6 +44,7 @@ from pyrit.score.question_answer_scorer import QuestionAnswerScorer
 __all__ = [
     "AND_",
     "AzureContentFilterScorer",
+    "BatchScorer",
     "ContentClassifierPaths",
     "CompositeScorer",
     "FloatScaleThresholdScorer",
