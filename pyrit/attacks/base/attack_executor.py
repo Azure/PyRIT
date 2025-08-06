@@ -107,11 +107,14 @@ class AttackExecutor:
             attack (AttackStrategy[_SingleTurnContextT, AttackResultT]): The single-turn attack strategy to use,
                 the context must be a SingleTurnAttackContext or a subclass of it.
             objectives (List[str]): List of attack objectives to test.
-            seed_prompt_groups (Optional[List[SeedPromptGroup]]): List of seed prompt groups to use for each objective.
-                If provided, must match the length of objectives.
-            prepended_conversations (Optional[List[List[PromptRequestResponse]]]): Conversations to prepend
-                to each objective. If provided, must match the length of objectives.
+            seed_prompt_groups (Optional[List[SeedPromptGroup]]): List of seed prompt groups to use for this execution.
+                If provided, must match the length of objectives. Seed prompt group will be sent along the objective
+                with the same list index.
+            prepended_conversations (Optional[List[List[PromptRequestResponse]]]): Conversations to prepend to each
+                objective. If provided, must match the length of objectives. Conversation will be sent along the
+                objective with the same list index.
             memory_labels (Optional[Dict[str, str]]): Additional labels that can be applied to the prompts.
+                The labels will be the same across all executions.
         Returns:
             List[AttackResultT]: List of attack results in the same order as the objectives list.
 
@@ -187,11 +190,14 @@ class AttackExecutor:
             attack (AttackStrategy[_MultiTurnContextT, AttackResultT]): The multi-turn attack strategy to use,
                 the context must be a MultiTurnAttackContext or a subclass of it.
             objectives (List[str]): List of attack objectives to test.
-            custom_prompts (Optional[List[str]]): List of custom prompts to use for each objective.
-                If provided, must match the length of objectives.
-            prepended_conversations (Optional[List[List[PromptRequestResponse]]]): Conversations to prepend
-                to each objective. If provided, must match the length of objectives.
+            custom_prompts (Optional[List[str]]): List of custom prompts to use for this execution.
+                If provided, must match the length of objectives. custom prompts will be sent along the objective
+                with the same list index.
+            prepended_conversations (Optional[List[List[PromptRequestResponse]]]): Conversations to prepend to each
+                objective. If provided, must match the length of objectives. Conversation will be sent along the
+                objective with the same list index.
             memory_labels (Optional[Dict[str, str]]): Additional labels that can be applied to the prompts.
+                The labels will be the same across all executions.
         Returns:
             List[AttackResultT]: List of attack results in the same order as the objectives list.
 
