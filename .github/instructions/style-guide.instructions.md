@@ -185,11 +185,11 @@ MIN_CONFIDENCE_THRESHOLD = 0.7
 async def execute_attack_async(self, *, context: AttackContext) -> AttackResult:
     """Execute the attack with the given context."""
     self._validate_context(context)
-    
+
     prompt = await self._prepare_prompt_async(context)
     response = await self._send_prompt_async(prompt, context)
     result = self._evaluate_response(response, context)
-    
+
     return result
 
 def _validate_context(self, context: AttackContext) -> None:
@@ -260,10 +260,10 @@ if not self._model:
 def process_items(self, *, items: List[str]) -> List[str]:
     if not items:
         return []
-    
+
     if len(items) == 1:
         return [self._process_single(items[0])]
-    
+
     # Main logic for multiple items
     return [self._process_single(item) for item in items]
 
