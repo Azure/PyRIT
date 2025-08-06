@@ -334,10 +334,10 @@ class PDFConverter(PromptConverter):
         Returns:
             DataTypeSerializer: The serializer object containing metadata about the saved file.
         """
-        original_filename_ending = self._existing_pdf_path.stem if self._existing_pdf_path else ""
+        original_filename_ending = self._existing_pdf_path.suffix if self._existing_pdf_path else ""
 
         if original_filename_ending:
-            extension = f"{original_filename_ending}.pdf"
+            extension = original_filename_ending[1:]  # Remove the leading dot
         else:
             extension = "pdf"
 

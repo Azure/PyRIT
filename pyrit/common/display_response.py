@@ -7,7 +7,7 @@ import logging
 from PIL import Image
 
 from pyrit.common.notebook_utils import is_in_ipython_session
-from pyrit.models import PromptRequestPiece, DiskStorageIO, AzureBlobStorageIO
+from pyrit.models import AzureBlobStorageIO, DiskStorageIO, PromptRequestPiece
 
 logger = logging.getLogger(__name__)
 

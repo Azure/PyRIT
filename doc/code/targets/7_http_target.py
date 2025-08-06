@@ -25,7 +25,11 @@
 # %%
 import os
 
-from pyrit.attacks import AttackConverterConfig, ConsoleAttackResultPrinter, PromptSendingAttack
+from pyrit.attacks import (
+    AttackConverterConfig,
+    ConsoleAttackResultPrinter,
+    PromptSendingAttack,
+)
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.prompt_converter import SearchReplaceConverter
@@ -77,10 +81,7 @@ converters = PromptConverterConfiguration.from_converters(
 # Note, a converter is used to format the prompt to be json safe without new lines/carriage returns, etc
 converter_config = AttackConverterConfig(request_converters=converters)
 
-attack = PromptSendingAttack(
-    objective_target=http_prompt_target,
-    attack_converter_config=converter_config
-)
+attack = PromptSendingAttack(objective_target=http_prompt_target, attack_converter_config=converter_config)
 
 result = await attack.execute_async(objective=objective)  # type: ignore
 await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore

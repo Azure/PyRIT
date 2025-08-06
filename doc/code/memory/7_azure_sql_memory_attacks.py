@@ -156,8 +156,12 @@ await result.print_conversation_async()  # type: ignore
 # %%
 import pathlib
 
-from pyrit.attacks import ConsoleAttackResultPrinter, PromptSendingAttack, SingleTurnAttackContext
-from pyrit.common import IN_MEMORY, AZURE_SQL,  initialize_pyrit
+from pyrit.attacks import (
+    ConsoleAttackResultPrinter,
+    PromptSendingAttack,
+    SingleTurnAttackContext,
+)
+from pyrit.common import AZURE_SQL, initialize_pyrit
 from pyrit.models import SeedPrompt, SeedPromptGroup
 from pyrit.prompt_target import OpenAIChatTarget
 

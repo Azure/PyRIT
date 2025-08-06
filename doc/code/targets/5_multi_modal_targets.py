@@ -25,7 +25,11 @@
 # This example demonstrates how to use the image target to create an image from a text-based prompt.
 
 # %%
-from pyrit.attacks import AttackScoringConfig, ConsoleAttackResultPrinter, PromptSendingAttack
+from pyrit.attacks import (
+    AttackScoringConfig,
+    ConsoleAttackResultPrinter,
+    PromptSendingAttack,
+)
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_target import OpenAIChatTarget, OpenAIDALLETarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion

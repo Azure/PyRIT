@@ -214,4 +214,3 @@ attack = PromptSendingAttack(
 
 result = await attack.execute_async(objective=prompt)  # type: ignore
 await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
-
