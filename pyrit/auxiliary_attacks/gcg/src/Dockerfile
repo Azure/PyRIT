@@ -8,6 +8,8 @@ ENV CONDA_ENVIRONMENT_PATH /azureml-envs/pyrit
 ENV PATH $CONDA_ENVIRONMENT_PATH/bin:$PATH
 
 # Create conda environment
+RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
 COPY conda_dependencies.yaml .
 RUN conda env create -p $CONDA_ENVIRONMENT_PATH -f conda_dependencies.yaml -q && \
     rm conda_dependencies.yaml && \
