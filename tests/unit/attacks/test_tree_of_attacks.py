@@ -493,6 +493,137 @@ class TestPruningLogic:
         assert context.best_objective_score == existing_score
         assert context.best_conversation_id == "existing_conv_id"
 
+    def test_prune_blocked_nodes_with_score_zero(self, basic_attack, node_factory, helpers):
+        """Test that nodes with 'blocked' response are assigned objective_score=0 and only pruned when width exceeded."""
+        # Configure error_score_map to assign 0.0 for blocked responses
+        basic_attack._error_score_map = {"blocked": 0.0}
+        basic_attack._tree_width = 3
+
+        context = helpers.create_basic_context()
+
+        # Create nodes: 2 blocked nodes, 2 valid nodes to test pruning
+        nodes = []
+        # Blocked nodes
+        for i in range(2):
+            node = node_factory.create_node(
+                NodeMockConfig(
+                    node_id=f"blocked_node_{i}",
+                    completed=True,
+                    off_topic=False,
+                    objective_score_value=0.0,  
+                    objective_target_conversation_id=f"conv_blocked_{i}"
+                )
+            )
+            # Mock response with 'blocked' error
+            response = PromptRequestResponse(
+                request_pieces=[
+                    PromptRequestPiece(
+                        role="assistant",
+                        original_value="Blocked response",
+                        converted_value="Blocked response",
+                        conversation_id=node.objective_target_conversation_id,
+                        id=str(uuid.uuid4()),
+                        response_error="blocked"
+                    )
+                ]
+            )
+            node._send_prompt_to_target_async = AsyncMock(return_value=response)
+            nodes.append(node)
+
+        # Valid nodes with scores
+        valid_nodes = node_factory.create_nodes_with_scores([0.8, 0.6])
+        nodes.extend(valid_nodes)
+
+        # Add all nodes to context and tree
+        context.nodes = nodes
+        helpers.add_nodes_to_tree(context, nodes)
+
+        # Execute pruning
+        basic_attack._prune_nodes_to_maintain_width(context=context)
+
+        # 1. Check that blocked nodes have objective_score=0
+        for node in nodes[:2]:
+            assert node.objective_score is not None
+            assert node.objective_score.get_value() == 0.0
+
+        # 2. Since tree_width=3 and we have 4 completed nodes (2 blocked, 2 valid),
+        #    expect 1 node to be pruned (the lowest-scoring, which should be a blocked node)
+        assert len(context.nodes) == 3
+        remaining_scores = [
+            node.objective_score.get_value() for node in context.nodes if node.objective_score is not None
+        ]
+        # Expect [0.8, 0.6, 0.0] (one blocked node remains, one is pruned)
+        assert sorted(remaining_scores, reverse=True) == [0.8, 0.6, 0.0]
+
+        # 3. Verify pruning annotation in tree visualization
+        pruned_nodes = [node for node in nodes if node not in context.nodes]
+        assert len(pruned_nodes) == 1
+        assert "Pruned (width)" in context.tree_visualization[pruned_nodes[0].node_id].tag
+
+    def test_no_pruning_when_below_width(self, basic_attack, node_factory, helpers):
+        """Test that blocked nodes are not pruned when completed list is below tree_width."""
+        # Configure error_score_map to assign 0.0 for blocked responses
+        basic_attack._error_score_map = {"blocked": 0.0}
+        basic_attack._tree_width = 5  # Set width higher than number of nodes
+
+        context = helpers.create_basic_context()
+
+        # Create 3 nodes: 2 blocked, 1 valid
+        nodes = []
+        # Blocked nodes
+        for i in range(2):
+            node = node_factory.create_node(
+                NodeMockConfig(
+                    node_id=f"blocked_node_{i}",
+                    completed=True,
+                    off_topic=False,
+                    objective_score_value=0.0,
+                    objective_target_conversation_id=f"conv_blocked_{i}"
+                )
+            )
+            response = PromptRequestResponse(
+                request_pieces=[
+                    PromptRequestPiece(
+                        role="assistant",
+                        original_value="Blocked response",
+                        converted_value="Blocked response",
+                        conversation_id=node.objective_target_conversation_id,
+                        id=str(uuid.uuid4()),
+                        response_error="blocked"
+                    )
+                ]
+            )
+            node._send_prompt_to_target_async = AsyncMock(return_value=response)
+            nodes.append(node)
+
+        # Valid node
+        valid_node = node_factory.create_node(
+            NodeMockConfig(
+                node_id="valid_node",
+                objective_score_value=0.7,
+                objective_target_conversation_id="conv_valid"
+            )
+        )
+        nodes.append(valid_node)
+
+        # Add nodes to context and tree
+        context.nodes = nodes
+        helpers.add_nodes_to_tree(context, nodes)
+
+        # Execute pruning
+        basic_attack._prune_nodes_to_maintain_width(context=context)
+
+        # Verify no pruning occurred (3 nodes < tree_width=5)
+        assert len(context.nodes) == 3
+        for node in context.nodes[1:]:
+            assert node.objective_score is not None
+            assert node.objective_score.get_value() == 0.0
+        assert context.nodes[0].objective_score.get_value() == 0.7
+
+        # Verify no nodes were marked as pruned in visualization
+        for node in nodes:
+            assert "Pruned" not in context.tree_visualization[node.node_id].tag
+
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestBranchingLogic:
