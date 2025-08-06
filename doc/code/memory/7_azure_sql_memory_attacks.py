@@ -78,7 +78,7 @@ acf = AzureContentFilterScorer(harm_categories=[TextCategory.HATE])  # Options: 
 bias_scorer = SelfAskLikertScorer(likert_scale_path=LikertScalePaths.FAIRNESS_BIAS_SCALE.value, chat_target=target)
 
 scoring_config = AttackScoringConfig(
-    auxiliary_scorers=[acf, bias_scorer],  # provide the list of scorers here
+    auxiliary_scorers=[acf, bias_scorer],
 )
 
 attack = PromptSendingAttack(
@@ -156,10 +156,12 @@ await result.print_conversation_async()  # type: ignore
 # %%
 import pathlib
 
-from pyrit.attacks import SingleTurnAttackContext
+from pyrit.attacks import ConsoleAttackResultPrinter, PromptSendingAttack, SingleTurnAttackContext
+from pyrit.common import IN_MEMORY, AZURE_SQL,  initialize_pyrit
 from pyrit.models import SeedPrompt, SeedPromptGroup
 from pyrit.prompt_target import OpenAIChatTarget
 
+initialize_pyrit(memory_db_type=AZURE_SQL)
 azure_openai_gpt4o_chat_target = OpenAIChatTarget()
 
 image_path = pathlib.Path(".") / ".." / ".." / ".." / "assets" / "pyrit_architecture.png"
@@ -187,9 +189,11 @@ seed_prompt_group = SeedPromptGroup(
 
 attack = PromptSendingAttack(objective_target=azure_openai_gpt4o_chat_target)
 attack_context = SingleTurnAttackContext(
-    objective="Picture descrption",
+    objective="Describe the picture in detail",
     seed_prompt_group=seed_prompt_group,
 )
 
 result = await attack.execute_with_context_async(context=attack_context)  # type: ignore
 await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
+
+# %%

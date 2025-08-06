@@ -46,8 +46,8 @@
 # %%
 import time
 
+from pyrit.attacks import AttackExecutor, PromptSendingAttack
 from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import HuggingFaceChatTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
@@ -67,14 +67,17 @@ try:
     # Initialize HuggingFaceChatTarget with the current model
     target = HuggingFaceChatTarget(model_id=model_id, use_cuda=False, tensor_format="pt", max_new_tokens=30)
 
-    # Initialize the orchestrator
-    orchestrator = PromptSendingOrchestrator(objective_target=target, verbose=False)
+    # Initialize the attack
+    attack = PromptSendingAttack(objective_target=target)
 
     # Record start time
     start_time = time.time()
 
     # Send prompts asynchronously
-    responses = await orchestrator.run_attacks_async(objectives=prompt_list)  # type: ignore
+    responses = await AttackExecutor().execute_multi_objective_attack_async(  # type: ignore
+        attack=attack,
+        objectives=prompt_list,
+    )
 
     # Record end time
     end_time = time.time()
