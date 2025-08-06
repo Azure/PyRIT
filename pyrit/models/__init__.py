@@ -9,6 +9,8 @@ from pyrit.models.chat_message import (
 )
 from pyrit.models.prompt_request_piece import PromptRequestPiece, sort_request_pieces
 
+from pyrit.models.conversation_reference import ConversationReference, ConversationType
+
 from pyrit.models.attack_result import AttackResult, AttackOutcome, AttackResultT
 
 from pyrit.models.data_type_serializer import (
@@ -45,6 +47,8 @@ __all__ = [
     "ChatMessagesDataset",
     "ChatMessageRole",
     "ChatMessageListDictContent",
+    "ConversationReference",
+    "ConversationType",
     "construct_response_from_request",
     "DataTypeSerializer",
     "data_serializer_factory",

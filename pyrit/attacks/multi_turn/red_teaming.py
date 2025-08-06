@@ -28,6 +28,8 @@ from pyrit.common.utils import combine_dict
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
+    ConversationReference,
+    ConversationType,
     PromptRequestResponse,
     Score,
     SeedPrompt,
@@ -194,6 +196,14 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         logger.debug(f"Conversation session ID: {context.session.conversation_id}")
         logger.debug(f"Adversarial chat conversation ID: {context.session.adversarial_chat_conversation_id}")
 
+        # Track the adversarial chat conversation ID using related_conversations
+        context.related_conversations.add(
+            ConversationReference(
+                conversation_id=context.session.adversarial_chat_conversation_id,
+                conversation_type=ConversationType.ADVERSARIAL,
+            )
+        )
+
         # Update the conversation state with the current context
         conversation_state: ConversationState = await self._conversation_manager.update_conversation_state_async(
             target=self._objective_target,
@@ -286,6 +296,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
             executed_turns=context.executed_turns,
             last_response=context.last_response.get_piece() if context.last_response else None,
             last_score=context.last_score,
+            related_conversations=context.related_conversations,
         )
 
     async def _teardown_async(self, *, context: MultiTurnAttackContext) -> None:
@@ -298,7 +309,7 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         Generate the next prompt to be sent to the target during the red teaming attack.
 
         This method is called each turn to obtain fresh adversarial text based on previous feedback,
-        error states, or the custom prompt if it is the first turn. It integrates feedback from the
+        error states, or the custom prompt if it is available. It integrates feedback from the
         scorer when available, and handles blocked or error responses by returning fallback prompts.
 
         Args:
@@ -307,10 +318,13 @@ class RedTeamingAttack(AttackStrategy[MultiTurnAttackContext, AttackResult]):
         Returns:
             str: The generated prompt to be sent to the adversarial chat.
         """
-        # If first turn and custom prompt provided, use it
-        if context.executed_turns == 0 and context.custom_prompt:
-            logger.debug("Using custom prompt for first turn")
-            return context.custom_prompt
+        # If custom prompt provided, use it and clear it
+        if context.custom_prompt:
+            logger.debug("Using custom prompt")
+            prompt = context.custom_prompt
+            # Clear to prevent reuse
+            context.custom_prompt = None
+            return prompt
 
         # Generate prompt using adversarial chat
         logger.debug(f"Generating prompt for turn {context.executed_turns + 1}")

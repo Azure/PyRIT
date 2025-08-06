@@ -2,12 +2,16 @@
 # Licensed under the MIT license.
 
 import logging
-from pathlib import Path
-from typing import Optional
+from typing import Optional, cast
 
-from pyrit.common.path import DATASETS_PATH
-from pyrit.datasets import fetch_many_shot_jailbreaking_dataset
-from pyrit.models import SeedPrompt, SeedPromptGroup
+from typing_extensions import LiteralString, deprecated
+
+from pyrit.attacks import (
+    AttackConverterConfig,
+    AttackScoringConfig,
+    ManyShotJailbreakAttack,
+)
+from pyrit.common import deprecation_message
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.orchestrator.models.orchestrator_result import OrchestratorResult
 from pyrit.prompt_normalizer import PromptConverterConfiguration
@@ -17,8 +21,22 @@ from pyrit.score import Scorer
 logger = logging.getLogger(__name__)
 
 
+@deprecated(
+    cast(
+        LiteralString,
+        deprecation_message(
+            old_item="ManyShotJailbreakOrchestrator",
+            new_item=ManyShotJailbreakAttack,
+            removed_in="v0.12.0",
+        ),
+    ),
+)
 class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
     """
+    .. warning::
+        `ManyShotJailbreakOrchestrator` is deprecated and will be removed in **v0.12.0**;
+        use `pyrit.attacks.ManyShotJailbreakAttack` instead.
+
     This orchestrator implements the Many Shot Jailbreak method as discussed in research found here:
     https://www.anthropic.com/research/many-shot-jailbreaking
 
@@ -73,17 +91,21 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
             verbose=verbose,
         )
 
-        # Template for the faux dialogue to be prepended
-        template_path = Path(DATASETS_PATH) / "jailbreak" / "multi_parameter" / "many_shot_template.yaml"
-        self._template = SeedPrompt.from_yaml_file(template_path)
-        # Fetch the Many Shot Jailbreaking example dataset
-        self._examples = (
-            many_shot_examples[:example_count]
-            if (many_shot_examples is not None)
-            else fetch_many_shot_jailbreaking_dataset()[:example_count]
+        self._attack = ManyShotJailbreakAttack(
+            objective_target=objective_target,
+            attack_converter_config=AttackConverterConfig(
+                request_converters=self._request_converter_configurations,
+                response_converters=self._response_converter_configurations,
+            ),
+            attack_scoring_config=AttackScoringConfig(
+                objective_scorer=self._objective_scorer,
+                auxiliary_scorers=self._auxiliary_scorers,
+            ),
+            prompt_normalizer=self._prompt_normalizer,
+            max_attempts_on_failure=retries_on_objective_failure,
+            example_count=example_count,
+            many_shot_examples=many_shot_examples,
         )
-        if not self._examples:
-            raise ValueError("Many shot examples must be provided.")
 
     async def run_attack_async(  # type: ignore[override]
         self,
@@ -91,14 +113,8 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
         objective: str,
         memory_labels: Optional[dict[str, str]] = None,
     ) -> OrchestratorResult:
-
-        many_shot_prompt = self._template.render_template_value(prompt=objective, examples=self._examples)
-
-        seed_prompt = SeedPromptGroup(prompts=[SeedPrompt(value=many_shot_prompt, data_type="text")])
-
         return await super().run_attack_async(
             objective=objective,
-            seed_prompt=seed_prompt,
             memory_labels=memory_labels,
         )
 

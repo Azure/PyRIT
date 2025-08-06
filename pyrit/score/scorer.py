@@ -28,6 +28,7 @@ from pyrit.models import (
 from pyrit.models.literals import ChatMessageRole
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
+from pyrit.score.scorer_evaluation.metrics_type import MetricsType
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,6 @@ class Scorer(abc.ABC):
     def _memory(self) -> MemoryInterface:
         return CentralMemory.get_memory_instance()
 
-    @abstractmethod
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Score the request_response, add the results to the database
@@ -56,6 +56,13 @@ class Scorer(abc.ABC):
         Returns:
             list[Score]: A list of Score objects representing the results.
         """
+        self.validate(request_response, task=task)
+        scores = await self._score_async(request_response, task=task)
+        self._memory.add_scores_to_memory(scores=scores)
+        return scores
+
+    @abstractmethod
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         raise NotImplementedError("score_async method not implemented")
 
     @abstractmethod
@@ -69,6 +76,33 @@ class Scorer(abc.ABC):
             task (str): The task based on which the text should be scored (the original attacker model's objective).
         """
         raise NotImplementedError("score_async method not implemented")
+
+    def get_scorer_metrics(self, dataset_name: str, metrics_type: Optional[MetricsType] = None):
+        """
+        Returns evaluation statistics for the scorer using the dataset_name of the human labeled dataset that this
+        scorer was run against. If you did not evaluate the scorer against your own human labeled dataset, you can
+        use this method to retrieve metrics based on a pre-existing dataset name, which is often a 'harm_category'
+        or abbreviated version of the 'objective'. For example, to retrieve metrics for the 'hate_speech' harm,
+        you would pass 'hate_speech' as the dataset_name.
+
+        The existing metrics can be found in the 'dataset/score/scorer_evals' directory within either
+        the 'harm' or 'objective' subdirectory.
+
+        Args:
+            dataset_name (str): The name of the dataset on which the scorer evaluation was run. This is used to
+                inform the name of the metrics file to read in the `scorer_evals` directory.
+            metrics_type (MetricsType, optional): The type of metrics to retrieve, either HARM
+                or OBJECTIVE. If not provided, it will default to OBJECTIVE for true/false scorers
+                and HARM for all other scorers.
+
+        Returns:
+            ScorerMetrics: A ScorerMetrics object containing the saved evaluation statistics for the scorer.
+        """
+        # Import ScorerEvaluator here to avoid circular imports
+        from pyrit.score import ScorerEvaluator
+
+        scorer_evaluator = ScorerEvaluator.from_scorer(self, metrics_type=metrics_type)
+        return scorer_evaluator.get_scorer_metrics(dataset_name=dataset_name)
 
     async def score_text_async(self, text: str, *, task: Optional[str] = None) -> list[Score]:
         """
@@ -88,6 +122,28 @@ class Scorer(abc.ABC):
 
         request_piece.id = None
         return await self.score_async(request_piece, task=task)
+
+    async def score_text_batch_async(
+        self,
+        *,
+        texts: Sequence[str],
+        tasks: Optional[Sequence[str]] = None,
+        batch_size: int = 10,
+    ) -> list[Score]:
+        if tasks:
+            if len(tasks) != len(texts):
+                raise ValueError("The number of tasks must match the number of texts.")
+        if len(texts) == 0:
+            return []
+        prompt_target = getattr(self, "_prompt_target")
+        results = await batch_task_async(
+            task_func=self.score_text_async,
+            task_arguments=["text", "task"] if tasks else ["text"],
+            prompt_target=prompt_target,
+            batch_size=batch_size,
+            items_to_batch=[texts, tasks] if tasks else [texts],
+        )
+        return [score for sublist in results for score in sublist]
 
     async def score_responses_inferring_tasks_batch_async(
         self,
