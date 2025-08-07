@@ -57,9 +57,9 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         verbose: bool = True,
         allow_non_ascii: bool = False,
         num_train_models: int = 1,
-        devices: list = ["mps"] if torch.backends.mps.is_available() else ["cuda:0"],
+        devices: list = ["cuda:0"],
         model_kwargs: list = [{"low_cpu_mem_usage": True, "use_cache": False}],
-        tokenizer_kwargs: list = [{"use_fast": True}],
+        tokenizer_kwargs: list = [{"use_fast": False}],
         n_test_data: int = 0,
         test_data: str = "",
         lr: float = 0.01,
@@ -108,7 +108,6 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         params.logfile = logfile
         params.random_seed = random_seed
         logger.info(f"Parameters: {params}")
-
         # Start mlflow logging
         mlflow.start_run()
         log_gpu_memory(step=0)
