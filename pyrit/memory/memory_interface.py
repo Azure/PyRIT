@@ -9,9 +9,9 @@ import uuid
 import weakref
 from datetime import datetime
 from pathlib import Path
-from typing import MutableSequence, Optional, Sequence, TypeVar, Union
+from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
 
-from sqlalchemy import Engine, MetaData, and_, or_, or_
+from sqlalchemy import Engine, MetaData, and_
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql.elements import ColumnElement
 
@@ -235,14 +235,14 @@ class MemoryInterface(abc.ABC):
         Returns:
             Sequence[Score]: A list of Score objects that match the specified filters.
         """
-        conditions = []
+        conditions: list[Any] = []
 
         if score_ids:
             conditions.append(ScoreEntry.id.in_(score_ids))
         if score_type:
-            conditions.append(ScoreEntry.type == score_type)
+            conditions.append(ScoreEntry.score_type == score_type)
         if score_category:
-            conditions.append(ScoreEntry.category == score_category)
+            conditions.append(ScoreEntry.score_category == score_category)
         if sent_after:
             conditions.append(ScoreEntry.timestamp >= sent_after)
         if sent_before:
@@ -296,12 +296,21 @@ class MemoryInterface(abc.ABC):
             converted_value_sha256=converted_value_sha256,
         )
 
-        scores = []
+        # Deduplicate prompt pieces by original_prompt_id to avoid duplicate scores
+        # since duplicated pieces share scores with their originals
+        seen_original_ids = set()
+        unique_pieces = []
         for piece in prompt_pieces:
+            if piece.original_prompt_id not in seen_original_ids:
+                seen_original_ids.add(piece.original_prompt_id)
+                unique_pieces.append(piece)
+
+        scores = []
+        for piece in unique_pieces:
             if piece.scores:
                 scores.extend(piece.scores)
 
-        return scores
+        return list(scores)
 
     def get_conversation(self, *, conversation_id: str) -> MutableSequence[PromptRequestResponse]:
         """

@@ -91,9 +91,7 @@ class OrchestratorResult:
                 await display_image_response(piece)
 
                 if include_auxiliary_scores:
-                    auxiliary_scores = (
-                        self._memory.get_prompt_scores(prompt_ids=[str(piece.id)]) or []
-                    )
+                    auxiliary_scores = self._memory.get_prompt_scores(prompt_ids=[str(piece.id)]) or []
                     for auxiliary_score in auxiliary_scores:
                         if not self.objective_score or auxiliary_score.id != self.objective_score.id:
                             print(

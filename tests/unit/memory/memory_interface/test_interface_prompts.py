@@ -10,14 +10,12 @@ from uuid import uuid4
 
 import pytest
 
-
 from pyrit.memory import MemoryInterface, PromptMemoryEntry
 from pyrit.models import (
     PromptRequestPiece,
     PromptRequestResponse,
     Score,
 )
-
 from pyrit.orchestrator import Orchestrator
 
 
@@ -240,17 +238,9 @@ def test_duplicate_conversation_pieces_not_score(duckdb_instance: MemoryInterfac
     assert len(duckdb_instance.get_prompt_scores(labels=memory_labels)) == 2
     assert len(duckdb_instance.get_prompt_scores(orchestrator_id=orchestrator1.get_identifier()["id"])) == 2
     assert len(duckdb_instance.get_prompt_scores(orchestrator_id=orchestrator2.get_identifier()["id"])) == 2
-    
-    # The duplicate prompts ids should not have scores so only two scores are returned
-    assert (
-        len(
-            duckdb_instance.get_prompt_scores(
-                prompt_ids=[str(prompt_id_1), str(prompt_id_2)] + new_pieces_ids
-            )
-        )
-        == 2
-    )
 
+    # The duplicate prompts ids should not have scores so only two scores are returned
+    assert len(duckdb_instance.get_prompt_scores(prompt_ids=[str(prompt_id_1), str(prompt_id_2)] + new_pieces_ids)) == 2
 
 
 def test_duplicate_conversation_excluding_last_turn(duckdb_instance: MemoryInterface):
@@ -407,14 +397,7 @@ def test_duplicate_conversation_excluding_last_turn_not_score(duckdb_instance: M
     assert len(duckdb_instance.get_prompt_scores(orchestrator_id=orchestrator1.get_identifier()["id"])) == 2
     assert len(duckdb_instance.get_prompt_scores(orchestrator_id=orchestrator2.get_identifier()["id"])) == 2
     # The duplicate prompts ids should not have scores so only two scores are returned
-    assert (
-        len(
-            duckdb_instance.get_prompt_scores(
-                prompt_ids=[str(prompt_id_1), str(prompt_id_2)] + new_pieces_ids
-            )
-        )
-        == 2
-    )
+    assert len(duckdb_instance.get_prompt_scores(prompt_ids=[str(prompt_id_1), str(prompt_id_2)] + new_pieces_ids)) == 2
 
 
 def test_duplicate_conversation_excluding_last_turn_same_orchestrator(duckdb_instance: MemoryInterface):
@@ -487,8 +470,6 @@ def test_duplicate_memory_orchestrator_id_collision(duckdb_instance: MemoryInter
             new_orchestrator_id=str(orchestrator1.get_identifier()["id"]),
             conversation_id=conversation_id,
         )
-
-
 
 
 def test_add_request_pieces_to_memory_calls_validate(duckdb_instance: MemoryInterface):
@@ -586,7 +567,6 @@ def test_insert_prompt_memories_not_inserts_embedding(
         duckdb_instance.add_request_response_to_memory(request=request)
 
         assert mock_embedding.assert_not_called
-
 
 
 def test_get_prompt_request_pieces_labels(duckdb_instance: MemoryInterface):
@@ -858,8 +838,6 @@ def test_get_prompt_request_pieces_by_hash(duckdb_instance: MemoryInterface):
     assert_original_value_in_list("Hello 1", retrieved_entries)
     assert_original_value_in_list("Hello 2", retrieved_entries)
 
-
-    
 
 def test_get_prompt_request_pieces_with_non_matching_memory_labels(duckdb_instance: MemoryInterface):
     orchestrator1 = Orchestrator()

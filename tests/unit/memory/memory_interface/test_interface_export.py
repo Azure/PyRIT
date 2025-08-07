@@ -31,7 +31,6 @@ def test_export_conversation_by_orchestrator_id_file_created(
         assert file_path.exists()
 
 
-
 def test_export_all_conversations_file_created(duckdb_instance: MemoryInterface):
     duckdb_instance.exporter = MemoryExporter()
 

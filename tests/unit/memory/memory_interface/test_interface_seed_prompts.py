@@ -3,24 +3,21 @@
 
 import os
 import tempfile
-
 from typing import Sequence
 from uuid import uuid4
 
 import pytest
 
 from pyrit.memory import MemoryInterface
-from pyrit.models import (
-    SeedPrompt,
-    SeedPromptGroup,
-    PromptRequestPiece
-)
+from pyrit.models import PromptRequestPiece, SeedPrompt, SeedPromptGroup
+
 
 def assert_original_value_in_list(original_value: str, prompt_request_pieces: Sequence[PromptRequestPiece]):
     for piece in prompt_request_pieces:
         if piece.original_value == original_value:
             return True
     raise AssertionError(f"Original value {original_value} not found in list")
+
 
 @pytest.mark.asyncio
 async def test_get_seed_prompts_with_audio(duckdb_instance: MemoryInterface):
@@ -703,8 +700,6 @@ def test_get_seed_prompt_groups_empty(duckdb_instance: MemoryInterface):
     assert duckdb_instance.get_seed_prompt_groups() == []
 
 
-    
-
 @pytest.mark.asyncio
 async def test_get_seed_prompt_groups_with_dataset_name(duckdb_instance: MemoryInterface):
     dataset_name = "test_dataset"
@@ -779,10 +774,6 @@ async def test_get_seed_prompt_groups_multiple_groups_with_unique_ids(duckdb_ins
     assert len(groups) == 2
     # Check that each group has a unique prompt_group_id
     assert groups[0].prompts[0].prompt_group_id != groups[1].prompts[0].prompt_group_id
-
-
-
-
 
 
 @pytest.mark.asyncio

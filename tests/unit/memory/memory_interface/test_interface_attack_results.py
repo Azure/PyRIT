@@ -5,13 +5,13 @@
 import uuid
 from typing import Sequence
 
-
 from pyrit.common.utils import to_sha256
 from pyrit.memory import MemoryInterface
 from pyrit.memory.memory_models import AttackResultEntry
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.models.attack_result import AttackOutcome, AttackResult
 from pyrit.models.conversation_reference import ConversationReference, ConversationType
+
 
 def test_add_attack_results_to_memory(duckdb_instance: MemoryInterface):
     """Test adding attack results to memory."""

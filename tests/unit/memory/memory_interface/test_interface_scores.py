@@ -14,8 +14,8 @@ from pyrit.models import (
     Score,
     SeedPrompt,
 )
-
 from pyrit.orchestrator import Orchestrator
+
 
 def test_get_scores_by_orchestrator_id_and_label(
     duckdb_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
@@ -41,9 +41,7 @@ def test_get_scores_by_orchestrator_id_and_label(
     duckdb_instance.add_scores_to_memory(scores=[score])
 
     # Fetch the score we just added
-    db_score = duckdb_instance.get_prompt_scores(
-        orchestrator_id=sample_conversations[0].orchestrator_identifier["id"]
-    )
+    db_score = duckdb_instance.get_prompt_scores(orchestrator_id=sample_conversations[0].orchestrator_identifier["id"])
 
     assert len(db_score) == 1
     assert db_score[0].score_value == score.score_value
@@ -63,7 +61,6 @@ def test_get_scores_by_orchestrator_id_and_label(
     assert len(db_score) == 1
     assert db_score[0].score_value == score.score_value
 
-
     db_score = duckdb_instance.get_prompt_scores(
         orchestrator_id=sample_conversations[0].orchestrator_identifier["id"],
         labels={"x": "y"},
@@ -77,6 +74,7 @@ def test_get_scores_by_orchestrator_id_and_label(
 
     db_score = duckdb_instance.get_scores()
     assert len(db_score) == 0
+
 
 @pytest.mark.parametrize("score_type", ["float_scale", "true_false"])
 def test_add_score_get_score(
