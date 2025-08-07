@@ -17,7 +17,7 @@ from pyrit.prompt_target import OpenAIChatTarget, RealtimeTarget
         ("AZURE_OPENAI_GPT4O_AAD_ENDPOINT", ""),
     ],
 )
-async def test_openai_chat_target_aad_auth(duckdb_instance, endpoint, model_name):
+async def test_openai_chat_target_aad_auth(sqlite_instance, endpoint, model_name):
     args = {
         "endpoint": os.getenv(endpoint),
         "temperature": 0.0,
@@ -44,7 +44,7 @@ async def test_openai_chat_target_aad_auth(duckdb_instance, endpoint, model_name
         ("OPENAI_REALTIME_ENDPOINT", ""),
     ],
 )
-async def test_openai_realtime_target_aad_auth(duckdb_instance, endpoint, model_name):
+async def test_openai_realtime_target_aad_auth(sqlite_instance, endpoint, model_name):
     args = {"endpoint": os.getenv(endpoint), "model_name": model_name}
 
     # These endpoints should have AAD authentication enabled in the current context

@@ -3,4 +3,4 @@ datasets:
 scenarios:
   - type: "PromptSendingOrchestrator"
 database:
-  type: "DuckDB"
+  type: "SQLite"

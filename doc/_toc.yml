@@ -94,7 +94,7 @@ chapters:
       - file: code/scoring/scorer_evals
     - file: code/memory/0_memory
       sections:
-      - file: code/memory/1_duck_db_memory
+      - file: code/memory/1_sqlite_memory
       - file: code/memory/2_basic_memory_programming
       - file: code/memory/3_prompt_request
       - file: code/memory/4_manually_working_with_memory

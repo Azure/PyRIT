@@ -144,13 +144,13 @@ memory.dispose_engine()
 # %%
 import pathlib
 
-from pyrit.common import DUCK_DB, initialize_pyrit
+from pyrit.common import SQLITE, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
 from pyrit.orchestrator import XPIATestOrchestrator
 from pyrit.prompt_converter import PDFConverter
 from pyrit.prompt_target import HTTPXAPITarget
 
-initialize_pyrit(memory_db_type=DUCK_DB)
+initialize_pyrit(memory_db_type=SQLITE)
 
 # Define PDF Path
 cv_pdf_path = pathlib.Path(DATASETS_PATH) / "prompt_converters" / "pdf_converters" / "Jonathon_Sanchez.pdf"

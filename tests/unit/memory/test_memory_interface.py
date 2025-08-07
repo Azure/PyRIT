@@ -52,19 +52,19 @@ def assert_original_value_in_list(original_value: str, prompt_request_pieces: Se
     raise AssertionError(f"Original value {original_value} not found in list")
 
 
-def test_memory(duckdb_instance: MemoryInterface):
-    assert duckdb_instance
+def test_memory(sqlite_instance: MemoryInterface):
+    assert sqlite_instance
 
 
-def test_conversation_memory_empty_by_default(duckdb_instance: MemoryInterface):
+def test_conversation_memory_empty_by_default(sqlite_instance: MemoryInterface):
     expected_count = 0
-    c = duckdb_instance.get_prompt_request_pieces()
+    c = sqlite_instance.get_prompt_request_pieces()
     assert len(c) == expected_count
 
 
 @pytest.mark.parametrize("num_conversations", [1, 2, 3])
 def test_add_request_pieces_to_memory(
-    duckdb_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece], num_conversations: int
+    sqlite_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece], num_conversations: int
 ):
     for c in sample_conversations[:num_conversations]:
         c.conversation_id = sample_conversations[0].conversation_id
@@ -72,11 +72,11 @@ def test_add_request_pieces_to_memory(
 
     request_response = PromptRequestResponse(request_pieces=sample_conversations[:num_conversations])
 
-    duckdb_instance.add_request_response_to_memory(request=request_response)
-    assert len(duckdb_instance.get_prompt_request_pieces()) == num_conversations
+    sqlite_instance.add_request_response_to_memory(request=request_response)
+    assert len(sqlite_instance.get_prompt_request_pieces()) == num_conversations
 
 
-def test_get_prompt_request_pieces_uuid_and_string_ids(duckdb_instance: MemoryInterface):
+def test_get_prompt_request_pieces_uuid_and_string_ids(sqlite_instance: MemoryInterface):
     """Test that get_prompt_request_pieces handles both UUID objects and string representations."""
     uuid1 = uuid.uuid4()
     uuid2 = uuid.uuid4()
@@ -102,31 +102,31 @@ def test_get_prompt_request_pieces_uuid_and_string_ids(duckdb_instance: MemoryIn
             converted_value="Test prompt 3",
         ),
     ]
-    duckdb_instance.add_request_pieces_to_memory(request_pieces=pieces)
+    sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
 
-    uuid_results = duckdb_instance.get_prompt_request_pieces(prompt_ids=[uuid1, uuid2])
+    uuid_results = sqlite_instance.get_prompt_request_pieces(prompt_ids=[uuid1, uuid2])
     assert len(uuid_results) == 2
     assert {str(uuid1), str(uuid2)} == {str(piece.id) for piece in uuid_results}
 
-    str_results = duckdb_instance.get_prompt_request_pieces(prompt_ids=[str(uuid1), str(uuid2)])
+    str_results = sqlite_instance.get_prompt_request_pieces(prompt_ids=[str(uuid1), str(uuid2)])
     assert len(str_results) == 2
     assert {str(uuid1), str(uuid2)} == {str(piece.id) for piece in str_results}
 
     mixed_types: Sequence[str | uuid.UUID] = [uuid1, str(uuid2)]
-    mixed_results = duckdb_instance.get_prompt_request_pieces(prompt_ids=mixed_types)
+    mixed_results = sqlite_instance.get_prompt_request_pieces(prompt_ids=mixed_types)
     assert len(mixed_results) == 2
     assert {str(uuid1), str(uuid2)} == {str(piece.id) for piece in mixed_results}
 
-    single_uuid_result = duckdb_instance.get_prompt_request_pieces(prompt_ids=[uuid3])
+    single_uuid_result = sqlite_instance.get_prompt_request_pieces(prompt_ids=[uuid3])
     assert len(single_uuid_result) == 1
     assert str(single_uuid_result[0].id) == str(uuid3)
 
-    single_str_result = duckdb_instance.get_prompt_request_pieces(prompt_ids=[str(uuid3)])
+    single_str_result = sqlite_instance.get_prompt_request_pieces(prompt_ids=[str(uuid3)])
     assert len(single_str_result) == 1
     assert str(single_str_result[0].id) == str(uuid3)
 
 
-def test_duplicate_memory(duckdb_instance: MemoryInterface):
+def test_duplicate_memory(sqlite_instance: MemoryInterface):
     orchestrator1 = Orchestrator()
     orchestrator2 = Orchestrator()
     conversation_id_1 = "11111"
@@ -173,18 +173,18 @@ def test_duplicate_memory(duckdb_instance: MemoryInterface):
             orchestrator_identifier=orchestrator1.get_identifier(),
         ),
     ]
-    duckdb_instance.add_request_pieces_to_memory(request_pieces=pieces)
-    assert len(duckdb_instance.get_prompt_request_pieces()) == 5
+    sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
+    assert len(sqlite_instance.get_prompt_request_pieces()) == 5
     orchestrator3 = Orchestrator()
-    new_conversation_id1 = duckdb_instance.duplicate_conversation(
+    new_conversation_id1 = sqlite_instance.duplicate_conversation(
         new_orchestrator_id=orchestrator3.get_identifier()["id"],
         conversation_id=conversation_id_1,
     )
-    new_conversation_id2 = duckdb_instance.duplicate_conversation(
+    new_conversation_id2 = sqlite_instance.duplicate_conversation(
         new_orchestrator_id=orchestrator3.get_identifier()["id"],
         conversation_id=conversation_id_2,
     )
-    all_pieces = duckdb_instance.get_prompt_request_pieces()
+    all_pieces = sqlite_instance.get_prompt_request_pieces()
     assert len(all_pieces) == 9
     assert len([p for p in all_pieces if p.orchestrator_identifier["id"] == orchestrator1.get_identifier()["id"]]) == 4
     assert len([p for p in all_pieces if p.orchestrator_identifier["id"] == orchestrator2.get_identifier()["id"]]) == 1
@@ -197,7 +197,7 @@ def test_duplicate_memory(duckdb_instance: MemoryInterface):
 
 
 # Ensure that the score entries are not duplicated when a conversation is duplicated
-def test_duplicate_conversation_pieces_not_score(duckdb_instance: MemoryInterface):
+def test_duplicate_conversation_pieces_not_score(sqlite_instance: MemoryInterface):
     conversation_id = str(uuid4())
     prompt_id_1 = uuid4()
     prompt_id_2 = uuid4()
@@ -250,14 +250,14 @@ def test_duplicate_conversation_pieces_not_score(duckdb_instance: MemoryInterfac
             prompt_request_response_id=prompt_id_2,
         ),
     ]
-    duckdb_instance.add_request_pieces_to_memory(request_pieces=pieces)
-    duckdb_instance.add_scores_to_memory(scores=scores)
+    sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
+    sqlite_instance.add_scores_to_memory(scores=scores)
     orchestrator2 = Orchestrator()
-    new_conversation_id = duckdb_instance.duplicate_conversation(
+    new_conversation_id = sqlite_instance.duplicate_conversation(
         new_orchestrator_id=orchestrator2.get_identifier()["id"],
         conversation_id=conversation_id,
     )
-    new_pieces = duckdb_instance.get_prompt_request_pieces(conversation_id=new_conversation_id)
+    new_pieces = sqlite_instance.get_prompt_request_pieces(conversation_id=new_conversation_id)
     new_pieces_ids = [str(p.id) for p in new_pieces]
     assert len(new_pieces) == 2
     original_ids = {piece.original_prompt_id for piece in new_pieces}
@@ -265,13 +265,13 @@ def test_duplicate_conversation_pieces_not_score(duckdb_instance: MemoryInterfac
 
     for piece in new_pieces:
         assert piece.id not in (prompt_id_1, prompt_id_2)
-    assert len(duckdb_instance.get_scores_by_memory_labels(memory_labels=memory_labels)) == 2
-    assert len(duckdb_instance.get_scores_by_orchestrator_id(orchestrator_id=orchestrator1.get_identifier()["id"])) == 2
-    assert len(duckdb_instance.get_scores_by_orchestrator_id(orchestrator_id=orchestrator2.get_identifier()["id"])) == 2
+    assert len(sqlite_instance.get_scores_by_memory_labels(memory_labels=memory_labels)) == 2
+    assert len(sqlite_instance.get_scores_by_orchestrator_id(orchestrator_id=orchestrator1.get_identifier()["id"])) == 2
+    assert len(sqlite_instance.get_scores_by_orchestrator_id(orchestrator_id=orchestrator2.get_identifier()["id"])) == 2
     # The duplicate prompts ids should not have scores so only two scores are returned
     assert (
         len(
-            duckdb_instance.get_scores_by_prompt_ids(
+            sqlite_instance.get_scores_by_prompt_ids(
                 prompt_request_response_ids=[str(prompt_id_1), str(prompt_id_2)] + new_pieces_ids
             )
         )
@@ -279,7 +279,7 @@ def test_duplicate_conversation_pieces_not_score(duckdb_instance: MemoryInterfac
     )
 
 
-def test_duplicate_conversation_excluding_last_turn(duckdb_instance: MemoryInterface):
+def test_duplicate_conversation_excluding_last_turn(sqlite_instance: MemoryInterface):
     orchestrator1 = Orchestrator()
     orchestrator2 = Orchestrator()
     conversation_id_1 = "11111"
@@ -324,26 +324,26 @@ def test_duplicate_conversation_excluding_last_turn(duckdb_instance: MemoryInter
             orchestrator_identifier=orchestrator1.get_identifier(),
         ),
     ]
-    duckdb_instance.add_request_pieces_to_memory(request_pieces=pieces)
-    assert len(duckdb_instance.get_prompt_request_pieces()) == 5
+    sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
+    assert len(sqlite_instance.get_prompt_request_pieces()) == 5
     orchestrator3 = Orchestrator()
 
-    new_conversation_id1 = duckdb_instance.duplicate_conversation_excluding_last_turn(
+    new_conversation_id1 = sqlite_instance.duplicate_conversation_excluding_last_turn(
         new_orchestrator_id=orchestrator3.get_identifier()["id"],
         conversation_id=conversation_id_1,
     )
 
-    all_memory = duckdb_instance.get_prompt_request_pieces()
+    all_memory = sqlite_instance.get_prompt_request_pieces()
     assert len(all_memory) == 7
 
-    duplicate_conversation = duckdb_instance.get_prompt_request_pieces(conversation_id=new_conversation_id1)
+    duplicate_conversation = sqlite_instance.get_prompt_request_pieces(conversation_id=new_conversation_id1)
     assert len(duplicate_conversation) == 2
 
     for piece in duplicate_conversation:
         assert piece.sequence < 2
 
 
-def test_duplicate_conversation_excluding_last_turn_not_score(duckdb_instance: MemoryInterface):
+def test_duplicate_conversation_excluding_last_turn_not_score(sqlite_instance: MemoryInterface):
     conversation_id = str(uuid4())
     prompt_id_1 = uuid4()
     prompt_id_2 = uuid4()
@@ -414,28 +414,28 @@ def test_duplicate_conversation_excluding_last_turn_not_score(duckdb_instance: M
             prompt_request_response_id=prompt_id_2,
         ),
     ]
-    duckdb_instance.add_request_pieces_to_memory(request_pieces=pieces)
-    duckdb_instance.add_scores_to_memory(scores=scores)
+    sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
+    sqlite_instance.add_scores_to_memory(scores=scores)
     orchestrator2 = Orchestrator()
 
-    new_conversation_id = duckdb_instance.duplicate_conversation_excluding_last_turn(
+    new_conversation_id = sqlite_instance.duplicate_conversation_excluding_last_turn(
         new_orchestrator_id=orchestrator2.get_identifier()["id"],
         conversation_id=conversation_id,
     )
-    new_pieces = duckdb_instance.get_prompt_request_pieces(conversation_id=new_conversation_id)
+    new_pieces = sqlite_instance.get_prompt_request_pieces(conversation_id=new_conversation_id)
     new_pieces_ids = [str(p.id) for p in new_pieces]
     assert len(new_pieces) == 2
     assert new_pieces[0].original_prompt_id == prompt_id_1
     assert new_pieces[1].original_prompt_id == prompt_id_2
     assert new_pieces[0].id != prompt_id_1
     assert new_pieces[1].id != prompt_id_2
-    assert len(duckdb_instance.get_scores_by_memory_labels(memory_labels=memory_labels)) == 2
-    assert len(duckdb_instance.get_scores_by_orchestrator_id(orchestrator_id=orchestrator1.get_identifier()["id"])) == 2
-    assert len(duckdb_instance.get_scores_by_orchestrator_id(orchestrator_id=orchestrator2.get_identifier()["id"])) == 2
+    assert len(sqlite_instance.get_scores_by_memory_labels(memory_labels=memory_labels)) == 2
+    assert len(sqlite_instance.get_scores_by_orchestrator_id(orchestrator_id=orchestrator1.get_identifier()["id"])) == 2
+    assert len(sqlite_instance.get_scores_by_orchestrator_id(orchestrator_id=orchestrator2.get_identifier()["id"])) == 2
     # The duplicate prompts ids should not have scores so only two scores are returned
     assert (
         len(
-            duckdb_instance.get_scores_by_prompt_ids(
+            sqlite_instance.get_scores_by_prompt_ids(
                 prompt_request_response_ids=[str(prompt_id_1), str(prompt_id_2)] + new_pieces_ids
             )
         )
@@ -443,7 +443,7 @@ def test_duplicate_conversation_excluding_last_turn_not_score(duckdb_instance: M
     )
 
 
-def test_duplicate_conversation_excluding_last_turn_same_orchestrator(duckdb_instance: MemoryInterface):
+def test_duplicate_conversation_excluding_last_turn_same_orchestrator(sqlite_instance: MemoryInterface):
     orchestrator1 = Orchestrator()
     conversation_id_1 = "11111"
     pieces = [
@@ -476,24 +476,24 @@ def test_duplicate_conversation_excluding_last_turn_same_orchestrator(duckdb_ins
             orchestrator_identifier=orchestrator1.get_identifier(),
         ),
     ]
-    duckdb_instance.add_request_pieces_to_memory(request_pieces=pieces)
-    assert len(duckdb_instance.get_prompt_request_pieces()) == 4
+    sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
+    assert len(sqlite_instance.get_prompt_request_pieces()) == 4
 
-    new_conversation_id1 = duckdb_instance.duplicate_conversation_excluding_last_turn(
+    new_conversation_id1 = sqlite_instance.duplicate_conversation_excluding_last_turn(
         conversation_id=conversation_id_1,
     )
 
-    all_memory = duckdb_instance.get_prompt_request_pieces()
+    all_memory = sqlite_instance.get_prompt_request_pieces()
     assert len(all_memory) == 6
 
-    duplicate_conversation = duckdb_instance.get_prompt_request_pieces(conversation_id=new_conversation_id1)
+    duplicate_conversation = sqlite_instance.get_prompt_request_pieces(conversation_id=new_conversation_id1)
     assert len(duplicate_conversation) == 2
 
     for piece in duplicate_conversation:
         assert piece.sequence < 2
 
 
-def test_duplicate_memory_orchestrator_id_collision(duckdb_instance: MemoryInterface):
+def test_duplicate_memory_orchestrator_id_collision(sqlite_instance: MemoryInterface):
     orchestrator1 = Orchestrator()
     conversation_id = "11111"
     pieces = [
@@ -506,36 +506,36 @@ def test_duplicate_memory_orchestrator_id_collision(duckdb_instance: MemoryInter
             orchestrator_identifier=orchestrator1.get_identifier(),
         ),
     ]
-    duckdb_instance.add_request_pieces_to_memory(request_pieces=pieces)
-    assert len(duckdb_instance.get_prompt_request_pieces()) == 1
+    sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
+    assert len(sqlite_instance.get_prompt_request_pieces()) == 1
     with pytest.raises(ValueError):
-        duckdb_instance.duplicate_conversation(
+        sqlite_instance.duplicate_conversation(
             new_orchestrator_id=str(orchestrator1.get_identifier()["id"]),
             conversation_id=conversation_id,
         )
 
 
-def test_add_request_pieces_to_memory_calls_validate(duckdb_instance: MemoryInterface):
+def test_add_request_pieces_to_memory_calls_validate(sqlite_instance: MemoryInterface):
     request_response = MagicMock(PromptRequestResponse)
     request_response.request_pieces = [MagicMock(PromptRequestPiece)]
     with (
-        patch("pyrit.memory.duckdb_memory.DuckDBMemory.add_request_pieces_to_memory"),
+        patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_request_pieces_to_memory"),
         patch("pyrit.memory.memory_interface.MemoryInterface._update_sequence"),
     ):
-        duckdb_instance.add_request_response_to_memory(request=request_response)
+        sqlite_instance.add_request_response_to_memory(request=request_response)
     assert request_response.validate.called
 
 
 def test_add_request_pieces_to_memory_updates_sequence(
-    duckdb_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
+    sqlite_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
 ):
     for conversation in sample_conversations:
         conversation.conversation_id = sample_conversations[0].conversation_id
         conversation.role = sample_conversations[0].role
         conversation.sequence = 17
 
-    with patch("pyrit.memory.duckdb_memory.DuckDBMemory.add_request_pieces_to_memory") as mock_add:
-        duckdb_instance.add_request_response_to_memory(
+    with patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_request_pieces_to_memory") as mock_add:
+        sqlite_instance.add_request_response_to_memory(
             request=PromptRequestResponse(request_pieces=sample_conversations)
         )
         assert mock_add.called
@@ -547,7 +547,7 @@ def test_add_request_pieces_to_memory_updates_sequence(
 
 
 def test_add_request_pieces_to_memory_updates_sequence_with_prev_conversation(
-    duckdb_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
+    sqlite_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
 ):
 
     for conversation in sample_conversations:
@@ -556,10 +556,10 @@ def test_add_request_pieces_to_memory_updates_sequence_with_prev_conversation(
         conversation.sequence = 17
 
     # insert one of these into memory
-    duckdb_instance.add_request_response_to_memory(request=PromptRequestResponse(request_pieces=sample_conversations))
+    sqlite_instance.add_request_response_to_memory(request=PromptRequestResponse(request_pieces=sample_conversations))
 
-    with patch("pyrit.memory.duckdb_memory.DuckDBMemory.add_request_pieces_to_memory") as mock_add:
-        duckdb_instance.add_request_response_to_memory(
+    with patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_request_pieces_to_memory") as mock_add:
+        sqlite_instance.add_request_response_to_memory(
             request=PromptRequestResponse(request_pieces=sample_conversations)
         )
         assert mock_add.called
@@ -571,49 +571,49 @@ def test_add_request_pieces_to_memory_updates_sequence_with_prev_conversation(
 
 
 def test_insert_prompt_memories_inserts_embedding(
-    duckdb_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
+    sqlite_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
 ):
 
     request = PromptRequestResponse(request_pieces=[sample_conversations[0]])
 
     embedding_mock = MagicMock()
     embedding_mock.generate_text_embedding.returns = [0, 1, 2]
-    duckdb_instance.enable_embedding(embedding_model=embedding_mock)
+    sqlite_instance.enable_embedding(embedding_model=embedding_mock)
 
     with (
-        patch("pyrit.memory.duckdb_memory.DuckDBMemory.add_request_pieces_to_memory"),
-        patch("pyrit.memory.duckdb_memory.DuckDBMemory._add_embeddings_to_memory") as mock_embedding,
+        patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_request_pieces_to_memory"),
+        patch("pyrit.memory.sqlite_memory.SQLiteMemory._add_embeddings_to_memory") as mock_embedding,
     ):
 
-        duckdb_instance.add_request_response_to_memory(request=request)
+        sqlite_instance.add_request_response_to_memory(request=request)
 
         assert mock_embedding.called
         assert embedding_mock.generate_text_embedding.called
 
 
 def test_insert_prompt_memories_not_inserts_embedding(
-    duckdb_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
+    sqlite_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
 ):
 
     request = PromptRequestResponse(request_pieces=[sample_conversations[0]])
 
     embedding_mock = MagicMock()
     embedding_mock.generate_text_embedding.returns = [0, 1, 2]
-    duckdb_instance.enable_embedding(embedding_model=embedding_mock)
-    duckdb_instance.disable_embedding()
+    sqlite_instance.enable_embedding(embedding_model=embedding_mock)
+    sqlite_instance.disable_embedding()
 
     with (
-        patch("pyrit.memory.duckdb_memory.DuckDBMemory.add_request_pieces_to_memory"),
-        patch("pyrit.memory.duckdb_memory.DuckDBMemory._add_embeddings_to_memory") as mock_embedding,
+        patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_request_pieces_to_memory"),
+        patch("pyrit.memory.sqlite_memory.SQLiteMemory._add_embeddings_to_memory") as mock_embedding,
     ):
 
-        duckdb_instance.add_request_response_to_memory(request=request)
+        sqlite_instance.add_request_response_to_memory(request=request)
 
         assert mock_embedding.assert_not_called
 
 
 def test_export_conversation_by_orchestrator_id_file_created(
-    duckdb_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
+    sqlite_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
 ):
     orchestrator1_id = sample_conversations[0].orchestrator_identifier["id"]
 
@@ -621,25 +621,25 @@ def test_export_conversation_by_orchestrator_id_file_created(
     file_name = f"{orchestrator1_id}.json"
     file_path = Path(DB_DATA_PATH, file_name)
 
-    duckdb_instance.exporter = MemoryExporter()
+    sqlite_instance.exporter = MemoryExporter()
 
-    with patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_prompt_request_pieces") as mock_get:
+    with patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_prompt_request_pieces") as mock_get:
         mock_get.return_value = sample_conversations
-        duckdb_instance.export_conversations(orchestrator_id=orchestrator1_id, file_path=file_path)
+        sqlite_instance.export_conversations(orchestrator_id=orchestrator1_id, file_path=file_path)
 
         # Verify file was created
         assert file_path.exists()
 
 
 def test_get_scores_by_orchestrator_id(
-    duckdb_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
+    sqlite_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
 ):
     # create list of scores that are associated with sample conversation entries
     # assert that that list of scores is the same as expected :-)
 
     prompt_id = sample_conversations[0].id
 
-    duckdb_instance.add_request_pieces_to_memory(request_pieces=sample_conversations)
+    sqlite_instance.add_request_pieces_to_memory(request_pieces=sample_conversations)
 
     score = Score(
         score_value=str(0.8),
@@ -652,10 +652,10 @@ def test_get_scores_by_orchestrator_id(
         prompt_request_response_id=prompt_id,
     )
 
-    duckdb_instance.add_scores_to_memory(scores=[score])
+    sqlite_instance.add_scores_to_memory(scores=[score])
 
     # Fetch the score we just added
-    db_score = duckdb_instance.get_scores_by_orchestrator_id(
+    db_score = sqlite_instance.get_scores_by_orchestrator_id(
         orchestrator_id=sample_conversations[0].orchestrator_identifier["id"]
     )
 
@@ -672,13 +672,13 @@ def test_get_scores_by_orchestrator_id(
 
 @pytest.mark.parametrize("score_type", ["float_scale", "true_false"])
 def test_add_score_get_score(
-    duckdb_instance: MemoryInterface,
+    sqlite_instance: MemoryInterface,
     sample_conversation_entries: Sequence[PromptMemoryEntry],
     score_type: Literal["float_scale"] | Literal["true_false"],
 ):
     prompt_id = sample_conversation_entries[0].id
 
-    duckdb_instance._insert_entries(entries=sample_conversation_entries)
+    sqlite_instance._insert_entries(entries=sample_conversation_entries)
 
     score_value = str(True) if score_type == "true_false" else "0.8"
 
@@ -693,10 +693,10 @@ def test_add_score_get_score(
         prompt_request_response_id=prompt_id,
     )
 
-    duckdb_instance.add_scores_to_memory(scores=[score])
+    sqlite_instance.add_scores_to_memory(scores=[score])
 
     # Fetch the score we just added
-    db_score = duckdb_instance.get_scores_by_prompt_ids(prompt_request_response_ids=[prompt_id])
+    db_score = sqlite_instance.get_scores_by_prompt_ids(prompt_request_response_ids=[prompt_id])
     assert db_score
     assert len(db_score) == 1
     assert db_score[0].score_value == score_value
@@ -709,7 +709,7 @@ def test_add_score_get_score(
     assert db_score[0].prompt_request_response_id == prompt_id
 
 
-def test_add_score_duplicate_prompt(duckdb_instance: MemoryInterface):
+def test_add_score_duplicate_prompt(sqlite_instance: MemoryInterface):
     # Ensure that scores of duplicate prompts are linked back to the original
     original_id = uuid4()
     orchestrator = Orchestrator()
@@ -726,9 +726,9 @@ def test_add_score_duplicate_prompt(duckdb_instance: MemoryInterface):
         )
     ]
     new_orchestrator_id = str(uuid4())
-    duckdb_instance.add_request_pieces_to_memory(request_pieces=pieces)
-    duckdb_instance.duplicate_conversation(new_orchestrator_id=new_orchestrator_id, conversation_id=conversation_id)
-    dupe_piece = duckdb_instance.get_prompt_request_pieces(orchestrator_id=new_orchestrator_id)[0]
+    sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
+    sqlite_instance.duplicate_conversation(new_orchestrator_id=new_orchestrator_id, conversation_id=conversation_id)
+    dupe_piece = sqlite_instance.get_prompt_request_pieces(orchestrator_id=new_orchestrator_id)[0]
     dupe_id = dupe_piece.id
 
     score_id = uuid4()
@@ -744,14 +744,14 @@ def test_add_score_duplicate_prompt(duckdb_instance: MemoryInterface):
         scorer_class_identifier={"__type__": "TestScorer"},
         prompt_request_response_id=dupe_id,
     )
-    duckdb_instance.add_scores_to_memory(scores=[score])
+    sqlite_instance.add_scores_to_memory(scores=[score])
 
     assert score.prompt_request_response_id == original_id
-    assert duckdb_instance.get_scores_by_prompt_ids(prompt_request_response_ids=[str(dupe_id)])[0].id == score_id
-    assert duckdb_instance.get_scores_by_prompt_ids(prompt_request_response_ids=[str(original_id)])[0].id == score_id
+    assert sqlite_instance.get_scores_by_prompt_ids(prompt_request_response_ids=[str(dupe_id)])[0].id == score_id
+    assert sqlite_instance.get_scores_by_prompt_ids(prompt_request_response_ids=[str(original_id)])[0].id == score_id
 
 
-def test_get_scores_by_memory_labels(duckdb_instance: MemoryInterface):
+def test_get_scores_by_memory_labels(sqlite_instance: MemoryInterface):
     prompt_id = uuid4()
     pieces = [
         PromptRequestPiece(
@@ -763,7 +763,7 @@ def test_get_scores_by_memory_labels(duckdb_instance: MemoryInterface):
             labels={"sample": "label"},
         )
     ]
-    duckdb_instance.add_request_pieces_to_memory(request_pieces=pieces)
+    sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
 
     score = Score(
         score_value=str(0.8),
@@ -775,10 +775,10 @@ def test_get_scores_by_memory_labels(duckdb_instance: MemoryInterface):
         scorer_class_identifier={"__type__": "TestScorer"},
         prompt_request_response_id=prompt_id,
     )
-    duckdb_instance.add_scores_to_memory(scores=[score])
+    sqlite_instance.add_scores_to_memory(scores=[score])
 
     # Fetch the score we just added
-    db_score = duckdb_instance.get_scores_by_memory_labels(memory_labels={"sample": "label"})
+    db_score = sqlite_instance.get_scores_by_memory_labels(memory_labels={"sample": "label"})
 
     assert len(db_score) == 1
     assert db_score[0].score_value == score.score_value
@@ -792,21 +792,21 @@ def test_get_scores_by_memory_labels(duckdb_instance: MemoryInterface):
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompts_no_filters(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompts_no_filters(sqlite_instance: MemoryInterface):
     seed_prompts = [
         SeedPrompt(value="prompt1", dataset_name="dataset1", data_type="text"),
         SeedPrompt(value="prompt2", dataset_name="dataset2", data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
-    result = duckdb_instance.get_seed_prompts()
+    result = sqlite_instance.get_seed_prompts()
     assert len(result) == 2
     assert result[0].value == "prompt1"
     assert result[1].value == "prompt2"
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompts_with_audio(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompts_with_audio(sqlite_instance: MemoryInterface):
     """Test adding and retrieving seed prompts with an audio file."""
     temp_files = []
     try:
@@ -820,10 +820,10 @@ async def test_get_seed_prompts_with_audio(duckdb_instance: MemoryInterface):
         audio_prompt = SeedPrompt(value=audio_file.name, dataset_name="dataset_audio", data_type="audio_path")
 
         # Add seed prompt to memory
-        await duckdb_instance.add_seed_prompts_to_memory_async(prompts=[audio_prompt], added_by="test_audio")
+        await sqlite_instance.add_seed_prompts_to_memory_async(prompts=[audio_prompt], added_by="test_audio")
 
         # Retrieve and verify the seed prompts
-        result = duckdb_instance.get_seed_prompts()
+        result = sqlite_instance.get_seed_prompts()
         assert len(result) == 1
         assert result[0].value.endswith(".wav")
         assert result[0].data_type == "audio_path"
@@ -835,7 +835,7 @@ async def test_get_seed_prompts_with_audio(duckdb_instance: MemoryInterface):
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompts_with_video(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompts_with_video(sqlite_instance: MemoryInterface):
     """Test adding and retrieving seed prompts with a video file."""
     temp_files = []
     try:
@@ -849,10 +849,10 @@ async def test_get_seed_prompts_with_video(duckdb_instance: MemoryInterface):
         video_prompt = SeedPrompt(value=video_file.name, dataset_name="dataset_video", data_type="video_path")
 
         # Add seed prompt to memory
-        await duckdb_instance.add_seed_prompts_to_memory_async(prompts=[video_prompt], added_by="test_video")
+        await sqlite_instance.add_seed_prompts_to_memory_async(prompts=[video_prompt], added_by="test_video")
 
         # Retrieve and verify the seed prompts
-        result = duckdb_instance.get_seed_prompts()
+        result = sqlite_instance.get_seed_prompts()
         assert len(result) == 1
         assert result[0].value.endswith(".mp4")
         assert result[0].data_type == "video_path"
@@ -864,7 +864,7 @@ async def test_get_seed_prompts_with_video(duckdb_instance: MemoryInterface):
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompts_with_image(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompts_with_image(sqlite_instance: MemoryInterface):
     """Test adding and retrieving seed prompts with an image file."""
     temp_files = []
     try:
@@ -878,10 +878,10 @@ async def test_get_seed_prompts_with_image(duckdb_instance: MemoryInterface):
         image_prompt = SeedPrompt(value=image_file.name, dataset_name="dataset_image", data_type="image_path")
 
         # Add seed prompt to memory
-        await duckdb_instance.add_seed_prompts_to_memory_async(prompts=[image_prompt], added_by="test_image")
+        await sqlite_instance.add_seed_prompts_to_memory_async(prompts=[image_prompt], added_by="test_image")
 
         # Retrieve and verify the seed prompts
-        result = duckdb_instance.get_seed_prompts()
+        result = sqlite_instance.get_seed_prompts()
         assert len(result) == 1
         assert result[0].value.endswith(".png")
         assert result[0].data_type == "image_path"
@@ -893,164 +893,164 @@ async def test_get_seed_prompts_with_image(duckdb_instance: MemoryInterface):
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompts_with_value_filter(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompts_with_value_filter(sqlite_instance: MemoryInterface):
     seed_prompts = [
         SeedPrompt(value="prompt1", dataset_name="dataset1", data_type="text"),
         SeedPrompt(value="another prompt", dataset_name="dataset2", data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
-    result = duckdb_instance.get_seed_prompts(value="prompt1")
+    result = sqlite_instance.get_seed_prompts(value="prompt1")
     assert len(result) == 1
     assert result[0].value == "prompt1"
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompts_with_dataset_name_filter(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompts_with_dataset_name_filter(sqlite_instance: MemoryInterface):
     seed_prompts = [
         SeedPrompt(value="prompt1", dataset_name="dataset1", data_type="text"),
         SeedPrompt(value="prompt2", dataset_name="dataset2", data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
-    result = duckdb_instance.get_seed_prompts(dataset_name="dataset1")
+    result = sqlite_instance.get_seed_prompts(dataset_name="dataset1")
     assert len(result) == 1
     assert result[0].dataset_name == "dataset1"
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompts_with_added_by_filter(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompts_with_added_by_filter(sqlite_instance: MemoryInterface):
     seed_prompts = [
         SeedPrompt(value="prompt1", dataset_name="dataset1", added_by="user1", data_type="text"),
         SeedPrompt(value="prompt2", dataset_name="dataset2", added_by="user2", data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts)
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts)
 
-    result = duckdb_instance.get_seed_prompts(added_by="user1")
+    result = sqlite_instance.get_seed_prompts(added_by="user1")
     assert len(result) == 1
     assert result[0].added_by == "user1"
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompts_with_source_filter(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompts_with_source_filter(sqlite_instance: MemoryInterface):
     seed_prompts = [
         SeedPrompt(value="prompt1", dataset_name="dataset1", source="source1", data_type="text"),
         SeedPrompt(value="prompt2", dataset_name="dataset2", source="source2", data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
-    result = duckdb_instance.get_seed_prompts(source="source1")
+    result = sqlite_instance.get_seed_prompts(source="source1")
     assert len(result) == 1
     assert result[0].source == "source1"
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompts_with_harm_categories_filter(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompts_with_harm_categories_filter(sqlite_instance: MemoryInterface):
     seed_prompts = [
         SeedPrompt(value="prompt1", harm_categories=["category1"], data_type="text"),
         SeedPrompt(value="prompt2", harm_categories=["category2"], data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
-    result = duckdb_instance.get_seed_prompts(harm_categories=["category1"])
+    result = sqlite_instance.get_seed_prompts(harm_categories=["category1"])
     assert len(result) == 1
     assert result[0].harm_categories == ["category1"]
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompts_with_authors_filter(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompts_with_authors_filter(sqlite_instance: MemoryInterface):
     seed_prompts = [
         SeedPrompt(value="prompt1", authors=["author1"], data_type="text"),
         SeedPrompt(value="prompt2", authors=["author2"], data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
-    result = duckdb_instance.get_seed_prompts(authors=["author1"])
+    result = sqlite_instance.get_seed_prompts(authors=["author1"])
     assert len(result) == 1
     assert result[0].authors == ["author1"]
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompts_with_groups_filter(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompts_with_groups_filter(sqlite_instance: MemoryInterface):
     seed_prompts = [
         SeedPrompt(value="prompt1", groups=["group1"], data_type="text"),
         SeedPrompt(value="prompt2", groups=["group2"], data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
-    result = duckdb_instance.get_seed_prompts(groups=["group1"])
+    result = sqlite_instance.get_seed_prompts(groups=["group1"])
     assert len(result) == 1
     assert result[0].groups == ["group1"]
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompts_with_parameters_filter(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompts_with_parameters_filter(sqlite_instance: MemoryInterface):
     seed_prompts = [
         SeedPrompt(value="prompt1", parameters=["param1"], data_type="text"),
         SeedPrompt(value="prompt2", parameters=["param2"], data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
-    result = duckdb_instance.get_seed_prompts(parameters=["param1"])
+    result = sqlite_instance.get_seed_prompts(parameters=["param1"])
     assert len(result) == 1
     assert result[0].parameters == ["param1"]
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompts_with_metadata_filter(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompts_with_metadata_filter(sqlite_instance: MemoryInterface):
     seed_prompts = [
         SeedPrompt(value="prompt1", data_type="text", metadata={"key1": "value1", "key2": "value2"}),
         SeedPrompt(value="prompt2", data_type="text", metadata={"key1": "value2"}),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
-    result = duckdb_instance.get_seed_prompts(metadata={"key1": "value1"})
+    result = sqlite_instance.get_seed_prompts(metadata={"key1": "value1"})
     assert len(result) == 1
     assert result[0].metadata == {"key1": "value1", "key2": "value2"}
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompts_with_multiple_filters(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompts_with_multiple_filters(sqlite_instance: MemoryInterface):
     seed_prompts = [
         SeedPrompt(value="prompt1", dataset_name="dataset1", added_by="user1", data_type="text"),
         SeedPrompt(value="prompt2", dataset_name="dataset2", added_by="user2", data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts)
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts)
 
-    result = duckdb_instance.get_seed_prompts(dataset_name="dataset1", added_by="user1")
+    result = sqlite_instance.get_seed_prompts(dataset_name="dataset1", added_by="user1")
     assert len(result) == 1
     assert result[0].dataset_name == "dataset1"
     assert result[0].added_by == "user1"
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompts_with_empty_list_filters(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompts_with_empty_list_filters(sqlite_instance: MemoryInterface):
     seed_prompts = [
         SeedPrompt(value="prompt1", harm_categories=["harm1"], authors=["author1"], data_type="text"),
         SeedPrompt(value="prompt2", harm_categories=["harm2"], authors=["author2"], data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
-    result = duckdb_instance.get_seed_prompts(harm_categories=[], authors=[])
+    result = sqlite_instance.get_seed_prompts(harm_categories=[], authors=[])
     assert len(result) == 2
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompts_with_single_element_list_filters(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompts_with_single_element_list_filters(sqlite_instance: MemoryInterface):
     seed_prompts = [
         SeedPrompt(value="prompt1", harm_categories=["category1"], authors=["author1"], data_type="text"),
         SeedPrompt(value="prompt2", harm_categories=["category2"], authors=["author2"], data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
-    result = duckdb_instance.get_seed_prompts(harm_categories=["category1"], authors=["author1"])
+    result = sqlite_instance.get_seed_prompts(harm_categories=["category1"], authors=["author1"])
     assert len(result) == 1
     assert result[0].harm_categories == ["category1"]
     assert result[0].authors == ["author1"]
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompts_with_multiple_elements_list_filters(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompts_with_multiple_elements_list_filters(sqlite_instance: MemoryInterface):
     seed_prompts = [
         SeedPrompt(
             value="prompt1",
@@ -1060,9 +1060,9 @@ async def test_get_seed_prompts_with_multiple_elements_list_filters(duckdb_insta
         ),
         SeedPrompt(value="prompt2", harm_categories=["category3"], authors=["author3"], data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
-    result = duckdb_instance.get_seed_prompts(
+    result = sqlite_instance.get_seed_prompts(
         harm_categories=["category1", "category2"], authors=["author1", "author2"]
     )
     assert len(result) == 1
@@ -1071,7 +1071,7 @@ async def test_get_seed_prompts_with_multiple_elements_list_filters(duckdb_insta
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompts_with_multiple_elements_list_filters_additional(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompts_with_multiple_elements_list_filters_additional(sqlite_instance: MemoryInterface):
     seed_prompts = [
         SeedPrompt(
             value="prompt1",
@@ -1087,9 +1087,9 @@ async def test_get_seed_prompts_with_multiple_elements_list_filters_additional(d
             data_type="text",
         ),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
-    result = duckdb_instance.get_seed_prompts(
+    result = sqlite_instance.get_seed_prompts(
         harm_categories=["category1", "category3"], authors=["author1", "author3"]
     )
     assert len(result) == 1
@@ -1098,75 +1098,75 @@ async def test_get_seed_prompts_with_multiple_elements_list_filters_additional(d
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompts_with_substring_filters_harm_categories(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompts_with_substring_filters_harm_categories(sqlite_instance: MemoryInterface):
     seed_prompts = [
         SeedPrompt(value="prompt1", harm_categories=["category1"], authors=["author1"], data_type="text"),
         SeedPrompt(value="prompt2", harm_categories=["category2"], authors=["author2"], data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
-    result = duckdb_instance.get_seed_prompts(harm_categories=["ory1"])
+    result = sqlite_instance.get_seed_prompts(harm_categories=["ory1"])
     assert len(result) == 1
     assert result[0].harm_categories == ["category1"]
 
-    result = duckdb_instance.get_seed_prompts(authors=["auth"])
+    result = sqlite_instance.get_seed_prompts(authors=["auth"])
     assert len(result) == 2
     assert result[0].authors == ["author1"]
     assert result[1].authors == ["author2"]
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompts_with_substring_filters_groups(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompts_with_substring_filters_groups(sqlite_instance: MemoryInterface):
     seed_prompts = [
         SeedPrompt(value="prompt1", groups=["group1"], data_type="text"),
         SeedPrompt(value="prompt2", groups=["group2"], data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
-    result = duckdb_instance.get_seed_prompts(groups=["oup1"])
+    result = sqlite_instance.get_seed_prompts(groups=["oup1"])
     assert len(result) == 1
     assert result[0].groups == ["group1"]
 
-    result = duckdb_instance.get_seed_prompts(groups=["oup"])
+    result = sqlite_instance.get_seed_prompts(groups=["oup"])
     assert len(result) == 2
     assert result[0].groups == ["group1"]
     assert result[1].groups == ["group2"]
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompts_with_substring_filters_parameters(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompts_with_substring_filters_parameters(sqlite_instance: MemoryInterface):
     seed_prompts = [
         SeedPrompt(value="prompt1", parameters=["param1"], data_type="text"),
         SeedPrompt(value="prompt2", parameters=["param2"], data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
-    result = duckdb_instance.get_seed_prompts(parameters=["ram1"])
+    result = sqlite_instance.get_seed_prompts(parameters=["ram1"])
     assert len(result) == 1
     assert result[0].parameters == ["param1"]
 
-    result = duckdb_instance.get_seed_prompts(parameters=["ram"])
+    result = sqlite_instance.get_seed_prompts(parameters=["ram"])
     assert len(result) == 2
     assert result[0].parameters == ["param1"]
     assert result[1].parameters == ["param2"]
 
 
 @pytest.mark.asyncio
-async def test_add_seed_prompts_to_memory_empty_list(duckdb_instance: MemoryInterface):
+async def test_add_seed_prompts_to_memory_empty_list(sqlite_instance: MemoryInterface):
     prompts: Sequence[SeedPrompt] = []
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=prompts, added_by="tester")
-    stored_prompts = duckdb_instance.get_seed_prompts(dataset_name="test_dataset")
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=prompts, added_by="tester")
+    stored_prompts = sqlite_instance.get_seed_prompts(dataset_name="test_dataset")
     assert len(stored_prompts) == 0
 
 
 @pytest.mark.asyncio
-async def test_add_seed_prompts_duplicate_entries_same_dataset(duckdb_instance: MemoryInterface):
+async def test_add_seed_prompts_duplicate_entries_same_dataset(sqlite_instance: MemoryInterface):
     prompts: Sequence[SeedPrompt] = [
         SeedPrompt(value="prompt1", dataset_name="test_dataset", data_type="text"),
         SeedPrompt(value="prompt2", dataset_name="test_dataset", data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=prompts, added_by="tester")
-    stored_prompts = duckdb_instance.get_seed_prompts(dataset_name="test_dataset")
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=prompts, added_by="tester")
+    stored_prompts = sqlite_instance.get_seed_prompts(dataset_name="test_dataset")
     assert len(stored_prompts) == 2
 
     # Try to add prompt list with one duplicate prompt and one new prompt
@@ -1174,21 +1174,21 @@ async def test_add_seed_prompts_duplicate_entries_same_dataset(duckdb_instance: 
         SeedPrompt(value="prompt1", dataset_name="test_dataset", data_type="text"),
         SeedPrompt(value="prompt3", dataset_name="test_dataset", data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=duplicate_prompts, added_by="tester")
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=duplicate_prompts, added_by="tester")
 
     # Validate that only new prompt is added and the total prompt count is 3
-    stored_prompts = duckdb_instance.get_seed_prompts(dataset_name="test_dataset")
+    stored_prompts = sqlite_instance.get_seed_prompts(dataset_name="test_dataset")
     assert len(stored_prompts) == 3
 
 
 @pytest.mark.asyncio
-async def test_add_seed_prompts_duplicate_entries_different_datasets(duckdb_instance: MemoryInterface):
+async def test_add_seed_prompts_duplicate_entries_different_datasets(sqlite_instance: MemoryInterface):
     prompts: Sequence[SeedPrompt] = [
         SeedPrompt(value="prompt1", dataset_name="test_dataset", data_type="text"),
         SeedPrompt(value="prompt2", dataset_name="test_dataset", data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=prompts, added_by="tester")
-    stored_prompts = duckdb_instance.get_seed_prompts(dataset_name="test_dataset")
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=prompts, added_by="tester")
+    stored_prompts = sqlite_instance.get_seed_prompts(dataset_name="test_dataset")
     assert len(stored_prompts) == 2
 
     # Try to add prompt list with one duplicate prompt and one new prompt
@@ -1196,100 +1196,100 @@ async def test_add_seed_prompts_duplicate_entries_different_datasets(duckdb_inst
         SeedPrompt(value="prompt1", dataset_name="test_dataset2", data_type="text"),
         SeedPrompt(value="prompt3", dataset_name="test_dataset2", data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=duplicate_prompts, added_by="tester")
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=duplicate_prompts, added_by="tester")
 
     # Validate that only new prompt is added and the total prompt count is 3
-    stored_prompts = duckdb_instance.get_seed_prompts()
+    stored_prompts = sqlite_instance.get_seed_prompts()
     assert len(stored_prompts) == 4
 
 
-def test_get_seed_prompt_dataset_names_empty(duckdb_instance: MemoryInterface):
-    assert duckdb_instance.get_seed_prompt_dataset_names() == []
+def test_get_seed_prompt_dataset_names_empty(sqlite_instance: MemoryInterface):
+    assert sqlite_instance.get_seed_prompt_dataset_names() == []
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompt_dataset_names_single(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompt_dataset_names_single(sqlite_instance: MemoryInterface):
     dataset_name = "test_dataset"
     seed_prompt = SeedPrompt(value="test_value", dataset_name=dataset_name, added_by="tester", data_type="text")
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=[seed_prompt])
-    assert duckdb_instance.get_seed_prompt_dataset_names() == [dataset_name]
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=[seed_prompt])
+    assert sqlite_instance.get_seed_prompt_dataset_names() == [dataset_name]
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompt_dataset_names_single_dataset_multiple_entries(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompt_dataset_names_single_dataset_multiple_entries(sqlite_instance: MemoryInterface):
     dataset_name = "test_dataset"
     seed_prompt1 = SeedPrompt(value="test_value", dataset_name=dataset_name, added_by="tester", data_type="text")
     seed_prompt2 = SeedPrompt(value="test_value", dataset_name=dataset_name, added_by="tester", data_type="text")
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=[seed_prompt1, seed_prompt2])
-    assert duckdb_instance.get_seed_prompt_dataset_names() == [dataset_name]
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=[seed_prompt1, seed_prompt2])
+    assert sqlite_instance.get_seed_prompt_dataset_names() == [dataset_name]
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompt_dataset_names_multiple(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompt_dataset_names_multiple(sqlite_instance: MemoryInterface):
     dataset_names = [f"dataset_{i}" for i in range(5)]
     seed_prompts = [
         SeedPrompt(value=f"value_{i}", dataset_name=dataset_name, added_by="tester", data_type="text")
         for i, dataset_name in enumerate(dataset_names)
     ]
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts)
-    assert len(duckdb_instance.get_seed_prompt_dataset_names()) == 5
-    assert sorted(duckdb_instance.get_seed_prompt_dataset_names()) == sorted(dataset_names)
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts)
+    assert len(sqlite_instance.get_seed_prompt_dataset_names()) == 5
+    assert sorted(sqlite_instance.get_seed_prompt_dataset_names()) == sorted(dataset_names)
 
 
 @pytest.mark.asyncio
-async def test_add_seed_prompt_groups_to_memory_empty_list(duckdb_instance: MemoryInterface):
+async def test_add_seed_prompt_groups_to_memory_empty_list(sqlite_instance: MemoryInterface):
     prompt_group = SeedPromptGroup(
         prompts=[SeedPrompt(value="Test prompt", added_by="tester", data_type="text", sequence=0)]
     )
     prompt_group.prompts = []
     with pytest.raises(ValueError, match="Prompt group must have at least one prompt."):
-        await duckdb_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
+        await sqlite_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
 
 
 @pytest.mark.asyncio
-async def test_add_seed_prompt_groups_to_memory_single_element(duckdb_instance: MemoryInterface):
+async def test_add_seed_prompt_groups_to_memory_single_element(sqlite_instance: MemoryInterface):
     prompt = SeedPrompt(value="Test prompt", added_by="tester", data_type="text", sequence=0)
     prompt_group = SeedPromptGroup(prompts=[prompt])
-    await duckdb_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group], added_by="tester")
-    assert len(duckdb_instance.get_seed_prompts()) == 1
+    await sqlite_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group], added_by="tester")
+    assert len(sqlite_instance.get_seed_prompts()) == 1
 
 
 @pytest.mark.asyncio
-async def test_add_seed_prompt_groups_to_memory_multiple_elements(duckdb_instance: MemoryInterface):
+async def test_add_seed_prompt_groups_to_memory_multiple_elements(sqlite_instance: MemoryInterface):
     prompt1 = SeedPrompt(value="Test prompt 1", added_by="tester", data_type="text", sequence=0)
     prompt2 = SeedPrompt(value="Test prompt 2", added_by="tester", data_type="text", sequence=1)
     prompt_group = SeedPromptGroup(prompts=[prompt1, prompt2])
-    await duckdb_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group], added_by="tester")
-    assert len(duckdb_instance.get_seed_prompts()) == 2
-    assert len(duckdb_instance.get_seed_prompt_groups()) == 1
+    await sqlite_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group], added_by="tester")
+    assert len(sqlite_instance.get_seed_prompts()) == 2
+    assert len(sqlite_instance.get_seed_prompt_groups()) == 1
 
 
 @pytest.mark.asyncio
-async def test_add_seed_prompt_groups_to_memory_no_elements(duckdb_instance: MemoryInterface):
+async def test_add_seed_prompt_groups_to_memory_no_elements(sqlite_instance: MemoryInterface):
     with pytest.raises(ValueError, match="SeedPromptGroup cannot be empty."):
         prompt_group = SeedPromptGroup(prompts=[])
-        await duckdb_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
+        await sqlite_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
 
 
 @pytest.mark.asyncio
-async def test_add_seed_prompt_groups_to_memory_single_element_no_added_by(duckdb_instance: MemoryInterface):
+async def test_add_seed_prompt_groups_to_memory_single_element_no_added_by(sqlite_instance: MemoryInterface):
     prompt = SeedPrompt(value="Test prompt", data_type="text", sequence=0)
     prompt_group = SeedPromptGroup(prompts=[prompt])
     with pytest.raises(ValueError, match="The 'added_by' attribute must be set for each prompt."):
-        await duckdb_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
+        await sqlite_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
 
 
 @pytest.mark.asyncio
-async def test_add_seed_prompt_groups_to_memory_multiple_elements_no_added_by(duckdb_instance: MemoryInterface):
+async def test_add_seed_prompt_groups_to_memory_multiple_elements_no_added_by(sqlite_instance: MemoryInterface):
     prompt1 = SeedPrompt(value="Test prompt 1", data_type="text", sequence=0)
     prompt2 = SeedPrompt(value="Test prompt 2", data_type="text", sequence=1)
     prompt_group = SeedPromptGroup(prompts=[prompt1, prompt2])
     with pytest.raises(ValueError, match="The 'added_by' attribute must be set for each prompt."):
-        await duckdb_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
+        await sqlite_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
 
 
 @pytest.mark.asyncio
-async def test_add_seed_prompt_groups_to_memory_inconsistent_group_ids(duckdb_instance: MemoryInterface):
+async def test_add_seed_prompt_groups_to_memory_inconsistent_group_ids(sqlite_instance: MemoryInterface):
     prompt1 = SeedPrompt(value="Test prompt 1", added_by="tester", data_type="text", sequence=0)
     prompt2 = SeedPrompt(value="Test prompt 2", added_by="tester", data_type="text", sequence=1)
 
@@ -1297,28 +1297,28 @@ async def test_add_seed_prompt_groups_to_memory_inconsistent_group_ids(duckdb_in
     prompt_group.prompts[0].prompt_group_id = uuid4()
 
     with pytest.raises(ValueError):
-        await duckdb_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
+        await sqlite_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
 
 
 @pytest.mark.asyncio
-async def test_add_seed_prompt_groups_to_memory_single_element_with_added_by(duckdb_instance: MemoryInterface):
+async def test_add_seed_prompt_groups_to_memory_single_element_with_added_by(sqlite_instance: MemoryInterface):
     prompt = SeedPrompt(value="Test prompt", added_by="tester", data_type="text", sequence=0)
     prompt_group = SeedPromptGroup(prompts=[prompt])
-    await duckdb_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
-    assert len(duckdb_instance.get_seed_prompts()) == 1
+    await sqlite_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
+    assert len(sqlite_instance.get_seed_prompts()) == 1
 
 
 @pytest.mark.asyncio
-async def test_add_seed_prompt_groups_to_memory_multiple_elements_with_added_by(duckdb_instance: MemoryInterface):
+async def test_add_seed_prompt_groups_to_memory_multiple_elements_with_added_by(sqlite_instance: MemoryInterface):
     prompt1 = SeedPrompt(value="Test prompt 1", added_by="tester", data_type="text", sequence=0)
     prompt2 = SeedPrompt(value="Test prompt 2", added_by="tester", data_type="text", sequence=1)
     prompt_group = SeedPromptGroup(prompts=[prompt1, prompt2])
-    await duckdb_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
-    assert len(duckdb_instance.get_seed_prompts()) == 2
+    await sqlite_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
+    assert len(sqlite_instance.get_seed_prompts()) == 2
 
 
 @pytest.mark.asyncio
-async def test_add_seed_prompt_groups_to_memory_multiple_groups_with_added_by(duckdb_instance: MemoryInterface):
+async def test_add_seed_prompt_groups_to_memory_multiple_groups_with_added_by(sqlite_instance: MemoryInterface):
     prompt1 = SeedPrompt(value="Test prompt 1", added_by="tester", data_type="text", sequence=0)
     prompt2 = SeedPrompt(value="Test prompt 2", added_by="tester", data_type="text", sequence=1)
     prompt3 = SeedPrompt(value="Test prompt 3", added_by="tester", data_type="text", sequence=0)
@@ -1327,9 +1327,9 @@ async def test_add_seed_prompt_groups_to_memory_multiple_groups_with_added_by(du
     prompt_group1 = SeedPromptGroup(prompts=[prompt1, prompt2])
     prompt_group2 = SeedPromptGroup(prompts=[prompt3, prompt4])
 
-    await duckdb_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group1, prompt_group2])
-    assert len(duckdb_instance.get_seed_prompts()) == 4
-    groups_from_memory = duckdb_instance.get_seed_prompt_groups()
+    await sqlite_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group1, prompt_group2])
+    assert len(sqlite_instance.get_seed_prompts()) == 4
+    groups_from_memory = sqlite_instance.get_seed_prompt_groups()
     assert len(groups_from_memory) == 2
     assert groups_from_memory[0].prompts[0].id != groups_from_memory[1].prompts[1].id
     assert groups_from_memory[0].prompts[0].prompt_group_id == groups_from_memory[0].prompts[1].prompt_group_id
@@ -1337,11 +1337,11 @@ async def test_add_seed_prompt_groups_to_memory_multiple_groups_with_added_by(du
 
 
 @pytest.mark.asyncio
-async def test_add_seed_prompt_groups_to_memory_with_all_modalities(duckdb_instance: MemoryInterface):
+async def test_add_seed_prompt_groups_to_memory_with_all_modalities(sqlite_instance: MemoryInterface):
     """Test adding multiple prompt groups with different modalities using temporary files."""
     temp_files = []
     temp_dir = tempfile.TemporaryDirectory()
-    duckdb_instance.results_path = temp_dir.name
+    sqlite_instance.results_path = temp_dir.name
     try:
         # Create a temporary image file
         image_file = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
@@ -1371,13 +1371,13 @@ async def test_add_seed_prompt_groups_to_memory_with_all_modalities(duckdb_insta
         seed_prompt_group1 = SeedPromptGroup(prompts=[prompt1, prompt2, prompt3, prompt4])
 
         # Add prompt groups to memory
-        await duckdb_instance.add_seed_prompt_groups_to_memory(prompt_groups=[seed_prompt_group1])
+        await sqlite_instance.add_seed_prompt_groups_to_memory(prompt_groups=[seed_prompt_group1])
 
         # Assert the total number of prompts in memory
-        assert len(duckdb_instance.get_seed_prompts(added_by="testmultimodal")) == 4
+        assert len(sqlite_instance.get_seed_prompts(added_by="testmultimodal")) == 4
 
         # Retrieve and verify prompt groups from memory
-        groups_from_memory = duckdb_instance.get_seed_prompt_groups(added_by="testmultimodal")
+        groups_from_memory = sqlite_instance.get_seed_prompt_groups(added_by="testmultimodal")
         assert len(groups_from_memory) == 1
 
         # Verify prompt group IDs are consistent within each group
@@ -1405,11 +1405,11 @@ async def test_add_seed_prompt_groups_to_memory_with_all_modalities(duckdb_insta
 
 
 @pytest.mark.asyncio
-async def test_add_seed_prompt_groups_to_memory_with_textimage_modalities(duckdb_instance: MemoryInterface):
+async def test_add_seed_prompt_groups_to_memory_with_textimage_modalities(sqlite_instance: MemoryInterface):
     """Test adding multiple prompt groups with text and image modalities using temporary files."""
     temp_files = []
     temp_dir = tempfile.TemporaryDirectory()
-    duckdb_instance.results_path = temp_dir.name
+    sqlite_instance.results_path = temp_dir.name
     try:
         # Create a temporary image file
         image_file = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
@@ -1427,13 +1427,13 @@ async def test_add_seed_prompt_groups_to_memory_with_textimage_modalities(duckdb
         seed_prompt_group1 = SeedPromptGroup(prompts=[prompt1, prompt2])
 
         # Add prompt groups to memory
-        await duckdb_instance.add_seed_prompt_groups_to_memory(prompt_groups=[seed_prompt_group1])
+        await sqlite_instance.add_seed_prompt_groups_to_memory(prompt_groups=[seed_prompt_group1])
 
         # Assert the total number of prompts in memory
-        assert len(duckdb_instance.get_seed_prompts(added_by="testtextimagemultimodal")) == 2
+        assert len(sqlite_instance.get_seed_prompts(added_by="testtextimagemultimodal")) == 2
 
         # Retrieve and verify prompt groups from memory
-        groups_from_memory = duckdb_instance.get_seed_prompt_groups(added_by="testtextimagemultimodal")
+        groups_from_memory = sqlite_instance.get_seed_prompt_groups(added_by="testtextimagemultimodal")
         assert len(groups_from_memory) == 1
 
         # Verify prompt group IDs are consistent within each group
@@ -1455,7 +1455,7 @@ async def test_add_seed_prompt_groups_to_memory_with_textimage_modalities(duckdb
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompts_with_param_filters(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompts_with_param_filters(sqlite_instance: MemoryInterface):
     template_value = "Test template {{ param1 }}"
     dataset_name = "dataset_1"
     harm_categories = ["category1"]
@@ -1469,9 +1469,9 @@ async def test_get_seed_prompts_with_param_filters(duckdb_instance: MemoryInterf
         added_by=added_by,
         data_type="text",
     )
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=[template])
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=[template])
 
-    templates = duckdb_instance.get_seed_prompts(
+    templates = sqlite_instance.get_seed_prompts(
         value=template_value,
         dataset_name=dataset_name,
         harm_categories=harm_categories,
@@ -1482,27 +1482,27 @@ async def test_get_seed_prompts_with_param_filters(duckdb_instance: MemoryInterf
     assert templates[0].value == template_value
 
 
-def test_get_seed_prompt_groups_empty(duckdb_instance: MemoryInterface):
-    assert duckdb_instance.get_seed_prompt_groups() == []
+def test_get_seed_prompt_groups_empty(sqlite_instance: MemoryInterface):
+    assert sqlite_instance.get_seed_prompt_groups() == []
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompt_groups_with_dataset_name(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompt_groups_with_dataset_name(sqlite_instance: MemoryInterface):
     dataset_name = "test_dataset"
     prompt_group = SeedPromptGroup(
         prompts=[
             SeedPrompt(value="Test prompt", dataset_name=dataset_name, added_by="tester", data_type="text", sequence=0)
         ]
     )
-    await duckdb_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
+    await sqlite_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
 
-    groups = duckdb_instance.get_seed_prompt_groups(dataset_name=dataset_name)
+    groups = sqlite_instance.get_seed_prompt_groups(dataset_name=dataset_name)
     assert len(groups) == 1
     assert groups[0].prompts[0].dataset_name == dataset_name
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompt_groups_with_multiple_filters(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompt_groups_with_multiple_filters(sqlite_instance: MemoryInterface):
     dataset_name = "dataset_1"
     data_types = ["text"]
     harm_categories = ["category1"]
@@ -1519,9 +1519,9 @@ async def test_get_seed_prompt_groups_with_multiple_filters(duckdb_instance: Mem
             )
         ]
     )
-    await duckdb_instance.add_seed_prompt_groups_to_memory(prompt_groups=[group])
+    await sqlite_instance.add_seed_prompt_groups_to_memory(prompt_groups=[group])
 
-    groups = duckdb_instance.get_seed_prompt_groups(
+    groups = sqlite_instance.get_seed_prompt_groups(
         dataset_name=dataset_name,
         data_types=data_types,
         harm_categories=harm_categories,
@@ -1533,42 +1533,42 @@ async def test_get_seed_prompt_groups_with_multiple_filters(duckdb_instance: Mem
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompt_groups_multiple_groups(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompt_groups_multiple_groups(sqlite_instance: MemoryInterface):
     group1 = SeedPromptGroup(
         prompts=[SeedPrompt(value="Prompt 1", dataset_name="dataset_1", added_by="user1", sequence=0, data_type="text")]
     )
     group2 = SeedPromptGroup(
         prompts=[SeedPrompt(value="Prompt 2", dataset_name="dataset_2", added_by="user2", sequence=0, data_type="text")]
     )
-    await duckdb_instance.add_seed_prompt_groups_to_memory(prompt_groups=[group1, group2])
+    await sqlite_instance.add_seed_prompt_groups_to_memory(prompt_groups=[group1, group2])
 
-    groups = duckdb_instance.get_seed_prompt_groups()
+    groups = sqlite_instance.get_seed_prompt_groups()
     assert len(groups) == 2
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompt_groups_multiple_groups_with_unique_ids(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompt_groups_multiple_groups_with_unique_ids(sqlite_instance: MemoryInterface):
     group1 = SeedPromptGroup(
         prompts=[SeedPrompt(value="Prompt 1", dataset_name="dataset_1", added_by="user1", sequence=0, data_type="text")]
     )
     group2 = SeedPromptGroup(
         prompts=[SeedPrompt(value="Prompt 2", dataset_name="dataset_2", added_by="user2", sequence=0, data_type="text")]
     )
-    await duckdb_instance.add_seed_prompt_groups_to_memory(prompt_groups=[group1, group2])
+    await sqlite_instance.add_seed_prompt_groups_to_memory(prompt_groups=[group1, group2])
 
-    groups = duckdb_instance.get_seed_prompt_groups()
+    groups = sqlite_instance.get_seed_prompt_groups()
     assert len(groups) == 2
     # Check that each group has a unique prompt_group_id
     assert groups[0].prompts[0].prompt_group_id != groups[1].prompts[0].prompt_group_id
 
 
-def test_export_all_conversations_file_created(duckdb_instance: MemoryInterface):
-    duckdb_instance.exporter = MemoryExporter()
+def test_export_all_conversations_file_created(sqlite_instance: MemoryInterface):
+    sqlite_instance.exporter = MemoryExporter()
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as temp_file:
         with (
-            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_prompt_request_pieces") as mock_get_pieces,
-            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_scores_by_prompt_ids") as mock_get_scores,
+            patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_prompt_request_pieces") as mock_get_pieces,
+            patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_scores_by_prompt_ids") as mock_get_scores,
         ):
             file_path = Path(temp_file.name)
 
@@ -1590,48 +1590,81 @@ def test_export_all_conversations_file_created(duckdb_instance: MemoryInterface)
             assert file_path.exists()
 
 
-def test_export_all_conversations_with_scores_correct_data(duckdb_instance: MemoryInterface):
-    duckdb_instance.exporter = MemoryExporter()
+def test_export_all_conversations_with_scores_correct_data(sqlite_instance: MemoryInterface):
+    sqlite_instance.exporter = MemoryExporter()
 
     with tempfile.NamedTemporaryFile(delete=True, suffix=".json") as temp_file:
         with (
-            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_prompt_request_pieces") as mock_get_pieces,
-            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_scores_by_prompt_ids") as mock_get_scores,
-            patch.object(duckdb_instance.exporter, "export_data") as mock_export_data,
+            patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_prompt_request_pieces") as mock_get_pieces,
+            patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_scores_by_prompt_ids") as mock_get_scores,
         ):
             file_path = Path(temp_file.name)
 
-            mock_get_pieces.return_value = [MagicMock(original_prompt_id="1234", converted_value="sample piece")]
-            mock_get_scores.return_value = [MagicMock(prompt_request_response_id="1234", score_value=10)]
+            # Create mock objects with proper to_dict methods
+            mock_piece = MagicMock()
+            mock_piece.id = "1234"
+            mock_piece.original_prompt_id = "1234"
+            mock_piece.converted_value = "sample piece"
+            mock_piece.to_dict.return_value = {
+                "id": "1234",
+                "original_prompt_id": "1234",
+                "converted_value": "sample piece",
+            }
 
-            duckdb_instance.export_conversations(file_path=file_path)
+            mock_score = MagicMock()
+            mock_score.prompt_request_response_id = "1234"
+            mock_score.score_value = 10
+            mock_score.to_dict.return_value = {"prompt_request_response_id": "1234", "score_value": 10}
 
-            pos_arg, named_args = mock_export_data.call_args
-            assert str(named_args["file_path"]) == temp_file.file.name
-            assert str(named_args["export_type"]) == "json"
-            assert pos_arg[0][0].original_prompt_id == "1234"
-            assert pos_arg[0][0].converted_value == "sample piece"
+            mock_get_pieces.return_value = [mock_piece]
+            mock_get_scores.return_value = [mock_score]
+
+            result_path = sqlite_instance.export_conversations(file_path=file_path)
+
+            # Verify the file was created and contains expected data
+            assert result_path.exists()
+
+            # Read and verify the JSON content
+            import json
+
+            with open(result_path, "r") as f:
+                data = json.load(f)
+
+            assert len(data) == 1
+            assert data[0]["id"] == "1234"
+            assert data[0]["converted_value"] == "sample piece"
+            assert "scores" in data[0]
+            assert len(data[0]["scores"]) == 1
+            assert data[0]["scores"][0]["score_value"] == 10
 
 
-def test_export_all_conversations_with_scores_empty_data(duckdb_instance: MemoryInterface):
-    duckdb_instance.exporter = MemoryExporter()
-    expected_data: Sequence = []
+def test_export_all_conversations_with_scores_empty_data(sqlite_instance: MemoryInterface):
+    sqlite_instance.exporter = MemoryExporter()
     with tempfile.NamedTemporaryFile(delete=True, suffix=".json") as temp_file:
         with (
-            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_prompt_request_pieces") as mock_get_pieces,
-            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_scores_by_prompt_ids") as mock_get_scores,
-            patch.object(duckdb_instance.exporter, "export_data") as mock_export_data,
+            patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_prompt_request_pieces") as mock_get_pieces,
+            patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_scores_by_prompt_ids") as mock_get_scores,
         ):
             file_path = Path(temp_file.name)
 
             mock_get_pieces.return_value = []
             mock_get_scores.return_value = []
 
-            duckdb_instance.export_conversations(file_path=file_path)
-            mock_export_data.assert_called_once_with(expected_data, file_path=file_path, export_type="json")
+            result_path = sqlite_instance.export_conversations(file_path=file_path)
+
+            # Verify the file was created and contains empty data
+            assert result_path.exists()
+
+            # Read and verify the JSON content is empty list
+            import json
+
+            with open(result_path, "r") as f:
+                data = json.load(f)
+
+            assert data == []
 
 
-def test_get_prompt_request_pieces_labels(duckdb_instance: MemoryInterface):
+def test_get_prompt_request_pieces_labels(sqlite_instance: MemoryInterface):
     labels = {"op_name": "op1", "user_name": "name1", "harm_category": "dummy1"}
     entries = [
         PromptMemoryEntry(
@@ -1656,9 +1689,9 @@ def test_get_prompt_request_pieces_labels(duckdb_instance: MemoryInterface):
         ),
     ]
 
-    duckdb_instance._insert_entries(entries=entries)
+    sqlite_instance._insert_entries(entries=entries)
 
-    retrieved_entries = duckdb_instance.get_prompt_request_pieces(labels=labels)
+    retrieved_entries = sqlite_instance.get_prompt_request_pieces(labels=labels)
 
     assert len(retrieved_entries) == 2  # Two entries should have the specific memory labels
     for retrieved_entry in retrieved_entries:
@@ -1667,7 +1700,7 @@ def test_get_prompt_request_pieces_labels(duckdb_instance: MemoryInterface):
         assert "harm_category" in retrieved_entry.labels
 
 
-def test_get_prompt_request_pieces_metadata(duckdb_instance: MemoryInterface):
+def test_get_prompt_request_pieces_metadata(sqlite_instance: MemoryInterface):
     metadata: dict[str, str | int] = {"key1": "value1", "key2": "value2"}
     entries = [
         PromptMemoryEntry(
@@ -1692,16 +1725,16 @@ def test_get_prompt_request_pieces_metadata(duckdb_instance: MemoryInterface):
         ),
     ]
 
-    duckdb_instance._insert_entries(entries=entries)
+    sqlite_instance._insert_entries(entries=entries)
 
-    retrieved_entries = duckdb_instance.get_prompt_request_pieces(prompt_metadata={"key2": "value2"})
+    retrieved_entries = sqlite_instance.get_prompt_request_pieces(prompt_metadata={"key2": "value2"})
 
     assert len(retrieved_entries) == 2  # Two entries should have the specific memory labels
     for retrieved_entry in retrieved_entries:
         assert "key2" in retrieved_entry.prompt_metadata
 
 
-def test_get_prompt_request_pieces_id(duckdb_instance: MemoryInterface):
+def test_get_prompt_request_pieces_id(sqlite_instance: MemoryInterface):
     entries = [
         PromptMemoryEntry(
             entry=PromptRequestPiece(
@@ -1728,16 +1761,16 @@ def test_get_prompt_request_pieces_id(duckdb_instance: MemoryInterface):
     entries[0].id = id_1
     entries[1].id = id_2
 
-    duckdb_instance._insert_entries(entries=entries)
+    sqlite_instance._insert_entries(entries=entries)
 
-    retrieved_entries = duckdb_instance.get_prompt_request_pieces(prompt_ids=[id_1, id_2])
+    retrieved_entries = sqlite_instance.get_prompt_request_pieces(prompt_ids=[id_1, id_2])
 
     assert len(retrieved_entries) == 2
     assert_original_value_in_list("Hello 1", retrieved_entries)
     assert_original_value_in_list("Hello 2", retrieved_entries)
 
 
-def test_get_prompt_request_pieces_orchestrator(duckdb_instance: MemoryInterface):
+def test_get_prompt_request_pieces_orchestrator(sqlite_instance: MemoryInterface):
 
     orchestrator1 = Orchestrator()
     orchestrator2 = Orchestrator()
@@ -1766,9 +1799,9 @@ def test_get_prompt_request_pieces_orchestrator(duckdb_instance: MemoryInterface
         ),
     ]
 
-    duckdb_instance._insert_entries(entries=entries)
+    sqlite_instance._insert_entries(entries=entries)
 
-    orchestrator1_entries = duckdb_instance.get_prompt_request_pieces(
+    orchestrator1_entries = sqlite_instance.get_prompt_request_pieces(
         orchestrator_id=orchestrator1.get_identifier()["id"]
     )
 
@@ -1777,7 +1810,7 @@ def test_get_prompt_request_pieces_orchestrator(duckdb_instance: MemoryInterface
     assert_original_value_in_list("Hello 3", orchestrator1_entries)
 
 
-def test_get_prompt_request_pieces_sent_after(duckdb_instance: MemoryInterface):
+def test_get_prompt_request_pieces_sent_after(sqlite_instance: MemoryInterface):
     entries = [
         PromptMemoryEntry(
             entry=PromptRequestPiece(
@@ -1802,15 +1835,15 @@ def test_get_prompt_request_pieces_sent_after(duckdb_instance: MemoryInterface):
     entries[0].timestamp = datetime(2022, 12, 25, 15, 30, 0)
     entries[1].timestamp = datetime(2022, 12, 25, 15, 30, 0)
 
-    duckdb_instance._insert_entries(entries=entries)
+    sqlite_instance._insert_entries(entries=entries)
 
-    retrieved_entries = duckdb_instance.get_prompt_request_pieces(sent_after=datetime(2024, 1, 1))
+    retrieved_entries = sqlite_instance.get_prompt_request_pieces(sent_after=datetime(2024, 1, 1))
 
     assert len(retrieved_entries) == 1
     assert "Hello 3" in retrieved_entries[0].original_value
 
 
-def test_get_prompt_request_pieces_sent_before(duckdb_instance: MemoryInterface):
+def test_get_prompt_request_pieces_sent_before(sqlite_instance: MemoryInterface):
     entries = [
         PromptMemoryEntry(
             entry=PromptRequestPiece(
@@ -1835,16 +1868,16 @@ def test_get_prompt_request_pieces_sent_before(duckdb_instance: MemoryInterface)
     entries[0].timestamp = datetime(2022, 12, 25, 15, 30, 0)
     entries[1].timestamp = datetime(2021, 12, 25, 15, 30, 0)
 
-    duckdb_instance._insert_entries(entries=entries)
+    sqlite_instance._insert_entries(entries=entries)
 
-    retrieved_entries = duckdb_instance.get_prompt_request_pieces(sent_before=datetime(2024, 1, 1))
+    retrieved_entries = sqlite_instance.get_prompt_request_pieces(sent_before=datetime(2024, 1, 1))
 
     assert len(retrieved_entries) == 2
     assert_original_value_in_list("Hello 1", retrieved_entries)
     assert_original_value_in_list("Hello 2", retrieved_entries)
 
 
-def test_get_prompt_request_pieces_by_value(duckdb_instance: MemoryInterface):
+def test_get_prompt_request_pieces_by_value(sqlite_instance: MemoryInterface):
     entries = [
         PromptMemoryEntry(
             entry=PromptRequestPiece(
@@ -1866,15 +1899,15 @@ def test_get_prompt_request_pieces_by_value(duckdb_instance: MemoryInterface):
         ),
     ]
 
-    duckdb_instance._insert_entries(entries=entries)
-    retrieved_entries = duckdb_instance.get_prompt_request_pieces(converted_values=["Hello 2", "Hello 3"])
+    sqlite_instance._insert_entries(entries=entries)
+    retrieved_entries = sqlite_instance.get_prompt_request_pieces(converted_values=["Hello 2", "Hello 3"])
 
     assert len(retrieved_entries) == 2
     assert_original_value_in_list("Hello 2", retrieved_entries)
     assert_original_value_in_list("Hello 3", retrieved_entries)
 
 
-def test_get_prompt_request_pieces_by_hash(duckdb_instance: MemoryInterface):
+def test_get_prompt_request_pieces_by_hash(sqlite_instance: MemoryInterface):
     entries = [
         PromptRequestPiece(
             role="user",
@@ -1893,8 +1926,8 @@ def test_get_prompt_request_pieces_by_hash(duckdb_instance: MemoryInterface):
     entries[0].converted_value_sha256 = "hash1"
     entries[1].converted_value_sha256 = "hash1"
 
-    duckdb_instance.add_request_pieces_to_memory(request_pieces=entries)
-    retrieved_entries = duckdb_instance.get_prompt_request_pieces(converted_value_sha256=["hash1"])
+    sqlite_instance.add_request_pieces_to_memory(request_pieces=entries)
+    retrieved_entries = sqlite_instance.get_prompt_request_pieces(converted_value_sha256=["hash1"])
 
     assert len(retrieved_entries) == 2
     assert_original_value_in_list("Hello 1", retrieved_entries)
@@ -1902,7 +1935,7 @@ def test_get_prompt_request_pieces_by_hash(duckdb_instance: MemoryInterface):
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompts_by_hash(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompts_by_hash(sqlite_instance: MemoryInterface):
     entries = [
         SeedPrompt(value="Hello 1", data_type="text"),
         SeedPrompt(value="Hello 2", data_type="text"),
@@ -1910,15 +1943,15 @@ async def test_get_seed_prompts_by_hash(duckdb_instance: MemoryInterface):
 
     hello_1_hash = "724c531a3bc130eb46fbc4600064779552682ef4f351976fe75d876d94e8088c"
 
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=entries, added_by="rlundeen")
-    retrieved_entries = duckdb_instance.get_seed_prompts(value_sha256=[hello_1_hash])
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=entries, added_by="rlundeen")
+    retrieved_entries = sqlite_instance.get_seed_prompts(value_sha256=[hello_1_hash])
 
     assert len(retrieved_entries) == 1
     assert retrieved_entries[0].value == "Hello 1"
     assert retrieved_entries[0].value_sha256 == hello_1_hash
 
 
-def test_get_prompt_request_pieces_with_non_matching_memory_labels(duckdb_instance: MemoryInterface):
+def test_get_prompt_request_pieces_with_non_matching_memory_labels(sqlite_instance: MemoryInterface):
     orchestrator1 = Orchestrator()
     labels = {"op_name": "op1", "user_name": "name1", "harm_category": "dummy1"}
     entries = [
@@ -1949,15 +1982,15 @@ def test_get_prompt_request_pieces_with_non_matching_memory_labels(duckdb_instan
         ),
     ]
 
-    duckdb_instance._insert_entries(entries=entries)
+    sqlite_instance._insert_entries(entries=entries)
     labels = {"nonexistent_key": "nonexiststent_value"}
-    retrieved_entries = duckdb_instance.get_prompt_request_pieces(labels=labels)
+    retrieved_entries = sqlite_instance.get_prompt_request_pieces(labels=labels)
 
     assert len(retrieved_entries) == 0  # zero entries found since invalid memory labels passed
 
 
 def test_get_prompt_request_pieces_sorts(
-    duckdb_instance: MemoryInterface, sample_conversations: MutableSequence[PromptRequestPiece]
+    sqlite_instance: MemoryInterface, sample_conversations: MutableSequence[PromptRequestPiece]
 ):
     conversation_id = sample_conversations[0].conversation_id
 
@@ -1970,9 +2003,9 @@ def test_get_prompt_request_pieces_sorts(
         )
     )
 
-    duckdb_instance.add_request_pieces_to_memory(request_pieces=sample_conversations)
+    sqlite_instance.add_request_pieces_to_memory(request_pieces=sample_conversations)
 
-    response = duckdb_instance.get_prompt_request_pieces()
+    response = sqlite_instance.get_prompt_request_pieces()
 
     current_value = response[0].conversation_id
     for obj in response[1:]:
@@ -1982,7 +2015,7 @@ def test_get_prompt_request_pieces_sorts(
                 assert False, "Conversation IDs are not grouped together"
 
 
-def test_prompt_piece_scores_duplicate_piece(duckdb_instance: MemoryInterface):
+def test_prompt_piece_scores_duplicate_piece(sqlite_instance: MemoryInterface):
     original_id = uuid4()
     duplicate_id = uuid4()
 
@@ -2000,7 +2033,7 @@ def test_prompt_piece_scores_duplicate_piece(duckdb_instance: MemoryInterface):
         ),
     ]
 
-    duckdb_instance.add_request_pieces_to_memory(request_pieces=pieces)
+    sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
 
     score = Score(
         score_value=str(0.8),
@@ -2011,9 +2044,9 @@ def test_prompt_piece_scores_duplicate_piece(duckdb_instance: MemoryInterface):
         score_metadata="Sample metadata",
         prompt_request_response_id=original_id,
     )
-    duckdb_instance.add_scores_to_memory(scores=[score])
+    sqlite_instance.add_scores_to_memory(scores=[score])
 
-    retrieved_pieces = duckdb_instance.get_prompt_request_pieces()
+    retrieved_pieces = sqlite_instance.get_prompt_request_pieces()
 
     assert len(retrieved_pieces[0].scores) == 1
     assert retrieved_pieces[0].scores[0].score_value == "0.8"
@@ -2024,7 +2057,7 @@ def test_prompt_piece_scores_duplicate_piece(duckdb_instance: MemoryInterface):
 
 
 @pytest.mark.asyncio
-async def test_prompt_piece_hash_stored_and_retrieved(duckdb_instance: MemoryInterface):
+async def test_prompt_piece_hash_stored_and_retrieved(sqlite_instance: MemoryInterface):
     entries = [
         PromptRequestPiece(
             role="user",
@@ -2039,8 +2072,8 @@ async def test_prompt_piece_hash_stored_and_retrieved(duckdb_instance: MemoryInt
     for entry in entries:
         await entry.set_sha256_values_async()
 
-    duckdb_instance.add_request_pieces_to_memory(request_pieces=entries)
-    retrieved_entries = duckdb_instance.get_prompt_request_pieces()
+    sqlite_instance.add_request_pieces_to_memory(request_pieces=entries)
+    retrieved_entries = sqlite_instance.get_prompt_request_pieces()
 
     assert len(retrieved_entries) == 2
     for prompt in retrieved_entries:
@@ -2049,7 +2082,7 @@ async def test_prompt_piece_hash_stored_and_retrieved(duckdb_instance: MemoryInt
 
 
 @pytest.mark.asyncio
-async def test_seed_prompt_hash_stored_and_retrieved(duckdb_instance: MemoryInterface):
+async def test_seed_prompt_hash_stored_and_retrieved(sqlite_instance: MemoryInterface):
     """Test that seed prompt hash values are properly stored and retrieved."""
     from pyrit.models import SeedPrompt
 
@@ -2062,15 +2095,15 @@ async def test_seed_prompt_hash_stored_and_retrieved(duckdb_instance: MemoryInte
     )
 
     # Add to memory
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=[seed_prompt])
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=[seed_prompt])
 
     # Retrieve and verify hash
-    retrieved_prompts = duckdb_instance.get_seed_prompts(value_sha256=[seed_prompt.value_sha256])
+    retrieved_prompts = sqlite_instance.get_seed_prompts(value_sha256=[seed_prompt.value_sha256])
     assert len(retrieved_prompts) == 1
     assert retrieved_prompts[0].value_sha256 == seed_prompt.value_sha256
 
 
-def test_add_attack_results_to_memory(duckdb_instance: MemoryInterface):
+def test_add_attack_results_to_memory(sqlite_instance: MemoryInterface):
     """Test adding attack results to memory."""
     # Create sample attack results
     attack_result1 = AttackResult(
@@ -2096,10 +2129,10 @@ def test_add_attack_results_to_memory(duckdb_instance: MemoryInterface):
     )
 
     # Add attack results to memory
-    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2])
+    sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2])
 
     # Verify they were added by querying all attack results
-    all_attack_results: Sequence[AttackResultEntry] = duckdb_instance._query_entries(AttackResultEntry)
+    all_attack_results: Sequence[AttackResultEntry] = sqlite_instance._query_entries(AttackResultEntry)
     assert len(all_attack_results) == 2
 
     # Verify the data was stored correctly
@@ -2108,7 +2141,7 @@ def test_add_attack_results_to_memory(duckdb_instance: MemoryInterface):
     assert conversation_ids == {"conv_1", "conv_2"}
 
 
-def test_get_attack_results_by_ids(duckdb_instance: MemoryInterface):
+def test_get_attack_results_by_ids(sqlite_instance: MemoryInterface):
     """Test retrieving attack results by their IDs."""
     # Create and add attack results
     attack_result1 = AttackResult(
@@ -2139,17 +2172,17 @@ def test_get_attack_results_by_ids(duckdb_instance: MemoryInterface):
     )
 
     # Add all attack results to memory
-    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2, attack_result3])
+    sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2, attack_result3])
 
     # Get all attack result entries to get their IDs
-    all_entries: Sequence[AttackResultEntry] = duckdb_instance._query_entries(AttackResultEntry)
+    all_entries: Sequence[AttackResultEntry] = sqlite_instance._query_entries(AttackResultEntry)
     assert len(all_entries) == 3
 
     # Get IDs of first two attack results
     attack_result_ids = [str(entry.id) for entry in all_entries[:2]]
 
     # Retrieve attack results by IDs
-    retrieved_results = duckdb_instance.get_attack_results(attack_result_ids=attack_result_ids)
+    retrieved_results = sqlite_instance.get_attack_results(attack_result_ids=attack_result_ids)
 
     # Verify correct results were retrieved
     assert len(retrieved_results) == 2
@@ -2157,7 +2190,7 @@ def test_get_attack_results_by_ids(duckdb_instance: MemoryInterface):
     assert retrieved_conversation_ids == {"conv_1", "conv_2"}
 
 
-def test_get_attack_results_by_conversation_id(duckdb_instance: MemoryInterface):
+def test_get_attack_results_by_conversation_id(sqlite_instance: MemoryInterface):
     """Test retrieving attack results by conversation ID."""
     # Create and add attack results
     attack_result1 = AttackResult(
@@ -2188,10 +2221,10 @@ def test_get_attack_results_by_conversation_id(duckdb_instance: MemoryInterface)
     )
 
     # Add all attack results to memory
-    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2, attack_result3])
+    sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2, attack_result3])
 
     # Retrieve attack results by conversation ID
-    retrieved_results = duckdb_instance.get_attack_results(conversation_id="conv_1")
+    retrieved_results = sqlite_instance.get_attack_results(conversation_id="conv_1")
 
     # Verify correct results were retrieved
     assert len(retrieved_results) == 2
@@ -2199,7 +2232,7 @@ def test_get_attack_results_by_conversation_id(duckdb_instance: MemoryInterface)
         assert result.conversation_id == "conv_1"
 
 
-def test_get_attack_results_by_objective(duckdb_instance: MemoryInterface):
+def test_get_attack_results_by_objective(sqlite_instance: MemoryInterface):
     """Test retrieving attack results by objective substring."""
     # Create and add attack results
     attack_result1 = AttackResult(
@@ -2230,10 +2263,10 @@ def test_get_attack_results_by_objective(duckdb_instance: MemoryInterface):
     )
 
     # Add all attack results to memory
-    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2, attack_result3])
+    sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2, attack_result3])
 
     # Retrieve attack results by objective substring
-    retrieved_results = duckdb_instance.get_attack_results(objective="objective for")
+    retrieved_results = sqlite_instance.get_attack_results(objective="objective for")
 
     # Verify correct results were retrieved (should match first two)
     assert len(retrieved_results) == 2
@@ -2242,7 +2275,7 @@ def test_get_attack_results_by_objective(duckdb_instance: MemoryInterface):
     assert "Another objective for failure" in objectives
 
 
-def test_get_attack_results_by_outcome(duckdb_instance: MemoryInterface):
+def test_get_attack_results_by_outcome(sqlite_instance: MemoryInterface):
     """Test retrieving attack results by outcome."""
     # Create and add attack results
     attack_result1 = AttackResult(
@@ -2273,10 +2306,10 @@ def test_get_attack_results_by_outcome(duckdb_instance: MemoryInterface):
     )
 
     # Add all attack results to memory
-    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2, attack_result3])
+    sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2, attack_result3])
 
     # Retrieve attack results by outcome
-    retrieved_results = duckdb_instance.get_attack_results(outcome="success")
+    retrieved_results = sqlite_instance.get_attack_results(outcome="success")
 
     # Verify correct results were retrieved
     assert len(retrieved_results) == 2
@@ -2284,7 +2317,7 @@ def test_get_attack_results_by_outcome(duckdb_instance: MemoryInterface):
         assert result.outcome == AttackOutcome.SUCCESS
 
 
-def test_get_attack_results_by_objective_sha256(duckdb_instance: MemoryInterface):
+def test_get_attack_results_by_objective_sha256(sqlite_instance: MemoryInterface):
     """Test retrieving attack results by objective SHA256."""
 
     # Create objectives with known SHA256 hashes
@@ -2323,10 +2356,10 @@ def test_get_attack_results_by_objective_sha256(duckdb_instance: MemoryInterface
     )
 
     # Add all attack results to memory
-    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2, attack_result3])
+    sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2, attack_result3])
 
     # Retrieve attack results by objective SHA256
-    retrieved_results = duckdb_instance.get_attack_results(objective_sha256=[objective1_sha256, objective2_sha256])
+    retrieved_results = sqlite_instance.get_attack_results(objective_sha256=[objective1_sha256, objective2_sha256])
 
     # Verify correct results were retrieved
     assert len(retrieved_results) == 2
@@ -2335,7 +2368,7 @@ def test_get_attack_results_by_objective_sha256(duckdb_instance: MemoryInterface
     assert objective2 in retrieved_objectives
 
 
-def test_get_attack_results_multiple_filters(duckdb_instance: MemoryInterface):
+def test_get_attack_results_multiple_filters(sqlite_instance: MemoryInterface):
     """Test retrieving attack results with multiple filters."""
     # Create and add attack results
     attack_result1 = AttackResult(
@@ -2366,10 +2399,10 @@ def test_get_attack_results_multiple_filters(duckdb_instance: MemoryInterface):
     )
 
     # Add all attack results to memory
-    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2, attack_result3])
+    sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2, attack_result3])
 
     # Retrieve attack results with multiple filters
-    retrieved_results = duckdb_instance.get_attack_results(
+    retrieved_results = sqlite_instance.get_attack_results(
         conversation_id="conv_1", objective="objective for", outcome="success"
     )
 
@@ -2380,7 +2413,7 @@ def test_get_attack_results_multiple_filters(duckdb_instance: MemoryInterface):
     assert "objective for" in retrieved_results[0].objective
 
 
-def test_get_attack_results_no_filters(duckdb_instance: MemoryInterface):
+def test_get_attack_results_no_filters(sqlite_instance: MemoryInterface):
     """Test retrieving all attack results when no filters are provided."""
     # Create and add attack results
     attack_result1 = AttackResult(
@@ -2402,16 +2435,16 @@ def test_get_attack_results_no_filters(duckdb_instance: MemoryInterface):
     )
 
     # Add attack results to memory
-    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2])
+    sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2])
 
     # Retrieve all attack results (no filters)
-    retrieved_results = duckdb_instance.get_attack_results()
+    retrieved_results = sqlite_instance.get_attack_results()
 
     # Should return all results
     assert len(retrieved_results) == 2
 
 
-def test_get_attack_results_empty_list(duckdb_instance: MemoryInterface):
+def test_get_attack_results_empty_list(sqlite_instance: MemoryInterface):
     """Test retrieving attack results with empty ID list."""
     # Create and add an attack result
     attack_result = AttackResult(
@@ -2423,14 +2456,14 @@ def test_get_attack_results_empty_list(duckdb_instance: MemoryInterface):
         outcome=AttackOutcome.SUCCESS,
     )
 
-    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
+    sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result])
 
     # Try to retrieve with empty list
-    retrieved_results = duckdb_instance.get_attack_results(attack_result_ids=[])
+    retrieved_results = sqlite_instance.get_attack_results(attack_result_ids=[])
     assert len(retrieved_results) == 0
 
 
-def test_get_attack_results_nonexistent_ids(duckdb_instance: MemoryInterface):
+def test_get_attack_results_nonexistent_ids(sqlite_instance: MemoryInterface):
     """Test retrieving attack results with non-existent IDs."""
     # Create and add an attack result
     attack_result = AttackResult(
@@ -2442,15 +2475,15 @@ def test_get_attack_results_nonexistent_ids(duckdb_instance: MemoryInterface):
         outcome=AttackOutcome.SUCCESS,
     )
 
-    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
+    sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result])
 
     # Try to retrieve with non-existent IDs
     nonexistent_ids = [str(uuid.uuid4()), str(uuid.uuid4())]
-    retrieved_results = duckdb_instance.get_attack_results(attack_result_ids=nonexistent_ids)
+    retrieved_results = sqlite_instance.get_attack_results(attack_result_ids=nonexistent_ids)
     assert len(retrieved_results) == 0
 
 
-def test_attack_result_with_last_response_and_score(duckdb_instance: MemoryInterface):
+def test_attack_result_with_last_response_and_score(sqlite_instance: MemoryInterface):
     """Test attack result with last_response and last_score relationships."""
     # Create a prompt request piece first
     prompt_piece = PromptRequestPiece(
@@ -2473,8 +2506,8 @@ def test_attack_result_with_last_response_and_score(duckdb_instance: MemoryInter
     )
 
     # Add prompt piece and score to memory
-    duckdb_instance.add_request_pieces_to_memory(request_pieces=[prompt_piece])
-    duckdb_instance.add_scores_to_memory(scores=[score])
+    sqlite_instance.add_request_pieces_to_memory(request_pieces=[prompt_piece])
+    sqlite_instance.add_scores_to_memory(scores=[score])
 
     # Create attack result with last_response and last_score
     attack_result = AttackResult(
@@ -2489,10 +2522,10 @@ def test_attack_result_with_last_response_and_score(duckdb_instance: MemoryInter
     )
 
     # Add attack result to memory
-    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
+    sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result])
 
     # Retrieve and verify relationships
-    all_entries: Sequence[AttackResult] = duckdb_instance.get_attack_results()
+    all_entries: Sequence[AttackResult] = sqlite_instance.get_attack_results()
     assert len(all_entries) == 1
     assert all_entries[0].conversation_id == "conv_1"
     assert all_entries[0].last_response is not None
@@ -2501,7 +2534,7 @@ def test_attack_result_with_last_response_and_score(duckdb_instance: MemoryInter
     assert all_entries[0].last_score.id == score.id
 
 
-def test_attack_result_all_outcomes(duckdb_instance: MemoryInterface):
+def test_attack_result_all_outcomes(sqlite_instance: MemoryInterface):
     """Test attack results with all possible outcomes."""
     outcomes = [AttackOutcome.SUCCESS, AttackOutcome.FAILURE, AttackOutcome.UNDETERMINED]
     attack_results = []
@@ -2519,10 +2552,10 @@ def test_attack_result_all_outcomes(duckdb_instance: MemoryInterface):
         attack_results.append(attack_result)
 
     # Add all attack results to memory
-    duckdb_instance.add_attack_results_to_memory(attack_results=attack_results)
+    sqlite_instance.add_attack_results_to_memory(attack_results=attack_results)
 
     # Verify all were added
-    all_entries: Sequence[AttackResultEntry] = duckdb_instance._query_entries(AttackResultEntry)
+    all_entries: Sequence[AttackResultEntry] = sqlite_instance._query_entries(AttackResultEntry)
     assert len(all_entries) == 3
 
     # Verify outcomes were stored correctly
@@ -2531,7 +2564,7 @@ def test_attack_result_all_outcomes(duckdb_instance: MemoryInterface):
     assert stored_outcomes == set(outcomes)
 
 
-def test_attack_result_metadata_handling(duckdb_instance: MemoryInterface):
+def test_attack_result_metadata_handling(sqlite_instance: MemoryInterface):
     """Test that attack result metadata is properly stored and retrieved."""
     # Create attack result with various metadata types
     metadata = {
@@ -2553,17 +2586,17 @@ def test_attack_result_metadata_handling(duckdb_instance: MemoryInterface):
         metadata=metadata,
     )
 
-    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
+    sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result])
 
     # Retrieve and verify metadata
-    all_entries: Sequence[AttackResultEntry] = duckdb_instance._query_entries(AttackResultEntry)
+    all_entries: Sequence[AttackResultEntry] = sqlite_instance._query_entries(AttackResultEntry)
     assert len(all_entries) == 1
 
     retrieved_result = all_entries[0].get_attack_result()
     assert retrieved_result.metadata == metadata
 
 
-def test_attack_result_objective_sha256_auto_generation(duckdb_instance: MemoryInterface):
+def test_attack_result_objective_sha256_auto_generation(sqlite_instance: MemoryInterface):
     """Test that objective SHA256 is always calculated."""
 
     objective = "Test objective without SHA256"
@@ -2577,17 +2610,17 @@ def test_attack_result_objective_sha256_auto_generation(duckdb_instance: MemoryI
     )
     expected_sha256 = to_sha256(attack_result.objective)
 
-    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
+    sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result])
 
     # Retrieve and verify that objective_sha256 is calculated
-    all_entries: Sequence[AttackResultEntry] = duckdb_instance._query_entries(AttackResultEntry)
+    all_entries: Sequence[AttackResultEntry] = sqlite_instance._query_entries(AttackResultEntry)
     assert len(all_entries) == 1
 
     # Verify the database stored the correct SHA256
     assert all_entries[0].objective_sha256 == expected_sha256
 
 
-def test_get_attack_results_case_sensitive_objective(duckdb_instance: MemoryInterface):
+def test_get_attack_results_case_sensitive_objective(sqlite_instance: MemoryInterface):
     """Test that objective filtering is case sensitive."""
     attack_result1 = AttackResult(
         conversation_id="conv_1",
@@ -2607,20 +2640,20 @@ def test_get_attack_results_case_sensitive_objective(duckdb_instance: MemoryInte
         outcome=AttackOutcome.FAILURE,
     )
 
-    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2])
+    sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2])
 
     # Test case-sensitive search
-    retrieved_results = duckdb_instance.get_attack_results(objective="Test Objective")
+    retrieved_results = sqlite_instance.get_attack_results(objective="Test Objective")
     assert len(retrieved_results) == 1
     assert retrieved_results[0].objective == "Test Objective for Success"
 
     # Test different case
-    retrieved_results = duckdb_instance.get_attack_results(objective="test objective")
+    retrieved_results = sqlite_instance.get_attack_results(objective="test objective")
     assert len(retrieved_results) == 1
     assert retrieved_results[0].objective == "test objective for failure"
 
 
-def test_attack_result_objective_sha256_always_calculated(duckdb_instance: MemoryInterface):
+def test_attack_result_objective_sha256_always_calculated(sqlite_instance: MemoryInterface):
     """Test that objective SHA256 is always calculated by the database model."""
 
     objective = "Test objective"
@@ -2635,17 +2668,17 @@ def test_attack_result_objective_sha256_always_calculated(duckdb_instance: Memor
     )
     expected_sha256 = to_sha256(attack_result.objective)
 
-    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
+    sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result])
 
     # Retrieve and verify that the objective_sha256 is calculated
-    all_entries: Sequence[AttackResultEntry] = duckdb_instance._query_entries(AttackResultEntry)
+    all_entries: Sequence[AttackResultEntry] = sqlite_instance._query_entries(AttackResultEntry)
     assert len(all_entries) == 1
 
     # Verify the database stored the correct SHA256
     assert all_entries[0].objective_sha256 == expected_sha256
 
 
-def test_attack_result_with_attack_generation_conversation_ids(duckdb_instance: MemoryInterface):
+def test_attack_result_with_attack_generation_conversation_ids(sqlite_instance: MemoryInterface):
     """Test attack result with related_conversations (PRUNED / ADVERSARIAL)."""
     pruned_ids = {"pruned_conv_1", "pruned_conv_2"}
     adversarial_ids = {"adv_conv_1", "adv_conv_2", "adv_conv_3"}
@@ -2665,9 +2698,9 @@ def test_attack_result_with_attack_generation_conversation_ids(duckdb_instance: 
         related_conversations=related_conversations,
     )
 
-    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
+    sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result])
 
-    entry: AttackResultEntry = duckdb_instance._query_entries(AttackResultEntry)[0]
+    entry: AttackResultEntry = sqlite_instance._query_entries(AttackResultEntry)[0]
 
     assert set(entry.pruned_conversation_ids) == pruned_ids  # type: ignore
     assert set(entry.adversarial_chat_conversation_ids) == adversarial_ids  # type: ignore
@@ -2681,7 +2714,7 @@ def test_attack_result_with_attack_generation_conversation_ids(duckdb_instance: 
     } == adversarial_ids
 
 
-def test_attack_result_without_attack_generation_conversation_ids(duckdb_instance: MemoryInterface):
+def test_attack_result_without_attack_generation_conversation_ids(sqlite_instance: MemoryInterface):
     """Test attack result without related_conversations."""
     attack_result = AttackResult(
         conversation_id="conv_1",
@@ -2692,9 +2725,9 @@ def test_attack_result_without_attack_generation_conversation_ids(duckdb_instanc
         outcome=AttackOutcome.SUCCESS,
     )
 
-    duckdb_instance.add_attack_results_to_memory(attack_results=[attack_result])
+    sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result])
 
-    entry: AttackResultEntry = duckdb_instance._query_entries(AttackResultEntry)[0]
+    entry: AttackResultEntry = sqlite_instance._query_entries(AttackResultEntry)[0]
     assert not entry.pruned_conversation_ids
     assert not entry.adversarial_chat_conversation_ids
 

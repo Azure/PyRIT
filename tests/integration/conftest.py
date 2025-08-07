@@ -11,7 +11,7 @@ from sqlalchemy import inspect
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.memory.azure_sql_memory import AzureSQLMemory
 from pyrit.memory.central_memory import CentralMemory
-from pyrit.memory.duckdb_memory import DuckDBMemory
+from pyrit.memory.sqlite_memory import SQLiteMemory
 
 # This limits retries to 10 attempts with a 1 second wait between retries
 # note this needs to be set before libraries that use them are imported
@@ -57,17 +57,17 @@ def pytest_collection_modifyitems(config, items):
 
 
 @pytest.fixture
-def duckdb_instance() -> Generator[DuckDBMemory, None, None]:
-    # Create an in-memory DuckDB engine
-    duckdb_memory = DuckDBMemory(db_path=":memory:")
+def sqlite_instance() -> Generator[SQLiteMemory, None, None]:
+    # Create an in-memory SQLite engine
+    sqlite_memory = SQLiteMemory(db_path=":memory:")
     temp_dir = tempfile.TemporaryDirectory()
-    duckdb_memory.results_path = temp_dir.name
+    sqlite_memory.results_path = temp_dir.name
 
-    duckdb_memory.disable_embedding()
+    sqlite_memory.disable_embedding()
 
     # Reset the database to ensure a clean state
-    duckdb_memory.reset_database()
-    inspector = inspect(duckdb_memory.engine)
+    sqlite_memory.reset_database()
+    inspector = inspect(sqlite_memory.engine)
 
     # Verify that tables are created as expected
     assert "PromptMemoryEntries" in inspector.get_table_names(), "PromptMemoryEntries table not created."
@@ -75,7 +75,7 @@ def duckdb_instance() -> Generator[DuckDBMemory, None, None]:
     assert "ScoreEntries" in inspector.get_table_names(), "ScoreEntries table not created."
     assert "SeedPromptEntries" in inspector.get_table_names(), "SeedPromptEntries table not created."
 
-    CentralMemory.set_memory_instance(duckdb_memory)
-    yield duckdb_memory
+    CentralMemory.set_memory_instance(sqlite_memory)
+    yield sqlite_memory
     temp_dir.cleanup()
-    duckdb_memory.dispose_engine()
+    sqlite_memory.dispose_engine()

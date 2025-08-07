@@ -9,4 +9,4 @@ converters:
   - type: "TranslationConverter"
     language: "spanish"
 database:
-  type: "DuckDB"
+  type: "SQLite"

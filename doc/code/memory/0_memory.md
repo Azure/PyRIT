@@ -10,22 +10,25 @@ At the beginning of each notebook, make sure to call:
 ```
 # Import initialize_pyrit
 # Import the specific constant for the MemoryDatabaseType, or provide the literal value
-from pyrit.common import initialize_pyrit, IN_MEMORY, DUCK_DB, AZURE_SQL
+from pyrit.common import initialize_pyrit, IN_MEMORY, SQLITE, AZURE_SQL
 
 initialize_pyrit(memory_db_type: MemoryDatabaseType, memory_instance_kwargs: Optional[Any])
 ```
 
-The `MemoryDatabaseType` is a `Literal` with 3 options: IN_MEMORY, DUCK_DB, AZURE_SQL. (Read more below)
+The `MemoryDatabaseType` is a `Literal` with 3 options: IN_MEMORY, SQLITE, AZURE_SQL. (Read more below)
    - `initialize_pyrit` takes the `MemoryDatabaseType` and an argument list (`memory_instance_kwargs`), to initialize the shared memory instance.
 
 ##  Memory Database Type Options
 
-**IN_MEMORY:** _In-Memory DuckDB Database_
+**IN_MEMORY:** _In-Memory SQLite Database_
    - This option can be preferable if the user does not care about storing conversations or scores in memory beyond the current process. It is used as the default in most of the PyRIT notebooks.
-   - **Note**: In in-memory mode, no data is persisted to disk, therefore, all data is lost when the process finishes (from [DuckDB docs](https://duckdb.org/docs/connect/overview.html#in-memory-database))
+   - **Note**: In in-memory mode, no data is persisted to disk, therefore, all data is lost when the process finishes
 
-**DUCK_DB:** _Persistent DuckDB Database_
-   - Interactions will be stored in a persistent `DuckDBMemory` instance with a location on-disk. See notebook [here](./1_duck_db_memory.ipynb) for more details.
+**SQLITE:** _Persistent SQLite Database_
+   - Interactions will be stored in a persistent `SQLiteMemory` instance with a location on-disk. See notebook [here](./1_sqlite_memory.ipynb) for more details.
+
+**DUCKDB:** _Persistent DuckDB Database_
+   - Interatctions will be stored in a persistent `DuckDB` instance with a location on disk.
 
 **AZURE_SQL:** _Azure SQL Database_
    - For examples on setting up `AzureSQLMemory`, please refer to the notebook [here](./7_azure_sql_memory_orchestrators.ipynb).

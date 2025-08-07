@@ -11,4 +11,4 @@ converters:
     converter_target:
       type: "OpenAIChatTarget"
 database:
-  type: "DuckDB"
+  type: "SQLite"

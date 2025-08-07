@@ -16,8 +16,10 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     String,
+    TypeDecorator,
     Unicode,
 )
+from sqlalchemy.dialects.sqlite import CHAR
 from sqlalchemy.orm import (  # type: ignore
     DeclarativeBase,
     Mapped,
@@ -30,6 +32,39 @@ from pyrit.common.utils import to_sha256
 from pyrit.models import PromptDataType, PromptRequestPiece, Score, SeedPrompt
 from pyrit.models.attack_result import AttackOutcome, AttackResult
 from pyrit.models.conversation_reference import ConversationReference, ConversationType
+
+
+class SQLiteUUID(TypeDecorator):
+    """
+    A custom UUID type that works consistently across different database backends.
+    For SQLite, stores UUIDs as strings and converts them back to UUID objects.
+    For other databases, uses the native UUID type.
+    """
+
+    impl = CHAR
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == "sqlite":
+            return dialect.type_descriptor(CHAR(36))
+        else:
+            return dialect.type_descriptor(Uuid())
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return value
+        elif isinstance(value, uuid.UUID):
+            return str(value)
+        else:
+            return str(value)
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return value
+        elif isinstance(value, uuid.UUID):
+            return value
+        else:
+            return uuid.UUID(value)
 
 
 class Base(DeclarativeBase):
@@ -73,7 +108,7 @@ class PromptMemoryEntry(Base):
 
     __tablename__ = "PromptMemoryEntries"
     __table_args__ = {"extend_existing": True}
-    id = mapped_column(Uuid, nullable=False, primary_key=True)
+    id = mapped_column(SQLiteUUID, nullable=False, primary_key=True)
     role: Mapped[Literal["system", "user", "assistant"]] = mapped_column(String, nullable=False)
     conversation_id = mapped_column(String, nullable=False)
     sequence = mapped_column(INTEGER, nullable=False)
@@ -99,7 +134,7 @@ class PromptMemoryEntry(Base):
 
     idx_conversation_id = Index("idx_conversation_id", "conversation_id")
 
-    original_prompt_id = mapped_column(Uuid, nullable=False)
+    original_prompt_id = mapped_column(SQLiteUUID, nullable=False)
 
     scores: Mapped[List["ScoreEntry"]] = relationship(
         "ScoreEntry",
@@ -176,8 +211,8 @@ class EmbeddingDataEntry(Base):  # type: ignore
     __tablename__ = "EmbeddingData"
     # Allows table redefinition if already defined.
     __table_args__ = {"extend_existing": True}
-    id = mapped_column(Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), primary_key=True)
-    embedding = mapped_column(ARRAY(Float).with_variant(JSON, "mssql"))  # type: ignore
+    id = mapped_column(SQLiteUUID, ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), primary_key=True)
+    embedding = mapped_column(ARRAY(Float).with_variant(JSON, "mssql").with_variant(JSON, "sqlite"))  # type: ignore
     embedding_type_name = mapped_column(String)
 
     def __str__(self):
@@ -193,7 +228,7 @@ class ScoreEntry(Base):  # type: ignore
     __tablename__ = "ScoreEntries"
     __table_args__ = {"extend_existing": True}
 
-    id = mapped_column(Uuid(as_uuid=True), nullable=False, primary_key=True)
+    id = mapped_column(SQLiteUUID, nullable=False, primary_key=True)
     score_value = mapped_column(String, nullable=False)
     score_value_description = mapped_column(String, nullable=True)
     score_type: Mapped[Literal["true_false", "float_scale"]] = mapped_column(String, nullable=False)
@@ -201,7 +236,7 @@ class ScoreEntry(Base):  # type: ignore
     score_rationale = mapped_column(String, nullable=True)
     score_metadata = mapped_column(String, nullable=True)
     scorer_class_identifier: Mapped[dict[str, str]] = mapped_column(JSON)
-    prompt_request_response_id = mapped_column(Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
+    prompt_request_response_id = mapped_column(SQLiteUUID, ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
     timestamp = mapped_column(DateTime, nullable=False)
     task = mapped_column(String, nullable=True)
     prompt_request_piece: Mapped["PromptMemoryEntry"] = relationship("PromptMemoryEntry", back_populates="scores")
@@ -305,7 +340,7 @@ class SeedPromptEntry(Base):
 
     __tablename__ = "SeedPromptEntries"
     __table_args__ = {"extend_existing": True}
-    id = mapped_column(Uuid, nullable=False, primary_key=True)
+    id = mapped_column(SQLiteUUID, nullable=False, primary_key=True)
     value = mapped_column(Unicode, nullable=False)
     value_sha256 = mapped_column(Unicode, nullable=True)
     data_type: Mapped[PromptDataType] = mapped_column(String, nullable=False)
@@ -320,7 +355,7 @@ class SeedPromptEntry(Base):
     added_by = mapped_column(String, nullable=False)
     prompt_metadata: Mapped[dict[str, Union[str, int]]] = mapped_column(JSON, nullable=True)
     parameters: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
-    prompt_group_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, nullable=True)
+    prompt_group_id: Mapped[Optional[uuid.UUID]] = mapped_column(SQLiteUUID, nullable=True)
     sequence: Mapped[Optional[int]] = mapped_column(INTEGER, nullable=True)
 
     def __init__(self, *, entry: SeedPrompt):
@@ -394,16 +429,16 @@ class AttackResultEntry(Base):
 
     __tablename__ = "AttackResultEntries"
     __table_args__ = {"extend_existing": True}
-    id = mapped_column(Uuid, nullable=False, primary_key=True)
+    id = mapped_column(SQLiteUUID, nullable=False, primary_key=True)
     conversation_id = mapped_column(String, nullable=False)
-    objective = mapped_column(Unicode, nullable=False)
+    objective = mapped_column(Unicode(collation="BINARY"), nullable=False)
     attack_identifier: Mapped[dict[str, str]] = mapped_column(JSON, nullable=False)
     objective_sha256 = mapped_column(String, nullable=True)
     last_response_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        Uuid, ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), nullable=True
+        SQLiteUUID, ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), nullable=True
     )
     last_score_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        Uuid, ForeignKey(f"{ScoreEntry.__tablename__}.id"), nullable=True
+        SQLiteUUID, ForeignKey(f"{ScoreEntry.__tablename__}.id"), nullable=True
     )
     executed_turns = mapped_column(INTEGER, nullable=False, default=0)
     execution_time_ms = mapped_column(INTEGER, nullable=False, default=0)
