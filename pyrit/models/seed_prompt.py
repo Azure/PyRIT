@@ -96,7 +96,8 @@ class SeedPrompt(YamlLoadable):
     # Role of the prompt in a conversation (e.g., "user", "assistant")
     role: Optional[ChatMessageRole] = None
 
-    # Sequence number for ordering prompts in a conversation
+    # Sequence number for ordering prompts in a conversation, prompts with
+    # the same sequence number are grouped together if they also share the same prompt_group_id
     sequence: Optional[int] = 0
 
     def __post_init__(self) -> None:

@@ -801,7 +801,7 @@ class MemoryInterface(abc.ABC):
         groups: Optional[Sequence[str]] = None,
         source: Optional[str] = None,
     ) -> Sequence[SeedPromptGroup]:
-        """Retrieves groups of seed prompts based on the provided filtering criteria.
+        """Retrieves groups of seed prompts based on the provided filtering criteria
 
         Args:
             value_sha256 (Optional[Sequence[str]], Optional): SHA256 hash of value to filter seed prompt groups by.

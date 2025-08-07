@@ -49,11 +49,15 @@ class PromptRequestResponse:
             raise ValueError("Empty request pieces.")
 
         conversation_id = self.request_pieces[0].conversation_id
+        sequence = self.request_pieces[0].sequence
         role = None
         for request_piece in self.request_pieces:
 
             if request_piece.conversation_id != conversation_id:
                 raise ValueError("Conversation ID mismatch.")
+
+            if request_piece.sequence != sequence:
+                raise ValueError("Sequence mismatch.")
 
             if not request_piece.converted_value:
                 raise ValueError("Converted prompt text is None.")
@@ -157,9 +161,8 @@ def group_conversation_request_pieces_by_sequence(
             raise ValueError("Conversation ID must match.")
 
         if request_piece.sequence not in conversation_by_sequence:
-            conversation_by_sequence[request_piece.sequence] = [request_piece]
-        else:
-            conversation_by_sequence[request_piece.sequence].append(request_piece)
+            conversation_by_sequence[request_piece.sequence] = []
+        conversation_by_sequence[request_piece.sequence].append(request_piece)
 
     sorted_sequences = sorted(conversation_by_sequence.keys())
     return [PromptRequestResponse(conversation_by_sequence[seq]) for seq in sorted_sequences]

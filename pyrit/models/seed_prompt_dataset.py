@@ -174,9 +174,27 @@ class SeedPromptDataset(YamlLoadable):
             prompt.value = prompt.render_template_value(**kwargs)
 
     @staticmethod
+    def _set_group_collection_id_by_alias(seed_prompts: Sequence[dict]):
+        """
+        Sets all group_collection_ids based on group_collection_alias matches
+
+        This is important so the prompt_group_id_alias can be set in yaml to group prompts
+        """
+        alias_to_group_id = {}
+
+        for prompt in seed_prompts:
+            alias = prompt.get("group_collection_alias")
+            if alias:
+                if alias not in alias_to_group_id:
+                    alias_to_group_id[alias] = uuid.uuid4()
+                prompt["group_collection_id"] = alias_to_group_id[alias]
+            else:
+                prompt["group_collection_id"] = uuid.uuid4()
+
+    @staticmethod
     def _set_seed_prompt_group_id_by_alias(seed_prompts: Sequence[dict]):
         """
-        Sets all seed_prompt_group_ids based on prompt_group_id_alias matches
+        Sets all seed_prompt_group_ids based on prompt_group_alias matches
 
         This is important so the prompt_group_id_alias can be set in yaml to group prompts
         """
@@ -195,13 +213,15 @@ class SeedPromptDataset(YamlLoadable):
     def group_seed_prompts_by_prompt_group_id(seed_prompts: Sequence[SeedPrompt]) -> Sequence[SeedPromptGroup]:
         """
         Groups the given list of SeedPrompts by their prompt_group_id and creates
-        SeedPromptGroup instances.
+        SeedPromptGroup instances. All seed prompts in a group must share the same prompt_group_id
 
         Args:
             seed_prompts: A list of SeedPrompt objects.
 
         Returns:
-            A list of SeedPromptGroup objects, with prompts grouped by prompt_group_id.
+            A list of SeedPromptGroup objects, with prompts grouped by prompt_group_id. Each SeedPromptGroup
+            will be ordered by the sequence number of the prompts, if available.
+
         """
         # Group seed prompts by `prompt_group_id`
         grouped_prompts = defaultdict(list)

@@ -85,9 +85,6 @@ seed_prompt_group = SeedPromptGroup.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal-group.prompt"
 )
 
-# Render user-defined values for yaml template
-seed_prompt_group.render_template_value(blocked_words="sorry, cannot")
-
 await memory.add_seed_prompt_groups_to_memory(prompt_groups=[seed_prompt_group], added_by="test multimodal illegal")  # type: ignore
 
 # %% [markdown]
