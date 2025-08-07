@@ -16,7 +16,6 @@ from pyrit.common.download_hf_model import (
 from pyrit.common.initialization import (
     initialize_pyrit,
     AZURE_SQL,
-    DUCK_DB,
     SQLITE,
     IN_MEMORY,
 )
@@ -30,7 +29,6 @@ from pyrit.common.deprecation import deprecation_message
 
 __all__ = [
     "AZURE_SQL",
-    "DUCK_DB",
     "SQLITE",
     "IN_MEMORY",
     "combine_dict",

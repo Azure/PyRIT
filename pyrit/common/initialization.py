@@ -10,11 +10,10 @@ from pyrit.common import path
 
 logger = logging.getLogger(__name__)
 
-DUCK_DB = "DuckDB"
 IN_MEMORY = "InMemory"
 SQLITE = "SQLite"
 AZURE_SQL = "AzureSQL"
-MemoryDatabaseType = Literal["InMemory", "SQLite", "AzureSQL", "DuckDB"]
+MemoryDatabaseType = Literal["InMemory", "SQLite", "AzureSQL"]
 
 
 def _load_environment_files() -> None:
@@ -59,7 +58,6 @@ def initialize_pyrit(memory_db_type: Union[MemoryDatabaseType, str], **memory_in
     from pyrit.memory import (
         AzureSQLMemory,
         CentralMemory,
-        DuckDBMemory,
         MemoryInterface,
         SQLiteMemory,
     )
@@ -68,9 +66,6 @@ def initialize_pyrit(memory_db_type: Union[MemoryDatabaseType, str], **memory_in
     if memory_db_type == IN_MEMORY:
         logger.info("Using in-memory SQLite database.")
         memory = SQLiteMemory(db_path=":memory:", **memory_instance_kwargs)
-    elif memory_db_type == DUCK_DB:
-        logger.info("Using persistent DuckDB database")
-        memory = DuckDBMemory(**memory_instance_kwargs)
     elif memory_db_type == SQLITE:
         logger.info("Using persistent SQLite database.")
         memory = SQLiteMemory(**memory_instance_kwargs)

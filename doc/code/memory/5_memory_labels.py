@@ -90,11 +90,11 @@ print("User prompts:", original_user_prompts)
 # %%
 import uuid
 
-from pyrit.common import DUCK_DB, initialize_pyrit
+from pyrit.common import SQLITE, initialize_pyrit
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 
-initialize_pyrit(memory_db_type=DUCK_DB)
+initialize_pyrit(memory_db_type=SQLITE)
 
 target = OpenAIChatTarget()
 group1 = str(uuid.uuid4())
