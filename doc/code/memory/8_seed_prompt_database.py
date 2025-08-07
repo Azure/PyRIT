@@ -6,11 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.2
 # ---
 
 # %% [markdown]
@@ -19,7 +15,7 @@
 # Apart from storing results in memory it's also useful to store datasets of seed prompts
 # and seed prompt templates that we may want to use at a later point.
 # This can help us in curating prompts with custom metadata like harm categories.
-# As with all memory, we can use local DuckDBMemory or AzureSQLMemory in Azure to get the
+# As with all memory, we can use local SQLite or AzureSQLMemory in Azure to get the
 # benefits of sharing with other users and persisting data.
 
 # %%
@@ -71,8 +67,8 @@ for prompt in prompts:
 # The Seed Prompt groups have the same `prompt_group_id`, meaning they will be sent together.
 # When we add non-text seed prompts to memory, encoding data will automatically populate in the seed prompt's
 # `metadata` field, including `format` (i.e. png, mp4, wav, etc.) as well as additional metadata for audio
-# and video files, inclduing `bitrate` (kBits/s as int), `samplerate` (samples/second as int), `bitdepth` (as int),
-# `filesize` (bytes as int), and `duration` (seconds as int) if the file type is supported by TinyTag.
+# and video files, inclduing `bitrate` (kBits/s as int), `samplerate` (samples/second as int), `bitdepth` (as int), 
+# `filesize` (bytes as int), and `duration` (seconds as int) if the file type is supported by TinyTag. 
 # Example suppported file types include: MP3, MP4, M4A, and WAV. These may be helpful to filter for as some targets
 # have specific input prompt requirements.
 # %%
