@@ -466,6 +466,7 @@ async def test_injection_on_last_page(mock_pdf_path):
 
     modified_pdf_path.unlink()
 
+
 @pytest.mark.asyncio
 async def test_filename_extension_default(duckdb_instance):
     converter = PDFConverter(
@@ -477,14 +478,18 @@ async def test_filename_extension_default(duckdb_instance):
     )
 
     result = await converter.convert_async(prompt="test")
-    assert result.output_text.endswith('.pdf'), "The output file should have a .pdf extension"
+    assert result.output_text.endswith(".pdf"), "The output file should have a .pdf extension"
+
 
 @pytest.mark.asyncio
 async def test_filename_extension_existing_pdf(duckdb_instance):
     import tempfile
+
     import requests
 
-    url = "https://raw.githubusercontent.com/Azure/PyRIT/main/pyrit/datasets/prompt_converters/pdf_converters/fake_CV.pdf"
+    url = (
+        "https://raw.githubusercontent.com/Azure/PyRIT/main/pyrit/datasets/prompt_converters/pdf_converters/fake_CV.pdf"
+    )
     with tempfile.NamedTemporaryFile(delete=False, suffix=".tmp") as tmp_file:
         response = requests.get(url)
         tmp_file.write(response.content)
@@ -524,4 +529,4 @@ async def test_filename_extension_existing_pdf(duckdb_instance):
     )
 
     result = await converter.convert_async(prompt="test")
-    assert result.output_text.endswith('.tmp'), "The output file should have a .tmp extension"
+    assert result.output_text.endswith(".tmp"), "The output file should have a .tmp extension"

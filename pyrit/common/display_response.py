@@ -30,16 +30,16 @@ async def display_image_response(response_piece: PromptRequestPiece) -> None:
 
         try:
             image_bytes = await memory.results_storage_io.read_file(image_location)
-        except:
+        except Exception as e:
             if isinstance(memory.results_storage_io, AzureBlobStorageIO):
                 try:
                     # Fallback to reading from disk if the storage IO fails
                     image_bytes = await DiskStorageIO().read_file(image_location)
-                except:
-                    logger.error(f"Failed to read image from {image_location}.")
+                except Exception as e:
+                    logger.error(f"Failed to read image from {image_location}. Full exception: {str(e)}")
                     return
             else:
-                logger.error(f"Failed to read image from {image_location}.")
+                logger.error(f"Failed to read image from {image_location}. Full exception: {str(e)}")
                 return
 
         image_stream = io.BytesIO(image_bytes)
