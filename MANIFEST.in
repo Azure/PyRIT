@@ -2,4 +2,5 @@ recursive-include pyrit *.json
 recursive-include pyrit *.prompt
 recursive-include pyrit *.yaml
 recursive-include pyrit/datasets/seed_prompts *
+recursive-include pyrit/datasets/score/scorer_evals *
 include pyrit/auxiliary_attacks/gcg/src/Dockerfile
