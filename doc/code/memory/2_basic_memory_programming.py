@@ -21,7 +21,7 @@
 # %%
 from uuid import uuid4
 
-from pyrit.memory.duckdb_memory import DuckDBMemory
+from pyrit.memory.sqlite_memory import SQLiteMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 
 conversation_id = str(uuid4())
@@ -40,7 +40,7 @@ message_list = [
     ),
 ]
 
-memory = DuckDBMemory()
+memory = SQLiteMemory()
 
 memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[0]]))
 memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[1]]))
