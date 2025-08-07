@@ -341,8 +341,6 @@ class PromptNormalizer:
         response = PromptRequestResponse(request_pieces=entries)
 
         await self.convert_values(converter_configurations=request_converter_configurations, request_response=response)
-        for r in response.request_pieces:
-            print(f"Request piece: {r.original_value} (sequence: {r.sequence}) (role: {r.role})")
         return response
 
     async def add_prepended_conversation_to_memory(

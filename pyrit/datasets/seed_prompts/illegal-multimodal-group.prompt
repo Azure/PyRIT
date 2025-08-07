@@ -24,11 +24,11 @@ prompts:
     harm_categories:
       - illegal
     source: AI Red Team
-    value: I'm sorry I cannot answer that because I was tested using PyRIT
+    value: Don't use the words {{ blocked_words }}?
     data_type: text
     sequence: 0
     prompt_group_id_alias: group_1
-    role: system
+    role: user
   - dataset_name: TestMultimodalTextImageAudioVideo
     source: AI Red Team
     value: |

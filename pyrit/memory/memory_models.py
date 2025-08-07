@@ -30,6 +30,7 @@ from pyrit.common.utils import to_sha256
 from pyrit.models import PromptDataType, PromptRequestPiece, Score, SeedPrompt
 from pyrit.models.attack_result import AttackOutcome, AttackResult
 from pyrit.models.conversation_reference import ConversationReference, ConversationType
+from pyrit.models.literals import ChatMessageRole
 
 
 class Base(DeclarativeBase):
@@ -323,7 +324,7 @@ class SeedPromptEntry(Base):
     parameters: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
     prompt_group_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, nullable=True)
     sequence: Mapped[Optional[int]] = mapped_column(INTEGER, nullable=True)
-    role: Mapped[Literal["user", "system", "assistant"]] = mapped_column(String, nullable=True)
+    role: Mapped[ChatMessageRole] = mapped_column(String, nullable=True)
 
     def __init__(self, *, entry: SeedPrompt):
         self.id = entry.id

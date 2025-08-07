@@ -244,38 +244,28 @@ def test_group_id_set_unequally_raises():
 
 def test_enforce_consistent_role_with_no_roles():
     """Test that when no roles are set, all prompts get the default 'user' role."""
-    prompts = [
-        SeedPrompt(value="test1", role=None),
-        SeedPrompt(value="test2", role=None)
-    ]
+    prompts = [SeedPrompt(value="test1", role=None), SeedPrompt(value="test2", role=None)]
     group = SeedPromptGroup(prompts=prompts)
-    
+
     assert all(prompt.role == "user" for prompt in group.prompts)
 
 
 def test_enforce_consistent_role_with_single_role():
     """Test that when one prompt has a role, all prompts get that role."""
-    prompts = [
-        SeedPrompt(value="test1", role="assistant"),
-        SeedPrompt(value="test2", role=None)
-    ]
+    prompts = [SeedPrompt(value="test1", role="assistant"), SeedPrompt(value="test2", role=None)]
     group = SeedPromptGroup(prompts=prompts)
-    
+
     assert all(prompt.role == "assistant" for prompt in group.prompts)
 
 
 def test_enforce_consistent_role_with_conflicting_roles():
     """Test that when prompts have different roles, ValueError is raised."""
-    prompts = [
-        SeedPrompt(value="test1", role="user"),
-        SeedPrompt(value="test2", role="assistant")
-    ]
-    
+    prompts = [SeedPrompt(value="test1", role="user"), SeedPrompt(value="test2", role="assistant")]
+
     with pytest.raises(ValueError) as exc_info:
         SeedPromptGroup(prompts=prompts)
-    
-    assert "Inconsistent roles found across prompts in the group" in str(exc_info.value)
 
+    assert "Inconsistent roles found across prompts in the group" in str(exc_info.value)
 
 
 @pytest.mark.asyncio

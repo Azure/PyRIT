@@ -17,7 +17,7 @@ from tinytag import TinyTag
 from pyrit.common.path import PATHS_DICT
 from pyrit.common.yaml_loadable import YamlLoadable
 from pyrit.models import DataTypeSerializer
-from pyrit.models.literals import PromptDataType
+from pyrit.models.literals import ChatMessageRole, PromptDataType
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +94,7 @@ class SeedPrompt(YamlLoadable):
     prompt_group_alias: Optional[str] = None
 
     # Role of the prompt in a conversation (e.g., "user", "assistant")
-    role: Optional[str] = None
+    role: Optional[ChatMessageRole] = None
 
     # Sequence number for ordering prompts in a conversation
     sequence: Optional[int] = 0
