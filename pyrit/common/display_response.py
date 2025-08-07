@@ -35,8 +35,8 @@ async def display_image_response(response_piece: PromptRequestPiece) -> None:
                 try:
                     # Fallback to reading from disk if the storage IO fails
                     image_bytes = await DiskStorageIO().read_file(image_location)
-                except Exception as e:
-                    logger.error(f"Failed to read image from {image_location}. Full exception: {str(e)}")
+                except Exception as exc:
+                    logger.error(f"Failed to read image from {image_location}. Full exception: {str(exc)}")
                     return
             else:
                 logger.error(f"Failed to read image from {image_location}. Full exception: {str(e)}")
