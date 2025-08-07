@@ -16,4 +16,4 @@ converters:
 adversarial_chat:
   type: "OpenAIChatTarget"
 database:
-  type: "DuckDB"
+  type: "SQLite"

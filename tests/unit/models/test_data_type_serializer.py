@@ -28,12 +28,12 @@ def test_allowed_categories():
     assert entries[1] == "prompt-memory-entries"
 
 
-def test_data_serializer_factory_text_no_data_throws(duckdb_instance):
+def test_data_serializer_factory_text_no_data_throws(sqlite_instance):
     with pytest.raises(ValueError):
         data_serializer_factory(category="prompt-memory-entries", data_type="text")
 
 
-def test_data_serializer_factory_text_with_data(duckdb_instance):
+def test_data_serializer_factory_text_with_data(sqlite_instance):
     serializer = data_serializer_factory(category="prompt-memory-entries", data_type="text", value="test")
     assert isinstance(serializer, DataTypeSerializer)
     assert isinstance(serializer, TextDataTypeSerializer)
@@ -42,7 +42,7 @@ def test_data_serializer_factory_text_with_data(duckdb_instance):
     assert serializer.data_on_disk() is False
 
 
-def test_data_serializer_factory_error_with_data(duckdb_instance):
+def test_data_serializer_factory_error_with_data(sqlite_instance):
     serializer = data_serializer_factory(category="prompt-memory-entries", data_type="error", value="test")
     assert isinstance(serializer, DataTypeSerializer)
     assert isinstance(serializer, ErrorDataTypeSerializer)
@@ -52,28 +52,28 @@ def test_data_serializer_factory_error_with_data(duckdb_instance):
 
 
 @pytest.mark.asyncio
-async def test_data_serializer_text_read_data_throws(duckdb_instance):
+async def test_data_serializer_text_read_data_throws(sqlite_instance):
     serializer = data_serializer_factory(category="prompt-memory-entries", data_type="text", value="test")
     with pytest.raises(TypeError):
         await serializer.read_data()
 
 
 @pytest.mark.asyncio
-async def test_data_serializer_text_save_data_throws(duckdb_instance):
+async def test_data_serializer_text_save_data_throws(sqlite_instance):
     serializer = data_serializer_factory(category="prompt-memory-entries", data_type="text", value="test")
     with pytest.raises(TypeError):
         await serializer.save_data(b"\x00")
 
 
 @pytest.mark.asyncio
-async def test_data_serializer_error_read_data_throws(duckdb_instance):
+async def test_data_serializer_error_read_data_throws(sqlite_instance):
     serializer = data_serializer_factory(category="prompt-memory-entries", data_type="error", value="test")
     with pytest.raises(TypeError):
         await serializer.read_data()
 
 
 @pytest.mark.asyncio
-async def test_data_serializer_error_save_data_throws(duckdb_instance):
+async def test_data_serializer_error_save_data_throws(sqlite_instance):
     serializer = data_serializer_factory(category="prompt-memory-entries", data_type="error", value="test")
     with pytest.raises(TypeError):
         await serializer.save_data(b"\x00")
@@ -91,7 +91,7 @@ async def test_data_serializer_factory_missing_category_raises_value_error():
         await data_serializer_factory(data_type="text", value="test", category=None)
 
 
-def test_image_path_normalizer_factory(duckdb_instance):
+def test_image_path_normalizer_factory(sqlite_instance):
     serializer = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
     assert isinstance(serializer, DataTypeSerializer)
     assert isinstance(serializer, ImagePathDataTypeSerializer)
@@ -100,7 +100,7 @@ def test_image_path_normalizer_factory(duckdb_instance):
 
 
 @pytest.mark.asyncio
-async def test_image_path_save_data(duckdb_instance):
+async def test_image_path_save_data(sqlite_instance):
     serializer = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
     await serializer.save_data(b"\x00")
     serializer_value = serializer.value
@@ -112,7 +112,7 @@ async def test_image_path_save_data(duckdb_instance):
 
 
 @pytest.mark.asyncio
-async def test_image_path_read_data(duckdb_instance):
+async def test_image_path_read_data(sqlite_instance):
     data = b"\x00\x11\x22\x33"
     normalizer = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
     await normalizer.save_data(data)
@@ -124,7 +124,7 @@ async def test_image_path_read_data(duckdb_instance):
 
 
 @pytest.mark.asyncio
-async def test_image_path_read_data_base64(duckdb_instance):
+async def test_image_path_read_data_base64(sqlite_instance):
     data = b"AAAA"
 
     normalizer = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
@@ -135,7 +135,7 @@ async def test_image_path_read_data_base64(duckdb_instance):
 
 
 @pytest.mark.asyncio
-async def test_path_not_exists(duckdb_instance):
+async def test_path_not_exists(sqlite_instance):
     file_path = "non_existing_file.txt"
     serializer = data_serializer_factory(category="prompt-memory-entries", data_type="image_path", value=file_path)
 
@@ -143,7 +143,7 @@ async def test_path_not_exists(duckdb_instance):
         await serializer.read_data()
 
 
-def test_get_extension(duckdb_instance):
+def test_get_extension(sqlite_instance):
     with tempfile.NamedTemporaryFile(suffix=".jpg") as temp_file:
         temp_file_path = temp_file.name
         expected_extension = ".jpg"
@@ -151,7 +151,7 @@ def test_get_extension(duckdb_instance):
         assert extension == expected_extension
 
 
-def test_get_mime_type(duckdb_instance):
+def test_get_mime_type(sqlite_instance):
     with tempfile.NamedTemporaryFile(suffix=".jpg") as temp_file:
         temp_file_path = temp_file.name
         expected_mime_type = "image/jpeg"
@@ -160,7 +160,7 @@ def test_get_mime_type(duckdb_instance):
 
 
 @pytest.mark.asyncio
-async def test_save_b64_image(duckdb_instance):
+async def test_save_b64_image(sqlite_instance):
     serializer = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
     await serializer.save_b64_image("\x00")
     serializer_value = str(serializer.value)
@@ -172,7 +172,7 @@ async def test_save_b64_image(duckdb_instance):
 
 
 @pytest.mark.asyncio
-async def test_audio_path_save_data(duckdb_instance):
+async def test_audio_path_save_data(sqlite_instance):
     """Test saving audio data to disk."""
     serializer = data_serializer_factory(category="prompt-memory-entries", data_type="audio_path")
     await serializer.save_data(b"audio_data")
@@ -182,7 +182,7 @@ async def test_audio_path_save_data(duckdb_instance):
 
 
 @pytest.mark.asyncio
-async def test_audio_path_read_data(duckdb_instance):
+async def test_audio_path_read_data(sqlite_instance):
     """Test reading audio data from disk."""
     data = b"audio_content"
     serializer = data_serializer_factory(category="prompt-memory-entries", data_type="audio_path")
@@ -192,7 +192,7 @@ async def test_audio_path_read_data(duckdb_instance):
 
 
 @pytest.mark.asyncio
-async def test_video_path_save_data(duckdb_instance):
+async def test_video_path_save_data(sqlite_instance):
     """Test saving video data to disk."""
     serializer = data_serializer_factory(category="prompt-memory-entries", data_type="video_path")
     video_data = b"video_data"
@@ -203,7 +203,7 @@ async def test_video_path_save_data(duckdb_instance):
 
 
 @pytest.mark.asyncio
-async def test_video_path_read_data(duckdb_instance):
+async def test_video_path_read_data(sqlite_instance):
     """Test reading video data from disk."""
     video_data = b"video_content"
     serializer = data_serializer_factory(category="prompt-memory-entries", data_type="video_path")
@@ -213,7 +213,7 @@ async def test_video_path_read_data(duckdb_instance):
 
 
 @pytest.mark.asyncio
-async def test_video_path_save_with_custom_extension(duckdb_instance):
+async def test_video_path_save_with_custom_extension(sqlite_instance):
     """Test saving video data with a custom file extension."""
     custom_extension = "avi"
     serializer = data_serializer_factory(
@@ -227,7 +227,7 @@ async def test_video_path_save_with_custom_extension(duckdb_instance):
 
 
 @pytest.mark.asyncio
-async def test_get_sha256_from_text(duckdb_instance):
+async def test_get_sha256_from_text(sqlite_instance):
     """Test SHA256 hash calculation for text data."""
     serializer = data_serializer_factory(category="prompt-memory-entries", data_type="text", value="test_string")
     sha256_hash = await serializer.get_sha256()
@@ -236,7 +236,7 @@ async def test_get_sha256_from_text(duckdb_instance):
 
 
 @pytest.mark.asyncio
-async def test_get_sha256_from_image_file(duckdb_instance):
+async def test_get_sha256_from_image_file(sqlite_instance):
     """Test SHA256 hash calculation for file data."""
     data = b"file_content.png"
     serializer = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
@@ -246,7 +246,7 @@ async def test_get_sha256_from_image_file(duckdb_instance):
     assert sha256_hash == expected_hash
 
 
-def test_is_azure_storage_url(duckdb_instance):
+def test_is_azure_storage_url(sqlite_instance):
     """Test Azure Storage URL validation."""
     valid_url = "https://mystorageaccount.blob.core.windows.net/container/file.txt"
     invalid_url = "https://example.com/file.txt"
@@ -257,7 +257,7 @@ def test_is_azure_storage_url(duckdb_instance):
 
 
 @pytest.mark.asyncio
-async def test_read_data_local_file_with_dummy_image(duckdb_instance):
+async def test_read_data_local_file_with_dummy_image(sqlite_instance):
     with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp_image_file:
         image_path = temp_image_file.name
         image = Image.new("RGB", (10, 10), color="red")
@@ -289,7 +289,7 @@ async def test_read_data_local_file_with_dummy_image(duckdb_instance):
 
 
 @pytest.mark.asyncio
-async def test_get_data_filename(duckdb_instance):
+async def test_get_data_filename(sqlite_instance):
     """Test get_data_filename when a file_name is provided."""
     serializer = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
     provided_filename = "custom_image_name"

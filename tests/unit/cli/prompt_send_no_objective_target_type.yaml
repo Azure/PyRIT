@@ -3,5 +3,5 @@ datasets:
 scenarios:
   - type: "PromptSendingOrchestrator"
 database:
-  type: "DuckDB"
+  type: "SQLite"
 objective_target:

@@ -10,4 +10,4 @@ scoring:
   scoring_target:
     type: "OpenAIChatTarget"
 database:
-  type: "DuckDB"
+  type: "SQLite"

@@ -10,10 +10,11 @@ from pyrit.common import path
 
 logger = logging.getLogger(__name__)
 
-IN_MEMORY = "InMemory"
 DUCK_DB = "DuckDB"
+IN_MEMORY = "InMemory"
+SQLITE = "SQLite"
 AZURE_SQL = "AzureSQL"
-MemoryDatabaseType = Literal["InMemory", "DuckDB", "AzureSQL"]
+MemoryDatabaseType = Literal["InMemory", "SQLite", "AzureSQL", "DuckDB"]
 
 
 def _load_environment_files() -> None:
@@ -45,7 +46,7 @@ def initialize_pyrit(memory_db_type: Union[MemoryDatabaseType, str], **memory_in
 
     Args:
         memory_db_type (MemoryDatabaseType): The MemoryDatabaseType string literal which indicates the memory
-            instance to use for central memory. Options include "InMemory", "DuckDB", and "AzureSQL".
+            instance to use for central memory. Options include "InMemory", "SQLite", and "AzureSQL".
         **memory_instance_kwargs (Optional[Any]): Additional keyword arguments to pass to the memory instance.
     """
     if memory_db_type not in get_args(MemoryDatabaseType):
@@ -60,15 +61,19 @@ def initialize_pyrit(memory_db_type: Union[MemoryDatabaseType, str], **memory_in
         CentralMemory,
         DuckDBMemory,
         MemoryInterface,
+        SQLiteMemory,
     )
 
     memory: MemoryInterface = None
     if memory_db_type == IN_MEMORY:
-        logger.info("Using in-memory DuckDB database.")
-        memory = DuckDBMemory(db_path=":memory:", **memory_instance_kwargs)
+        logger.info("Using in-memory SQLite database.")
+        memory = SQLiteMemory(db_path=":memory:", **memory_instance_kwargs)
     elif memory_db_type == DUCK_DB:
-        logger.info("Using persistent DuckDB database.")
+        logger.info("Using persistent DuckDB database")
         memory = DuckDBMemory(**memory_instance_kwargs)
+    elif memory_db_type == SQLITE:
+        logger.info("Using persistent SQLite database.")
+        memory = SQLiteMemory(**memory_instance_kwargs)
     else:
         logger.info("Using AzureSQL database.")
         memory = AzureSQLMemory(**memory_instance_kwargs)

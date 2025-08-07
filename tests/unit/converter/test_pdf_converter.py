@@ -147,7 +147,7 @@ def test_input_supported(pdf_converter_no_template):
 
 
 @pytest.mark.asyncio
-async def test_convert_async_end_to_end_no_reader(tmp_path, duckdb_instance):
+async def test_convert_async_end_to_end_no_reader(tmp_path, sqlite_instance):
     prompt = "Test for PDF generation."
     pdf_file_path = tmp_path / "output.pdf"
     converter = PDFConverter(prompt_template=None)

@@ -21,21 +21,21 @@ os.environ["RETRY_WAIT_MAX_SECONDS"] = "1"
 
 
 from pyrit.memory.central_memory import CentralMemory  # noqa: E402
-from pyrit.memory.duckdb_memory import DuckDBMemory  # noqa: E402
+from pyrit.memory.sqlite_memory import SQLiteMemory  # noqa: E402
 
 
 @pytest.fixture
-def duckdb_instance() -> Generator[DuckDBMemory, None, None]:
-    # Create an in-memory DuckDB engine
-    duckdb_memory = DuckDBMemory(db_path=":memory:")
+def sqlite_instance() -> Generator[SQLiteMemory, None, None]:
+    # Create an in-memory SQLite engine
+    sqlite_memory = SQLiteMemory(db_path=":memory:")
     temp_dir = tempfile.TemporaryDirectory()
-    duckdb_memory.results_path = temp_dir.name
+    sqlite_memory.results_path = temp_dir.name
 
-    duckdb_memory.disable_embedding()
+    sqlite_memory.disable_embedding()
 
     # Reset the database to ensure a clean state
-    duckdb_memory.reset_database()
-    inspector = inspect(duckdb_memory.engine)
+    sqlite_memory.reset_database()
+    inspector = inspect(sqlite_memory.engine)
 
     # Verify that tables are created as expected
     assert "PromptMemoryEntries" in inspector.get_table_names(), "PromptMemoryEntries table not created."
@@ -43,14 +43,14 @@ def duckdb_instance() -> Generator[DuckDBMemory, None, None]:
     assert "ScoreEntries" in inspector.get_table_names(), "ScoreEntries table not created."
     assert "SeedPromptEntries" in inspector.get_table_names(), "SeedPromptEntries table not created."
 
-    CentralMemory.set_memory_instance(duckdb_memory)
-    yield duckdb_memory
+    CentralMemory.set_memory_instance(sqlite_memory)
+    yield sqlite_memory
     temp_dir.cleanup()
-    duckdb_memory.dispose_engine()
+    sqlite_memory.dispose_engine()
 
 
 @pytest.fixture()
-def patch_central_database(duckdb_instance):
+def patch_central_database(sqlite_instance):
     """Fixture to mock CentralMemory.get_memory_instance"""
-    with patch.object(CentralMemory, "get_memory_instance", return_value=duckdb_instance) as duck_db_memory:
-        yield duck_db_memory
+    with patch.object(CentralMemory, "get_memory_instance", return_value=sqlite_instance) as sqlite_memory:
+        yield sqlite_memory

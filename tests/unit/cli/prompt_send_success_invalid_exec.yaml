@@ -7,4 +7,4 @@ scenarios:
 execution_settings:
   type: "azureml"
 database:
-  type: "DuckDB"
+  type: "SQLite"

@@ -2,18 +2,18 @@
 # Licensed under the MIT license.
 
 import logging
+import uuid
 from contextlib import closing
+from datetime import datetime
 from pathlib import Path
-from typing import MutableSequence, Optional, Sequence, TypeVar, Union, cast
+from typing import MutableSequence, Optional, Sequence, TypeVar, Union
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload, sessionmaker
 from sqlalchemy.orm.session import Session
-from typing_extensions import LiteralString, deprecated
 
-from pyrit.common import deprecation_message
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.common.singleton import Singleton
 from pyrit.memory.memory_interface import MemoryInterface
@@ -30,29 +30,15 @@ logger = logging.getLogger(__name__)
 Model = TypeVar("Model")
 
 
-@deprecated(
-    cast(
-        LiteralString,
-        deprecation_message(
-            old_item="DuckDBMemory",
-            new_item="SQLiteMemory",
-            removed_in="v0.12.0",
-        ),
-    ),
-)
-class DuckDBMemory(MemoryInterface, metaclass=Singleton):
+class SQLiteMemory(MemoryInterface, metaclass=Singleton):
     """
-    A class to manage conversation memory using DuckDB as the backend database. It leverages SQLAlchemy Base models
-    for creating tables and provides CRUD operations to interact with the tables.
-    This class encapsulates the setup of the database connection, table creation based on SQLAlchemy models,
-    and session management to perform database operations.
+    A memory interface that uses SQLite as the backend database.
 
-    .. deprecated::
-        DuckDBMemory is deprecated and will be removed in a future version.
-        Please use SQLiteMemory instead for better compatibility and performance.
+    This class provides functionality to insert, query, and manage conversation data
+    using SQLite. It supports both file-based and in-memory databases.
     """
 
-    DEFAULT_DB_FILE_NAME = "pyrit_duckdb_storage.db"
+    DEFAULT_DB_FILE_NAME = "pyrit.db"
 
     def __init__(
         self,
@@ -60,7 +46,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         db_path: Optional[Union[Path, str]] = None,
         verbose: bool = False,
     ):
-        super(DuckDBMemory, self).__init__()
+        super(SQLiteMemory, self).__init__()
 
         if db_path == ":memory:":
             self.db_path: Union[Path, str] = ":memory:"
@@ -73,11 +59,11 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         self._create_tables_if_not_exist()
 
     def _init_storage_io(self):
-        # Handles disk-based storage for DuckDB local memory.
+        # Handles disk-based storage for SQLite local memory.
         self.results_storage_io = DiskStorageIO()
 
     def _create_engine(self, *, has_echo: bool) -> Engine:
-        """Creates the SQLAlchemy engine for DuckDB.
+        """Creates the SQLAlchemy engine for SQLite.
 
         Creates an engine bound to the specified database file. The `has_echo` parameter
         controls the verbosity of SQL execution logging.
@@ -87,7 +73,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         """
         try:
             # Create the SQLAlchemy engine.
-            engine = create_engine(f"duckdb:///{self.db_path}", echo=has_echo)
+            engine = create_engine(f"sqlite:///{self.db_path}", echo=has_echo)
             logger.info(f"Engine created successfully for database: {self.db_path}")
             return engine
         except SQLAlchemyError as e:
@@ -117,21 +103,22 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
     def _get_prompt_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> list:
         """
         Generates SQLAlchemy filter conditions for filtering conversation pieces by memory labels.
-        For DuckDB, we use json_extract_string function to handle JSON fields.
+        For SQLite, we use JSON_EXTRACT function to handle JSON fields.
         """
-        # DuckDB uses json_extract_string for string values from JSON
-        json_conditions = " AND ".join([f"json_extract_string(labels, '$.{key}') = :{key}" for key in memory_labels])
+        # For SQLite, we use JSON_EXTRACT with text() and bindparams similar to Azure SQL approach
+        json_conditions = " AND ".join([f"JSON_EXTRACT(labels, '$.{key}') = :{key}" for key in memory_labels])
 
         # Create SQL condition using SQLAlchemy's text() with bindparams
+        # for safe parameter passing, preventing SQL injection
         condition = text(json_conditions).bindparams(**{key: str(value) for key, value in memory_labels.items()})
         return [condition]
 
-    def _get_prompt_pieces_prompt_metadata_conditions(self, *, prompt_metadata) -> list:
+    def _get_prompt_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list:
         """
         Generates SQLAlchemy filter conditions for filtering conversation pieces by prompt metadata.
         """
         json_conditions = " AND ".join(
-            [f"json_extract_string(prompt_metadata, '$.{key}') = :{key}" for key in prompt_metadata]
+            [f"JSON_EXTRACT(prompt_metadata, '$.{key}') = :{key}" for key in prompt_metadata]
         )
 
         # Create SQL condition using SQLAlchemy's text() with bindparams
@@ -142,7 +129,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         """
         Generates SQLAlchemy filter conditions for filtering by orchestrator ID.
         """
-        return text("json_extract_string(orchestrator_identifier, '$.id') = :orchestrator_id").bindparams(
+        return text("JSON_EXTRACT(orchestrator_identifier, '$.id') = :orchestrator_id").bindparams(
             orchestrator_id=str(orchestrator_id)
         )
 
@@ -150,9 +137,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         """
         Generates SQLAlchemy filter conditions for filtering seed prompts by metadata.
         """
-        json_conditions = " AND ".join(
-            [f"json_extract_string(prompt_metadata, '$.{key}') = :{key}" for key in metadata]
-        )
+        json_conditions = " AND ".join([f"JSON_EXTRACT(prompt_metadata, '$.{key}') = :{key}" for key in metadata])
 
         # Create SQL condition using SQLAlchemy's text() with bindparams
         return text(json_conditions).bindparams(**{key: str(value) for key, value in metadata.items()})
@@ -160,7 +145,6 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
     def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.
-
         """
         self._insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in request_pieces])
 
@@ -168,7 +152,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         """
         Inserts embedding data into memory storage
         """
-        self._insert_entries(entries=embedding_data)
+        self._insert_entries(entries=list(embedding_data))
 
     def get_all_table_models(self) -> list[type[Base]]:  # type: ignore
         """
@@ -180,38 +164,6 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         # The '__subclasses__()' method returns a list of all subclasses of Base, which includes table models
         return Base.__subclasses__()
 
-    def get_session(self) -> Session:
-        """
-        Provides a session for database operations.
-        """
-        return self.SessionFactory()
-
-    def _insert_entry(self, entry: Base) -> None:  # type: ignore
-        """
-        Inserts an entry into the Table.
-
-        Args:
-            entry: An instance of a SQLAlchemy model to be added to the Table.
-        """
-        with closing(self.get_session()) as session:
-            try:
-                session.add(entry)
-                session.commit()
-            except SQLAlchemyError as e:
-                session.rollback()
-                logger.exception(f"Error inserting entry into the table: {e}")
-
-    def _insert_entries(self, *, entries: Sequence[Base]) -> None:  # type: ignore
-        """Inserts multiple entries into the database."""
-        with closing(self.get_session()) as session:
-            try:
-                session.add_all(entries)
-                session.commit()
-            except SQLAlchemyError as e:
-                session.rollback()
-                logger.exception(f"Error inserting multiple entries into the table: {e}")
-                raise
-
     def _query_entries(
         self, Model, *, conditions: Optional = None, distinct: bool = False, join_scores: bool = False  # type: ignore
     ) -> MutableSequence[Model]:
@@ -219,7 +171,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         Fetches data from the specified table model with optional conditions.
 
         Args:
-            model: The SQLAlchemy model class corresponding to the table you want to query.
+            Model: The SQLAlchemy model class corresponding to the table you want to query.
             conditions: SQLAlchemy filter conditions (Optional).
             distinct: Flag to return distinct rows (default is False).
             join_scores: Flag to join the scores table (default is False).
@@ -245,6 +197,32 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             except SQLAlchemyError as e:
                 logger.exception(f"Error fetching data from table {Model.__tablename__}: {e}")
                 return []
+
+    def _insert_entry(self, entry: Base) -> None:  # type: ignore
+        """
+        Inserts an entry into the Table.
+
+        Args:
+            entry: An instance of a SQLAlchemy model to be inserted into the database.
+        """
+        with closing(self.get_session()) as session:
+            try:
+                session.add(entry)
+                session.commit()
+            except SQLAlchemyError as e:
+                session.rollback()
+                logger.exception(f"Error inserting entry into the table: {e}")
+
+    def _insert_entries(self, *, entries: Sequence[Base]) -> None:  # type: ignore
+        """Inserts multiple entries into the database."""
+        with closing(self.get_session()) as session:
+            try:
+                session.add_all(entries)
+                session.commit()
+            except SQLAlchemyError as e:
+                session.rollback()
+                logger.exception(f"Error inserting multiple entries into the table: {e}")
+                raise
 
     def _update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
         """
@@ -273,8 +251,8 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                         else:
                             session.rollback()
                             raise ValueError(
-                                f"Field '{field}' does not exist in the table \
-                                            '{entry_in_session.__tablename__}'. Rolling back changes..."
+                                f"Field '{field}' does not exist in the table '{entry_in_session.__tablename__}'. "
+                                f"Rolling back changes..."
                             )
                 session.commit()
                 return True
@@ -282,6 +260,118 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 session.rollback()
                 logger.exception(f"Error updating entries: {e}")
                 return False
+
+    def get_session(self) -> Session:
+        """
+        Provides a SQLAlchemy session for transactional operations.
+
+        Returns:
+            Session: A SQLAlchemy session bound to the engine.
+        """
+        return self.SessionFactory()
+
+    def reset_database(self) -> None:
+        """
+        Drops and recreates all tables in the database.
+        """
+        Base.metadata.drop_all(self.engine)
+        Base.metadata.create_all(self.engine)
+
+    def dispose_engine(self) -> None:
+        """
+        Dispose the engine and close all connections.
+        """
+        if self.engine:
+            self.engine.dispose()
+            logger.info("Engine disposed and all connections closed.")
+
+    def export_conversations(
+        self,
+        *,
+        orchestrator_id: Optional[str | uuid.UUID] = None,
+        conversation_id: Optional[str | uuid.UUID] = None,
+        prompt_ids: Optional[Sequence[str] | Sequence[uuid.UUID]] = None,
+        labels: Optional[dict[str, str]] = None,
+        sent_after: Optional[datetime] = None,
+        sent_before: Optional[datetime] = None,
+        original_values: Optional[Sequence[str]] = None,
+        converted_values: Optional[Sequence[str]] = None,
+        data_type: Optional[str] = None,
+        not_data_type: Optional[str] = None,
+        converted_value_sha256: Optional[Sequence[str]] = None,
+        file_path: Optional[Path] = None,
+        export_type: str = "json",
+    ) -> Path:
+        """
+        Exports conversations and their associated scores from the database to a specified file.
+        """
+        # Import here to avoid circular import issues
+        from pyrit.memory.memory_exporter import MemoryExporter
+
+        if not self.exporter:
+            self.exporter = MemoryExporter()
+
+        # Get prompt pieces using the parent class method with appropriate filters
+        prompt_pieces = self.get_prompt_request_pieces(
+            orchestrator_id=orchestrator_id,
+            conversation_id=conversation_id,
+            prompt_ids=prompt_ids,
+            labels=labels,
+            sent_after=sent_after,
+            sent_before=sent_before,
+            original_values=original_values,
+            converted_values=converted_values,
+            data_type=data_type,
+            not_data_type=not_data_type,
+            converted_value_sha256=converted_value_sha256,
+        )
+
+        # Create the filename if not provided
+        if not file_path:
+            if orchestrator_id:
+                file_name = f"{orchestrator_id}.{export_type}"
+            elif conversation_id:
+                file_name = f"{conversation_id}.{export_type}"
+            else:
+                file_name = f"all_conversations.{export_type}"
+            file_path = Path(DB_DATA_PATH, file_name)
+
+        # Get scores for the prompt pieces
+        if prompt_pieces:
+            prompt_request_response_ids = [str(piece.id) for piece in prompt_pieces]
+            scores = self.get_scores_by_prompt_ids(prompt_request_response_ids=prompt_request_response_ids)
+        else:
+            scores = []
+
+        # Merge conversations and scores - create the data structure manually
+        merged_data = []
+        for piece in prompt_pieces:
+            piece_data = piece.to_dict()
+            # Find associated scores
+            piece_scores = [score for score in scores if score.prompt_request_response_id == piece.id]
+            piece_data["scores"] = [score.to_dict() for score in piece_scores]
+            merged_data.append(piece_data)
+
+        # Export to JSON manually since the exporter expects objects but we have dicts
+        with open(file_path, "w") as f:
+            import json
+
+            json.dump(merged_data, f, indent=4)
+        return file_path
+
+    def print_schema(self):
+        """
+        Prints the schema of all tables in the SQLite database.
+        """
+        print("Database Schema:")
+        print("================")
+        for table_name, table in Base.metadata.tables.items():
+            print(f"\nTable: {table_name}")
+            print("-" * (len(table_name) + 7))
+            for column in table.columns:
+                nullable = "NULL" if column.nullable else "NOT NULL"
+                default = f" DEFAULT {column.default}" if column.default else ""
+                print(f"  {column.name}: {column.type} {nullable}{default}")
 
     def export_all_tables(self, *, export_type: str = "json"):
         """
@@ -295,23 +385,9 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         table_models = self.get_all_table_models()
 
         for model in table_models:
-            data: MutableSequence[Base] = self._query_entries(model)
+            data = self._query_entries(model)  # type: ignore
             table_name = model.__tablename__
             file_extension = f".{export_type}"
             file_path = DB_DATA_PATH / f"{table_name}{file_extension}"
-            self.exporter.export_data(data, file_path=file_path, export_type=export_type)
-
-    def dispose_engine(self):
-        """
-        Dispose the engine and clean up resources.
-        """
-        if self.engine:
-            self.engine.dispose()
-            logger.info("Engine disposed successfully.")
-
-    def reset_database(self):
-        """Drop and recreate existing tables"""
-        # Drop all existing tables
-        Base.metadata.drop_all(self.engine)
-        # Recreate the tables
-        Base.metadata.create_all(self.engine, checkfirst=True)
+            # Convert to list for exporter compatibility
+            self.exporter.export_data(list(data), file_path=file_path, export_type=export_type)

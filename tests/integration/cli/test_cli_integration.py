@@ -225,7 +225,7 @@ def _create_data(data_type: str) -> dict[str, Collection[Collection[str]]]:
         "scenarios": [{"type": "PromptSendingOrchestrator"}],
         "adversarial_chat": {"type": "OpenAIChatTarget"},
         "objective_target": {"type": "OpenAIChatTarget"},
-        "database": {"type": "DuckDB"},
+        "database": {"type": "SQLite"},
     }
 
     if data_type == "text":
