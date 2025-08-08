@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
@@ -25,7 +25,7 @@
 # This example demonstrates how to use the image target to create an image from a text-based prompt.
 
 # %%
-from pyrit.attacks import (
+from pyrit.executor.attack import (
     AttackScoringConfig,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
@@ -64,7 +64,7 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 # Similarly, this example shows how to use the TTS (audio) target to convert text to speech
 
 # %%
-from pyrit.attacks import AttackConverterConfig
+from pyrit.executor.attack import AttackConverterConfig
 from pyrit.prompt_converter import TranslationConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import OpenAIChatTarget, OpenAITTSTarget
@@ -95,7 +95,7 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 # This example demonstrates how to use the Sora target to create a video from a text-based prompt.
 
 # %%
-from pyrit.attacks import AttackExecutor
+from pyrit.executor.attack import AttackExecutor
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_target import OpenAISoraTarget
 
@@ -125,7 +125,7 @@ for result in results:
 # %%
 import pathlib
 
-from pyrit.attacks import SingleTurnAttackContext
+from pyrit.executor.attack import SingleTurnAttackContext
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.models import SeedPrompt, SeedPromptGroup
 from pyrit.prompt_target import OpenAIChatTarget

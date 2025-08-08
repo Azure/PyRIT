@@ -32,7 +32,7 @@
 #
 
 # %%
-from pyrit.attacks import ConsoleAttackResultPrinter, PromptSendingAttack
+from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_target import OpenAIChatTarget
 
@@ -57,7 +57,7 @@ await printer.print_conversation_async(result=result)  # type: ignore
 # %%
 import pathlib
 
-from pyrit.attacks import (
+from pyrit.executor.attack import (
     AttackConverterConfig,
     AttackExecutor,
     ConsoleAttackResultPrinter,
@@ -99,7 +99,7 @@ for result in results:
 # %%
 import pathlib
 
-from pyrit.attacks import (
+from pyrit.executor.attack import (
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
     SingleTurnAttackContext,
@@ -135,7 +135,7 @@ await printer.print_result_async(result=result)  # type: ignore
 # %%
 from azure.ai.contentsafety.models import TextCategory
 
-from pyrit.attacks import AttackScoringConfig, PromptSendingAttack
+from pyrit.executor.attack import AttackScoringConfig, PromptSendingAttack
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import (
     AzureContentFilterScorer,
@@ -174,7 +174,7 @@ await printer.print_conversation_async(result=result, include_auxiliary_scores=T
 #
 # If you prepend all or part of a conversation with `PromptSendingAttack`, that is also supported. You can call `set_prepended_conversation` to customize the beginning part of any message. For example, you could use this to do a multi-turn conversation. Below sets the system prompt for many messages.
 # %%
-from pyrit.attacks import AttackExecutor, PromptSendingAttack
+from pyrit.executor.attack import AttackExecutor, PromptSendingAttack
 from pyrit.datasets import TextJailBreak
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.prompt_target import OpenAIChatTarget
@@ -207,7 +207,7 @@ for result in results:
 # %%
 import uuid
 
-from pyrit.attacks import PromptSendingAttack
+from pyrit.executor.attack import PromptSendingAttack
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.models import SeedPrompt, SeedPromptGroup
 from pyrit.prompt_target import OpenAIChatTarget

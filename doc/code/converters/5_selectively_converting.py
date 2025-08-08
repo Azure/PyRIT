@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
@@ -18,7 +18,7 @@
 # You can selectively convert strings from text converters using most orchestrators or the `convert_tokens_async` function. This function uses a `start_token` and `end_token` to determine where to do the converting (by default these are the unicode characters ⟪ and ⟫). Here is an example that uses `PromptSendingAttack` to convert pieces of the text to base64.
 
 # %%
-from pyrit.attacks import (
+from pyrit.executor.attack import (
     AttackConverterConfig,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,

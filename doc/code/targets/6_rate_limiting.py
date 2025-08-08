@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
@@ -23,7 +23,7 @@
 # %%
 import time
 
-from pyrit.attacks import AttackExecutor, PromptSendingAttack
+from pyrit.executor.attack import AttackExecutor, PromptSendingAttack
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_target import OpenAIChatTarget
 

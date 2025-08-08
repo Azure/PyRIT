@@ -1,3 +1,14 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.17.2
+# ---
+
 # %% [markdown]
 # # Generating Perturbed Prompts Using the AnsiAttackConverter
 #
@@ -12,7 +23,7 @@
 # - **Attack scenarios:** These involve crafting malicious or deceptive escape sequences.
 
 # %%
-from pyrit.attacks import (
+from pyrit.executor.attack import (
     AttackConverterConfig,
     AttackExecutor,
     ConsoleAttackResultPrinter,

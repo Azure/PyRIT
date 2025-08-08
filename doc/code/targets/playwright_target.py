@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
+#       jupytext_version: 1.17.2
 # ---
 
 # %% [markdown]
@@ -134,7 +134,7 @@ async def interact_with_my_app(page: Page, request_piece: PromptRequestPiece) ->
 import asyncio
 import sys
 
-from pyrit.attacks import ConsoleAttackResultPrinter, PromptSendingAttack
+from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
 
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())

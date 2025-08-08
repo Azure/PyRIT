@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
@@ -28,7 +28,7 @@
 # - model_name: The model to use (`OPENAI_RESPONSES_MODEL` environment variable). For OpenAI, these are any available model name and are listed here: "https://platform.openai.com/docs/models".
 
 # %%
-from pyrit.attacks import ConsoleAttackResultPrinter, PromptSendingAttack
+from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_target import OpenAIResponseTarget
 

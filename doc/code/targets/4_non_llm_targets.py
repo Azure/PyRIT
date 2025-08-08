@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
+#       jupytext_version: 1.17.2
 # ---
 
 # %% [markdown]
@@ -29,7 +29,7 @@
 # %%
 import os
 
-from pyrit.attacks import ConsoleAttackResultPrinter, PromptSendingAttack
+from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
 from pyrit.common import AZURE_SQL, initialize_pyrit
 from pyrit.prompt_target import AzureBlobStorageTarget
 

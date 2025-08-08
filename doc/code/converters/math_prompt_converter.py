@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
@@ -29,7 +29,7 @@
 # %%
 import pathlib
 
-from pyrit.attacks import (
+from pyrit.executor.attack import (
     AttackConverterConfig,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
