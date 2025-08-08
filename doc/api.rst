@@ -31,7 +31,6 @@ API Reference
     AttackExecutor
     AttackScoringConfig
     AttackStrategy
-    AttackStrategyLogAdapter
     ContextT
     ContextComplianceAttack
     ConversationSession
