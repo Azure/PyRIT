@@ -27,9 +27,10 @@
 # - auth: The API key for authentication (`OPENAI_RESPONSES_KEY` environment variable).
 # - model_name: The model to use (`OPENAI_RESPONSES_MODEL` environment variable). For OpenAI, these are any available model name and are listed here: "https://platform.openai.com/docs/models".
 
+from pyrit.common import IN_MEMORY, initialize_pyrit
+
 # %%
 from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_target import OpenAIResponseTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)

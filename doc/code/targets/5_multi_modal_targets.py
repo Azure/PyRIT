@@ -24,13 +24,14 @@
 #
 # This example demonstrates how to use the image target to create an image from a text-based prompt.
 
+from pyrit.common import IN_MEMORY, initialize_pyrit
+
 # %%
 from pyrit.executor.attack import (
     AttackScoringConfig,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_target import OpenAIChatTarget, OpenAIDALLETarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
 
@@ -94,9 +95,10 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 #
 # This example demonstrates how to use the Sora target to create a video from a text-based prompt.
 
+from pyrit.common import IN_MEMORY, initialize_pyrit
+
 # %%
 from pyrit.executor.attack import AttackExecutor
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_target import OpenAISoraTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
@@ -125,8 +127,8 @@ for result in results:
 # %%
 import pathlib
 
-from pyrit.executor.attack import SingleTurnAttackContext
 from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.executor.attack import SingleTurnAttackContext
 from pyrit.models import SeedPrompt, SeedPromptGroup
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion

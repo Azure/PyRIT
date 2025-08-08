@@ -44,9 +44,10 @@
 # possible adjustable parameters can be found here: https://huggingface.co/docs/api-inference/tasks/text-generation but note that not all parameters may have an effect
 # depending on the specific model. The parameters that can be set per model can usually be found in the 'Consume' tab when you navigate to your endpoint in AML Studio.
 
+from pyrit.common import IN_MEMORY, initialize_pyrit
+
 # %%
 from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_target import AzureMLChatTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)

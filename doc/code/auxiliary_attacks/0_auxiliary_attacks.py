@@ -29,13 +29,14 @@
 #
 # First, we send a harmful prompt to Phi-3-mini without a GCG suffix. If the environment variables `PHI3_MINI_ENDPOINT` and `PHI3_MINI_KEY` are not set in your .env file, the target will default to the model with `AZURE_ML_MANAGED_ENDPOINT` and `AZURE_ML_MANAGED_KEY`.
 
+from pyrit.common import IN_MEMORY, initialize_pyrit
+
 # %%
 from pyrit.executor.attack import (
     AttackScoringConfig,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_target import AzureMLChatTarget, OpenAIChatTarget
 from pyrit.score import SelfAskRefusalScorer, TrueFalseInverterScorer
 

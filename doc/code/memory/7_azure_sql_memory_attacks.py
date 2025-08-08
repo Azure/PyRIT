@@ -25,12 +25,12 @@
 import time
 import uuid
 
+from pyrit.common import AZURE_SQL, initialize_pyrit
 from pyrit.executor.attack import (
     AttackExecutor,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
-from pyrit.common import AZURE_SQL, initialize_pyrit
 from pyrit.prompt_target import OpenAIChatTarget
 
 initialize_pyrit(memory_db_type=AZURE_SQL)
@@ -156,12 +156,12 @@ await result.print_conversation_async()  # type: ignore
 # %%
 import pathlib
 
+from pyrit.common import AZURE_SQL, initialize_pyrit
 from pyrit.executor.attack import (
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
     SingleTurnAttackContext,
 )
-from pyrit.common import AZURE_SQL, initialize_pyrit
 from pyrit.models import SeedPrompt, SeedPromptGroup
 from pyrit.prompt_target import OpenAIChatTarget
 

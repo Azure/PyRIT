@@ -22,6 +22,8 @@
 # - **Practical tasks:** Examples include printing colored text or terminal effects.
 # - **Attack scenarios:** These involve crafting malicious or deceptive escape sequences.
 
+from pyrit.common import IN_MEMORY, initialize_pyrit
+
 # %%
 from pyrit.executor.attack import (
     AttackConverterConfig,
@@ -29,7 +31,6 @@ from pyrit.executor.attack import (
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_converter import AnsiAttackConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import OpenAIChatTarget

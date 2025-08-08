@@ -25,12 +25,12 @@
 # %%
 import os
 
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     AttackConverterConfig,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.prompt_converter import SearchReplaceConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration

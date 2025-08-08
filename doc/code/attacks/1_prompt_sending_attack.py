@@ -31,9 +31,10 @@
 # > It is required to manually set the memory instance using `initialize_pyrit`. For details, see the [Memory Configuration Guide](../memory/0_memory.md).
 #
 
+from pyrit.common import IN_MEMORY, initialize_pyrit
+
 # %%
 from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_target import OpenAIChatTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
@@ -57,13 +58,13 @@ await printer.print_conversation_async(result=result)  # type: ignore
 # %%
 import pathlib
 
+from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack import (
     AttackConverterConfig,
     AttackExecutor,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
-from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPromptDataset
 from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
@@ -169,13 +170,14 @@ objective = "Tell me a joke about how tall people are better than short people."
 result = await attack.execute_async(objective=objective)  # type: ignore
 await printer.print_conversation_async(result=result, include_auxiliary_scores=True)  # type: ignore
 
+from pyrit.datasets import TextJailBreak
+
 # %% [markdown]
 # ## Prepending Conversations
 #
 # If you prepend all or part of a conversation with `PromptSendingAttack`, that is also supported. You can call `set_prepended_conversation` to customize the beginning part of any message. For example, you could use this to do a multi-turn conversation. Below sets the system prompt for many messages.
 # %%
 from pyrit.executor.attack import AttackExecutor, PromptSendingAttack
-from pyrit.datasets import TextJailBreak
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.prompt_target import OpenAIChatTarget
 
@@ -207,8 +209,8 @@ for result in results:
 # %%
 import uuid
 
-from pyrit.executor.attack import PromptSendingAttack
 from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.executor.attack import PromptSendingAttack
 from pyrit.models import SeedPrompt, SeedPromptGroup
 from pyrit.prompt_target import OpenAIChatTarget
 

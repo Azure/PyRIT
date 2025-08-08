@@ -461,7 +461,7 @@ class FuzzerResultPrinter:
                     self._print_wrapped_text(message.converted_value, Fore.YELLOW)
 
                 # Print scores if available
-                scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(message.id)])
+                scores = self._memory.get_prompt_scores(prompt_ids=[str(message.id)])
                 if scores:
                     score = scores[0]
                     self._print_colored(

@@ -23,8 +23,8 @@
 # %%
 import time
 
-from pyrit.executor.attack import AttackExecutor, PromptSendingAttack
 from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.executor.attack import AttackExecutor, PromptSendingAttack
 from pyrit.prompt_target import OpenAIChatTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)

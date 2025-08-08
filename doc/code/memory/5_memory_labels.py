@@ -33,12 +33,12 @@
 # %%
 import uuid
 
+from pyrit.common import DUCK_DB, initialize_pyrit
 from pyrit.executor.attack import (
     AttackExecutor,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
-from pyrit.common import DUCK_DB, initialize_pyrit
 from pyrit.prompt_target import OpenAIChatTarget
 
 initialize_pyrit(memory_db_type=DUCK_DB)

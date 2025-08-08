@@ -97,13 +97,13 @@ await result.print_conversation_async()  # type: ignore
 # %%
 from typing import List
 
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     AttackConverterConfig,
     AttackScoringConfig,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_converter import RandomCapitalLettersConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import CrucibleTarget, OpenAIChatTarget

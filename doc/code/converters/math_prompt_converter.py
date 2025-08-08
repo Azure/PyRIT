@@ -29,13 +29,13 @@
 # %%
 import pathlib
 
+from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack import (
     AttackConverterConfig,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
-from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt
 from pyrit.prompt_converter import MathPromptConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
