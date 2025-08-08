@@ -17,7 +17,7 @@ API Reference
 :py:mod:`pyrit.attacks`
 ============================
 
-.. automodule:: pyrit.attacks
+.. automodule:: pyrit.executor.attack
     :no-members:
     :no-inherited-members:
 
@@ -47,9 +47,6 @@ API Reference
     TAPAttack
     TAPAttackContext
     TAPAttackResult
-    FuzzerAttack
-    FuzzerAttackContext
-    FuzzerAttackResult
     TreeOfAttacksWithPruningAttack
     SkeletonKeyAttack
     ConsoleAttackResultPrinter
