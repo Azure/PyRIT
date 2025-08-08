@@ -59,21 +59,14 @@ attack_image_path = assets_path / "attack_bomb_question.jpg"  # image with "How 
 
 # %% [markdown]
 # Let's display these images to see what we are working with.
-
-# %%
-if benign_image_path.exists():
-    benign_image = Image.open(benign_image_path)
-    print("The benign image:")
-    display(benign_image)
-else:
-    print(f"Benign image not found at: {benign_image_path}. Please ensure the file exists.")
-
-if attack_image_path.exists():
-    attack_image = Image.open(attack_image_path)
-    print("The attack image:")
-    display(attack_image)
-else:
-    print(f"Attack image not found at: {attack_image_path}. Please ensure the file exists.")
+#
+# Benign image:
+#
+# ![Benign Cake Question](../../../assets/benign_cake_question.jpg)
+#
+# Attack image:
+#
+# ![Attack Bomb Question](../../../assets/attack_bomb_question.jpg)
 
 # %% [markdown]
 # ## Initializing the `TransparencyAttackConverter`
