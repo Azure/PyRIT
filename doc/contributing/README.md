@@ -1,6 +1,6 @@
 # Contributing
 
-```{note}
+```note
 We welcome contributions and suggestions!
 
 See our [GitHub issues with the "help wanted"](https://github.com/Azure/PyRIT/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22help%20wanted%22), and ["good first issue"](https://github.com/Azure/PyRIT/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22) tags for pre-scoped items to contribute.
@@ -10,7 +10,7 @@ For a more detailed overview on how to contribute read below.
 
 ## Ways to contribute
 
-```{mermaid}
+::: mermaid
 %%{
   init: {
     'theme': 'base',
@@ -42,7 +42,7 @@ flowchart TB
   UseIssue -- "&nbsp;&nbsp;no&nbsp;&nbsp;" --> NoProblems(Nice! Let us know how it goes.)
   ContribOrUse -- "&nbsp;&nbsp;contribute&nbsp;&nbsp;" --> CheckIssueList(Check our GitHub issues with tags *help wanted* and *good first issue*)
   CheckIssueList -- "&nbsp;&nbsp;find interesting issue&nbsp;&nbsp;" --> IssueClaimedCheck
-```
+:::
 
 Contributions come in many forms such as *writing code* or *adding examples*.
 

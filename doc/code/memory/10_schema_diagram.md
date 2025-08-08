@@ -2,7 +2,7 @@
 
 Our memory contains multiple components. This diagram  shows a mapping of our database schema and how our components map together! The arrows indicate the values that map one database to another.
 
-```{mermaid}
+::: mermaid
 flowchart LR
  subgraph EmbeddingData["EmbeddingData"]
         E_id["id (UUID)"]
@@ -64,10 +64,10 @@ flowchart LR
     S_value_sha256 -- N:N relationship to query --> P_original_value_sha256
     P_id -- 1:N relationship to query --> Sc_prompt_request_response_id
 
-    style S_value_sha256 fill:#E1BEE7
-    style P_id fill:#C8E6C9
-    style P_original_value_sha256 fill:#E1BEE7
-    style Sc_prompt_request_response_id fill:#C8E6C9
-    linkStyle 0 stroke:#E1BEE7,fill:none
-    linkStyle 1 stroke:#C8E6C9
-```
+    style S_value_sha256 fill:#ff8800ff
+    style P_id fill:#14a519ff
+    style P_original_value_sha256 fill:#ff8800ff
+    style Sc_prompt_request_response_id fill:#14a519ff
+    linkStyle 0 stroke:#ff8800ff,fill:none
+    linkStyle 1 stroke:#14a519ff
+:::
