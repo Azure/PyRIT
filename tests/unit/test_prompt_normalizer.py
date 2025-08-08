@@ -368,8 +368,11 @@ async def test_build_prompt_request_response(mock_memory_instance, seed_prompt_g
     # Check all prompt pieces in the response have the same conversation ID
     assert len(set(prompt_piece.conversation_id for prompt_piece in response.request_pieces)) == 1
 
-    assert (prompt_piece.sequence for prompt_piece in response.request_pieces) == 1
-    assert (prompt_piece.role for prompt_piece in response.request_pieces) == "system"
+    assert response.request_pieces[0].sequence == 1
+    assert len(set(prompt_piece.sequence for prompt_piece in response.request_pieces)) == 1
+
+    assert response.request_pieces[0].role == "system"
+    assert len(set(prompt_piece.role for prompt_piece in response.request_pieces)) == 1
 
     # Check sequence is set correctly
     assert len(set(prompt_piece.sequence for prompt_piece in response.request_pieces)) == 1

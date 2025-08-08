@@ -227,6 +227,7 @@ def test_group_id_set_unequally_raises():
 
     assert "Inconsistent group IDs found across prompts" in str(exc_info.value)
 
+
 def test_enforce_consistent_role_with_no_roles_by_sequence():
     """Test that when no roles are set, all prompts in each sequence get the default 'user' role."""
     prompts = [
