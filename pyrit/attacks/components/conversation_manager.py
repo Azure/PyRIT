@@ -419,9 +419,7 @@ class ConversationManager:
         elif last_message.role == "assistant":
             # Get scores for the last assistant message based off of the original id
             conversation_state.last_assistant_message_scores = list(
-                self._memory.get_scores_by_prompt_ids(
-                    prompt_request_response_ids=[str(last_message.original_prompt_id)]
-                )
+                self._memory.get_prompt_scores(prompt_ids=[str(last_message.original_prompt_id)])
             )
 
             # Do not set last user message if there are no scores for the last assistant message
