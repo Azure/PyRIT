@@ -32,7 +32,6 @@ chapters:
       - file: code/datasets/2_fetch_dataset
     - file: code/attacks/0_attack
       sections:
-      - file: code/attacks/0_attack
       - file: code/attacks/1_prompt_sending_attack
     - file: code/orchestrators/0_orchestrator
       sections:
