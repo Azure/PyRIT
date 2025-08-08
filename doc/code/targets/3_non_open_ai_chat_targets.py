@@ -45,8 +45,8 @@
 # depending on the specific model. The parameters that can be set per model can usually be found in the 'Consume' tab when you navigate to your endpoint in AML Studio.
 
 # %%
+from pyrit.attacks import ConsoleAttackResultPrinter, PromptSendingAttack
 from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import AzureMLChatTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
@@ -61,10 +61,10 @@ azure_ml_chat_target._set_env_configuration_vars(
 # Parameters such as temperature and repetition_penalty can be set using the _set_model_parameters() function.
 azure_ml_chat_target._set_model_parameters(temperature=0.9, repetition_penalty=1.3)
 
-orchestrator = PromptSendingOrchestrator(objective_target=azure_ml_chat_target)
+attack = PromptSendingAttack(objective_target=azure_ml_chat_target)
 
-response = await orchestrator.run_attack_async(objective="Hello! Describe yourself and the company who developed you.")  # type: ignore
-await response.print_conversation_async()  # type: ignore
+result = await attack.execute_async(objective="Hello! Describe yourself and the company who developed you.")  # type: ignore
+await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
 
 azure_ml_chat_target.dispose_db_engine()
 

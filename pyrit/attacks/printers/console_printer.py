@@ -149,7 +149,7 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
 
                 # Print scores with better formatting (only if auxiliary scores are requested)
                 if include_auxiliary_scores:
-                    scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(piece.id)])
+                    scores = self._memory.get_prompt_scores(prompt_ids=[str(piece.id)])
                     if scores:
                         print()
                         self._print_colored(f"{self._indent}📊 Scores:", Style.DIM, Fore.MAGENTA)
@@ -290,6 +290,8 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
             indent_level (int): Number of indent units to apply. Defaults to 3.
         """
         indent = self._indent * indent_level
+        print(f"{indent}Scorer: {score.scorer_class_identifier['__type__']}")
+        self._print_colored(f"{indent}• Category: {score.score_category or 'N/A'}", Fore.LIGHTMAGENTA_EX)
         self._print_colored(f"{indent}• Type: {score.score_type}", Fore.CYAN)
 
         # Determine color based on score type and value

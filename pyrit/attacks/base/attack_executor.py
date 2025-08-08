@@ -2,11 +2,16 @@
 # Licensed under the MIT license.
 
 import asyncio
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, TypeVar
 
-from pyrit.attacks.base.attack_context import ContextT
+from pyrit.attacks.base.attack_context import (
+    ContextT,
+    MultiTurnAttackContext,
+    SingleTurnAttackContext,
+)
 from pyrit.attacks.base.attack_strategy import AttackStrategy
 from pyrit.models import AttackResultT, PromptRequestResponse
+from pyrit.models.seed_prompt import SeedPromptGroup
 
 
 class AttackExecutor:
@@ -17,6 +22,9 @@ class AttackExecutor:
     concurrency limiting and parallel execution. It can handle multiple objectives against
     the same target or execute different strategies concurrently.
     """
+
+    _SingleTurnContextT = TypeVar("_SingleTurnContextT", bound=SingleTurnAttackContext)
+    _MultiTurnContextT = TypeVar("_MultiTurnContextT", bound=MultiTurnAttackContext)
 
     def __init__(self, *, max_concurrency: int = 1):
         """
@@ -79,6 +87,208 @@ class AttackExecutor:
 
         tasks = [execute_with_semaphore(obj) for obj in objectives]
         return await asyncio.gather(*tasks)
+
+    async def execute_single_turn_attacks_async(
+        self,
+        *,
+        attack: AttackStrategy[_SingleTurnContextT, AttackResultT],
+        objectives: List[str],
+        seed_prompt_groups: Optional[List[SeedPromptGroup]] = None,
+        prepended_conversations: Optional[List[List[PromptRequestResponse]]] = None,
+        memory_labels: Optional[Dict[str, str]] = None,
+    ) -> List[AttackResultT]:
+        """
+        Execute a batch of single-turn attacks with multiple objectives.
+
+        This method is specifically designed for single-turn attacks, allowing you to
+        execute multiple objectives in parallel while managing the contexts and prompts.
+
+        Args:
+            attack (AttackStrategy[_SingleTurnContextT, AttackResultT]): The single-turn attack strategy to use,
+                the context must be a SingleTurnAttackContext or a subclass of it.
+            objectives (List[str]): List of attack objectives to test.
+            seed_prompt_groups (Optional[List[SeedPromptGroup]]): List of seed prompt groups to use for this execution.
+                If provided, must match the length of objectives. Seed prompt group will be sent along the objective
+                with the same list index.
+            prepended_conversations (Optional[List[List[PromptRequestResponse]]]): Conversations to prepend to each
+                objective. If provided, must match the length of objectives. Conversation will be sent along the
+                objective with the same list index.
+            memory_labels (Optional[Dict[str, str]]): Additional labels that can be applied to the prompts.
+                The labels will be the same across all executions.
+        Returns:
+            List[AttackResultT]: List of attack results in the same order as the objectives list.
+
+        Example:
+            >>> executor = AttackExecutor(max_concurrency=3)
+            >>> results = await executor.execute_single_turn_batch_async(
+            ...     attack=single_turn_attack,
+            ...     objectives=["how to make a Molotov cocktail", "how to escalate privileges"],
+            ...     seed_prompts=[SeedPromptGroup(...), SeedPromptGroup(...)]
+            ... )
+        """
+
+        # Validate that the attack uses SingleTurnAttackContext
+        if hasattr(attack, "_context_type") and not issubclass(attack._context_type, SingleTurnAttackContext):
+            raise TypeError(
+                f"Attack strategy {attack.__class__.__name__} must use SingleTurnAttackContext or a subclass of it."
+            )
+
+        # Validate input parameters using shared validation logic
+        self._validate_attack_batch_parameters(
+            objectives=objectives,
+            optional_list=seed_prompt_groups,
+            optional_list_name="seed_prompt_groups",
+            prepended_conversations=prepended_conversations,
+        )
+
+        # Create semaphore for concurrency control
+        semaphore = asyncio.Semaphore(self._max_concurrency)
+
+        async def execute_with_semaphore(
+            objective: str,
+            seed_prompt_group: Optional[SeedPromptGroup],
+            prepended_conversation: Optional[List[PromptRequestResponse]],
+        ) -> AttackResultT:
+            async with semaphore:
+                return await attack.execute_async(
+                    objective=objective,
+                    prepended_conversation=prepended_conversation,
+                    seed_prompt_group=seed_prompt_group,
+                    memory_labels=memory_labels or {},
+                )
+
+        # Create tasks for each objective with its corresponding parameters
+        tasks = []
+        for i, objective in enumerate(objectives):
+            seed_prompt_group = seed_prompt_groups[i] if seed_prompt_groups else None
+            prepended_conversation = prepended_conversations[i] if prepended_conversations else []
+
+            task = execute_with_semaphore(
+                objective=objective, seed_prompt_group=seed_prompt_group, prepended_conversation=prepended_conversation
+            )
+            tasks.append(task)
+
+        # Execute all tasks in parallel with concurrency control
+        return await asyncio.gather(*tasks)
+
+    async def execute_multi_turn_attacks_async(
+        self,
+        *,
+        attack: AttackStrategy[_MultiTurnContextT, AttackResultT],
+        objectives: List[str],
+        custom_prompts: Optional[List[str]] = None,
+        prepended_conversations: Optional[List[List[PromptRequestResponse]]] = None,
+        memory_labels: Optional[Dict[str, str]] = None,
+    ) -> List[AttackResultT]:
+        """
+        Execute a batch of multi-turn attacks with multiple objectives.
+
+        This method is specifically designed for multi-turn attacks, allowing you to
+        execute multiple objectives in parallel while managing the contexts and custom prompts.
+
+        Args:
+            attack (AttackStrategy[_MultiTurnContextT, AttackResultT]): The multi-turn attack strategy to use,
+                the context must be a MultiTurnAttackContext or a subclass of it.
+            objectives (List[str]): List of attack objectives to test.
+            custom_prompts (Optional[List[str]]): List of custom prompts to use for this execution.
+                If provided, must match the length of objectives. custom prompts will be sent along the objective
+                with the same list index.
+            prepended_conversations (Optional[List[List[PromptRequestResponse]]]): Conversations to prepend to each
+                objective. If provided, must match the length of objectives. Conversation will be sent along the
+                objective with the same list index.
+            memory_labels (Optional[Dict[str, str]]): Additional labels that can be applied to the prompts.
+                The labels will be the same across all executions.
+        Returns:
+            List[AttackResultT]: List of attack results in the same order as the objectives list.
+
+        Example:
+            >>> executor = AttackExecutor(max_concurrency=3)
+            >>> results = await executor.execute_multi_turn_attacks_async(
+            ...     attack=multi_turn_attack,
+            ...     objectives=["how to make a Molotov cocktail", "how to escalate privileges"],
+            ...     custom_prompts=["Tell me about chemistry", "Explain system administration"]
+            ... )
+        """
+
+        # Validate that the attack uses MultiTurnAttackContext
+        if hasattr(attack, "_context_type") and not issubclass(attack._context_type, MultiTurnAttackContext):
+            raise TypeError(
+                f"Attack strategy {attack.__class__.__name__} must use MultiTurnAttackContext or a subclass of it."
+            )
+
+        # Validate input parameters using shared validation logic
+        self._validate_attack_batch_parameters(
+            objectives=objectives,
+            optional_list=custom_prompts,
+            optional_list_name="custom_prompts",
+            prepended_conversations=prepended_conversations,
+        )
+
+        # Create semaphore for concurrency control
+        semaphore = asyncio.Semaphore(self._max_concurrency)
+
+        async def execute_with_semaphore(
+            objective: str, custom_prompt: Optional[str], prepended_conversation: Optional[List[PromptRequestResponse]]
+        ) -> AttackResultT:
+            async with semaphore:
+                return await attack.execute_async(
+                    objective=objective,
+                    prepended_conversation=prepended_conversation,
+                    custom_prompt=custom_prompt,
+                    memory_labels=memory_labels or {},
+                )
+
+        # Create tasks for each objective with its corresponding parameters
+        tasks = []
+        for i, objective in enumerate(objectives):
+            custom_prompt = custom_prompts[i] if custom_prompts else None
+            prepended_conversation = prepended_conversations[i] if prepended_conversations else []
+
+            task = execute_with_semaphore(
+                objective=objective, custom_prompt=custom_prompt, prepended_conversation=prepended_conversation
+            )
+            tasks.append(task)
+
+        # Execute all tasks in parallel with concurrency control
+        return await asyncio.gather(*tasks)
+
+    def _validate_attack_batch_parameters(
+        self,
+        *,
+        objectives: List[str],
+        optional_list: Optional[List[Any]] = None,
+        optional_list_name: str = "optional_list",
+        prepended_conversations: Optional[List[List[PromptRequestResponse]]] = None,
+    ) -> None:
+        """
+        Validate common parameters for batch attack execution methods.
+
+        Args:
+            objectives (List[str]): List of attack objectives to test.
+            optional_list (Optional[List[any]]): Optional list parameter to validate length against objectives.
+            optional_list_name (str): Name of the optional list parameter for error messages.
+            prepended_conversations (Optional[List[List[PromptRequestResponse]]]): Conversations to prepend.
+
+        Raises:
+            ValueError: If validation fails.
+        """
+        # Validate input parameters
+        if not objectives:
+            raise ValueError("At least one objective must be provided")
+
+        # Validate optional_list length if provided
+        if optional_list is not None and len(optional_list) != len(objectives):
+            raise ValueError(
+                f"Number of {optional_list_name} ({len(optional_list)}) must"
+                f" match number of objectives ({len(objectives)})"
+            )
+
+        # Validate prepended_conversations length if provided
+        if prepended_conversations is not None and len(prepended_conversations) != len(objectives):
+            raise ValueError(
+                f"Number of prepended_conversations ({len(prepended_conversations)}) must match "
+                f"number of objectives ({len(objectives)})"
+            )
 
     async def execute_multi_objective_attack_with_context_async(
         self, attack: AttackStrategy[ContextT, AttackResultT], context_template: ContextT, objectives: List[str]
