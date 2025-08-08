@@ -10,19 +10,9 @@ from pyrit.executor.attack import (
     ConversationManager,
     ConversationState,
 )
-from pyrit.models import (
-    PromptRequestPiece, 
-    PromptRequestResponse, 
-    Score
-)
-from pyrit.prompt_normalizer import (
-    PromptNormalizer,
-    PromptConverterConfiguration
-)
-from pyrit.prompt_target import (
-    PromptTarget,
-    PromptChatTarget
-)
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
+from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
+from pyrit.prompt_target import PromptChatTarget, PromptTarget
 
 
 @pytest.fixture

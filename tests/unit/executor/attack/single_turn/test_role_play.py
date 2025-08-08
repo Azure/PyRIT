@@ -10,10 +10,10 @@ import pytest
 import yaml
 
 from pyrit.executor.attack import (
-    AttackConverterConfig, 
+    AttackConverterConfig,
     AttackScoringConfig,
-    SingleTurnAttackContext, 
-    RolePlayAttack
+    RolePlayAttack,
+    SingleTurnAttackContext,
 )
 from pyrit.models import AttackOutcome, Score
 from pyrit.models.attack_result import AttackResult

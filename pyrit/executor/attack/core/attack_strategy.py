@@ -3,14 +3,12 @@
 
 from __future__ import annotations
 
-import ast
 import logging
 import time
 from abc import ABC
 from dataclasses import dataclass, field
 from typing import Dict, Optional, TypeVar, overload
 
-from pyrit.common import default_values
 from pyrit.common.logger import logger
 from pyrit.common.utils import get_kwarg_param
 from pyrit.executor.core import (

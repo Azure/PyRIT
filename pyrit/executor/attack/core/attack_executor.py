@@ -309,7 +309,7 @@ class AttackExecutor:
         or have an existing context template to reuse.
 
         Args:
-            attack (AttackStrategy[AttackStrategyContextT, AttackStrategyResultT]): The attack strategy to use for 
+            attack (AttackStrategy[AttackStrategyContextT, AttackStrategyResultT]): The attack strategy to use for
                 all objectives.
             context_template (AttackStrategyContextT): Template context that will be duplicated for each objective.
                 Must have a 'duplicate()' method and an 'objective' attribute.

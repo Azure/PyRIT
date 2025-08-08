@@ -12,7 +12,7 @@ from pyrit.executor.attack import (
     AttackConverterConfig,
     AttackScoringConfig,
     ContextComplianceAttack,
-    SingleTurnAttackContext
+    SingleTurnAttackContext,
 )
 from pyrit.models import (
     PromptRequestPiece,
@@ -174,7 +174,9 @@ class TestContextComplianceAttackInitialization:
         self, mock_objective_target, mock_attack_adversarial_config, mock_seed_prompt_dataset
     ):
         """Test that context description instructions are loaded from default path"""
-        with patch("pyrit.executor.attack.single_turn.context_compliance.SeedPromptDataset.from_yaml_file") as mock_from_yaml:
+        with patch(
+            "pyrit.executor.attack.single_turn.context_compliance.SeedPromptDataset.from_yaml_file"
+        ) as mock_from_yaml:
             mock_from_yaml.return_value = mock_seed_prompt_dataset
 
             ContextComplianceAttack(
@@ -191,7 +193,9 @@ class TestContextComplianceAttackInitialization:
         """Test that context description instructions are loaded from custom path"""
         custom_path = Path("/custom/path/context_description.yaml")
 
-        with patch("pyrit.executor.attack.single_turn.context_compliance.SeedPromptDataset.from_yaml_file") as mock_from_yaml:
+        with patch(
+            "pyrit.executor.attack.single_turn.context_compliance.SeedPromptDataset.from_yaml_file"
+        ) as mock_from_yaml:
             mock_from_yaml.return_value = mock_seed_prompt_dataset
 
             ContextComplianceAttack(

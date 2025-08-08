@@ -3,9 +3,11 @@
 
 from dataclasses import dataclass, field
 from typing import List
+
 from pyrit.prompt_normalizer import (
     PromptConverterConfiguration,
 )
+
 
 @dataclass
 class StrategyConverterConfig:

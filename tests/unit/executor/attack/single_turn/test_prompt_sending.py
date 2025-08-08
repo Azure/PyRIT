@@ -7,20 +7,20 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from pyrit.executor.attack import (
-    SingleTurnAttackContext, 
-    PromptSendingAttack, 
     AttackConverterConfig,
-    AttackScoringConfig
+    AttackScoringConfig,
+    PromptSendingAttack,
+    SingleTurnAttackContext,
 )
 from pyrit.models import (
+    AttackOutcome,
+    AttackResult,
     ConversationType,
     PromptRequestPiece,
     PromptRequestResponse,
     Score,
     SeedPrompt,
     SeedPromptGroup,
-    AttackResult,
-    AttackOutcome
 )
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer

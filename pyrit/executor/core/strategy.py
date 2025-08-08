@@ -14,9 +14,9 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, AsyncIterator, Dict, Generic, MutableMapping, Optional, TypeVar
 
-from pyrit.models import StrategyResultT
 from pyrit.common import default_values
 from pyrit.common.logger import logger
+from pyrit.models import StrategyResultT
 
 StrategyContextT = TypeVar("StrategyContextT", bound="StrategyContext")
 
@@ -148,13 +148,14 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
 
         Args:
             context_type (type[StrategyContextT]): The type of context this strategy will use.
-            event_handler (Optional[StrategyEventHandler[StrategyContextT, StrategyResultT]]): An optional event handler for strategy events.
+            event_handler (Optional[StrategyEventHandler[StrategyContextT, StrategyResultT]]): An optional
+                event handler for strategy events.
             logger (logging.Logger): The logger to use for this strategy.
         """
 
         self._id = uuid.uuid4()
         self._context_type = context_type
-        self._event_handlers = {}
+        self._event_handlers: Dict[str, StrategyEventHandler[StrategyContextT, StrategyResultT]] = {}
 
         if event_handler is not None:
             self._register_event_handler(event_handler)

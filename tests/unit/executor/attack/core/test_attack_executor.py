@@ -8,17 +8,12 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from pyrit.executor.attack import (
+    AttackExecutor,
+    AttackStrategy,
     MultiTurnAttackContext,
     SingleTurnAttackContext,
-    AttackExecutor, 
-    AttackStrategy
 )
-from pyrit.models import (
-    AttackOutcome, 
-    AttackResult, 
-    SeedPrompt, 
-    SeedPromptGroup
-)
+from pyrit.models import AttackOutcome, AttackResult, SeedPrompt, SeedPromptGroup
 
 
 @pytest.fixture

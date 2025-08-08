@@ -13,10 +13,10 @@ from pyrit.executor.attack import (
     AttackConverterConfig,
     AttackScoringConfig,
     ConversationSession,
-    MultiTurnAttackContext,
     ConversationState,
-    RedTeamingAttack, 
-    RTOSystemPromptPaths
+    MultiTurnAttackContext,
+    RedTeamingAttack,
+    RTOSystemPromptPaths,
 )
 from pyrit.models import (
     AttackOutcome,
@@ -324,7 +324,10 @@ class TestContextCreation:
                         # Verify the captured context
                         assert captured_context is not None
                         assert captured_context.objective == "Test objective"
-                        assert captured_context.prepended_conversation is None or captured_context.prepended_conversation == []
+                        assert (
+                            captured_context.prepended_conversation is None
+                            or captured_context.prepended_conversation == []
+                        )
                         assert captured_context.memory_labels == {"test": "label"}
 
                         # Verify that validation was called
@@ -1283,7 +1286,9 @@ class TestAttackLifecycle:
                             )
 
                         # Verify error details
-                        assert "Strategy context validation failed for RedTeamingAttack" in str(exc_info.value)        # Verify only validation was attempted
+                        assert "Strategy context validation failed for RedTeamingAttack" in str(
+                            exc_info.value
+                        )  # Verify only validation was attempted
         mock_validate.assert_called_once()
         mock_setup.assert_not_called()
         mock_perform.assert_not_called()

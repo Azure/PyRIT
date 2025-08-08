@@ -11,7 +11,7 @@ from pyrit.executor.attack import (
     AttackConverterConfig,
     AttackScoringConfig,
     SingleTurnAttackContext,
-    SkeletonKeyAttack
+    SkeletonKeyAttack,
 )
 from pyrit.models import (
     AttackOutcome,

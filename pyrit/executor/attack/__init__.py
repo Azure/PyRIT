@@ -7,7 +7,7 @@ from pyrit.executor.attack.core import (
     AttackConverterConfig,
     AttackScoringConfig,
     AttackAdversarialConfig,
-    AttackExecutor
+    AttackExecutor,
 )
 
 from pyrit.executor.attack.single_turn import (
@@ -71,6 +71,6 @@ __all__ = [
     "AttackAdversarialConfig",
     "ConversationManager",
     "ConversationState",
-    "AttackExecutor", 
+    "AttackExecutor",
     "ObjectiveEvaluator",
 ]

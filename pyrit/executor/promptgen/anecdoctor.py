@@ -17,7 +17,7 @@ from pyrit.executor.core.config import StrategyConverterConfig
 from pyrit.executor.promptgen.core import (
     PromptGeneratorStrategy,
     PromptGeneratorStrategyContext,
-    PromptGeneratorStrategyResult
+    PromptGeneratorStrategyResult,
 )
 from pyrit.models import (
     PromptRequestResponse,
@@ -54,18 +54,20 @@ class AnecdoctorContext(PromptGeneratorStrategyContext):
     # Optional memory labels to apply to the prompts
     memory_labels: Dict[str, str] = field(default_factory=dict)
 
+
 @dataclass
 class AnecdoctorResult(PromptGeneratorStrategyResult):
     """
     Result of Anecdoctor prompt generation.
-    
+
     Contains the generated content from the misinformation prompt generation.
-    
+
     Args:
         generated_content (PromptRequestResponse): The generated content from the prompt generation.
     """
 
     generated_content: PromptRequestResponse
+
 
 class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorResult]):
     """
@@ -113,10 +115,7 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
             prompt_normalizer (Optional[PromptNormalizer]): Normalizer for handling prompts.
         """
         # Initialize base class
-        super().__init__(
-            logger=logger, 
-            context_type=AnecdoctorContext
-        )
+        super().__init__(logger=logger, context_type=AnecdoctorContext)
 
         # Store configuration
         self._objective_target = objective_target
@@ -194,7 +193,7 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
 
         Returns:
             AnecdoctorResult: The result containing the generated misinformation content.
-            
+
         Raises:
             RuntimeError: If no response is received from the target model.
         """
@@ -204,10 +203,10 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
 
         formatted_examples = await self._prepare_examples_async(context=context)
         response = await self._send_examples_to_target_async(formatted_examples=formatted_examples, context=context)
-        
+
         if not response:
             raise RuntimeError("Failed to get response from target model")
-        
+
         return AnecdoctorResult(
             generated_content=response,
         )
@@ -215,7 +214,7 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
     async def _teardown_async(self, *, context: AnecdoctorContext) -> None:
         """
         Clean up after prompt generation execution.
-        
+
         Currently no cleanup is required for this prompt generation strategy.
 
         Args:
@@ -259,7 +258,7 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
             context (AnecdoctorContext): The generation context containing conversation metadata.
 
         Returns:
-            Optional[PromptRequestResponse]: The response from the target model, 
+            Optional[PromptRequestResponse]: The response from the target model,
                 or None if the request failed.
         """
         # Create seed prompt group containing the formatted examples
@@ -379,7 +378,7 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
             raise RuntimeError("Failed to extract knowledge graph: no response from processing model")
 
         return kg_response.get_value()
-    
+
     @overload
     async def execute_async(
         self,
@@ -409,8 +408,7 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
     async def execute_async(
         self,
         **kwargs,
-    ) -> AnecdoctorResult: 
-        ...
+    ) -> AnecdoctorResult: ...
 
     async def execute_async(
         self,
@@ -421,15 +419,9 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
         """
 
         # Validate parameters before creating context
-        content_type = get_kwarg_param(
-            kwargs=kwargs, param_name="content_type", expected_type=str
-        )
-        language = get_kwarg_param(
-            kwargs=kwargs, param_name="language", expected_type=str
-        )
-        evaluation_data = get_kwarg_param(
-            kwargs=kwargs, param_name="evaluation_data", expected_type=list
-        )
+        content_type = get_kwarg_param(kwargs=kwargs, param_name="content_type", expected_type=str)
+        language = get_kwarg_param(kwargs=kwargs, param_name="language", expected_type=str)
+        evaluation_data = get_kwarg_param(kwargs=kwargs, param_name="evaluation_data", expected_type=list)
         return await super().execute_async(
             **kwargs, content_type=content_type, language=language, evaluation_data=evaluation_data
         )

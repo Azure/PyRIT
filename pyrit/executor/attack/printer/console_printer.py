@@ -6,14 +6,10 @@ from datetime import datetime
 
 from colorama import Back, Fore, Style
 
-from pyrit.executor.attack.printer.attack_result_printer import AttackResultPrinter
 from pyrit.common.display_response import display_image_response
+from pyrit.executor.attack.printer.attack_result_printer import AttackResultPrinter
 from pyrit.memory import CentralMemory
-from pyrit.models import (
-    Score,
-    AttackResult,
-    AttackOutcome
-)
+from pyrit.models import AttackOutcome, AttackResult, Score
 
 
 class ConsoleAttackResultPrinter(AttackResultPrinter):

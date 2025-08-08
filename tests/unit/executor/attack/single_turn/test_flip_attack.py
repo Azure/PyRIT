@@ -7,10 +7,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from pyrit.executor.attack import (
-    AttackConverterConfig, 
-    AttackScoringConfig, 
-    SingleTurnAttackContext, 
-    FlipAttack
+    AttackConverterConfig,
+    AttackScoringConfig,
+    FlipAttack,
+    SingleTurnAttackContext,
 )
 from pyrit.models import (
     AttackOutcome,

@@ -12,6 +12,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from treelib.tree import Tree
 
+from pyrit.exceptions import InvalidJsonException
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackConverterConfig,
@@ -21,7 +22,6 @@ from pyrit.executor.attack import (
     TreeOfAttacksWithPruningAttack,
 )
 from pyrit.executor.attack.multi_turn.tree_of_attacks import _TreeOfAttacksNode
-from pyrit.exceptions import InvalidJsonException
 from pyrit.models import (
     AttackOutcome,
     ConversationReference,

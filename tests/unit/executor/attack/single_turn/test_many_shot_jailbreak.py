@@ -7,10 +7,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from pyrit.executor.attack import (
-    AttackConverterConfig, 
-    AttackScoringConfig, 
-    SingleTurnAttackContext, 
-    ManyShotJailbreakAttack
+    AttackConverterConfig,
+    AttackScoringConfig,
+    ManyShotJailbreakAttack,
+    SingleTurnAttackContext,
 )
 from pyrit.models import (
     AttackOutcome,
@@ -377,7 +377,6 @@ class TestManyShotJailbreakAttackLifecycle:
         attack._perform_async = AsyncMock()
         attack._teardown_async = AsyncMock()
 
-        # Should raise AttackValidationException
         with pytest.raises(ValueError) as exc_info:
             await attack.execute_with_context_async(context=basic_context)
 
