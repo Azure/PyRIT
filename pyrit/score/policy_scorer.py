@@ -1,111 +1,182 @@
-from pathlib import Path
-from typing import Optional
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
 
 import enum
 import json
-import yaml
+import tkinter as tk
 import uuid
+from pathlib import Path
+from tkinter import simpledialog
+from typing import Optional
 
 from pyrit.common.path import SCALES_PATH
-from pyrit.models import (
-    PromptDataType,
-    PromptRequestPiece, 
-    Score, 
-    SeedPrompt, 
-    UnvalidatedScore, 
-    PromptRequestResponse,
-)
-from pyrit.prompt_target import PromptChatTarget
-from pyrit.score.scorer import Scorer
 from pyrit.exceptions import (
     InvalidJsonException,
     pyrit_json_retry,
     remove_markdown_json,
 )
+from pyrit.models import (
+    PromptDataType,
+    PromptRequestPiece,
+    PromptRequestResponse,
+    Score,
+    SeedPrompt,
+    UnvalidatedScore,
+)
+from pyrit.prompt_target import PromptChatTarget
+from pyrit.score.scorer import Scorer
+
 
 class PolicyScorer(Scorer):
     """
-    A scorer that generates evaluation policies and scores model outputs based on them, with human-in-the-loop adjustment.
+    A scorer that generates evaluation policies and scores model outputs based on them, with manual adjustment.
+
+    This scorer uses two LLMs:
+    1. A policy generator LLM that creates evaluation criteria based on the given task
+    2. An evaluator LLM that scores responses according to the generated policies
+
+    The scorer allows for manual weight adjustment of each policy through a GUI interface,
+    enabling human expertise to be incorporated into the scoring process.
     """
 
     class SystemPaths(enum.Enum):
+        """Predefined paths for system prompt templates used by the scorer."""
+
         POLICY_PROMPT = Path(SCALES_PATH, "policy_generator_prompt.yaml").resolve()
         SCORE_PROMPT = Path(SCALES_PATH, "policy_system_prompt.yaml").resolve()
 
-    def __init__(self,
-                 *,
-                 policy_generator: PromptChatTarget,
-                 evaluator: PromptChatTarget,
-                 scale_args,
-                 policy_generation_prompt_path: Optional[Path] = None,
-                 score_prompt_path: Optional[Path] = None,
-                 ) -> None:
+    def __init__(
+        self,
+        *,
+        policy_generator: PromptChatTarget,
+        evaluator: PromptChatTarget,
+        scale_args,
+        policy_generation_prompt_path: Optional[Path] = None,
+        score_prompt_path: Optional[Path] = None,
+    ) -> None:
+        """
+        Initialize the PolicyScorer with two LLMs and configuration parameters.
+
+        Args:
+            policy_generator: The LLM used to generate evaluation policies
+            evaluator: The LLM used to score responses against the generated policies
+            scale_args: Dictionary containing scoring scale configuration including:
+                - minimum_value: Minimum value for the scoring scale
+                - maximum_value: Maximum value for the scoring scale
+                - category: Category of harm or evaluation type
+                - task: The specific task being evaluated
+            policy_generation_prompt_path: Optional path to custom policy generation prompt
+            score_prompt_path: Optional path to custom scoring prompt template
+        """
+        # Store the LLM targets for policy generation and evaluation
         self._policy_generator = policy_generator
         self._evaluator = evaluator
         self.scorer_type = "float_scale"
 
+        # Use default prompt paths if not provided
         if not policy_generation_prompt_path:
             policy_generation_prompt_path = self.SystemPaths.POLICY_PROMPT.value
         if not score_prompt_path:
             score_prompt_path = self.SystemPaths.SCORE_PROMPT.value
 
+        # Validate and extract scale arguments
         self._validate_scale_arguments_set(scale_args)
         self._minimum_value = scale_args["minimum_value"]
         self._maximum_value = scale_args["maximum_value"]
         self._category = scale_args["category"]
         self._task = scale_args["task"]
 
+        # Load and prepare prompt templates
         generating_policies_template = SeedPrompt.from_yaml_file(policy_generation_prompt_path)
         self.scoring_instructions_template = SeedPrompt.from_yaml_file(score_prompt_path)
 
+        # Generate the policy generation prompt with the provided scale arguments
         self._policy_prompt = generating_policies_template.render_template_value_silent(**scale_args)
+
+        # Initialize policies as None - they will be generated on first use
         self.policies = None
 
     async def _generate_policies(self):
         """
         Generates evaluation policies using the policy generation LLM.
+
+        This method sends the configured policy prompt to the policy generator LLM
+        and extracts a list of evaluation policies from the JSON response.
+
+        Returns:
+            list[str]: A list of evaluation policy strings generated by the LLM
+
+        Raises:
+            Exception: If there's an error communicating with the policy generator
+            InvalidJsonException: If the response is not valid JSON or missing expected fields
         """
+        # Create a request to the policy generation LLM
         policy_request = PromptRequestResponse(
             request_pieces=[
                 PromptRequestPiece(
-                    role="assistant",
+                    role="user",  # User role for requesting policy generation
                     original_value=self._policy_prompt,
                 )
             ]
         )
-        
+
         try:
+            # Send the policy generation request to the LLM
             response = await self._policy_generator.send_prompt_async(prompt_request=policy_request)
         except Exception as ex:
-            raise Exception(f"Error policy prompt") from ex
-        
-        try:
-            response_json = response.request_pieces[0].converted_value
+            raise Exception("Error policy prompt") from ex
 
+        # Initialize response_json to avoid unbound variable issues
+        response_json = ""
+        try:
+            # Extract and clean the JSON response
+            response_json = response.get_value()
             response_json = remove_markdown_json(response_json)
             parsed_response = json.loads(response_json)
 
-            policies = parsed_response['policy']
-        except Exception as ex:
-            raise InvalidJsonException(f"Invalid JSON response: {response_json}")
-        
+            # Extract the policies list from the response
+            policies = parsed_response["policy"]
+        except Exception:
+            raise InvalidJsonException(message=f"Invalid JSON response: {response_json}")
+
         return policies
-    
-    async def score_async(self, request_response, *, task = None):
+
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+        """
+        Score a response using the generated policies and human-adjusted weights.
+
+        This method implements the main scoring logic:
+        1. Generate policies if not already done
+        2. Get manual weight adjustments from human user
+        3. Score the response against each policy
+        4. Calculate a weighted final score
+
+        Args:
+            request_response: The response piece to be scored
+            task: Optional task description for context
+
+        Returns:
+            list[Score]: A list containing the final weighted score
+        """
+        # Generate policies and get weights on first use
         if not self.policies:
             self.policies = await self._generate_policies()
             self.weights = self._adjust_weight_manually()
 
-        # render scoring template based on generated criteria
+        # Prepare arguments for the scoring template
         scoring_args = {
             "minimum_value": self._minimum_value,
             "maximum_value": self._maximum_value,
-            "policies": '- ' + '\n- '.join(self.policies),
+            "policies": "- " + "\n- ".join(self.policies),  # Format policies as bullet list
         }
 
+        # Render the system prompt with the policies
         system_prompt = self.scoring_instructions_template.render_template_value(**scoring_args)
+
+        # Create the user prompt combining task and response
         scoring_prompt = f"task: {task}\nresponse: {request_response.converted_value}"
 
+        # Get individual scores for each policy
         unvalidated_scores = await self._score_dimension_value_with_llm(
             prompt_target=self._evaluator,
             system_prompt=system_prompt,
@@ -115,35 +186,46 @@ class PolicyScorer(Scorer):
             category=self._category,
             task=task,
         )
-        # Validate score values
+
+        # Validate and normalize score values to 0-1 scale
         validated_scores = []
         for s in unvalidated_scores:
             score = s.to_score(
                 score_value=str(
-                    self.scale_value_float(
-                        float(s.raw_score_value), self._minimum_value, self._maximum_value
-                    )
+                    self.scale_value_float(float(s.raw_score_value), self._minimum_value, self._maximum_value)
                 )
             )
             validated_scores.append(score)
-            
-        # weighted final score
-        final_score_value = 0
+
+        # Calculate weighted final score using human-provided weights
+        final_score_value = 0.0
+        weighted_descriptions = []
+        weighted_rationales = []
+
         for i, s in enumerate(validated_scores):
-            final_score_value += self.weights[i] * s.get_value()
-        final_score_value /= sum(self.weights)
+            if self.weights[i] > 0:  # Only include non-zero weighted scores
+                final_score_value += self.weights[i] * s.get_value()
+                weighted_descriptions.append(s.score_value_description)
+                weighted_rationales.append(s.score_rationale)
+
+        # Normalize by sum of non-zero weights only
+        non_zero_weight_sum = sum(w for w in self.weights if w > 0)
+        if non_zero_weight_sum > 0:
+            final_score_value /= non_zero_weight_sum
+
+        # Create the final score object with only weighted policy metadata
         final_score = Score(
             score_value=str(final_score_value),
-            score_value_description='- '+ '\n- '.join([s.score_value_description for s in unvalidated_scores]),
+            score_value_description="- " + "\n- ".join(weighted_descriptions),
             score_type=self.scorer_type,
             score_category=self._category,
-            score_rationale='- '+ '\n- '.join([s.score_rationale for s in unvalidated_scores]),
-            score_metadata="Policies:\n- " + '\n- '.join(self.policies),
+            score_rationale="- " + "\n- ".join(weighted_rationales),
+            score_metadata="Policies:\n- " + "\n- ".join(self.policies),
             scorer_class_identifier=self.get_identifier(),
-            prompt_request_response_id=request_response.id)
-        self._memory.add_scores_to_memory(scores=[final_score])
+            prompt_request_response_id=request_response.id,
+            task=task,
+        )
         return [final_score]
-
 
     @pyrit_json_retry
     async def _score_dimension_value_with_llm(
@@ -154,26 +236,51 @@ class PolicyScorer(Scorer):
         prompt_request_value: str,
         prompt_request_data_type: PromptDataType,
         scored_prompt_id: str,
-        category: str = None,
-        task: str = None,
-        orchestrator_identifier: dict[str, str] = None,
+        category: Optional[str] = None,
+        task: Optional[str] = None,
+        orchestrator_identifier: Optional[dict[str, str]] = None,
     ) -> list[UnvalidatedScore]:
         """
-        Sends a request to LLM for multi-policy scoring and returns a list of UnvalidatedScores in the same order as policy_dimensions.
+        Sends a request to LLM for multi-policy scoring and returns a list of UnvalidatedScores.
+
+        This method handles the actual communication with the evaluator LLM to get scores
+        for each policy. It expects a JSON response with scores, descriptions, and rationales
+        for each policy in the same order as they were provided.
+
+        Args:
+            prompt_target: The LLM target for scoring
+            system_prompt: The system prompt containing policies and instructions
+            prompt_request_value: The user prompt with task and response to score
+            prompt_request_data_type: The data type of the request value
+            scored_prompt_id: ID of the original prompt being scored
+            category: Optional category for the scores
+            task: Optional task description
+            orchestrator_identifier: Optional orchestrator metadata
+
+        Returns:
+            list[UnvalidatedScore]: List of scores for each policy
+
+        Raises:
+            Exception: If there's an error communicating with the LLM
+            InvalidJsonException: If the response format is invalid
         """
         conversation_id = str(uuid.uuid4())
 
+        # Add scored prompt ID to orchestrator identifier if provided
         if orchestrator_identifier:
             orchestrator_identifier["scored_prompt_id"] = str(scored_prompt_id)
 
+        # Set up the system prompt for the conversation
         prompt_target.set_system_prompt(
             system_prompt=system_prompt,
             conversation_id=conversation_id,
             orchestrator_identifier=orchestrator_identifier,
         )
 
+        # Configure for JSON response format
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
 
+        # Create the scoring request
         scorer_llm_request = PromptRequestResponse(
             [
                 PromptRequestPiece(
@@ -189,96 +296,154 @@ class PolicyScorer(Scorer):
         )
 
         try:
+            # Send the scoring request to the evaluator LLM
             response = await prompt_target.send_prompt_async(prompt_request=scorer_llm_request)
         except Exception as ex:
             raise Exception(f"Error scoring prompt with original prompt ID: {scored_prompt_id}") from ex
 
+        # Initialize response_json to avoid unbound variable issues
+        response_json = ""
         try:
+            # Parse the JSON response from the LLM
             response_json = response.get_value()
             response_json = remove_markdown_json(response_json)
             parsed_response = json.loads(response_json)
 
+            # Extract parallel arrays from the response
             scores = parsed_response["score"]
-            descriptions = parsed_response["descriptions"]            
+            descriptions = parsed_response["descriptions"]
             rationales = parsed_response["rationales"]
 
-            if not (len(scores) == len(self.policies)):
-                raise ValueError(f"Mismatch between number of scores and policy dimensions. Got {len(scores)} scores but expected {len(policy_dimensions)}.")
+            # Validate that we have the right number of scores
+            if not self.policies or not (len(scores) == len(self.policies)):
+                raise ValueError(
+                    f"Mismatch between number of scores and policies."
+                    f"Got {len(scores)} scores but expected {len(self.policies) if self.policies else 0}."
+                )
 
+            # Create UnvalidatedScore objects for each policy
             results = []
             for i, policy in enumerate(self.policies):
+
                 results.append(
                     UnvalidatedScore(
                         raw_score_value=str(scores[i]),
-                        score_value_description=descriptions[i] if i < len(descriptions) else None,
+                        score_value_description=descriptions[i] if i < len(descriptions) else "",
                         score_type="float_scale",
                         score_category=self._category,
-                        score_rationale=rationales[i] if i < len(rationales) else None,
+                        score_rationale=rationales[i] if i < len(rationales) else "",
+                        score_metadata="",
                         scorer_class_identifier=self.get_identifier(),
-                        score_metadata=None,
                         prompt_request_response_id=scored_prompt_id,
-                        task=task,
+                        task=task or "",
                     )
                 )
         except (json.JSONDecodeError, KeyError, ValueError) as e:
             raise InvalidJsonException(message=f"Invalid or malformed JSON response: {response_json}") from e
-        
 
         return results
 
-
     def _adjust_weight_manually(self) -> list[float]:
-        '''
-        Manually adjust weight of each policy
-        '''
-        weights = []
+        """
+        Allows user to manually adjust the weight of each policy through a GUI interface.
+
+        This method presents each policy to the user and asks them to provide a weight
+        between 0.0 and 1.0. The weights will be used to calculate the final weighted
+        score across all policies.
+
+        Returns:
+            list[float]: List of weights corresponding to each policy
+        """
+        weights: list[float] = []
+        if not self.policies:
+            return weights
+
+        # Present each policy to the user for weight assignment
         for policy in self.policies:
             weight = ""
             while not weight:
-                message = f"The task is: {self._task}\nThe policy is: {policy}\nPlease enter a weight value between '0.0' and '1.0:"
+                message = (
+                    f"Task is: {self._task}\nPolicy is: {policy}\nPlease enter a weight value between '0.0' and '1.0:"
+                )
                 weight = self._get_user_input(message)
                 try:
                     value = self._validate_human_weight(weight)
                     weights.append(value)
                 except ValueError as e:
                     print(e)
-                    weight = ""
-        return weights  
-
+                    weight = ""  # Reset to prompt again on invalid input
+        return weights
 
     def _get_user_input(self, message) -> str:
-        try:
-            import tkinter as tk
-            from tkinter import simpledialog
-        except ImportError as e:
-            print(
-                "To adjust weight manually, you need to install tkinter. "
-                "See https://stackoverflow.com/a/74607246 for more information."
-            )
-            raise e
+        """
+        Display a GUI dialog to get user input for weight values.
+
+        Uses tkinter to show a simple dialog box where users can enter
+        weight values for each policy.
+
+        Args:
+            message: The message to display to the user
+
+        Returns:
+            str: The user's input as a string, or empty string if cancelled
+
+        """
+
         root = tk.Tk()
-        root.withdraw()
-        user_input = simpledialog.askstring("Score Prompt", message).strip()
+        root.withdraw()  # Hide the main window
+        user_input = simpledialog.askstring("Score Prompt", message)
         root.destroy()
+        if user_input is None:
+            return ""  # User cancelled the dialog
         return user_input.strip()
-    
+
     def _validate_human_weight(self, weight: str) -> float:
+        """
+        Validate that the user-provided weight is a valid float between 0 and 1.
+
+        Args:
+            weight: The weight value as a string from user input
+
+        Returns:
+            float: The validated weight value
+
+        Raises:
+            ValueError: If the weight is not a valid number or not in range [0,1]
+        """
         try:
             value = float(weight)
             if value < 0 or value > 1:
                 raise ValueError("Weight must be between 0 and 1")
         except ValueError:
-            raise ValueError(f"Weights require a numberic value. Got {weight}")
+            raise ValueError(f"Weights require a numeric value. Got {weight}")
         return value
-    
-    async def validate(self, request_response, *, task = None):
+
+    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
+        """
+        Validate the input request_response and task for scoring.
+
+        Args:
+            request_response: The request response piece to validate
+            task: The task description for context
+
+        Raises:
+            ValueError: If the input data is not suitable for this scorer
+        """
         if request_response.original_value_data_type != "text":
             raise ValueError("The original value data type must be text.")
         if not task:
             raise ValueError("Task must be provided.")
-    
-    def _validate_scale_arguments_set(self, scale_args: dict):
 
+    def _validate_scale_arguments_set(self, scale_args: dict):
+        """
+        Validate that all required scale arguments are present and correctly typed.
+
+        Args:
+            scale_args: Dictionary containing scale configuration
+
+        Raises:
+            ValueError: If any required arguments are missing or invalid
+        """
         try:
             minimum_value = scale_args["minimum_value"]
             maximum_value = scale_args["maximum_value"]
@@ -287,6 +452,7 @@ class PolicyScorer(Scorer):
         except KeyError as e:
             raise ValueError(f"Missing key in scale_args: {e.args[0]}") from None
 
+        # Validate argument types and values
         if not isinstance(minimum_value, int):
             raise ValueError(f"Minimum value must be an integer, got {type(minimum_value).__name__}.")
         if not isinstance(maximum_value, int):
@@ -297,4 +463,3 @@ class PolicyScorer(Scorer):
             raise ValueError("Category must be set and cannot be empty.")
         if not task:
             raise ValueError("Task must be set and cannot be empty.")
-        
