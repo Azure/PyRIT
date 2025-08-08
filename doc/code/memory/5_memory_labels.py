@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
@@ -33,12 +33,12 @@
 # %%
 import uuid
 
-from pyrit.attacks import (
+from pyrit.common import DUCK_DB, initialize_pyrit
+from pyrit.executor.attack import (
     AttackExecutor,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
-from pyrit.common import DUCK_DB, initialize_pyrit
 from pyrit.prompt_target import OpenAIChatTarget
 
 initialize_pyrit(memory_db_type=DUCK_DB)
@@ -63,7 +63,7 @@ for result in results:
 # Because you have labeled `group1`, you can retrieve these prompts later. For example, you could score them as shown [here](../orchestrators/4_scoring_orchestrator.ipynb). Or you could resend them as shown below; this script will resend any prompts with the label regardless of modality.
 
 # %%
-from pyrit.attacks import AttackConverterConfig
+from pyrit.executor.attack import AttackConverterConfig
 from pyrit.memory import CentralMemory
 from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_normalizer import PromptConverterConfiguration

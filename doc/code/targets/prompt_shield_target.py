@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
@@ -73,8 +73,8 @@
 # %%
 import os
 
-from pyrit.attacks import ConsoleAttackResultPrinter, PromptSendingAttack
 from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
 from pyrit.prompt_target import PromptShieldTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)

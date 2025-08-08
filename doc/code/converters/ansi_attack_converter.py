@@ -1,3 +1,14 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.17.2
+# ---
+
 # %% [markdown]
 # # Generating Perturbed Prompts Using the AnsiAttackConverter
 #
@@ -11,14 +22,15 @@
 # - **Practical tasks:** Examples include printing colored text or terminal effects.
 # - **Attack scenarios:** These involve crafting malicious or deceptive escape sequences.
 
+from pyrit.common import IN_MEMORY, initialize_pyrit
+
 # %%
-from pyrit.attacks import (
+from pyrit.executor.attack import (
     AttackConverterConfig,
     AttackExecutor,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_converter import AnsiAttackConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import OpenAIChatTarget

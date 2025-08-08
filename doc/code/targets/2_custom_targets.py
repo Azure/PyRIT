@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
@@ -97,13 +97,13 @@ await result.print_conversation_async()  # type: ignore
 # %%
 from typing import List
 
-from pyrit.attacks import (
+from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.executor.attack import (
     AttackConverterConfig,
     AttackScoringConfig,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_converter import RandomCapitalLettersConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import CrucibleTarget, OpenAIChatTarget

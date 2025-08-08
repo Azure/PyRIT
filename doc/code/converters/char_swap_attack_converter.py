@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
@@ -22,13 +22,14 @@
 # The attack technique is inspired by the char-swap attack method from Project Moonshot.
 # Reference: [Charswap Attack](https://github.com/aiverify-foundation/moonshot-data/blob/main/attack-modules/charswap_attack.py)
 
+from pyrit.common import IN_MEMORY, initialize_pyrit
+
 # %%
-from pyrit.attacks import (
+from pyrit.executor.attack import (
     AttackConverterConfig,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_converter import CharSwapConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import OpenAIChatTarget

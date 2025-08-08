@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
+#       jupytext_version: 1.17.2
 # ---
 
 # %% [markdown]
@@ -25,12 +25,12 @@
 import time
 import uuid
 
-from pyrit.attacks import (
+from pyrit.common import AZURE_SQL, initialize_pyrit
+from pyrit.executor.attack import (
     AttackExecutor,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
-from pyrit.common import AZURE_SQL, initialize_pyrit
 from pyrit.prompt_target import OpenAIChatTarget
 
 initialize_pyrit(memory_db_type=AZURE_SQL)
@@ -67,7 +67,7 @@ for result in results:
 # %%
 from azure.ai.contentsafety.models import TextCategory
 
-from pyrit.attacks import AttackScoringConfig
+from pyrit.executor.attack import AttackScoringConfig
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import AzureContentFilterScorer, LikertScalePaths, SelfAskLikertScorer
 
@@ -156,12 +156,12 @@ await result.print_conversation_async()  # type: ignore
 # %%
 import pathlib
 
-from pyrit.attacks import (
+from pyrit.common import AZURE_SQL, initialize_pyrit
+from pyrit.executor.attack import (
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
     SingleTurnAttackContext,
 )
-from pyrit.common import AZURE_SQL, initialize_pyrit
 from pyrit.models import SeedPrompt, SeedPromptGroup
 from pyrit.prompt_target import OpenAIChatTarget
 
