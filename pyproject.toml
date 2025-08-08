@@ -46,6 +46,7 @@ dependencies = [
     "krippendorff>=0.8.1",
     "numpy>=2.2.6",
     "openai>=1.58.1",
+    "openpyxl>=3.1.5",
     "pillow>=11.2.1",
     "pydantic>=2.11.5",
     "pyodbc>=5.1.0",
