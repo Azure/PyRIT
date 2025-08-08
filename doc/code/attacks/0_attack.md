@@ -4,13 +4,13 @@ The Attack is a top-level component that red team operators will interact with t
 
 An Attack is made up of four components, which create a consistent flow of control:
 
-::: mermaid
+```{mermaid}
 flowchart LR
     A(["Attack Strategy <br> << abstract base class >>"])
     A --consumes--> B(["Attack Context <br> << abstract base class >>"])
     A --takes in as parameters within __init__--> D(["Attack Configurations"])
     A --produces--> C(["Attack Result <br> << abstract base class >>"])
-:::
+```
 
 To execute an Attack, one generally follows this pattern:
 1. Create an **attack context** containing state information (i.e. attack objective, memory labels, prepended conversations, seed prompts)
@@ -33,7 +33,7 @@ This implementation enforces a consistent execution flow across all strategies:
 The following documentation will illustrate the different kinds of attacks within PyRIT. Some simply send prompts and run them through converters. Others instantiate more complicated attack techniques, like PAIR, TAP, and Crescendo.
 
 See the below diagrams for more details of the components:
-::: mermaid
+```{mermaid}
 flowchart LR
     subgraph AttackStrategy["AttackStrategy"]
         S_s["Other Single Turn Attacks (e.g. RolePlayAttack, SkeletonKeyAttack)"] --inherit from--> S_psa["PromptSendingAttack"]
@@ -41,9 +41,9 @@ flowchart LR
         S_r["RedTeamingAttack"]
         s_t["TreeOfAttacksWithPruningAttack"]
     end
-:::
+```
 
-::: mermaid
+```{mermaid}
 flowchart LR
     subgraph AttackContext["AttackContext"]
         C_s["SingleTurnAttackContext"]
@@ -69,9 +69,9 @@ flowchart LR
     C_m-->C_o
     C_m-->C_mem
     C_m-->C_rel
-:::
+```
 
-::: mermaid
+```{mermaid}
 flowchart LR
     subgraph AttackConfig["Attack Configurations"]
         Adv["AttackAdversarialConfig"]
@@ -97,9 +97,9 @@ flowchart LR
     Scoring-->Scoring_ref
     Scoring-->Scoring_aux
     Scoring-->Scoring_misc
-:::
+```
 
-::: mermaid
+```{mermaid}
 flowchart LR
     subgraph AttackResult["AttackResult"]
         a["conversation_id"]
@@ -114,4 +114,4 @@ flowchart LR
         j["related_conversations"]
         k["metadata"]
     end
-:::
+```

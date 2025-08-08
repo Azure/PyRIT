@@ -1,8 +1,8 @@
-# Memory Schema Diagram
+# 10. Memory Schema Diagram
 
 Our memory contains multiple components. This diagram  shows a mapping of our database schema and how our components map together! The arrows indicate the values that map one database to another.
 
-::: mermaid
+```{mermaid}
 flowchart LR
  subgraph EmbeddingData["EmbeddingData"]
         E_id["id (UUID)"]
@@ -70,4 +70,4 @@ flowchart LR
     style Sc_prompt_request_response_id fill:#14a519ff
     linkStyle 0 stroke:#ff8800ff,fill:none
     linkStyle 1 stroke:#14a519ff
-:::
+```
