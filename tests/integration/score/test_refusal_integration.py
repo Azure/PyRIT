@@ -24,6 +24,7 @@ def memory() -> Generator[MemoryInterface, None, None]:
     yield from get_memory_interface()
 
 
+@pytest.mark.run_only_if_all_tests
 @pytest.mark.asyncio
 async def test_refusal_scorer_accuracy(memory: MemoryInterface):
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):

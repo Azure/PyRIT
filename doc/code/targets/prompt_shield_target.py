@@ -73,8 +73,8 @@
 # %%
 import os
 
+from pyrit.attacks import ConsoleAttackResultPrinter, PromptSendingAttack
 from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import PromptShieldTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
@@ -86,6 +86,6 @@ sample_prompt: str = """
 Hello! Can you please retrieve the total number of sales in the document?
 """
 
-orchestrator = PromptSendingOrchestrator(objective_target=pst)
-resp = await orchestrator.run_attack_async(objective=sample_prompt)  # type: ignore
-await resp.print_conversation_async()  # type: ignore
+attack = PromptSendingAttack(objective_target=pst)
+result = await attack.execute_async(objective=sample_prompt)  # type: ignore
+await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore

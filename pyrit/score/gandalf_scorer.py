@@ -18,7 +18,7 @@ class GandalfScorer(Scorer):
     def __init__(self, level: GandalfLevel, chat_target: PromptChatTarget = None) -> None:
         self._prompt_target = chat_target
         self._defender = level.value
-        self._endpoint = "https://gandalf.lakera.ai/api/guess-password"
+        self._endpoint = "https://gandalf-api.lakera.ai/api/guess-password"
         self.scorer_type = "true_false"
 
     @pyrit_target_retry
