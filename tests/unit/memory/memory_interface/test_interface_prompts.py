@@ -39,6 +39,7 @@ def test_add_request_pieces_to_memory(
     for c in sample_conversations[:num_conversations]:
         c.conversation_id = sample_conversations[0].conversation_id
         c.role = sample_conversations[0].role
+        c.sequence = 0
 
     request_response = PromptRequestResponse(request_pieces=sample_conversations[:num_conversations])
 

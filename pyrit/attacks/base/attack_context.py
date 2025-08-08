@@ -12,7 +12,7 @@ from typing import Dict, List, Optional, TypeVar, Union
 from pyrit.models.conversation_reference import ConversationReference
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.models.score import Score
-from pyrit.models.seed_prompt import SeedPromptGroup
+from pyrit.models.seed_prompt_group import SeedPromptGroup
 
 ContextT = TypeVar("ContextT", bound="AttackContext")
 

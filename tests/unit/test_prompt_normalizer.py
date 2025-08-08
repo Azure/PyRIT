@@ -13,7 +13,8 @@ from pyrit.exceptions import EmptyResponseException
 from pyrit.memory import CentralMemory
 from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse
 from pyrit.models.filter_criteria import PromptFilterCriteria
-from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
+from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models.seed_prompt_group import SeedPromptGroup
 from pyrit.prompt_converter import (
     Base64Converter,
     ConverterResult,
@@ -50,6 +51,8 @@ def seed_prompt_group() -> SeedPromptGroup:
             SeedPrompt(
                 value="Hello",
                 data_type="text",
+                role="system",
+                sequence=1,
             )
         ]
     )
@@ -358,13 +361,18 @@ async def test_build_prompt_request_response(mock_memory_instance, seed_prompt_g
         conversation_id=conversation_id,
         request_converter_configurations=request_converters,
         target=prompt_target,
-        sequence=2,
         labels=labels,
         orchestrator_identifier=orchestrator_identifier,
     )
 
     # Check all prompt pieces in the response have the same conversation ID
     assert len(set(prompt_piece.conversation_id for prompt_piece in response.request_pieces)) == 1
+
+    assert response.request_pieces[0].sequence == 1
+    assert len(set(prompt_piece.sequence for prompt_piece in response.request_pieces)) == 1
+
+    assert response.request_pieces[0].role == "system"
+    assert len(set(prompt_piece.role for prompt_piece in response.request_pieces)) == 1
 
     # Check sequence is set correctly
     assert len(set(prompt_piece.sequence for prompt_piece in response.request_pieces)) == 1

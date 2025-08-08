@@ -174,6 +174,7 @@ def test_prompt_response_validate(sample_conversations: MutableSequence[PromptRe
     for c in sample_conversations:
         c.conversation_id = sample_conversations[0].conversation_id
         c.role = sample_conversations[0].role
+        c.sequence = 0
 
     request_response = PromptRequestResponse(request_pieces=sample_conversations)
     request_response.validate()
@@ -201,6 +202,20 @@ def test_prompt_request_response_inconsistent_roles_throws(sample_conversations:
 
     request_response = PromptRequestResponse(request_pieces=sample_conversations)
     with pytest.raises(ValueError, match="Inconsistent roles within the same prompt request response entry."):
+        request_response.validate()
+
+
+def test_prompt_request_response_inconsistent_sequence_throws(
+    sample_conversations: MutableSequence[PromptRequestPiece],
+):
+    sequence = 0
+    for c in sample_conversations:
+        c.conversation_id = sample_conversations[0].conversation_id
+        c.sequence = sequence
+        sequence += 1
+
+    request_response = PromptRequestResponse(request_pieces=sample_conversations)
+    with pytest.raises(ValueError, match="Inconsistent sequences within the same prompt request response entry."):
         request_response.validate()
 
 

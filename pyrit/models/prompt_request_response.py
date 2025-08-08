@@ -49,19 +49,20 @@ class PromptRequestResponse:
             raise ValueError("Empty request pieces.")
 
         conversation_id = self.request_pieces[0].conversation_id
-        role = None
+        sequence = self.request_pieces[0].sequence
+        role = self.request_pieces[0].role
         for request_piece in self.request_pieces:
 
             if request_piece.conversation_id != conversation_id:
                 raise ValueError("Conversation ID mismatch.")
 
+            if request_piece.sequence != sequence:
+                raise ValueError("Inconsistent sequences within the same prompt request response entry.")
+
             if not request_piece.converted_value:
                 raise ValueError("Converted prompt text is None.")
 
-            if not role:
-                role = request_piece.role
-
-            elif role != request_piece.role:
+            if role != request_piece.role:
                 raise ValueError("Inconsistent roles within the same prompt request response entry.")
 
     def __str__(self):
@@ -128,18 +129,18 @@ def group_conversation_request_pieces_by_sequence(
     Example:
     >>> request_pieces = [
     >>>     PromptRequestPiece(conversation_id=1, sequence=1, text="Hello"),
-    >>>     PromptRequestPiece(conversation_id=1, sequence=2, text="How are you?"),
-    >>>     PromptRequestPiece(conversation_id=1, sequence=1, text="Hi"),
+    >>>     PromptRequestPiece(conversation_id=1, sequence=2, text="Hi!"),
+    >>>     PromptRequestPiece(conversation_id=1, sequence=1, text="How are you?"),
     >>>     PromptRequestPiece(conversation_id=1, sequence=2, text="I'm good, thanks!")
     >>> ]
     >>> grouped_responses = group_conversation_request_pieces(request_pieces)
     ... [
     ...     PromptRequestResponse(request_pieces=[
     ...         PromptRequestPiece(conversation_id=1, sequence=1, text="Hello"),
-    ...         PromptRequestPiece(conversation_id=1, sequence=1, text="Hi")
+    ...         PromptRequestPiece(conversation_id=1, sequence=1, text="How are you?")
     ...     ]),
     ...     PromptRequestResponse(request_pieces=[
-    ...         PromptRequestPiece(conversation_id=1, sequence=2, text="How are you?"),
+    ...         PromptRequestPiece(conversation_id=1, sequence=2, text="Hi?"),
     ...         PromptRequestPiece(conversation_id=1, sequence=2, text="I'm good, thanks!")
     ...     ])
     ... ]
@@ -157,9 +158,8 @@ def group_conversation_request_pieces_by_sequence(
             raise ValueError("Conversation ID must match.")
 
         if request_piece.sequence not in conversation_by_sequence:
-            conversation_by_sequence[request_piece.sequence] = [request_piece]
-        else:
-            conversation_by_sequence[request_piece.sequence].append(request_piece)
+            conversation_by_sequence[request_piece.sequence] = []
+        conversation_by_sequence[request_piece.sequence].append(request_piece)
 
     sorted_sequences = sorted(conversation_by_sequence.keys())
     return [PromptRequestResponse(conversation_by_sequence[seq]) for seq in sorted_sequences]

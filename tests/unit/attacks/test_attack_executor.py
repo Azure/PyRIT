@@ -15,7 +15,8 @@ from pyrit.attacks.base.attack_executor import AttackExecutor
 from pyrit.attacks.base.attack_strategy import AttackStrategy
 from pyrit.exceptions.exception_classes import AttackExecutionException
 from pyrit.models import AttackOutcome, AttackResult
-from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
+from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models.seed_prompt_group import SeedPromptGroup
 
 
 @pytest.fixture

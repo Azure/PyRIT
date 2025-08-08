@@ -11,7 +11,7 @@ from pyrit.attacks.base.attack_context import (
 )
 from pyrit.attacks.base.attack_strategy import AttackStrategy
 from pyrit.models import AttackResultT, PromptRequestResponse
-from pyrit.models.seed_prompt import SeedPromptGroup
+from pyrit.models.seed_prompt_group import SeedPromptGroup
 
 
 class AttackExecutor:
