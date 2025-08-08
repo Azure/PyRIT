@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import logging
 import uuid
+from collections import defaultdict
 from typing import Any, Dict, Sequence, Union
 
 from pyrit.common.yaml_loadable import YamlLoadable
@@ -95,7 +96,7 @@ class SeedPromptGroup(YamlLoadable):
         If multiple different roles are found, raises ValueError.
         """
         # groups the prompts according to their sequence
-        grouped_prompts = {}
+        grouped_prompts = defaultdict(list)
         for prompt in self.prompts:
             if prompt.sequence not in grouped_prompts:
                 grouped_prompts[prompt.sequence] = []
@@ -105,14 +106,9 @@ class SeedPromptGroup(YamlLoadable):
             roles = {prompt.role for prompt in prompts if prompt.role is not None}
             if len(roles) > 1:
                 raise ValueError(f"Inconsistent roles found for sequence {sequence}: {roles}")
-            elif len(roles) == 1:
-                # Apply the single existing role to all prompts in this sequence
-                for prompt in prompts:
-                    prompt.role = roles.pop()
-            else:
-                # No roles set; assign the default 'user' role
-                for prompt in prompts:
-                    prompt.role = "user"
+            role = roles.pop() if len(roles) else "user"
+            for prompt in prompts:
+                prompt.role = role
 
     def is_single_request(self) -> bool:
         unique_sequences = {prompt.sequence for prompt in self.prompts}

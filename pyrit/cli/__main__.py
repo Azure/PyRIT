@@ -46,7 +46,7 @@ def load_seed_prompt_groups(dataset_paths: List[str]) -> List[SeedPromptGroup]:
         if not path.exists():
             raise FileNotFoundError(f"Dataset file '{path}' does not exist.")
         dataset = SeedPromptDataset.from_yaml_file(path)
-        groups = SeedPromptDataset.collect_groups_by_prompt_group_id(dataset.prompts)
+        groups = SeedPromptDataset.group_seed_prompts_by_prompt_group_id(dataset.prompts)
         all_prompt_groups.extend(groups)
     return all_prompt_groups
 

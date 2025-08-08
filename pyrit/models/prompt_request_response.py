@@ -50,22 +50,19 @@ class PromptRequestResponse:
 
         conversation_id = self.request_pieces[0].conversation_id
         sequence = self.request_pieces[0].sequence
-        role = None
+        role = self.request_pieces[0].role
         for request_piece in self.request_pieces:
 
             if request_piece.conversation_id != conversation_id:
                 raise ValueError("Conversation ID mismatch.")
 
             if request_piece.sequence != sequence:
-                raise ValueError("Sequence mismatch.")
+                raise ValueError("Inconsistent sequences within the same prompt request response entry.")
 
             if not request_piece.converted_value:
                 raise ValueError("Converted prompt text is None.")
 
-            if not role:
-                role = request_piece.role
-
-            elif role != request_piece.role:
+            if role != request_piece.role:
                 raise ValueError("Inconsistent roles within the same prompt request response entry.")
 
     def __str__(self):
