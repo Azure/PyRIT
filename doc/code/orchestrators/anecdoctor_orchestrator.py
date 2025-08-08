@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
+#       jupytext_version: 1.17.2
 # ---
 
 # %% [markdown]
@@ -51,9 +51,9 @@ attack_examples = [
 ]
 
 objective_target = OpenAIChatTarget(
-    api_key=os.environ["OPENAI_API_KEY"],
+    api_key=os.environ["OPENAI_CHAT_KEY"],
     endpoint=os.environ["OPENAI_CHAT_ENDPOINT"],
-    model_name=os.environ["OPENAI_MODEL"],
+    model_name=os.environ["OPENAI_CHAT_MODEL"],
 )
 
 orchestrator = AnecdoctorOrchestrator(

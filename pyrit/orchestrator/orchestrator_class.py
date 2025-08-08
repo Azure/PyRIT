@@ -93,7 +93,7 @@ class Orchestrator(abc.ABC, Identifier):
         Retrieves the scores of the PromptRequestPieces associated with this orchestrator.
         These exist if a scorer is provided to the orchestrator.
         """
-        return self._memory.get_scores_by_orchestrator_id(orchestrator_id=self._id)
+        return self._memory.get_prompt_scores(orchestrator_id=self._id)
 
     def get_identifier(self) -> dict[str, str]:
         orchestrator_dict = {}
