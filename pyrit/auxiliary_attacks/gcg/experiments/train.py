@@ -4,7 +4,7 @@
 import logging
 import time
 from typing import Union
-
+import torch
 import mlflow
 import numpy as np
 import torch.multiprocessing as mp
@@ -108,7 +108,6 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         params.logfile = logfile
         params.random_seed = random_seed
         logger.info(f"Parameters: {params}")
-
         # Start mlflow logging
         mlflow.start_run()
         log_gpu_memory(step=0)
