@@ -214,6 +214,32 @@ async def test_send_prompt_async_empty_exception(mock_memory_instance, seed_prom
 
 
 @pytest.mark.asyncio
+async def test_send_prompt_async_different_sequences():
+    """Test that sending prompts with different sequences raises ValueError."""
+    prompt_target = AsyncMock()
+    normalizer = PromptNormalizer()
+
+    prompts = [SeedPrompt(value="test1", sequence=1), SeedPrompt(value="test2", sequence=2)]  # Different sequence
+    group = SeedPromptGroup(prompts=prompts)
+
+    with pytest.raises(ValueError, match="All SeedPrompts in the SeedPromptGroup must have the same sequence"):
+        await normalizer.send_prompt_async(seed_prompt_group=group, target=prompt_target)
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_mixed_sequence_types():
+    """Test that sending prompts with mixed sequence types (None and int) raises ValueError."""
+    prompt_target = AsyncMock()
+    normalizer = PromptNormalizer()
+
+    prompts = [SeedPrompt(value="test1", sequence=1), SeedPrompt(value="test2")]  # No sequence (will default to None)
+    group = SeedPromptGroup(prompts=prompts)
+
+    with pytest.raises(ValueError, match="All SeedPrompts in the SeedPromptGroup must have the same sequence"):
+        await normalizer.send_prompt_async(seed_prompt_group=group, target=prompt_target)
+
+
+@pytest.mark.asyncio
 async def test_send_prompt_async_adds_memory_twice(
     mock_memory_instance, seed_prompt_group, response: PromptRequestResponse
 ):

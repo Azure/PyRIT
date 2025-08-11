@@ -67,10 +67,14 @@ class PromptNormalizer:
 
             Raises:
             Exception: If an error occurs during the request processing.
+            ValueError: If the prompts in the SeedPromptGroup are not part of the same sequence.
 
         Returns:
             PromptRequestResponse: The response received from the target.
         """
+        # Validates that the SeedPrompts in the SeedPromptGroup are part of the same sequence
+        if len(set(prompt.sequence for prompt in seed_prompt_group.prompts)) > 1:
+            raise ValueError("All SeedPrompts in the SeedPromptGroup must have the same sequence.")
 
         request = await self._build_prompt_request_response(
             seed_prompt_group=seed_prompt_group,
