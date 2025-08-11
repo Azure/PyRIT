@@ -25,6 +25,7 @@ def memory() -> Generator[MemoryInterface, None, None]:
     yield from get_memory_interface()
 
 
+@pytest.mark.run_only_if_all_tests
 @pytest.mark.parametrize(
     "scale_path, dataset_name",
     [

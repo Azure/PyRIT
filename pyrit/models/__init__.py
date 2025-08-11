@@ -12,7 +12,7 @@ from pyrit.models.prompt_request_piece import PromptRequestPiece, sort_request_p
 from pyrit.models.conversation_reference import ConversationReference, ConversationType
 
 from pyrit.models.attack_result import AttackResult, AttackOutcome, AttackResultT
-
+from pyrit.models.strategy_result import StrategyResult, StrategyResultT
 from pyrit.models.data_type_serializer import (
     AllowedCategories,
     AudioPathDataTypeSerializer,
@@ -77,6 +77,8 @@ __all__ = [
     "SeedPromptDataset",
     "SeedPromptGroup",
     "StorageIO",
+    "StrategyResult",
+    "StrategyResultT",
     "TextDataTypeSerializer",
     "UnvalidatedScore",
 ]

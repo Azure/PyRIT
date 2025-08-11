@@ -6,13 +6,13 @@ from typing import Any, Optional, Sequence, cast
 
 from typing_extensions import LiteralString, deprecated
 
-from pyrit.attacks import (
+from pyrit.common import deprecation_message
+from pyrit.executor.attack import (
     AttackConverterConfig,
     AttackScoringConfig,
     PromptSendingAttack,
     SingleTurnAttackContext,
 )
-from pyrit.common import deprecation_message
 from pyrit.models import (
     AttackOutcome,
     PromptRequestResponse,
@@ -46,7 +46,7 @@ class PromptSendingOrchestrator(Orchestrator):
     """
     .. warning::
         `PromptSendingOrchestrator` is deprecated and will be removed in **v0.12.0**;
-        use `pyrit.attacks.PromptSendingAttack` instead.
+        use `pyrit.executor.attack.PromptSendingAttack` instead.
 
     This orchestrator takes a set of prompts, converts them using the list of PromptConverters,
     sends them to a target, and scores the resonses with scorers (if provided).

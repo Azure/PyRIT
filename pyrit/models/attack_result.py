@@ -10,6 +10,7 @@ from typing import Any, Dict, Optional, TypeVar
 from pyrit.models.conversation_reference import ConversationReference, ConversationType
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.score import Score
+from pyrit.models.strategy_result import StrategyResult
 
 AttackResultT = TypeVar("AttackResultT", bound="AttackResult")
 
@@ -30,7 +31,7 @@ class AttackOutcome(Enum):
 
 
 @dataclass
-class AttackResult:
+class AttackResult(StrategyResult):
     """Base class for all attack results"""
 
     # Identity

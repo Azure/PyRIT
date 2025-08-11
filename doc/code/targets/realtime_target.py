@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
@@ -38,8 +38,13 @@ target = RealtimeTarget()
 # %%
 from pathlib import Path
 
+from pyrit.executor.attack import (
+    AttackExecutor,
+    ConsoleAttackResultPrinter,
+    PromptSendingAttack,
+    SingleTurnAttackContext,
+)
 from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
-from pyrit.orchestrator import PromptSendingOrchestrator
 
 # This is audio asking how to cut down a tree
 audio_path = Path("../../../assets/converted_audio.wav").resolve()
@@ -56,10 +61,14 @@ seed_prompt_group = SeedPromptGroup(
     ]
 )
 
+context = SingleTurnAttackContext(
+    objective=objective,
+    seed_prompt_group=seed_prompt_group,
+)
 
-orchestrator = PromptSendingOrchestrator(objective_target=target)
-result = await orchestrator.run_attack_async(objective=objective, seed_prompt=seed_prompt_group)  # type: ignore
-await result.print_conversation_async()  # type: ignore
+attack = PromptSendingAttack(objective_target=target)
+result = await attack.execute_with_context_async(context=context)  # type: ignore
+await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
 await target.cleanup_target()  # type: ignore
 
 # %% [markdown]
@@ -72,11 +81,14 @@ prompt_to_send = "What is the capitol of France?"
 second_prompt_to_send = "What is the size of that city?"
 # Showing how to send multiple prompts but each is its own conversation, ie the second prompt is not a follow up to the first
 
-orchestrator = PromptSendingOrchestrator(objective_target=target)
-results = await orchestrator.run_attacks_async(objectives=[prompt_to_send, second_prompt_to_send])  # type: ignore
+attack = PromptSendingAttack(objective_target=target)
+results = await AttackExecutor().execute_multi_objective_attack_async(  # type: ignore
+    attack=attack,
+    objectives=[prompt_to_send, second_prompt_to_send],
+)
 
 for result in results:
-    await result.print_conversation_async()  # type: ignore
+    await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
 await target.cleanup_target()  # type: ignore
 
 # %% [markdown]

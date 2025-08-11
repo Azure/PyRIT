@@ -111,7 +111,7 @@ class FuzzerResult:
                 else:
                     print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
 
-                scores = memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(message.id)])
+                scores = memory.get_prompt_scores(prompt_ids=[str(message.id)])
                 if scores and len(scores) > 0:
                     score = scores[0]
                     print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
