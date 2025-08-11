@@ -16,8 +16,8 @@ def test_normalizer_request_validates_sequence():
 
     seed_prompt_group = SeedPromptGroup(
         prompts=[
-            SeedPrompt(value="Hello", data_type="text", prompt_group_id=group_id, sequence=0),
-            SeedPrompt(value="World", data_type="text", prompt_group_id=group_id, sequence=1),
+            SeedPrompt(value="Hello", data_type="text", prompt_group_id=group_id, sequence=0, role="user"),
+            SeedPrompt(value="World", data_type="text", prompt_group_id=group_id, sequence=1, role="user"),
         ]
     )
 

@@ -229,15 +229,44 @@ def test_group_id_set_unequally_raises():
 
 
 def test_enforce_consistent_role_with_no_roles_by_sequence():
-    """Test that when no roles are set, all prompts in each sequence get the default 'user' role."""
+    """Test that if only one role is set, all prompts in each sequence get that role."""
     prompts = [
-        SeedPrompt(value="test1", sequence=1, role=None),
-        SeedPrompt(value="test2", sequence=1, role=None),
-        SeedPrompt(value="test3", sequence=2, role=None),
+        SeedPrompt(value="test1", sequence=1, role="user"),
+        SeedPrompt(value="test2", sequence=1),
+        SeedPrompt(value="test3", sequence=2, role="user"),
     ]
     group = SeedPromptGroup(prompts=prompts)
 
     assert all(prompt.role == "user" for prompt in group.prompts)
+
+
+def test_enforce_consistent_role_with_undefined_role_by_sequence():
+    """Test that when prompts in different sequences have roles defined, ValueError is raised."""
+    prompts = [
+        SeedPrompt(value="test1", sequence=1, role="user"),
+        SeedPrompt(value="test2", sequence=2),  # undefined role raises error
+    ]
+
+    with pytest.raises(ValueError) as exc_info:
+        SeedPromptGroup(prompts=prompts)
+
+    assert (
+        f"No roles set for sequence 2 in a multi-sequence group. Please ensure at least one prompt within a sequence"
+        f" has an assigned role."
+    ) in str(exc_info.value)
+
+
+def test_enforce_consistent_role_with_unassigned_role_single_sequence():
+    """Test that when no prompt in a sequence has a role, all prompts are assigned user."""
+    prompts = [
+        SeedPrompt(value="test1", sequence=1),
+        SeedPrompt(value="test2", sequence=1),
+    ]
+    group = SeedPromptGroup(prompts=prompts)
+
+    # Check sequence 1 prompts
+    seq1_prompts = [p for p in group.prompts if p.sequence == 1]
+    assert all(p.role == "user" for p in seq1_prompts)
 
 
 def test_enforce_consistent_role_with_single_role_by_sequence():

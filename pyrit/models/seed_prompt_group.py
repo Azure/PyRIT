@@ -94,6 +94,10 @@ class SeedPromptGroup(YamlLoadable):
         If no roles are set, all prompts will be assigned the default 'user' role.
         If one prompt in a sequence has a role, all prompts will be assigned that role.
         If multiple different roles are found, raises ValueError.
+
+        Raises:
+            ValueError: If multiple different roles are found across prompts in the group  or
+            if no roles are set in a multi-sequence group.
         """
         # groups the prompts according to their sequence
         grouped_prompts = defaultdict(list)
@@ -102,8 +106,14 @@ class SeedPromptGroup(YamlLoadable):
                 grouped_prompts[prompt.sequence] = []
             grouped_prompts[prompt.sequence].append(prompt)
 
+        num_sequences = len(grouped_prompts)
         for sequence, prompts in grouped_prompts.items():
             roles = {prompt.role for prompt in prompts if prompt.role is not None}
+            if not len(roles) and num_sequences > 1:
+                raise ValueError(
+                    f"No roles set for sequence {sequence} in a multi-sequence group. "
+                    "Please ensure at least one prompt within a sequence has an assigned role."
+                )
             if len(roles) > 1:
                 raise ValueError(f"Inconsistent roles found for sequence {sequence}: {roles}")
             role = roles.pop() if len(roles) else "user"

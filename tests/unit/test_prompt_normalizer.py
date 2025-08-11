@@ -219,7 +219,10 @@ async def test_send_prompt_async_different_sequences():
     prompt_target = AsyncMock()
     normalizer = PromptNormalizer()
 
-    prompts = [SeedPrompt(value="test1", sequence=1), SeedPrompt(value="test2", sequence=2)]  # Different sequence
+    prompts = [
+        SeedPrompt(value="test1", sequence=1, role="user"),
+        SeedPrompt(value="test2", sequence=2, role="user"),
+    ]  # Different sequence
     group = SeedPromptGroup(prompts=prompts)
 
     with pytest.raises(ValueError, match="All SeedPrompts in the SeedPromptGroup must have the same sequence"):
@@ -232,7 +235,10 @@ async def test_send_prompt_async_mixed_sequence_types():
     prompt_target = AsyncMock()
     normalizer = PromptNormalizer()
 
-    prompts = [SeedPrompt(value="test1", sequence=1), SeedPrompt(value="test2")]  # No sequence (will default to None)
+    prompts = [
+        SeedPrompt(value="test1", sequence=1, role="user"),
+        SeedPrompt(value="test2", role="user"),
+    ]  # No sequence (will default to None)
     group = SeedPromptGroup(prompts=prompts)
 
     with pytest.raises(ValueError, match="All SeedPrompts in the SeedPromptGroup must have the same sequence"):
