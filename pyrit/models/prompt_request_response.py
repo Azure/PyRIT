@@ -128,20 +128,22 @@ def group_conversation_request_pieces_by_sequence(
 
     Example:
     >>> request_pieces = [
-    >>>     PromptRequestPiece(conversation_id=1, sequence=1, text="Hello"),
-    >>>     PromptRequestPiece(conversation_id=1, sequence=2, text="Hi!"),
-    >>>     PromptRequestPiece(conversation_id=1, sequence=1, text="How are you?"),
-    >>>     PromptRequestPiece(conversation_id=1, sequence=2, text="I'm good, thanks!")
+    >>>     PromptRequestPiece(conversation_id=1, sequence=1, text="Given this list of creatures, which is your
+    >>>     favorite:"),
+    >>>     PromptRequestPiece(conversation_id=1, sequence=2, text="Good question!"),
+    >>>     PromptRequestPiece(conversation_id=1, sequence=1, text="Raccoon, Narwhal, or Sloth?"),
+    >>>     PromptRequestPiece(conversation_id=1, sequence=2, text="I'd have to say racoons are my favorite!"),
     >>> ]
     >>> grouped_responses = group_conversation_request_pieces(request_pieces)
     ... [
     ...     PromptRequestResponse(request_pieces=[
-    ...         PromptRequestPiece(conversation_id=1, sequence=1, text="Hello"),
-    ...         PromptRequestPiece(conversation_id=1, sequence=1, text="How are you?")
+    ...         PromptRequestPiece(conversation_id=1, sequence=1, text="Given this list of creatures, which is your
+    ...         favorite:"),
+    ...         PromptRequestPiece(conversation_id=1, sequence=1, text="Raccoon, Narwhal, or Sloth?")
     ...     ]),
     ...     PromptRequestResponse(request_pieces=[
-    ...         PromptRequestPiece(conversation_id=1, sequence=2, text="Hi!"),
-    ...         PromptRequestPiece(conversation_id=1, sequence=2, text="I'm good, thanks!")
+    ...         PromptRequestPiece(conversation_id=1, sequence=2, text="Good question!"),
+    ...         PromptRequestPiece(conversation_id=1, sequence=2, text="I'd have to say racoons are my favorite!")
     ...     ])
     ... ]
     """
