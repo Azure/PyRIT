@@ -62,7 +62,6 @@ def fetch_medsafetybench(
     combined_data = []
 
     for source in sources:
-        try:
             examples = fetch_examples(
                 source=source,
                 source_type="public_url",
@@ -105,19 +104,6 @@ def fetch_medsafetybench(
                     "file_type": file_type,
                     "source": source
                 })
-                
-        except Exception as e:
-            print(f"Warning: Failed to fetch data from {source}: {str(e)}")
-            continue
-
-    if combined_data:
-        if output_csv_path is None:
-            output_csv_path = f"medsafetybench_combined_{subset_name}.csv"
-        
-        df = pd.DataFrame(combined_data)
-        df.to_csv(output_csv_path, index=False)
-        print(f"Combined data saved to: {output_csv_path}")
-        print(f"Total prompts saved: {len(combined_data)}")
 
     return SeedPromptDataset(prompts=all_prompts)
 
