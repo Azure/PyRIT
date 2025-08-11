@@ -14,6 +14,41 @@ API Reference
 
     ConversationAnalytics
 
+:py:mod:`pyrit.attacks`
+============================
+
+.. automodule:: pyrit.executor.attack
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    AttackAdversarialConfig
+    AttackContext
+    AttackConverterConfig
+    AttackExecutor
+    AttackScoringConfig
+    AttackStrategy
+    ContextComplianceAttack
+    ConversationSession
+    CrescendoAttack
+    FlipAttack
+    ManyShotJailbreakAttack
+    MultiTurnAttackContext
+    PromptSendingAttack
+    RTOSystemPromptPaths
+    RedTeamingAttack
+    RolePlayAttack
+    SingleTurnAttackContext
+    TAPAttack
+    TAPAttackContext
+    TAPAttackResult
+    TreeOfAttacksWithPruningAttack
+    SkeletonKeyAttack
+    ConsoleAttackResultPrinter
+
 :py:mod:`pyrit.auth`
 ====================
 

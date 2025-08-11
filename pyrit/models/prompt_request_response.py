@@ -62,7 +62,7 @@ class PromptRequestResponse:
             if not request_piece.converted_value:
                 raise ValueError("Converted prompt text is None.")
 
-            if role != request_piece.role:
+            if request_piece.role != role:
                 raise ValueError("Inconsistent roles within the same prompt request response entry.")
 
     def __str__(self):
@@ -140,7 +140,7 @@ def group_conversation_request_pieces_by_sequence(
     ...         PromptRequestPiece(conversation_id=1, sequence=1, text="How are you?")
     ...     ]),
     ...     PromptRequestResponse(request_pieces=[
-    ...         PromptRequestPiece(conversation_id=1, sequence=2, text="Hi?"),
+    ...         PromptRequestPiece(conversation_id=1, sequence=2, text="Hi!"),
     ...         PromptRequestPiece(conversation_id=1, sequence=2, text="I'm good, thanks!")
     ...     ])
     ... ]

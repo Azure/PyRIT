@@ -65,7 +65,7 @@ print(jailbreak_prompt)
 # %% [markdown]
 # # Multimodal use case with Seed Prompt Groups
 #
-# For multimodal cases where we want to send a piece of text and image together, the `SeedPromptGroup` abstraction can be used for groups of seed prompts. When a group of prompts need to be sent together, this class can support sending this datatype to a target where all the prompts share the same `prompt_group_id`. SeedPrompts represent a turn and multiple SeedPrompts can be sent together if they share the same sequence and are apart of the same SeedPromptGroup. Sequence is also useful for multi-turn conversations such as in Skeleton Key attack where the turns are both fixed prompts.
+# For multimodal cases where we want to send a piece of text and image together, the `SeedPromptGroup` abstraction can be used for groups of seed prompts. When a group of prompts need to be sent together, this class can support sending this datatype to a target where all the prompts share the same `prompt_group_id`. SeedPrompts represent a turn and multiple SeedPrompts can be sent together if they share the same sequence and are a part of the same SeedPromptGroup. Sequence is also useful for multi-turn conversations such as in Skeleton Key attack where the turns are both fixed prompts.
 
 # %%
 from pyrit.models import SeedPromptGroup

@@ -334,13 +334,18 @@ class PDFConverter(PromptConverter):
         Returns:
             DataTypeSerializer: The serializer object containing metadata about the saved file.
         """
-        original_filename_ending = self._existing_pdf_path.stem if self._existing_pdf_path else ""
+        original_filename_ending = self._existing_pdf_path.suffix if self._existing_pdf_path else ""
+
+        if original_filename_ending:
+            extension = original_filename_ending[1:]  # Remove the leading dot
+        else:
+            extension = "pdf"
 
         pdf_serializer = data_serializer_factory(
             category="prompt-memory-entries",
             data_type="url",
             value=content,
-            extension=f"{original_filename_ending}.pdf",
+            extension=extension,
         )
         await pdf_serializer.save_data(pdf_bytes)
         return pdf_serializer

@@ -174,29 +174,11 @@ class SeedPromptDataset(YamlLoadable):
             prompt.value = prompt.render_template_value(**kwargs)
 
     @staticmethod
-    def _set_group_collection_id_by_alias(seed_prompts: Sequence[dict]):
-        """
-        Sets all group_collection_ids based on group_collection_alias matches
-
-        This is important so the prompt_group_id_alias can be set in yaml to group prompts
-        """
-        alias_to_group_id = {}
-
-        for prompt in seed_prompts:
-            alias = prompt.get("group_collection_alias")
-            if alias:
-                if alias not in alias_to_group_id:
-                    alias_to_group_id[alias] = uuid.uuid4()
-                prompt["group_collection_id"] = alias_to_group_id[alias]
-            else:
-                prompt["group_collection_id"] = uuid.uuid4()
-
-    @staticmethod
     def _set_seed_prompt_group_id_by_alias(seed_prompts: Sequence[dict]):
         """
         Sets all seed_prompt_group_ids based on prompt_group_alias matches
 
-        This is important so the prompt_group_id_alias can be set in yaml to group prompts
+        This is important so the prompt_group_alias can be set in yaml to group prompts
         """
         alias_to_group_id = {}
 
