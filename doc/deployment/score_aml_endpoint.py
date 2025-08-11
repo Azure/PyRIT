@@ -45,7 +45,10 @@ api_key = os.getenv("AZURE_ML_SCORE_API_KEY")
 # %%
 print(f"Deployment name {deployment_name}")
 print(f"Azure ML endpoint uri: {url}")
-print(f"API key: {api_key}")
+if api_key:
+    print("API key is set.")
+else:
+    print("API key is not set.")
 
 # %% [markdown]
 # **Azure ML endpoint JSON body**

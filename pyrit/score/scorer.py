@@ -426,9 +426,9 @@ class Scorer(abc.ABC):
                 logger.debug("All response pieces have errors, skipping scoring")
                 return []
 
-        # Create all scoring tasks
+        # Create all scoring tasks, note TEMPORARY fix to prevent multi-piece responses from breaking scoring logic
         tasks = [
-            scorer.score_async(request_response=piece, task=task) for piece in filtered_pieces for scorer in scorers
+            scorer.score_async(request_response=piece, task=task) for piece in filtered_pieces[:1] for scorer in scorers
         ]
 
         if not tasks:
@@ -485,7 +485,8 @@ class Scorer(abc.ABC):
 
         first_score = None
 
-        for piece in scorable_pieces:
+        # TEMPORARY fix to prevent multi-piece responses from breaking scoring logic of attack
+        for piece in scorable_pieces[:1]:
             # Run all scorers on this piece in parallel
             tasks = [scorer.score_async(request_response=piece, task=task) for scorer in scorers]
             score_lists = await asyncio.gather(*tasks)

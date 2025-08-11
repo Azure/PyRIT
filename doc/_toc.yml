@@ -30,6 +30,9 @@ chapters:
       sections:
       - file: code/datasets/1_seed_prompt
       - file: code/datasets/2_fetch_dataset
+    - file: code/attacks/0_attack
+      sections:
+      - file: code/attacks/1_prompt_sending_attack
     - file: code/orchestrators/0_orchestrator
       sections:
       - file: code/orchestrators/1_prompt_sending_orchestrator
@@ -100,7 +103,7 @@ chapters:
       - file: code/memory/4_manually_working_with_memory
       - file: code/memory/5_memory_labels
       - file: code/memory/6_azure_sql_memory
-      - file: code/memory/7_azure_sql_memory_orchestrators
+      - file: code/memory/7_azure_sql_memory_attacks
       - file: code/memory/8_seed_prompt_database
       - file: code/memory/9_exporting_data
       - file: code/memory/10_schema_diagram.md

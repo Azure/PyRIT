@@ -6,8 +6,8 @@ from typing import Optional, cast
 
 from typing_extensions import LiteralString, deprecated
 
-from pyrit.attacks import AttackConverterConfig, AttackScoringConfig, FlipAttack
 from pyrit.common import deprecation_message
+from pyrit.executor.attack import AttackConverterConfig, AttackScoringConfig, FlipAttack
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.orchestrator.models.orchestrator_result import OrchestratorResult
 from pyrit.prompt_normalizer import PromptConverterConfiguration
@@ -31,7 +31,7 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
     """
     .. warning::
         `FlipAttackOrchestrator` is deprecated and will be removed in **v0.12.0**;
-        use `pyrit.attacks.FlipAttack` instead.
+        use `pyrit.executor.attack.FlipAttack` instead.
 
     This orchestrator implements the Flip Attack method found here:
     https://arxiv.org/html/2410.02832v1.
