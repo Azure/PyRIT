@@ -118,9 +118,6 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
                 If no scorer is provided the workflow will skip scoring.
             converter_config (Optional[StrategyConverterConfig]): Optional converter
                 configuration for request and response converters.
-            prompt_converters (Optional[List[PromptConverter]]): Optional list of prompt
-                converters to apply to the attack content before sending it to the prompt target.
-                This provides backward compatibility with the legacy XPIAOrchestrator interface.
             prompt_normalizer (Optional[PromptNormalizer]): Optional PromptNormalizer
                 instance. If not provided, a new one will be created.
             logger (logging.Logger): Logger instance for logging events.
@@ -221,15 +218,14 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
         # Create seed prompt group from attack content
         seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=context.attack_content, data_type="text")])
 
-        # Send to attack setup target using request converters
-        # Use the same pattern as legacy - pass converter configurations list
         setup_response = await self._prompt_normalizer.send_prompt_async(
             seed_prompt_group=seed_prompt_group,
             request_converter_configurations=self._request_converters,
+            response_converter_configurations=self._response_converters,
             target=self._attack_setup_target,
             labels=context.memory_labels,
             orchestrator_identifier=self.get_identifier(),
-            conversation_id=context.attack_setup_target_conversation_id
+            conversation_id=context.attack_setup_target_conversation_id,
         )
 
         setup_response_text = setup_response.get_value()
@@ -440,7 +436,7 @@ class XPIATestWorkflow(XPIAWorkflow):
                 response_converter_configurations=self._response_converters,
                 labels=context.memory_labels,
                 orchestrator_identifier=self.get_identifier(),
-                conversation_id=context.processing_conversation_id
+                conversation_id=context.processing_conversation_id,
             )
 
             return response.get_value()

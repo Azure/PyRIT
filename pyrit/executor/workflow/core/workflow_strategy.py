@@ -5,8 +5,8 @@ from __future__ import annotations
 
 import logging
 from abc import ABC
-from dataclasses import dataclass, field
-from typing import Dict, Optional, TypeVar
+from dataclasses import dataclass
+from typing import Optional, TypeVar
 
 from pyrit.common.logger import logger
 from pyrit.executor.core.strategy import (
@@ -25,12 +25,14 @@ WorkflowResultT = TypeVar("WorkflowResultT", bound="WorkflowResult")
 @dataclass
 class WorkflowContext(StrategyContext, ABC):
     """Base class for all workflow contexts"""
+
     pass
 
 
 @dataclass
 class WorkflowResult(StrategyResult, ABC):
     """Base class for all workflow results"""
+
     pass
 
 
@@ -97,8 +99,7 @@ class _DefaultWorkflowEventHandler(StrategyEventHandler[WorkflowContextT, Workfl
 
     async def _on_error(self, event_data: StrategyEventData[WorkflowContextT, WorkflowResultT]) -> None:
         self._logger.error(
-            f"Error in workflow {event_data.strategy_name}: {event_data.error}",
-            exc_info=event_data.error
+            f"Error in workflow {event_data.strategy_name}: {event_data.error}", exc_info=event_data.error
         )
 
 
