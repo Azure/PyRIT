@@ -335,6 +335,7 @@ API Reference
     DenylistConverter
     DiacriticConverter
     EmojiConverter
+    FirstLetterConverter
     FlipConverter
     FuzzerCrossOverConverter
     FuzzerExpandConverter
