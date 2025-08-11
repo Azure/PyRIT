@@ -109,7 +109,8 @@ def calculate_score(
     *,
     response: str,
     objective: str,
-    threshold: float = 0.8
+    threshold: float = 0.8,
+    max_attempts: Optional[int] = None
 ) -> Score:
     """
     Calculate the score for a response against an objective.
@@ -121,6 +122,7 @@ def calculate_score(
         response (str): The response text to evaluate.
         objective (str): The objective to evaluate against.
         threshold (float): The minimum score threshold. Defaults to 0.8.
+        max_attempts (Optional[int]): Maximum number of scoring attempts. Defaults to None.
 
     Returns:
         Score: The calculated score object containing value and metadata.
