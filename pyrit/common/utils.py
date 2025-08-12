@@ -112,7 +112,7 @@ def warn_if_set(
     for field_name in unused_fields:
         # Get the field value from the config object
         if not hasattr(config, field_name):
-            log.warning(f"Field '{field_name}' does not exist in {config_name}. " f"Skipping unused parameter check.")
+            log.warning(f"Field '{field_name}' does not exist in {config_name}. Skipping unused parameter check.")
             continue
 
         param_value = getattr(config, field_name)
@@ -127,9 +127,7 @@ def warn_if_set(
                 is_set = True
 
         if is_set:
-            log.warning(
-                f"{field_name} was provided in {config_name} but is not used. " f"This parameter will be ignored."
-            )
+            log.warning(f"{field_name} was provided in {config_name} but is not used. This parameter will be ignored.")
 
 
 _T = TypeVar("_T")

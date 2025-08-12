@@ -14,41 +14,6 @@ API Reference
 
     ConversationAnalytics
 
-:py:mod:`pyrit.attacks`
-============================
-
-.. automodule:: pyrit.executor.attack
-    :no-members:
-    :no-inherited-members:
-
-.. autosummary::
-    :nosignatures:
-    :toctree: _autosummary/
-
-    AttackAdversarialConfig
-    AttackContext
-    AttackConverterConfig
-    AttackExecutor
-    AttackScoringConfig
-    AttackStrategy
-    ContextComplianceAttack
-    ConversationSession
-    CrescendoAttack
-    FlipAttack
-    ManyShotJailbreakAttack
-    MultiTurnAttackContext
-    PromptSendingAttack
-    RTOSystemPromptPaths
-    RedTeamingAttack
-    RolePlayAttack
-    SingleTurnAttackContext
-    TAPAttack
-    TAPAttackContext
-    TAPAttackResult
-    TreeOfAttacksWithPruningAttack
-    SkeletonKeyAttack
-    ConsoleAttackResultPrinter
-
 :py:mod:`pyrit.auth`
 ====================
 
@@ -207,6 +172,82 @@ API Reference
     pyrit_placeholder_retry
     RateLimitException
     remove_markdown_json
+
+:py:mod:`pyrit.executor.attack`
+===============================
+
+.. automodule:: pyrit.executor.attack
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    AttackAdversarialConfig
+    AttackContext
+    AttackConverterConfig
+    AttackExecutor
+    AttackScoringConfig
+    AttackStrategy
+    ContextComplianceAttack
+    ConversationSession
+    CrescendoAttack
+    FlipAttack
+    ManyShotJailbreakAttack
+    MultiTurnAttackContext
+    PromptSendingAttack
+    RTOSystemPromptPaths
+    RedTeamingAttack
+    RolePlayAttack
+    SingleTurnAttackContext
+    TAPAttack
+    TAPAttackContext
+    TAPAttackResult
+    TreeOfAttacksWithPruningAttack
+    SkeletonKeyAttack
+    ConsoleAttackResultPrinter
+
+:py:mod:`pyrit.executor.promptgen`
+==================================
+
+.. automodule:: pyrit.executor.promptgen
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    AnecdoctorContext
+    AnecdoctorGenerator
+    AnecdoctorResult
+    FuzzerContext
+    FuzzerResult
+    FuzzerGenerator
+    FuzzerResultPrinter
+    PromptGeneratorStrategy
+    PromptGeneratorStrategyContext
+    PromptGeneratorStrategyResult
+
+:py:mod:`pyrit.executor.workflow`
+=================================
+
+.. automodule:: pyrit.executor.workflow
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    XPIAContext
+    XPIAResult
+    XPIAWorkflow
+    XPIATestWorkflow
+    XPIAManualProcessingWorkflow
+    XPIAProcessingCallback
+    XPIAStatus
 
 :py:mod:`pyrit.memory`
 ======================
