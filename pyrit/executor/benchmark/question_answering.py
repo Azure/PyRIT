@@ -5,6 +5,7 @@ import logging
 import textwrap
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, overload
+
 from pyrit.common.utils import get_kwarg_param
 from pyrit.executor.attack.core import (
     AttackConverterConfig,
@@ -13,10 +14,7 @@ from pyrit.executor.attack.core import (
 from pyrit.executor.attack.single_turn import (
     PromptSendingAttack,
 )
-from pyrit.executor.core import (
-    Strategy,
-    StrategyContext
-)
+from pyrit.executor.core import Strategy, StrategyContext
 from pyrit.models import (
     AttackResult,
     PromptRequestResponse,
@@ -29,13 +27,14 @@ from pyrit.prompt_target import PromptTarget
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class QuestionAnsweringBenchmarkContext(StrategyContext):
     """Context for question answering benchmark execution."""
-    
+
     # The question answering entry being evaluated (required)
     question_answering_entry: QuestionAnsweringEntry
-    
+
     # Prepended conversation for context
     prepended_conversation: List[PromptRequestResponse] = field(default_factory=list)
 
@@ -54,14 +53,14 @@ class QuestionAnsweringBenchmarkContext(StrategyContext):
 class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, AttackResult]):
     """
     Strategy for executing question answering benchmarks.
-    
+
     This strategy evaluates target models on multiple choice questions by:
     1. Formatting questions with their choices into prompts
     2. Sending prompts to the target model via PromptSendingAttack
     3. Evaluating responses using configured scorers
     4. Tracking success/failure for benchmark reporting
     """
-    
+
     # Default format strings
     _DEFAULT_OBJECTIVE_FORMAT = textwrap.dedent(
         """
@@ -69,7 +68,7 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
         Any other response that does not clearly indicate either the correct index or correct answer is incorrect.
         """
     ).strip()
-    
+
     _DEFAULT_QUESTION_FORMAT = textwrap.dedent(
         """
         Answer the following question.
@@ -80,9 +79,9 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
         {options}
         """
     ).strip()
-    
+
     _DEFAULT_OPTIONS_FORMAT = "Option {index}: {choice}"
-    
+
     def __init__(
         self,
         *,
@@ -97,7 +96,7 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
     ):
         """
         Initialize the question answering benchmark strategy.
-        
+
         Args:
             objective_target (PromptTarget): The target system to evaluate.
             attack_converter_config (Optional[AttackConverterConfig]): Configuration for prompt converters.
@@ -112,14 +111,14 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
             context_type=QuestionAnsweringBenchmarkContext,
             logger=logger,
         )
-        
+
         self._objective_target = objective_target
-        
+
         # Store format strings
         self._objective_format_string = objective_format_string
         self._question_asking_format_string = question_asking_format_string
         self._options_format_string = options_format_string
-        
+
         # Initialize the underlying PromptSendingAttack
         self._prompt_sending_attack = PromptSendingAttack(
             objective_target=objective_target,
@@ -128,60 +127,57 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
             prompt_normalizer=prompt_normalizer,
             max_attempts_on_failure=max_attempts_on_failure,
         )
-    
+
     def _validate_context(self, *, context: QuestionAnsweringBenchmarkContext) -> None:
         """
         Validate the strategy context before execution.
-        
+
         Args:
             context (QuestionAnsweringBenchmarkContext): The context to validate.
-            
+
         Raises:
             ValueError: If the context is invalid.
         """
         if not context.question_answering_entry.question:
             raise ValueError("Question text cannot be empty")
-        
+
         if not context.question_answering_entry.choices:
             raise ValueError("Question must have at least one choice")
-        
+
         entry = context.question_answering_entry
         valid_indices = {choice.index for choice in entry.choices}
         if entry.correct_answer not in valid_indices:
             raise ValueError(f"Correct answer index {entry.correct_answer} not found in choices")
-    
+
     async def _setup_async(self, *, context: QuestionAnsweringBenchmarkContext) -> None:
         """
         Setup phase before executing the strategy.
-        
+
         Args:
             context (QuestionAnsweringBenchmarkContext): The context for the strategy.
         """
         entry = context.question_answering_entry
-        
+
         # Format the objective for scoring
         context.generated_objective = self._objective_format_string.format(
-            question=entry.question,
-            index=entry.correct_answer,
-            answer=entry.get_correct_answer_text()
+            question=entry.question, index=entry.correct_answer, answer=entry.get_correct_answer_text()
         )
-        
+
         # Format the question prompt for the target
         context.generated_question_prompt = self._format_question_prompt(entry)
 
         # Create the seed prompt with metadata
         context.generated_seed_prompt_group = self._create_seed_prompt_group(
-            entry=entry,
-            question_prompt=context.generated_question_prompt
+            entry=entry, question_prompt=context.generated_question_prompt
         )
 
     async def _perform_async(self, *, context: QuestionAnsweringBenchmarkContext) -> AttackResult:
         """
         Execute the benchmark strategy for a single question.
-        
+
         Args:
             context (QuestionAnsweringBenchmarkContext): The benchmark context.
-            
+
         Returns:
             AttackResult: The result of the benchmark execution.
         """
@@ -192,54 +188,48 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
             prepended_conversation=context.prepended_conversation,
             memory_labels=context.memory_labels,
         )
-    
+
     def _format_question_prompt(self, entry: QuestionAnsweringEntry) -> str:
         """
         Format the complete question prompt including options.
-        
+
         Args:
             entry (QuestionAnsweringEntry): The question answering entry.
-            
+
         Returns:
             str: The formatted question prompt.
         """
         # Format all options
         options_text = self._format_options(entry)
-        
+
         # Format complete question with options
-        return self._question_asking_format_string.format(
-            question=entry.question,
-            options=options_text
-        )
-    
+        return self._question_asking_format_string.format(question=entry.question, options=options_text)
+
     def _format_options(self, entry: QuestionAnsweringEntry) -> str:
         """
         Format all answer choices into a single options string.
-        
+
         Args:
             entry (QuestionAnsweringEntry): The question answering entry.
-            
+
         Returns:
             str: The formatted options string.
         """
         options_text = ""
         for choice in entry.choices:
-            options_text += self._options_format_string.format(
-                index=choice.index, 
-                choice=choice.text
-            )
+            options_text += self._options_format_string.format(index=choice.index, choice=choice.text)
             options_text += "\n"  # Add newline between options
-        
+
         return options_text.rstrip()  # Remove trailing newline
-    
+
     def _create_seed_prompt_group(self, *, entry: QuestionAnsweringEntry, question_prompt: str) -> SeedPromptGroup:
         """
         Create a seed prompt group with the formatted question and metadata.
-        
+
         Args:
             entry (QuestionAnsweringEntry): The question answering entry.
             question_prompt (str): The formatted question prompt.
-            
+
         Returns:
             SeedPromptGroup: The seed prompt group for execution.
         """
@@ -249,16 +239,15 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
             metadata={
                 "correct_answer_index": str(entry.correct_answer),
                 "correct_answer": str(entry.get_correct_answer_text()),
-            }
+            },
         )
-        
+
         return SeedPromptGroup(prompts=[seed_prompt])
-    
-    
+
     async def _teardown_async(self, *, context: QuestionAnsweringBenchmarkContext) -> None:
         """
         Teardown phase after executing the strategy.
-        
+
         Args:
             context (QuestionAnsweringBenchmarkContext): The context for the strategy.
         """
@@ -303,7 +292,9 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
 
         # Validate parameters before creating context
         question_answering_entry = get_kwarg_param(
-            kwargs=kwargs, param_name="question_answering_entry", expected_type=QuestionAnsweringEntry, 
+            kwargs=kwargs,
+            param_name="question_answering_entry",
+            expected_type=QuestionAnsweringEntry,
         )
         prepended_conversation = get_kwarg_param(
             kwargs=kwargs, param_name="prepended_conversation", expected_type=list, required=False, default_value=[]
@@ -313,8 +304,8 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
         )
 
         return await super().execute_async(
-            **kwargs, 
-            question_answering_entry=question_answering_entry, 
+            **kwargs,
+            question_answering_entry=question_answering_entry,
             prepended_conversation=prepended_conversation,
-            memory_labels=memory_labels
+            memory_labels=memory_labels,
         )
