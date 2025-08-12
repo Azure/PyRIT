@@ -94,7 +94,12 @@ async def test_connect_required_openai_text_targets(
 @pytest.mark.parametrize(
     ("endpoint", "api_key", "model_name", "no_api_version"),
     [
-        ("OPENAI_RESPONSES_ENDPOINT", "OPENAI_RESPONSES_KEY", "OPENAI_RESPONSES_MODEL", True),
+        (
+            "PLATFORM_OPENAI_RESPONSES_ENDPOINT",
+            "PLATFORM_OPENAI_RESPONSES_KEY",
+            "PLATFORM_OPENAI_RESPONSES_MODEL",
+            True,
+        ),
         ("AZURE_OPENAI_RESPONSES_ENDPOINT", "AZURE_OPENAI_RESPONSES_KEY", "AZURE_OPENAI_RESPONSES_MODEL", False),
     ],
 )
