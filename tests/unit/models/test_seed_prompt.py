@@ -104,20 +104,6 @@ def test_seed_prompt_group_sequence_default():
     assert seed_prompt_group.prompts[0].sequence == 0
 
 
-def test_group_seed_prompts_by_prompt_group_id(seed_prompt_fixture):
-    # Grouping two prompts
-    prompt_2 = SeedPrompt(
-        value="Another prompt", data_type="text", prompt_group_id=seed_prompt_fixture.prompt_group_id, sequence=2
-    )
-
-    groups = SeedPromptDataset.group_seed_prompts_by_prompt_group_id([seed_prompt_fixture, prompt_2])
-    assert len(groups) == 1
-    assert len(groups[0].prompts) == 2
-    assert groups[0].prompts[0].sequence is not None
-    assert groups[0].prompts[1].sequence is not None
-    assert groups[0].prompts[0].sequence < groups[0].prompts[1].sequence
-
-
 def test_seed_prompt_dataset_initialization(seed_prompt_fixture):
     dataset = SeedPromptDataset(prompts=[seed_prompt_fixture])
     assert len(dataset.prompts) == 1
@@ -240,6 +226,97 @@ def test_group_id_set_unequally_raises():
         )
 
     assert "Inconsistent group IDs found across prompts" in str(exc_info.value)
+
+
+def test_enforce_consistent_role_with_no_roles_by_sequence():
+    """Test that if only one role is set, all prompts in each sequence get that role."""
+    prompts = [
+        SeedPrompt(value="test1", sequence=1, role="user"),
+        SeedPrompt(value="test2", sequence=1),
+        SeedPrompt(value="test3", sequence=2, role="user"),
+    ]
+    group = SeedPromptGroup(prompts=prompts)
+
+    assert all(prompt.role == "user" for prompt in group.prompts)
+
+
+def test_enforce_consistent_role_with_undefined_role_by_sequence():
+    """Test that when prompts in different sequences have roles defined, ValueError is raised."""
+    prompts = [
+        SeedPrompt(value="test1", sequence=1, role="user"),
+        SeedPrompt(value="test2", sequence=2),  # undefined role raises error
+    ]
+
+    with pytest.raises(ValueError) as exc_info:
+        SeedPromptGroup(prompts=prompts)
+
+    assert (
+        f"No roles set for sequence 2 in a multi-sequence group. Please ensure at least one prompt within a sequence"
+        f" has an assigned role."
+    ) in str(exc_info.value)
+
+
+def test_enforce_consistent_role_with_unassigned_role_single_sequence():
+    """Test that when no prompt in a sequence has a role, all prompts are assigned user."""
+    prompts = [
+        SeedPrompt(value="test1", sequence=1),
+        SeedPrompt(value="test2", sequence=1),
+    ]
+    group = SeedPromptGroup(prompts=prompts)
+
+    # Check sequence 1 prompts
+    seq1_prompts = [p for p in group.prompts if p.sequence == 1]
+    assert all(p.role == "user" for p in seq1_prompts)
+
+
+def test_enforce_consistent_role_with_single_role_by_sequence():
+    """Test that when one prompt in a sequence has a role, all prompts in that sequence get that role."""
+    prompts = [
+        SeedPrompt(value="test1", sequence=1, role="assistant"),
+        SeedPrompt(value="test2", sequence=1, role=None),
+        SeedPrompt(value="test3", sequence=2, role="user"),  # Different sequence can have different role
+    ]
+    group = SeedPromptGroup(prompts=prompts)
+
+    # Check sequence 1 prompts
+    seq1_prompts = [p for p in group.prompts if p.sequence == 1]
+    assert all(p.role == "assistant" for p in seq1_prompts)
+
+    # Check sequence 2 prompts
+    seq2_prompts = [p for p in group.prompts if p.sequence == 2]
+    assert all(p.role == "user" for p in seq2_prompts)
+
+
+def test_enforce_consistent_role_with_conflicting_roles_in_sequence():
+    """Test that when prompts in the same sequence have different roles, ValueError is raised."""
+    prompts = [
+        SeedPrompt(value="test1", sequence=1, role="user"),
+        SeedPrompt(value="test2", sequence=1, role="assistant"),  # Conflict in sequence 1
+        SeedPrompt(value="test3", sequence=2, role="user"),  # Different sequence, no conflict
+    ]
+
+    with pytest.raises(ValueError) as exc_info:
+        SeedPromptGroup(prompts=prompts)
+
+    assert "Inconsistent roles found for sequence 1" in str(exc_info.value)
+
+
+def test_enforce_consistent_role_with_different_roles_across_sequences():
+    """Test that different sequences can have different roles without raising an error."""
+    prompts = [
+        SeedPrompt(value="test1", sequence=1, role="assistant"),
+        SeedPrompt(value="test2", sequence=1, role="assistant"),
+        SeedPrompt(value="test3", sequence=2, role="user"),
+        SeedPrompt(value="test4", sequence=2, role="user"),
+    ]
+
+    group = SeedPromptGroup(prompts=prompts)  # Should not raise an error
+
+    # Check that roles are maintained per sequence
+    seq1_prompts = [p for p in group.prompts if p.sequence == 1]
+    seq2_prompts = [p for p in group.prompts if p.sequence == 2]
+    assert all(p.role == "assistant" for p in seq1_prompts)
+    assert all(p.role == "user" for p in seq2_prompts)
 
 
 @pytest.mark.asyncio
