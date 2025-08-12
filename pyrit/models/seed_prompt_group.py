@@ -92,8 +92,9 @@ class SeedPromptGroup(YamlLoadable):
         """
         Ensures that all prompts in the group that share a sequence have a consistent role.
         If no roles are set, all prompts will be assigned the default 'user' role.
-        If one prompt in a sequence has a role, all prompts will be assigned that role.
-        If multiple different roles are found, raises ValueError.
+        If only one prompt in a sequence has a role, all prompts will be assigned that role.
+        Roles must be set if there is more than one sequence and within a sequence all
+        roles must be consistent.
 
         Raises:
             ValueError: If multiple different roles are found across prompts in the group  or
