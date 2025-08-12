@@ -16,7 +16,7 @@ from pyrit.models import (
     construct_response_from_request,
 )
 from pyrit.models.filter_criteria import PromptConverterState, PromptFilterCriteria
-from pyrit.models.seed_prompt import SeedPromptGroup
+from pyrit.models.seed_prompt_group import SeedPromptGroup
 from pyrit.prompt_normalizer import NormalizerRequest, PromptConverterConfiguration
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
@@ -47,7 +47,6 @@ class PromptNormalizer:
         conversation_id: Optional[str] = None,
         request_converter_configurations: list[PromptConverterConfiguration] = [],
         response_converter_configurations: list[PromptConverterConfiguration] = [],
-        sequence: int = -1,
         labels: Optional[dict[str, str]] = None,
         orchestrator_identifier: Optional[dict[str, str]] = None,
     ) -> PromptRequestResponse:
@@ -62,24 +61,26 @@ class PromptNormalizer:
                 converting the request. Defaults to an empty list.
             response_converter_configurations (list[PromptConverterConfiguration], optional): Configurations for
                 converting the response. Defaults to an empty list.
-            sequence (int, optional): The sequence number of the request. Defaults to -1.
             labels (Optional[dict[str, str]], optional): Labels associated with the request. Defaults to None.
             orchestrator_identifier (Optional[dict[str, str]], optional): Identifier for the orchestrator. Defaults to
                 None.
 
             Raises:
             Exception: If an error occurs during the request processing.
+            ValueError: If the prompts in the SeedPromptGroup are not part of the same sequence.
 
         Returns:
             PromptRequestResponse: The response received from the target.
         """
+        # Validates that the SeedPrompts in the SeedPromptGroup are part of the same sequence
+        if len(set(prompt.sequence for prompt in seed_prompt_group.prompts)) > 1:
+            raise ValueError("All SeedPrompts in the SeedPromptGroup must have the same sequence.")
 
         request = await self._build_prompt_request_response(
             seed_prompt_group=seed_prompt_group,
             conversation_id=conversation_id,
             request_converter_configurations=request_converter_configurations,
             target=target,
-            sequence=sequence,
             labels=labels,
             orchestrator_identifier=orchestrator_identifier,
         )
@@ -301,7 +302,6 @@ class PromptNormalizer:
         conversation_id: str,
         request_converter_configurations: list[PromptConverterConfiguration],
         target: PromptTarget,
-        sequence: int,
         labels: dict[str, str],
         orchestrator_identifier: Optional[dict[str, str]] = None,
     ) -> PromptRequestResponse:
@@ -316,7 +316,6 @@ class PromptNormalizer:
             request_converter_configurations (list[PromptConverterConfiguration]): List of configurations for
                 request converters.
             target (PromptTarget): The target for the prompt.
-            sequence (int): The sequence number of the prompt.
             labels (dict[str, str]): A dictionary of labels associated with the prompt.
             orchestrator_identifier (Optional[dict[str, str]]): An optional dictionary for orchestrator identifiers.
 
@@ -329,12 +328,11 @@ class PromptNormalizer:
         # All prompt request pieces within PromptRequestResponse needs to have same conversation ID.
         conversation_id = conversation_id if conversation_id else str(uuid4())
         for seed_prompt in seed_prompt_group.prompts:
-
             prompt_request_piece = PromptRequestPiece(
-                role="user",
+                role=seed_prompt.role,
                 original_value=seed_prompt.value,
                 conversation_id=conversation_id,
-                sequence=sequence,
+                sequence=seed_prompt.sequence,
                 labels=labels,
                 prompt_metadata=seed_prompt.metadata,
                 prompt_target_identifier=target.get_identifier(),

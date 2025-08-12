@@ -44,7 +44,7 @@ from pyrit.executor.attack import (
     PromptSendingAttack,
     SingleTurnAttackContext,
 )
-from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
+from pyrit.models import SeedPrompt, SeedPromptGroup
 
 # This is audio asking how to cut down a tree
 audio_path = Path("../../../assets/converted_audio.wav").resolve()
