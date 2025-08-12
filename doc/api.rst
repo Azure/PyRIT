@@ -15,7 +15,7 @@ API Reference
     ConversationAnalytics
 
 :py:mod:`pyrit.executor.attack`
-============================
+===============================
 
 .. automodule:: pyrit.executor.attack
     :no-members:
@@ -50,7 +50,7 @@ API Reference
     ConsoleAttackResultPrinter
 
 :py:mod:`pyrit.executor.workflow`
-============================
+=================================
 
 .. automodule:: pyrit.executor.workflow
     :no-members:
@@ -69,7 +69,7 @@ API Reference
     XPIAStatus
 
 :py:mod:`pyrit.executor.promptgen`
-============================
+==================================
 
 .. automodule:: pyrit.executor.promptgen
     :no-members:
