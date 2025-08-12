@@ -70,6 +70,7 @@ for prompt in prompts:
 # In this next example, we will add a Seed Prompt Group with prompts across the audio, image, video, and text modalities.
 # Seed Prompts that have the same `prompt_group_alias` will be part of the same Seed Prompt Group. Within a Seed Prompt Group,
 # Seed Prompts that share a `sequence` will be sent together as part of the same turn (e.g. text and corresponding image).
+# <br> <center> <img src="../../../assets/seed_prompt.png" alt="SeedPrompt and SeedPromptGroup architecture" height="600" /> </center> </br>
 # When we add non-text seed prompts to memory, encoding data will automatically populate in the seed prompt's
 # `metadata` field, including `format` (i.e. png, mp4, wav, etc.) as well as additional metadata for audio
 # and video files, inclduing `bitrate` (kBits/s as int), `samplerate` (samples/second as int), `bitdepth` (as int),
