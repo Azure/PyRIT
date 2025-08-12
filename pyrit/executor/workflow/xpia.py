@@ -1,12 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
-import concurrent.futures
 import logging
 import uuid
 from dataclasses import dataclass, field
-from typing import Awaitable, Callable, Dict, Optional, overload
+from enum import Enum
+from typing import Dict, Optional, Protocol, overload
 
 from aioconsole import ainput
 
@@ -17,12 +16,40 @@ from pyrit.executor.workflow.core import (
     WorkflowResult,
     WorkflowStrategy,
 )
-from pyrit.models import Score, SeedPrompt, SeedPromptGroup
+from pyrit.memory import CentralMemory
+from pyrit.models import (
+    PromptRequestPiece,
+    PromptRequestResponse,
+    Score,
+    SeedPromptGroup,
+)
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
+
+
+class ProcessingCallback(Protocol):
+    """
+    Protocol for processing callback functions used in XPIA workflows.
+
+    Defines the interface for callback functions that execute the processing
+    phase of an XPIA attack. The callback should handle the actual execution
+    of the processing target and return the response as a string.
+    """
+
+    async def __call__(self) -> str: ...
+
+
+class XPIAStatus(Enum):
+    """
+    Enumeration of possible XPIA attack result statuses.
+    """
+
+    SUCCESS = "success"
+    FAILURE = "failure"
+    UNKNOWN = "unknown"
 
 
 @dataclass
@@ -34,11 +61,11 @@ class XPIAContext(WorkflowContext):
     Immutable objects like targets and scorers are stored in the workflow instance.
     """
 
-    # The content to attack the processing target with (e.g., a jailbreak)
-    attack_content: str
+    # The attack content as a seed prompt group containing the attack content
+    attack_content: SeedPromptGroup
 
     # Callback to execute after the attack prompt is positioned in the attack location
-    processing_callback: Callable[[], Awaitable[str]]
+    processing_callback: ProcessingCallback
 
     # Conversation ID for the attack setup target
     attack_setup_target_conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
@@ -46,8 +73,8 @@ class XPIAContext(WorkflowContext):
     # Conversation ID for the processing phase
     processing_conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
-    # The prompt to send to the processing target
-    processing_prompt: str = ""
+    # The prompt to send to the processing target (for test workflow)
+    processing_prompt: Optional[SeedPromptGroup] = None
 
     # Additional labels that can be applied throughout the workflow
     memory_labels: Dict[str, str] = field(default_factory=dict)
@@ -83,7 +110,19 @@ class XPIAResult(WorkflowResult):
         if self.score is None:
             return False
         score_value = self.score.get_value()
-        return bool(score_value) if isinstance(score_value, (int, float)) else False
+        return score_value > 0 if isinstance(score_value, (int, float)) else False
+
+    @property
+    def status(self) -> XPIAStatus:
+        """
+        Get the status of the attack result.
+
+        Returns:
+            XPIAStatus: The status of the attack result.
+        """
+        if self.score is None:
+            return XPIAStatus.UNKNOWN
+        return XPIAStatus.SUCCESS if self.success else XPIAStatus.FAILURE
 
 
 class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
@@ -131,6 +170,7 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
         self._response_converters = converter_config.response_converters
 
         self._prompt_normalizer = prompt_normalizer or PromptNormalizer()
+        self._memory = CentralMemory.get_memory_instance()
 
     def _validate_context(self, *, context: XPIAContext) -> None:
         """
@@ -145,11 +185,45 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
         Raises:
             ValueError: If the context is invalid (missing attack_content or processing_callback).
         """
-        if not context.attack_content:
-            raise ValueError("attack_content cannot be empty")
+        self._validate_seed_prompt_group(field_name="attack_content", seed_prompt_group=context.attack_content)
 
         if not context.processing_callback:
             raise ValueError("processing_callback is required")
+
+    @staticmethod
+    def _validate_seed_prompt_group(*, field_name: str, seed_prompt_group: SeedPromptGroup) -> None:
+        """
+        Validate the seed prompt group before execution.
+
+        This method ensures that the seed prompt group is well-formed and contains
+        all required prompts.
+
+        Args:
+            seed_prompt_group (SeedPromptGroup): The seed prompt group to validate.
+            field_name (str): The name of the field being validated.
+
+        Raises:
+            ValueError: If the seed prompt group is invalid.
+        """
+        if not seed_prompt_group or not seed_prompt_group.prompts:
+            raise ValueError(
+                f"{field_name}: SeedPromptGroup must be provided with at least one prompt. "
+                f"Received: {seed_prompt_group}"
+            )
+
+        if len(seed_prompt_group.prompts) != 1:
+            raise ValueError(
+                f"{field_name}: Exactly one seed prompt must be provided. "
+                f"Received {len(seed_prompt_group.prompts)} prompts."
+            )
+
+        # Validate each prompt in the group
+        prompt = seed_prompt_group.prompts[0]
+        if prompt.data_type != "text":
+            raise ValueError(
+                f"{field_name}: Prompt must be of type 'text'. "
+                f"Received: '{prompt.data_type}' with value: {prompt.value[:50]}..."
+            )
 
     async def _setup_async(self, *, context: XPIAContext) -> None:
         """
@@ -163,6 +237,7 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
                 to include setup-specific configuration.
         """
         context.attack_setup_target_conversation_id = str(uuid.uuid4())
+        context.processing_conversation_id = str(uuid.uuid4())
         context.memory_labels = combine_dict(self._memory_labels, context.memory_labels)
 
     async def _perform_async(self, *, context: XPIAContext) -> XPIAResult:
@@ -182,6 +257,7 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
             XPIAResult: The result of the workflow execution containing the processing
                 response, optional score, and attack setup response.
         """
+
         # Step 1: Setup and send attack prompt
         setup_response_text = await self._setup_attack_async(context=context)
 
@@ -201,8 +277,8 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
         """
         Setup and send the attack prompt to the attack setup target.
 
-        This method creates a seed prompt group from the attack content and sends it
-        to the attack setup target using configured request converters.
+        This method sends the attack content to the attack setup target
+        using configured request converters.
 
         Args:
             context (XPIAContext): The context containing the attack content and labels.
@@ -210,16 +286,14 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
         Returns:
             str: The response text from the attack setup target.
         """
+        attack_content_value = context.attack_content.prompts[0].value
         self._logger.info(
             "Sending the following prompt to the prompt target (after applying prompt "
-            f'converter operations) "{context.attack_content}"',
+            f'converter operations) "{attack_content_value}"',
         )
 
-        # Create seed prompt group from attack content
-        seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=context.attack_content, data_type="text")])
-
         setup_response = await self._prompt_normalizer.send_prompt_async(
-            seed_prompt_group=seed_prompt_group,
+            seed_prompt_group=context.attack_content,
             request_converter_configurations=self._request_converters,
             response_converter_configurations=self._response_converters,
             target=self._attack_setup_target,
@@ -247,6 +321,19 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
             str: The response from the processing target.
         """
         processing_response = await context.processing_callback()
+        self._memory.add_request_response_to_memory(
+            request=PromptRequestResponse(
+                request_pieces=[
+                    PromptRequestPiece(
+                        conversation_id=context.processing_conversation_id,
+                        original_value=processing_response,
+                        original_value_data_type="text",
+                        role="assistant",
+                        orchestrator_identifier=self.get_identifier(),
+                    )
+                ],
+            )
+        )
         self._logger.info(f'Received the following response from the processing target "{processing_response}"')
         return processing_response
 
@@ -268,17 +355,16 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
             self._logger.info("No scorer provided. Returning raw processing response.")
             return None
 
-        # Use thread pool executor to match legacy behavior
-        pool = concurrent.futures.ThreadPoolExecutor()
         try:
-            score = pool.submit(asyncio.run, self._scorer.score_text_async(processing_response)).result()[0]
-            self._logger.info(f"Score of the processing response: {score}")
-            return score
-        except Exception as e:
-            self._logger.error(f"Error scoring response: {e}")
+            scores = await self._scorer.score_text_async(processing_response)
+            if scores:
+                score = scores[0]
+                self._logger.info(f"Score of the processing response: {score}")
+                return score
             return None
-        finally:
-            pool.shutdown(wait=False)
+        except Exception as e:
+            self._logger.error(f"Error scoring response: {e}", exc_info=True)
+            return None
 
     async def _teardown_async(self, *, context: XPIAContext) -> None:
         """
@@ -298,18 +384,22 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
     async def execute_async(
         self,
         *,
-        attack_content: str,
-        processing_prompt: Optional[str] = None,
-        memory_labels: Optional[dict[str, str]] = None,
+        attack_content: SeedPromptGroup,
+        processing_callback: ProcessingCallback,
+        processing_prompt: Optional[SeedPromptGroup] = None,
+        memory_labels: Optional[Dict[str, str]] = None,
         **kwargs,
     ) -> XPIAResult:
         """
         Execute the XPIA workflow strategy asynchronously with the provided parameters.
 
         Args:
-            attack_content (str): The content to use for the attack.
-            processing_prompt (Optional[str]): The prompt to send to the processing target. This should include
-                placeholders to invoke plugins (if any).
+            attack_content (SeedPromptGroup): The content to use for the attack.
+            processing_callback (ProcessingCallback): The callback to execute after the attack prompt is positioned
+                in the attack location. This is generic on purpose to allow for flexibility. The callback should
+                return the processing response.
+            processing_prompt (Optional[SeedPromptGroup]): The prompt to send to the processing target. This should
+                include placeholders to invoke plugins (if any).
             memory_labels (Optional[Dict[str, str]]): Memory labels for the attack context.
             **kwargs: Additional parameters for the attack.
 
@@ -331,15 +421,22 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
         """
         Execute the XPIA workflow strategy asynchronously with the provided parameters.
         """
-        attack_content = get_kwarg_param(kwargs=kwargs, param_name="attack_content", expected_type=str)
+        attack_content = get_kwarg_param(kwargs=kwargs, param_name="attack_content", expected_type=SeedPromptGroup)
+
+        # _validate_context takes care of the validation
         processing_prompt = get_kwarg_param(
-            kwargs=kwargs, param_name="processing_prompt", expected_type=str, required=False
+            kwargs=kwargs, param_name="processing_prompt", expected_type=SeedPromptGroup, required=False
         )
+
+        processing_callback = kwargs.get("processing_callback")
+        if processing_callback is not None and not callable(processing_callback):
+            raise TypeError(f"processing_callback must be callable, got {type(processing_callback)}")
+
         memory_labels = get_kwarg_param(kwargs=kwargs, param_name="memory_labels", expected_type=dict, required=False)
 
         return await super().execute_async(
             attack_content=attack_content,
-            processing_prompt=processing_prompt or "",
+            processing_prompt=processing_prompt,
             memory_labels=memory_labels or {},
             **kwargs,
         )
@@ -397,18 +494,18 @@ class XPIATestWorkflow(XPIAWorkflow):
         Validate the XPIA test context.
 
         This method validates the context for test workflow execution, ensuring
-        that both attack content and processing prompt are provided.
+        that both seed prompt and processing prompt are provided.
 
         Args:
             context (XPIAContext): The context to validate.
 
         Raises:
-            ValueError: If the context is invalid (missing attack_content or processing_prompt).
+            ValueError: If the context is invalid (missing seed_prompt or processing_prompt).
         """
         super()._validate_context(context=context)
 
-        if not context.processing_prompt:
-            raise ValueError("processing_prompt cannot be empty")
+        if not context.processing_prompt or not context.processing_prompt.prompts:
+            raise ValueError("processing_prompt with at least one prompt is required")
 
     async def _setup_async(self, *, context: XPIAContext) -> None:
         """
@@ -426,11 +523,10 @@ class XPIATestWorkflow(XPIAWorkflow):
 
         # Create the processing callback using the test context
         async def process_async() -> str:
-            seed_prompt = SeedPrompt(value=context.processing_prompt, data_type="text")
-            seed_prompt_group = SeedPromptGroup(prompts=[seed_prompt])
-
+            # processing_prompt is validated to be non-None in _validate_context
+            assert context.processing_prompt is not None
             response = await self._prompt_normalizer.send_prompt_async(
-                seed_prompt_group=seed_prompt_group,
+                seed_prompt_group=context.processing_prompt,
                 target=self._processing_target,
                 request_converter_configurations=self._request_converters,
                 response_converter_configurations=self._response_converters,
@@ -505,8 +601,7 @@ class XPIAManualProcessingWorkflow(XPIAWorkflow):
             ValueError: If the context is invalid (missing attack_content).
         """
         # Skip the base validation for processing_callback since we'll set it ourselves
-        if not context.attack_content:
-            raise ValueError("attack_content cannot be empty")
+        self._validate_seed_prompt_group(field_name="attack_content", seed_prompt_group=context.attack_content)
 
     async def _setup_async(self, *, context: XPIAContext) -> None:
         """
