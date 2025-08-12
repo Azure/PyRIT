@@ -4,7 +4,6 @@
 import logging
 import time
 from typing import Union
-import torch
 import mlflow
 import numpy as np
 import torch.multiprocessing as mp
