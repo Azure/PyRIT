@@ -253,10 +253,7 @@ def fetch_jbb_behaviors_by_jbb_category(jbb_category: str, **kwargs) -> SeedProm
     filtered_prompts = [
         prompt
         for prompt in all_dataset.prompts
-        if (
-            prompt.metadata
-            and str(prompt.metadata.get("jbb_category", "")).lower() == jbb_category.lower()
-        )
+        if (prompt.metadata and str(prompt.metadata.get("jbb_category", "")).lower() == jbb_category.lower())
     ]
 
     if not filtered_prompts:

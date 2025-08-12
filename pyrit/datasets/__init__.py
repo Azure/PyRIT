@@ -32,6 +32,7 @@ from pyrit.datasets.fetch_jbb_behaviors import (
     fetch_jbb_behaviors_by_harm_category,
     fetch_jbb_behaviors_by_jbb_category,
 )
+
 __all__ = [
     "fetch_adv_bench_dataset",
     "fetch_aya_redteaming_dataset",
@@ -58,6 +59,6 @@ __all__ = [
     "fetch_xstest_dataset",
     "TextJailBreak",
     "fetch_jbb_behaviors_dataset",
-    "fetch_jbb_behaviors_by_harm_category", 
+    "fetch_jbb_behaviors_by_harm_category",
     "fetch_jbb_behaviors_by_jbb_category",
 ]
