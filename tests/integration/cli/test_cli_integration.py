@@ -90,6 +90,10 @@ converters = [
     ),
     (
         "text",
+        {"type": "FirstLetterConverter"},
+    ),
+    (
+        "text",
         {"type": "FlipConverter"},
     ),
     (
