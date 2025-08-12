@@ -178,6 +178,7 @@ class TestXPIAWorkflowPerform:
 
         # Verify result
         assert isinstance(result, XPIAResult)
+        assert result.processing_conversation_id == context.processing_conversation_id
         assert result.processing_response == "Processing response"
         assert result.score == mock_score
         assert result.attack_setup_response == "Attack setup response"
@@ -221,6 +222,7 @@ class TestXPIAWorkflowPerform:
 
         # Verify result
         assert isinstance(result, XPIAResult)
+        assert result.processing_conversation_id == context.processing_conversation_id
         assert result.processing_response == "Processing response"
         assert result.score is None
         assert result.attack_setup_response == "Attack setup response"
@@ -250,6 +252,7 @@ class TestXPIAWorkflowPerform:
 
         # Verify result
         assert isinstance(result, XPIAResult)
+        assert result.processing_conversation_id == valid_context.processing_conversation_id
         assert result.processing_response == "Processing response"
         assert result.score is None
         assert result.attack_setup_response == "Attack setup response"
@@ -275,6 +278,7 @@ class TestXPIAWorkflowPerform:
 
         # Verify result
         assert isinstance(result, XPIAResult)
+        assert result.processing_conversation_id == valid_context.processing_conversation_id
         assert result.processing_response == "Processing response"
         assert result.score is None
         assert result.attack_setup_response == "Attack setup response"
@@ -371,7 +375,10 @@ class TestXPIAWorkflowExecution:
 
                 # Setup mock return value
                 expected_result = XPIAResult(
-                    processing_response="test response", score=None, attack_setup_response="setup response"
+                    processing_conversation_id="test-conversation-id",
+                    processing_response="test response",
+                    score=None,
+                    attack_setup_response="setup response",
                 )
                 mock_perform.return_value = expected_result
 
@@ -519,7 +526,7 @@ class TestXPIAResult:
         mock_score = MagicMock(spec=Score)
         mock_score.get_value.return_value = 0.8
 
-        result = XPIAResult(processing_response="test response", score=mock_score)
+        result = XPIAResult(processing_conversation_id="test-id", processing_response="test response", score=mock_score)
 
         assert result.success is True
 
@@ -528,7 +535,7 @@ class TestXPIAResult:
         mock_score = MagicMock(spec=Score)
         mock_score.get_value.return_value = 0.0
 
-        result = XPIAResult(processing_response="test response", score=mock_score)
+        result = XPIAResult(processing_conversation_id="test-id", processing_response="test response", score=mock_score)
 
         assert result.success is False
 
@@ -537,13 +544,13 @@ class TestXPIAResult:
         mock_score = MagicMock(spec=Score)
         mock_score.get_value.return_value = -0.5
 
-        result = XPIAResult(processing_response="test response", score=mock_score)
+        result = XPIAResult(processing_conversation_id="test-id", processing_response="test response", score=mock_score)
 
         assert result.success is False
 
     def test_success_property_with_no_score(self) -> None:
         """Test success property returns False when no score is provided."""
-        result = XPIAResult(processing_response="test response", score=None)
+        result = XPIAResult(processing_conversation_id="test-id", processing_response="test response", score=None)
 
         assert result.success is False
 
@@ -552,7 +559,7 @@ class TestXPIAResult:
         mock_score = MagicMock(spec=Score)
         mock_score.get_value.return_value = "invalid"
 
-        result = XPIAResult(processing_response="test response", score=mock_score)
+        result = XPIAResult(processing_conversation_id="test-id", processing_response="test response", score=mock_score)
 
         assert result.success is False
 
@@ -561,7 +568,7 @@ class TestXPIAResult:
         mock_score = MagicMock(spec=Score)
         mock_score.get_value.return_value = 0.8
 
-        result = XPIAResult(processing_response="test response", score=mock_score)
+        result = XPIAResult(processing_conversation_id="test-id", processing_response="test response", score=mock_score)
 
         assert result.status == XPIAStatus.SUCCESS
 
@@ -570,12 +577,12 @@ class TestXPIAResult:
         mock_score = MagicMock(spec=Score)
         mock_score.get_value.return_value = 0.0
 
-        result = XPIAResult(processing_response="test response", score=mock_score)
+        result = XPIAResult(processing_conversation_id="test-id", processing_response="test response", score=mock_score)
 
         assert result.status == XPIAStatus.FAILURE
 
     def test_status_property_unknown(self) -> None:
         """Test status property returns UNKNOWN when no score is provided."""
-        result = XPIAResult(processing_response="test response", score=None)
+        result = XPIAResult(processing_conversation_id="test-id", processing_response="test response", score=None)
 
         assert result.status == XPIAStatus.UNKNOWN

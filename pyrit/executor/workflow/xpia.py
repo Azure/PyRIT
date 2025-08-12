@@ -89,6 +89,9 @@ class XPIAResult(WorkflowResult):
     the processing response, optional score, and attack setup response.
     """
 
+    # Conversation ID for the processing phase
+    processing_conversation_id: str
+
     # Response from the processing target
     processing_response: str
 
@@ -268,6 +271,7 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
         score = await self._score_response_async(processing_response=processing_response)
 
         return XPIAResult(
+            processing_conversation_id=context.processing_conversation_id,
             processing_response=processing_response,
             score=score,
             attack_setup_response=setup_response_text,
