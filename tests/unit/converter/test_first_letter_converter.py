@@ -13,10 +13,20 @@ async def test_first_letter_converter_default():
     converter = FirstLetterConverter()
     prompt = "Lorem ipsum dolor sit amet"
     output = await converter.convert_async(prompt=prompt, input_type="text")
-    assert output.output_text == "Lidsa"
+    assert output.output_text == "L i d s a"
     assert output.output_type == "text"
 
 
+# Test that the converter produces the expected result with a different separator
+@pytest.mark.asyncio
+async def test_first_letter_converter_dashes():
+    converter = FirstLetterConverter(separator="-")
+    prompt = "Lorem ipsum dolor sit amet"
+    output = await converter.convert_async(prompt=prompt, input_type="text")
+    assert output.output_text == "L-i-d-s-a"
+    assert output.output_type == "text"
+    
+    
 # Test that the converter produces the expected result with French punctuation
 @pytest.mark.asyncio
 async def test_first_letter_converter_french():
@@ -26,7 +36,7 @@ async def test_first_letter_converter_french():
     C'était un vieillard d'environ soixante-quinze ans ; il occupait le siége de Digne depuis 1806.
     """
     output = await converter.convert_async(prompt=prompt, input_type="text")
-    assert output.output_text == "E1MCMéédDCuvdsaiolsdDd1"
+    assert output.output_text == "E 1 M C M é é d D C u v d s a i o l s d D d 1"
     assert output.output_type == "text"
 
 
@@ -40,5 +50,5 @@ async def test_first_letter_converter_japanese():
     みず の おと
     """
     output = await converter.convert_async(prompt=prompt, input_type="text")
-    assert output.output_text == "ふやかとみのお"
+    assert output.output_text == "ふ や か と み の お"
     assert output.output_type == "text"
