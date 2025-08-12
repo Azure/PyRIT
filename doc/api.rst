@@ -49,25 +49,6 @@ API Reference
     SkeletonKeyAttack
     ConsoleAttackResultPrinter
 
-:py:mod:`pyrit.executor.workflow`
-=================================
-
-.. automodule:: pyrit.executor.workflow
-    :no-members:
-    :no-inherited-members:
-
-.. autosummary::
-    :nosignatures:
-    :toctree: _autosummary/
-
-    XPIAContext
-    XPIAResult
-    XPIAWorkflow
-    XPIATestWorkflow
-    XPIAManualProcessingWorkflow
-    XPIAProcessingCallback
-    XPIAStatus
-
 :py:mod:`pyrit.executor.promptgen`
 ==================================
 
@@ -89,6 +70,25 @@ API Reference
     PromptGeneratorStrategy
     PromptGeneratorStrategyContext
     PromptGeneratorStrategyResult
+
+:py:mod:`pyrit.executor.workflow`
+=================================
+
+.. automodule:: pyrit.executor.workflow
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    XPIAContext
+    XPIAResult
+    XPIAWorkflow
+    XPIATestWorkflow
+    XPIAManualProcessingWorkflow
+    XPIAProcessingCallback
+    XPIAStatus
 
 :py:mod:`pyrit.auth`
 ====================
