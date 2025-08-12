@@ -30,7 +30,7 @@ from pyrit.score import Scorer
 logger = logging.getLogger(__name__)
 
 
-class ProcessingCallback(Protocol):
+class XPIAProcessingCallback(Protocol):
     """
     Protocol for processing callback functions used in XPIA workflows.
 
@@ -65,7 +65,7 @@ class XPIAContext(WorkflowContext):
     attack_content: SeedPromptGroup
 
     # Callback to execute after the attack prompt is positioned in the attack location
-    processing_callback: ProcessingCallback
+    processing_callback: XPIAProcessingCallback
 
     # Conversation ID for the attack setup target
     attack_setup_target_conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
@@ -385,7 +385,7 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
         self,
         *,
         attack_content: SeedPromptGroup,
-        processing_callback: ProcessingCallback,
+        processing_callback: XPIAProcessingCallback,
         processing_prompt: Optional[SeedPromptGroup] = None,
         memory_labels: Optional[Dict[str, str]] = None,
         **kwargs,

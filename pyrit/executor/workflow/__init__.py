@@ -8,6 +8,16 @@ from pyrit.executor.workflow.xpia import (
     XPIAWorkflow,
     XPIATestWorkflow,
     XPIAManualProcessingWorkflow,
+    XPIAProcessingCallback,
+    XPIAStatus,
 )
 
-__all__ = ["XPIAContext", "XPIAResult", "XPIAWorkflow", "XPIATestWorkflow", "XPIAManualProcessingWorkflow"]
+__all__ = [
+    "XPIAContext",
+    "XPIAResult",
+    "XPIAWorkflow",
+    "XPIATestWorkflow",
+    "XPIAManualProcessingWorkflow",
+    "XPIAProcessingCallback",
+    "XPIAStatus",
+]
