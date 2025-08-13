@@ -30,9 +30,11 @@ chapters:
       sections:
       - file: code/datasets/1_seed_prompt
       - file: code/datasets/2_fetch_dataset
-    - file: code/attacks/0_attack
+    - file: code/executor/attacks/0_attack
       sections:
-      - file: code/attacks/1_prompt_sending_attack
+      - file: code/executor/attacks/single_turn/1_prompt_sending_attack
+      - file: code/executor/attacks/multi_turn/1_red_teaming_attack
+      - file: code/executor/attacks/multi_tur/2_crescendo_attack
     - file: code/orchestrators/0_orchestrator
       sections:
       - file: code/orchestrators/1_prompt_sending_orchestrator

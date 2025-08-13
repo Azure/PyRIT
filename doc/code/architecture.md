@@ -25,7 +25,7 @@ This is the least defined component, because attacks can get *complicated*. They
 
 Attacks should contain all the logic for different types of attacks. For example, PAIR, tree of attack, or crescendo should be implemented primarily as orchestrators.
 
-Ways to contribute: Check out our [attack docs](./attacks/0_attack.md). There are hundreds of attacks outlined in research papers. A lot of these can be captured within PyRIT. If you find an attack that doesn't fit the attack model please notify the team. Are there scenarios you can write attack modules for?
+Ways to contribute: Check out our [attack docs](./executor/attacks/0_attack.md). There are hundreds of attacks outlined in research papers. A lot of these can be captured within PyRIT. If you find an attack that doesn't fit the attack model please notify the team. Are there scenarios you can write attack modules for?
 
 ## Converters
 

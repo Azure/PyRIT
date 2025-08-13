@@ -508,7 +508,7 @@ class XPIATestWorkflow(XPIAWorkflow):
         """
         if not context.processing_prompt or not context.processing_prompt.prompts:
             raise ValueError("processing_prompt with at least one prompt is required")
-        
+
         # Skip the base validation for processing_callback since we'll set it ourselves
         self._validate_seed_prompt_group(field_name="attack_content", seed_prompt_group=context.attack_content)
 
