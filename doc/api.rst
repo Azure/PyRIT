@@ -125,6 +125,9 @@ API Reference
     fetch_harmbench_dataset
     fetch_librAI_do_not_answer_dataset
     fetch_llm_latent_adversarial_training_harmful_dataset
+    fetch_jbb_behaviors_by_harm_category
+    fetch_jbb_behaviors_by_jbb_category
+    fetch_jbb_behaviors_dataset
     fetch_many_shot_jailbreaking_dataset
     fetch_mlcommons_ailuminate_demo_dataset
     fetch_multilingual_vulnerability_dataset
@@ -506,3 +509,26 @@ API Reference
     TrueFalseInverterScorer
     TrueFalseQuestion
     TrueFalseQuestionPaths
+
+:py:mod:`pyrit.score.scorer_evaluation`
+=======================================
+
+.. automodule:: pyrit.score.scorer_evaluation
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    HarmHumanLabeledEntry
+    HarmScorerEvaluator
+    HarmScorerMetrics
+    HumanLabeledDataset
+    HumanLabeledEntry
+    MetricsType
+    ObjectiveHumanLabeledEntry
+    ObjectiveScorerEvaluator
+    ObjectiveScorerMetrics
+    ScorerEvaluator
+    ScorerMetrics
