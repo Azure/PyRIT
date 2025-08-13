@@ -100,4 +100,3 @@ def test_export_data_creates_file(tmp_path, export_type):
     exporter.export_data(data=sample_conversation_entries, file_path=file_path, export_type=export_type)
 
     assert file_path.exists()
-    
