@@ -327,8 +327,6 @@ API Reference
     StrategyResult
     TextDataTypeSerializer
     UnvalidatedScore
-    URLDataTypeSerializer
-    VideoPathDataTypeSerializer
 
 :py:mod:`pyrit.orchestrator`
 ============================
