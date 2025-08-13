@@ -510,15 +510,26 @@ API Reference
     CompositeScorer
     FloatScaleThresholdScorer
     GandalfScorer
+    HarmHumanLabeledEntry
+    HarmScorerEvaluator
+    HarmScorerMetrics
     HumanInTheLoopScorer
     HumanInTheLoopScorerGradio
+    HumanLabeledDataset
+    HumanLabeledEntry
     InsecureCodeScorer
     LikertScalePaths
     LookBackScorer
     MarkdownInjectionScorer
+    MetricsType
+    ObjectiveHumanLabeledEntry
+    ObjectiveScorerEvaluator
+    ObjectiveScorerMetrics
     PromptShieldScorer
     QuestionAnswerScorer
     Scorer
+    ScorerEvaluator
+    ScorerMetrics
     ScoreAggregator
     SelfAskCategoryScorer
     SelfAskGeneralScorer
@@ -531,26 +542,3 @@ API Reference
     TrueFalseInverterScorer
     TrueFalseQuestion
     TrueFalseQuestionPaths
-
-:py:mod:`pyrit.score.scorer_evaluation`
-=======================================
-
-.. automodule:: pyrit.score.scorer_evaluation
-    :no-members:
-    :no-inherited-members:
-
-.. autosummary::
-    :nosignatures:
-    :toctree: _autosummary/
-
-    HarmHumanLabeledEntry
-    HarmScorerEvaluator
-    HarmScorerMetrics
-    HumanLabeledDataset
-    HumanLabeledEntry
-    MetricsType
-    ObjectiveHumanLabeledEntry
-    ObjectiveScorerEvaluator
-    ObjectiveScorerMetrics
-    ScorerEvaluator
-    ScorerMetrics
