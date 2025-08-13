@@ -49,8 +49,9 @@ class QuestionAnsweringEntry(BaseModel):
 
         correct_answer_index = self.correct_answer
         try:
+            # Match using the explicit choice.index (not enumerate position) so non-sequential indices are supported
             return next(
-                choice for index, choice in enumerate(self.choices) if str(index) == str(correct_answer_index)
+                choice for choice in self.choices if str(choice.index) == str(correct_answer_index)
             ).text
         except StopIteration:
             raise ValueError(

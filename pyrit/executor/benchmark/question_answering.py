@@ -80,7 +80,7 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
         """
     ).strip()
 
-    _DEFAULT_OPTIONS_FORMAT = "Option {index}: {choice}"
+    _DEFAULT_OPTIONS_FORMAT = "Option {index}: {choice}\n"
 
     def __init__(
         self,
@@ -145,9 +145,12 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
             raise ValueError("Question must have at least one choice")
 
         entry = context.question_answering_entry
-        valid_indices = {choice.index for choice in entry.choices}
-        if entry.correct_answer not in valid_indices:
-            raise ValueError(f"Correct answer index {entry.correct_answer} not found in choices")
+        choice_indices = {choice.index for choice in entry.choices}
+        if entry.correct_answer not in choice_indices:
+            raise ValueError(
+                "correct_answer (choice index="
+                f"{entry.correct_answer}) not found among choice indices {sorted(choice_indices)}"
+            )
 
     async def _setup_async(self, *, context: QuestionAnsweringBenchmarkContext) -> None:
         """
@@ -218,7 +221,6 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
         options_text = ""
         for choice in entry.choices:
             options_text += self._options_format_string.format(index=choice.index, choice=choice.text)
-            options_text += "\n"  # Add newline between options
 
         return options_text.rstrip()  # Remove trailing newline
 
