@@ -65,7 +65,7 @@ class XPIAContext(WorkflowContext):
     attack_content: SeedPromptGroup
 
     # Callback to execute after the attack prompt is positioned in the attack location
-    processing_callback: XPIAProcessingCallback
+    processing_callback: Optional[XPIAProcessingCallback] = None
 
     # Conversation ID for the attack setup target
     attack_setup_target_conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
@@ -389,7 +389,7 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
         self,
         *,
         attack_content: SeedPromptGroup,
-        processing_callback: XPIAProcessingCallback,
+        processing_callback: Optional[XPIAProcessingCallback] = None,
         processing_prompt: Optional[SeedPromptGroup] = None,
         memory_labels: Optional[Dict[str, str]] = None,
         **kwargs,
@@ -506,10 +506,11 @@ class XPIATestWorkflow(XPIAWorkflow):
         Raises:
             ValueError: If the context is invalid (missing seed_prompt or processing_prompt).
         """
-        super()._validate_context(context=context)
-
         if not context.processing_prompt or not context.processing_prompt.prompts:
             raise ValueError("processing_prompt with at least one prompt is required")
+        
+        # Skip the base validation for processing_callback since we'll set it ourselves
+        self._validate_seed_prompt_group(field_name="attack_content", seed_prompt_group=context.attack_content)
 
     async def _setup_async(self, *, context: XPIAContext) -> None:
         """

@@ -13,19 +13,16 @@
 # ---
 
 # %% [markdown]
-# # 2. Multi-Turn Attacks
+# # 1. Red Teaming Attack
 #
 # Multi-turn attacks implement strategies that attempt to achieve an objective against a LLM endpoint over several turns. These types of attacks are useful against endpoints that keep track of conversation history and can be more effective in achieving an objective than single-turn attacks.
 # In PyRIT, each multi-turn attack will require defining an `AttackAdversarialConfig`, where you can specify which LLM to use as the adversarial chat target. This LLM is used for the purpose of generating adversarial prompts that align with the attack strategy, so that the entire multi-turn attack
 # can be run in an automated fashion in order to achieve the objective.
 #
-# ## RedTeamingAttack Example
-#
-# In this example, we'll try to convince a LLM to give us instructions on how to make a Molotov cocktail (a dangerous incendiary device). To do so, we use the `RedTeamingAttack` that leverages another LLM to generate adversarial prompts that are then sent to the target endpoint. It is the simplest implementation of a multi-turn attack within PyRIT.
+# In this doc, we'll try to convince a LLM to give us instructions on how to make a Molotov cocktail (a dangerous incendiary device). To do so, we use the `RedTeamingAttack` that leverages another LLM to generate adversarial prompts that are then sent to the target endpoint. It is the simplest implementation of a multi-turn attack within PyRIT.
 #
 # Behind the scenes, this example use an OpenAI model endpoint to generate the prompts and send them to the target endpoint (an Azure ML model). The responses from the target endpoint are evaluated and scored by the objective scorer provided in the `AttackScoringConfig` to determine if the objective has been achieved. If the objective has not been achieved, the `RedTeamingAttack` will generate a new prompt and send it to the target. This process continues until the objective is achieved or a maximum number of attempts is reached.
 #
-# ![PyRIT operation setup](../../../assets/operation-setup.jpg)
 # ```mermaid
 #   flowchart LR
 #       A["PyRIT Agent"]
@@ -179,8 +176,6 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 # If you are using the same configuration across multiple attacks, you can use the `AttackExecutor`'s `execute_multi_turn_attacks_async` method to run multiple objectives instead.
 
 # %%
-import logging
-
 from pyrit.executor.attack import AttackConverterConfig
 from pyrit.prompt_converter import EmojiConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
