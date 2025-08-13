@@ -120,7 +120,7 @@ class OpenAISoraTarget(OpenAITarget):
                 Sora API will support up to 2 variants for resolutions of 720p, but only 1 for resolutions
                 of 1080p.
             output_filename (str, Optional): The name of the output file for the generated video.
-                Note: DO NOT SET if using target with PromptSendingOrchestrator. The default filename
+                DO NOT SET if using target with PromptSendingOrchestrator. The default filename
                 is {job_id}_{generation_id}.mp4 as returned by the model.
 
         Raises:
