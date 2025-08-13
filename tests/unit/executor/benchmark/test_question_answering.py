@@ -128,7 +128,7 @@ class TestQuestionAnsweringBenchmark:
         benchmark = QuestionAnsweringBenchmark(objective_target=mock_prompt_target)
         context = QuestionAnsweringBenchmarkContext(question_answering_entry=invalid_question_entry)
 
-        with pytest.raises(ValueError, match="Correct answer index 5 not found in choices"):
+        with pytest.raises(ValueError, match="choice index=5"):
             benchmark._validate_context(context=context)
 
     @pytest.mark.asyncio
