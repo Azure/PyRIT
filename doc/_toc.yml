@@ -35,7 +35,7 @@ chapters:
       - file: code/executor/attacks/single_turn/1_prompt_sending_attack
       - file: code/executor/attacks/single_turn/skeleton_key_attack
       - file: code/executor/attacks/multi_turn/1_red_teaming_attack
-      - file: code/executor/attacks/multi_tur/2_crescendo_attack
+      - file: code/executor/attacks/multi_turn/2_crescendo_attack
     - file: code/orchestrators/0_orchestrator
       sections:
       - file: code/orchestrators/1_prompt_sending_orchestrator
