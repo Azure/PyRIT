@@ -123,7 +123,7 @@ class OpenAISoraTarget(OpenAITarget):
             output_filename (str, Optional): The name of the output file for the generated video.
                 DO NOT SET if using target with PromptSendingOrchestrator. The default filename is
                 `{job_id}_{generation_id}.mp4` as returned by the model.
-        
+
         Raises:
             ValueError: If video constraints are not met for the specified resolution.
         """
