@@ -124,6 +124,7 @@ class OpenAISoraTarget(OpenAITarget):
 
         Raises:
             ValueError: If video constraints are not met for the specified resolution.
+
         """
         super().__init__(**kwargs)
 
