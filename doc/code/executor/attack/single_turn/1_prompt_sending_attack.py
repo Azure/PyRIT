@@ -78,7 +78,9 @@ prompt_converters = PromptConverterConfiguration.from_converters(converters=[Bas
 attack_converter_config = AttackConverterConfig(request_converters=prompt_converters)
 
 seed_prompt_dataset = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
-for objective in list(seed_prompt_dataset.get_values()):
+
+objectives = list(seed_prompt_dataset.get_values())
+for objective in objectives:
     scoring_config = AttackScoringConfig(
         objective_scorer=SelfAskTrueFalseScorer(
             chat_target=OpenAIChatTarget(),
@@ -96,6 +98,16 @@ for objective in list(seed_prompt_dataset.get_values()):
 
     result = await attack.execute_async(objective=objective)  # type: ignore
     await ConsoleAttackResultPrinter().print_result_async(result=result)  # type: ignore
+
+# How to call AttackExecutor's method if not changing the attack configuration for each objective
+"""
+from pyrit.executor.attack import AttackExecutor
+results = AttackExecutor().execute_single_turn_attacks_async(
+    attack=attack,
+    objectives=objectives,
+)
+"""
+
 
 # %% [markdown]
 # ## Multi-Modal
