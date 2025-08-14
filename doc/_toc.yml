@@ -30,12 +30,21 @@ chapters:
       sections:
       - file: code/datasets/1_seed_prompt
       - file: code/datasets/2_fetch_dataset
-    - file: code/executor/attacks/0_attack
+    - file: code/executor/0_executor
       sections:
-      - file: code/executor/attacks/single_turn/1_prompt_sending_attack
-      - file: code/executor/attacks/single_turn/skeleton_key_attack
-      - file: code/executor/attacks/multi_turn/1_red_teaming_attack
-      - file: code/executor/attacks/multi_turn/2_crescendo_attack
+        - file: code/executor/attack/0_attack
+          sections:
+          - file: code/executor/attack/multi_turn/0_multi_turn
+            sections:
+              - file: code/executor/attack/multi_turn/1_red_teaming_attack
+              - file: code/executor/attack/multi_turn/2_crescendo_attack
+          - file: code/executor/attack/single_turn/0_single_turn
+            sections:
+              - file: code/executor/attack/single_turn/1_prompt_sending_attack
+              - file: code/executor/attack/single_turn/skeleton_key_attack
+        - file: code/executor/workflow/0_workflow
+          sections:
+          - file: code/executor/workflow/1_xpia_workflow
     - file: code/orchestrators/0_orchestrator
       sections:
       - file: code/orchestrators/1_prompt_sending_orchestrator

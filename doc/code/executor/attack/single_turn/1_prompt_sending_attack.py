@@ -136,7 +136,7 @@ await printer.print_result_async(result=result)  # type: ignore
 # ## Automatic Scoring
 #
 # The `PromptSendingAttack` also has built-in support to score prompt responses in parallel.
-# This example shows how to pass in a list of scorers to the orchestrator.
+# This example shows how to pass in a list of scorers to the attack.
 
 # %%
 from azure.ai.contentsafety.models import TextCategory

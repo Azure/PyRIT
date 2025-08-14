@@ -158,7 +158,6 @@ prepended_conversation.append(
 """
 
 # Set the prepended conversation to prepare the conversation with this context list
-# Note: This will set a variable forthe orchestrator, and will be used for all attacks within the same orchestrator instance.
 result = await red_teaming_attack.execute_async(  # type: ignore
     objective=objective,
     prepended_conversation=prepended_conversation,
