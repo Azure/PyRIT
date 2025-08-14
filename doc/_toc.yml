@@ -33,6 +33,7 @@ chapters:
     - file: code/executor/attacks/0_attack
       sections:
       - file: code/executor/attacks/single_turn/1_prompt_sending_attack
+      - file: code/executor/attacks/single_turn/skeleton_key_attack
       - file: code/executor/attacks/multi_turn/1_red_teaming_attack
       - file: code/executor/attacks/multi_tur/2_crescendo_attack
     - file: code/orchestrators/0_orchestrator
@@ -90,6 +91,7 @@ chapters:
       - file: code/scoring/4_likert_scorers
       - file: code/scoring/5_human_scorers
       - file: code/scoring/6_refusal_scorer
+      - file: code/scoring/7_batch_scorer
       - file: code/scoring/insecure_code_scorer
       - file: code/scoring/look_back_scorer
       - file: code/scoring/prompt_shield_scorer
