@@ -42,7 +42,7 @@ def get_http_target_regex_matching_callback_function(key: str, url: str = None) 
     def parse_using_regex(response: requests.Response):
         """
         Parses text outputs using regex
-        
+
         Parameters:
             url (optional str): the original URL if this is needed to get a full URL response back (ie BIC)
             key (str): this is the regex pattern to follow for parsing the output response

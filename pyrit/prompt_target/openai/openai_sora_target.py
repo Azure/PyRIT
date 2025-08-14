@@ -123,7 +123,6 @@ class OpenAISoraTarget(OpenAITarget):
 
         Raises:
             ValueError: If video constraints are not met for the specified resolution.
-
         """
         super().__init__(**kwargs)
 
@@ -389,8 +388,8 @@ class OpenAISoraTarget(OpenAITarget):
 
     def _validate_video_constraints(self, resolution_dimensions: str, n_variants: int, n_seconds: int) -> None:
         """
-        Validate the video constraints based on the resolution dimensions. 
-        
+        Validate the video constraints based on the resolution dimensions.
+
         This checks both n_seconds and n_variants values, which have different constraints for different resolution
         dimensions.
 
