@@ -87,7 +87,7 @@ def test_fetch_jbb_behaviors_by_jbb_category():
     """Integration test for filtering by JBB category with real data."""
     try:
         # Filter for a common category to ensure we get results
-        hate_prompts = fetch_jbb_behaviors_by_jbb_category("hate")
+        hate_prompts = fetch_jbb_behaviors_by_jbb_category("Disinformation")
         assert isinstance(hate_prompts, SeedPromptDataset)
         assert len(hate_prompts.prompts) > 0
     except Exception as e:
