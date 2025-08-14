@@ -112,13 +112,12 @@ class OpenAISoraTarget(OpenAITarget):
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
                 `httpx.AsyncClient()` constructor.
             resolution_dimensions (Literal["360x360", "640x360", "480x480", "854x480", "720x720",
-            "1280x720", "1080x1080", "1920x1080"], Optional): Resolution dimensions for the video.
+                "1280x720", "1080x1080", "1920x1080"], Optional): Resolution dimensions for the video.
                 Defaults to "480x480", where the first value is width and the second is height.
             n_seconds (int, Optional): The duration of the generated video (in seconds). Defaults to 5.
                 Sora API will support duration up to 20s. For 1080p, maximum duration is 10s.
-            n_variants (int, Optional): The number of generated videos. Defaults to 1.
-                Sora API will support up to 2 variants for resolutions of 720p, but only 1 for resolutions
-                of 1080p.
+            n_variants (int, Optional): The number of generated videos. Defaults to 1. Sora API will support up
+                to 2 variants for resolutions of 720p, but only 1 for resolutions of 1080p.
             output_filename (str, Optional): The name of the output file for the generated video.
                 Note: DO NOT SET if using target with PromptSendingOrchestrator. The default filename
                 is {job_id}_{generation_id}.mp4 as returned by the model.
