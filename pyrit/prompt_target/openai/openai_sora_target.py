@@ -92,33 +92,6 @@ class OpenAISoraTarget(OpenAITarget):
         output_filename: Optional[str] = None,
         **kwargs,
     ):
-        """
-        Initialize the OpenAI Sora Target.
-
-        Args:
-            model_name (str, Optional): The name of the model.
-            endpoint (str, Optional): The target URL for the OpenAI service.
-            api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-                Defaults to the `OPENAI_SORA_KEY` environment variable.
-            headers (str, Optional): Extra headers of the endpoint (JSON).
-            use_aad_auth (bool, Optional): When set to True, user authentication is used
-                instead of API Key. DefaultAzureCredential is taken for
-                https://cognitiveservices.azure.com/.default. Please run `az login` locally
-                to leverage user AuthN.
-            api_version (str, Optional): The version of the Azure OpenAI API. Defaults to
-                "preview".
-            max_requests_per_minute (int, Optional): Number of requests the target can handle per
-                minute before hitting a rate limit. The number of requests sent to the target
-                will be capped at the value provided.
-            httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
-                `httpx.AsyncClient()` constructor.
-            resolution_dimensions (Literal["360x360", "640x360", "480x480", "854x480", "720x720",
-                "1280x720", "1080x1080", "1920x1080"], Optional): Resolution dimensions for the video.
-                Defaults to "480x480", where the first value is width and the second is height.
-
-        Raises:
-            ValueError: If video constraints are not met for the specified resolution.
-        """
         super().__init__(**kwargs)
 
         dimensions = resolution_dimensions or self.DEFAULT_RESOLUTION_DIMENSIONS
