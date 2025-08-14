@@ -483,7 +483,6 @@ API Reference
     OpenAIDALLETarget
     OpenAIChatTarget
     OpenAIResponseTarget
-    OpenAISoraTarget
     OpenAITTSTarget
     OpenAITarget
     PlaywrightTarget
