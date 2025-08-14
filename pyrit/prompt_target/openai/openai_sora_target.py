@@ -111,8 +111,7 @@ class OpenAISoraTarget(OpenAITarget):
                 will be capped at the value provided.
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
                 `httpx.AsyncClient()` constructor.
-            resolution_dimensions (Literal["360x360", "640x360", "480x480", "854x480", "720x720",
-                "1280x720", "1080x1080", "1920x1080"], Optional): Resolution dimensions for the video.
+            resolution_dimensions (Literal, Optional): Resolution dimensions for the video.
                 Defaults to "480x480", where the first value is width and the second is height.
             n_seconds (int, Optional): The duration of the generated video (in seconds). Defaults to 5.
                 Sora API will support duration up to 20s. For 1080p, maximum duration is 10s.
@@ -222,16 +221,19 @@ class OpenAISoraTarget(OpenAITarget):
     )
     @pyrit_target_retry
     async def check_job_status_async(self, job_id: str) -> httpx.Response:
-        f"""
+        """
         Asynchronously check status of a submitted video generation job using the job_id.
+
         Retries a maxium of {self.CHECK_JOB_RETRY_MAX_NUM_ATTEMPTS} times,
         until the job is complete (succeeded, failed, or cancelled). Also
         retries upon RateLimitException.
 
         Args:
             job_id (str): The ID of the job to check.
+
         Returns:
             httpx.Response: The response from the API.
+
         Raises:
             RateLimitException: If the rate limit is exceeded.
             httpx.HTTPStatusError: If the request fails.
@@ -253,12 +255,15 @@ class OpenAISoraTarget(OpenAITarget):
     async def download_video_content_async(self, generation_id: str) -> httpx.Response:
         """
         Asynchronously download the video using the video generation ID.
+
         Retries if the response status code is not 200. Also retries upon RateLimitException.
 
         Args:
             generation_id (str): The ID of the video generation to download.
+
         Returns:
             httpx.Response: The response from the API.
+
         Raises:
             RateLimitException: If the rate limit is exceeded.
             httpx.HTTPStatusError: If the request fails.
@@ -284,12 +289,15 @@ class OpenAISoraTarget(OpenAITarget):
     ) -> PromptRequestResponse:
         """
         Asynchronously save the video content to storage using a serializer.
+
         This function is called after the video content is available for download.
+
         Args:
             data (bytes): The video content to save.
             job_id (str): The video generation job ID.
             generation_id (str): The video generation ID.
             request (PromptRequestPiece): The request piece associated with the prompt.
+
         Returns:
             PromptRequestResponse: The response entry with the saved video path.
         """
@@ -312,11 +320,13 @@ class OpenAISoraTarget(OpenAITarget):
     ) -> PromptRequestResponse:
         """
         Asynchronously handle the response to a video generation request.
+
         This includes checking the status of the job and downloading the video content if successful.
 
         Args:
             request (PromptRequestPiece): The request piece associated with the prompt.
             response (httpx.Response): The response from the API.
+
         Returns:
             PromptRequestResponse: The response entry with the saved video path or error message.
         """
@@ -378,8 +388,11 @@ class OpenAISoraTarget(OpenAITarget):
 
     def _validate_video_constraints(self, resolution_dimensions: str, n_variants: int, n_seconds: int) -> None:
         """
-        Validate the video constraints based on the resolution dimensions. This checks both n_seconds and n_variants
-        values, which have different constraints for different resolution dimensions.
+        Validate the video constraints based on the resolution dimensions. 
+        
+        This checks both n_seconds and n_variants values, which have different constraints for different resolution
+        dimensions.
+
         Raises:
             ValueError: If the constraints are not met.
         """
@@ -410,8 +423,10 @@ class OpenAISoraTarget(OpenAITarget):
     def _construct_request_body(self, prompt: str) -> dict:
         """
         Constructs the request body for the endpoint API.
+
         Args:
             prompt (str): The prompt text to be sent to the API.
+
         Returns:
             dict: The request body as a dictionary.
         """
@@ -430,8 +445,10 @@ class OpenAISoraTarget(OpenAITarget):
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         """
         Validates the prompt request to ensure it meets the requirements for the Sora target.
+
         Args:
             prompt_request (PromptRequestResponse): The prompt request response object.
+
         Raises:
             ValueError: If the request is invalid.
         """
