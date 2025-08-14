@@ -24,19 +24,41 @@
 # Behind the scenes, this example use an OpenAI model endpoint to generate the prompts and send them to the target endpoint (an Azure ML model). The responses from the target endpoint are evaluated and scored by the objective scorer provided in the `AttackScoringConfig` to determine if the objective has been achieved. If the objective has not been achieved, the `RedTeamingAttack` will generate a new prompt and send it to the target. This process continues until the objective is achieved or a maximum number of attempts is reached.
 #
 # ```mermaid
-#   flowchart LR
-#       A["PyRIT Agent"]
-#       B["Target GenAI Endpoint"]
-#       C["PyRIT Scoring Engine"]
-#       D(["Objective achieved?"])
-#       a(["Repeat steps 1-4"])
-#       b(["Complete attack"])
-#       A -- (1) Send malicious prompt --> B
-#       B -- (2) Receive response from target endpoint --> A
-#       A -- (3) Send response to scoring engine --> C
-#       C -- (4) Receive response from scoring engine --> A
-#       D -- yes --> b
-#       D -- no --> a
+# flowchart LR
+#     start(("Start")) --> getPrompt["Get prompt from an unsafe model<br>(adversarial chat target) defined in AttackAdversarialConfig"]
+#     getPrompt -- Prompt --> transform["Use converters defined in AttackConverterConfig to transform the<br>attack prompt"]
+#     transform -- Transformed&nbsp;Prompt --> sendPrompt["Send transformed prompt<br>to objective target"]
+#     sendPrompt -- Response --> scoreResp@{ label: "Score objective target's response<br>based on given criteria" }
+#     scoreResp -- Score --> decision{"Objective achieved<br>or turn limit reached?"}
+#     decision -- Yes --> done(("DONE"))
+#     decision -- No --> feedback["Use score to generate<br>feedback"]
+#     feedback -- Feedback --> getPrompt
+# 
+#     scoreResp@{ shape: rect}
+#      start:::Ash
+#      getPrompt:::Aqua
+#      getPrompt:::Node
+#      transform:::Aqua
+#      transform:::Node
+#      sendPrompt:::Aqua
+#      sendPrompt:::Node
+#      scoreResp:::Aqua
+#      scoreResp:::Node
+#      decision:::Aqua
+#      decision:::Node
+#      decision:::Sky
+#      done:::Rose
+#      done:::Pine
+#      feedback:::Aqua
+#      feedback:::Node
+#     classDef Aqua stroke-width:1px, stroke-dasharray:none, stroke:#46EDC8, fill:#DEFFF8, color:#378E7A
+#     classDef Rose stroke-width:1px, stroke-dasharray:none, stroke:#FF5978, fill:#FFDFE5, color:#8E2236
+#     classDef Pine stroke-width:1px, stroke-dasharray:none, stroke:#254336, fill:#27654A, color:#FFFFFF
+#     classDef Sky stroke-width:1px, stroke-dasharray:none, stroke:#374D7C, fill:#E2EBFF, color:#374D7C
+#     classDef Node color:#000000, fill:#BBDEFB, stroke:transparent
+#     classDef Ash stroke-width:1px, stroke-dasharray:none, stroke:#999999, fill:#EEEEEE, color:#000000
+#     linkStyle 5 stroke:#00C853,fill:none
+#     linkStyle 6 stroke:#D50000
 # ```
 #
 # Note that for this to succeed, the `AttackAdversarialConfig` requires an LLM endpoint without serious content moderation or other kinds of safety filtering mechanisms. Success depends on the model and may not be achieved every time.
