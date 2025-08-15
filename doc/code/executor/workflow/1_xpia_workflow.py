@@ -22,7 +22,7 @@
 #
 # The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../../memory/0_memory.md).
 # %%
-import logging
+# import logging
 import os
 
 from pyrit.datasets import TextJailBreak
