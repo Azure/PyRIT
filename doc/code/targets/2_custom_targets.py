@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
@@ -35,7 +35,7 @@
 #
 # In this demo below we also use a standard `AzureOpenAI` target as an "AI Red Team Bot". This is attacker infrastructure, and is used to help the attacker generate prompts to bypass Gandalf protections.
 #
-# <img src="../../../assets/gandalf-demo-setup.png" alt="gandalf-demo-setup.png" height="400"/>
+# <img src="../../../assets/gandalf-demo-setup.png" alt="Gandalf demo setup" height="400"/>
 #
 # **Step 1.** AI Red Team Orchestrator sends a message to Gandalf. <br>
 # **Step 2.** Gandalf sends a message back. <br>
@@ -44,7 +44,7 @@
 # **Step 5.** Gandalf responds with success or failure. <br>
 # **Step 6.** If the password was leaked in the response, the conversation is completed. Otherwise, the Red Team Orchestrator continues from Step 1 with the knowledge of the previous iteration. <br>
 #
-# <img src="../../../assets/gandalf-home-level-1.png" alt="gandalf-home-level-1.png" height="400"/>
+# <img src="../../../assets/gandalf-home-level-1.png" alt="Gandalf demo level 1" height="400"/>
 
 # %%
 import textwrap
@@ -97,13 +97,13 @@ await result.print_conversation_async()  # type: ignore
 # %%
 from typing import List
 
-from pyrit.attacks import (
+from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.executor.attack import (
     AttackConverterConfig,
     AttackScoringConfig,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_converter import RandomCapitalLettersConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import CrucibleTarget, OpenAIChatTarget

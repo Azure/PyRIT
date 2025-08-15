@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
@@ -38,13 +38,13 @@ target = RealtimeTarget()
 # %%
 from pathlib import Path
 
-from pyrit.attacks import (
+from pyrit.executor.attack import (
     AttackExecutor,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
     SingleTurnAttackContext,
 )
-from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
+from pyrit.models import SeedPrompt, SeedPromptGroup
 
 # This is audio asking how to cut down a tree
 audio_path = Path("../../../assets/converted_audio.wav").resolve()

@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
@@ -29,13 +29,14 @@
 #
 # First, we send a harmful prompt to Phi-3-mini without a GCG suffix. If the environment variables `PHI3_MINI_ENDPOINT` and `PHI3_MINI_KEY` are not set in your .env file, the target will default to the model with `AZURE_ML_MANAGED_ENDPOINT` and `AZURE_ML_MANAGED_KEY`.
 
+from pyrit.common import IN_MEMORY, initialize_pyrit
+
 # %%
-from pyrit.attacks import (
+from pyrit.executor.attack import (
     AttackScoringConfig,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_target import AzureMLChatTarget, OpenAIChatTarget
 from pyrit.score import SelfAskRefusalScorer, TrueFalseInverterScorer
 
@@ -58,7 +59,7 @@ await printer.print_conversation_async(result=result)  # type: ignore
 # Next, let's apply a GCG suffix trained on Phi-3-mini to the base prompt using the `SuffixAppendConverter`.
 
 # %%
-from pyrit.attacks import AttackConverterConfig
+from pyrit.executor.attack import AttackConverterConfig
 from pyrit.prompt_converter import SuffixAppendConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 

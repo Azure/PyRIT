@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
@@ -20,14 +20,15 @@
 # Three example datasets are shown in this notebook and can be used with orchestrators such as the Prompt Sending Orchestrator.
 # The example below demonstrates loading a HuggingFace dataset as a `SeedPromptDataset`.
 
+from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.datasets import fetch_llm_latent_adversarial_training_harmful_dataset
+
 # %%
-from pyrit.attacks import (
+from pyrit.executor.attack import (
     AttackExecutor,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
-from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.datasets import fetch_llm_latent_adversarial_training_harmful_dataset
 from pyrit.prompt_target import TextTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
