@@ -98,7 +98,7 @@ from dotenv import load_dotenv
 #
 # 9. **AZURE_ML_COMPUTE_NAME**
 #    - If you already have an Azure ML compute cluster, provide its name. If not, the script will create one based on the instance size and the specified minimum and maximum instances.
-#    <br> <img src="./../../assets/aml_compute_cluster.png" alt="aml_compute_cluster.png" height="400"/> <br>
+#    <br> <img src="./../../assets/aml_compute_cluster.png" alt="AML compute cluster" height="400"/> <br>
 #
 # 10. **IDLE_TIME_BEFORE_SCALE_DOWN**
 #     - Set the duration for the Azure ML cluster to remain active before scaling down due to inactivity, ensuring efficient resource use. Typically, 3-4 hours is ideal for large size models.

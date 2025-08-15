@@ -6,12 +6,12 @@ from typing import Optional, cast
 
 from typing_extensions import LiteralString, deprecated
 
-from pyrit.attacks import (
+from pyrit.common import deprecation_message
+from pyrit.executor.attack import (
     AttackConverterConfig,
     AttackScoringConfig,
     ManyShotJailbreakAttack,
 )
-from pyrit.common import deprecation_message
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.orchestrator.models.orchestrator_result import OrchestratorResult
 from pyrit.prompt_normalizer import PromptConverterConfiguration
@@ -35,7 +35,7 @@ class ManyShotJailbreakOrchestrator(PromptSendingOrchestrator):
     """
     .. warning::
         `ManyShotJailbreakOrchestrator` is deprecated and will be removed in **v0.12.0**;
-        use `pyrit.attacks.ManyShotJailbreakAttack` instead.
+        use `pyrit.executor.attack.ManyShotJailbreakAttack` instead.
 
     This orchestrator implements the Many Shot Jailbreak method as discussed in research found here:
     https://www.anthropic.com/research/many-shot-jailbreaking

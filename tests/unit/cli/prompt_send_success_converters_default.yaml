@@ -33,6 +33,7 @@ converters:
   - type: "DenylistConverter"
   - type: "DiacriticConverter"
   - type: "EmojiConverter"
+  - type: "FirstLetterConverter"
   - type: "FlipConverter"
   - type: "FuzzerCrossOverConverter"
   - type: "FuzzerExpandConverter"
