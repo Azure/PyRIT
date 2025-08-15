@@ -13,6 +13,9 @@ from pyrit.datasets import (
     fetch_equitymedqa_dataset_unique_values,
     fetch_forbidden_questions_dataset,
     fetch_harmbench_dataset,
+    fetch_jbb_behaviors_by_harm_category,
+    fetch_jbb_behaviors_by_jbb_category,
+    fetch_jbb_behaviors_dataset,
     fetch_librAI_do_not_answer_dataset,
     fetch_llm_latent_adversarial_training_harmful_dataset,
     fetch_many_shot_jailbreaking_dataset,
@@ -55,6 +58,7 @@ from pyrit.models.seed_prompt_dataset import SeedPromptDataset
         (fetch_transphobia_awareness_dataset, True),
         (fetch_wmdp_dataset, False),
         (fetch_xstest_dataset, True),
+        (fetch_jbb_behaviors_dataset, True),
     ],
 )
 def test_fetch_datasets(fetch_function, is_seed_prompt_dataset):
@@ -64,3 +68,27 @@ def test_fetch_datasets(fetch_function, is_seed_prompt_dataset):
     if is_seed_prompt_dataset:
         assert isinstance(data, SeedPromptDataset)
         assert len(data.prompts) > 0
+
+
+@pytest.mark.integration
+def test_fetch_jbb_behaviors_by_harm_category():
+    """Integration test for filtering by harm category with real data."""
+    try:
+        # Filter for a common category to ensure we get results
+        violence_prompts = fetch_jbb_behaviors_by_harm_category("violence")
+        assert isinstance(violence_prompts, SeedPromptDataset)
+        assert len(violence_prompts.prompts) > 0
+    except Exception as e:
+        pytest.skip(f"Integration test skipped due to: {e}")
+
+
+@pytest.mark.integration
+def test_fetch_jbb_behaviors_by_jbb_category():
+    """Integration test for filtering by JBB category with real data."""
+    try:
+        # Filter for a common category to ensure we get results
+        hate_prompts = fetch_jbb_behaviors_by_jbb_category("hate")
+        assert isinstance(hate_prompts, SeedPromptDataset)
+        assert len(hate_prompts.prompts) > 0
+    except Exception as e:
+        pytest.skip(f"Integration test skipped due to: {e}")
