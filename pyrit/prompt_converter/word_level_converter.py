@@ -27,6 +27,7 @@ class WordLevelConverter(PromptConverter):
         keywords: Optional[List[str]] = None,
         proportion: Optional[float] = None,
         regex: Optional[Union[str, re.Pattern]] = None,
+        word_split_separator: Optional[str] = " ",
     ):
         """
         Initializes the converter with the specified selection parameters.
@@ -40,6 +41,7 @@ class WordLevelConverter(PromptConverter):
             keywords (Optional[List[str]]): Keywords to select words for conversion.
             proportion (Optional[float]): Proportion of randomly selected words to convert [0.0-1.0].
             regex (Optional[Union[str, re.Pattern]]): Regex pattern to match words for conversion.
+            word_split_separator (Optional[str]): Separator used to split words in the input text (default " ").
         """
         # Make sure at most one selection criteria is provided
         criteria_map = {"indices": indices, "keywords": keywords, "proportion": proportion, "regex": regex}
@@ -57,6 +59,7 @@ class WordLevelConverter(PromptConverter):
         self._indices = indices or []
         self._proportion = 1.0 if proportion is None else proportion
         self._regex = regex or ".*"
+        self._word_split_separator = word_split_separator
 
     def _select_word_indices(self, words: List[str]) -> List[int]:
         """Returns indices of words to be converted based on the selection criteria."""
@@ -128,7 +131,10 @@ class WordLevelConverter(PromptConverter):
 
         self.validate_input(prompt=prompt)
 
-        words = prompt.split(" ")  # split by spaces only, preserving other whitespace
+        if self._word_split_separator is None:
+            words = prompt.split()  # if no specified separator, split by all whitespace
+        else:
+            words = prompt.split(self._word_split_separator)
         selected_indices = self._select_word_indices(words=words)
 
         # Convert only selected words

@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
@@ -32,6 +32,7 @@ from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_converter import (
     AsciiArtConverter,
     BinaryConverter,
+    FirstLetterConverter,
     RandomCapitalLettersConverter,
     ROT13Converter,
 )
@@ -45,6 +46,7 @@ print(await ROT13Converter().convert_tokens_async(prompt=prompt))  # type: ignor
 print(await RandomCapitalLettersConverter(percentage=25.0).convert_tokens_async(prompt=prompt))  # type: ignore
 print(await AsciiArtConverter().convert_tokens_async(prompt=prompt))  # type: ignore
 print(await BinaryConverter().convert_tokens_async(prompt=prompt))  # type: ignore
+print(await FirstLetterConverter().convert_tokens_async(prompt=prompt))  # type: ignore
 
 
 # %%
