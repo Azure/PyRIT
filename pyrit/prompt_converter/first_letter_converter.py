@@ -16,7 +16,7 @@ class FirstLetterConverter(WordLevelConverter):
     def __init__(
         self,
         *,
-        separator = " ",
+        separator=" ",
         indices: Optional[List[int]] = None,
         keywords: Optional[List[str]] = None,
         proportion: Optional[float] = None,

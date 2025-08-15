@@ -25,8 +25,8 @@ async def test_first_letter_converter_dashes():
     output = await converter.convert_async(prompt=prompt, input_type="text")
     assert output.output_text == "L-i-d-s-a"
     assert output.output_type == "text"
-    
-    
+
+
 # Test that the converter produces the expected result with French punctuation
 @pytest.mark.asyncio
 async def test_first_letter_converter_french():
