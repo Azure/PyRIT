@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# # 6. Skeleton Key Attack
+# # Skeleton Key Attack
 #
 # The **Skeleton Key Attack** showcases how to perform a multi-step jailbreak against a large language model (LLM). It demonstrates the effectiveness of using a two-step approach where the attack first sends an initial "skeleton key" prompt to the model to bypass its safety and guardrails, followed by a secondary attack prompt that attempts to elicit harmful or restricted content. This demo is designed to test and evaluate the security measures and robustness of LLMs against adversarial attacks.
 #

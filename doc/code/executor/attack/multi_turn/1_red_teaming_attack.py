@@ -23,7 +23,7 @@
 #
 # Behind the scenes, this example use an OpenAI model endpoint to generate the prompts and send them to the target endpoint (an Azure ML model). The responses from the target endpoint are evaluated and scored by the objective scorer provided in the `AttackScoringConfig` to determine if the objective has been achieved. If the objective has not been achieved, the `RedTeamingAttack` will generate a new prompt and send it to the target. This process continues until the objective is achieved or a maximum number of attempts is reached.
 #
-# ```mermaid
+# ```{mermaid}
 # flowchart LR
 #     start(("Start")) --> getPrompt["Get prompt from an unsafe model<br>(adversarial chat target) defined in AttackAdversarialConfig"]
 #     getPrompt -- Prompt --> transform["Use converters defined in AttackConverterConfig to transform the<br>attack prompt"]

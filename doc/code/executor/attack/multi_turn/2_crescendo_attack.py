@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# # 5. Crescendo Attack
+# # 2. Crescendo Attack
 #
 # This demo showcases the use of the `CrescendoAttack` in PyRIT.
 #
