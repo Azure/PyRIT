@@ -1,6 +1,6 @@
 format: jb-book
 root: index
-chapters:
+parts:
   - file: cookbooks/README
     sections:
     - file: cookbooks/1_sending_prompts
@@ -125,13 +125,13 @@ chapters:
     - file: code/auxiliary_attacks/0_auxiliary_attacks
       sections:
       - file: code/auxiliary_attacks/1_gcg_azure_ml
-    - file: deployment/README
-      sections:
-      - file: deployment/deploy_hf_model_aml
-      - file: deployment/download_and_register_hf_model_aml
-      - file: deployment/hf_aml_model_endpoint_guide
-      - file: deployment/score_aml_endpoint
-      - file: deployment/troubleshooting_guide_hf_azureml
+  - file: deployment/README
+    sections:
+    - file: deployment/deploy_hf_model_aml
+    - file: deployment/download_and_register_hf_model_aml
+    - file: deployment/hf_aml_model_endpoint_guide
+    - file: deployment/score_aml_endpoint
+    - file: deployment/troubleshooting_guide_hf_azureml
   - file: api.rst
   - file: blog/README
     sections:

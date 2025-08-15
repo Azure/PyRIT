@@ -1,4 +1,4 @@
-# PyRIT Executor Framework
+# Executor
 
 ## Overview
 
