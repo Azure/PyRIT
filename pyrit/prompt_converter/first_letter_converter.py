@@ -16,7 +16,7 @@ class FirstLetterConverter(WordLevelConverter):
     def __init__(
         self,
         *,
-        separator=" ",
+        letter_separator=" ",
         indices: Optional[List[int]] = None,
         keywords: Optional[List[str]] = None,
         proportion: Optional[float] = None,
@@ -36,8 +36,10 @@ class FirstLetterConverter(WordLevelConverter):
             proportion (Optional[float]): Proportion of randomly selected words to convert [0.0-1.0].
             regex (Optional[Union[str, re.Pattern]]): Regex pattern to match words for conversion.
         """
-        super().__init__(indices=indices, keywords=keywords, proportion=proportion, regex=regex)
-        self.separator = separator
+        super().__init__(
+            indices=indices, keywords=keywords, proportion=proportion, regex=regex, word_split_separator=None
+        )
+        self.letter_separator = letter_separator
 
     async def convert_word_async(self, word: str) -> str:
         stripped_word = "".join(filter(str.isalnum, word))
@@ -45,4 +47,4 @@ class FirstLetterConverter(WordLevelConverter):
 
     def join_words(self, words: list[str]) -> str:
         cleaned_words = list(filter(None, words))
-        return self.separator.join(cleaned_words)
+        return self.letter_separator.join(cleaned_words)

@@ -17,10 +17,20 @@ async def test_first_letter_converter_default():
     assert output.output_type == "text"
 
 
+# Test that the converter produces the expected result with whitespace
+@pytest.mark.asyncio
+async def test_first_letter_converter_whitespace():
+    converter = FirstLetterConverter()
+    prompt = "Lorem\nipsum\tdolor\nsit\tamet"
+    output = await converter.convert_async(prompt=prompt, input_type="text")
+    assert output.output_text == "L i d s a"
+    assert output.output_type == "text"
+
+
 # Test that the converter produces the expected result with a different separator
 @pytest.mark.asyncio
 async def test_first_letter_converter_dashes():
-    converter = FirstLetterConverter(separator="-")
+    converter = FirstLetterConverter(letter_separator="-")
     prompt = "Lorem ipsum dolor sit amet"
     output = await converter.convert_async(prompt=prompt, input_type="text")
     assert output.output_text == "L-i-d-s-a"
