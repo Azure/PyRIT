@@ -2,14 +2,14 @@
 
 The Attack is a top-level component that red team operators will interact with the most. It is responsible for telling PyRIT which endpoints to connect to and how to send prompts. It can be thought of as the component that executes an attack technique.
 
-An Attack is made up of four components, which create a consistent flow of control:
+An Attack is made up of four components:
 
 ```{mermaid}
 flowchart LR
-    A(["Attack Strategy <br> << abstract base class >>"])
-    A --consumes--> B(["Attack Context <br> << abstract base class >>"])
-    A --takes in as parameters within __init__--> D(["Attack Configurations"])
-    A --produces--> C(["Attack Result <br> << abstract base class >>"])
+    A(["Attack Strategy <br>"])
+    A --consumes--> B(["Attack Context <br>"])
+    A --takes in as parameters within __init__--> D(["Attack Configurations (Adversarial, Scoring, Converter)"])
+    A --produces--> C(["Attack Result <br>"])
 ```
 
 To execute an Attack, one generally follows this pattern:
@@ -18,49 +18,61 @@ To execute an Attack, one generally follows this pattern:
 3. _Execute_ the attack strategy with the created context
 4. Recieve and process the **attack result**
 
-Each attack implements a lifecycle with distinct phases (all abstract methods), and the base `AttackStrategy` class provides a non-abstract `execute_async()` method that enforces this lifecycle:
-* `_validate_context`: Validates the context of the attack
-* `_setup_async`: Prepare the attack (initialize state)
-* `_perform_attack_async`: Execute the core attack logic
-* `_teardown_async`: Clean up resources and finalize the attack
+## Types of Attacks
 
-This implementation enforces a consistent execution flow across all strategies:
-1. It guarantees that setup is always performed before the attack begins
-2. It ensures the attack logic is only executed if setup succeeds
-3. It guarantees teardown is always executed, even if errors occur, through the use of a finally block
-4. It provides centralized error handling and logging
+- [**Single-Turn Attacks**](./single_turn/0_single_turn.md): Single-turn attacks typically send prompts to a target endpoint to try to achieve a specific objective within a single turn. These attack strategies evaluate the target response using optional scorers to determine if the objective has been met.
 
-The following documentation will illustrate the different kinds of attacks within PyRIT. Some simply send prompts and run them through converters. Others instantiate more complicated attack techniques, like PAIR, TAP, and Crescendo.
+- [**Multi-Turn Attacks**](./multi_turn/0_multi_turn.md): Multi-turn attacks introduce an iterative attack process where an adversarial chat model generates prompts to send to a target system, attempting to achieve a specified objective over multiple turns. This strategy also evaluates the response using a scorer to determine if the objective has been met. These attacks continue iterating until the objective is met or a maximum numbers of turns is attempted. These types of attacks tend to work better than single-turn attacks in eliciting harm if a target endpoint keeps track of conversation history.
 
+## Component Diagrams
 See the below diagrams for more details of the components:
 ```{mermaid}
 flowchart LR
-    subgraph AttackStrategy["AttackStrategy"]
-        S_s["Other Single Turn Attacks (e.g. RolePlayAttack, SkeletonKeyAttack)"] --inherit from--> S_psa["PromptSendingAttack"]
+    subgraph AttackStrategy["AttackStrategy(Strategy)"]
+        S_psa1["FlipAttack"]
+        S_psa2["ContextComplianceAttack"]
+        S_psa3["ManyShotJailbreakAttack"]
+        S_psa4["RolePlayAttack"]
+        S_psa5["SkeletonKeyAttack"]
+        S_psa["PromptSendingAttack"]
+        S_single["SingleTurnAttackStrategy (ABC)"]
         S_c["CrescendoAttack"]
         S_r["RedTeamingAttack"]
-        s_t["TreeOfAttacksWithPruningAttack"]
+        s_t["TreeOfAttacksWithPruningAttack (aka TAPAttack)"]
+        S_multi["MultiTurnAttackStrategy (ABC)"]
     end
+
+    S_psa --> S_psa1
+    S_psa --> S_psa2
+    S_psa --> S_psa3
+    S_psa --> S_psa4
+    S_psa --> S_psa5
+    S_single --> S_psa
+    S_multi --> S_c
+    S_multi --> S_r
+    
 ```
 
 ```{mermaid}
 flowchart LR
-    subgraph AttackContext["AttackContext"]
-        C_s["SingleTurnAttackContext"]
+    subgraph AttackContext["AttackContext(StrategyContext) <br>(attack/core/attack_strategy.py)"]
+        C_s["SingleTurnAttackContext <br>(attack/single_turn/single_turn_attack_strategy.py)"]
         a["conversation_id"]
         b["seed_prompt_group"]
         c["..."]
-        C_m["MultiTurnAttackContext"]
+        C_m["MultiTurnAttackContext <br>(attack/multi_turn/multi_turn_attack_strategy.py)"]
         A["custom_prompt"]
         B["..."]
         C_o["objective"]
         C_mem["memory_labels"]
         C_rel["related_conversations"]
+        C_st["start_time"]
     end
 
     C_s-->C_o
     C_s-->C_mem
     C_s-->C_rel
+    C_s-->C_st
     C_m-->B
     C_m-->A
     C_s-->c
@@ -69,6 +81,7 @@ flowchart LR
     C_m-->C_o
     C_m-->C_mem
     C_m-->C_rel
+    C_m-->C_st
 ```
 
 ```{mermaid}
@@ -83,7 +96,7 @@ flowchart LR
         Scoring_ref["refusal_scorer"]
         Scoring_aux["auxiliary_scorers"]
         Scoring_misc["..."]
-        Convert["AttackConverterConfig"]
+        Convert["AttackConverterConfig(StrategyConverterConfig)"]
         Convert_req["request_converters"]
         Convert_resp["response_converters"]
     end
@@ -101,7 +114,7 @@ flowchart LR
 
 ```{mermaid}
 flowchart LR
-    subgraph AttackResult["AttackResult"]
+    subgraph AttackResult["AttackResult(StrategyResult) <br>(pyrit/models/attack_result.py)"]
         a["conversation_id"]
         b["objective"]
         c["attack_identifier"]
@@ -115,3 +128,5 @@ flowchart LR
         k["metadata"]
     end
 ```
+
+The following subsections of this documentation will illustrate the different kinds of attacks within PyRIT.
