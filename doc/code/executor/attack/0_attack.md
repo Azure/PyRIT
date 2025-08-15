@@ -22,7 +22,8 @@ To execute an Attack, one generally follows this pattern:
 
 - [**Single-Turn Attacks**](./single_turn/0_single_turn.md): Single-turn attacks typically send prompts to a target endpoint to try to achieve a specific objective within a single turn. These attack strategies evaluate the target response using optional scorers to determine if the objective has been met.
 
-- [**Multi-Turn Attacks**](./multi_turn/0_multi_turn.md): Multi-turn attacks introduce an iterative attack process where an adversarial chat model generates prompts to send to a target system, attempting to achieve a specified objective over multiple turns. This strategy also evaluates the response using a scorer to determine if the objective has been met. These attacks continue iterating until the objective is met or a maximum numbers of turns is attempted. These types of attacks tend to work better than single-turn attacks in eliciting harm if a target endpoint keeps track of conversation history.
+- [**Multi-Turn Attacks**](./multi_turn/0_multi_turn.md): Multi-turn attacks introduce an iterative attack process where an adversarial chat model generates prompts to send to a target system, attempting to achieve a specified objective over multiple turns. This strategy evaluates the response using a scorer to determine if the objective has been met and continues iterating until the objective is met or a maximum numbers of turns is attempted. These types of attacks tend to work better than single-turn attacks in eliciting harm if a target endpoint keeps track of conversation history. Nonetheless, multi-turn attacks can be useful on targets that only accept individual prompts as opposed to conversations. The Tree of Attacks with Pruning strategy is a good example that was developed for this use case.
+
 
 ## Component Diagrams
 See the below diagrams for more details of the components:

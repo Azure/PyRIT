@@ -23,7 +23,7 @@ flowchart LR
 
 To execute, one generally follows this pattern:
 1. Create an **strategy context** containing state information
-2. Initialize an **strategy** (with optional **configurations** for converters etc.)
+2. Initialize a **strategy** (with optional **configurations** for converters etc.)
 3. _Execute_ the attack strategy with the created context
 4. Recieve and process the **strategy result**
 
@@ -33,11 +33,11 @@ Each attack implements a lifecycle with distinct phases (all abstract methods), 
 * `_perform_async`: Execute the core  logic
 * `_teardown_async`: Clean up resources
 
-This implementation enforces a consistent execution flow across all strategies:
-1. It guarantees that setup is always performed before the attack begins
-2. It ensures the attack logic is only executed if setup succeeds
-3. It guarantees teardown is always executed, even if errors occur, through the use of a finally block
-4. It provides centralized error handling and logging
+This implementation enforces a consistent execution flow across all strategies by:
+1. Guaranteeing that setup is always performed before the attack begins
+2. Ensuring the attack logic is only executed if setup succeeds
+3. Guaranteeing teardown is always executed, even if errors occur, through the use of a finally block
+4. Providing centralized error handling and logging
 
 ## Executor Categories
 
@@ -74,6 +74,6 @@ Read more about Workflows [here](../executor/workflow/0_workflow.md)
 
 Benchmarks evaluate model performance and safety. Examples include:
 
-- **Question Answering Benchmark**: This benchmark strategy evaluates target models on multiple choice questions by formatting questions with their choices into prompts, sending those prompts to the target model using `PromptSendingAttack`, evaluating the responses and tracking success/failure for benchmark reporting.
+- **Question Answering Benchmark**: This benchmark strategy evaluates target models by formatting multiple choice questions into prompts, which get sent to the target model using `PromptSendingAttack`. The responses are evaluated for benchmark reporting.
 
 Read more about Benchmarks here (link to be added soon)

@@ -1,7 +1,7 @@
 format: jb-book
 root: index
 maxdepth: 5
-parts:
+chapters:
   - file: cookbooks/README
     sections:
     - file: cookbooks/1_sending_prompts
