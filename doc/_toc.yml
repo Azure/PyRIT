@@ -1,5 +1,6 @@
 format: jb-book
 root: index
+maxdepth: 5
 parts:
   - file: cookbooks/README
     sections:
