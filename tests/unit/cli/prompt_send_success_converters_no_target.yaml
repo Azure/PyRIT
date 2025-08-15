@@ -8,4 +8,4 @@ objective_target:
 converters:
   - type: "Base64Converter"
 database:
-  type: "DuckDB"
+  type: "SQLite"

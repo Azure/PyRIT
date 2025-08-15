@@ -162,25 +162,25 @@ def test_prompt_dataset_from_yaml_defaults():
 
 
 @pytest.mark.asyncio
-async def test_group_seed_prompt_groups_from_yaml(duckdb_instance):
+async def test_group_seed_prompt_groups_from_yaml(sqlite_instance):
     prompts = SeedPromptDataset.from_yaml_file(
         pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal-dataset.prompt"
     )
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=prompts.prompts, added_by="rlundeen")
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=prompts.prompts, added_by="rlundeen")
 
-    groups = duckdb_instance.get_seed_prompt_groups()
+    groups = sqlite_instance.get_seed_prompt_groups()
     # there are 8 SeedPrompts, 6 SeedPromptGroups
     assert len(groups) == 6
 
 
 @pytest.mark.asyncio
-async def test_group_seed_prompt_alias_sets_group_id(duckdb_instance):
+async def test_group_seed_prompt_alias_sets_group_id(sqlite_instance):
     prompts = SeedPromptDataset.from_yaml_file(
         pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal-dataset.prompt"
     )
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=prompts.prompts, added_by="rlundeen")
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=prompts.prompts, added_by="rlundeen")
 
-    groups = duckdb_instance.get_seed_prompt_groups()
+    groups = sqlite_instance.get_seed_prompt_groups()
     # there are 8 SeedPrompts, 6 SeedPromptGroups
     assert len(groups) == 6
 
@@ -348,15 +348,15 @@ async def test_hashes_generated_files():
 
 
 @pytest.mark.asyncio
-async def test_memory_encoding_metadata_image(duckdb_instance):
+async def test_memory_encoding_metadata_image(sqlite_instance):
     mock_image = Image.new("RGB", (400, 300), (255, 255, 255))
     mock_image.save("test.png")
     sp = SeedPrompt(
         value="test.png",
         data_type="image_path",
     )
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=[sp], added_by="test")
-    entry = duckdb_instance.get_seed_prompts()[0]
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=[sp], added_by="test")
+    entry = sqlite_instance.get_seed_prompts()[0]
     assert len(entry.metadata) == 1
     assert entry.metadata["format"] == "png"
     os.remove("test.png")
@@ -364,7 +364,7 @@ async def test_memory_encoding_metadata_image(duckdb_instance):
 
 @pytest.mark.asyncio
 @patch("pyrit.models.seed_prompt.TinyTag")
-async def test_memory_encoding_metadata_audio(mock_tinytag, duckdb_instance):
+async def test_memory_encoding_metadata_audio(mock_tinytag, sqlite_instance):
     # Simulate WAV data
     sample_rate = 44100
     mock_audio_data = np.random.randint(-32768, 32767, size=(100,), dtype=np.int16)
@@ -385,8 +385,8 @@ async def test_memory_encoding_metadata_audio(mock_tinytag, duckdb_instance):
     mock_tag.duration = 180
     mock_tinytag.get.return_value = mock_tag
 
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=[sp], added_by="test")
-    entry = duckdb_instance.get_seed_prompts()[0]
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=[sp], added_by="test")
+    entry = sqlite_instance.get_seed_prompts()[0]
     assert entry.metadata["format"] == "wav"
     assert entry.metadata["bitrate"] == 128
     assert entry.metadata["samplerate"] == 44100

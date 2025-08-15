@@ -8,4 +8,4 @@ scoring:
   objective_scorer:
     type: "SelfAskRefusalScorer"
 database:
-  type: "DuckDB"
+  type: "SQLite"

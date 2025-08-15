@@ -37,7 +37,7 @@ async def test_insecure_code_scorer_valid_response(mock_chat_target):
         task=None,
     )
 
-    # Patch _memory.add_scores_to_memory to prevent duckdb errors and check for call
+    # Patch _memory.add_scores_to_memory to prevent sqlite errors and check for call
     with patch.object(scorer._memory, "add_scores_to_memory", new=MagicMock()) as mock_add_scores:
         with patch.object(scorer, "_score_value_with_llm", new=AsyncMock(return_value=unvalidated_score)):
             # Create a request_response object

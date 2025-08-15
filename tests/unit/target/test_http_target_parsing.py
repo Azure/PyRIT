@@ -25,7 +25,7 @@ def mock_callback_function() -> Callable:
 
 
 @pytest.fixture
-def mock_http_target(mock_callback_function, duckdb_instance) -> HTTPTarget:
+def mock_http_target(mock_callback_function, sqlite_instance) -> HTTPTarget:
     return HTTPTarget(
         http_request=sample_request,
         prompt_regex_string="{PLACEHOLDER_PROMPT}",
