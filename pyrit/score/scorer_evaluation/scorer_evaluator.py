@@ -209,11 +209,13 @@ class ScorerEvaluator(abc.ABC):
     ) -> ScorerMetrics:
         """
         Run the evaluation for the scorer/policy combination on the passed in HumanLabeledDataset.
+
         Args:
             labeled_dataset (HumanLabeledDataset): The HumanLabeledDataset to evaluate the scorer against.
             num_scorer_trials (int): The number of trials to run the scorer on all responses.
             save_results (bool): Whether to save the metrics in a JSON file and the model score(s) for each response
                 in a CSV file. Defaults to True.
+
         Returns:
             ScorerMetrics: The metrics for the scorer. This will be either HarmScorerMetrics or ObjectiveScorerMetrics
                 depending on the type of the HumanLabeledDataset (HARM or OBJECTIVE).
