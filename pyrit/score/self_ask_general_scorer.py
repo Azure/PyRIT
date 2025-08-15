@@ -13,10 +13,11 @@ from pyrit.score.scorer import Scorer
 class SelfAskGeneralScorer(Scorer):
     """
     A general scorer that uses a chat target to score a prompt request piece.
+
     It can be configured to use different scoring types (e.g., true/false, float scale)
     It can also format the prompt using a system-level prompt and a format string.
 
-    Params:
+    Parameters:
         chat_target (PromptChatTarget): The chat target to use for scoring.
         system_prompt (str): The system-level prompt that guides the behavior of the target LLM.
             Defaults to None.
