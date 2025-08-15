@@ -50,7 +50,7 @@ flowchart LR
     S_single --> S_psa
     S_multi --> S_c
     S_multi --> S_r
-    
+
 ```
 
 ```{mermaid}

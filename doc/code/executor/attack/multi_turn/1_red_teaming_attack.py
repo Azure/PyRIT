@@ -33,7 +33,7 @@
 #     decision -- Yes --> done(("DONE"))
 #     decision -- No --> feedback["Use score to generate<br>feedback"]
 #     feedback -- Feedback --> getPrompt
-# 
+#
 #     scoreResp@{ shape: rect}
 #      start:::Ash
 #      getPrompt:::Aqua

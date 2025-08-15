@@ -4,7 +4,7 @@
 
 They differ from multi-turn attacks because:
 1. They do not require an adversarial configuration (this is where you would set the adversarial chat target in multi-turn attacks)
-2. The objective of the attack is attempted within one (or two) turn(s). Some attacks prepare the conversation by sending a predetermined prompt that aligns with the attack strategy before the user's first prompt is sent. 
+2. The objective of the attack is attempted within one (or two) turn(s). Some attacks prepare the conversation by sending a predetermined prompt that aligns with the attack strategy before the user's first prompt is sent.
 
 See the diagrams below to understand how the code is structured. These diagrams are the same as what is shown in the [Attacks](../0_attack.md) landing page, but specifically for single-turn attacks.
 
