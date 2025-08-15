@@ -59,7 +59,7 @@ Prompt generators create various types of prompts using different strategies. So
 - **Fuzzer Generator**: Generates diverse jailbreak prompts by systematically exploring and generating prompt templates using the Monte Carlo Tree Search to balance exploration of new templates with exploitation of promosing ones.
 - **Anecdoctor Generator**: Generates misinformation content by using few-shot examples directly or by extracting a knowledge graph from examples, then using it.
 
-Read more about Prompt Generators [here](../executor/promptgen/0_promptgen.md)
+Read more about Prompt Generators [here]()
 
 ### Workflow (`pyrit/executor/workflow`)
 
@@ -76,4 +76,4 @@ Benchmarks evaluate model performance and safety. Examples include:
 
 - **Question Answering Benchmark**: This benchmark strategy evaluates target models on multiple choice questions by formatting questions with their choices into prompts, sending those prompts to the target model using `PromptSendingAttack`, evaluating the responses and tracking success/failure for benchmark reporting.
 
-Read more about Benchmarks [here](../executor/benchmark/0_benchmark.md)
+Read more about Benchmarks [here]()
