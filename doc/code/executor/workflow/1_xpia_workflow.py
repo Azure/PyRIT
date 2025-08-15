@@ -35,7 +35,7 @@ print(jailbreak_prompt)
 # create SeedPromptGroup containing jailbreak_prompt contents
 attack_content = SeedPromptGroup(prompts=[SeedPrompt(value=jailbreak_prompt)])
 
-logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.INFO)
 
 # %% [markdown]
 #
