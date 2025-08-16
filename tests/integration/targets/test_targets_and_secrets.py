@@ -11,6 +11,7 @@ from pyrit.prompt_target import (
     OpenAIChatTarget,
     OpenAICompletionTarget,
     OpenAIDALLETarget,
+    OpenAIResponseTarget,
     OpenAISoraTarget,
     OpenAITTSTarget,
     RealtimeTarget,
@@ -66,6 +67,7 @@ explanation, or additional text. Output only the word "test" and nothing else.
         ("AZURE_FOUNDRY_PHI4_ENDPOINT", "AZURE_CHAT_PHI4_KEY", "", False, True),
         ("AZURE_FOUNDRY_MINSTRAL3B_ENDPOINT", "AZURE_CHAT_MINSTRAL3B_KEY", "", False, False),
         ("GOOGLE_GEMINI_ENDPOINT", "GOOGLE_GEMINI_API_KEY", "GOOGLE_GEMINI_MODEL", True, False),
+        ("ANTHROPIC_CHAT_ENDPOINT", "ANTHROPIC_CHAT_KEY", "ANTHROPIC_CHAT_MODEL", True, False),
     ],
 )
 async def test_connect_required_openai_text_targets(
@@ -84,6 +86,33 @@ async def test_connect_required_openai_text_targets(
         args["seed"] = 42
 
     target = OpenAIChatTarget(**args)
+
+    await _assert_can_send_prompt(target)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("endpoint", "api_key", "model_name", "no_api_version"),
+    [
+        (
+            "PLATFORM_OPENAI_RESPONSES_ENDPOINT",
+            "PLATFORM_OPENAI_RESPONSES_KEY",
+            "PLATFORM_OPENAI_RESPONSES_MODEL",
+            True,
+        ),
+        ("AZURE_OPENAI_RESPONSES_ENDPOINT", "AZURE_OPENAI_RESPONSES_KEY", "AZURE_OPENAI_RESPONSES_MODEL", False),
+    ],
+)
+async def test_connect_required_openai_response_targets(duckdb_instance, endpoint, api_key, model_name, no_api_version):
+    args = {
+        "endpoint": os.getenv(endpoint),
+        "api_key": os.getenv(api_key),
+        "model_name": os.getenv(model_name),
+    }
+    if no_api_version:
+        args["api_version"] = None
+
+    target = OpenAIResponseTarget(**args)
 
     await _assert_can_send_prompt(target)
 

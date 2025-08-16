@@ -2,14 +2,14 @@
 # Licensed under the MIT license.
 
 import logging
-import pathlib
-from typing import Optional
+from typing import Optional, cast
 
-from pyrit.common.path import DATASETS_PATH
-from pyrit.models import PromptRequestResponse, SeedPrompt, SeedPromptGroup
+from typing_extensions import LiteralString, deprecated
+
+from pyrit.common import deprecation_message
+from pyrit.executor.attack import AttackConverterConfig, AttackScoringConfig, FlipAttack
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.orchestrator.models.orchestrator_result import OrchestratorResult
-from pyrit.prompt_converter import FlipConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer
@@ -17,12 +17,26 @@ from pyrit.score import Scorer
 logger = logging.getLogger(__name__)
 
 
+@deprecated(
+    cast(
+        LiteralString,
+        deprecation_message(
+            old_item="FlipAttackOrchestrator",
+            new_item=FlipAttack,
+            removed_in="v0.12.0",
+        ),
+    ),
+)
 class FlipAttackOrchestrator(PromptSendingOrchestrator):
     """
+    .. warning::
+        `FlipAttackOrchestrator` is deprecated and will be removed in **v0.12.0**;
+        use `pyrit.executor.attack.FlipAttack` instead.
+
     This orchestrator implements the Flip Attack method found here:
     https://arxiv.org/html/2410.02832v1.
 
-    Essentially, adds a system prompt to the beginning of the conversation to flip each word in the prompt.
+    Essentially, it adds a system prompt to the beginning of the conversation to flip each word in the prompt.
     """
 
     def __init__(
@@ -54,11 +68,9 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
             verbose (bool, Optional): Whether to log debug information. Defaults to False.
         """
 
-        flip_converter = PromptConverterConfiguration.from_converters(converters=[FlipConverter()])
-
         super().__init__(
             objective_target=objective_target,
-            request_converter_configurations=flip_converter + (request_converter_configurations or []),
+            request_converter_configurations=request_converter_configurations,
             response_converter_configurations=response_converter_configurations,
             objective_scorer=objective_scorer,
             auxiliary_scorers=auxiliary_scorers,
@@ -68,11 +80,19 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
             verbose=verbose,
         )
 
-        # This system prompt is sent to the target
-        system_prompt_path = pathlib.Path(DATASETS_PATH) / "orchestrators" / "flip_attack.yaml"
-        system_prompt = SeedPrompt.from_yaml_file(system_prompt_path).value
-
-        self._system_prompt = PromptRequestResponse.from_system_prompt(system_prompt=system_prompt)
+        self._attack = FlipAttack(
+            objective_target=objective_target,
+            attack_converter_config=AttackConverterConfig(
+                request_converters=self._request_converter_configurations,
+                response_converters=self._response_converter_configurations,
+            ),
+            attack_scoring_config=AttackScoringConfig(
+                objective_scorer=self._objective_scorer,
+                auxiliary_scorers=self._auxiliary_scorers,
+            ),
+            prompt_normalizer=self._prompt_normalizer,
+            max_attempts_on_failure=retries_on_objective_failure,
+        )
 
     async def run_attack_async(  # type: ignore[override]
         self,
@@ -80,14 +100,8 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
         objective: str,
         memory_labels: Optional[dict[str, str]] = None,
     ) -> OrchestratorResult:
-
-        initial_prompt = "TASK is '⟪" + objective.replace("'", "") + "⟫'"
-        seed_prompt = SeedPromptGroup(prompts=[SeedPrompt(value=initial_prompt, data_type="text")])
-
         return await super().run_attack_async(
             objective=objective,
-            seed_prompt=seed_prompt,
-            prepended_conversation=[self._system_prompt],
             memory_labels=memory_labels,
         )
 

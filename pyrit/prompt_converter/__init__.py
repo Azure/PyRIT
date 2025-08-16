@@ -26,6 +26,7 @@ from pyrit.prompt_converter.codechameleon_converter import CodeChameleonConverte
 from pyrit.prompt_converter.colloquial_wordswap_converter import ColloquialWordswapConverter
 from pyrit.prompt_converter.diacritic_converter import DiacriticConverter
 from pyrit.prompt_converter.emoji_converter import EmojiConverter
+from pyrit.prompt_converter.first_letter_converter import FirstLetterConverter
 from pyrit.prompt_converter.flip_converter import FlipConverter
 from pyrit.prompt_converter.fuzzer_converter import (
     FuzzerConverter,
@@ -36,6 +37,7 @@ from pyrit.prompt_converter.fuzzer_converter import (
     FuzzerSimilarConverter,
 )
 from pyrit.prompt_converter.human_in_the_loop_converter import HumanInTheLoopConverter
+from pyrit.prompt_converter.image_compression_converter import ImageCompressionConverter
 from pyrit.prompt_converter.insert_punctuation_converter import InsertPunctuationConverter
 from pyrit.prompt_converter.leetspeak_converter import LeetspeakConverter
 from pyrit.prompt_converter.llm_generic_text_converter import LLMGenericTextConverter
@@ -92,6 +94,7 @@ __all__ = [
     "DiacriticConverter",
     "ConverterResult",
     "EmojiConverter",
+    "FirstLetterConverter",
     "FlipConverter",
     "FuzzerConverter",
     "FuzzerCrossOverConverter",
@@ -100,6 +103,7 @@ __all__ = [
     "FuzzerShortenConverter",
     "FuzzerSimilarConverter",
     "HumanInTheLoopConverter",
+    "ImageCompressionConverter",
     "InsertPunctuationConverter",
     "TemplateSegmentConverter",
     "TextJailbreakConverter",

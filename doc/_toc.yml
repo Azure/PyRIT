@@ -30,6 +30,9 @@ chapters:
       sections:
       - file: code/datasets/1_seed_prompt
       - file: code/datasets/2_fetch_dataset
+    - file: code/attacks/0_attack
+      sections:
+      - file: code/attacks/1_prompt_sending_attack
     - file: code/orchestrators/0_orchestrator
       sections:
       - file: code/orchestrators/1_prompt_sending_orchestrator
@@ -48,6 +51,7 @@ chapters:
       - file: code/orchestrators/role_playing_orchestrator
       - file: code/orchestrators/tree_of_attacks_with_pruning
       - file: code/orchestrators/violent_durian
+      - file: code/orchestrators/anecdoctor_orchestrator
     - file: code/targets/0_prompt_targets
       sections:
       - file: code/targets/1_openai_chat_target
@@ -57,6 +61,7 @@ chapters:
       - file: code/targets/5_multi_modal_targets
       - file: code/targets/6_rate_limiting
       - file: code/targets/7_http_target
+      - file: code/targets/8_openai_responses_target
       - file: code/targets/open_ai_completions
       - file: code/targets/playwright_target
       - file: code/targets/prompt_shield_target
@@ -89,6 +94,7 @@ chapters:
       - file: code/scoring/true_false_batch_scoring
       - file: code/scoring/human_in_the_loop_scorer_gradio
       - file: code/scoring/generic_scorers
+      - file: code/scoring/scorer_evals
     - file: code/memory/0_memory
       sections:
       - file: code/memory/1_duck_db_memory
@@ -97,7 +103,7 @@ chapters:
       - file: code/memory/4_manually_working_with_memory
       - file: code/memory/5_memory_labels
       - file: code/memory/6_azure_sql_memory
-      - file: code/memory/7_azure_sql_memory_orchestrators
+      - file: code/memory/7_azure_sql_memory_attacks
       - file: code/memory/8_seed_prompt_database
       - file: code/memory/9_exporting_data
       - file: code/memory/10_schema_diagram.md

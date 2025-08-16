@@ -34,7 +34,7 @@
 # %%
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.orchestrator import ContextComplianceOrchestrator
-from pyrit.prompt_converter import Base64Converter
+from pyrit.prompt_converter import RandomCapitalLettersConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import AzureContentFilterScorer
@@ -48,7 +48,9 @@ orchestrator = ContextComplianceOrchestrator(
     objective_target=objective_target,
     adversarial_chat=adversarial_chat,
     auxiliary_scorers=[AzureContentFilterScorer()],
-    request_converter_configurations=PromptConverterConfiguration.from_converters(converters=[Base64Converter()]),
+    request_converter_configurations=PromptConverterConfiguration.from_converters(
+        converters=[RandomCapitalLettersConverter(percentage=50)]
+    ),
 )
 
 objectives = [
@@ -58,4 +60,4 @@ objectives = [
 
 results = await orchestrator.run_attacks_async(objectives=objectives)  # type: ignore
 for result in results:
-    await result.print_conversation_async()  # type: ignore
+    await result.print_conversation_async(include_auxiliary_scores=True)  # type: ignore

@@ -36,7 +36,7 @@ class GandalfTarget(PromptTarget):
     ) -> None:
         super().__init__(max_requests_per_minute=max_requests_per_minute)
 
-        self._endpoint = "https://gandalf.lakera.ai/api/send-message"
+        self._endpoint = "https://gandalf-api.lakera.ai/api/send-message"
         self._defender = level.value
 
     @limit_requests_per_minute

@@ -11,15 +11,14 @@ from typing import Optional, cast
 
 from typing_extensions import LiteralString, deprecated
 
-from pyrit.attacks import (
+from pyrit.common import deprecation_message
+from pyrit.common.path import RED_TEAM_ORCHESTRATOR_PATH
+from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackConverterConfig,
     AttackScoringConfig,
-    MultiTurnAttackContext,
     RedTeamingAttack,
 )
-from pyrit.common import deprecation_message
-from pyrit.common.path import RED_TEAM_ORCHESTRATOR_PATH
 from pyrit.models import AttackOutcome
 from pyrit.orchestrator import MultiTurnOrchestrator, OrchestratorResult
 from pyrit.prompt_converter import PromptConverter
@@ -55,7 +54,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
     """
     .. warning::
         `RedTeamingOrchestrator` is deprecated and will be removed in **v0.12.0**;
-        use `pyrit.attacks.RedTeamingAttack` instead.
+        use `pyrit.executor.attack.RedTeamingAttack` instead.
 
     The `RedTeamingOrchestrator` class orchestrates a multi-turn red teaming attack on a target system.
 
@@ -147,13 +146,11 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         self, *, objective: str, memory_labels: Optional[dict[str, str]] = None
     ) -> OrchestratorResult:
 
-        # Transitions to the new attack model
-        context = MultiTurnAttackContext(
+        result = await self._attack.execute_async(
             objective=objective,
+            prepended_conversation=self._prepended_conversation,
             memory_labels=memory_labels or {},
         )
-
-        result = await self._attack.execute_with_context_async(context=context)
         objective_achieved = result.outcome == AttackOutcome.SUCCESS
 
         # Translating the result back to the orchestrator result format
