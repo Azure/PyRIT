@@ -1,6 +1,5 @@
 format: jb-book
 root: index
-maxdepth: 5
 chapters:
   - file: cookbooks/README
     sections:
@@ -32,6 +31,7 @@ chapters:
       - file: code/datasets/1_seed_prompt
       - file: code/datasets/2_fetch_dataset
     - file: code/executor/0_executor
+      maxdepth: 5
       sections:
         - file: code/executor/attack/0_attack
           sections:
