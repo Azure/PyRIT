@@ -8,7 +8,7 @@ from pyrit.models import SeedPromptDataset
 from pyrit.models.seed_prompt import SeedPrompt
 
 
-def fetch_medsafetybench(
+def fetch_medsafetybench_dataset(
     subset_name: Literal["train", "test", "generated", "all"] = "all",
     cache: bool = True,
     data_home: Optional[Path] = None,
