@@ -9,8 +9,9 @@
 # ---
 
 # %% [markdown]
-# # Adding Images to a Video
+# # 7. Video Converters
 #
+# ## Adding Images to a Video
 # Adds an image to a video.
 # To use this converter you'll need to install opencv which can be done with
 # `pip install pyrit[opencv]`

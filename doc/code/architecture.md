@@ -17,15 +17,12 @@ The first piece of an attack is often a dataset piece, like a prompt. "Tell me h
 
 Ways to contribute: Check out our prompts in [seed prompts](https://github.com/Azure/PyRIT/tree/main/pyrit/datasets/seed_prompts) and [jailbreak templates](https://github.com/Azure/PyRIT/tree/main/pyrit/datasets/jailbreak); are there more you can add that include scenarios you're testing for?
 
-## Attacks (formerly known as Orchestrators)
+## Attacks
 
-Attacks are responsible for putting all the other pieces together.
+Attacks are responsible for putting all the other pieces together. They make use of all other components in PyRIT to execute an attack technique end-to-end.
+PyRIT supports single-turn (e.g. Many Shot Jailbreaks, Role Play, Skeleton Key) and multi-turn attack strategies (e.g. Tree of Attacks, Crescendo)
 
-This is the least defined component, because attacks can get *complicated*. They can be circular and modify prompts, support multiple conversation turns, upload documents to a storage account for later use, and do all sorts of other things. But attacks can make use of all the other components and execute the technique end-to-end.
-
-Attacks should contain all the logic for different types of attacks. For example, PAIR, tree of attack, or crescendo should be implemented primarily as orchestrators.
-
-Ways to contribute: Check out our [attack docs](./attacks/0_attack.md). There are hundreds of attacks outlined in research papers. A lot of these can be captured within PyRIT. If you find an attack that doesn't fit the attack model please notify the team. Are there scenarios you can write attack modules for?
+Ways to contribute: Check out our [attack docs](./executor/attack/0_attack.md). There are hundreds of attacks outlined in research papers. A lot of these can be captured within PyRIT. If you find an attack that doesn't fit the attack model please notify the team. Are there scenarios you can write attack modules for?
 
 ## Converters
 

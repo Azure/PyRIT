@@ -42,9 +42,6 @@ class MultiTurnAttackContext(AttackContext):
     # Object holding all conversation-level identifiers for this attack
     session: ConversationSession = field(default_factory=lambda: ConversationSession())
 
-    # Conversation that is automatically prepended to the target model
-    prepended_conversation: List[PromptRequestResponse] = field(default_factory=list)
-
     # Counter of turns that have actually been executed so far
     executed_turns: int = 0
 

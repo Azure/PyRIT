@@ -13,7 +13,7 @@
 # ---
 
 # %% [markdown]
-# # Seed Prompts
+# # 1. Seed Prompts
 #
 # Most of the datasets we load into PyRIT are stored as a `SeedPromptDataset`. It is useful to store these results with the attributes and metadata associated with these prompts. In order to better understand the organization of the data, we will first start by defining what a `SeedPrompt` is. A `SeedPrompt` can either be a prompt template with parameters such as `{{gender}}` or just a prompt. By loading a YAML file as a `SeedPromptDataset`, we can use the prompts in other components within PyRIT.
 

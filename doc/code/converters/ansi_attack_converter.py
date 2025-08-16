@@ -10,7 +10,9 @@
 # ---
 
 # %% [markdown]
-# # Generating Perturbed Prompts Using the AnsiAttackConverter
+# # AnsiAttackConverter - optional
+#
+# ## Generating Perturbed Prompts Using the AnsiAttackConverter
 #
 # This script demonstrates how to use the `AnsiAttackConverter` to generate and process prompts that involve ANSI escape sequences.
 # The converter interacts with the Azure OpenAI API via the `PromptSendingAttack`, sending prompts asynchronously.

@@ -14,7 +14,9 @@
 # ---
 
 # %% [markdown]
-# # Jailbreaking Large Language Models with Symbolic Mathematics Using the MathPromptConverter - optional
+# # MathPromptConverter - optional
+#
+# ## Jailbreaking LLMs with Symbolic Mathematics
 #
 # This script demonstrates how to use the `MathPromptConverter` class to transform user queries into symbolic mathematical problems by applying set theory, abstract algebra, and symbolic logic.
 # The converter integrates with the `OpenAIChatTarget`, and it utilizes a predefined template (`math_prompt_converter.yaml`) to dynamically handle and convert user inputs.
