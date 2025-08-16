@@ -427,6 +427,7 @@ API Reference
     ToneConverter
     ToxicSentenceGeneratorConverter
     TranslationConverter
+    TransparencyAttackConverter
     UnicodeConfusableConverter
     UnicodeReplacementConverter
     UnicodeSubstitutionConverter

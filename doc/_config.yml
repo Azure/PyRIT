@@ -33,7 +33,7 @@ html:
   use_issues_button: true
   use_repository_button: true
   use_edit_page_button: true
-  extra_static_files: ["_static/custom.js"]
+  extra_static_files: ["_static/custom.js", "_static/custom.css"]
 
 sphinx:
   extra_extensions:
