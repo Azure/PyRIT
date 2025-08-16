@@ -17,7 +17,7 @@
 # %%
 from uuid import uuid4
 
-from pyrit.memory.sqlite_memory import SQLiteMemory
+from pyrit.memory import SQLiteMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 
 conversation_id = str(uuid4())
