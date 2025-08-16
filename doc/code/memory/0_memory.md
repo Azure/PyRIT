@@ -28,7 +28,7 @@ The `MemoryDatabaseType` is a `Literal` with 3 options: IN_MEMORY, DUCK_DB, AZUR
    - Interactions will be stored in a persistent `DuckDBMemory` instance with a location on-disk. See notebook [here](./1_duck_db_memory.ipynb) for more details.
 
 **AZURE_SQL:** _Azure SQL Database_
-   - For examples on setting up `AzureSQLMemory`, please refer to the notebook [here](./7_azure_sql_memory_orchestrators.ipynb).
+   - For examples on setting up `AzureSQLMemory`, please refer to the notebook [here](./7_azure_sql_memory_attacks.ipynb).
    - To configure AzureSQLMemory without an extra argument list, these keys should be in your `.env` file:
      - `AZURE_SQL_DB_CONNECTION_STRING`
      - `AZURE_STORAGE_ACCOUNT_DB_DATA_CONTAINER_URL`
