@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece
-from pyrit.score.plagiarism_scorer import PlagiarismScorer, PlagiarismMetric, plagiarism_score, tokenize, lcs_length, levenshtein_distance, ngram_set
+from pyrit.score.plagiarism_scorer import PlagiarismScorer, PlagiarismMetric, _plagiarism_score, _tokenize, _lcs_length, _levenshtein_distance, _ngram_set
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -289,86 +289,86 @@ class TestPlagiarismScorerUtilityFunctions:
     def test_tokenize_basic(self):
         """Test basic tokenization functionality."""
         text = "Hello World Test"
-        tokens = tokenize(text)
+        tokens = _tokenize(text)
         assert tokens == ["hello", "world", "test"]
 
     def test_tokenize_with_punctuation(self):
         """Test tokenization with punctuation removal."""
         text = "Hello, world! How are you?"
-        tokens = tokenize(text)
+        tokens = _tokenize(text)
         assert tokens == ["hello", "world", "how", "are", "you"]
 
     def test_tokenize_empty_string(self):
         """Test tokenization with empty string."""
-        tokens = tokenize("")
+        tokens = _tokenize("")
         assert tokens == []
 
     def test_lcs_length_identical(self):
         """Test LCS with identical sequences."""
         a = ["hello", "world", "test"]
         b = ["hello", "world", "test"]
-        length = lcs_length(a, b)
+        length = _lcs_length(a, b)
         assert length == 3
 
     def test_lcs_length_different(self):
         """Test LCS with different sequences."""
         a = ["hello", "world", "test"]
         b = ["hello", "test", "case"]
-        length = lcs_length(a, b)
+        length = _lcs_length(a, b)
         assert length == 2  # "hello" and "test"
 
     def test_lcs_length_empty(self):
         """Test LCS with empty sequences."""
         a = []
         b = ["hello", "world"]
-        length = lcs_length(a, b)
+        length = _lcs_length(a, b)
         assert length == 0
 
     def test_levenshtein_distance_identical(self):
         """Test Levenshtein distance with identical sequences."""
         a = ["hello", "world"]
         b = ["hello", "world"]
-        distance = levenshtein_distance(a, b)
+        distance = _levenshtein_distance(a, b)
         assert distance == 0
 
     def test_levenshtein_distance_different(self):
         """Test Levenshtein distance with different sequences."""
         a = ["hello", "world"]
         b = ["hello", "test"]
-        distance = levenshtein_distance(a, b)
+        distance = _levenshtein_distance(a, b)
         assert distance == 1  # One substitution
 
     def test_levenshtein_distance_empty(self):
         """Test Levenshtein distance with empty sequences."""
         a = []
         b = ["hello", "world"]
-        distance = levenshtein_distance(a, b)
+        distance = _levenshtein_distance(a, b)
         assert distance == 2  # Two insertions
 
     def test_ngram_set_basic(self):
         """Test n-gram set generation."""
         tokens = ["the", "quick", "brown", "fox"]
-        ngrams = ngram_set(tokens, 2)
+        ngrams = _ngram_set(tokens, 2)
         expected = {("the", "quick"), ("quick", "brown"), ("brown", "fox")}
         assert ngrams == expected
 
     def test_ngram_set_longer_n(self):
         """Test n-gram set with n longer than token list."""
         tokens = ["hello", "world"]
-        ngrams = ngram_set(tokens, 5)
+        ngrams = _ngram_set(tokens, 5)
         assert ngrams == set()
 
     def test_ngram_set_empty_tokens(self):
         """Test n-gram set with empty token list."""
         tokens = []
-        ngrams = ngram_set(tokens, 2)
+        ngrams = _ngram_set(tokens, 2)
         assert ngrams == set()
 
     def test_plagiarism_score_lcs(self):
         """Test plagiarism score with LCS metric."""
         response = "The quick brown fox"
         reference = "The quick brown dog"
-        score = plagiarism_score(response, reference, metric="lcs")
+        score = _plagiarism_score(response, reference, metric="lcs")
         assert 0.0 <= score <= 1.0
         assert score == 0.75  # 3/4 words match
 
@@ -376,31 +376,31 @@ class TestPlagiarismScorerUtilityFunctions:
         """Test plagiarism score with Levenshtein metric."""
         response = "hello world"
         reference = "hello world"
-        score = plagiarism_score(response, reference, metric="levenshtein")
+        score = _plagiarism_score(response, reference, metric="levenshtein")
         assert score == 1.0  # Perfect match
 
-    def test_plagiarism_score_ngram(self):
-        """Test plagiarism score with n-gram metric."""
+    def test_plagiarism_score_jaccard(self):
+        """Test plagiarism score with Jaccard metric."""
         response = "the quick brown fox jumps"
         reference = "the quick brown dog runs"
-        score = plagiarism_score(response, reference, metric="ngram", n=2)
+        score = _plagiarism_score(response, reference, metric="jaccard", n=2)
         assert 0.0 <= score <= 1.0
 
     def test_plagiarism_score_empty_texts(self):
         """Test plagiarism score with empty texts."""
-        score = plagiarism_score("", "hello world", metric="lcs")
+        score = _plagiarism_score("", "hello world", metric="lcs")
         assert score == 0.0
 
     def test_plagiarism_score_invalid_metric(self):
-        """Test plagiarism score with invalid metric."""
-        score = plagiarism_score("hello", "world", metric="invalid")
-        assert score == 0.0
+        """Test plagiarism score with invalid metric raises ValueError."""
+        with pytest.raises(ValueError, match="metric must be 'lcs', 'levenshtein', or 'jaccard'"):
+            _plagiarism_score("hello", "world", metric="invalid")
 
     def test_plagiarism_score_case_insensitive(self):
         """Test that plagiarism score is case insensitive."""
         response = "Hello World"
         reference = "hello world"
-        score = plagiarism_score(response, reference, metric="lcs")
+        score = _plagiarism_score(response, reference, metric="lcs")
         assert score == 1.0  # Should be perfect match despite case difference
 
 
