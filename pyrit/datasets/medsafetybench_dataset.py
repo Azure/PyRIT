@@ -8,7 +8,7 @@ from pyrit.models import SeedPromptDataset
 from pyrit.models.seed_prompt import SeedPrompt
 
 
-def fetch_medsafetybench(
+def fetch_medsafetybench_dataset(
     subset_name: Literal["train", "test", "generated", "all"] = "all",
     cache: bool = True,
     data_home: Optional[Path] = None,
@@ -70,9 +70,9 @@ def fetch_medsafetybench(
             )
 
             for ex in examples:
-                prompt = ex.get("prompt") or ex.get("harmful_request") or ex.get("harmful_medical_request")
+                prompt = ex.get("harmful_medical_request")
                 if not prompt:
-                    continue
+                    raise KeyError(f"No 'harmful_medical_request' found in example from {source}")
 
                 url_parts = source.split("/")
                 model_type = url_parts[-2] if len(url_parts) >= 2 else "unknown"
