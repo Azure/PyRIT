@@ -71,7 +71,7 @@ def initialize_pyrit(memory_db_type: Union[MemoryDatabaseType, str], **memory_in
         logger.info("Using persistent SQLite database.")
         memory = SQLiteMemory(**memory_instance_kwargs)
     elif memory_db_type == DUCK_DB:
-        print("DuckDB is no longer supported and instead we are using SQLite")
+        raise ValueError("DuckDB is no longer supported and instead we are using SQLite")
     else:
         logger.info("Using AzureSQL database.")
         memory = AzureSQLMemory(**memory_instance_kwargs)
