@@ -30,9 +30,17 @@ chapters:
       sections:
       - file: code/datasets/1_seed_prompt
       - file: code/datasets/2_fetch_dataset
-    - file: code/attacks/0_attack
+    - file: code/executor/0_executor
       sections:
-      - file: code/attacks/1_prompt_sending_attack
+        - file: code/executor/attack/0_attack
+          sections:
+          - file: code/executor/attack/1_prompt_sending_attack
+          - file: code/executor/attack/2_red_teaming_attack
+          - file: code/executor/attack/3_crescendo_attack
+          - file: code/executor/attack/skeleton_key_attack
+        - file: code/executor/workflow/0_workflow
+          sections:
+          - file: code/executor/workflow/1_xpia_workflow
     - file: code/orchestrators/0_orchestrator
       sections:
       - file: code/orchestrators/1_prompt_sending_orchestrator
@@ -89,10 +97,10 @@ chapters:
       - file: code/scoring/4_likert_scorers
       - file: code/scoring/5_human_scorers
       - file: code/scoring/6_refusal_scorer
+      - file: code/scoring/7_batch_scorer
       - file: code/scoring/insecure_code_scorer
       - file: code/scoring/look_back_scorer
       - file: code/scoring/prompt_shield_scorer
-      - file: code/scoring/true_false_batch_scoring
       - file: code/scoring/human_in_the_loop_scorer_gradio
       - file: code/scoring/generic_scorers
       - file: code/scoring/scorer_evals
@@ -113,13 +121,13 @@ chapters:
     - file: code/auxiliary_attacks/0_auxiliary_attacks
       sections:
       - file: code/auxiliary_attacks/1_gcg_azure_ml
-    - file: deployment/README
-      sections:
-      - file: deployment/deploy_hf_model_aml
-      - file: deployment/download_and_register_hf_model_aml
-      - file: deployment/hf_aml_model_endpoint_guide
-      - file: deployment/score_aml_endpoint
-      - file: deployment/troubleshooting_guide_hf_azureml
+  - file: deployment/README
+    sections:
+    - file: deployment/deploy_hf_model_aml
+    - file: deployment/download_and_register_hf_model_aml
+    - file: deployment/hf_aml_model_endpoint_guide
+    - file: deployment/score_aml_endpoint
+    - file: deployment/troubleshooting_guide_hf_azureml
   - file: api.rst
   - file: blog/README
     sections:
