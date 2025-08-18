@@ -23,7 +23,7 @@ def test_export_conversation_by_orchestrator_id_file_created(
 
     sqlite_instance.exporter = MemoryExporter()
 
-    with patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_prompt_request_pieces") as mock_get:
+    with patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_prompt_request_pieces") as mock_get:
         mock_get.return_value = sample_conversations
         sqlite_instance.export_conversations(orchestrator_id=orchestrator1_id, file_path=file_path)
 
@@ -36,26 +36,33 @@ def test_export_all_conversations_file_created(sqlite_instance: MemoryInterface)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as temp_file:
         with (
-            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_prompt_request_pieces") as mock_get_pieces,
-            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_prompt_scores") as mock_get_scores,
+            patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_prompt_request_pieces") as mock_get_pieces,
+            patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_prompt_scores") as mock_get_scores,
         ):
             file_path = Path(temp_file.name)
 
-            mock_get_pieces.return_value = [
-                MagicMock(
-                    original_prompt_id="1234",
-                    converted_value="sample piece",
-                    to_dict=lambda: {"prompt_request_response_id": "1234", "conversation": ["sample piece"]},
-                )
-            ]
-            mock_get_scores.return_value = [
-                MagicMock(
-                    prompt_request_response_id="1234",
-                    score_value=10,
-                    to_dict=lambda: {"prompt_request_response_id": "1234", "score_value": 10},
-                )
-            ]
+            # Create mock with serializable data
+            mock_piece = MagicMock()
+            mock_piece.id = "1234"
+            mock_piece.original_prompt_id = "1234"
+            mock_piece.converted_value = "sample piece"
+            mock_piece.to_dict.return_value = {
+                "id": "1234",
+                "original_prompt_id": "1234",
+                "converted_value": "sample piece",
+            }
 
+            mock_score = MagicMock()
+            mock_score.prompt_request_response_id = "1234"
+            mock_score.score_value = 10
+            mock_score.to_dict.return_value = {"prompt_request_response_id": "1234", "score_value": 10}
+
+            mock_get_pieces.return_value = [mock_piece]
+            mock_get_scores.return_value = [mock_score]
+
+            result_path = sqlite_instance.export_conversations(file_path=file_path)
+
+            assert result_path == file_path
             assert file_path.exists()
 
 
@@ -64,37 +71,73 @@ def test_export_all_conversations_with_scores_correct_data(sqlite_instance: Memo
 
     with tempfile.NamedTemporaryFile(delete=True, suffix=".json") as temp_file:
         with (
-            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_prompt_request_pieces") as mock_get_pieces,
-            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_prompt_scores") as mock_get_scores,
-            patch.object(sqlite_instance.exporter, "export_data") as mock_export_data,
+            patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_prompt_request_pieces") as mock_get_pieces,
+            patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_prompt_scores") as mock_get_scores,
         ):
             file_path = Path(temp_file.name)
 
-            mock_get_pieces.return_value = [MagicMock(original_prompt_id="1234", converted_value="sample piece")]
-            mock_get_scores.return_value = [MagicMock(prompt_request_response_id="1234", score_value=10)]
+            # Create a mock piece that returns serializable data
+            mock_piece = MagicMock()
+            mock_piece.id = "piece_id_1234"
+            mock_piece.original_prompt_id = "1234"
+            mock_piece.converted_value = "sample piece"
+            mock_piece.to_dict.return_value = {
+                "id": "piece_id_1234",
+                "original_prompt_id": "1234",
+                "converted_value": "sample piece",
+            }
 
-            sqlite_instance.export_conversations(file_path=file_path)
+            # Create a mock score that returns serializable data
+            mock_score = MagicMock()
+            mock_score.prompt_request_response_id = "piece_id_1234"
+            mock_score.score_value = 10
+            mock_score.to_dict.return_value = {"prompt_request_response_id": "piece_id_1234", "score_value": 10}
 
-            pos_arg, named_args = mock_export_data.call_args
-            assert str(named_args["file_path"]) == temp_file.file.name
-            assert str(named_args["export_type"]) == "json"
-            assert pos_arg[0][0].original_prompt_id == "1234"
-            assert pos_arg[0][0].converted_value == "sample piece"
+            mock_get_pieces.return_value = [mock_piece]
+            mock_get_scores.return_value = [mock_score]
+
+            result_path = sqlite_instance.export_conversations(file_path=file_path)
+
+            # Verify the file was created and contains correct data
+            assert result_path == file_path
+            assert file_path.exists()
+
+            # Read and verify the exported JSON content
+            import json
+
+            with open(file_path, "r") as f:
+                exported_data = json.load(f)
+
+            assert len(exported_data) == 1
+            assert exported_data[0]["id"] == "piece_id_1234"
+            assert exported_data[0]["original_prompt_id"] == "1234"
+            assert exported_data[0]["converted_value"] == "sample piece"
+            assert len(exported_data[0]["scores"]) == 1
+            assert exported_data[0]["scores"][0]["score_value"] == 10
 
 
 def test_export_all_conversations_with_scores_empty_data(sqlite_instance: MemoryInterface):
     sqlite_instance.exporter = MemoryExporter()
-    expected_data: Sequence = []
     with tempfile.NamedTemporaryFile(delete=True, suffix=".json") as temp_file:
         with (
-            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_prompt_request_pieces") as mock_get_pieces,
-            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_prompt_scores") as mock_get_scores,
-            patch.object(sqlite_instance.exporter, "export_data") as mock_export_data,
+            patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_prompt_request_pieces") as mock_get_pieces,
+            patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_prompt_scores") as mock_get_scores,
         ):
             file_path = Path(temp_file.name)
 
             mock_get_pieces.return_value = []
             mock_get_scores.return_value = []
 
-            sqlite_instance.export_conversations(file_path=file_path)
-            mock_export_data.assert_called_once_with(expected_data, file_path=file_path, export_type="json")
+            result_path = sqlite_instance.export_conversations(file_path=file_path)
+
+            # Verify the file was created and is empty JSON array
+            assert result_path == file_path
+            assert file_path.exists()
+
+            # Read and verify the exported JSON content is empty
+            import json
+
+            with open(file_path, "r") as f:
+                exported_data = json.load(f)
+
+            assert exported_data == []

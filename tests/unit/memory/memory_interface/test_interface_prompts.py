@@ -477,7 +477,7 @@ def test_add_request_pieces_to_memory_calls_validate(sqlite_instance: MemoryInte
     request_response = MagicMock(PromptRequestResponse)
     request_response.request_pieces = [MagicMock(PromptRequestPiece)]
     with (
-        patch("pyrit.memory.duckdb_memory.DuckDBMemory.add_request_pieces_to_memory"),
+        patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_request_pieces_to_memory"),
         patch("pyrit.memory.memory_interface.MemoryInterface._update_sequence"),
     ):
         sqlite_instance.add_request_response_to_memory(request=request_response)
@@ -492,7 +492,7 @@ def test_add_request_pieces_to_memory_updates_sequence(
         conversation.role = sample_conversations[0].role
         conversation.sequence = 17
 
-    with patch("pyrit.memory.duckdb_memory.DuckDBMemory.add_request_pieces_to_memory") as mock_add:
+    with patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_request_pieces_to_memory") as mock_add:
         sqlite_instance.add_request_response_to_memory(
             request=PromptRequestResponse(request_pieces=sample_conversations)
         )
@@ -516,7 +516,7 @@ def test_add_request_pieces_to_memory_updates_sequence_with_prev_conversation(
     # insert one of these into memory
     sqlite_instance.add_request_response_to_memory(request=PromptRequestResponse(request_pieces=sample_conversations))
 
-    with patch("pyrit.memory.duckdb_memory.DuckDBMemory.add_request_pieces_to_memory") as mock_add:
+    with patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_request_pieces_to_memory") as mock_add:
         sqlite_instance.add_request_response_to_memory(
             request=PromptRequestResponse(request_pieces=sample_conversations)
         )
@@ -539,8 +539,8 @@ def test_insert_prompt_memories_inserts_embedding(
     sqlite_instance.enable_embedding(embedding_model=embedding_mock)
 
     with (
-        patch("pyrit.memory.duckdb_memory.DuckDBMemory.add_request_pieces_to_memory"),
-        patch("pyrit.memory.duckdb_memory.DuckDBMemory._add_embeddings_to_memory") as mock_embedding,
+        patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_request_pieces_to_memory"),
+        patch("pyrit.memory.sqlite_memory.SQLiteMemory._add_embeddings_to_memory") as mock_embedding,
     ):
 
         sqlite_instance.add_request_response_to_memory(request=request)
@@ -561,8 +561,8 @@ def test_insert_prompt_memories_not_inserts_embedding(
     sqlite_instance.disable_embedding()
 
     with (
-        patch("pyrit.memory.duckdb_memory.DuckDBMemory.add_request_pieces_to_memory"),
-        patch("pyrit.memory.duckdb_memory.DuckDBMemory._add_embeddings_to_memory") as mock_embedding,
+        patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_request_pieces_to_memory"),
+        patch("pyrit.memory.sqlite_memory.SQLiteMemory._add_embeddings_to_memory") as mock_embedding,
     ):
 
         sqlite_instance.add_request_response_to_memory(request=request)
