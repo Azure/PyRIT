@@ -78,6 +78,7 @@ chapters:
         - file: code/converters/7_video_converters
         - file: code/converters/ansi_attack_converter
         - file: code/converters/char_swap_attack_converter
+        - file: code/converters/first_letter_converter
         - file: code/converters/pdf_converter
         - file: code/converters/math_prompt_converter
     - file: code/scoring/0_scoring
