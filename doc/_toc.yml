@@ -5,6 +5,7 @@ chapters:
     sections:
     - file: cookbooks/1_sending_prompts
     - file: cookbooks/2_precomputing_turns
+    - file: cookbooks/copyright_violations
   - file: setup/install_pyrit
     sections:
     - file: setup/jupyter_setup
@@ -86,7 +87,6 @@ chapters:
         - file: code/converters/7_video_converters
         - file: code/converters/ansi_attack_converter
         - file: code/converters/char_swap_attack_converter
-        - file: code/converters/first_letter_converter
         - file: code/converters/pdf_converter
         - file: code/converters/math_prompt_converter
     - file: code/scoring/0_scoring
