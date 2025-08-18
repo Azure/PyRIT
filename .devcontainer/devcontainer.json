@@ -20,7 +20,7 @@
         "python.analysis.typeCheckingMode": "basic",
         "python.analysis.diagnosticMode": "openFilesOnly",
         "python.analysis.autoSearchPaths": false,
-        "python.analysis.indexing": false,
+        "python.analysis.indexing": true,
         "python.analysis.userFileIndexingLimit": 2000,
         "python.analysis.persistAllIndices": false,
         "python.analysis.cacheFolderPath": "/home/vscode/.cache/pylance",

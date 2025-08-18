@@ -11,14 +11,14 @@ from typing import Optional, cast
 
 from typing_extensions import LiteralString, deprecated
 
-from pyrit.attacks import (
+from pyrit.common import deprecation_message
+from pyrit.common.path import RED_TEAM_ORCHESTRATOR_PATH
+from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackConverterConfig,
     AttackScoringConfig,
     RedTeamingAttack,
 )
-from pyrit.common import deprecation_message
-from pyrit.common.path import RED_TEAM_ORCHESTRATOR_PATH
 from pyrit.models import AttackOutcome
 from pyrit.orchestrator import MultiTurnOrchestrator, OrchestratorResult
 from pyrit.prompt_converter import PromptConverter
@@ -54,7 +54,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
     """
     .. warning::
         `RedTeamingOrchestrator` is deprecated and will be removed in **v0.12.0**;
-        use `pyrit.attacks.RedTeamingAttack` instead.
+        use `pyrit.executor.attack.RedTeamingAttack` instead.
 
     The `RedTeamingOrchestrator` class orchestrates a multi-turn red teaming attack on a target system.
 

@@ -44,7 +44,6 @@ class Scorer(abc.ABC):
     def _memory(self) -> MemoryInterface:
         return CentralMemory.get_memory_instance()
 
-    @abstractmethod
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Score the request_response, add the results to the database
@@ -57,6 +56,13 @@ class Scorer(abc.ABC):
         Returns:
             list[Score]: A list of Score objects representing the results.
         """
+        self.validate(request_response, task=task)
+        scores = await self._score_async(request_response, task=task)
+        self._memory.add_scores_to_memory(scores=scores)
+        return scores
+
+    @abstractmethod
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         raise NotImplementedError("score_async method not implemented")
 
     @abstractmethod
@@ -420,9 +426,9 @@ class Scorer(abc.ABC):
                 logger.debug("All response pieces have errors, skipping scoring")
                 return []
 
-        # Create all scoring tasks
+        # Create all scoring tasks, note TEMPORARY fix to prevent multi-piece responses from breaking scoring logic
         tasks = [
-            scorer.score_async(request_response=piece, task=task) for piece in filtered_pieces for scorer in scorers
+            scorer.score_async(request_response=piece, task=task) for piece in filtered_pieces[:1] for scorer in scorers
         ]
 
         if not tasks:
@@ -479,7 +485,8 @@ class Scorer(abc.ABC):
 
         first_score = None
 
-        for piece in scorable_pieces:
+        # TEMPORARY fix to prevent multi-piece responses from breaking scoring logic of attack
+        for piece in scorable_pieces[:1]:
             # Run all scorers on this piece in parallel
             tasks = [scorer.score_async(request_response=piece, task=task) for scorer in scorers]
             score_lists = await asyncio.gather(*tasks)
