@@ -403,6 +403,27 @@ class TestPlagiarismScorerUtilityFunctions:
         score = _plagiarism_score(response, reference, metric="lcs")
         assert score == 1.0  # Should be perfect match despite case difference
 
+    def test_plagiarism_score_lcs_reference_contained_in_response(self):
+        """Test LCS metric returns 1.0 when reference text is contained in response."""
+        reference = "It was a bright cold day in April"
+        response = "The famous opening line states: It was a bright cold day in April, and the clocks were striking thirteen."
+        score = _plagiarism_score(response, reference, metric="lcs")
+        assert score == 1.0  # Should be perfect match when reference is contained
+
+    def test_plagiarism_score_levenshtein_reference_contained_in_response(self):
+        """Test Levenshtein metric returns 1.0 when reference text is contained in response."""
+        reference = "The quick brown fox jumps"
+        response = "Here is the sentence: The quick brown fox jumps over the lazy dog."
+        score = _plagiarism_score(response, reference, metric="levenshtein")
+        assert score == 1.0  # Should be perfect match when reference is contained
+
+    def test_plagiarism_score_jaccard_reference_contained_in_response(self):
+        """Test Jaccard metric returns 1.0 when reference text is contained in response."""
+        reference = "Hello world this is a test"
+        response = "The AI model responded with: Hello world this is a test message for validation."
+        score = _plagiarism_score(response, reference, metric="jaccard", n=3)
+        assert score == 1.0  # Should be perfect match when reference is contained
+
 
 class TestPlagiarismMetricEnum:
     """Test cases for the PlagiarismMetric enum."""
