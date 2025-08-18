@@ -27,9 +27,6 @@ The `MemoryDatabaseType` is a `Literal` with 3 options: IN_MEMORY, SQLITE, AZURE
 **SQLITE:** _Persistent SQLite Database_
    - Interactions will be stored in a persistent `SQLiteMemory` instance with a location on-disk. See notebook [here](./1_sqlite_memory.ipynb) for more details.
 
-**DUCKDB:** _Persistent DuckDB Database_
-   - Interatctions will be stored in a persistent `DuckDB` instance with a location on disk.
-
 **AZURE_SQL:** _Azure SQL Database_
    - For examples on setting up `AzureSQLMemory`, please refer to the notebook [here](./7_azure_sql_memory_attacks.ipynb).
    - To configure AzureSQLMemory without an extra argument list, these keys should be in your `.env` file:

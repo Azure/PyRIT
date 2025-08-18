@@ -339,7 +339,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         # Get scores for the prompt pieces
         if prompt_pieces:
             prompt_request_response_ids = [str(piece.id) for piece in prompt_pieces]
-            scores = self.get_scores_by_prompt_ids(prompt_request_response_ids=prompt_request_response_ids)
+            scores = self.get_prompt_scores(prompt_ids=prompt_request_response_ids)
         else:
             scores = []
 

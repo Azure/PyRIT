@@ -468,7 +468,7 @@ async def test_injection_on_last_page(mock_pdf_path):
 
 
 @pytest.mark.asyncio
-async def test_filename_extension_default(duckdb_instance):
+async def test_filename_extension_default(sqlite_instance):
     converter = PDFConverter(
         prompt_template=None,
         font_type="Helvetica",
@@ -482,7 +482,7 @@ async def test_filename_extension_default(duckdb_instance):
 
 
 @pytest.mark.asyncio
-async def test_filename_extension_existing_pdf(duckdb_instance):
+async def test_filename_extension_existing_pdf(sqlite_instance):
     import tempfile
 
     import requests
