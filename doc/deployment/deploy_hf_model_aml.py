@@ -38,9 +38,9 @@
 #
 # 5. **AZURE_ML_MODEL_NAME_TO_DEPLOY**
 #    - If the model is listed in the AZURE ML Hugging Face model catalog, then supply the model name as shown in the following image.
-#    <br> <img src="./../../assets/aml_hf_model.png" alt="aml_hf_model.png" height="400"/> <br>
+#    <br> <img src="./../../assets/aml_hf_model.png" alt="AML Hugging Face model" height="400"/> <br>
 #    - If you intend to deploy the model from the AZURE ML workspace model registry, then use the model name as shown in the subsequent image.
-#    <br> <img src="./../../assets/aml_ws_model.png" alt="aml_ws_model.png" height="400"/> <br>
+#    <br> <img src="./../../assets/aml_ws_model.png" alt="AML workspace model" height="400"/> <br>
 # 6. **AZURE_ML_MODEL_VERSION_TO_DEPLOY**
 #    - You can find the details of the model version in the images from previous step associated with the respective model.
 #
@@ -212,7 +212,7 @@ workspace_ml_client.begin_create_or_update(endpoint).wait()
 # **Add deployment to an Azure ML endpoint created above**
 #
 # Please be aware that deploying, particularly larger models, may take some time. Once the deployment is finished, the provisioning state will be marked as 'Succeeded', as illustrated in the image below.
-# <br> <img src="./../../assets/aml_endpoint_deployment.png" alt="aml_endpoint_deployment.png" height="400"/> <br>
+# <br> <img src="./../../assets/aml_endpoint_deployment.png" alt="AML endpoint deployment" height="400"/> <br>
 
 # %%
 # create a deployment

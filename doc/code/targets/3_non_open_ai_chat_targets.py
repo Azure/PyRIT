@@ -27,7 +27,7 @@
 #    - Navigate to the AML Studio.
 #    - Go to the 'Endpoints' section.
 #    - Retrieve the API key and endpoint URI from the 'Consume' tab
-#    <br> <img src="../../../assets/aml_managed_online_endpoint_api_key.png" alt="aml_managed_online_endpoint_api_key.png" height="400"/> <br>
+#    <br> <img src="../../../assets/aml_managed_online_endpoint_api_key.png" alt="AML Managed Online Endpoint API Key" height="400"/> <br>
 #
 # 1. **Set the Environment Variable:**
 #    - Add the obtained API key to an environment variable named `AZURE_ML_KEY`. This is the default API key when the target is instantiated.
