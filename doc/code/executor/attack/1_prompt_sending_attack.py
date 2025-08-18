@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# # 1. PromptSendingAttack
+# # 1. Prompt Sending Attack (Single-Turn)
 #
 # `PromptSendingAttack` is a single-turn prompt sending attack strategy that allows you to send prompts to a target to try to achieve
 # a specific objective. It evaluates the target response using optional scorers to determine if the objective was achieved.
@@ -22,13 +22,13 @@
 # This demo showcases how to use the attack to send prompts, how to modify the prompts with converters, and how to view responses from the target.
 #
 # Before you begin, import the necessary libraries and ensure you are setup with the correct version of PyRIT installed and have secrets
-# configured as described [here](../../../../setup/populating_secrets.md).
+# configured as described [here](../../../setup/populating_secrets.md).
 #
 # The first example is as simple as it gets.
 #
 # > **Important Note:**
 # >
-# > It is required to manually set the memory instance using `initialize_pyrit`. For details, see the [Memory Configuration Guide](../../../memory/0_memory.md).
+# > It is required to manually set the memory instance using `initialize_pyrit`. For details, see the [Memory Configuration Guide](../../memory/0_memory.md).
 #
 
 # %%

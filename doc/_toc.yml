@@ -31,18 +31,13 @@ chapters:
       - file: code/datasets/1_seed_prompt
       - file: code/datasets/2_fetch_dataset
     - file: code/executor/0_executor
-      maxdepth: 5
       sections:
         - file: code/executor/attack/0_attack
           sections:
-          - file: code/executor/attack/multi_turn/0_multi_turn
-            sections:
-              - file: code/executor/attack/multi_turn/1_red_teaming_attack
-              - file: code/executor/attack/multi_turn/2_crescendo_attack
-          - file: code/executor/attack/single_turn/0_single_turn
-            sections:
-              - file: code/executor/attack/single_turn/1_prompt_sending_attack
-              - file: code/executor/attack/single_turn/skeleton_key_attack
+          - file: code/executor/attack/1_prompt_sending_attack
+          - file: code/executor/attack/2_red_teaming_attack
+          - file: code/executor/attack/3_crescendo_attack
+          - file: code/executor/attack/skeleton_key_attack
         - file: code/executor/workflow/0_workflow
           sections:
           - file: code/executor/workflow/1_xpia_workflow
@@ -105,7 +100,6 @@ chapters:
       - file: code/scoring/insecure_code_scorer
       - file: code/scoring/look_back_scorer
       - file: code/scoring/prompt_shield_scorer
-      - file: code/scoring/true_false_batch_scoring
       - file: code/scoring/human_in_the_loop_scorer_gradio
       - file: code/scoring/generic_scorers
       - file: code/scoring/scorer_evals

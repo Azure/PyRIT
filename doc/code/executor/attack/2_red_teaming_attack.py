@@ -13,7 +13,7 @@
 # ---
 
 # %% [markdown]
-# # 1. Red Teaming Attack
+# # 2. Red Teaming Attack (Multi-Turn)
 #
 # Multi-turn attacks implement strategies that attempt to achieve an objective against a LLM endpoint over several turns. These types of attacks are useful against endpoints that keep track of conversation history and can be more effective in achieving an objective than single-turn attacks.
 # In PyRIT, each multi-turn attack will require defining an `AttackAdversarialConfig`, where you can specify which LLM to use as the adversarial chat target. This LLM is used for the purpose of generating adversarial prompts that align with the attack strategy, so that the entire multi-turn attack
@@ -63,7 +63,7 @@
 #
 # Note that for this to succeed, the `AttackAdversarialConfig` requires an LLM endpoint without serious content moderation or other kinds of safety filtering mechanisms. Success depends on the model and may not be achieved every time.
 #
-# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../../../setup/populating_secrets.md).
+# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../../setup/populating_secrets.md).
 # %%
 import logging
 
