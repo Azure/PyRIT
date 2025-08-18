@@ -13,7 +13,7 @@
 # ---
 
 # %% [markdown]
-# # Using Generic Scorers
+# # Generic Self-Ask Scorer - optional
 #
 # This notebook shows how to use the generic self-ask scorer and flexibly modify the system prompt, scale, and output format. (The output must still be JSON format)
 #
