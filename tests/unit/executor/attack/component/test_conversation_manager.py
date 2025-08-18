@@ -480,7 +480,7 @@ class TestConversationStateUpdate:
         stored_conversation = manager.get_conversation(conversation_id)
         assert len(stored_conversation) == 2
 
-        # Verify that user and assistant pieces have the correct conversation_id and orechestrator_identifier
+        # Verify that user and assistant pieces have the correct conversation_id and orchestrator_identifier
         for stored_response in stored_conversation:
             for piece in stored_response.request_pieces:
                 assert piece.conversation_id == conversation_id

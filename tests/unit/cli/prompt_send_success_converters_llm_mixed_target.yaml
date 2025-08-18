@@ -1,4 +1,4 @@
-# Scenario: All converters require a converter_target, some use default adversarial_chat and some define their own
+# Scenario: All converters require a converter_target, some use default attack_adversarial_config and some define their own
 datasets:
   - ./pyrit/datasets/seed_prompts/illegal.prompt
 scenarios:
@@ -22,7 +22,7 @@ converters:
   - type: "TranslationConverter"
     language: "spanish"
   - type: "VariationConverter"
-adversarial_chat:
+attack_adversarial_config:
   type: "OpenAIChatTarget"
 database:
   type: "DuckDB"

@@ -12,6 +12,11 @@ import yaml
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from pyrit.common.initialization import MemoryDatabaseType
+from pyrit.executor.attack.core.attack_config import (
+    AttackAdversarialConfig,
+    AttackConverterConfig,
+    AttackScoringConfig,
+)
 from pyrit.prompt_converter.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 
@@ -68,7 +73,7 @@ class ScenarioConfig(BaseModel, extra="allow"):
     def create_attack(
         self,
         objective_target: Any,
-        adversarial_chat: Optional[Any] = None,
+        attack_adversarial_config: Optional[Any] = None,
         prompt_converters: Optional[List[Any]] = None,
         scoring_target: Optional[Any] = None,
         objective_scorer: Optional[Any] = None,
@@ -92,9 +97,9 @@ class ScenarioConfig(BaseModel, extra="allow"):
         # Building a map of complex top-level objects that belong outside the scenario
         complex_args = {
             "objective_target": objective_target,
-            "adversarial_chat": adversarial_chat,
+            "attack_adversarial_config": attack_adversarial_config,
+            "attack_scoring_config": objective_scorer,
             "scoring_target": scoring_target,
-            "objective_scorer": objective_scorer,
         }
 
         # Disallowing scenario-level overrides for these complex args
@@ -139,7 +144,7 @@ class TargetConfig(BaseModel, extra="allow"):
         )
 
         init_kwargs = self.model_dump(exclude={"class_name"})
-        return target_class(**init_kwargs)
+        return AttackAdversarialConfig(target=target_class(**init_kwargs))
 
 
 class ObjectiveScorerConfig(BaseModel, extra="allow"):
@@ -149,7 +154,7 @@ class ObjectiveScorerConfig(BaseModel, extra="allow"):
 
     type: str = Field(..., description="Scorer class (e.g. 'SelfAskRefusalScorer').")
 
-    def create_scorer(self, scoring_target_obj: Optional[Any] = None) -> Any:
+    def create_scorer_config(self, scoring_target_obj: Optional[Any] = None) -> Any:
         """
         Load and instantiate the scorer class.
         """
@@ -177,7 +182,7 @@ class ObjectiveScorerConfig(BaseModel, extra="allow"):
                     print(f"Converting {param_name} to Path")
                     init_kwargs[param_name] = Path(init_kwargs[param_name])
 
-        return scorer_class(**init_kwargs)
+        return AttackScoringConfig(objective_scorer=scorer_class(**init_kwargs))
 
 
 class ScoringConfig(BaseModel, extra="allow"):
@@ -188,7 +193,7 @@ class ScoringConfig(BaseModel, extra="allow"):
     """
 
     scoring_target: Optional[TargetConfig] = Field(
-        None, description="If provided, use this target for scoring instead of 'adversarial_chat'."
+        None, description="If provided, use this target for scoring instead of 'attack_adversarial_config'."
     )
     objective_scorer: Optional[ObjectiveScorerConfig] = Field(
         None, description="Details for the objective scorer, if any."
@@ -199,8 +204,7 @@ class ScoringConfig(BaseModel, extra="allow"):
         # we simply return None – no scorer to instantiate.
         if not self.objective_scorer:
             return None
-
-        return self.objective_scorer.create_scorer(scoring_target_obj=scoring_target_obj)
+        return self.objective_scorer.create_scorer_config(scoring_target_obj=scoring_target_obj)
 
 
 class ConverterConfig(BaseModel, extra="allow"):
@@ -211,7 +215,7 @@ class ConverterConfig(BaseModel, extra="allow"):
     class_name: str = Field(..., alias="type", description="The prompt converter class name (e.g. 'Base64Converter').")
 
     converter_target: Optional[TargetConfig] = Field(
-        None, description="If provided, use this target for the converter LLM instead of 'adversarial_chat'."
+        None, description="If provided, use this target for the converter LLM instead of 'attack_adversarial_config'."
     )
 
     def create_instance(self, converter_target: Optional[Any]) -> Any:
@@ -235,7 +239,7 @@ class ConverterConfig(BaseModel, extra="allow"):
                 )
             init_kwargs[converter_target_key] = converter_target
 
-        return converter_class(**init_kwargs)
+        return AttackConverterConfig(request_converters=converter_class(**init_kwargs))
 
 
 class ExecutionSettings(BaseModel):
@@ -257,7 +261,7 @@ class ScannerConfig(BaseModel):
     datasets: List[str] = Field(..., description="List of dataset YAML paths to load seed prompts from.")
     scenarios: List[ScenarioConfig] = Field(..., description="List of scenario attacks to execute.")
     objective_target: TargetConfig = Field(..., description="Configuration of the main (objective) chat target.")
-    adversarial_chat: Optional[TargetConfig] = Field(
+    attack_adversarial_config: Optional[TargetConfig] = Field(
         None, description="Configuration of the adversarial chat target (if any)."
     )
     scoring: Optional[ScoringConfig] = Field(None, description="Scoring configuration (if any).")
@@ -290,18 +294,18 @@ class ScannerConfig(BaseModel):
     def fill_scoring_target(self) -> "ScannerConfig":
         """
         If config.scoring exists but doesn't explicitly define a scoring_target,
-        default it to the adversarial_chat
+        default it to the attack_adversarial_config
         """
         if self.scoring:
-            if self.scoring.scoring_target is None and self.adversarial_chat is not None:
-                self.scoring.scoring_target = self.adversarial_chat
+            if self.scoring.scoring_target is None and self.attack_adversarial_config is not None:
+                self.scoring.scoring_target = self.attack_adversarial_config
         return self
 
     @model_validator(mode="after")
     def fill_converter_target(self) -> "ScannerConfig":
         """
         If config.converters are provided but don't explicitly define a converter_target,
-        default it to the adversarial_chat
+        default it to the attack_adversarial_config
         """
         if self.converters:
             for converter_cfg in self.converters:
@@ -319,9 +323,9 @@ class ScannerConfig(BaseModel):
                 if (
                     converter_target_key in signature.parameters
                     and converter_cfg.converter_target is None
-                    and self.adversarial_chat is not None
+                    and self.attack_adversarial_config is not None
                 ):
-                    converter_cfg.converter_target = self.adversarial_chat
+                    converter_cfg.converter_target = self.attack_adversarial_config
 
         return self
 
@@ -337,7 +341,7 @@ class ScannerConfig(BaseModel):
     def create_objective_scorer(self) -> Optional[Any]:
         """
         if there's an objective scorer configured,
-        instantiate it using 'scoring_target' (which might be adversarial_chat).
+        instantiate it using 'scoring_target' (which might be attack_adversarial_config).
         """
         if not self.scoring:
             return None
@@ -368,13 +372,13 @@ class ScannerConfig(BaseModel):
     ) -> list[Any]:
         """
         Helper method to instantiate all attacks from the scenario configs,
-        injecting objective_target, adversarial_chat, scoring_target, objective_scorer, etc.
+        injecting objective_target, attack_adversarial_config, scoring_target, objective_scorer, etc.
         """
         # Instantiate the top-level targets
         objective_target_obj = self.objective_target.create_instance()
-        adversarial_chat_obj = None
-        if self.adversarial_chat:
-            adversarial_chat_obj = self.adversarial_chat.create_instance()
+        adversarial_config = None
+        if self.attack_adversarial_config:
+            adversarial_config = self.attack_adversarial_config.create_instance()
 
         # If there is a scoring_target or an objective_scorer:
         scoring_target_obj = None
@@ -391,7 +395,7 @@ class ScannerConfig(BaseModel):
         for scenario in self.scenarios:
             attack = scenario.create_attack(
                 objective_target=objective_target_obj,
-                adversarial_chat=adversarial_chat_obj,
+                attack_adversarial_config=adversarial_config,
                 prompt_converters=prompt_converters,
                 scoring_target=scoring_target_obj,
                 objective_scorer=objective_scorer_obj,

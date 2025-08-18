@@ -2,12 +2,12 @@ datasets:
   - ./pyrit/datasets/seed_prompts/illegal.prompt
 scenarios:
   - type: "TreeOfAttacksWithPruningAttack"
-    depth: 10
-    width: 7
+    tree_depth: 10
+    tree_width: 7
     branching_factor: 8
 objective_target:
   type: "OpenAIChatTarget"
-adversarial_chat:
+attack_adversarial_config:
   type: "OpenAIChatTarget"
 scoring:
   scoring_target:

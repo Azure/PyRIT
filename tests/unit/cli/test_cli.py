@@ -200,7 +200,7 @@ test_cases_error = [
 @pytest.mark.parametrize("command, attack_classes", test_cases_success)
 @patch("pyrit.common.default_values.get_required_value", return_value="value")
 def test_cli_success(get_required_value, command, attack_classes):
-    # Patching the request sending functionality since we don't want to test the orchestrator,
+    # Patching the request sending functionality since we don't want to test the attack,
     # but just the CLI part.
 
     with contextlib.ExitStack() as stack:

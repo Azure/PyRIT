@@ -5,7 +5,7 @@ scenarios:
 objective_target:
   type: "OpenAIChatTarget"
   max_tokens: 123
-adversarial_chat:
+attack_adversarial_config:
   type: "OpenAIChatTarget"
   max_tokens: 456
 scoring:
