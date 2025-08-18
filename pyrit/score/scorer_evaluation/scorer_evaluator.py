@@ -498,7 +498,7 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
 
         all_model_scores_list = []
         for _ in range(num_scorer_trials):
-            scores = await self.scorer.score_prompts_with_tasks_batch_async(
+            scores = await self.scorer.score_prompts_batch_async(
                 request_responses=assistant_responses, tasks=objectives
             )
 

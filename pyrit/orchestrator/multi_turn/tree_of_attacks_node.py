@@ -120,7 +120,7 @@ class TreeOfAttacksNode:
         self.objective_score = (
             await self._objective_scorer.score_async(
                 request_response=response,
-                task=objective,
+                objective=objective,
             )
         )[0]
 

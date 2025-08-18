@@ -20,23 +20,14 @@ from pyrit.models import (
     Score,
     data_serializer_factory,
 )
-from pyrit.score.scorer import Scorer
+from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
+from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
-# Supported image formats for Azure as per https://learn.microsoft.com/en-us/azure/ai-services/content-safety/
-# quickstart-image?tabs=visual-studio%2Cwindows&pivots=programming-language-rest
-AZURE_CONTENT_FILTER_SCORER_SUPPORTED_IMAGE_FORMATS = [
-    ".jpg",
-    ".jpeg",
-    ".png",
-    ".gif",
-    ".bmp",
-    ".tiff",
-    ".tif",
-    ".webp",
-]
+class AzureContentFilterScorer(FloatScaleScorer):
 
-
-class AzureContentFilterScorer(Scorer):
+    _default_validator: ScorerPromptValidator = ScorerPromptValidator(
+        supported_data_types=["text", "image_path"],
+    )
 
     API_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_CONTENT_SAFETY_API_KEY"
     ENDPOINT_URI_ENVIRONMENT_VARIABLE: str = "AZURE_CONTENT_SAFETY_API_ENDPOINT"
@@ -44,10 +35,11 @@ class AzureContentFilterScorer(Scorer):
     def __init__(
         self,
         *,
-        endpoint: Optional[str] = None,
-        api_key: Optional[str] = None,
+        endpoint: Optional[str | None] = None,
+        api_key: Optional[str | None] = None,
         use_aad_auth: bool = False,
         harm_categories: Optional[list[TextCategory]] = None,
+        validator: Optional[ScorerPromptValidator] = None
     ) -> None:
         """
         Class that initializes an Azure Content Filter Scorer
@@ -63,7 +55,7 @@ class AzureContentFilterScorer(Scorer):
                 azure.ai.contentsafety.models.TextCategory.
         """
 
-        self.scorer_type = "float_scale"
+        super().__init__(validator=validator or self._default_validator)
 
         if harm_categories:
             self._score_categories = [category.value for category in harm_categories]
@@ -91,11 +83,11 @@ class AzureContentFilterScorer(Scorer):
         else:
             raise ValueError("Please provide the Azure Content Safety endpoint")
 
-    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
         """Evaluating the input text or image using the Azure Content Filter API
 
         Args:
-            request_response (PromptRequestPiece): The prompt request piece containing the text to be scored.
+            request_piece (PromptRequestPiece): The prompt request piece containing the text to be scored.
                 Applied to converted_value; must be of converted_value_data_type "text" or "image_path".
                 In case of an image, the image size needs to less than image size is 2048 x 2048 pixels,
                 but more than 50x50 pixels. The data size should not exceed exceed 4 MB. Image must be
@@ -114,16 +106,16 @@ class AzureContentFilterScorer(Scorer):
             ValueError if converted_value_data_type is not "text" or "image_path" or image isn't in supported format
         """
         filter_result: dict[str, list] = {}
-        if request_response.converted_value_data_type == "text":
+        if request_piece.converted_value_data_type == "text":
             text_request_options = AnalyzeTextOptions(
-                text=request_response.converted_value,
+                text=request_piece.converted_value,
                 categories=self._score_categories,
                 output_type="EightSeverityLevels",
             )
             filter_result = self._azure_cf_client.analyze_text(text_request_options)  # type: ignore
 
-        elif request_response.converted_value_data_type == "image_path":
-            base64_encoded_data = await self._get_base64_image_data(request_response)
+        elif request_piece.converted_value_data_type == "image_path":
+            base64_encoded_data = await self._get_base64_image_data(request_piece)
             image_data = ImageData(content=base64_encoded_data)
             image_request_options = AnalyzeImageOptions(
                 image=image_data, categories=self._score_categories, output_type="FourSeverityLevels"
@@ -140,18 +132,19 @@ class AzureContentFilterScorer(Scorer):
 
             # Severity as defined here
             # https://learn.microsoft.com/en-us/azure/ai-services/content-safety/concepts/harm-categories?tabs=definitions#severity-levels
-            metadata = {"azure_severity": str(value)}
+            metadata: dict[str, str | int] = {"azure_severity": int(value)}
+
 
             score = Score(
                 score_type="float_scale",
                 score_value=str(normalized_value),
-                score_value_description=None,
+                score_value_description="",
                 score_category=category,
-                score_metadata=str(metadata),
-                score_rationale=None,
+                score_metadata=metadata,
+                score_rationale="",
                 scorer_class_identifier=self.get_identifier(),
-                prompt_request_response_id=request_response.id,
-                task=task,
+                prompt_request_response_id=request_piece.id,
+                objective=objective,
             )
             scores.append(score)
 
@@ -166,16 +159,3 @@ class AzureContentFilterScorer(Scorer):
         base64_encoded_data = await image_serializer.read_data_base64()
         return base64_encoded_data
 
-    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
-        if (
-            request_response.converted_value_data_type != "text"
-            and request_response.converted_value_data_type != "image_path"
-        ):
-            raise ValueError("Azure Content Filter Scorer only supports text and image_path data type")
-        if request_response.converted_value_data_type == "image_path":
-            ext = DataTypeSerializer.get_extension(request_response.converted_value)
-            if ext.lower() not in AZURE_CONTENT_FILTER_SCORER_SUPPORTED_IMAGE_FORMATS:
-                raise ValueError(
-                    f"Unsupported image format: {ext}. Supported formats are: \
-                        {AZURE_CONTENT_FILTER_SCORER_SUPPORTED_IMAGE_FORMATS}"
-                )

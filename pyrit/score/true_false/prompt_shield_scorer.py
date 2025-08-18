@@ -10,11 +10,15 @@ from pyrit.memory import PromptMemoryEntry
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score, ScoreType
 from pyrit.prompt_target import PromptShieldTarget
 from pyrit.score.scorer import Scorer
+from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
+from pyrit.score.true_false.true_false_score_aggregator import OR_, TrueFalseScoreAggregator
+from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
+
 
 logger = logging.getLogger(__name__)
 
 
-class PromptShieldScorer(Scorer):
+class PromptShieldScorer(TrueFalseScorer):
     """
     Returns true if an attack or jailbreak has been detected by Prompt Shield.
     """
@@ -23,26 +27,31 @@ class PromptShieldScorer(Scorer):
     _conversation_id: str
     _prompt_shield_target: PromptShieldTarget
 
+    _default_validator: ScorerPromptValidator = ScorerPromptValidator(
+        supported_data_types=["text"]
+    )
+
     def __init__(
         self,
+        *,
         prompt_shield_target: PromptShieldTarget,
+        validator: Optional[ScorerPromptValidator] = None,
+        score_aggregator: TrueFalseScoreAggregator = OR_
     ) -> None:
+        super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
         self._prompt_target = prompt_shield_target
-        self.scorer_type = "true_false"
 
-    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
-        self.validate(request_response=request_response)
-
+    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
         self._conversation_id = str(uuid.uuid4())
 
-        body = request_response.original_value
+        body = request_piece.original_value
 
         request = PromptRequestResponse(
             [
                 PromptRequestPiece(
                     role="user",
                     original_value=body,
-                    prompt_metadata=request_response.prompt_metadata,
+                    prompt_metadata=request_piece.prompt_metadata,
                     conversation_id=self._conversation_id,
                     prompt_target_identifier=self._prompt_target.get_identifier(),
                 )
@@ -51,22 +60,27 @@ class PromptShieldScorer(Scorer):
 
         # The body of the Prompt Shield response
         target_response = await self._prompt_target.send_prompt_async(prompt_request=request)
-
         response: str = target_response.get_value()
 
         # Whether or not any of the documents or userPrompt got flagged as an attack
         result: bool = any(self._parse_response_to_boolean_list(response))
 
+        # Store parsed response in metadata for structured access
+        try:
+            meta = json.loads(response)
+        except Exception:
+            meta = {"raw": response}
+
         score = Score(
             score_type="true_false",
             score_value=str(result),
-            score_value_description=None,
-            score_category="attack_detection",
-            score_metadata=response,
-            score_rationale=None,
+            score_value_description="True if an attack or jailbreak has been detected, else False.",
+            score_category=["attack_detection"],
+            score_metadata=meta,
+            score_rationale="",
             scorer_class_identifier=self.get_identifier(),
-            prompt_request_response_id=request_response.id,
-            task=task,
+            prompt_request_response_id=request_piece.id,
+            objective=objective,
         )
 
         return [score]
@@ -97,10 +111,4 @@ class PromptShieldScorer(Scorer):
 
         return user_detections + document_detections
 
-    def validate(self, request_response: Any, task: Optional[str] = None) -> None:
-        if not isinstance(request_response, PromptRequestPiece) and not isinstance(request_response, PromptMemoryEntry):
-            raise ValueError(
-                f"Scorer expected PromptRequestPiece: Got {type(request_response)} with contents {request_response}"
-            )
-        if request_response.converted_value_data_type != "text":
-            raise ValueError("Expected text data type")
+    

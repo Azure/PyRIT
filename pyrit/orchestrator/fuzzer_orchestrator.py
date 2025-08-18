@@ -337,7 +337,7 @@ class FuzzerOrchestrator(Orchestrator):
             response_pieces = [response.request_pieces[0] for response in responses]
 
             # 5. Score responses.
-            scores = await self._scorer.score_prompts_with_tasks_batch_async(
+            scores = await self._scorer.score_prompts_batch_async(
                 request_responses=response_pieces, tasks=self._prompts
             )
             score_values = [score.get_value() for score in scores]

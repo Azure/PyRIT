@@ -5,21 +5,22 @@ import uuid
 from typing import Optional
 
 from pyrit.models import PromptRequestPiece, Score
+from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.score.scorer import Scorer
+from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
+from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
-class TrueFalseInverterScorer(Scorer):
+class TrueFalseInverterScorer(TrueFalseScorer):
     """A scorer that inverts a true false score."""
 
-    def __init__(self, *, scorer: Scorer) -> None:
+    def __init__(self, *, scorer: TrueFalseScorer, validator: Optional[ScorerPromptValidator] = None) -> None:
+        if (type(scorer) is not TrueFalseScorer):
+            raise ValueError("The scorer must be a true false scorer")
         self._scorer = scorer
 
-        if not scorer.scorer_type == "true_false":
-            raise ValueError("The scorer must be a true false scorer")
 
-        self.scorer_type = "true_false"
-
-    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_async(self, request_response: PromptRequestResponse, *, objective: Optional[str] = None) -> list[Score]:
         """Scores the piece using the underlying true-false scorer and returns the opposite score.
 
         Args:
@@ -29,7 +30,7 @@ class TrueFalseInverterScorer(Scorer):
         Returns:
             list[Score]: The scores.
         """
-        scores = await self._scorer.score_async(request_response, task=task)
+        scores = await self._scorer.score_async(request_response, objective=task)
         for score in scores:
             score.score_value = str(True) if not score.get_value() else str(False)
             score.score_value_description = "Inverted score: " + str(score.score_value_description)
@@ -42,6 +43,4 @@ class TrueFalseInverterScorer(Scorer):
 
         return scores
 
-    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> None:
-        """Validates the request response for scoring."""
-        self._scorer.validate(request_response, task=task)
+    

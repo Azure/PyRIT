@@ -11,6 +11,9 @@ from pyrit.common.path import CONTENT_CLASSIFIERS_PATH
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer import Scorer
+from pyrit.score.true_false.true_false_score_aggregator import TrueFalseScoreAggregator, OR_
+from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
+from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
 class ContentClassifierPaths(enum.Enum):
@@ -18,7 +21,7 @@ class ContentClassifierPaths(enum.Enum):
     SENTIMENT_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "sentiment.yaml").resolve()
 
 
-class SelfAskCategoryScorer(Scorer):
+class SelfAskCategoryScorer(TrueFalseScorer):
     """
     A class that represents a self-ask score for text classification and scoring.
     Given a classifer file, it scores according to these categories and returns the category
@@ -27,10 +30,15 @@ class SelfAskCategoryScorer(Scorer):
     There is also a false category that is used if the promptrequestpiece does not fit any of the categories.
     """
 
+    _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
+
     def __init__(
         self,
+        *,
         chat_target: PromptChatTarget,
         content_classifier: Path,
+        score_aggregator: TrueFalseScoreAggregator = OR_,
+        validator: Optional[ScorerPromptValidator] = None,
     ) -> None:
         """
         Initializes a new instance of the SelfAskCategoryScorer class.
@@ -39,8 +47,9 @@ class SelfAskCategoryScorer(Scorer):
             chat_target (PromptChatTarget): The chat target to interact with.
             content_classifier (Path): The path to the classifier file.
         """
+        super().__init__(score_aggregator=score_aggregator, validator=validator or self._default_validator)
+        
         self._prompt_target = chat_target
-        self.scorer_type = "true_false"
 
         category_file_contents = yaml.safe_load(content_classifier.read_text(encoding="utf-8"))
 
@@ -82,7 +91,7 @@ class SelfAskCategoryScorer(Scorer):
 
         return category_descriptions
 
-    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
         """
         Scores the given request_response using the chat target.
 
@@ -100,16 +109,15 @@ class SelfAskCategoryScorer(Scorer):
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=self._system_prompt,
-            prompt_request_value=request_response.converted_value,
-            prompt_request_data_type=request_response.converted_value_data_type,
-            scored_prompt_id=request_response.id,
-            task=task,
-            orchestrator_identifier=request_response.orchestrator_identifier,
+            prompt_request_value=request_piece.converted_value,
+            prompt_request_data_type=request_piece.converted_value_data_type,
+            scored_prompt_id=request_piece.id,
+            objective=objective,
+            orchestrator_identifier=request_piece.orchestrator_identifier,
         )
 
         score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value)
 
         return [score]
 
-    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
-        pass
+    

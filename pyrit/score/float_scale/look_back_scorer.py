@@ -11,12 +11,13 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.models import PromptRequestPiece, SeedPrompt
 from pyrit.models.score import Score, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.score.scorer import Scorer
+from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
+from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
 logger = logging.getLogger(__name__)
 
 
-class LookBackScorer(Scorer):
+class LookBackScorer(FloatScaleScorer):
     """
     Create a score from analyzing the entire conversation and adds them to the database.
 
@@ -26,7 +27,10 @@ class LookBackScorer(Scorer):
             Must be passed as a keyword argument.
     """
 
-    def __init__(self, chat_target: PromptChatTarget, *, exclude_instruction_prompts: bool) -> None:
+    _default_validator: ScorerPromptValidator = ScorerPromptValidator()
+
+    def __init__(self, chat_target: PromptChatTarget, *, exclude_instruction_prompts: bool, validator: Optional[ScorerPromptValidator] = None) -> None:
+        super().__init__(validator=validator or self._default_validator)
         self._prompt_target = chat_target
         self.scorer_type = "float_scale"
         self.exclude_instruction_prompts = exclude_instruction_prompts
@@ -43,7 +47,7 @@ class LookBackScorer(Scorer):
             step_description=behavior_change_scale
         )
 
-    async def _score_async(self, request_piece: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
         """
         Scores the entire conversation based on detected behavior change.
 
@@ -97,5 +101,4 @@ class LookBackScorer(Scorer):
         )
         return [score]
 
-    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
-        pass
+    

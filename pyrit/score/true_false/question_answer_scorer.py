@@ -8,20 +8,30 @@ from typing import Optional
 from pyrit.models import Score
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.score import Scorer
+from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
+from pyrit.score.true_false.true_false_score_aggregator import OR_, TrueFalseScoreAggregator
+from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
-class QuestionAnswerScorer(Scorer):
+class QuestionAnswerScorer(TrueFalseScorer):
     """
     A class that represents a question answering scorer.
     """
 
     CORRECT_ANSWER_MATCHING_PATTERNS = ["{correct_answer_index}:", "{correct_answer}"]
 
+    _default_validator: ScorerPromptValidator = ScorerPromptValidator(
+        supported_data_types=["text"],
+        required_metadata=["correct_answer_index", "correct_answer"]
+    )
+
     def __init__(
         self,
         *,
         correct_answer_matching_patterns: list[str] = CORRECT_ANSWER_MATCHING_PATTERNS,
-        category: str = "",
+        category: Optional[list[str]] = None,
+        validator: Optional[ScorerPromptValidator] = None,
+        score_aggregator: TrueFalseScoreAggregator = OR_
     ) -> None:
         """
         Scores PromptRequestResponse objects that contain correct_answer_index and/or correct_answer metadata
@@ -31,11 +41,11 @@ class QuestionAnswerScorer(Scorer):
                 pattern is found in the response, the score will be True. These patterns should be format strings
                 that will be formatted with the correct answer metadata.
         """
+        super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
         self._correct_answer_matching_patterns = correct_answer_matching_patterns
         self._score_category = category
-        self.scorer_type = "true_false"
 
-    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
         """
         Score the request_reponse using the QuestionAnsweringEntry
         and return a single score object
@@ -50,12 +60,12 @@ class QuestionAnswerScorer(Scorer):
         result = False
         matching_text = None
 
-        correct_index = request_response.prompt_metadata["correct_answer_index"]
-        correct_answer = request_response.prompt_metadata["correct_answer"]
+        correct_index = request_piece.prompt_metadata["correct_answer_index"]
+        correct_answer = request_piece.prompt_metadata["correct_answer"]
 
         for pattern in self._correct_answer_matching_patterns:
             text = pattern.format(correct_answer_index=correct_index, correct_answer=correct_answer).lower()
-            if text in request_response.converted_value.lower():
+            if text in request_piece.converted_value.lower():
                 result = True
                 matching_text = text
                 break
@@ -63,9 +73,9 @@ class QuestionAnswerScorer(Scorer):
         scores = [
             Score(
                 score_value=str(result),
-                score_value_description=None,
+                score_value_description="",
                 score_metadata=None,
-                score_type=self.scorer_type,
+                score_type="true_false",
                 score_category=self._score_category,
                 score_rationale=(
                     f"Found matching text '{matching_text}' in response"
@@ -73,29 +83,9 @@ class QuestionAnswerScorer(Scorer):
                     else "No matching text found in response"
                 ),
                 scorer_class_identifier=self.get_identifier(),
-                prompt_request_response_id=request_response.id,
-                task=task,
+                prompt_request_response_id=request_piece.id,
+                objective=objective,
             )
         ]
 
         return scores
-
-    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
-        """
-        Validates the request_response piece to score. Because some scorers may require
-        specific PromptRequestPiece types or values.
-
-        Args:
-            request_response (PromptRequestPiece): The request response to be validated.
-            task (str): The task based on which the text should be scored (the original attacker model's objective).
-        """
-        if request_response.converted_value_data_type != "text":
-            raise ValueError("Question Answer Scorer only supports text data type")
-
-        if not request_response.prompt_metadata or (
-            "correct_answer_index" not in request_response.prompt_metadata
-            and "correct_answer" not in request_response.prompt_metadata
-        ):
-            raise ValueError(
-                "Question Answer Scorer requires metadata with either correct_answer_index or correct_answer"
-            )

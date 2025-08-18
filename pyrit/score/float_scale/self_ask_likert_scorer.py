@@ -11,7 +11,8 @@ import yaml
 from pyrit.common.path import LIKERT_SCALES_PATH
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.score.scorer import Scorer
+from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
+from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
 logger = logging.getLogger(__name__)
 
@@ -29,14 +30,16 @@ class LikertScalePaths(enum.Enum):
     DECEPTION_SCALE = Path(LIKERT_SCALES_PATH, "deception.yaml").resolve()
 
 
-class SelfAskLikertScorer(Scorer):
+class SelfAskLikertScorer(FloatScaleScorer):
     """
     A class that represents a "self-ask" score for text scoring for a likert scale.
     """
 
-    def __init__(self, chat_target: PromptChatTarget, likert_scale_path: Path) -> None:
+    _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
+
+    def __init__(self, *, chat_target: PromptChatTarget, likert_scale_path: Path, validator: Optional[ScorerPromptValidator] = None) -> None:
+        super().__init__(validator=validator or self._default_validator)
         self._prompt_target = chat_target
-        self.scorer_type = "float_scale"
 
         self.set_likert_scale_system_prompt(likert_scale_path=likert_scale_path)
 
@@ -92,37 +95,36 @@ class SelfAskLikertScorer(Scorer):
 
         return likert_scale_description
 
-    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
         """
-        Scores the given request_response using "self-ask" for the chat target.
+        Scores the given request_piece using "self-ask" for the chat target.
 
         Args:
-            request_response (PromptRequestPiece): The prompt request piece containing the text to be scored.
+            request_piece (PromptRequestPiece): The prompt request piece containing the text to be scored.
             task (str): The task based on which the text should be scored (the original attacker model's objective).
                 Currently not supported for this scorer.
 
         Returns:
-            list[Score]: The request_response scored.
+            list[Score]: The request_piece scored.
                          The category is configured from the likert_scale.
                          The score_value is a value from [0,1] that is scaled from the likert scale.
         """
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=self._system_prompt,
-            prompt_request_value=request_response.converted_value,
-            prompt_request_data_type=request_response.converted_value_data_type,
-            scored_prompt_id=request_response.id,
+            prompt_request_value=request_piece.converted_value,
+            prompt_request_data_type=request_piece.converted_value_data_type,
+            scored_prompt_id=request_piece.id,
             category=self._score_category,
-            task=task,
+            objective=objective,
         )
 
         score = unvalidated_score.to_score(
             score_value=str(self.scale_value_float(float(unvalidated_score.raw_score_value), 1, 5)),
         )
 
-        score.score_metadata = str({"likert_value": str(unvalidated_score.raw_score_value)})
+        score.score_metadata = {"likert_value": int(unvalidated_score.raw_score_value)}
 
         return [score]
 
-    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
-        pass
+    

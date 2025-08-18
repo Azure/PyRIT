@@ -9,6 +9,7 @@ from pyrit.executor.core import StrategyConverterConfig
 from pyrit.models.seed_prompt import SeedPrompt
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.score import Scorer
+from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
 @dataclass
@@ -40,7 +41,7 @@ class AttackScoringConfig:
     """
 
     # Primary scorer for evaluating attack effectiveness
-    objective_scorer: Optional[Scorer] = None
+    objective_scorer: Optional[TrueFalseScorer] = None
 
     # Refusal scorer for detecting refusals or non-compliance
     refusal_scorer: Optional[Scorer] = None

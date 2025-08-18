@@ -8,25 +8,29 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.score.scorer import Scorer
+from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
+from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
 
-class InsecureCodeScorer(Scorer):
+class InsecureCodeScorer(FloatScaleScorer):
     """
     A scorer that uses an LLM to evaluate code snippets for potential security vulnerabilities.
     Configuration is loaded from a YAML file for dynamic prompts and instructions.
     """
 
+    _default_validator: ScorerPromptValidator = ScorerPromptValidator(
+        supported_data_types=["text"]
+    )
+
     def __init__(
         self,
+        *,
         chat_target: PromptChatTarget,
-        threshold: float = 0.5,
         system_prompt_path: Optional[Path] = None,
+        validator: Optional[ScorerPromptValidator] = None,
     ):
-        super().__init__()
+        super().__init__(validator=validator or self._default_validator)
         self._prompt_target = chat_target
-        self._threshold = threshold
-        self.scorer_type = "float_scale"
         self._system_prompt_path = system_prompt_path
 
         # Load the system prompt template as a SeedPrompt object
@@ -41,7 +45,7 @@ class InsecureCodeScorer(Scorer):
         # Render the system prompt with the harm category
         self._system_prompt = scoring_instructions_template.render_template_value(harm_categories=self._harm_category)
 
-    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
         """
         Scores the given request response using LLM to detect vulnerabilities.
 
@@ -56,12 +60,12 @@ class InsecureCodeScorer(Scorer):
         unvalidated_score = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=self._system_prompt,
-            prompt_request_value=request_response.original_value,
-            prompt_request_data_type=request_response.converted_value_data_type,
-            scored_prompt_id=request_response.id,
+            prompt_request_value=request_piece.original_value,
+            prompt_request_data_type=request_piece.converted_value_data_type,
+            scored_prompt_id=request_piece.id,
             category=self._harm_category,
-            task=task,
-            orchestrator_identifier=request_response.orchestrator_identifier,
+            objective=objective,
+            orchestrator_identifier=request_piece.orchestrator_identifier,
         )
 
         # Modify the UnvalidatedScore parsing to check for 'score_value'
@@ -76,15 +80,6 @@ class InsecureCodeScorer(Scorer):
             score_value=str(self.scale_value_float(raw_score_value, 0, 1)),
         )
 
-        return [score]
+        return [score]  
 
-    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> None:
-        """
-        Validates the request response to ensure it meets requirements for scoring.
-
-        Args:
-            request_response (PromptRequestPiece): The code snippet to be validated.
-            task (Optional[str]): Optional task descriptor.
-        """
-        if not request_response.original_value:
-            raise ValueError("The code snippet must not be empty.")
+    

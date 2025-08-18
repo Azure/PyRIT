@@ -243,7 +243,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             if backtrack_count < self._max_backtracks:
 
                 refusal_score = (
-                    await self._refusal_scorer.score_async(request_response=last_response, task=attack_prompt)
+                    await self._refusal_scorer.score_async(request_response=last_response, objective=attack_prompt)
                 )[0]
 
                 logger.info(
@@ -270,7 +270,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
                 logger.info("Max Backtrack Limit Reached, continuing to next turn")
 
             objective_score = (
-                await self._objective_scorer.score_async(request_response=last_response, task=objective)
+                await self._objective_scorer.score_async(request_response=last_response, objective=objective)
             )[0]
 
             logger.info(
