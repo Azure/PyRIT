@@ -270,7 +270,6 @@ API Reference
     AttackResultEntry
     AzureSQLMemory
     CentralMemory
-    DuckDBMemory
     EmbeddingDataEntry
     MemoryInterface
     MemoryEmbedding

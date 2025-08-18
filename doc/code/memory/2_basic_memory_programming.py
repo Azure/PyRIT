@@ -7,12 +7,11 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.2
+#   kernelspec:
+#     display_name: pyrit
+#     language: python
+#     name: python3
 # ---
-
-# %% [markdown]
-# # 2. Basic Memory Programming Usage
-#
-# The `pyrit.memory` module provides functionality to keep track of the conversation history, scoring, data, and more. You can use memory to read and write data. Here is an example that retrieves a normalized conversation using SQLite memory:
 
 # %%
 from uuid import uuid4
