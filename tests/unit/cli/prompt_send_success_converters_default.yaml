@@ -4,7 +4,7 @@
 datasets:
   - ./pyrit/datasets/seed_prompts/illegal.prompt
 scenarios:
-  - type: "PromptSendingOrchestrator"
+  - type: "PromptSendingAttack"
 objective_target:
   type: "OpenAIChatTarget"
 converters:

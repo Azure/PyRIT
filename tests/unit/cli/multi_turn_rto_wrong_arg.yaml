@@ -1,7 +1,7 @@
 datasets:
   - ./pyrit/datasets/seed_prompts/illegal.prompt
 scenarios:
-  - type: "RedTeamingOrchestrator"
+  - type: "RedTeamingAttack"
     wrong_arg: "wrong"
 objective_target:
   type: "OpenAIChatTarget"

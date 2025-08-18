@@ -88,21 +88,21 @@ async def run_scenarios_async(config: ScannerConfig) -> None:
 
     seed_prompt_groups = load_seed_prompt_groups(config.datasets)
     prompt_converters = config.create_prompt_converters()
-    orchestrators = config.create_orchestrators(prompt_converters=prompt_converters)
+    attacks = config.create_attacks(prompt_converters=prompt_converters)
 
-    for orchestrator in orchestrators:
+    for attack in attacks:
         objectives = _get_first_text_values_if_exist(seed_prompt_groups)
-        if hasattr(orchestrator, "run_attacks_async"):
+        if hasattr(attack, "execute_async"):
             args = {
                 "objectives": objectives,
                 "memory_labels": memory_labels,
             }
-            sig = inspect.signature(orchestrator.run_attacks_async)
+            sig = inspect.signature(attack.execute_async)
             if "seed_prompts" in sig.parameters:
                 args["seed_prompts"] = seed_prompt_groups
-            await orchestrator.run_attacks_async(**args)
+            await attack.execute_async(**args)
         else:
-            raise ValueError(f"The orchestrator {type(orchestrator).__name__} does not have run_attacks_async.")
+            raise ValueError(f"The attack {type(attack).__name__} does not have execute_async.")
 
     # Print conversation pieces from memory
     memory = CentralMemory.get_memory_instance()

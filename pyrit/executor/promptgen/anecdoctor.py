@@ -93,7 +93,7 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
     _ANECDOCTOR_BUILD_KG_YAML = "anecdoctor_build_knowledge_graph.yaml"
     _ANECDOCTOR_USE_KG_YAML = "anecdoctor_use_knowledge_graph.yaml"
     _ANECDOCTOR_USE_FEWSHOT_YAML = "anecdoctor_use_fewshot.yaml"
-    _ANECDOCTOR_PROMPT_PATH = Path("orchestrators", "anecdoctor")
+    _ANECDOCTOR_PROMPT_PATH = Path("executors", "anecdoctor")
 
     def __init__(
         self,

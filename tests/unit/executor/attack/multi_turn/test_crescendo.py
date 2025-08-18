@@ -337,7 +337,7 @@ class TestCrescendoAttackInitialization:
 
     @pytest.mark.parametrize(
         "system_prompt_path",
-        [Path(DATASETS_PATH) / "orchestrators" / "crescendo" / f"crescendo_variant_{i}.yaml" for i in range(1, 6)],
+        [Path(DATASETS_PATH) / "executors" / "crescendo" / f"crescendo_variant_{i}.yaml" for i in range(1, 6)],
     )
     def test_init_with_different_system_prompt_variants(
         self,

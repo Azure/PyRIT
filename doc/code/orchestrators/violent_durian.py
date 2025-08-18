@@ -56,7 +56,7 @@ conversation_objective = (
 )
 
 # Define the attack strategy path
-strategy_path = DATASETS_PATH / "orchestrators" / "red_teaming" / "violent_durian.yaml"
+strategy_path = DATASETS_PATH / "executors" / "red_teaming" / "violent_durian.yaml"
 
 # Set up the red_teaming_chat used to generate prompts sent to the target.
 # OpenAI (GPT4) as the Red Teaming LLM

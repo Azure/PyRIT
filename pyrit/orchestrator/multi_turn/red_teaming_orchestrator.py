@@ -12,7 +12,7 @@ from typing import Optional, cast
 from typing_extensions import LiteralString, deprecated
 
 from pyrit.common import deprecation_message
-from pyrit.common.path import RED_TEAM_ORCHESTRATOR_PATH
+from pyrit.common.path import RED_TEAM_EXECUTOR_PATH
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackConverterConfig,
@@ -33,11 +33,11 @@ logger = logging.getLogger(__name__)
 
 
 class RTOSystemPromptPaths(enum.Enum):
-    TEXT_GENERATION = Path(RED_TEAM_ORCHESTRATOR_PATH, "text_generation.yaml").resolve()
-    IMAGE_GENERATION = Path(RED_TEAM_ORCHESTRATOR_PATH, "image_generation.yaml").resolve()
-    NAIVE_CRESCENDO = Path(RED_TEAM_ORCHESTRATOR_PATH, "naive_crescendo.yaml").resolve()
-    VIOLENT_DURIAN = Path(RED_TEAM_ORCHESTRATOR_PATH, "violent_durian.yaml").resolve()
-    CRUCIBLE = Path(RED_TEAM_ORCHESTRATOR_PATH, "crucible.yaml").resolve()
+    TEXT_GENERATION = Path(RED_TEAM_EXECUTOR_PATH, "text_generation.yaml").resolve()
+    IMAGE_GENERATION = Path(RED_TEAM_EXECUTOR_PATH, "image_generation.yaml").resolve()
+    NAIVE_CRESCENDO = Path(RED_TEAM_EXECUTOR_PATH, "naive_crescendo.yaml").resolve()
+    VIOLENT_DURIAN = Path(RED_TEAM_EXECUTOR_PATH, "violent_durian.yaml").resolve()
+    CRUCIBLE = Path(RED_TEAM_EXECUTOR_PATH, "crucible.yaml").resolve()
 
 
 @deprecated(

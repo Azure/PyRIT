@@ -1,7 +1,7 @@
 datasets:
   - ./pyrit/datasets/seed_prompts/illegal.prompt
 scenarios:
-  - type: "TreeOfAttacksWithPruningOrchestrator"
+  - type: "TreeOfAttacksWithPruningAttack"
     depth: 10
     width: 7
     branching_factor: 8

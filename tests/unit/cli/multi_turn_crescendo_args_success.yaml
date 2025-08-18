@@ -1,7 +1,7 @@
 datasets:
   - ./pyrit/datasets/seed_prompts/illegal.prompt
 scenarios:
-  - type: "CrescendoOrchestrator"
+  - type: "CrescendoAttack"
     max_turns: 8
     max_backtracks: 4
 objective_target:

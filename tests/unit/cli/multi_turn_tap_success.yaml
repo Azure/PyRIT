@@ -1,7 +1,7 @@
 datasets:
   - ./pyrit/datasets/seed_prompts/illegal.prompt
 scenarios:
-  - type: "TreeOfAttacksWithPruningOrchestrator"
+  - type: "TreeOfAttacksWithPruningAttack"
 objective_target:
   type: "OpenAIChatTarget"
 adversarial_chat:

@@ -62,7 +62,7 @@ class FlipAttack(PromptSendingAttack):
         self._request_converters = flip_converter + self._request_converters
 
         # This system prompt is sent to the target to flip the words in the prompt.
-        system_prompt_path = pathlib.Path(DATASETS_PATH) / "orchestrators" / "flip_attack.yaml"
+        system_prompt_path = pathlib.Path(DATASETS_PATH) / "executors" / "flip_attack.yaml"
         system_prompt = SeedPrompt.from_yaml_file(system_prompt_path).value
 
         self._system_prompt = PromptRequestResponse.from_system_prompt(system_prompt=system_prompt)
