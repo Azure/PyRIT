@@ -10,7 +10,7 @@ from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     PretrainedConfig,
-    PreTrainedModel
+    PreTrainedModel,
 )
 
 from pyrit.common import default_values
@@ -252,7 +252,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
             # Generate the response
             logger.info("Generating response from model...")
-            generated_ids = self.model.generate(    # type: ignore[attr-defined]
+            generated_ids = self.model.generate(  # type: ignore[attr-defined]
                 input_ids=input_ids,
                 attention_mask=attention_mask,
                 max_new_tokens=self.max_new_tokens,
