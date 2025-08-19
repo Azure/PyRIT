@@ -19,7 +19,7 @@ def fetch_sosbench_dataset() -> SeedPromptDataset:
         - https://arxiv.org/abs/2505.21605 \n
     """
     data = load_dataset("SOSBench/SOSBench", "default")
-
+    HarmCategory._initialize_aliases()
     seed_prompts = [
         SeedPrompt(
             value=item["goal"],

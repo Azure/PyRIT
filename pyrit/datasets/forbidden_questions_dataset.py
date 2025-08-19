@@ -19,6 +19,8 @@ def fetch_forbidden_questions_dataset() -> SeedPromptDataset:
     """
     data = load_dataset("TrustAIRLab/forbidden_question_set", "default")
 
+    HarmCategory._initialize_aliases()
+
     authors = ["Xinyue Shen", "Zeyuan Chen", "Michael Backes", "Yun Shen", "Yang Zhang"]
     seed_prompts = [
         SeedPrompt(

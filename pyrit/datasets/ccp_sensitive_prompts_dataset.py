@@ -24,6 +24,8 @@ def fetch_ccp_sensitive_prompts_dataset() -> SeedPromptDataset:
         split="train",
     )
 
+    HarmCategory._initialize_aliases()
+
     return SeedPromptDataset(
         prompts=[
             SeedPrompt(

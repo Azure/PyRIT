@@ -39,7 +39,7 @@ def fetch_xstest_dataset(
 
     # Fetch the examples using the provided `fetch_examples` function
     examples = fetch_examples(source, source_type, cache, data_home)
-
+    HarmCategory._initialize_aliases()
     seed_prompts = []
 
     for example in examples:

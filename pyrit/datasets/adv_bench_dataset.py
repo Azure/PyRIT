@@ -66,6 +66,8 @@ def fetch_adv_bench_dataset(
         source=str(Path(DATASETS_PATH) / "data" / "adv_bench_dataset.json"), source_type="file", cache=cache
     )
 
+    HarmCategory._initialize_aliases()
+    
     filtered = dataset["data"]  # type: ignore
 
     if main_categories or sub_categories:

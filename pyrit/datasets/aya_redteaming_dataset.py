@@ -73,6 +73,8 @@ def fetch_aya_redteaming_dataset(
         cache=cache,
         data_home=data_home,
     )
+    
+    HarmCategory._initialize_aliases()
 
     parsed_filter_categories = [HarmCategory.parse(c) for c in harm_categories] if harm_categories else None
 

@@ -50,6 +50,8 @@ def fetch_decoding_trust_stereotypes_dataset(
         Ritik Dutta, Rylan Schaeffer, Sang T. Truong, Simran Arora, Mantas Mazeika, Dan Hendrycks, Zinan Lin,
         Yu Cheng, Sanmi Koyejo, Dawn Song, Bo Li. is available at https://arxiv.org/abs//2306.11698
     """
+    HarmCategory._initialize_aliases()
+    
     if system_prompt_type not in ["benign", "untargeted", "targeted"]:
         raise ValueError("Invalid system_prompt_type. Expected 'benign', 'untargeted', or 'targeted'}")
     # Determine the file type from the source URL

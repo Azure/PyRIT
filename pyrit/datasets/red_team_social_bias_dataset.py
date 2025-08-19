@@ -34,7 +34,7 @@ def fetch_red_team_social_bias_dataset() -> SeedPromptDataset:
         Written by Simone Van Taylor.
     """
     data = load_dataset("svannie678/red_team_repo_social_bias_prompts", "default")
-
+    HarmCategory._initialize_aliases()
     # Define common metadata that will be used across all seed prompts
     common_metadata = {
         "dataset_name": "Red team social bias prompts",

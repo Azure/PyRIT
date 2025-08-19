@@ -26,7 +26,7 @@ def fetch_librAI_do_not_answer_dataset() -> SeedPromptDataset:
     """
     # Load dataset from Hugging Face
     data = load_dataset("LibrAI/do-not-answer", split="train")
-
+    HarmCategory._initialize_aliases()
     seed_prompts = [
         SeedPrompt(
             value=entry["question"],
