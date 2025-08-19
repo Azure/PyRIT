@@ -4,9 +4,14 @@
 import asyncio
 import logging
 import os
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, ClassVar, Optional
 
-from transformers import AutoModelForCausalLM, AutoTokenizer, PretrainedConfig
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    PretrainedConfig,
+    PreTrainedModel,
+)
 
 from pyrit.common import default_values
 from pyrit.common.download_hf_model import download_specific_files
@@ -29,8 +34,8 @@ class HuggingFaceChatTarget(PromptChatTarget):
     """
 
     # Class-level cache for model and tokenizer
-    _cached_model = None
-    _cached_tokenizer = None
+    _cached_model: ClassVar[Optional[PreTrainedModel]] = None
+    _cached_tokenizer: ClassVar[Optional[AutoTokenizer]] = None
     _cached_model_id = None
 
     # Class-level flag to enable or disable cache
