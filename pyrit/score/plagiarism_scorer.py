@@ -159,16 +159,7 @@ class PlagiarismScorer(Scorer):
             list[Score]: A list containing the computed score.
         """
         if request_response.converted_value_data_type != "text":
-            return [
-                Score(
-                    score_value="0.0",
-                    score_value_description="Non text response",
-                    score_metadata="None",
-                    score_type=self.scorer_type,
-                    score_rationale="Model response is not text.",
-                    prompt_request_response_id=request_response.id,
-                )
-            ]
+            raise ValueError("PlagiarismScorer only supports text responses.")
 
         response_to_evaluate = request_response.converted_value
 
