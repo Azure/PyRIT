@@ -66,7 +66,7 @@ class TestPlagiarismScorer:
         assert len(scores) == 1
         score = scores[0]
         assert score.score_type == "float_scale"
-        assert "Plagiarism score using lcs metric" in score.score_value_description
+        assert "Plagiarism score using 'lcs' metric" in score.score_value_description
         assert score.score_rationale == "Score is deterministic."
         assert score.prompt_request_response_id == request_piece.id
 
@@ -94,7 +94,7 @@ class TestPlagiarismScorer:
 
         assert len(scores) == 1
         score = scores[0]
-        assert "Plagiarism score using levenshtein metric" in score.score_value_description
+        assert "Plagiarism score using 'levenshtein' metric" in score.score_value_description
 
         score_value = float(score.score_value)
         assert 0.0 <= score_value <= 1.0
@@ -118,7 +118,7 @@ class TestPlagiarismScorer:
 
         assert len(scores) == 1
         score = scores[0]
-        assert "Plagiarism score using jaccard metric" in score.score_value_description
+        assert "Plagiarism score using 'jaccard' metric" in score.score_value_description
 
         score_value = float(score.score_value)
         assert 0.0 <= score_value <= 1.0
