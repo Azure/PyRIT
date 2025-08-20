@@ -527,6 +527,7 @@ API Reference
     ObjectiveHumanLabeledEntry
     ObjectiveScorerEvaluator
     ObjectiveScorerMetrics
+    PlagiarismScorer
     PromptShieldScorer
     QuestionAnswerScorer
     Scorer
