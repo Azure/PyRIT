@@ -10,6 +10,7 @@ from pyrit.prompt_converter import (
     LLMGenericTextConverter,
     MaliciousQuestionGeneratorConverter,
     NoiseConverter,
+    RandomTranslationConverter,
     TenseConverter,
     ToneConverter,
 )
@@ -34,7 +35,6 @@ def mock_target() -> PromptTarget:
 @pytest.mark.asyncio
 async def test_noise_converter_sets_system_prompt_default(mock_target) -> None:
     converter = NoiseConverter(converter_target=mock_target)
-
     await converter.convert_async(prompt="being awesome")
 
     mock_target.set_system_prompt.assert_called_once()
@@ -47,7 +47,6 @@ async def test_noise_converter_sets_system_prompt_default(mock_target) -> None:
 @pytest.mark.asyncio
 async def test_noise_converter_sets_system_prompt(mock_target) -> None:
     converter = NoiseConverter(converter_target=mock_target, noise="extra random periods")
-
     await converter.convert_async(prompt="being awesome")
 
     mock_target.set_system_prompt.assert_called_once()
@@ -59,7 +58,6 @@ async def test_noise_converter_sets_system_prompt(mock_target) -> None:
 
 @pytest.mark.asyncio
 async def test_tone_converter_sets_system_prompt(mock_target) -> None:
-
     converter = ToneConverter(tone="formal", converter_target=mock_target)
     await converter.convert_async(prompt="being awesome")
 
@@ -84,9 +82,7 @@ async def test_tense_converter_sets_system_prompt(mock_target) -> None:
 
 @pytest.mark.asyncio
 async def test_malicious_question_converter_sets_system_prompt(mock_target) -> None:
-
     converter = MaliciousQuestionGeneratorConverter(converter_target=mock_target)
-
     await converter.convert_async(prompt="being awesome")
 
     mock_target.set_system_prompt.assert_called_once()
@@ -94,6 +90,18 @@ async def test_malicious_question_converter_sets_system_prompt(mock_target) -> N
     system_arg = mock_target.set_system_prompt.call_args[1]["system_prompt"]
     assert isinstance(system_arg, str)
     assert "Please act as an expert in this domain: being awesome" in system_arg
+
+
+@pytest.mark.asyncio
+async def test_random_translation_converter_sets_system_prompt(mock_target) -> None:
+    converter = RandomTranslationConverter(converter_target=mock_target)
+    await converter.convert_async(prompt="being awesome")
+
+    mock_target.set_system_prompt.assert_called_once()
+
+    system_arg = mock_target.set_system_prompt.call_args[1]["system_prompt"]
+    assert isinstance(system_arg, str)
+    assert "Each word is associated with a target language on the same line." in system_arg
 
 
 def test_generic_llm_converter_input_supported() -> None:
