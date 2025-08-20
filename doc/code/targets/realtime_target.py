@@ -13,7 +13,7 @@
 # ---
 
 # %% [markdown]
-# # REALTIME TARGET
+# # Realtime Target - optional
 #
 # This notebooks shows how to interact with the Realtime Target to send text or audio prompts and receive back an audio output and the text transcript of that audio.
 #

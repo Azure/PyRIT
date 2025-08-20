@@ -20,7 +20,7 @@ There is no single way to read the documentation, and it's perfectly fine to jum
    - [Setup](./setup/install_pyrit.md): Includes help setting up PyRIT and related resources for users.
    - [Contributing](./contributing/README.md): Contains information for people contributing to the project.
 3. [Architecture](./code/architecture.md): This section provides a high-level overview of all the components. Understanding any single component is difficult without some knowledge of the others.
-4. [Attacks](./code/attacks/0_attack.md): These are the top-level components of PyRIT (end-to-end attack techniques). Reviewing their usage can help users understand where all components fit.
+4. [Attacks](./code/executor/attack/0_attack.md): These are the top-level components of PyRIT that implement end-to-end attack techniques. Reviewing their usage can help users understand how all components fit together.
 5. [Datasets](./code/datasets/0_dataset.md): This is the first piece of building an attack using seed prompts and fetching datasets.
 6. [Targets](./code/targets/0_prompt_targets.md): These are the endpoints that PyRIT sends prompts to. Nearly any scenario where PyRIT is used will need targets. This section dives into what targets are available and how to use them.
 7. [Converters](./code/converters/0_converters.ipynb): These transform prompts from one format to another. This is one of the most powerful capabilities within PyRIT.

@@ -6,7 +6,11 @@ import logging
 import os
 from typing import TYPE_CHECKING, Optional
 
-from transformers import AutoModelForCausalLM, AutoTokenizer, PretrainedConfig
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    PretrainedConfig,
+)
 
 from pyrit.common import default_values
 from pyrit.common.download_hf_model import download_specific_files
@@ -237,7 +241,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
         try:
             # Ensure model is on the correct device (should already be the case from `load_model_and_tokenizer`)
-            self.model.to(self.device)
+            self.model.to(self.device)  # type: ignore[arg-type]
 
             # Record the length of the input tokens to later extract only the generated tokens
             input_length = input_ids.shape[-1]
