@@ -158,9 +158,6 @@ class PlagiarismScorer(Scorer):
         Returns:
             list[Score]: A list containing the computed score.
         """
-        if request_response.converted_value_data_type != "text":
-            raise ValueError("PlagiarismScorer only supports text responses.")
-
         response_to_evaluate = request_response.converted_value
 
         score_value = 0.0
