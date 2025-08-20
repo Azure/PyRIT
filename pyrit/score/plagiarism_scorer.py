@@ -174,7 +174,7 @@ class PlagiarismScorer(Scorer):
             Score(
                 score_value=str(score_value),
                 score_value_description=f"Plagiarism score using '{self.metric.value}' metric",
-                score_metadata="None",
+                score_metadata=None,
                 score_type=self.scorer_type,
                 score_rationale="Score is deterministic.",
                 prompt_request_response_id=request_response.id,
