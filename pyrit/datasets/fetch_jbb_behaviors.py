@@ -43,7 +43,7 @@ def fetch_jbb_behaviors_dataset(
         logger.info(f"Loading JBB-Behaviors dataset from {source}")
 
         # Load the dataset from HuggingFace
-        data = load_dataset(source, cache_dir=data_home)
+        data = load_dataset(source, "behaviors", cache_dir=data_home)
 
         # Get the appropriate split (typically 'train' or the first available split)
         dataset_split = data["train"] if "train" in data else data[list(data.keys())[0]]
@@ -65,8 +65,8 @@ def fetch_jbb_behaviors_dataset(
 
         for item in dataset_split:
             # Extract the required fields
-            behavior = item.get("behavior", "").strip()
-            category = item.get("category", "")
+            behavior = item.get("Behavior", "").strip()
+            category = item.get("Category", "")
 
             if not behavior:
                 logger.warning("Skipping item with empty behavior")
