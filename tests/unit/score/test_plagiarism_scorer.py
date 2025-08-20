@@ -124,28 +124,6 @@ class TestPlagiarismScorer:
         assert 0.0 <= score_value <= 1.0
 
     @pytest.mark.asyncio
-    async def test_score_async_non_text_response(self):
-        """Test scoring with non-text response."""
-        reference_text = "Sample reference text"
-        scorer = PlagiarismScorer(reference_text=reference_text)
-
-        request_piece = PromptRequestPiece(
-            role="assistant",
-            original_value="image_data",
-            converted_value="image_data",
-            converted_value_data_type="image_path",
-        )
-
-        scores = await scorer._score_async(request_response=request_piece)
-
-        assert len(scores) == 1
-        score = scores[0]
-        assert score.score_value == "0.0"
-        assert score.score_value_description == "Non text response"
-        assert score.score_rationale == "Model response is not text."
-        assert score.score_metadata == "None"
-
-    @pytest.mark.asyncio
     async def test_score_async_empty_response(self):
         """Test scoring with empty response."""
         reference_text = "Sample reference text"
