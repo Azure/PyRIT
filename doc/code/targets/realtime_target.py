@@ -98,8 +98,8 @@ await target.cleanup_target()  # type: ignore
 import logging
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.executor.attack import RTASystemPromptPaths
 from pyrit.orchestrator import RedTeamingOrchestrator
-from pyrit.orchestrator.multi_turn.red_teaming_orchestrator import RTASystemPromptPaths
 from pyrit.prompt_target import OpenAIChatTarget, RealtimeTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
 
