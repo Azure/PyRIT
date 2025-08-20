@@ -162,16 +162,18 @@ class PlagiarismScorer(Scorer):
 
         score_value = 0.0
         if self.metric == PlagiarismMetric.LCS:
-            score_value = _plagiarism_score(response_to_evaluate, self.reference_text, metric="lcs")
+            score_value = _plagiarism_score(response_to_evaluate, self.reference_text, metric=self.metric.value)
         elif self.metric == PlagiarismMetric.LEVENSHTEIN:
-            score_value = _plagiarism_score(response_to_evaluate, self.reference_text, metric="levenshtein")
+            score_value = _plagiarism_score(response_to_evaluate, self.reference_text, metric=self.metric.value)
         elif self.metric == PlagiarismMetric.JACCARD:
-            score_value = _plagiarism_score(response_to_evaluate, self.reference_text, metric="jaccard", n=self.n)
+            score_value = _plagiarism_score(
+                response_to_evaluate, self.reference_text, metric=self.metric.value, n=self.n
+            )
 
         return [
             Score(
                 score_value=str(score_value),
-                score_value_description=f"Plagiarism score using {self.metric.value} metric",
+                score_value_description=f"Plagiarism score using '{self.metric.value}' metric",
                 score_metadata="None",
                 score_type=self.scorer_type,
                 score_rationale="Score is deterministic.",
