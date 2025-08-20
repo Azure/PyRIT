@@ -6,6 +6,7 @@ from typing import Optional
 
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models.literals import ChatMessageRole
 from pyrit.score.float_scale.float_scale_score_aggregator import MAX_, FloatScaleScoreAggregator
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
@@ -33,7 +34,13 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
         if threshold <= 0 or threshold >= 1:
             raise ValueError("The threshold must be between 0 and 1")
 
-    async def _score_async(self, request_response: PromptRequestResponse, *, objective: Optional[str] = None) -> list[Score]:
+    async def _score_async(
+        self,
+        request_response: PromptRequestResponse,
+        *,
+        objective: Optional[str] = None,
+        role_filter: Optional[ChatMessageRole] = None,
+    ) -> list[Score]:
         """Scores the piece using the underlying float-scale scorer and thresholds the resulting score.
 
         Args:
@@ -43,7 +50,11 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
         Returns:
             list[Score]: The score.
         """
-        scores = await self._scorer.score_async(request_response, objective=objective)
+        scores = await self._scorer.score_async(
+            request_response,
+            objective=objective,
+            role_filter=role_filter,
+        )
 
         aggregate_score = self._float_scale_aggregator(scores)
 
@@ -52,11 +63,10 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
 
         aggregate_value = aggregate_score.value
 
-
         score.score_value = str(aggregate_value >= self._threshold)
         if aggregate_value > self._threshold:
             comparison_symbol = ">"
-        if aggregate_value < self._threshold:
+        elif aggregate_value < self._threshold:
             comparison_symbol = "<"
         else:
             comparison_symbol = "="
@@ -69,5 +79,5 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
 
         score.id = uuid.uuid4()
         score.scorer_class_identifier = self.get_identifier()
-        score.scorer_class_identifier["sub_identifier"] = self._scorer.get_identifier()
+        score.scorer_class_identifier["sub_identifier"] = str(self._scorer.get_identifier())
         return scores

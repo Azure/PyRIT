@@ -460,7 +460,7 @@ class _TreeOfAttacksNode:
             auxiliary_scorers=self._auxiliary_scorers,
             objective_scorers=[self._objective_scorer],
             role_filter="assistant",
-            task=objective,
+            objective=objective,
             skip_on_error=True,
         )
 

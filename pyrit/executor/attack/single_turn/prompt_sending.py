@@ -323,7 +323,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
             auxiliary_scorers=self._auxiliary_scorers,
             objective_scorers=[self._objective_scorer] if self._objective_scorer else None,
             role_filter="assistant",
-            task=objective,
+            objective=objective,
         )
 
         objective_scores = scoring_results["objective_scores"]

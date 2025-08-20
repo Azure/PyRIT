@@ -6,6 +6,7 @@ from typing import Optional
 
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models.literals import ChatMessageRole
 from pyrit.score.scorer import Scorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
@@ -20,7 +21,13 @@ class TrueFalseInverterScorer(TrueFalseScorer):
         self._scorer = scorer
 
 
-    async def _score_async(self, request_response: PromptRequestResponse, *, objective: Optional[str] = None) -> list[Score]:
+    async def _score_async(
+        self,
+        request_response: PromptRequestResponse,
+        *,
+        objective: Optional[str] = None,
+        role_filter: Optional[ChatMessageRole] = None,
+    ) -> list[Score]:
         """Scores the piece using the underlying true-false scorer and returns the opposite score.
 
         Args:
@@ -30,19 +37,24 @@ class TrueFalseInverterScorer(TrueFalseScorer):
         Returns:
             list[Score]: The scores.
         """
-        scores = await self._scorer.score_async(request_response, objective=objective)
+        scores = await self._scorer.score_async(
+            request_response,
+            objective=objective,
+            role_filter=role_filter,
+        )
 
         # TrueFalseScorers only have a single score
-        score = scores[0]
+        inv_score = scores[0]
 
-        score.score_value = str(True) if not score.get_value() else str(False)
-        score.score_value_description = "Inverted score: " + str(score.score_value_description)
-        score.score_rationale = f"Inverted score: {score.score_value}\n{score.score_rationale}"
+        inv_score.score_value = str(True) if not inv_score.get_value() else str(False)
+        inv_score.score_value_description = "Inverted score: " + str(inv_score.score_value_description)
+        inv_score.score_rationale = f"Inverted score: {inv_score.score_value}\n{inv_score.score_rationale}"
 
-        score.id = uuid.uuid4()
+        inv_score.id = uuid.uuid4()
 
-        score.scorer_class_identifier = self.get_identifier()
-        score.scorer_class_identifier["sub_identifier"] = self._scorer.get_identifier()
+        inv_score.scorer_class_identifier = self.get_identifier()
+        # Store a string representation to satisfy type expectations
+        inv_score.scorer_class_identifier["sub_identifier"] = str(self._scorer.get_identifier())
 
-        return [score]
+        return [inv_score]
 

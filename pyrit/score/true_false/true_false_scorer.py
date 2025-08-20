@@ -7,6 +7,7 @@ from typing import Dict, Optional
 
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models.literals import ChatMessageRole
 from pyrit.score.scorer import Scorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import OR_, TrueFalseScoreAggregator
@@ -26,16 +27,40 @@ class TrueFalseScorer(Scorer):
             raise ValueError("TrueFalseScorer score value must be True or False.")
 
 
-    async def _score_async(self, request_response: PromptRequestResponse, *, objective: Optional[str] = None) -> list[Score]:
+    async def _score_async(
+        self,
+        request_response: PromptRequestResponse,
+        *,
+        objective: Optional[str] = None,
+        role_filter: Optional[ChatMessageRole] = None,
+    ) -> list[Score]:
         """
         Score the given request response asynchronously.
 
         For TrueFalseScorer, the scoring is a single score. 
         """
-        
+        # If a role filter is provided and this response's role doesn't match, immediately return False
+        if role_filter is not None and request_response.request_pieces:
+            if request_response.request_pieces[0].role != role_filter:
+                return_score = Score(
+                    score_value=str(False).lower(),
+                    score_value_description="Role did not match role_filter; returning false.",
+                    score_type="true_false",
+                    score_category=None,
+                    score_metadata=None,
+                    score_rationale=f"role={request_response.request_pieces[0].role} != role_filter={role_filter}",
+                    scorer_class_identifier=self.get_identifier(),
+                    prompt_request_response_id=request_response.request_pieces[0].original_prompt_id,
+                    objective=objective,
+                )
+                return [return_score]
+
         # score the supported pieces
         # in the future, we may want to make this configurable. E.g. ensuring every piece returns true
         supported_pieces = self._get_supported_pieces(request_response)
+        # Apply role filter to supported pieces when provided
+        if role_filter is not None:
+            supported_pieces = [p for p in supported_pieces if p.role == role_filter]
 
         tasks = [
             self._score_piece_async(request_piece=piece, objective=objective)
@@ -43,7 +68,19 @@ class TrueFalseScorer(Scorer):
         ]
 
         if not tasks:
-            raise ValueError("No tasks were created to score.")
+            # If no pieces matched (e.g., due to role filter), return False
+            return_score = Score(
+                score_value=str(False).lower(),
+                score_value_description="No pieces to score after filtering; returning false.",
+                score_type="true_false",
+                score_category=None,
+                score_metadata=None,
+                score_rationale="No supported pieces (possibly filtered by role).",
+                scorer_class_identifier=self.get_identifier(),
+                prompt_request_response_id=request_response.request_pieces[0].original_prompt_id,
+                objective=objective,
+            )
+            return [return_score]
     
         # Run all piece-level scorings concurrently
         piece_score_lists = await asyncio.gather(*tasks)
@@ -52,7 +89,18 @@ class TrueFalseScorer(Scorer):
         score_list = [score for sublist in piece_score_lists for score in sublist]
 
         if len(score_list) == 0:
-            raise ValueError("No scores were generated from the request response pieces.")
+            return_score = Score(
+                score_value=str(False).lower(),
+                score_value_description="No scores generated; returning false.",
+                score_type="true_false",
+                score_category=None,
+                score_metadata=None,
+                score_rationale="Piece-level scoring produced no scores.",
+                scorer_class_identifier=self.get_identifier(),
+                prompt_request_response_id=request_response.request_pieces[0].original_prompt_id,
+                objective=objective,
+            )
+            return [return_score]
 
         result = self._score_aggregator(score_list)
 
@@ -64,7 +112,7 @@ class TrueFalseScorer(Scorer):
             score_metadata=result.metadata,
             score_rationale=result.rationale,
             scorer_class_identifier= self.get_identifier(),
-            prompt_request_response_id=request_response.request_pieces[0].id,
+            prompt_request_response_id=request_response.request_pieces[0].original_prompt_id,
             objective=objective,
         )
 

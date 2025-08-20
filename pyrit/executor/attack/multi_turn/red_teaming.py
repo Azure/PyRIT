@@ -535,7 +535,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
             auxiliary_scorers=None,  # No auxiliary scorers for red teaming by default
             objective_scorers=[self._objective_scorer],
             role_filter="assistant",
-            task=context.objective,
+            objective=context.objective,
         )
 
         objective_scores = scoring_results["objective_scores"]

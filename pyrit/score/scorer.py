@@ -9,7 +9,7 @@ import json
 import logging
 import uuid
 from abc import abstractmethod
-from typing import Dict, List, Optional, Sequence, Union
+from typing import Dict, List, Optional, Sequence, Union, cast
 
 from pyrit.exceptions import (
     InvalidJsonException,
@@ -26,7 +26,7 @@ from pyrit.models import (
     UnvalidatedScore,
 )
 from pyrit.models.literals import ChatMessageRole
-from pyrit.prompt_target import PromptChatTarget
+from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
 from pyrit.score.scorer_evaluation.metrics_type import MetricsType
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -48,7 +48,13 @@ class Scorer(abc.ABC):
     def _memory(self) -> MemoryInterface:
         return CentralMemory.get_memory_instance()
 
-    async def score_async(self, request_response: PromptRequestResponse, *, objective: Optional[str] = None) -> list[Score]:
+    async def score_async(
+        self,
+        request_response: PromptRequestResponse,
+        *,
+        objective: Optional[str] = None,
+        role_filter: Optional[ChatMessageRole] = None,
+    ) -> list[Score]:
         """
         Score the request_response, add the results to the database
         and return a list of Score objects.
@@ -61,7 +67,11 @@ class Scorer(abc.ABC):
             list[Score]: A list of Score objects representing the results.
         """
         self._validator.validate(request_response, objective=objective)
-        scores = await self._score_async(request_response, objective=objective)
+        scores = await self._score_async(
+            request_response,
+            objective=objective,
+            role_filter=role_filter,
+        )
         self._memory.add_scores_to_memory(scores=scores)
 
         self.validate_return_scores(scores=scores)
@@ -69,7 +79,13 @@ class Scorer(abc.ABC):
         return scores
 
     @abstractmethod
-    async def _score_async(self, request_response: PromptRequestResponse, *, objective: Optional[str] = None) -> list[Score]:
+    async def _score_async(
+        self,
+        request_response: PromptRequestResponse,
+        *,
+        objective: Optional[str] = None,
+        role_filter: Optional[ChatMessageRole] = None,
+    ) -> list[Score]:
         raise NotImplementedError()
     
     @abstractmethod
@@ -204,11 +220,12 @@ class Scorer(abc.ABC):
         if len(request_responses) == 0:
             return []
 
+        # Some scorers do not have an associated prompt target; batch helper validates RPM only when present
         prompt_target = getattr(self, "_prompt_target", None)
         results = await batch_task_async(
             task_func=self.score_async,
             task_arguments=["request_response", "objective"],
-            prompt_target=prompt_target,
+            prompt_target=cast(PromptTarget, prompt_target),
             batch_size=batch_size,
             items_to_batch=[request_responses, tasks],
         )
@@ -519,7 +536,7 @@ class Scorer(abc.ABC):
         auxiliary_scorers: Optional[List[Scorer]] = None,
         objective_scorers: Optional[List[Scorer]] = None,
         role_filter: ChatMessageRole = "assistant",
-        task: Optional[str] = None,
+        objective: Optional[str] = None,
         skip_on_error: bool = True,
     ) -> Dict[str, List[Score]]:
         """
@@ -556,7 +573,7 @@ class Scorer(abc.ABC):
                 response=response,
                 scorers=auxiliary_scorers,
                 role_filter=role_filter,
-                task=task,
+                task=objective,
                 skip_on_error=skip_on_error,
             )
 
@@ -564,7 +581,7 @@ class Scorer(abc.ABC):
                 response=response,
                 scorers=objective_scorers,
                 role_filter=role_filter,
-                task=task,
+                task=objective,
                 skip_on_error=skip_on_error,
             )
 
@@ -581,7 +598,7 @@ class Scorer(abc.ABC):
                 response=response,
                 scorers=auxiliary_scorers,
                 role_filter=role_filter,
-                task=task,
+                task=objective,
                 skip_on_error=skip_on_error,
             )
 
@@ -591,7 +608,7 @@ class Scorer(abc.ABC):
                 response=response,
                 scorers=objective_scorers,
                 role_filter=role_filter,
-                task=task,
+                task=objective,
                 skip_on_error=skip_on_error,
             )
             result["objective_scores"] = [objective_score] if objective_score else []
