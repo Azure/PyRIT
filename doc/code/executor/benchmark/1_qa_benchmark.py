@@ -33,7 +33,7 @@ from pyrit.score.self_ask_question_answer_scorer import SelfAskQuestionAnswerSco
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
 # Define the scoring configuration for the benchmark
-scoring_config = AttackScoringConfig(objective_scorer = SelfAskQuestionAnswerScorer(chat_target=OpenAIChatTarget()))
+scoring_config = AttackScoringConfig(objective_scorer=SelfAskQuestionAnswerScorer(chat_target=OpenAIChatTarget()))
 
 # Create the benchmark with scorer and execute with demo dataset
 benchmark = QuestionAnsweringBenchmark(

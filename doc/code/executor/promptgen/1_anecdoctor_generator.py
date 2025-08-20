@@ -31,9 +31,9 @@
 # without content moderation or other safety mechanisms, and success rates
 # will vary depending on the model, topic, and example data.
 #
-# Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
+# Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../../setup/populating_secrets.md).
 #
-# The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../memory/0_memory.md).
+# The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../../memory/0_memory.md).
 
 # %%
 import os
@@ -77,7 +77,7 @@ print(result.generated_content)
 # %%
 generator_with_kg = AnecdoctorGenerator(
     objective_target=objective_target,
-    processing_model=objective_target, # Providing a processing model means the generator will extract a knowledge graph from the examples before generation.
+    processing_model=objective_target,  # Providing a processing model means the generator will extract a knowledge graph from the examples before generation.
 )
 
 result_kg = await generator_with_kg.execute_async(  # type: ignore[top-level-await]
@@ -155,6 +155,7 @@ def visualize_knowledge_graph(kg_result):
     edge_labels = nx.get_edge_attributes(G, "label")
     nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
     plt.show()
+
 
 # Create Anecdoctor Contexts that match the above generators
 context_english = AnecdoctorContext(

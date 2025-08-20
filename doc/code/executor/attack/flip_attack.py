@@ -19,12 +19,16 @@
 #
 # We replicate the ability to send prompts that match this output: https://github.com/yueliu1999/FlipAttack/blob/main/result/FlipAttack-gpt-4.json. In other words, it sends a system prompt to the target, directing it to unflip the word, and then it flips the malicious prompt.
 #
-# Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/install_pyrit.md).
+# Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../../setup/install_pyrit.md).
 #
-# The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../memory/0_memory.md).
+# The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../../memory/0_memory.md).
 # %%
 from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.executor.attack import AttackScoringConfig, ConsoleAttackResultPrinter, FlipAttack
+from pyrit.executor.attack import (
+    AttackScoringConfig,
+    ConsoleAttackResultPrinter,
+    FlipAttack,
+)
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskRefusalScorer, TrueFalseInverterScorer
 
@@ -34,9 +38,7 @@ target = OpenAIChatTarget()
 
 # Anything that isn't a refusal is a "success"
 objective_scorer = TrueFalseInverterScorer(scorer=SelfAskRefusalScorer(chat_target=target))
-scoring_config = AttackScoringConfig(
-    objective_scorer=objective_scorer
-)
+scoring_config = AttackScoringConfig(objective_scorer=objective_scorer)
 
 attack = FlipAttack(
     objective_target=target,

@@ -27,7 +27,12 @@ from pathlib import Path
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
-from pyrit.executor.attack import AttackAdversarialConfig, AttackScoringConfig, ConsoleAttackResultPrinter, RedTeamingAttack
+from pyrit.executor.attack import (
+    AttackAdversarialConfig,
+    AttackScoringConfig,
+    ConsoleAttackResultPrinter,
+    RedTeamingAttack,
+)
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer
 

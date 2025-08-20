@@ -39,7 +39,7 @@ from pyrit.prompt_converter import (
     FuzzerSimilarConverter,
 )
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import TrueFalseQuestion, SelfAskTrueFalseScorer
+from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
 
 # Initialize Pyrit with in-memory database
 initialize_pyrit(memory_db_type=IN_MEMORY)

@@ -30,7 +30,11 @@
 # %%
 # Import necessary packages
 from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.executor.attack import AttackScoringConfig, ConsoleAttackResultPrinter, ManyShotJailbreakAttack
+from pyrit.executor.attack import (
+    AttackScoringConfig,
+    ConsoleAttackResultPrinter,
+    ManyShotJailbreakAttack,
+)
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import LikertScalePaths, SelfAskLikertScorer
 
