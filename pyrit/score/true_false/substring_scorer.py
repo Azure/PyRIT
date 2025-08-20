@@ -6,7 +6,7 @@ from typing import Optional
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.score.scorer import Scorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
-from pyrit.score.true_false.true_false_score_aggregator import TrueFalseScoreAggregator
+from pyrit.score.true_false.true_false_score_aggregator import OR_, TrueFalseScoreAggregator
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
@@ -24,8 +24,8 @@ class SubStringScorer(TrueFalseScorer):
             self,
             *,
             substring: str,
-            category: str = "",
-            aggregator: TrueFalseScoreAggregator,
+            categories: Optional[list[str]] = None,
+            aggregator: TrueFalseScoreAggregator = OR_,
             validator: Optional[ScorerPromptValidator] = None
         ) -> None:
         """Initialize the SubStringScorer.
@@ -36,7 +36,7 @@ class SubStringScorer(TrueFalseScorer):
         """
         super().__init__(score_aggregator=aggregator, validator=validator or self._default_validator)
         self._substring = substring
-        self._score_category = category
+        self._score_categories = categories if categories else []
 
     async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
         """Score the given request_response based on presence of the substring.
@@ -57,7 +57,7 @@ class SubStringScorer(TrueFalseScorer):
                 score_value_description="",
                 score_metadata=None,
                 score_type="true_false",
-                score_category=self._score_category,
+                score_category=self._score_categories,
                 score_rationale="",
                 scorer_class_identifier=self.get_identifier(),
                 prompt_request_response_id=request_piece.id,

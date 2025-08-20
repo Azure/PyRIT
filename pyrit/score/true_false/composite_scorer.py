@@ -42,7 +42,7 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
             raise ValueError("At least one scorer must be provided.")
 
         for scorer in scorers:
-            if scorer.scorer_type != "true_false":
+            if not isinstance(scorer, TrueFalseScorer):
                 raise ValueError("All scorers must be true_false scorers.")
 
         self._scorers = scorers

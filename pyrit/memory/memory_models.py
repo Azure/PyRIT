@@ -204,7 +204,7 @@ class ScoreEntry(Base):  # type: ignore
     scorer_class_identifier: Mapped[dict[str, str]] = mapped_column(JSON)
     prompt_request_response_id = mapped_column(Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
     timestamp = mapped_column(DateTime, nullable=False)
-    task = mapped_column(String, nullable=True)
+    objective = mapped_column(String, nullable=True)
     prompt_request_piece: Mapped["PromptMemoryEntry"] = relationship("PromptMemoryEntry", back_populates="scores")
 
     def __init__(self, *, entry: Score):
@@ -218,7 +218,7 @@ class ScoreEntry(Base):  # type: ignore
         self.scorer_class_identifier = entry.scorer_class_identifier
         self.prompt_request_response_id = entry.prompt_request_response_id if entry.prompt_request_response_id else None
         self.timestamp = entry.timestamp
-        self.task = entry.task
+        self.objective = entry.objective
 
     def get_score(self) -> Score:
         return Score(
@@ -232,7 +232,7 @@ class ScoreEntry(Base):  # type: ignore
             scorer_class_identifier=self.scorer_class_identifier,
             prompt_request_response_id=self.prompt_request_response_id,
             timestamp=self.timestamp,
-            task=self.task,
+            objective=self.objective,
         )
 
     def to_dict(self) -> dict:
@@ -247,7 +247,7 @@ class ScoreEntry(Base):  # type: ignore
             "scorer_class_identifier": self.scorer_class_identifier,
             "prompt_request_response_id": str(self.prompt_request_response_id),
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,
-            "task": self.task,
+            "objective": self.objective,
         }
 
 

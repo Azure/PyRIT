@@ -9,7 +9,7 @@ import json
 import logging
 import uuid
 from abc import abstractmethod
-from typing import Dict, List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence, Union
 
 from pyrit.exceptions import (
     InvalidJsonException,
@@ -350,15 +350,33 @@ class Scorer(abc.ABC):
                 # JSON must yield either a string or a list of strings
                 raise ValueError("'category' must be a string or a list of strings")
 
-            # TODO get rid of scorer_type
+            # Normalize metadata to a dictionary with string keys and string/int values
+            raw_md = parsed_response.get(metadata_output_key)
+            normalized_md: Optional[Dict[str, Union[str, int]]]
+            if raw_md is None:
+                normalized_md = None
+            elif isinstance(raw_md, dict):
+                # Coerce keys to str and filter to str/int values only
+                normalized_md = {
+                    str(k): v
+                    for k, v in raw_md.items()
+                    if isinstance(v, (str, int))
+                }
+                # If dictionary becomes empty after filtering, keep as empty dict
+            elif isinstance(raw_md, (str, int)):
+                # Wrap primitive metadata into a namespaced field
+                normalized_md = {"metadata": raw_md}
+            else:
+                # Unrecognized metadata shape; drop to avoid downstream errors
+                normalized_md = None
+
             score = UnvalidatedScore(
                 raw_score_value=str(parsed_response[score_value_output_key]),
                 score_value_description=parsed_response.get(description_output_key),
-                score_type=self.scorer_type,
                 score_category=normalized_category,
                 score_rationale=parsed_response[rationale_output_key],
                 scorer_class_identifier=self.get_identifier(),
-                score_metadata=parsed_response.get(metadata_output_key),
+                score_metadata=normalized_md,
                 prompt_request_response_id=scored_prompt_id,
                 objective=objective,
             )

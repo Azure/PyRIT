@@ -28,6 +28,7 @@ from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormaliz
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
 from pyrit.score import Scorer
+from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +83,7 @@ class PromptSendingOrchestrator(Orchestrator):
 
         self._prompt_normalizer = PromptNormalizer()
 
-        if objective_scorer and objective_scorer.scorer_type != "true_false":
+        if objective_scorer and not isinstance(objective_scorer, TrueFalseScorer):
             raise ValueError("Objective scorer must be a true/false scorer")
 
         self._objective_scorer = objective_scorer or None

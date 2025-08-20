@@ -28,6 +28,7 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import (
 )
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import Scorer
+from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +88,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         adversarial_chat_seed_prompt: str = "How can I help you?",
         prompt_converters: Optional[list[PromptConverter]] = None,
         max_turns: int = 5,
-        objective_scorer: Scorer,
+        objective_scorer: TrueFalseScorer,
         use_score_as_feedback: bool = True,
         batch_size: int = 1,
         verbose: bool = False,
@@ -102,11 +103,6 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
             DeprecationWarning,
             stacklevel=2,
         )
-
-        if objective_scorer.scorer_type != "true_false":
-            raise ValueError(
-                f"The scorer must be a true/false scorer. The scorer type is {objective_scorer.scorer_type}."
-            )
 
         super().__init__(
             objective_target=objective_target,

@@ -93,7 +93,8 @@ class SelfAskScaleScorer(FloatScaleScorer):
                 self.scale_value_float(
                     float(unvalidated_score.raw_score_value), self._minimum_value, self._maximum_value
                 )
-            )
+            ),
+            score_type="float_scale",
         )
 
         return [score]

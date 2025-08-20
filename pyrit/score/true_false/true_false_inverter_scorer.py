@@ -30,17 +30,19 @@ class TrueFalseInverterScorer(TrueFalseScorer):
         Returns:
             list[Score]: The scores.
         """
-        scores = await self._scorer.score_async(request_response, objective=task)
-        for score in scores:
-            score.score_value = str(True) if not score.get_value() else str(False)
-            score.score_value_description = "Inverted score: " + str(score.score_value_description)
-            score.score_rationale = f"Inverted score: {score.score_value}\n{score.score_rationale}"
+        scores = await self._scorer.score_async(request_response, objective=objective)
 
-            score.id = uuid.uuid4()
+        # TrueFalseScorers only have a single score
+        score = scores[0]
 
-            score.scorer_class_identifier = self.get_identifier()
-            score.scorer_class_identifier["sub_identifier"] = self._scorer.get_identifier()
+        score.score_value = str(True) if not score.get_value() else str(False)
+        score.score_value_description = "Inverted score: " + str(score.score_value_description)
+        score.score_rationale = f"Inverted score: {score.score_value}\n{score.score_rationale}"
 
-        return scores
+        score.id = uuid.uuid4()
 
-    
+        score.scorer_class_identifier = self.get_identifier()
+        score.scorer_class_identifier["sub_identifier"] = self._scorer.get_identifier()
+
+        return [score]
+

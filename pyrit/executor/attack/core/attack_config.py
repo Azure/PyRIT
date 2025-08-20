@@ -44,7 +44,7 @@ class AttackScoringConfig:
     objective_scorer: Optional[TrueFalseScorer] = None
 
     # Refusal scorer for detecting refusals or non-compliance
-    refusal_scorer: Optional[Scorer] = None
+    refusal_scorer: Optional[TrueFalseScorer] = None
 
     # Additional scorers for auxiliary metrics or custom evaluations
     auxiliary_scorers: List[Scorer] = field(default_factory=list)

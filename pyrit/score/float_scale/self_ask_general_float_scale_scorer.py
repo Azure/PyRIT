@@ -132,6 +132,7 @@ class SelfAskGeneralFloatScaleScorer(FloatScaleScorer):
                 self.scale_value_float(
                     float(unvalidated.raw_score_value), self._min_value, self._max_value
                 )
-            )
+            ),
+            score_type="float_scale",
         )
         return [score]

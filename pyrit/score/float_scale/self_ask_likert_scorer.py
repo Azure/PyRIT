@@ -121,6 +121,7 @@ class SelfAskLikertScorer(FloatScaleScorer):
 
         score = unvalidated_score.to_score(
             score_value=str(self.scale_value_float(float(unvalidated_score.raw_score_value), 1, 5)),
+            score_type="float_scale"
         )
 
         score.score_metadata = {"likert_value": int(unvalidated_score.raw_score_value)}

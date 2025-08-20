@@ -87,6 +87,6 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
             orchestrator_identifier=request_piece.orchestrator_identifier,
         )
 
-        score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value)
+        score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value, score_type="true_false")
 
         return [score]

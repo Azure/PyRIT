@@ -78,6 +78,7 @@ class InsecureCodeScorer(FloatScaleScorer):
         # Convert UnvalidatedScore to Score, applying scaling and metadata
         score = unvalidated_score.to_score(
             score_value=str(self.scale_value_float(raw_score_value, 0, 1)),
+            score_type="float_scale",
         )
 
         return [score]  

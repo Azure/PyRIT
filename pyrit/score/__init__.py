@@ -9,9 +9,9 @@ from pyrit.score.float_scale.azure_content_filter_scorer import AzureContentFilt
 from pyrit.score.batch_scorer import BatchScorer
 from pyrit.score.true_false.composite_scorer import TrueFalseCompositeScorer
 from pyrit.score.true_false.float_scale_threshold_scorer import FloatScaleThresholdScorer
-from pyrit.score.self_ask_general_scorer import SelfAskGeneralScorer
+from pyrit.score.true_false.self_ask_general_true_false_scorer import SelfAskGeneralTrueFalseScorer
+from pyrit.score.float_scale.self_ask_general_float_scale_scorer import SelfAskGeneralFloatScaleScorer
 from pyrit.score.true_false.gandalf_scorer import GandalfScorer
-from pyrit.score.human.human_in_the_loop_scorer import HumanInTheLoopScorer
 from pyrit.score.human.human_in_the_loop_gradio import HumanInTheLoopScorerGradio
 from pyrit.score.float_scale.insecure_code_scorer import InsecureCodeScorer
 from pyrit.score.true_false.markdown_injection import MarkdownInjectionScorer
@@ -53,12 +53,12 @@ __all__ = [
     "FloatScaleThresholdScorer",
     "GandalfScorer",
     "HumanLabeledDataset",
-    "SelfAskGeneralScorer",
+    "SelfAskGeneralTrueFalseScorer",
+    "SelfAskGeneralFloatScaleScorer",
     "HarmHumanLabeledEntry",
     "HarmScorerEvaluator",
     "HarmScorerMetrics",
     "HumanLabeledEntry",
-    "HumanInTheLoopScorer",
     "HumanInTheLoopScorerGradio",
     "InsecureCodeScorer",
     "LikertScalePaths",

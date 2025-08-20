@@ -19,6 +19,7 @@ from pyrit.common.path import (
     SCORER_EVALS_OBJECTIVE_PATH,
 )
 from pyrit.score import Scorer
+from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 from pyrit.score.scorer_evaluation.human_labeled_dataset import (
     HarmHumanLabeledEntry,
     HumanLabeledDataset,
@@ -146,7 +147,7 @@ class ScorerEvaluator(abc.ABC):
             ScorerEvaluator: An instance of HarmScorerEvaluator or ObjectiveScorerEvaluator.
         """
         if not metrics_type:
-            metrics_type = MetricsType.OBJECTIVE if scorer.scorer_type == "true_false" else MetricsType.HARM
+            metrics_type = MetricsType.OBJECTIVE if isinstance(scorer, TrueFalseScorer) else MetricsType.HARM
 
         _EVALUATOR_MAP = {MetricsType.HARM: HarmScorerEvaluator, MetricsType.OBJECTIVE: ObjectiveScorerEvaluator}
 

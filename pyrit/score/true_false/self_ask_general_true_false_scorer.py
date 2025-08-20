@@ -49,7 +49,7 @@ class SelfAskGeneralTrueFalseScorer(TrueFalseScorer):
         *,
         chat_target: PromptChatTarget,
         system_prompt_format_string: str,
-        prompt_format_string: Optional[str] = None,
+    prompt_format_string: Optional[str] = None,
     category: Optional[str] = None,
         validator: Optional[ScorerPromptValidator] = None,
         score_value_output_key: str = "score_value",
@@ -118,5 +118,5 @@ class SelfAskGeneralTrueFalseScorer(TrueFalseScorer):
             category_output_key=self._category_output_key,
         )
 
-        score = unvalidated.to_score(score_value=unvalidated.raw_score_value)
+        score = unvalidated.to_score(score_value=unvalidated.raw_score_value, score_type="true_false")
         return [score]

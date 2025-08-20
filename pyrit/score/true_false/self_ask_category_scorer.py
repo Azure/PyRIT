@@ -30,7 +30,7 @@ class SelfAskCategoryScorer(TrueFalseScorer):
     There is also a false category that is used if the promptrequestpiece does not fit any of the categories.
     """
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
+    _default_validator: ScorerPromptValidator = ScorerPromptValidator()
 
     def __init__(
         self,
@@ -116,7 +116,7 @@ class SelfAskCategoryScorer(TrueFalseScorer):
             orchestrator_identifier=request_piece.orchestrator_identifier,
         )
 
-        score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value)
+        score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value, score_type="true_false")
 
         return [score]
 

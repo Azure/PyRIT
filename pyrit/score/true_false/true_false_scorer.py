@@ -22,7 +22,7 @@ class TrueFalseScorer(Scorer):
         if len(scores) != 1:
             raise ValueError("TrueFalseScorer should return exactly one score.")
 
-        if scores[0].score_value not in ["true", "false"]:
+        if scores[0].score_value.lower() not in ["true", "false"]:
             raise ValueError("TrueFalseScorer score value must be True or False.")
 
 
@@ -57,7 +57,7 @@ class TrueFalseScorer(Scorer):
         result = self._score_aggregator(score_list)
 
         return_score = Score(
-            score_value=str(result.value),
+            score_value=str(result.value).lower(),
             score_value_description=result.description,
             score_type="true_false",
             score_category=result.category,

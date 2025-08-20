@@ -148,7 +148,6 @@ class UnvalidatedScore:
     raw_score_value: str
 
     score_value_description: str
-    score_type: ScoreType
     score_category: Optional[List[str]]
     score_rationale: str
     score_metadata: Optional[Dict[str, Union[str, int]]]
@@ -158,12 +157,12 @@ class UnvalidatedScore:
     id: Optional[uuid.UUID | str] = None
     timestamp: Optional[datetime] = None
 
-    def to_score(self, *, score_value: str):
+    def to_score(self, *, score_value: str, score_type: ScoreType):
         return Score(
             id=self.id,
             score_value=score_value,
             score_value_description=self.score_value_description,
-            score_type=self.score_type,
+            score_type=score_type,
             score_category=self.score_category,
             score_rationale=self.score_rationale,
             score_metadata=self.score_metadata,

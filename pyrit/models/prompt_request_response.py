@@ -40,6 +40,15 @@ class PromptRequestResponse:
             raise IndexError(f"No request piece at index {n}.")
 
         return self.request_pieces[n]
+    
+    def set_response_not_in_database(self):
+        """
+        Set that the prompt is not in the database.
+
+        This is needed when we're scoring prompts or other things that have not been sent by PyRIT
+        """
+        for piece in self.request_pieces:
+            piece.set_piece_not_in_database()
 
     def validate(self):
         """

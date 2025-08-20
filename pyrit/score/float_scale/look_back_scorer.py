@@ -32,7 +32,7 @@ class LookBackScorer(FloatScaleScorer):
     def __init__(self, chat_target: PromptChatTarget, *, exclude_instruction_prompts: bool, validator: Optional[ScorerPromptValidator] = None) -> None:
         super().__init__(validator=validator or self._default_validator)
         self._prompt_target = chat_target
-        self.scorer_type = "float_scale"
+
         self.exclude_instruction_prompts = exclude_instruction_prompts
 
         behavior_change_prompt_path = Path(
@@ -93,7 +93,7 @@ class LookBackScorer(FloatScaleScorer):
             orchestrator_identifier=conversation[0].request_pieces[0].orchestrator_identifier,
         )
 
-        score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value)
+        score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value, score_type="float_scale")
 
         # Output score results
         logger.info(

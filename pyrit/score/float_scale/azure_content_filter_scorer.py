@@ -63,12 +63,12 @@ class AzureContentFilterScorer(FloatScaleScorer):
             self._score_categories = [category.value for category in TextCategory]
 
         self._endpoint = default_values.get_required_value(
-            env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint
+            env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint or ""
         )
 
         if not use_aad_auth:
             self._api_key = default_values.get_required_value(
-                env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
+                env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key or ""
             )
         else:
             if api_key:
@@ -139,7 +139,7 @@ class AzureContentFilterScorer(FloatScaleScorer):
                 score_type="float_scale",
                 score_value=str(normalized_value),
                 score_value_description="",
-                score_category=category,
+                score_category=[category] if category else None,
                 score_metadata=metadata,
                 score_rationale="",
                 scorer_class_identifier=self.get_identifier(),

@@ -25,6 +25,7 @@ from pyrit.models import (
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.score import Scorer
+from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +90,9 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
 
         self._auxiliary_scorers = attack_scoring_config.auxiliary_scorers
         self._objective_scorer = attack_scoring_config.objective_scorer
-        if self._objective_scorer and self._objective_scorer.scorer_type != "true_false":
+
+        # Enforce objective scorer type: must be a TrueFalseScorer if provided
+        if self._objective_scorer and not isinstance(self._objective_scorer, TrueFalseScorer):
             raise ValueError("Objective scorer must be a true/false scorer")
 
         # Skip criteria could be set directly in the injected prompt normalizer
