@@ -10,7 +10,6 @@ from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     PretrainedConfig,
-    PreTrainedModel,
 )
 
 from pyrit.common import default_values
@@ -40,9 +39,6 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
     # Class-level flag to enable or disable cache
     _cache_enabled = True
-
-    # Explicit typing for model to avoid mypy errors
-    model: PreTrainedModel
 
     # Define the environment variable name for the Hugging Face token
     HUGGINGFACE_TOKEN_ENVIRONMENT_VARIABLE = "HUGGINGFACE_TOKEN"
@@ -245,14 +241,14 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
         try:
             # Ensure model is on the correct device (should already be the case from `load_model_and_tokenizer`)
-            self.model.to(self.device)  # type: ignore[attr-defined]
+            self.model.to(self.device)  # type: ignore[arg-type]
 
             # Record the length of the input tokens to later extract only the generated tokens
             input_length = input_ids.shape[-1]
 
             # Generate the response
             logger.info("Generating response from model...")
-            generated_ids = self.model.generate(  # type: ignore[attr-defined]
+            generated_ids = self.model.generate(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
                 max_new_tokens=self.max_new_tokens,
