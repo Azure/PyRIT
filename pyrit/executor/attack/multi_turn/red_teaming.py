@@ -42,7 +42,7 @@ from pyrit.score import Scorer
 logger = logging.getLogger(__name__)
 
 
-class RTOSystemPromptPaths(enum.Enum):
+class RTASystemPromptPaths(enum.Enum):
     TEXT_GENERATION = Path(RED_TEAM_EXECUTOR_PATH, "text_generation.yaml").resolve()
     IMAGE_GENERATION = Path(RED_TEAM_EXECUTOR_PATH, "image_generation.yaml").resolve()
     NAIVE_CRESCENDO = Path(RED_TEAM_EXECUTOR_PATH, "naive_crescendo.yaml").resolve()
@@ -129,7 +129,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         # Initialize adversarial configuration
         self._adversarial_chat = attack_adversarial_config.target
         system_prompt_template_path = (
-            attack_adversarial_config.system_prompt_path or RTOSystemPromptPaths.TEXT_GENERATION.value
+            attack_adversarial_config.system_prompt_path or RTASystemPromptPaths.TEXT_GENERATION.value
         )
         self._adversarial_chat_system_prompt_template = SeedPrompt.from_yaml_with_required_parameters(
             template_path=system_prompt_template_path,

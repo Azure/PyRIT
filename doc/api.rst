@@ -206,7 +206,7 @@ API Reference
     ManyShotJailbreakAttack
     MultiTurnAttackContext
     PromptSendingAttack
-    RTOSystemPromptPaths
+    RTASystemPromptPaths
     RedTeamingAttack
     RolePlayAttack
     SingleTurnAttackContext

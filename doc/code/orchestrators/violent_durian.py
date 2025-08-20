@@ -26,7 +26,7 @@ import random
 from pathlib import Path
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.common.path import DATASETS_PATH
+from pyrit.executor.attack import RTASystemPromptPaths
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer
@@ -56,7 +56,7 @@ conversation_objective = (
 )
 
 # Define the attack strategy path
-strategy_path = DATASETS_PATH / "executors" / "red_teaming" / "violent_durian.yaml"
+strategy_path = RTASystemPromptPaths.VIOLENT_DURIAN.value
 
 # Set up the red_teaming_chat used to generate prompts sent to the target.
 # OpenAI (GPT4) as the Red Teaming LLM

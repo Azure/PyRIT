@@ -12,7 +12,7 @@ import yaml
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from pyrit.common.initialization import MemoryDatabaseType
-from pyrit.executor.attack.core.attack_config import (
+from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackConverterConfig,
     AttackScoringConfig,

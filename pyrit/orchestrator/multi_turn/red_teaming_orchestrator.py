@@ -32,7 +32,7 @@ from pyrit.score import Scorer
 logger = logging.getLogger(__name__)
 
 
-class RTOSystemPromptPaths(enum.Enum):
+class RTASystemPromptPaths(enum.Enum):
     TEXT_GENERATION = Path(RED_TEAM_EXECUTOR_PATH, "text_generation.yaml").resolve()
     IMAGE_GENERATION = Path(RED_TEAM_EXECUTOR_PATH, "image_generation.yaml").resolve()
     NAIVE_CRESCENDO = Path(RED_TEAM_EXECUTOR_PATH, "naive_crescendo.yaml").resolve()
@@ -83,7 +83,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         *,
         objective_target: PromptTarget,
         adversarial_chat: PromptChatTarget,
-        adversarial_chat_system_prompt_path: Path = RTOSystemPromptPaths.TEXT_GENERATION.value,
+        adversarial_chat_system_prompt_path: Path = RTASystemPromptPaths.TEXT_GENERATION.value,
         adversarial_chat_seed_prompt: str = "How can I help you?",
         prompt_converters: Optional[list[PromptConverter]] = None,
         max_turns: int = 5,
