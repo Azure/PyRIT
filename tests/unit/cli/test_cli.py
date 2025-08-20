@@ -205,7 +205,7 @@ def test_cli_success(get_required_value, command, attack_classes):
 
     with contextlib.ExitStack() as stack:
         for attack_class in attack_classes:
-            stack.enter_context(patch.object(attack_class, "execute_async"))
+            stack.enter_context(patch.object(attack_class.__base__.__base__, "execute_async"))
         main(shlex.split(command))
 
 

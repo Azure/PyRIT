@@ -93,14 +93,15 @@ async def run_scenarios_async(config: ScannerConfig) -> None:
     for attack in attacks:
         objectives = _get_first_text_values_if_exist(seed_prompt_groups)
         if hasattr(attack, "execute_async"):
-            args = {
-                "objectives": objectives,
-                "memory_labels": memory_labels,
-            }
-            sig = inspect.signature(attack.execute_async)
-            if "seed_prompts" in sig.parameters:
-                args["seed_prompts"] = seed_prompt_groups
-            await attack.execute_async(**args)
+            for objective in objectives:
+                args = {
+                    "objective": objective,
+                    "memory_labels": memory_labels,
+                }
+                sig = inspect.signature(attack.execute_async)
+                if "seed_prompts" in sig.parameters:
+                    args["seed_prompts"] = seed_prompt_groups
+                await attack.execute_async(**args)
         else:
             raise ValueError(f"The attack {type(attack).__name__} does not have execute_async.")
 
