@@ -121,7 +121,7 @@ def test_export_all_conversations_with_scores_empty_data(sqlite_instance: Memory
     with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as temp_file:
         file_path = Path(temp_file.name)
         temp_file.close()  # Close the file to allow Windows to open it for writing
-        
+
     try:
         with (
             patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_prompt_request_pieces") as mock_get_pieces,
