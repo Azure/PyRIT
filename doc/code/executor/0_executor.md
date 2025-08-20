@@ -52,14 +52,14 @@ Attacks implement various adversarial testing strategies to send prompts to a ta
 
 Read more about the Attack architecture [here](../executor/attack/0_attack.md)
 
-### Prompt Generation (`pyrit/executor/promptgen`)
+### Prompt Generator (`pyrit/executor/promptgen`)
 
 Prompt generators create various types of prompts using different strategies. Some examples are:
 
 - **Fuzzer Generator**: Generates diverse jailbreak prompts by systematically exploring and generating prompt templates using the Monte Carlo Tree Search to balance exploration of new templates with exploitation of promosing ones.
 - **Anecdoctor Generator**: Generates misinformation content by using few-shot examples directly or by extracting a knowledge graph from examples, then using it.
 
-Read more about Prompt Generators here (link to be added soon)
+Read more about Prompt Generators [here](../executor/promptgen/0_promptgen.md)
 
 ### Workflow (`pyrit/executor/workflow`)
 
@@ -72,8 +72,8 @@ Read more about Workflows [here](../executor/workflow/0_workflow.md)
 
 ### Benchmark (`pyrit/executor/benchmark`)
 
-Benchmarks evaluate model performance and safety. Examples include:
+Benchmarks evaluate model performance and safety based off of specific criteria. Examples include:
 
-- **Question Answering Benchmark**: This benchmark strategy evaluates target models by formatting multiple choice questions into prompts, which get sent to the target model using `PromptSendingAttack`. The responses are evaluated for benchmark reporting.
+- **Question Answering Benchmark**: This benchmark strategy evaluates target models by sending multiple choice questions as prompts and seeing how accurately the model answers those questions. The responses are evaluated for benchmark reporting.
 
-Read more about Benchmarks here (link to be added soon)
+Read more about Benchmarks [here](../executor/benchmark/0_benchmark.md)
