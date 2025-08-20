@@ -136,7 +136,7 @@ class PlagiarismScorer(Scorer):
         """
         if request_response.converted_value_data_type != "text":
             raise ValueError("PlagiarismScorer only supports text data type")
-    
+
     async def _score_async(
         self,
         request_response: PromptRequestPiece,
