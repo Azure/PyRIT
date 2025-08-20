@@ -1,9 +1,7 @@
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT license.
-
+b v
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, overload
+from typing import List, Optional, overload
 
 from pyrit.common.utils import combine_dict, get_kwarg_param
 from pyrit.executor.attack.component import ConversationManager
@@ -43,7 +41,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
     """
     Implementation of multi-prompt sending attack strategy.
 
-    This class orchestrates a multi-turn attack where a series of predefined malicious 
+    This class orchestrates a multi-turn attack where a series of predefined malicious
     prompts are sent sequentially to try to achieve a specific objective against a target
     system. The strategy evaluates the final target response using optional scorers to
     determine if the objective has been met.
@@ -54,7 +52,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
     3. Evaluating the final response with scorers if configured.
     4. Returning the attack result with achievement status.
 
-    Note: This attack always runs all predefined prompts regardless of whether the 
+    Note: This attack always runs all predefined prompts regardless of whether the
     objective is achieved early in the sequence.
 
     The strategy supports customization through prepended conversations, converters,
@@ -181,10 +179,9 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
 
             # Send the prompt
             prompt_response = await self._send_prompt_to_objective_target_async(
-                prompt_group=prompt_group, 
-                context=context
+                prompt_group=prompt_group, context=context
             )
-            
+
             # Update context with latest response (may be None if sending failed)
             if prompt_response:
                 response = prompt_response
@@ -192,6 +189,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
                 context.executed_turns += 1
                 self._logger.debug(f"Successfully sent prompt {prompt_index + 1}")
             else:
+                response = None
                 self._logger.warning(f"Failed to send prompt {prompt_index + 1}, terminating")
                 break
 
@@ -202,11 +200,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
             score = None
 
         # Determine the outcome
-        outcome, outcome_reason = self._determine_attack_outcome(
-            response=response, 
-            score=score, 
-            context=context
-        )
+        outcome, outcome_reason = self._determine_attack_outcome(response=response, score=score, context=context)
 
         result = AttackResult(
             conversation_id=context.session.conversation_id,
@@ -223,11 +217,11 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
         return result
 
     def _determine_attack_outcome(
-        self, 
-        *, 
-        response: Optional[PromptRequestResponse], 
-        score: Optional[Score], 
-        context: MultiPromptSendingAttackContext
+        self,
+        *,
+        response: Optional[PromptRequestResponse],
+        score: Optional[Score],
+        context: MultiPromptSendingAttackContext,
     ) -> tuple[AttackOutcome, Optional[str]]:
         """
         Determine the outcome of the attack based on the response and score.
@@ -252,7 +246,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
             # We got response(s) but the final response did not achieve the objective
             return (
                 AttackOutcome.FAILURE,
-                f"Failed to achieve objective",
+                "Failed to achieve objective",
             )
 
         # No response at all (all attempts filtered/failed)
@@ -358,6 +352,8 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
         """
 
         # Validate parameters before creating context
-        prompt_sequence = get_kwarg_param(kwargs=kwargs, param_name="prompt_sequence", expected_type=list, required=True)
+        prompt_sequence = get_kwarg_param(
+            kwargs=kwargs, param_name="prompt_sequence", expected_type=list, required=True
+        )
 
         return await super().execute_async(**kwargs, prompt_sequence=prompt_sequence)
