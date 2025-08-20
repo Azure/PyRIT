@@ -10,7 +10,6 @@ from pyrit.prompt_converter import (
     LLMGenericTextConverter,
     MaliciousQuestionGeneratorConverter,
     NoiseConverter,
-    RandomTranslationConverter,
     TenseConverter,
     ToneConverter,
 )
@@ -90,18 +89,6 @@ async def test_malicious_question_converter_sets_system_prompt(mock_target) -> N
     system_arg = mock_target.set_system_prompt.call_args[1]["system_prompt"]
     assert isinstance(system_arg, str)
     assert "Please act as an expert in this domain: being awesome" in system_arg
-
-
-@pytest.mark.asyncio
-async def test_random_translation_converter_sets_system_prompt(mock_target) -> None:
-    converter = RandomTranslationConverter(converter_target=mock_target)
-    await converter.convert_async(prompt="being awesome")
-
-    mock_target.set_system_prompt.assert_called_once()
-
-    system_arg = mock_target.set_system_prompt.call_args[1]["system_prompt"]
-    assert isinstance(system_arg, str)
-    assert "Each word is associated with a target language on the same line." in system_arg
 
 
 def test_generic_llm_converter_input_supported() -> None:

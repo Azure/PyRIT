@@ -2,9 +2,9 @@
 # Licensed under the MIT license.
 
 import logging
-import pathlib
 import random
 import re
+from pathlib import Path
 from typing import List, Optional, Union
 
 from pyrit.common.path import DATASETS_PATH
@@ -22,6 +22,9 @@ class RandomTranslationConverter(LLMGenericTextConverter, WordLevelConverter):
 
     An existing ``PromptChatTarget`` is used to perform the translation (like Azure OpenAI).
     """
+
+    # Default language list
+    _DEFAULT_LANGUAGES_SEED_PROMPT_PATH = Path(DATASETS_PATH) / "lexicons" / "languages_most_spoken.yaml"
 
     def __init__(
         self,
@@ -41,14 +44,18 @@ class RandomTranslationConverter(LLMGenericTextConverter, WordLevelConverter):
             converter_target (PromptChatTarget): The target for the prompt conversion.
             system_prompt_template (Optional[SeedPrompt]): The system prompt template to use for the conversion.
                 If not provided, a default template will be used.
-            denylist (list[str]): A list of words or phrases that should be replaced in the prompt.
+            languages (Optional[List[str]]): The list of available languages to use for translation.
+            indices (Optional[List[int]]): Specific indices of words to convert.
+            keywords (Optional[List[str]]): Keywords to select words for conversion.
+            proportion (Optional[float]): Proportion of randomly selected words to convert [0.0-1.0].
+            regex (Optional[Union[str, re.Pattern]]): Regex pattern to match words for conversion.
         """
         # set to default strategy if not provided
         system_prompt_template = (
             system_prompt_template
             if system_prompt_template
             else SeedPrompt.from_yaml_file(
-                pathlib.Path(DATASETS_PATH) / "prompt_converters" / "random_translation_converter.yaml"
+                Path(DATASETS_PATH) / "prompt_converters" / "random_translation_converter.yaml"
             )
         )
 
@@ -64,7 +71,7 @@ class RandomTranslationConverter(LLMGenericTextConverter, WordLevelConverter):
 
         if not languages:
             default_languages = SeedPromptDataset.from_yaml_file(
-                pathlib.Path(DATASETS_PATH) / "lexicons" / "languages_most_spoken.yaml"
+                RandomTranslationConverter._DEFAULT_LANGUAGES_SEED_PROMPT_PATH
             )
             self.languages = [prompt.value for prompt in default_languages.prompts]
         else:
@@ -82,7 +89,7 @@ class RandomTranslationConverter(LLMGenericTextConverter, WordLevelConverter):
             ConverterResult: The result containing the converted output and its type.
         """
         words = prompt.split()
-        selected_indices = super()._select_word_indices(words=words)
+        selected_indices = self._select_word_indices(words=words)
 
         language_word_pairs = [f"NOOP: {word}" for word in words]
 
