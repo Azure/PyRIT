@@ -83,7 +83,7 @@ class PlagiarismScorer(Scorer):
         self,
         response: str,
         reference: str,
-        metric: str = "lcs",
+        metric: PlagiarismMetric = PlagiarismMetric.LCS,
         n: int = 5,
     ) -> float:
 
@@ -100,20 +100,20 @@ class PlagiarismScorer(Scorer):
             return 1.0
 
         # Compute the LCS metric (normalized by reference length)
-        if metric == "lcs":
+        if metric.value == "lcs":
             lcs_len = self._lcs_length(tokens_reference, tokens_response)
             score = lcs_len / reference_len
             return score
 
         # Compute the Levenshtein metric (normalized by max length)
-        elif metric == "levenshtein":
+        elif metric.value == "levenshtein":
             lev_dist = self._levenshtein_distance(tokens_reference, tokens_response)
             max_len = max(reference_len, response_len)
             score = 1 - (lev_dist / max_len)
             return score
 
         # Compute the Jaccard metric (normalized by number of n-grams in reference)
-        elif metric == "jaccard":
+        elif metric.value == "jaccard":
             ref_ngrams = self._ngram_set(tokens_reference, n) if reference_len >= n else set()
             res_ngrams = self._ngram_set(tokens_response, n) if response_len >= n else set()
             if not ref_ngrams:
@@ -153,9 +153,7 @@ class PlagiarismScorer(Scorer):
             list[Score]: A list containing the computed score.
         """
         response_to_evaluate = request_response.converted_value
-        score_value = self._plagiarism_score(
-            response_to_evaluate, self.reference_text, metric=self.metric.value, n=self.n
-        )
+        score_value = self._plagiarism_score(response_to_evaluate, self.reference_text, metric=self.metric, n=self.n)
 
         return [
             Score(
