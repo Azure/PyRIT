@@ -36,6 +36,8 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
 
     This class provides functionality to insert, query, and manage conversation data
     using SQLite. It supports both file-based and in-memory databases.
+
+    Note: this is replacing the old DuckDB implementation.
     """
 
     DEFAULT_DB_FILE_NAME = "pyrit.db"
