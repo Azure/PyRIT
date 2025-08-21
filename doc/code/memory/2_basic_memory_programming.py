@@ -13,6 +13,17 @@
 #     name: python3
 # ---
 
+# %% [markdown]
+# # Basic Memory Programming
+#
+# This notebook demonstrates basic memory programming with PyRIT's SQLite memory backend. It shows how to create conversation entries, store them in memory, and retrieve them.
+#
+# The examples below illustrate how to:
+# - Create prompt request pieces
+# - Add them to SQLite memory
+# - Retrieve conversations by ID
+# - Properly dispose of memory resources
+
 # %%
 from uuid import uuid4
 
