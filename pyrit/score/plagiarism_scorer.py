@@ -153,16 +153,9 @@ class PlagiarismScorer(Scorer):
             list[Score]: A list containing the computed score.
         """
         response_to_evaluate = request_response.converted_value
-
-        score_value = 0.0
-        if self.metric == PlagiarismMetric.LCS:
-            score_value = self._plagiarism_score(response_to_evaluate, self.reference_text, metric=self.metric.value)
-        elif self.metric == PlagiarismMetric.LEVENSHTEIN:
-            score_value = self._plagiarism_score(response_to_evaluate, self.reference_text, metric=self.metric.value)
-        elif self.metric == PlagiarismMetric.JACCARD:
-            score_value = self._plagiarism_score(
-                response_to_evaluate, self.reference_text, metric=self.metric.value, n=self.n
-            )
+        score_value = self._plagiarism_score(
+            response_to_evaluate, self.reference_text, metric=self.metric.value, n=self.n
+        )
 
         return [
             Score(
