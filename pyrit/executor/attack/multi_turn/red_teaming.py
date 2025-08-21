@@ -8,7 +8,7 @@ import logging
 from pathlib import Path
 from typing import Optional, Union
 
-from pyrit.common.path import RED_TEAM_ORCHESTRATOR_PATH
+from pyrit.common.path import RED_TEAM_EXECUTOR_PATH
 from pyrit.common.utils import combine_dict, warn_if_set
 from pyrit.executor.attack.component import (
     ConversationManager,
@@ -42,12 +42,12 @@ from pyrit.score import Scorer
 logger = logging.getLogger(__name__)
 
 
-class RTOSystemPromptPaths(enum.Enum):
-    TEXT_GENERATION = Path(RED_TEAM_ORCHESTRATOR_PATH, "text_generation.yaml").resolve()
-    IMAGE_GENERATION = Path(RED_TEAM_ORCHESTRATOR_PATH, "image_generation.yaml").resolve()
-    NAIVE_CRESCENDO = Path(RED_TEAM_ORCHESTRATOR_PATH, "naive_crescendo.yaml").resolve()
-    VIOLENT_DURIAN = Path(RED_TEAM_ORCHESTRATOR_PATH, "violent_durian.yaml").resolve()
-    CRUCIBLE = Path(RED_TEAM_ORCHESTRATOR_PATH, "crucible.yaml").resolve()
+class RTASystemPromptPaths(enum.Enum):
+    TEXT_GENERATION = Path(RED_TEAM_EXECUTOR_PATH, "text_generation.yaml").resolve()
+    IMAGE_GENERATION = Path(RED_TEAM_EXECUTOR_PATH, "image_generation.yaml").resolve()
+    NAIVE_CRESCENDO = Path(RED_TEAM_EXECUTOR_PATH, "naive_crescendo.yaml").resolve()
+    VIOLENT_DURIAN = Path(RED_TEAM_EXECUTOR_PATH, "violent_durian.yaml").resolve()
+    CRUCIBLE = Path(RED_TEAM_EXECUTOR_PATH, "crucible.yaml").resolve()
 
 
 class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackResult]):
@@ -129,7 +129,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         # Initialize adversarial configuration
         self._adversarial_chat = attack_adversarial_config.target
         system_prompt_template_path = (
-            attack_adversarial_config.system_prompt_path or RTOSystemPromptPaths.TEXT_GENERATION.value
+            attack_adversarial_config.system_prompt_path or RTASystemPromptPaths.TEXT_GENERATION.value
         )
         self._adversarial_chat_system_prompt_template = SeedPrompt.from_yaml_with_required_parameters(
             template_path=system_prompt_template_path,

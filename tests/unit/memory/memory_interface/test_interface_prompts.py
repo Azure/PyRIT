@@ -10,13 +10,13 @@ from uuid import uuid4
 
 import pytest
 
+from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.memory import MemoryInterface, PromptMemoryEntry
 from pyrit.models import (
     PromptRequestPiece,
     PromptRequestResponse,
     Score,
 )
-from pyrit.orchestrator import Orchestrator
 
 
 def assert_original_value_in_list(original_value: str, prompt_request_pieces: Sequence[PromptRequestPiece]):
@@ -98,8 +98,8 @@ def test_get_prompt_request_pieces_uuid_and_string_ids(duckdb_instance: MemoryIn
 
 
 def test_duplicate_memory(duckdb_instance: MemoryInterface):
-    orchestrator1 = Orchestrator()
-    orchestrator2 = Orchestrator()
+    attack1 = PromptSendingAttack(objective_target=MagicMock())
+    attack2 = PromptSendingAttack(objective_target=MagicMock())
     conversation_id_1 = "11111"
     conversation_id_2 = "22222"
     conversation_id_3 = "33333"
@@ -110,7 +110,7 @@ def test_duplicate_memory(duckdb_instance: MemoryInterface):
             converted_value="Hello, how are you?",
             conversation_id=conversation_id_1,
             sequence=0,
-            orchestrator_identifier=orchestrator1.get_identifier(),
+            orchestrator_identifier=attack1.get_identifier(),
         ),
         PromptRequestPiece(
             role="assistant",
@@ -118,14 +118,14 @@ def test_duplicate_memory(duckdb_instance: MemoryInterface):
             converted_value="I'm fine, thank you!",
             conversation_id=conversation_id_1,
             sequence=0,
-            orchestrator_identifier=orchestrator1.get_identifier(),
+            orchestrator_identifier=attack1.get_identifier(),
         ),
         PromptRequestPiece(
             role="assistant",
             original_value="original prompt text",
             converted_value="I'm fine, thank you!",
             conversation_id=conversation_id_3,
-            orchestrator_identifier=orchestrator2.get_identifier(),
+            orchestrator_identifier=attack2.get_identifier(),
         ),
         PromptRequestPiece(
             role="user",
@@ -133,7 +133,7 @@ def test_duplicate_memory(duckdb_instance: MemoryInterface):
             converted_value="Hello, how are you?",
             conversation_id=conversation_id_2,
             sequence=0,
-            orchestrator_identifier=orchestrator1.get_identifier(),
+            orchestrator_identifier=attack1.get_identifier(),
         ),
         PromptRequestPiece(
             role="assistant",
@@ -141,25 +141,25 @@ def test_duplicate_memory(duckdb_instance: MemoryInterface):
             converted_value="I'm fine, thank you!",
             conversation_id=conversation_id_2,
             sequence=0,
-            orchestrator_identifier=orchestrator1.get_identifier(),
+            orchestrator_identifier=attack1.get_identifier(),
         ),
     ]
     duckdb_instance.add_request_pieces_to_memory(request_pieces=pieces)
     assert len(duckdb_instance.get_prompt_request_pieces()) == 5
-    orchestrator3 = Orchestrator()
+    attack3 = PromptSendingAttack(objective_target=MagicMock())
     new_conversation_id1 = duckdb_instance.duplicate_conversation(
-        new_orchestrator_id=orchestrator3.get_identifier()["id"],
+        new_orchestrator_id=attack3.get_identifier()["id"],
         conversation_id=conversation_id_1,
     )
     new_conversation_id2 = duckdb_instance.duplicate_conversation(
-        new_orchestrator_id=orchestrator3.get_identifier()["id"],
+        new_orchestrator_id=attack3.get_identifier()["id"],
         conversation_id=conversation_id_2,
     )
     all_pieces = duckdb_instance.get_prompt_request_pieces()
     assert len(all_pieces) == 9
-    assert len([p for p in all_pieces if p.orchestrator_identifier["id"] == orchestrator1.get_identifier()["id"]]) == 4
-    assert len([p for p in all_pieces if p.orchestrator_identifier["id"] == orchestrator2.get_identifier()["id"]]) == 1
-    assert len([p for p in all_pieces if p.orchestrator_identifier["id"] == orchestrator3.get_identifier()["id"]]) == 4
+    assert len([p for p in all_pieces if p.orchestrator_identifier["id"] == attack1.get_identifier()["id"]]) == 4
+    assert len([p for p in all_pieces if p.orchestrator_identifier["id"] == attack2.get_identifier()["id"]]) == 1
+    assert len([p for p in all_pieces if p.orchestrator_identifier["id"] == attack3.get_identifier()["id"]]) == 4
     assert len([p for p in all_pieces if p.conversation_id == conversation_id_1]) == 2
     assert len([p for p in all_pieces if p.conversation_id == conversation_id_2]) == 2
     assert len([p for p in all_pieces if p.conversation_id == conversation_id_3]) == 1
@@ -172,7 +172,7 @@ def test_duplicate_conversation_pieces_not_score(duckdb_instance: MemoryInterfac
     conversation_id = str(uuid4())
     prompt_id_1 = uuid4()
     prompt_id_2 = uuid4()
-    orchestrator1 = Orchestrator()
+    attack1 = PromptSendingAttack(objective_target=MagicMock())
     memory_labels = {"sample": "label"}
     pieces = [
         PromptRequestPiece(
@@ -182,7 +182,7 @@ def test_duplicate_conversation_pieces_not_score(duckdb_instance: MemoryInterfac
             converted_value="Hello, how are you?",
             conversation_id=conversation_id,
             sequence=0,
-            orchestrator_identifier=orchestrator1.get_identifier(),
+            orchestrator_identifier=attack1.get_identifier(),
             labels=memory_labels,
         ),
         PromptRequestPiece(
@@ -192,7 +192,7 @@ def test_duplicate_conversation_pieces_not_score(duckdb_instance: MemoryInterfac
             converted_value="I'm fine, thank you!",
             conversation_id=conversation_id,
             sequence=0,
-            orchestrator_identifier=orchestrator1.get_identifier(),
+            orchestrator_identifier=attack1.get_identifier(),
             labels=memory_labels,
         ),
     ]
@@ -223,9 +223,9 @@ def test_duplicate_conversation_pieces_not_score(duckdb_instance: MemoryInterfac
     ]
     duckdb_instance.add_request_pieces_to_memory(request_pieces=pieces)
     duckdb_instance.add_scores_to_memory(scores=scores)
-    orchestrator2 = Orchestrator()
+    attack2 = PromptSendingAttack(objective_target=MagicMock())
     new_conversation_id = duckdb_instance.duplicate_conversation(
-        new_orchestrator_id=orchestrator2.get_identifier()["id"],
+        new_orchestrator_id=attack2.get_identifier()["id"],
         conversation_id=conversation_id,
     )
     new_pieces = duckdb_instance.get_prompt_request_pieces(conversation_id=new_conversation_id)
@@ -237,16 +237,16 @@ def test_duplicate_conversation_pieces_not_score(duckdb_instance: MemoryInterfac
     for piece in new_pieces:
         assert piece.id not in (prompt_id_1, prompt_id_2)
     assert len(duckdb_instance.get_prompt_scores(labels=memory_labels)) == 2
-    assert len(duckdb_instance.get_prompt_scores(orchestrator_id=orchestrator1.get_identifier()["id"])) == 2
-    assert len(duckdb_instance.get_prompt_scores(orchestrator_id=orchestrator2.get_identifier()["id"])) == 2
+    assert len(duckdb_instance.get_prompt_scores(orchestrator_id=attack1.get_identifier()["id"])) == 2
+    assert len(duckdb_instance.get_prompt_scores(orchestrator_id=attack2.get_identifier()["id"])) == 2
 
     # The duplicate prompts ids should not have scores so only two scores are returned
     assert len(duckdb_instance.get_prompt_scores(prompt_ids=[str(prompt_id_1), str(prompt_id_2)] + new_pieces_ids)) == 2
 
 
 def test_duplicate_conversation_excluding_last_turn(duckdb_instance: MemoryInterface):
-    orchestrator1 = Orchestrator()
-    orchestrator2 = Orchestrator()
+    attack1 = PromptSendingAttack(objective_target=MagicMock())
+    attack2 = PromptSendingAttack(objective_target=MagicMock())
     conversation_id_1 = "11111"
     conversation_id_2 = "22222"
     pieces = [
@@ -255,14 +255,14 @@ def test_duplicate_conversation_excluding_last_turn(duckdb_instance: MemoryInter
             original_value="original prompt text",
             conversation_id=conversation_id_1,
             sequence=0,
-            orchestrator_identifier=orchestrator1.get_identifier(),
+            orchestrator_identifier=attack1.get_identifier(),
         ),
         PromptRequestPiece(
             role="assistant",
             original_value="original prompt text",
             conversation_id=conversation_id_1,
             sequence=1,
-            orchestrator_identifier=orchestrator1.get_identifier(),
+            orchestrator_identifier=attack1.get_identifier(),
         ),
         PromptRequestPiece(
             role="user",
@@ -270,7 +270,7 @@ def test_duplicate_conversation_excluding_last_turn(duckdb_instance: MemoryInter
             converted_value="I'm fine, thank you!",
             sequence=2,
             conversation_id=conversation_id_1,
-            orchestrator_identifier=orchestrator2.get_identifier(),
+            orchestrator_identifier=attack2.get_identifier(),
         ),
         PromptRequestPiece(
             role="user",
@@ -278,7 +278,7 @@ def test_duplicate_conversation_excluding_last_turn(duckdb_instance: MemoryInter
             converted_value="Hello, how are you?",
             conversation_id=conversation_id_2,
             sequence=2,
-            orchestrator_identifier=orchestrator1.get_identifier(),
+            orchestrator_identifier=attack2.get_identifier(),
         ),
         PromptRequestPiece(
             role="assistant",
@@ -286,15 +286,15 @@ def test_duplicate_conversation_excluding_last_turn(duckdb_instance: MemoryInter
             converted_value="I'm fine, thank you!",
             conversation_id=conversation_id_2,
             sequence=3,
-            orchestrator_identifier=orchestrator1.get_identifier(),
+            orchestrator_identifier=attack1.get_identifier(),
         ),
     ]
     duckdb_instance.add_request_pieces_to_memory(request_pieces=pieces)
     assert len(duckdb_instance.get_prompt_request_pieces()) == 5
-    orchestrator3 = Orchestrator()
+    attack3 = PromptSendingAttack(objective_target=MagicMock())
 
     new_conversation_id1 = duckdb_instance.duplicate_conversation_excluding_last_turn(
-        new_orchestrator_id=orchestrator3.get_identifier()["id"],
+        new_orchestrator_id=attack3.get_identifier()["id"],
         conversation_id=conversation_id_1,
     )
 
@@ -312,7 +312,7 @@ def test_duplicate_conversation_excluding_last_turn_not_score(duckdb_instance: M
     conversation_id = str(uuid4())
     prompt_id_1 = uuid4()
     prompt_id_2 = uuid4()
-    orchestrator1 = Orchestrator()
+    attack1 = PromptSendingAttack(objective_target=MagicMock())
     memory_labels = {"sample": "label"}
     pieces = [
         PromptRequestPiece(
@@ -322,7 +322,7 @@ def test_duplicate_conversation_excluding_last_turn_not_score(duckdb_instance: M
             converted_value="Hello, how are you?",
             conversation_id=conversation_id,
             sequence=0,
-            orchestrator_identifier=orchestrator1.get_identifier(),
+            orchestrator_identifier=attack1.get_identifier(),
             labels=memory_labels,
         ),
         PromptRequestPiece(
@@ -332,7 +332,7 @@ def test_duplicate_conversation_excluding_last_turn_not_score(duckdb_instance: M
             converted_value="I'm fine, thank you!",
             conversation_id=conversation_id,
             sequence=1,
-            orchestrator_identifier=orchestrator1.get_identifier(),
+            orchestrator_identifier=attack1.get_identifier(),
             labels=memory_labels,
         ),
         PromptRequestPiece(
@@ -341,7 +341,7 @@ def test_duplicate_conversation_excluding_last_turn_not_score(duckdb_instance: M
             converted_value="That's good.",
             conversation_id=conversation_id,
             sequence=2,
-            orchestrator_identifier=orchestrator1.get_identifier(),
+            orchestrator_identifier=attack1.get_identifier(),
             labels=memory_labels,
         ),
         PromptRequestPiece(
@@ -350,7 +350,7 @@ def test_duplicate_conversation_excluding_last_turn_not_score(duckdb_instance: M
             converted_value="Thanks.",
             conversation_id=conversation_id,
             sequence=3,
-            orchestrator_identifier=orchestrator1.get_identifier(),
+            orchestrator_identifier=attack1.get_identifier(),
             labels=memory_labels,
         ),
     ]
@@ -381,10 +381,10 @@ def test_duplicate_conversation_excluding_last_turn_not_score(duckdb_instance: M
     ]
     duckdb_instance.add_request_pieces_to_memory(request_pieces=pieces)
     duckdb_instance.add_scores_to_memory(scores=scores)
-    orchestrator2 = Orchestrator()
+    attack2 = PromptSendingAttack(objective_target=MagicMock())
 
     new_conversation_id = duckdb_instance.duplicate_conversation_excluding_last_turn(
-        new_orchestrator_id=orchestrator2.get_identifier()["id"],
+        new_orchestrator_id=attack2.get_identifier()["id"],
         conversation_id=conversation_id,
     )
     new_pieces = duckdb_instance.get_prompt_request_pieces(conversation_id=new_conversation_id)
@@ -395,14 +395,14 @@ def test_duplicate_conversation_excluding_last_turn_not_score(duckdb_instance: M
     assert new_pieces[0].id != prompt_id_1
     assert new_pieces[1].id != prompt_id_2
     assert len(duckdb_instance.get_prompt_scores(labels=memory_labels)) == 2
-    assert len(duckdb_instance.get_prompt_scores(orchestrator_id=orchestrator1.get_identifier()["id"])) == 2
-    assert len(duckdb_instance.get_prompt_scores(orchestrator_id=orchestrator2.get_identifier()["id"])) == 2
+    assert len(duckdb_instance.get_prompt_scores(orchestrator_id=attack1.get_identifier()["id"])) == 2
+    assert len(duckdb_instance.get_prompt_scores(orchestrator_id=attack2.get_identifier()["id"])) == 2
     # The duplicate prompts ids should not have scores so only two scores are returned
     assert len(duckdb_instance.get_prompt_scores(prompt_ids=[str(prompt_id_1), str(prompt_id_2)] + new_pieces_ids)) == 2
 
 
 def test_duplicate_conversation_excluding_last_turn_same_orchestrator(duckdb_instance: MemoryInterface):
-    orchestrator1 = Orchestrator()
+    attack1 = PromptSendingAttack(objective_target=MagicMock())
     conversation_id_1 = "11111"
     pieces = [
         PromptRequestPiece(
@@ -410,28 +410,28 @@ def test_duplicate_conversation_excluding_last_turn_same_orchestrator(duckdb_ins
             original_value="original prompt text",
             conversation_id=conversation_id_1,
             sequence=0,
-            orchestrator_identifier=orchestrator1.get_identifier(),
+            orchestrator_identifier=attack1.get_identifier(),
         ),
         PromptRequestPiece(
             role="assistant",
             original_value="original prompt text",
             conversation_id=conversation_id_1,
             sequence=1,
-            orchestrator_identifier=orchestrator1.get_identifier(),
+            orchestrator_identifier=attack1.get_identifier(),
         ),
         PromptRequestPiece(
             role="user",
             original_value="original prompt text",
             conversation_id=conversation_id_1,
             sequence=2,
-            orchestrator_identifier=orchestrator1.get_identifier(),
+            orchestrator_identifier=attack1.get_identifier(),
         ),
         PromptRequestPiece(
             role="assistant",
             original_value="original prompt text",
             conversation_id=conversation_id_1,
             sequence=3,
-            orchestrator_identifier=orchestrator1.get_identifier(),
+            orchestrator_identifier=attack1.get_identifier(),
         ),
     ]
     duckdb_instance.add_request_pieces_to_memory(request_pieces=pieces)
@@ -452,7 +452,7 @@ def test_duplicate_conversation_excluding_last_turn_same_orchestrator(duckdb_ins
 
 
 def test_duplicate_memory_orchestrator_id_collision(duckdb_instance: MemoryInterface):
-    orchestrator1 = Orchestrator()
+    attack1 = PromptSendingAttack(objective_target=MagicMock())
     conversation_id = "11111"
     pieces = [
         PromptRequestPiece(
@@ -461,14 +461,14 @@ def test_duplicate_memory_orchestrator_id_collision(duckdb_instance: MemoryInter
             converted_value="Hello, how are you?",
             conversation_id=conversation_id,
             sequence=0,
-            orchestrator_identifier=orchestrator1.get_identifier(),
+            orchestrator_identifier=attack1.get_identifier(),
         ),
     ]
     duckdb_instance.add_request_pieces_to_memory(request_pieces=pieces)
     assert len(duckdb_instance.get_prompt_request_pieces()) == 1
     with pytest.raises(ValueError):
         duckdb_instance.duplicate_conversation(
-            new_orchestrator_id=str(orchestrator1.get_identifier()["id"]),
+            new_orchestrator_id=str(attack1.get_identifier()["id"]),
             conversation_id=conversation_id,
         )
 
@@ -678,42 +678,40 @@ def test_get_prompt_request_pieces_id(duckdb_instance: MemoryInterface):
 
 def test_get_prompt_request_pieces_orchestrator(duckdb_instance: MemoryInterface):
 
-    orchestrator1 = Orchestrator()
-    orchestrator2 = Orchestrator()
+    attack1 = PromptSendingAttack(objective_target=MagicMock())
+    attack2 = PromptSendingAttack(objective_target=MagicMock())
 
     entries = [
         PromptMemoryEntry(
             entry=PromptRequestPiece(
                 role="user",
                 original_value="Hello 1",
-                orchestrator_identifier=orchestrator1.get_identifier(),
+                orchestrator_identifier=attack1.get_identifier(),
             )
         ),
         PromptMemoryEntry(
             entry=PromptRequestPiece(
                 role="assistant",
                 original_value="Hello 2",
-                orchestrator_identifier=orchestrator2.get_identifier(),
+                orchestrator_identifier=attack2.get_identifier(),
             )
         ),
         PromptMemoryEntry(
             entry=PromptRequestPiece(
                 role="user",
                 original_value="Hello 3",
-                orchestrator_identifier=orchestrator1.get_identifier(),
+                orchestrator_identifier=attack1.get_identifier(),
             )
         ),
     ]
 
     duckdb_instance._insert_entries(entries=entries)
 
-    orchestrator1_entries = duckdb_instance.get_prompt_request_pieces(
-        orchestrator_id=orchestrator1.get_identifier()["id"]
-    )
+    attack1_entries = duckdb_instance.get_prompt_request_pieces(orchestrator_id=attack1.get_identifier()["id"])
 
-    assert len(orchestrator1_entries) == 2
-    assert_original_value_in_list("Hello 1", orchestrator1_entries)
-    assert_original_value_in_list("Hello 3", orchestrator1_entries)
+    assert len(attack1_entries) == 2
+    assert_original_value_in_list("Hello 1", attack1_entries)
+    assert_original_value_in_list("Hello 3", attack1_entries)
 
 
 def test_get_prompt_request_pieces_sent_after(duckdb_instance: MemoryInterface):
@@ -841,7 +839,7 @@ def test_get_prompt_request_pieces_by_hash(duckdb_instance: MemoryInterface):
 
 
 def test_get_prompt_request_pieces_with_non_matching_memory_labels(duckdb_instance: MemoryInterface):
-    orchestrator1 = Orchestrator()
+    attack = PromptSendingAttack(objective_target=MagicMock())
     labels = {"op_name": "op1", "user_name": "name1", "harm_category": "dummy1"}
     entries = [
         PromptMemoryEntry(
@@ -866,7 +864,7 @@ def test_get_prompt_request_pieces_with_non_matching_memory_labels(duckdb_instan
                 role="user",
                 original_value="Hello 3",
                 converted_value="Hello 1",
-                orchestrator_identifier=orchestrator1.get_identifier(),
+                orchestrator_identifier=attack.get_identifier(),
             )
         ),
     ]
