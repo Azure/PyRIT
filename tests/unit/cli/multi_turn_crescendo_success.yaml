@@ -1,10 +1,10 @@
 datasets:
   - ./pyrit/datasets/seed_prompts/illegal.prompt
 scenarios:
-  - type: "CrescendoOrchestrator"
+  - type: "CrescendoAttack"
 objective_target:
   type: "OpenAIChatTarget"
-adversarial_chat:
+attack_adversarial_config:
   type: "OpenAIChatTarget"
 scoring:
   scoring_target:

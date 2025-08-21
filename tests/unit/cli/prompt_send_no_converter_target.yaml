@@ -1,8 +1,8 @@
-# test case: no converter target specified, and adversarial_chat not available for default
+# test case: no converter target specified, and attack_adversarial_config not available for default
 datasets:
   - ./pyrit/datasets/seed_prompts/illegal.prompt
 scenarios:
-  - type: "PromptSendingOrchestrator"
+  - type: "PromptSendingAttack"
 objective_target:
   type: "OpenAIChatTarget"
 converters:

@@ -135,6 +135,7 @@ __all__ = [
     "UrlConverter",
     "VariationConverter",
     "VariationSelectorSmugglerConverter",
+    "WordLevelConverter",
     "ZalgoConverter",
     "ZeroWidthConverter",
     "ToxicSentenceGeneratorConverter",
