@@ -1,16 +1,16 @@
 datasets:
   - ./pyrit/datasets/seed_prompts/illegal.prompt
 scenarios:
-  - type: "TreeOfAttacksWithPruningOrchestrator"
-    depth: 10
-    width: 7
+  - type: "TreeOfAttacksWithPruningAttack"
+    tree_depth: 10
+    tree_width: 7
     branching_factor: 8
 objective_target:
   type: "OpenAIChatTarget"
-adversarial_chat:
+attack_adversarial_config:
   type: "OpenAIChatTarget"
 scoring:
   scoring_target:
     type: "OpenAIChatTarget"
 database:
-  type: "SQLite"
+  type: "DuckDB"

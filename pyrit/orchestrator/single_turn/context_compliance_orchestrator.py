@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 class ContextDescriptionPaths(enum.Enum):
-    GENERAL = pathlib.Path(DATASETS_PATH) / "orchestrators" / "context_compliance" / "context_description.yaml"
+    GENERAL = pathlib.Path(DATASETS_PATH) / "executors" / "context_compliance" / "context_description.yaml"
 
 
 @deprecated(

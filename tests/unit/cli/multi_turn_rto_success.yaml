@@ -1,13 +1,13 @@
 datasets:
   - ./pyrit/datasets/seed_prompts/illegal.prompt
 scenarios:
-  - type: "RedTeamingOrchestrator"
+  - type: "RedTeamingAttack"
 objective_target:
   type: "OpenAIChatTarget"
-adversarial_chat:
+attack_adversarial_config:
   type: "OpenAIChatTarget"
 scoring:
   objective_scorer:
     type: "SelfAskRefusalScorer"
 database:
-  type: "SQLite"
+  type: "DuckDB"

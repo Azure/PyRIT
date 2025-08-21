@@ -4,17 +4,18 @@
 
 import uuid
 from typing import Literal, Sequence
+from unittest.mock import MagicMock
 from uuid import uuid4
 
 import pytest
 
+from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.memory import MemoryInterface, PromptMemoryEntry
 from pyrit.models import (
     PromptRequestPiece,
     Score,
     SeedPrompt,
 )
-from pyrit.orchestrator import Orchestrator
 
 
 def test_get_scores_by_orchestrator_id_and_label(
@@ -118,7 +119,7 @@ def test_add_score_get_score(
 def test_add_score_duplicate_prompt(sqlite_instance: MemoryInterface):
     # Ensure that scores of duplicate prompts are linked back to the original
     original_id = uuid4()
-    orchestrator = Orchestrator()
+    attack = PromptSendingAttack(objective_target=MagicMock())
     conversation_id = str(uuid4())
     pieces = [
         PromptRequestPiece(
@@ -128,7 +129,7 @@ def test_add_score_duplicate_prompt(sqlite_instance: MemoryInterface):
             converted_value="Hello, how are you?",
             conversation_id=conversation_id,
             sequence=0,
-            orchestrator_identifier=orchestrator.get_identifier(),
+            orchestrator_identifier=attack.get_identifier(),
         )
     ]
     new_orchestrator_id = str(uuid4())
