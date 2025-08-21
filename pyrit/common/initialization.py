@@ -14,7 +14,7 @@ IN_MEMORY = "InMemory"
 SQLITE = "SQLite"
 AZURE_SQL = "AzureSQL"
 DUCK_DB = "DuckDB"
-MemoryDatabaseType = Literal["InMemory", "SQLite", "AzureSQL"]
+MemoryDatabaseType = Literal["InMemory", "SQLite", "AzureSQL", "DuckDB"]
 
 
 def _load_environment_files() -> None:
