@@ -43,9 +43,7 @@ class SkeletonKeyAttack(PromptSendingAttack):
     """
 
     # Default skeleton key prompt path
-    DEFAULT_SKELETON_KEY_PROMPT_PATH: Path = (
-        Path(DATASETS_PATH) / "orchestrators" / "skeleton_key" / "skeleton_key.prompt"
-    )
+    DEFAULT_SKELETON_KEY_PROMPT_PATH: Path = Path(DATASETS_PATH) / "executors" / "skeleton_key" / "skeleton_key.prompt"
 
     def __init__(
         self,

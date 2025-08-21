@@ -24,10 +24,10 @@ logger = logging.getLogger(__name__)
 
 
 class RolePlayPaths(enum.Enum):
-    VIDEO_GAME = pathlib.Path(DATASETS_PATH) / "orchestrators" / "role_play" / "video_game.yaml"
-    MOVIE_SCRIPT = pathlib.Path(DATASETS_PATH) / "orchestrators" / "role_play" / "movie_script.yaml"
-    TRIVIA_GAME = pathlib.Path(DATASETS_PATH) / "orchestrators" / "role_play" / "trivia_game.yaml"
-    PERSUASION_SCRIPT = pathlib.Path(DATASETS_PATH) / "orchestrators" / "role_play" / "persuasion_script.yaml"
+    VIDEO_GAME = pathlib.Path(DATASETS_PATH) / "executors" / "role_play" / "video_game.yaml"
+    MOVIE_SCRIPT = pathlib.Path(DATASETS_PATH) / "executors" / "role_play" / "movie_script.yaml"
+    TRIVIA_GAME = pathlib.Path(DATASETS_PATH) / "executors" / "role_play" / "trivia_game.yaml"
+    PERSUASION_SCRIPT = pathlib.Path(DATASETS_PATH) / "executors" / "role_play" / "persuasion_script.yaml"
 
 
 class RolePlayAttack(PromptSendingAttack):
