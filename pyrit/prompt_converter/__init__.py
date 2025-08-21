@@ -59,6 +59,7 @@ from pyrit.prompt_converter.tense_converter import TenseConverter
 from pyrit.prompt_converter.text_to_hex_converter import TextToHexConverter
 from pyrit.prompt_converter.tone_converter import ToneConverter
 from pyrit.prompt_converter.translation_converter import TranslationConverter
+from pyrit.prompt_converter.random_translation_converter import RandomTranslationConverter
 from pyrit.prompt_converter.unicode_confusable_converter import UnicodeConfusableConverter
 from pyrit.prompt_converter.unicode_replacement_converter import UnicodeReplacementConverter
 from pyrit.prompt_converter.unicode_sub_converter import UnicodeSubstitutionConverter
@@ -129,6 +130,7 @@ __all__ = [
     "TenseConverter",
     "ToneConverter",
     "TranslationConverter",
+    "RandomTranslationConverter",
     "UnicodeConfusableConverter",
     "UnicodeReplacementConverter",
     "UnicodeSubstitutionConverter",

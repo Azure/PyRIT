@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
@@ -44,10 +44,10 @@ print(await variation_converter.convert_async(prompt=prompt))  # type: ignore
 # This is not meant to be exhaustive and include all converter techniques, but hopefully illustrate some things you can do!
 
 # %%
-
 from pyrit.prompt_converter import (
     MaliciousQuestionGeneratorConverter,
     NoiseConverter,
+    RandomTranslationConverter,
     TenseConverter,
     ToneConverter,
     TranslationConverter,
@@ -61,8 +61,13 @@ print(f"Introduced noise: {await noise_converter.convert_async(prompt=prompt)}")
 tone_converter = ToneConverter(converter_target=attack_llm, tone="angry")
 print(f"Angry tone: {await tone_converter.convert_async(prompt=prompt)}")  # type: ignore
 
-language_converter = TranslationConverter(converter_target=attack_llm, language="fr")
-print(f"french translation: {await language_converter.convert_async(prompt=prompt)}")  # type: ignore
+translation_converter = TranslationConverter(converter_target=attack_llm, language="French")
+print(f"french translation: {await translation_converter.convert_async(prompt=prompt)}")  # type: ignore
+
+random_translation_converter = RandomTranslationConverter(
+    converter_target=attack_llm, languages=["French", "German", "Spanish", "English"]
+)
+print(f"random translation: {await random_translation_converter.convert_async(prompt=prompt)}")  # type: ignore
 
 tense_converter = TenseConverter(converter_target=attack_llm, tense="far future")
 print(f"future tense: {await tense_converter.convert_async(prompt=prompt)}")  # type: ignore
