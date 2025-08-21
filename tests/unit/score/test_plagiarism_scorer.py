@@ -332,7 +332,7 @@ class TestPlagiarismScorerUtilityFunctions:
         """Test plagiarism score with LCS metric."""
         response = "The quick brown fox"
         reference = "The quick brown dog"
-        score = scorer._plagiarism_score(response, reference, metric="lcs")
+        score = scorer._plagiarism_score(response, reference, metric=PlagiarismMetric.LCS)
         assert 0.0 <= score <= 1.0
         assert score == 0.75  # 3/4 words match
 
@@ -340,31 +340,37 @@ class TestPlagiarismScorerUtilityFunctions:
         """Test plagiarism score with Levenshtein metric."""
         response = "hello world"
         reference = "hello world"
-        score = scorer._plagiarism_score(response, reference, metric="levenshtein")
+        score = scorer._plagiarism_score(response, reference, metric=PlagiarismMetric.LEVENSHTEIN)
         assert score == 1.0  # Perfect match
 
     def test_plagiarism_score_jaccard(self, scorer):
         """Test plagiarism score with Jaccard metric."""
         response = "the quick brown fox jumps"
         reference = "the quick brown dog runs"
-        score = scorer._plagiarism_score(response, reference, metric="jaccard", n=2)
+        score = scorer._plagiarism_score(response, reference, metric=PlagiarismMetric.JACCARD, n=2)
         assert 0.0 <= score <= 1.0
 
     def test_plagiarism_score_empty_texts(self, scorer):
         """Test plagiarism score with empty texts."""
-        score = scorer._plagiarism_score("", "hello world", metric="lcs")
+        score = scorer._plagiarism_score("", "hello world", metric=PlagiarismMetric.LCS)
         assert score == 0.0
 
     def test_plagiarism_score_invalid_metric(self, scorer):
-        """Test plagiarism score with invalid metric raises ValueError."""
+        """Test plagiarism score with mock invalid metric raises ValueError."""
+        from unittest.mock import MagicMock
+
+        # Create a mock metric that has an invalid value
+        mock_metric = MagicMock()
+        mock_metric.value = "invalid"
+
         with pytest.raises(ValueError, match="metric must be 'lcs', 'levenshtein', or 'jaccard'"):
-            scorer._plagiarism_score("hello", "world", metric="invalid")
+            scorer._plagiarism_score("hello", "world", metric=mock_metric)
 
     def test_plagiarism_score_case_insensitive(self, scorer):
         """Test that plagiarism score is case insensitive."""
         response = "Hello World"
         reference = "hello world"
-        score = scorer._plagiarism_score(response, reference, metric="lcs")
+        score = scorer._plagiarism_score(response, reference, metric=PlagiarismMetric.LCS)
         assert score == 1.0  # Should be perfect match despite case difference
 
     def test_plagiarism_score_lcs_reference_contained_in_response(self, scorer):
@@ -373,21 +379,21 @@ class TestPlagiarismScorerUtilityFunctions:
         response = (
             "The famous opening line states: It was a bright cold day in April, and the clocks were striking thirteen."
         )
-        score = scorer._plagiarism_score(response, reference, metric="lcs")
+        score = scorer._plagiarism_score(response, reference, metric=PlagiarismMetric.LCS)
         assert score == 1.0  # Should be perfect match when reference is contained
 
     def test_plagiarism_score_levenshtein_reference_contained_in_response(self, scorer):
         """Test Levenshtein metric returns 1.0 when reference text is contained in response."""
         reference = "The quick brown fox jumps"
         response = "Here is the sentence: The quick brown fox jumps over the lazy dog."
-        score = scorer._plagiarism_score(response, reference, metric="levenshtein")
+        score = scorer._plagiarism_score(response, reference, metric=PlagiarismMetric.LEVENSHTEIN)
         assert score == 1.0  # Should be perfect match when reference is contained
 
     def test_plagiarism_score_jaccard_reference_contained_in_response(self, scorer):
         """Test Jaccard metric returns 1.0 when reference text is contained in response."""
         reference = "Hello world this is a test"
         response = "The AI model responded with: Hello world this is a test message for validation."
-        score = scorer._plagiarism_score(response, reference, metric="jaccard", n=3)
+        score = scorer._plagiarism_score(response, reference, metric=PlagiarismMetric.JACCARD, n=3)
         assert score == 1.0  # Should be perfect match when reference is contained
 
 
