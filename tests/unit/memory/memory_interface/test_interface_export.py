@@ -69,13 +69,15 @@ def test_export_all_conversations_file_created(sqlite_instance: MemoryInterface)
 def test_export_all_conversations_with_scores_correct_data(sqlite_instance: MemoryInterface):
     sqlite_instance.exporter = MemoryExporter()
 
-    with tempfile.NamedTemporaryFile(delete=True, suffix=".json") as temp_file:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as temp_file:
+        file_path = Path(temp_file.name)
+        temp_file.close()  # Close the file to allow Windows to open it for writing
+
+    try:
         with (
             patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_prompt_request_pieces") as mock_get_pieces,
             patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_prompt_scores") as mock_get_scores,
         ):
-            file_path = Path(temp_file.name)
-
             # Create a mock piece that returns serializable data
             mock_piece = MagicMock()
             mock_piece.id = "piece_id_1234"
@@ -114,6 +116,10 @@ def test_export_all_conversations_with_scores_correct_data(sqlite_instance: Memo
             assert exported_data[0]["converted_value"] == "sample piece"
             assert len(exported_data[0]["scores"]) == 1
             assert exported_data[0]["scores"][0]["score_value"] == 10
+    finally:
+        # Clean up the temp file
+        if file_path.exists():
+            os.remove(file_path)
 
 
 def test_export_all_conversations_with_scores_empty_data(sqlite_instance: MemoryInterface):
