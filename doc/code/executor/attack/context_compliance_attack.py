@@ -13,7 +13,7 @@
 # ---
 
 # %% [markdown]
-# # Context Compliance Attack
+# # Context Compliance Attack (Single-Turn) - optional
 #
 # This attack generates the first prompts using instructions defined in  `context_description_instructions_path`, along with an `adversarial_chat` to generate the first turns to send.
 #

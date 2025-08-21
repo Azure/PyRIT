@@ -18,8 +18,8 @@
 # This demo showcases the use of the `HumanInTheLoopScorer` with the `BatchScorer`. Human-in-the-loop scoring is useful for scenarios where you want to manually review and score prompts or responses, especially in cases where automated scoring may not be sufficient or reliable.
 # It allows you to provide a score for each prompt or response, which can then be used for further analysis or training.
 #
-# Before you begin, ensure you have the correct version of PyRIT installed and have secrets configured as described [here](../../../setup/install_pyrit.md).
-# The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../../memory/0_memory.md).
+# Before you begin, ensure you have the correct version of PyRIT installed and have secrets configured as described [here](../../setup/install_pyrit.md).
+# The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../memory/0_memory.md).
 
 # %%
 from pyrit.common import IN_MEMORY, initialize_pyrit
