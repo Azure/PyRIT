@@ -1,7 +1,7 @@
 datasets:
   - ./tests/integration/cli/illegal_integration_test_image_input.prompt
 scenarios:
-  - type: "PromptSendingOrchestrator"
+  - type: "PromptSendingAttack"
 objective_target:
   type: "OpenAIChatTarget"
 converters:

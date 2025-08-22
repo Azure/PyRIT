@@ -1,15 +1,15 @@
 datasets:
   - ./tests/integration/cli/illegal_integration_test.prompt
 scenarios:
-  - type: "PromptSendingOrchestrator"
-  - type: "RedTeamingOrchestrator"
-  - type: "CrescendoOrchestrator"
+  - type: "PromptSendingAttack"
+  - type: "RedTeamingAttack"
+  - type: "CrescendoAttack"
     max_turns: 5
     max_backtracks: 3
-  - type: "CrescendoOrchestrator"
+  - type: "CrescendoAttack"
     max_turns: 5
     max_backtracks: 5
-  - type: "TreeOfAttacksWithPruningOrchestrator"
+  - type: "TreeOfAttacksWithPruningAttack"
     depth: 3
     width: 3
     branching_factor: 4

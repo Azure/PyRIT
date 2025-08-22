@@ -31,7 +31,7 @@ class ConversationState:
 
 class ConversationManager:
     """
-    Manages conversations for orchestrators, handling message history,
+    Manages conversations for attacks, handling message history,
     system prompts, and conversation state.
     This class provides methods to retrieve conversations, add system prompts,
     and update conversation state with prepended messages.
@@ -148,7 +148,7 @@ class ConversationManager:
 
         Multi-turn continuation - When `max_turns` **is** supplied the function acts as a state machine:
         it verifies that the running history does not exceed the allowed turn budget, excludes
-        the most recent user-utterance (so that an orchestrator can re-inject it as the "live" request),
+        the most recent user-utterance (so that an attack can re-inject it as the "live" request),
         and extracts per-session counters such as the current turn index.
 
         Args:
@@ -200,7 +200,7 @@ class ConversationManager:
         for i, request in enumerate(valid_requests):
             # Skip the last message if it's a user message in multi-turn context
             if should_exclude_last and i == len(valid_requests) - 1:
-                logger.debug("Skipping last user message (will be added by orchestrator)")
+                logger.debug("Skipping last user message (will be added by attack)")
                 continue
 
             # Apply converters if needed
@@ -285,7 +285,7 @@ class ConversationManager:
         """
         Process a prepended message and update the conversation state.
         This method handles the conversion of request pieces, sets conversation IDs,
-        and orchestrator identifiers, and processes each piece based on its role.
+        and attack identifiers, and processes each piece based on its role.
 
         Args:
             request (PromptRequestResponse): The request containing pieces to process.
@@ -302,7 +302,7 @@ class ConversationManager:
         if not request or not request.request_pieces:
             return
 
-        # Set the conversation ID and orchestrator ID for each piece in the request
+        # Set the conversation ID and attack ID for each piece in the request
         save_to_memory = True
         for piece in request.request_pieces:
             piece.conversation_id = conversation_id
