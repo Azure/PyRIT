@@ -19,14 +19,14 @@ from pyrit.models import (
 
 
 def test_get_scores_by_orchestrator_id_and_label(
-    duckdb_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
+    sqlite_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
 ):
     # create list of scores that are associated with sample conversation entries
     # assert that that list of scores is the same as expected :-)
 
     prompt_id = sample_conversations[0].id
 
-    duckdb_instance.add_request_pieces_to_memory(request_pieces=sample_conversations)
+    sqlite_instance.add_request_pieces_to_memory(request_pieces=sample_conversations)
 
     score = Score(
         score_value=str(0.8),
@@ -39,10 +39,10 @@ def test_get_scores_by_orchestrator_id_and_label(
         prompt_request_response_id=prompt_id,
     )
 
-    duckdb_instance.add_scores_to_memory(scores=[score])
+    sqlite_instance.add_scores_to_memory(scores=[score])
 
     # Fetch the score we just added
-    db_score = duckdb_instance.get_prompt_scores(orchestrator_id=sample_conversations[0].orchestrator_identifier["id"])
+    db_score = sqlite_instance.get_prompt_scores(orchestrator_id=sample_conversations[0].orchestrator_identifier["id"])
 
     assert len(db_score) == 1
     assert db_score[0].score_value == score.score_value
@@ -54,38 +54,38 @@ def test_get_scores_by_orchestrator_id_and_label(
     assert db_score[0].scorer_class_identifier == score.scorer_class_identifier
     assert db_score[0].prompt_request_response_id == score.prompt_request_response_id
 
-    db_score = duckdb_instance.get_prompt_scores(labels=sample_conversations[0].labels)
+    db_score = sqlite_instance.get_prompt_scores(labels=sample_conversations[0].labels)
     assert len(db_score) == 1
     assert db_score[0].score_value == score.score_value
 
-    db_score = duckdb_instance.get_scores(score_ids=[str(score.id)])
+    db_score = sqlite_instance.get_scores(score_ids=[str(score.id)])
     assert len(db_score) == 1
     assert db_score[0].score_value == score.score_value
 
-    db_score = duckdb_instance.get_prompt_scores(
+    db_score = sqlite_instance.get_prompt_scores(
         orchestrator_id=sample_conversations[0].orchestrator_identifier["id"],
         labels={"x": "y"},
     )
     assert len(db_score) == 0
 
-    db_score = duckdb_instance.get_prompt_scores(
+    db_score = sqlite_instance.get_prompt_scores(
         orchestrator_id=str(uuid.uuid4()),
     )
     assert len(db_score) == 0
 
-    db_score = duckdb_instance.get_scores()
+    db_score = sqlite_instance.get_scores()
     assert len(db_score) == 0
 
 
 @pytest.mark.parametrize("score_type", ["float_scale", "true_false"])
 def test_add_score_get_score(
-    duckdb_instance: MemoryInterface,
+    sqlite_instance: MemoryInterface,
     sample_conversation_entries: Sequence[PromptMemoryEntry],
     score_type: Literal["float_scale"] | Literal["true_false"],
 ):
     prompt_id = sample_conversation_entries[0].id
 
-    duckdb_instance._insert_entries(entries=sample_conversation_entries)
+    sqlite_instance._insert_entries(entries=sample_conversation_entries)
 
     score_value = str(True) if score_type == "true_false" else "0.8"
 
@@ -100,10 +100,10 @@ def test_add_score_get_score(
         prompt_request_response_id=prompt_id,
     )
 
-    duckdb_instance.add_scores_to_memory(scores=[score])
+    sqlite_instance.add_scores_to_memory(scores=[score])
 
     # Fetch the score we just added
-    db_score = duckdb_instance.get_prompt_scores(prompt_ids=[prompt_id])
+    db_score = sqlite_instance.get_prompt_scores(prompt_ids=[prompt_id])
     assert db_score
     assert len(db_score) == 1
     assert db_score[0].score_value == score_value
@@ -116,7 +116,7 @@ def test_add_score_get_score(
     assert db_score[0].prompt_request_response_id == prompt_id
 
 
-def test_add_score_duplicate_prompt(duckdb_instance: MemoryInterface):
+def test_add_score_duplicate_prompt(sqlite_instance: MemoryInterface):
     # Ensure that scores of duplicate prompts are linked back to the original
     original_id = uuid4()
     attack = PromptSendingAttack(objective_target=MagicMock())
@@ -133,9 +133,9 @@ def test_add_score_duplicate_prompt(duckdb_instance: MemoryInterface):
         )
     ]
     new_orchestrator_id = str(uuid4())
-    duckdb_instance.add_request_pieces_to_memory(request_pieces=pieces)
-    duckdb_instance.duplicate_conversation(new_orchestrator_id=new_orchestrator_id, conversation_id=conversation_id)
-    dupe_piece = duckdb_instance.get_prompt_request_pieces(orchestrator_id=new_orchestrator_id)[0]
+    sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
+    sqlite_instance.duplicate_conversation(new_orchestrator_id=new_orchestrator_id, conversation_id=conversation_id)
+    dupe_piece = sqlite_instance.get_prompt_request_pieces(orchestrator_id=new_orchestrator_id)[0]
     dupe_id = dupe_piece.id
 
     score_id = uuid4()
@@ -151,14 +151,14 @@ def test_add_score_duplicate_prompt(duckdb_instance: MemoryInterface):
         scorer_class_identifier={"__type__": "TestScorer"},
         prompt_request_response_id=dupe_id,
     )
-    duckdb_instance.add_scores_to_memory(scores=[score])
+    sqlite_instance.add_scores_to_memory(scores=[score])
 
     assert score.prompt_request_response_id == original_id
-    assert duckdb_instance.get_prompt_scores(prompt_ids=[str(dupe_id)])[0].id == score_id
-    assert duckdb_instance.get_prompt_scores(prompt_ids=[str(original_id)])[0].id == score_id
+    assert sqlite_instance.get_prompt_scores(prompt_ids=[str(dupe_id)])[0].id == score_id
+    assert sqlite_instance.get_prompt_scores(prompt_ids=[str(original_id)])[0].id == score_id
 
 
-def test_get_scores_by_memory_labels(duckdb_instance: MemoryInterface):
+def test_get_scores_by_memory_labels(sqlite_instance: MemoryInterface):
     prompt_id = uuid4()
     pieces = [
         PromptRequestPiece(
@@ -170,7 +170,7 @@ def test_get_scores_by_memory_labels(duckdb_instance: MemoryInterface):
             labels={"sample": "label"},
         )
     ]
-    duckdb_instance.add_request_pieces_to_memory(request_pieces=pieces)
+    sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
 
     score = Score(
         score_value=str(0.8),
@@ -182,10 +182,10 @@ def test_get_scores_by_memory_labels(duckdb_instance: MemoryInterface):
         scorer_class_identifier={"__type__": "TestScorer"},
         prompt_request_response_id=prompt_id,
     )
-    duckdb_instance.add_scores_to_memory(scores=[score])
+    sqlite_instance.add_scores_to_memory(scores=[score])
 
     # Fetch the score we just added
-    db_score = duckdb_instance.get_prompt_scores(labels={"sample": "label"})
+    db_score = sqlite_instance.get_prompt_scores(labels={"sample": "label"})
 
     assert len(db_score) == 1
     assert db_score[0].score_value == score.score_value
@@ -199,14 +199,14 @@ def test_get_scores_by_memory_labels(duckdb_instance: MemoryInterface):
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompts_no_filters(duckdb_instance: MemoryInterface):
+async def test_get_seed_prompts_no_filters(sqlite_instance: MemoryInterface):
     seed_prompts = [
         SeedPrompt(value="prompt1", dataset_name="dataset1", data_type="text"),
         SeedPrompt(value="prompt2", dataset_name="dataset2", data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
-    result = duckdb_instance.get_seed_prompts()
+    result = sqlite_instance.get_seed_prompts()
     assert len(result) == 2
     assert result[0].value == "prompt1"
     assert result[1].value == "prompt2"

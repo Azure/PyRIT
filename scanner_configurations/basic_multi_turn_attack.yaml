@@ -25,7 +25,7 @@ scoring:
   objective_scorer:
     type: "SelfAskRefusalScorer"
 database:
-  type: "DuckDB"
+  type: "SQLite"
   memory_labels:
     operator: roakey
     operation: op_trash_panda

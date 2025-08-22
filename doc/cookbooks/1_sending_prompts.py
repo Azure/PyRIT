@@ -31,7 +31,7 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import SeedPromptDataset
 
-# Configure memory. For this notebook, we're using in-memory. In reality, you will likely want something more permanent (like AzureSQL or DuckDB)
+# Configure memory. For this notebook, we're using in-memory. In reality, you will likely want something more permanent (like AzureSQL or SQLite)
 initialize_pyrit(memory_db_type="InMemory")
 
 memory = CentralMemory.get_memory_instance()

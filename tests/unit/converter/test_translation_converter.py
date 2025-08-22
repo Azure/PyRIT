@@ -10,21 +10,21 @@ from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_converter import TranslationConverter
 
 
-def test_prompt_translation_init_templates_not_null(duckdb_instance):
+def test_prompt_translation_init_templates_not_null(sqlite_instance):
     prompt_target = MockPromptTarget()
     translation_converter = TranslationConverter(converter_target=prompt_target, language="en")
     assert translation_converter.system_prompt
 
 
 @pytest.mark.parametrize("languages", [None, ""])
-def test_translator_converter_languages_validation_throws(languages, duckdb_instance):
+def test_translator_converter_languages_validation_throws(languages, sqlite_instance):
     prompt_target = MockPromptTarget()
     with pytest.raises(ValueError):
         TranslationConverter(converter_target=prompt_target, language=languages)
 
 
 @pytest.mark.asyncio
-async def test_translation_converter_convert_async_retrieve_key_capitalization_mismatch(duckdb_instance):
+async def test_translation_converter_convert_async_retrieve_key_capitalization_mismatch(sqlite_instance):
     prompt_target = MockPromptTarget()
 
     translation_converter = TranslationConverter(converter_target=prompt_target, language="spanish")
@@ -40,7 +40,7 @@ async def test_translation_converter_convert_async_retrieve_key_capitalization_m
 
 
 @pytest.mark.asyncio
-async def test_translation_converter_retries_on_exception(duckdb_instance):
+async def test_translation_converter_retries_on_exception(sqlite_instance):
     prompt_target = MockPromptTarget()
     max_retries = 3
     translation_converter = TranslationConverter(
@@ -56,7 +56,7 @@ async def test_translation_converter_retries_on_exception(duckdb_instance):
 
 
 @pytest.mark.asyncio
-async def test_translation_converter_succeeds_after_retries(duckdb_instance):
+async def test_translation_converter_succeeds_after_retries(sqlite_instance):
     """Test that TranslationConverter succeeds if a retry attempt works."""
     prompt_target = MockPromptTarget()
     max_retries = 3
@@ -91,7 +91,7 @@ async def test_translation_converter_succeeds_after_retries(duckdb_instance):
         assert result.output_type == "text"
 
 
-def test_translation_converter_input_supported(duckdb_instance):
+def test_translation_converter_input_supported(sqlite_instance):
     prompt_target = MockPromptTarget()
     translation_converter = TranslationConverter(converter_target=prompt_target, language="spanish")
     assert translation_converter.input_supported("text") is True

@@ -15,7 +15,7 @@ objective_target:
 # scoring:
 #   objective_scorer: ...
 database:
-  type: "DuckDB"
+  type: "SQLite"
   memory_labels:
     operator: roakey
     operation: op_trash_panda
