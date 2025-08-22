@@ -16,7 +16,7 @@ from pyrit.executor.attack import (
     ConversationState,
     MultiTurnAttackContext,
     RedTeamingAttack,
-    RTOSystemPromptPaths,
+    RTASystemPromptPaths,
 )
 from pyrit.models import (
     AttackOutcome,
@@ -158,11 +158,11 @@ class TestRedTeamingAttackInitialization:
     @pytest.mark.parametrize(
         "system_prompt_path",
         [
-            RTOSystemPromptPaths.TEXT_GENERATION.value,
-            RTOSystemPromptPaths.IMAGE_GENERATION.value,
-            RTOSystemPromptPaths.NAIVE_CRESCENDO.value,
-            RTOSystemPromptPaths.VIOLENT_DURIAN.value,
-            RTOSystemPromptPaths.CRUCIBLE.value,
+            RTASystemPromptPaths.TEXT_GENERATION.value,
+            RTASystemPromptPaths.IMAGE_GENERATION.value,
+            RTASystemPromptPaths.NAIVE_CRESCENDO.value,
+            RTASystemPromptPaths.VIOLENT_DURIAN.value,
+            RTASystemPromptPaths.CRUCIBLE.value,
         ],
     )
     def test_init_with_different_system_prompts(

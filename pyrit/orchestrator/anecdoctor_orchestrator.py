@@ -71,7 +71,7 @@ class AnecdoctorOrchestrator(Orchestrator):
         Loads a prompt template from a given YAML file (relative path).
         Returns the 'value' key as a string.
         """
-        prompt_path = Path(DATASETS_PATH, "orchestrators", "anecdoctor", yaml_filename)
+        prompt_path = Path(DATASETS_PATH, "executors", "anecdoctor", yaml_filename)
         prompt_data = prompt_path.read_text(encoding="utf-8")
         yaml_data = yaml.safe_load(prompt_data)
         return yaml_data["value"]

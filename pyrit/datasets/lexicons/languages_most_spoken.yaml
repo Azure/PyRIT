@@ -1,0 +1,50 @@
+dataset_name: languages_most_spoken
+data_type: text
+description: |
+  This dataset contains a list of the most spoken languages in the World.
+  Language speakers include people for whom it is either the first or second language.
+  A canonical use case is to use this list as part of RandomTranslationConverter
+authors: Frédéric Dubut
+groups: AI Red Team
+source: Wikipedia https://en.wikipedia.org/wiki/List_of_languages_by_total_number_of_speakers
+prompts:
+# More than one billion speakers
+  - value: English
+  - value: Mandarin Chinese
+# More than 100 million speakers
+  - value: Hindi
+  - value: Spanish
+  - value: Modern Standard Arabic
+  - value: French
+  - value: Bengali
+  - value: Portuguese
+  - value: Russian
+  - value: Indonesian
+  - value: Urdu
+  - value: Standard German
+  - value: Japanese
+  - value: Nigerian Pidgin
+  - value: Egyptian Arabic
+# More than 50 million speakers
+  - value: Marathi
+  - value: Vietnamese
+  - value: Telugu
+  - value: Hausa
+  - value: Turkish
+  - value: Western Punjabi
+  - value: Swahili
+  - value: Tagalog
+  - value: Tamil
+  - value: Yue Chinese
+  - value: Wu Chinese
+  - value: Iranian Persian
+  - value: Korean
+  - value: Thai
+  - value: Javanese
+  - value: Italian
+  - value: Gujarati
+  - value: Levantine Arabic
+  - value: Amharic
+  - value: Kannada
+  - value: Bhojpuri
+  - value: Sudanese Arabic

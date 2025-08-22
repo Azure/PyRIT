@@ -1,0 +1,47 @@
+dataset_name: languages_most_used_internet
+data_type: text
+description: |
+  This dataset contains a list of the most used languages on the Internet.
+  A canonical use case is to use this list as part of RandomTranslationConverter
+authors: Frédéric Dubut
+groups: AI Red Team
+source: Wikipedia https://en.wikipedia.org/wiki/Languages_used_on_the_Internet
+prompts:
+  - value: English
+  - value: Spanish
+  - value: German
+  - value: Japanese
+  - value: French
+  - value: Portuguese
+  - value: Russian
+  - value: Italian
+  - value: Dutch
+  - value: Polish
+  - value: Turkish
+  - value: Persian
+  - value: Chinese
+  - value: Vietnamese
+  - value: Indonesian
+  - value: Czech
+  - value: Korean
+  - value: Ukrainian
+  - value: Hungarian
+  - value: Swedish
+  - value: Arabic
+  - value: Romanian
+  - value: Greek
+  - value: Hebrew
+  - value: Danish
+  - value: Finnish
+  - value: Slovak
+  - value: Thai
+  - value: Bulgarian
+  - value: Serbian
+  - value: Croatian
+  - value: Lithuanian
+  - value: Norwegian Bokmål
+  - value: Slovenian
+  - value: Catalan
+  - value: Estonian
+  - value: Norwegian
+  - value: Latvian
