@@ -13,7 +13,7 @@ from pyrit.common import path
 nb_directory_path = pathlib.Path(path.DOCS_CODE_PATH, "scoring").resolve()
 
 skipped_files = [
-    "5_human_in_the_loop_scorer.ipynb", # requires human input
+    "5_human_in_the_loop_scorer.ipynb",  # requires human input
     "human_in_the_loop_scorer_gradio.ipynb",  # requires human input
 ]
 

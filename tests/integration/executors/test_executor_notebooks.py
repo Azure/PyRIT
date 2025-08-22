@@ -20,10 +20,12 @@ skipped_files = [
 
 @pytest.mark.parametrize(
     "file_path",
-    [os.path.join(dir_path, file) 
-     for dir_path in folder_paths 
-     for file in os.listdir(dir_path) 
-     if file.endswith(".ipynb") and file not in skipped_files],
+    [
+        os.path.join(dir_path, file)
+        for dir_path in folder_paths
+        for file in os.listdir(dir_path)
+        if file.endswith(".ipynb") and file not in skipped_files
+    ],
 )
 def test_execute_notebooks(file_path):
     nb_path = pathlib.Path(file_path).resolve()
