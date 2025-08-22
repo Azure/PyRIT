@@ -55,12 +55,7 @@ class SQLiteUUID(TypeDecorator):
         return str(value) if value else None
 
     def process_result_value(self, value, dialect):
-        if value is None:
-            return value
-        elif isinstance(value, uuid.UUID):
-            return value
-        else:
-            return uuid.UUID(value)
+        return uuid.UUID(value) if value else None
 
 
 class Base(DeclarativeBase):

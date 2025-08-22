@@ -11,7 +11,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
 
-from sqlalchemy import MetaData, and_, func
+from sqlalchemy import MetaData, and_
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql.elements import ColumnElement
@@ -982,9 +982,8 @@ class MemoryInterface(abc.ABC):
         if conversation_id:
             conditions.append(AttackResultEntry.conversation_id == conversation_id)
         if objective:
-            # Use case-sensitive pattern matching via SQLite GLOB function
-            # GLOB is case-sensitive, unlike LIKE which is case-insensitive
-            conditions.append(func.glob(f"*{objective}*", AttackResultEntry.objective))
+            conditions.append(AttackResultEntry.objective.contains(objective))
+
         if objective_sha256:
             conditions.append(AttackResultEntry.objective_sha256.in_(objective_sha256))
         if outcome:

@@ -29,11 +29,11 @@ memory.dispose_engine()
 # %% [markdown]
 # ## DuckDB to SQLite Migration
 #
-# **Note:** DuckDBMemory has been replaced by SQLiteMemory for better compatibility and performance. 
+# **Note:** DuckDBMemory has been replaced by SQLiteMemory for better compatibility and performance.
 #
 # If you try to use DuckDBMemory, it will:
 # 1. Issue a warning
-# 2. Raise a `NotImplementedError` 
+# 2. Raise a `NotImplementedError`
 #
 # Please use `SQLiteMemory` instead, which provides the same functionality with better reliability.
 
