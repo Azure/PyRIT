@@ -52,12 +52,7 @@ class SQLiteUUID(TypeDecorator):
             return dialect.type_descriptor(Uuid())
 
     def process_bind_param(self, value, dialect):
-        if value is None:
-            return value
-        elif isinstance(value, uuid.UUID):
-            return str(value)
-        else:
-            return str(value)
+        return str(value) if value else None
 
     def process_result_value(self, value, dialect):
         if value is None:
@@ -453,6 +448,7 @@ class AttackResultEntry(Base):
     )
     outcome_reason = mapped_column(String, nullable=True)
     attack_metadata: Mapped[dict[str, Union[str, int, float, bool]]] = mapped_column(JSON, nullable=True)
+    pruned_conversation_ids: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
     adversarial_chat_conversation_ids: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
     timestamp = mapped_column(DateTime, nullable=False)
 
