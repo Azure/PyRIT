@@ -16,7 +16,7 @@
 # # 5. Resending Prompts Using Memory Labels Example
 #
 # Memory labels are a free-from dictionary for tagging prompts for easier querying and scoring later on. The `GLOBAL_MEMORY_LABELS`
-# environment variable can be set to apply labels (e.g. `username` and `op_name`) to all prompts sent by any orchestrator.
+# environment variable can be set to apply labels (e.g. `username` and `op_name`) to all prompts sent by any attack.
 # Passed-in labels will be combined with `GLOBAL_MEMORY_LABELS` into one dictionary. In the case of collisions,
 # the passed-in labels take precedence.
 #
@@ -60,7 +60,7 @@ for result in results:
     await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
 
 # %% [markdown]
-# Because you have labeled `group1`, you can retrieve these prompts later. For example, you could score them as shown [here](../orchestrators/4_scoring_orchestrator.ipynb). Or you could resend them as shown below; this script will resend any prompts with the label regardless of modality.
+# Because you have labeled `group1`, you can retrieve these prompts later. For example, you could score them as shown [here](../scoring/7_batch_scorer.ipynb). Or you could resend them as shown below; this script will resend any prompts with the label regardless of modality.
 
 # %%
 from pyrit.executor.attack import AttackConverterConfig
