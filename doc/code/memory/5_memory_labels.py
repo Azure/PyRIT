@@ -27,8 +27,6 @@
 # 1. Send prompts to a text target using `PromptSendingAttack`, passing in `memory_labels` to the execution function.
 # 2. Retrieve these prompts by querying for the corresponding memory label(s).
 # 3. Resend the retrieved prompts.
-#
-# Note that similar steps can be taken with `MultiTurnOrchestrators` as well by passing in `memory_labels` to `run_attack_async`.
 
 # %%
 import uuid
