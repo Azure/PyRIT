@@ -1,6 +1,6 @@
 # 10. Exception Handling Guidelines
 
-In our PyRIT framework, proper exception handling is crucial for maintaining robustness and reliability. We have centralized exceptions in a dedicated [module](../../pyrit/exceptions/exception_classes.py) to streamline this process. When working with orchestrators, targets, converters, and scorers, and handle exceptions please adhere to the following guidelines:
+In our PyRIT framework, proper exception handling is crucial for maintaining robustness and reliability. We have centralized exceptions in a dedicated [module](../../pyrit/exceptions/exception_classes.py) to streamline this process. When working with attacks, targets, converters, and scorers, and handle exceptions please adhere to the following guidelines:
 
 ## General Guidelines
 
@@ -15,7 +15,7 @@ In our PyRIT framework, proper exception handling is crucial for maintaining rob
    - **Action**: In the endpoint code (scoring, target, or converter) there should be a retry mechanism to attempt the operation a few times. For example, use the `@pyrit_target_retry` decorator
    - **If Still Failing**:
      - The endpoint raises the exception (it should be unhandled)
-     - The top-level orchestrators can handle the exception as needed
+     - The top-level attacks can handle the exception as needed
 
 1. **BadRequestError Caused by Content Filter**
    - **Action**: Do not retry the operation.

@@ -28,7 +28,7 @@ class SingleTurnAttackContext(AttackContext):
     # System prompt for chat-based targets
     system_prompt: Optional[str] = None
 
-    # Arbitrary metadata that downstream orchestrators or scorers may attach
+    # Arbitrary metadata that downstream attacks or scorers may attach
     metadata: Optional[dict[str, Union[str, int]]] = None
 
 

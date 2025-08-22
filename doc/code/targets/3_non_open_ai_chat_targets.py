@@ -72,6 +72,6 @@ azure_ml_chat_target.dispose_db_engine()
 # %% [markdown]
 #
 # You can then use this cell anywhere you would use a `PromptTarget` object.
-# For example, you can create a red teaming orchestrator and use this instead of the `AzureOpenAI` target and do the [Gandalf or Crucible Demos](./2_custom_targets.ipynb) but use this AML model.
+# For example, you can create a red teaming attack and use this instead of the `AzureOpenAI` target and do the [Gandalf or Crucible Demos](./2_custom_targets.ipynb) but use this AML model.
 #
-# This is also shown in the [Red Teaming Orchestrator](../orchestrators/2_multi_turn_orchestrators.ipynb) documentation.
+# This is also shown in the [Red Teaming Attack](../executor/attack/2_red_teaming_attack.ipynb) documentation.

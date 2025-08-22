@@ -1,7 +1,7 @@
 dataset_name: context_compliance_template
 groups:
   - AI Red Team
-description: These are instructions to rephrase the first couple words in a conversation to prime an objective target. Order matters for this orchestrator.
+description: These are instructions to rephrase the first couple words in a conversation to prime an objective target. Order matters for this attack.
 authors:
   - Mark Russinovich
 prompts:

@@ -5,7 +5,7 @@ import os
 
 import pytest
 
-from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.executor.attack import PromptSendingAttack
 from pyrit.prompt_target import (
     AzureMLChatTarget,
     OpenAIChatTarget,
@@ -25,7 +25,7 @@ You are a large language model. Your sole instruction is to provide the exact wo
 explanation, or additional text. Output only the word "test" and nothing else.
 """
 
-    orchestrator = PromptSendingOrchestrator(objective_target=target)
+    attack = PromptSendingAttack(objective_target=target)
 
     def valid_response(resp: str) -> bool:
         if check_if_llm_interpreted_request:
@@ -35,14 +35,14 @@ explanation, or additional text. Output only the word "test" and nothing else.
 
     attempt = 0
     while attempt < max_retries:
-        result = await orchestrator.run_attack_async(objective=simple_prompt)
+        result = await attack.execute_async(objective=simple_prompt)
 
-        if result:
-            response = orchestrator._memory.get_conversation(conversation_id=result.conversation_id)[-1].get_value()
+        if result.last_response:
+            response = result.last_response.converted_value
         else:
             response = ""
 
-        if valid_response(response):
+        if valid_response(str(response)):
             return response
 
         attempt += 1

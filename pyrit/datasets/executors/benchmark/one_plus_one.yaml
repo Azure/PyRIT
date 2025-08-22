@@ -1,5 +1,5 @@
 dataset_name: question_answer_default
-description: This is an example first turn response to a question and answer scenario for the orchestrator.
+description: This is an example first turn response to a question and answer scenario for the attack.
 prompts:
   - description: This is the first user turn
     value: |
