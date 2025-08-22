@@ -28,26 +28,3 @@ memory = SQLiteMemory(db_path=":memory:")
 memory.print_schema()
 
 memory.dispose_engine()
-
-
-# %% [markdown]
-# ## DuckDB to SQLite Migration
-#
-# **Note:** DuckDBMemory has been replaced by SQLiteMemory for better compatibility and performance.
-#
-# If you try to use DuckDBMemory, it will:
-# 1. Issue a warning
-# 2. Use in-memory SQLite instead
-
-# %%
-# Example: What happens when you try to use DuckDB
-# This demonstrates the helpful error message that guides users to migrate
-
-from pyrit.common.initialization import initialize_pyrit
-
-try:
-    # Attempting to initialize with DuckDB will show a helpful migration message
-    initialize_pyrit(memory_db_type="DuckDB")
-
-except Exception as e:
-    print("Error:", e)
