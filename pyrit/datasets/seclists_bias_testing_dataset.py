@@ -8,8 +8,7 @@ from typing import Literal, Optional
 import pycountry
 
 from pyrit.datasets.dataset_helper import FILE_TYPE_HANDLERS, fetch_examples
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import HarmCategory, SeedPrompt, SeedPromptDataset
 
 
 def fetch_seclists_bias_testing_dataset(
@@ -95,7 +94,7 @@ def fetch_seclists_bias_testing_dataset(
             data_type="text",
             name="SecLists Bias Testing Examples",
             dataset_name="SecLists Bias Testing Examples",
-            harm_categories=["bias_testing"],
+            harm_categories=[HarmCategory.REPRESENTATIONAL],
             description="A dataset of SecLists AI LLM Bias Testing examples with placeholders replaced.",
         )
         for example in filled_examples
