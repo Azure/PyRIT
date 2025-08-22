@@ -74,9 +74,9 @@ def fetch_medsafetybench_dataset(
         )
 
         for ex in examples:
-            prompt = ex.get("harmful_medical_request")
+            prompt = ex.get("harmful_medical_request") or ex.get("prompt")
             if not prompt:
-                raise KeyError(f"No 'harmful_medical_request' found in example from {source}")
+                raise KeyError(f"No 'harmful_medical_request' or 'prompt' found in example from {source}")
 
             url_parts = source.split("/")
             model_type = url_parts[-2] if len(url_parts) >= 2 else "unknown"

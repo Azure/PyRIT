@@ -43,7 +43,7 @@ class ContextComplianceAttack(PromptSendingAttack):
 
     # Default path for context description instructions
     DEFAULT_CONTEXT_DESCRIPTION_PATH: Path = (
-        Path(DATASETS_PATH) / "orchestrators" / "context_compliance" / "context_description.yaml"
+        Path(DATASETS_PATH) / "executors" / "context_compliance" / "context_description.yaml"
     )
 
     # Default affirmative response used in conversation
@@ -165,7 +165,7 @@ class ContextComplianceAttack(PromptSendingAttack):
         )
 
         # Update context with the prepended conversation
-        context.prepended_conversation.extend(prepended_conversation)
+        context.prepended_conversation = prepended_conversation
 
         # Create the affirmative seed prompt group
         affirmative_seed_prompt = SeedPromptGroup(

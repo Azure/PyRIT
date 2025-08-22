@@ -206,7 +206,7 @@ API Reference
     ManyShotJailbreakAttack
     MultiTurnAttackContext
     PromptSendingAttack
-    RTOSystemPromptPaths
+    RTASystemPromptPaths
     RedTeamingAttack
     RolePlayAttack
     SingleTurnAttackContext
@@ -527,6 +527,7 @@ API Reference
     ObjectiveHumanLabeledEntry
     ObjectiveScorerEvaluator
     ObjectiveScorerMetrics
+    PlagiarismScorer
     PromptShieldScorer
     QuestionAnswerScorer
     Scorer
