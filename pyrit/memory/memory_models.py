@@ -213,7 +213,8 @@ class EmbeddingDataEntry(Base):  # type: ignore
     # Allows table redefinition if already defined.
     __table_args__ = {"extend_existing": True}
     id = mapped_column(SQLiteUUID, ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), primary_key=True)
-    embedding = mapped_column(ARRAY(Float).with_variant(JSON, "mssql").with_variant(JSON, "sqlite"))  # type: ignore
+    # embedding = mapped_column(ARRAY(Float).with_variant(JSON, "mssql").with_variant(JSON, "sqlite"))  # type: ignore
+    embedding = mapped_column(ARRAY(Float).with_variant(JSON, "sqlite"))  # type: ignore
     embedding_type_name = mapped_column(String)
 
     def __str__(self):
@@ -436,7 +437,7 @@ class AttackResultEntry(Base):
     __table_args__ = {"extend_existing": True}
     id = mapped_column(SQLiteUUID, nullable=False, primary_key=True)
     conversation_id = mapped_column(String, nullable=False)
-    objective = mapped_column(Unicode(collation="BINARY"), nullable=False)
+    objective = mapped_column(Unicode, nullable=False)
     attack_identifier: Mapped[dict[str, str]] = mapped_column(JSON, nullable=False)
     objective_sha256 = mapped_column(String, nullable=True)
     last_response_id: Mapped[Optional[uuid.UUID]] = mapped_column(
@@ -452,7 +453,6 @@ class AttackResultEntry(Base):
     )
     outcome_reason = mapped_column(String, nullable=True)
     attack_metadata: Mapped[dict[str, Union[str, int, float, bool]]] = mapped_column(JSON, nullable=True)
-    pruned_conversation_ids: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
     adversarial_chat_conversation_ids: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
     timestamp = mapped_column(DateTime, nullable=False)
 

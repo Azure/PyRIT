@@ -7,22 +7,12 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
-# # Basic Memory Programming
+# # 2. Basic Memory Programming Usage
 #
-# This notebook demonstrates basic memory programming with PyRIT's SQLite memory backend. It shows how to create conversation entries, store them in memory, and retrieve them.
-#
-# The examples below illustrate how to:
-# - Create prompt request pieces
-# - Add them to SQLite memory
-# - Retrieve conversations by ID
-# - Properly dispose of memory resources
+# The `pyrit.memory` module provides functionality to keep track of the conversation history, scoring, data, and more. You can use memory to read and write data. Here is an example that retrieves a normalized conversation:
 
 # %%
 from uuid import uuid4

@@ -278,6 +278,7 @@ API Reference
     MemoryExporter
     PromptMemoryEntry
     SeedPromptEntry
+    SQLiteMemory
 
 :py:mod:`pyrit.models`
 ======================
