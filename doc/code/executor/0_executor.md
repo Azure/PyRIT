@@ -56,7 +56,7 @@ Read more about the Attack architecture [here](../executor/attack/0_attack.md)
 
 Prompt generators create various types of prompts using different strategies. Some examples are:
 
-- **Fuzzer Generator**: Generates diverse jailbreak prompts by systematically exploring and generating prompt templates using the Monte Carlo Tree Search to balance exploration of new templates with exploitation of promosing ones.
+- **Fuzzer Generator**: Generates diverse jailbreak prompts by systematically exploring and generating prompt templates using the Monte Carlo Tree Search to balance exploration of new templates with exploitation of promising ones.
 - **Anecdoctor Generator**: Generates misinformation content by using few-shot examples directly or by extracting a knowledge graph from examples, then using it.
 
 Read more about Prompt Generators [here](../executor/promptgen/0_promptgen.md)
