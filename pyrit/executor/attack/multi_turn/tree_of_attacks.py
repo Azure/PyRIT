@@ -920,15 +920,15 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
 
     # Default paths for TAP attack prompts
     DEFAULT_ADVERSARIAL_SYSTEM_PROMPT_PATH: Path = (
-        DATASETS_PATH / "orchestrators" / "tree_of_attacks" / "adversarial_system_prompt.yaml"
+        DATASETS_PATH / "executors" / "tree_of_attacks" / "adversarial_system_prompt.yaml"
     )
 
     DEFAULT_ADVERSARIAL_PROMPT_TEMPLATE_PATH: Path = (
-        DATASETS_PATH / "orchestrators" / "tree_of_attacks" / "adversarial_prompt_template.yaml"
+        DATASETS_PATH / "executors" / "tree_of_attacks" / "adversarial_prompt_template.yaml"
     )
 
     DEFAULT_ADVERSARIAL_SEED_PROMPT_PATH: Path = (
-        DATASETS_PATH / "orchestrators" / "tree_of_attacks" / "adversarial_seed_prompt.yaml"
+        DATASETS_PATH / "executors" / "tree_of_attacks" / "adversarial_seed_prompt.yaml"
     )
 
     def __init__(

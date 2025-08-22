@@ -41,7 +41,7 @@ class PAIROrchestrator(TreeOfAttacksWithPruningOrchestrator):
     ) -> None:
 
         adversarial_chat_system_prompt_path = adversarial_chat_system_prompt_path or Path(
-            DATASETS_PATH / "orchestrators" / "pair" / "attacker_system_prompt.yaml"
+            DATASETS_PATH / "executors" / "pair" / "attacker_system_prompt.yaml"
         )
 
         super().__init__(
