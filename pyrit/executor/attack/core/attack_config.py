@@ -14,13 +14,13 @@ from pyrit.score import Scorer
 @dataclass
 class AttackAdversarialConfig:
     """
-    Advarsarial configuration for attacks that involve adversarial chat targets.
+    Adversarial configuration for attacks that involve adversarial chat targets.
 
     This class defines the configuration for attacks that utilize an adversarial chat target,
     including the target chat model, system prompt, and seed prompt for the attack.
     """
 
-    # Advarsarial chat target for the attack
+    # Adversarial chat target for the attack
     target: PromptChatTarget
 
     # Path to the YAML file containing the system prompt for the advarsarial chat target
