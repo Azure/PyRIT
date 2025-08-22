@@ -202,8 +202,7 @@ class EmbeddingDataEntry(Base):  # type: ignore
     __tablename__ = "EmbeddingData"
     # Allows table redefinition if already defined.
     __table_args__ = {"extend_existing": True}
-    id = mapped_column(SQLiteUUID, ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), primary_key=True)
-    # embedding = mapped_column(ARRAY(Float).with_variant(JSON, "mssql").with_variant(JSON, "sqlite"))  # type: ignore
+    id = mapped_column(Uuid, ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), primary_key=True)
     embedding = mapped_column(ARRAY(Float).with_variant(JSON, "sqlite"))  # type: ignore
     embedding_type_name = mapped_column(String)
 

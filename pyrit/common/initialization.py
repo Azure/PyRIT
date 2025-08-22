@@ -13,8 +13,7 @@ logger = logging.getLogger(__name__)
 IN_MEMORY = "InMemory"
 SQLITE = "SQLite"
 AZURE_SQL = "AzureSQL"
-DUCK_DB = "DuckDB"
-MemoryDatabaseType = Literal["InMemory", "SQLite", "AzureSQL", "DuckDB"]
+MemoryDatabaseType = Literal["InMemory", "SQLite", "AzureSQL"]
 
 
 def _load_environment_files() -> None:
@@ -49,6 +48,17 @@ def initialize_pyrit(memory_db_type: Union[MemoryDatabaseType, str], **memory_in
             instance to use for central memory. Options include "InMemory", "SQLite", and "AzureSQL".
         **memory_instance_kwargs (Optional[Any]): Additional keyword arguments to pass to the memory instance.
     """
+    # Handle DuckDB deprecation before validation
+    if memory_db_type == "DuckDB":
+        logger.warning(
+            "DuckDB is no longer supported and has been replaced by SQLite for better compatibility and performance. "
+            "Please update your code to use SQLite instead. "
+            "For migration guidance, see the SQLite Memory documentation at: "
+            "doc/code/memory/1_sqlite_memory.ipynb. "
+            "Using in-memory SQLite instead."
+        )
+        memory_db_type = IN_MEMORY
+
     if memory_db_type not in get_args(MemoryDatabaseType):
         raise ValueError(
             f"Memory database type '{memory_db_type}' is not a supported type {get_args(MemoryDatabaseType)}"
@@ -64,19 +74,13 @@ def initialize_pyrit(memory_db_type: Union[MemoryDatabaseType, str], **memory_in
     )
 
     memory: MemoryInterface = None
+
     if memory_db_type == IN_MEMORY:
         logger.info("Using in-memory SQLite database.")
         memory = SQLiteMemory(db_path=":memory:", **memory_instance_kwargs)
     elif memory_db_type == SQLITE:
         logger.info("Using persistent SQLite database.")
         memory = SQLiteMemory(**memory_instance_kwargs)
-    elif memory_db_type == DUCK_DB:
-        raise ValueError(
-            "DuckDB is no longer supported and has been replaced by SQLite for better compatibility and performance. "
-            "Please update your code to use SQLite instead. "
-            "For migration guidance, see the SQLite Memory documentation at: "
-            "doc/code/memory/1_sqlite_memory.ipynb"
-        )
     else:
         logger.info("Using AzureSQL database.")
         memory = AzureSQLMemory(**memory_instance_kwargs)

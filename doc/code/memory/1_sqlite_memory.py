@@ -7,6 +7,10 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.2
+#   kernelspec:
+#     display_name: pyrit
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -33,9 +37,7 @@ memory.dispose_engine()
 #
 # If you try to use DuckDBMemory, it will:
 # 1. Issue a warning
-# 2. Raise a `NotImplementedError`
-#
-# Please use `SQLiteMemory` instead, which provides the same functionality with better reliability.
+# 2. Use in-memory SQLite instead
 
 # %%
 # Example: What happens when you try to use DuckDB
@@ -49,7 +51,3 @@ try:
 
 except Exception as e:
     print("Error:", e)
-
-
-# %% [markdown]
-#

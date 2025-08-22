@@ -130,8 +130,8 @@ def test_initialize_pyrit_type_check_throws():
 
 def test_validate_memory_database_type():
     literal_args = get_args(MemoryDatabaseType)
-    assert len(literal_args) == 4
+    assert len(literal_args) == 3
 
-    approved_values = ["InMemory", "SQLite", "AzureSQL", "DuckDB"]
+    approved_values = ["InMemory", "SQLite", "AzureSQL"]
     for value in approved_values:
         assert value in literal_args

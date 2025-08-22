@@ -161,7 +161,7 @@ test_cases_error = [
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_bad_db_type.yaml'",
-        "database.type\n  Input should be 'InMemory', 'SQLite', 'AzureSQL' or 'DuckDB' ",
+        "database.type\n  Input should be 'InMemory', 'SQLite' or 'AzureSQL' ",
         ValidationError,
     ),
     (
