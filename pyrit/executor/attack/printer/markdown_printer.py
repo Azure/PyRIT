@@ -3,6 +3,7 @@
 
 from datetime import datetime
 from typing import List
+
 from IPython.display import Markdown, display
 
 from pyrit.common.display_response import display_image_response
@@ -35,12 +36,12 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
     def _render_markdown(self, markdown_lines: List[str]) -> None:
         """
         Render the markdown content.
-        
+
         Args:
             markdown_lines: List of markdown strings to render.
         """
         full_markdown = "\n".join(markdown_lines)
-        
+
         if self._display_inline:
             try:
                 display(Markdown(full_markdown))
@@ -53,7 +54,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
     def _format_score(self, score: Score, indent: str = "") -> str:
         """Format a score object as markdown."""
         lines = []
-        
+
         # Score value with appropriate formatting
         score_value = score.get_value()
         if isinstance(score_value, bool):
@@ -62,24 +63,24 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
             value_str = f"**{score_value:.2f}**" if isinstance(score_value, float) else f"**{score_value}**"
         else:
             value_str = f"**{score_value}**"
-        
+
         lines.append(f"{indent}- **Score Type:** {score.score_type}")
         lines.append(f"{indent}- **Value:** {value_str}")
         lines.append(f"{indent}- **Category:** {score.score_category or 'N/A'}")
-        
+
         if score.score_rationale:
             # Handle multi-line rationale
-            rationale_lines = score.score_rationale.split('\n')
+            rationale_lines = score.score_rationale.split("\n")
             if len(rationale_lines) > 1:
                 lines.append(f"{indent}- **Rationale:**")
                 for line in rationale_lines:
                     lines.append(f"{indent}  {line}")
             else:
                 lines.append(f"{indent}- **Rationale:** {score.score_rationale}")
-        
+
         if score.score_metadata:
             lines.append(f"{indent}- **Metadata:** `{score.score_metadata}`")
-        
+
         return "\n".join(lines)
 
     async def print_result_async(self, result: AttackResult, *, include_auxiliary_scores: bool = False) -> None:
@@ -92,7 +93,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
                 Defaults to False.
         """
         markdown_lines = []
-        
+
         # Header with outcome
         outcome_emoji = self._get_outcome_icon(result.outcome)
         markdown_lines.append(f"# {outcome_emoji} Attack Result: {result.outcome.value.upper()}\n")
@@ -175,21 +176,21 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
 
         turn_number = 0
         current_turn_has_user = False
-        
+
         for message in messages:
             for piece in message.request_pieces:
                 if piece.role == "system":
                     # System message
                     markdown_lines.append("\n### System Message\n")
                     markdown_lines.append(f"{piece.converted_value}\n")
-                    
+
                 elif piece.role == "user":
                     turn_number += 1
                     current_turn_has_user = True
                     # Start new turn
                     markdown_lines.append(f"\n### Turn {turn_number}\n")
                     markdown_lines.append("#### User\n")
-                    
+
                     # Show original and converted if different
                     if piece.converted_value != piece.original_value:
                         markdown_lines.append("**Original:**\n")
@@ -199,17 +200,17 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
                     else:
                         # Display content as markdown
                         markdown_lines.append(f"{piece.converted_value}\n")
-                    
+
                 else:
                     # Assistant/Model response
                     # Only add Turn header if we haven't seen a user message in this turn
                     if not current_turn_has_user:
                         turn_number += 1
                         markdown_lines.append(f"\n### Turn {turn_number}\n")
-                    
+
                     markdown_lines.append(f"\n#### {piece.role.capitalize()}\n")
                     current_turn_has_user = False
-                    
+
                     # Display response as markdown
                     response_text = piece.converted_value
                     markdown_lines.append(f"{response_text}\n")
@@ -244,38 +245,38 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
         """
         markdown_lines = []
         markdown_lines.append("## Attack Summary\n")
-        
+
         # Basic Information Table
         markdown_lines.append("### Basic Information\n")
         markdown_lines.append("| Field | Value |")
         markdown_lines.append("|-------|-------|")
         markdown_lines.append(f"| **Objective** | {result.objective} |")
-        
+
         # Extract attack type
         attack_type = "Unknown"
         if isinstance(result.attack_identifier, dict) and "__type__" in result.attack_identifier:
             attack_type = result.attack_identifier["__type__"]
         elif isinstance(result.attack_identifier, str):
             attack_type = result.attack_identifier
-        
+
         markdown_lines.append(f"| **Attack Type** | `{attack_type}` |")
         markdown_lines.append(f"| **Conversation ID** | `{result.conversation_id}` |")
-        
+
         # Execution Metrics
         markdown_lines.append("\n### Execution Metrics\n")
         markdown_lines.append("| Metric | Value |")
         markdown_lines.append("|--------|-------|")
         markdown_lines.append(f"| **Turns Executed** | {result.executed_turns} |")
         markdown_lines.append(f"| **Execution Time** | {self._format_time(result.execution_time_ms)} |")
-        
+
         # Outcome
         outcome_emoji = self._get_outcome_icon(result.outcome)
         markdown_lines.append("\n### Outcome\n")
         markdown_lines.append(f"**Status:** {outcome_emoji} **{result.outcome.value.upper()}**\n")
-        
+
         if result.outcome_reason:
             markdown_lines.append(f"**Reason:** {result.outcome_reason}\n")
-        
+
         # Final Score
         if result.last_score:
             markdown_lines.append("\n### Final Score\n")
