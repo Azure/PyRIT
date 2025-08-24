@@ -61,9 +61,11 @@ class AttackResultPrinter(ABC):
         Returns:
             str: Unicode emoji string.
         """
-        return {AttackOutcome.SUCCESS: "✅", AttackOutcome.FAILURE: "❌", AttackOutcome.UNDETERMINED: "❓"}.get(
-            outcome, ""
-        )
+        return {
+            AttackOutcome.SUCCESS: "\u2705",
+            AttackOutcome.FAILURE: "\u274c",
+            AttackOutcome.UNDETERMINED: "\u2753",
+        }.get(outcome, "")
 
     @staticmethod
     def _format_time(milliseconds: int) -> str:
