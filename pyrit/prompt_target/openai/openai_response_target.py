@@ -4,7 +4,16 @@
 import json
 import logging
 from enum import Enum
-from typing import Any, Dict, List, MutableSequence, Optional, Sequence
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    List,
+    MutableSequence,
+    Optional,
+    Sequence,
+)
 
 from pyrit.common import convert_local_image_to_data_url
 from pyrit.exceptions import (
@@ -26,7 +35,8 @@ from pyrit.prompt_target.openai.openai_chat_target_base import OpenAIChatTargetB
 logger = logging.getLogger(__name__)
 
 
-# Define PromptRequestPieceType enum for all mentioned types
+# Tool function registry (agentic extension)
+ToolExecutor = Callable[[dict[str, Any]], Awaitable[dict[str, Any]]]
 
 
 class PromptRequestPieceType(str, Enum):
@@ -57,6 +67,8 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
     def __init__(
         self,
         *,
+        py_functions: Optional[Dict[str, ToolExecutor]] = None,
+        tool_executors: Optional[Dict[str, ToolExecutor]] = None,
         api_version: Optional[str] = "2025-03-01-preview",
         max_output_tokens: Optional[int] = None,
         temperature: Optional[float] = None,
@@ -68,6 +80,8 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         Initializes the OpenAIResponseTarget with the provided parameters.
 
         Args:
+            py_functions: Mapping of user-defined function names (e.g., "my_func").
+            tool_executors: Mapping of built-in tool types (e.g., "web_search_call", "file_search_call").
             model_name (str, Optional): The name of the model.
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
@@ -105,7 +119,6 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             Exception: If the request fails for any other reason.
         """
         super().__init__(api_version=api_version, temperature=temperature, top_p=top_p, **kwargs)
-
         self._max_output_tokens = max_output_tokens
 
         # Reasoning parameters are not yet supported by PyRIT.
@@ -113,6 +126,18 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         # for more information.
 
         self._extra_body_parameters = extra_body_parameters
+
+        # Per-instance tool/func registries:
+        self._py_fn_registry: Dict[str, ToolExecutor] = py_functions or {}
+        self._tool_executors: Dict[str, ToolExecutor] = tool_executors or {}
+
+    def register_python_function(self, name: str, fn: ToolExecutor) -> None:
+        """Instance method to add a Python function."""
+        self._py_fn_registry[name] = fn
+
+    def register_tool(self, section_type: str, executor: ToolExecutor) -> None:
+        """Instance method to add a custom tool executor."""
+        self._tool_executors[section_type] = executor
 
     def _set_openai_env_configuration_vars(self) -> None:
         self.model_name_environment_variable = "OPENAI_RESPONSES_MODEL"
@@ -247,7 +272,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             return self._create_text_content_item(piece)
         elif data_type == "image_path":
             return await self._create_image_content_item(piece)
-        elif data_type == "reasoning":
+        elif data_type in {"reasoning", "tool_call", "function_call"}:
             # Reasoning summaries are intentionally not passed back to the target
             return None
         else:
@@ -362,11 +387,55 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
 
         return PromptRequestResponse(request_pieces=extracted_response_pieces)
 
+    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+        """
+        Send prompt, handle agentic tool calls (function_call, web_search_call), return assistant output.
+
+        Args:
+            prompt_request: The initial prompt from the user.
+
+        Returns:
+            The final PromptRequestResponse with the assistant's answer.
+        """
+        conversation: MutableSequence[PromptRequestResponse] = [prompt_request]
+        while True:
+           # Use the base implementation for sending the prompt and receiving the response
+            assistant_reply = await super().send_prompt_async(prompt_request=prompt_request)
+            conversation.append(assistant_reply)
+
+            # Find a tool call in the output
+            call_section = self._find_last_pending_tool_call(assistant_reply)
+            if call_section is None:
+                # No tool call found, so assistant message is complete!
+                return assistant_reply
+            
+            # Execute the tool/function
+            tool_output = await self._execute_call_section(call_section)
+
+            # Add the tool result as a tool message to the conversation
+            tool_message = self._make_tool_message(tool_output, call_section["id"])
+            conversation.append(tool_message)
+
+            # Set the new prompt_request for the next loop iteration
+            prompt_request = tool_message
+
     def _parse_response_output_section(
         self, *, section: dict, request_piece: PromptRequestPiece, error: Optional[PromptResponseError]
     ) -> PromptRequestPiece | None:
-        piece_type: PromptDataType = "text"
+        """
+        Parse model output sections, forwarding tool-calls for the agentic loop.
+
+        Args:
+            section: The section dict from OpenAI output.
+            request_piece: The original request piece.
+            error: Any error information from OpenAI.
+
+        Returns:
+            A PromptRequestPiece for this section, or None to skip.
+        """
         section_type = section.get("type", "")
+        piece_type: PromptDataType = "text"  # Default, always set!
+        piece_value = ""
 
         if section_type == PromptRequestPieceType.MESSAGE:
             section_content = section.get("content", [])
@@ -381,6 +450,14 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
                     piece_value += summary_piece.get("text", "")
             if not piece_value:
                 return None  # Skip empty reasoning summaries
+        elif section_type == PromptRequestPieceType.FUNCTION_CALL:
+            piece_value = json.dumps(section, separators=(",", ":"))
+            piece_type = "function_call"
+        elif section_type in {
+            PromptRequestPieceType.WEB_SEARCH_CALL,
+        }:
+            piece_value = json.dumps(section, separators=(",", ":"))
+            piece_type = "tool_call"
         else:
             # other options include "image_generation_call", "file_search_call", "function_call",
             # "web_search_call", "computer_call", "code_interpreter_call", "local_shell_call",
@@ -419,6 +496,55 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         ]
 
         # Some models may not support all of these
-        for prompt_data_type in converted_prompt_data_types:
-            if prompt_data_type not in ["text", "image_path"]:
-                raise ValueError("This target only supports text and image_path.")
+        allowed_types = {"text", "image_path", "function_call", "tool_call"}
+        for request_piece in prompt_request.request_pieces:
+            if request_piece.converted_value_data_type not in allowed_types:
+                raise ValueError(f"Unsupported data type: {request_piece.converted_value_data_type}")
+
+
+    # Agentic helpers (module scope)
+    def _find_last_pending_tool_call(self, reply: PromptRequestResponse) -> Optional[dict[str, Any]]:
+        """
+        Return the last tool-call section in assistant messages, or None.
+        Looks for a piece whose value parses as JSON with a 'type' key matching function_call, web_search_call, etc.
+        """
+        for piece in reversed(reply.request_pieces):
+            if piece.role != "assistant":
+                continue
+            try:
+                section = json.loads(piece.original_value)
+            except Exception:
+                continue
+            if section.get("type") in {"function_call", "web_search_call"}:
+                # Optionally skip completed web_search_call if desired
+                if section["type"] == "web_search_call" and section.get("status") == "completed":
+                    continue
+                return section
+        return None
+
+
+    async def _execute_call_section(self, section: dict[str, Any]) -> dict[str, Any]:
+            """
+            Execute a function_call or custom tool type (per instance registry).
+            """
+            if section["type"] == "function_call":
+                name = section.get("name")
+                fn = self._py_fn_registry.get(name)
+                if fn is None:
+                    return {"error": f"function '{name}' is not registered"}
+                args = json.loads(section.get("arguments", "{}"))
+                return await fn(args)
+            exec_ = self._tool_executors.get(section["type"])
+            if exec_ is None:
+                return {"error": f"no executor for {section['type']}"}
+            return await exec_(json.loads(section.get("arguments", "{}")))
+
+
+    def _make_tool_message(self, output: dict[str, Any], call_id: str) -> PromptRequestResponse:
+        piece = PromptRequestPiece(
+            role="assistant",
+            original_value=json.dumps(output, separators=(",", ":")),
+            original_value_data_type="function_call" if output.get("name") else "tool_call",
+            labels={"call_id": call_id},
+        )
+        return PromptRequestResponse(request_pieces=[piece])
