@@ -58,11 +58,7 @@ def initialize_pyrit(memory_db_type: Union[MemoryDatabaseType, str], **memory_in
             "Using in-memory SQLite instead."
         )
         memory_db_type = IN_MEMORY
-
-    if memory_db_type not in get_args(MemoryDatabaseType):
-        raise ValueError(
-            f"Memory database type '{memory_db_type}' is not a supported type {get_args(MemoryDatabaseType)}"
-        )
+        logger.info("Setting memory type to default in-memory SQL database.")
 
     _load_environment_files()
 
@@ -75,14 +71,26 @@ def initialize_pyrit(memory_db_type: Union[MemoryDatabaseType, str], **memory_in
 
     memory: MemoryInterface = None
 
-    if memory_db_type == IN_MEMORY:
+    if memory_db_type == IN_MEMORY or memory_db_type == "DuckDB":
+        if memory_db_type == "DuckDB":
+            logger.warning(
+                "DuckDB is no longer supported and has been replaced by SQLite for better performance. "
+                "Please update your code to use SQLite instead. "
+                "For migration guidance, see the SQLite Memory documentation at: "
+                "doc/code/memory/1_sqlite_memory.ipynb."
+            )
+            logger.warning("Setting memory to in-memory SQLite instead.")
+
         logger.info("Using in-memory SQLite database.")
         memory = SQLiteMemory(db_path=":memory:", **memory_instance_kwargs)
     elif memory_db_type == SQLITE:
         logger.info("Using persistent SQLite database.")
         memory = SQLiteMemory(**memory_instance_kwargs)
-    else:
+    elif memory_db_type == AZURE_SQL:
         logger.info("Using AzureSQL database.")
         memory = AzureSQLMemory(**memory_instance_kwargs)
-
+    else:
+        raise ValueError(
+            f"Memory database type '{memory_db_type}' is not a supported type {get_args(MemoryDatabaseType)}"
+        )
     CentralMemory.set_memory_instance(memory)
