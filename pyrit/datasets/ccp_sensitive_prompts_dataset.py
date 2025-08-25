@@ -3,8 +3,7 @@
 
 from datasets import load_dataset
 
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import HarmCategory, SeedPrompt, SeedPromptDataset
 
 
 def fetch_ccp_sensitive_prompts_dataset() -> SeedPromptDataset:
@@ -25,6 +24,8 @@ def fetch_ccp_sensitive_prompts_dataset() -> SeedPromptDataset:
         split="train",
     )
 
+    HarmCategory._initialize_aliases()
+
     return SeedPromptDataset(
         prompts=[
             SeedPrompt(
@@ -32,7 +33,7 @@ def fetch_ccp_sensitive_prompts_dataset() -> SeedPromptDataset:
                 data_type="text",
                 name="",
                 dataset_name="CCP-sensitive-prompts",
-                harm_categories=[row["subject"]],
+                harm_categories=[HarmCategory.parse(row["subject"])],
                 description=("Prompts covering topics sensitive to the CCP."),
                 groups=["promptfoo"],
                 source="https://huggingface.co/datasets/promptfoo/CCP-sensitive-prompts",

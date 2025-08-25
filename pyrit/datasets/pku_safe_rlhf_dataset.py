@@ -5,8 +5,7 @@ from typing import List, Literal, Optional
 
 from datasets import load_dataset
 
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import HarmCategory, SeedPrompt, SeedPromptDataset
 
 
 def fetch_pku_safe_rlhf_dataset(
@@ -57,7 +56,7 @@ def fetch_pku_safe_rlhf_dataset(
         and Josef Dai and Boren Zheng and Tianyi Qiu and Boxun Li and Yaodong Yang
     """
     data = load_dataset("PKU-Alignment/PKU-SafeRLHF", "default")
-
+    HarmCategory._initialize_aliases()
     seed_prompts = []
 
     for item in data["train"]:
@@ -68,24 +67,28 @@ def fetch_pku_safe_rlhf_dataset(
             continue
 
         # Collect harm categories from both responses, avoid duplicates
-        harm_categories = {
+        raw_categories = {
             category
             for response_key in ["response_0_harm_category", "response_1_harm_category"]
             for category, is_harmful in item[response_key].items()
             if is_harmful
         }
 
+        parsed_categories = [
+            HarmCategory.parse(cat) or HarmCategory.OTHER for cat in raw_categories
+        ]
+
         # Add the prompt in two cases:
         # 1. No harm categories are provided for filtering
         # 2. At least one harm category matches the specified filter criteria
-        if not filter_harm_categories or any(category in filter_harm_categories for category in harm_categories):
+        if not filter_harm_categories or any(category in filter_harm_categories for category in parsed_categories):
             seed_prompts.append(
                 SeedPrompt(
                     value=item["prompt"],
                     data_type="text",
                     name="PKU-SafeRLHF",
                     dataset_name="PKU-SafeRLHF",
-                    harm_categories=sorted(list(harm_categories)),
+                    harm_categories=sorted(list(parsed_categories)),
                     description="""This is a Hugging Face dataset that labels a prompt and 2 responses categorizing
                         their helpfulness or harmfulness. Only the 'prompt' column is extracted.""",
                     source="https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF",
