@@ -3,7 +3,7 @@
 
 import enum
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 import yaml
 
@@ -30,7 +30,7 @@ class SelfAskCategoryScorer(Scorer):
     def __init__(
         self,
         chat_target: PromptChatTarget,
-        content_classifier: Path,
+        content_classifier: Union[str, Path],
     ) -> None:
         """
         Initializes a new instance of the SelfAskCategoryScorer class.
@@ -41,6 +41,9 @@ class SelfAskCategoryScorer(Scorer):
         """
         self._prompt_target = chat_target
         self.scorer_type = "true_false"
+
+        if isinstance(content_classifier, str):
+            content_classifier = Path(content_classifier)
 
         category_file_contents = yaml.safe_load(content_classifier.read_text(encoding="utf-8"))
 

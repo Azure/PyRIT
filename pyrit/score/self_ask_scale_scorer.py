@@ -3,7 +3,7 @@
 
 import enum
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import yaml
 
@@ -18,6 +18,8 @@ class SelfAskScaleScorer(Scorer):
     A class that represents a "self-ask" score for text scoring for a customizable numeric scale.
     """
 
+    # This would go under SelfAskScaleScorerConfig
+    # TREE_OF_ATTACKS_SCALE, ..., CRITERIA_SYSTEM_PROMPT = selfaskscalescorer_config.vars
     class ScalePaths(enum.Enum):
         TREE_OF_ATTACKS_SCALE = Path(SCALES_PATH, "tree_of_attacks_scale.yaml").resolve()
         TASK_ACHIEVED_SCALE = Path(SCALES_PATH, "task_achieved_scale.yaml").resolve()
@@ -32,8 +34,8 @@ class SelfAskScaleScorer(Scorer):
         self,
         *,
         chat_target: PromptChatTarget,
-        scale_arguments_path: Optional[Path] = None,
-        system_prompt_path: Optional[Path] = None,
+        scale_arguments_path: Optional[Union[Path, str]] = None,
+        system_prompt_path: Optional[Union[Path, str]] = None,
     ) -> None:
         self._prompt_target = chat_target
         self.scorer_type = "float_scale"
@@ -43,6 +45,12 @@ class SelfAskScaleScorer(Scorer):
 
         if not scale_arguments_path:
             scale_arguments_path = self.ScalePaths.TREE_OF_ATTACKS_SCALE.value
+
+        if isinstance(scale_arguments_path, str):
+            scale_arguments_path = Path(scale_arguments_path)
+        
+        if isinstance(system_prompt_path, str):
+            system_prompt_path = Path(system_prompt_path)
 
         scale_args = yaml.safe_load(scale_arguments_path.read_text(encoding="utf-8"))
 

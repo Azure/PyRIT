@@ -32,7 +32,6 @@ from pyrit.score.scorer_evaluation.metrics_type import MetricsType
 
 logger = logging.getLogger(__name__)
 
-
 class Scorer(abc.ABC):
     """
     Abstract base class for scorers.

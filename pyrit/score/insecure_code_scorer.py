@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions.exception_classes import InvalidJsonException
@@ -21,7 +21,7 @@ class InsecureCodeScorer(Scorer):
         self,
         chat_target: PromptChatTarget,
         threshold: float = 0.5,
-        system_prompt_path: Optional[Path] = None,
+        system_prompt_path: Optional[Union[str, Path]] = None,
     ):
         super().__init__()
         self._prompt_target = chat_target
