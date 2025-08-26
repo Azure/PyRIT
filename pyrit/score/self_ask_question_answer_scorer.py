@@ -6,7 +6,7 @@ from __future__ import annotations
 import pathlib
 from typing import Optional
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import SCORER_CONFIGS
 from pyrit.models import (
     Score,
     UnvalidatedScore,
@@ -40,7 +40,7 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
 
         if not true_false_question_path:
             true_false_question_path = pathlib.Path(
-                DATASETS_PATH, "score", "true_false_question", "question_answering.yaml"
+                SCORER_CONFIGS, "true_false_question", "question_answering.yaml"
             )
 
         super().__init__(

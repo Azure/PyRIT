@@ -7,7 +7,7 @@ from typing import Optional
 
 import yaml
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import SCORER_CONFIGS
 from pyrit.models import PromptRequestPiece, SeedPrompt
 from pyrit.models.score import Score, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
@@ -32,9 +32,9 @@ class LookBackScorer(Scorer):
         self.exclude_instruction_prompts = exclude_instruction_prompts
 
         behavior_change_prompt_path = Path(
-            DATASETS_PATH, "score", "scales", "behavior_change_system_prompt.yaml"
+            SCORER_CONFIGS, "scales", "behavior_change_system_prompt.yaml"
         ).resolve()
-        behavior_change_scale_path = Path(DATASETS_PATH, "score", "likert_scales", "behavior_change.yaml")
+        behavior_change_scale_path = Path(SCORER_CONFIGS, "likert_scales", "behavior_change.yaml")
         behavior_change_scale = yaml.safe_load(behavior_change_scale_path.read_text(encoding="utf-8"))
 
         scoring_instructions_template = SeedPrompt.from_yaml_file(behavior_change_prompt_path)
