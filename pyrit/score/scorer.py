@@ -29,6 +29,7 @@ from pyrit.models.literals import ChatMessageRole
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
 from pyrit.score.scorer_evaluation.metrics_type import MetricsType
+from pyrit.score.scorer_config import ScorerConfig
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,7 @@ class Scorer(abc.ABC):
     """
 
     scorer_type: ScoreType
+    _config: Optional[ScorerConfig]
 
     @property
     def _memory(self) -> MemoryInterface:
