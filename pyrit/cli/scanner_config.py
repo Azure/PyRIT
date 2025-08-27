@@ -97,7 +97,7 @@ class ScenarioConfig(BaseModel, extra="allow"):
         # Building a map of complex top-level objects that belong outside the scenario
         complex_args = {
             "objective_target": objective_target,
-            "attack_adversarial_config": attack_adversarial_config,
+            "attack_adversarial_config": AttackAdversarialConfig(target=attack_adversarial_config),
             "attack_scoring_config": objective_scorer,
             "scoring_target": scoring_target,
         }
@@ -112,12 +112,11 @@ class ScenarioConfig(BaseModel, extra="allow"):
             if key in constructor_arg_names and value is not None:
                 scenario_args[key] = value
 
-        # Handle converters: prefer request_converter_configurations if present, else prompt_converters
-        if "request_converter_configurations" in constructor_arg_names:
+        # Handle converters: prefer attack_converter_config if present, else prompt_converters
+        if "attack_converter_config" in constructor_arg_names:
             if prompt_converters:
-                scenario_args["request_converter_configurations"] = PromptConverterConfiguration.from_converters(
-                    converters=prompt_converters
-                )
+                converters = PromptConverterConfiguration.from_converters(converters=prompt_converters)
+                scenario_args["attack_converter_config"] = AttackConverterConfig(request_converters=converters)
         elif "prompt_converters" in constructor_arg_names:
             scenario_args["prompt_converters"] = prompt_converters
 
@@ -144,7 +143,7 @@ class TargetConfig(BaseModel, extra="allow"):
         )
 
         init_kwargs = self.model_dump(exclude={"class_name"})
-        return AttackAdversarialConfig(target=target_class(**init_kwargs))
+        return target_class(**init_kwargs)
 
 
 class ObjectiveScorerConfig(BaseModel, extra="allow"):
@@ -239,7 +238,7 @@ class ConverterConfig(BaseModel, extra="allow"):
                 )
             init_kwargs[converter_target_key] = converter_target
 
-        return AttackConverterConfig(request_converters=converter_class(**init_kwargs))
+        return converter_class(**init_kwargs)
 
 
 class ExecutionSettings(BaseModel):
