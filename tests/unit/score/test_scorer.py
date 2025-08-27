@@ -230,6 +230,14 @@ async def test_scorer_remove_markdown_json_called(good_json):
 
         mock_remove_markdown_json.assert_called_once()
 
+def test_scorer_path_verification():
+    """
+    Test that the scorer verifies paths correctly.
+    """
+    scorer = MockScorer()
+    mock_path: str = "this/does/not/exist.yaml"
+    with pytest.raises(ValueError):
+        scorer._verify_paths({"mock_path": mock_path})
 
 def test_scorer_extract_task_from_response():
     """

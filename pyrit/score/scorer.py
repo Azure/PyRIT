@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import abc
 import asyncio
+from importlib.resources import path
 import json
 import logging
+from pathlib import Path
 import uuid
 from abc import abstractmethod
 from typing import Dict, List, Optional, Sequence
@@ -29,7 +31,6 @@ from pyrit.models.literals import ChatMessageRole
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
 from pyrit.score.scorer_evaluation.metrics_type import MetricsType
-from pyrit.score.scorer_config import ScorerConfig
 
 logger = logging.getLogger(__name__)
 
@@ -39,12 +40,26 @@ class Scorer(abc.ABC):
     """
 
     scorer_type: ScoreType
-    _config: Optional[ScorerConfig]
 
     @property
     def _memory(self) -> MemoryInterface:
         return CentralMemory.get_memory_instance()
-
+    
+    def __init__(self, **kwargs):
+        self._verify_paths(kwargs)
+        
+    @classmethod
+    def _verify_paths(cls, kwargs):
+        for k, v in kwargs.items():
+            if not isinstance(v, (str, Path)):
+                continue
+            if not "path" in k:
+                continue
+            if isinstance(v, str):
+                v = Path(v).resolve()
+            if not v.exists():
+                raise ValueError(f"Path not found: {v}")
+        
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Score the request_response, add the results to the database
