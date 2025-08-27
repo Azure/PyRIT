@@ -117,8 +117,6 @@ class ScenarioConfig(BaseModel, extra="allow"):
             if prompt_converters:
                 converters = PromptConverterConfiguration.from_converters(converters=prompt_converters)
                 scenario_args["attack_converter_config"] = AttackConverterConfig(request_converters=converters)
-        elif "prompt_converters" in constructor_arg_names:
-            scenario_args["prompt_converters"] = prompt_converters
 
         # And the instantiation of the attack
         try:
