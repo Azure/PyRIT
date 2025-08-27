@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from pyrit.common.path import SCORER_CONFIGS
 from pyrit.exceptions import InvalidJsonException, remove_markdown_json
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
@@ -230,14 +231,24 @@ async def test_scorer_remove_markdown_json_called(good_json):
 
         mock_remove_markdown_json.assert_called_once()
 
-def test_scorer_path_verification():
+def test_scorer_path_verification_rejection():
     """
-    Test that the scorer verifies paths correctly.
+    Test that the scorer correctly refuses to verify a non-existent path.
     """
     scorer = MockScorer()
     mock_path: str = "this/does/not/exist.yaml"
     with pytest.raises(ValueError):
         scorer._verify_paths({"mock_path": mock_path})
+        
+def test_scorer_path_verification_confirmation():
+    """
+    Test that the scorer verifies the paths that currently exist
+    under the scorer configs. 
+    """
+    scorer = MockScorer()
+    mock_paths: list[str] = [f for f in os.listdir(SCORER_CONFIGS) if os.path.isfile(os.path.join(SCORER_CONFIGS, f))] # fetch all .yaml
+    mock_path_names: list[str] = [f"{i}_path" for i in range(len(mock_paths))]
+    assert scorer._verify_paths(dict(zip(mock_path_names, mock_paths))) == None
 
 def test_scorer_extract_task_from_response():
     """

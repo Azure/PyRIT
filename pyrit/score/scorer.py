@@ -5,13 +5,12 @@ from __future__ import annotations
 
 import abc
 import asyncio
-from importlib.resources import path
 import json
 import logging
 from pathlib import Path
 import uuid
 from abc import abstractmethod
-from typing import Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence
 
 from pyrit.exceptions import (
     InvalidJsonException,
@@ -49,7 +48,14 @@ class Scorer(abc.ABC):
         self._verify_paths(kwargs)
         
     @classmethod
-    def _verify_paths(cls, kwargs):
+    def _verify_paths(cls, kwargs: dict[str, Any]):
+        """
+        Verify that all paths that are passed to a Scorer on its creation
+        are valid before beginning the scoring logic.
+        
+        Args:
+            kwargs (dict): All keyword arguments passed to the constructor of a Scorer, including paths.
+        """
         for k, v in kwargs.items():
             if not isinstance(v, (str, Path)):
                 continue
