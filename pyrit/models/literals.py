@@ -3,7 +3,7 @@
 
 from typing import Literal
 
-PromptDataType = Literal["text", "image_path", "audio_path", "video_path", "url", "reasoning", "error", "function_call", "tool_call"]
+PromptDataType = Literal["text", "image_path", "audio_path", "video_path", "url", "reasoning", "error", "function_call", "tool_call", "function_call_output"]
 
 """
 The type of the error in the prompt response
@@ -14,4 +14,4 @@ unknown: the type of error is unknown
 """
 PromptResponseError = Literal["blocked", "none", "processing", "empty", "unknown"]
 
-ChatMessageRole = Literal["system", "user", "assistant"]
+ChatMessageRole = Literal["system", "user", "assistant", "tool", "developer"]
