@@ -103,8 +103,7 @@ async def run_scenarios_async(config: ScannerConfig) -> None:
                     "memory_labels": memory_labels,
                 }
                 if isinstance(attack, SingleTurnAttackStrategy) and len(seed_prompt_groups) > i:
-                    seed_prompt_group = seed_prompt_groups[i]
-                    args["seed_prompt_group"] = seed_prompt_groups
+                    args["seed_prompt_group"] = seed_prompt_groups[i]  # type: ignore
                 await attack.execute_async(**args)
         else:
             raise ValueError(f"The attack {type(attack).__name__} does not have execute_async.")
