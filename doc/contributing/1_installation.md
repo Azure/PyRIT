@@ -10,7 +10,7 @@ You can set up PyRIT in one of two ways:
 
 To install PyRIT as a library, the simplest way to do it is just `pip install pyrit`. This is documented [here](../setup/install_pyrit.md).
 
-However, there are many reasons to install as a contributor. Yes, of course, if you want to contribute. But also because of the nature of the tool, it is often the case that targets/attacks/converters/core code needs to be modified. This section walks through how to install PyRIT as a contributor.
+However, there are many reasons to install as a contributor. Yes, of course, if you want to contribute. But also because of the nature of the tool, it is often the case that targets, attacks, converters, core, etc. code needs to be modified. This section walks through how to install PyRIT as a contributor.
 
 ### Prerequisite software
 

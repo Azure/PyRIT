@@ -107,7 +107,6 @@ await ConsoleAttackResultPrinter().print_result_async(result=result)  # type: ig
 
 # Retrieve the completed conversation and hand to LookBackScorer
 memory = CentralMemory.get_memory_instance()
-conversation_history = memory.get_conversation(conversation_id=result.conversation_id)
 
 # Exclude the instruction prompts from the scoring process by setting exclude_instruction_prompts to True
 score_conversation = LookBackScorer(chat_target=adversarial_chat, exclude_instruction_prompts=True)

@@ -93,7 +93,7 @@ result = await attack.execute_async(objective=objective)  # type: ignore
 await ConsoleAttackResultPrinter().print_result_async(result=result, include_auxiliary_scores=True)  # type: ignore
 
 # %% [markdown]
-# # `RedTeamingAttack with Multi-Modal and Multi-Turn with Azure SQL Memory
+# # `RedTeamingAttack` with Multi-Modal and Multi-Turn with Azure SQL Memory
 #
 # You can utilize Azure SQL Memory to persist all interactions in multi-turn attack strategies or multi-modal scenarios simply by passing the Azure SQL Memory instance to the attack.
 #

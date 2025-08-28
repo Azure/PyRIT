@@ -226,7 +226,7 @@ converters = [
 def _create_data(data_type: str) -> dict[str, Collection[Collection[str]]]:
     data = {
         "scenarios": [{"type": "PromptSendingAttack"}],
-        "adversarial_chat": {"type": "OpenAIChatTarget"},
+        "attack_adversarial_config": {"type": "OpenAIChatTarget"},
         "objective_target": {"type": "OpenAIChatTarget"},
         "database": {"type": "DuckDB"},
     }

@@ -10,12 +10,12 @@ scenarios:
     max_turns: 5
     max_backtracks: 5
   - type: "TreeOfAttacksWithPruningAttack"
-    depth: 3
-    width: 3
+    tree_depth: 3
+    tree_width: 3
     branching_factor: 4
 objective_target:
   type: "OpenAIChatTarget"
-adversarial_chat:
+attack_adversarial_config:
   type: "OpenAIChatTarget"
 scoring:
   scoring_target:

@@ -13,7 +13,7 @@ converters:
   - type: "TranslationConverter" # default to use adversarial_chat as converter_target
     language: "spanish"
   - type: "Base64Converter" # does not require a converter_target
-adversarial_chat:
+attack_adversarial_config:
   type: "OpenAIChatTarget"
 database:
   type: "DuckDB"

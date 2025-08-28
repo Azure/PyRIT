@@ -9,7 +9,7 @@ converters:
     language: "spanish"
     converter_target:
       type: "AzureMLChatTarget"
-adversarial_chat:
+attack_adversarial_config:
   type: "OpenAIChatTarget"
 database:
   type: "DuckDB"
