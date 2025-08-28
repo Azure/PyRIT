@@ -57,7 +57,6 @@ class SelfAskLikertScorer(Scorer):
         Args:
             likert_scale_path (Path): The path to the YAML file containing the Likert scale description.
         """
-        super().__init__(likert_scale_path)
         likert_scale = yaml.safe_load(likert_scale_path.read_text(encoding="utf-8"))
 
         if likert_scale["category"]:
