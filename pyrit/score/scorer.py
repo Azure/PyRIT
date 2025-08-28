@@ -10,6 +10,7 @@ import logging
 from pathlib import Path
 import uuid
 from abc import abstractmethod
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence
 
 from pyrit.exceptions import (
