@@ -248,7 +248,7 @@ def test_scorer_path_verification_confirmation():
     scorer = MockScorer()
     mock_paths: list[str] = [f for f in os.listdir(SCORER_CONFIGS) if os.path.isfile(os.path.join(SCORER_CONFIGS, f))] # fetch all .yaml
     mock_path_names: list[str] = [f"{i}_path" for i in range(len(mock_paths))]
-    assert scorer._verify_paths(dict(zip(mock_path_names, mock_paths))) == None
+    assert scorer._verify_paths(dict(zip(mock_path_names, mock_paths))) is None
 
 def test_scorer_extract_task_from_response():
     """
