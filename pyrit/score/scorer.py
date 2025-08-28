@@ -61,7 +61,7 @@ class Scorer(abc.ABC):
         for k, v in kwargs.items():
             if not isinstance(v, (str, Path)):
                 continue
-            if not "path" in k:
+            if "path" not in k:
                 continue
             if isinstance(v, str):
                 v = Path(v).resolve()
