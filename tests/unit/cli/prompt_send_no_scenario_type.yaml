@@ -5,4 +5,4 @@ objective_target:
 scenarios:
   - test: test-name
 database:
-  type: "DuckDB"
+  type: "SQLite"

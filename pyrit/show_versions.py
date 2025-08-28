@@ -43,7 +43,7 @@ def _get_deps_info():
     deps = sorted(
         [
             "Cython",
-            "duckdb",
+            "sqlite3",
             "openai",
             "packaging",
             "pip",

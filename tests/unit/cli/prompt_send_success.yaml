@@ -5,4 +5,4 @@ objective_target:
 scenarios:
   - type: "PromptSendingAttack"
 database:
-  type: "DuckDB"
+  type: "SQLite"

@@ -71,7 +71,7 @@ explanation, or additional text. Output only the word "test" and nothing else.
     ],
 )
 async def test_connect_required_openai_text_targets(
-    duckdb_instance, endpoint, api_key, model_name, no_api_version, supports_seed
+    sqlite_instance, endpoint, api_key, model_name, no_api_version, supports_seed
 ):
     args = {
         "endpoint": os.getenv(endpoint),
@@ -103,7 +103,7 @@ async def test_connect_required_openai_text_targets(
         ("AZURE_OPENAI_RESPONSES_ENDPOINT", "AZURE_OPENAI_RESPONSES_KEY", "AZURE_OPENAI_RESPONSES_MODEL", False),
     ],
 )
-async def test_connect_required_openai_response_targets(duckdb_instance, endpoint, api_key, model_name, no_api_version):
+async def test_connect_required_openai_response_targets(sqlite_instance, endpoint, api_key, model_name, no_api_version):
     args = {
         "endpoint": os.getenv(endpoint),
         "api_key": os.getenv(api_key),
@@ -124,7 +124,7 @@ async def test_connect_required_openai_response_targets(duckdb_instance, endpoin
         ("AZURE_OPENAI_REALTIME_ENDPOINT", "AZURE_OPENAI_REALTIME_API_KEY", "AZURE_OPENAI_REALTIME_MODEL"),
     ],
 )
-async def test_connect_required_realtime_targets(duckdb_instance, endpoint, api_key, model_name):
+async def test_connect_required_realtime_targets(sqlite_instance, endpoint, api_key, model_name):
     target = RealtimeTarget(
         endpoint=os.getenv(endpoint),
         api_key=os.getenv(api_key),
@@ -142,7 +142,7 @@ async def test_connect_required_realtime_targets(duckdb_instance, endpoint, api_
         ("AZURE_ML_MIXTRAL_ENDPOINT", "AZURE_ML_MIXTRAL_KEY"),
     ],
 )
-async def test_connect_required_aml_text_targets(duckdb_instance, endpoint, api_key):
+async def test_connect_required_aml_text_targets(sqlite_instance, endpoint, api_key):
     target = AzureMLChatTarget(
         endpoint=os.getenv(endpoint),
         api_key=os.getenv(api_key),
@@ -152,7 +152,7 @@ async def test_connect_required_aml_text_targets(duckdb_instance, endpoint, api_
 
 
 @pytest.mark.asyncio
-async def test_connect_openai_completion(duckdb_instance):
+async def test_connect_openai_completion(sqlite_instance):
 
     endpoint = "OPENAI_COMPLETION_ENDPOINT"
     api_key = "OPENAI_COMPLETION_API_KEY"
@@ -173,7 +173,7 @@ async def test_connect_openai_completion(duckdb_instance):
         ("OPENAI_DALLE_ENDPOINT2", "OPENAI_DALLE_API_KEY2"),
     ],
 )
-async def test_connect_dall_e(duckdb_instance, endpoint, api_key):
+async def test_connect_dall_e(sqlite_instance, endpoint, api_key):
     target = OpenAIDALLETarget(
         endpoint=os.getenv(endpoint),
         api_key=os.getenv(api_key),
@@ -190,7 +190,7 @@ async def test_connect_dall_e(duckdb_instance, endpoint, api_key):
         ("OPENAI_TTS_ENDPOINT2", "OPENAI_TTS_KEY2"),
     ],
 )
-async def test_connect_tts(duckdb_instance, endpoint, api_key):
+async def test_connect_tts(sqlite_instance, endpoint, api_key):
     target = OpenAITTSTarget(
         endpoint=os.getenv(endpoint),
         api_key=os.getenv(api_key),
@@ -200,7 +200,7 @@ async def test_connect_tts(duckdb_instance, endpoint, api_key):
 
 
 @pytest.mark.asyncio
-async def test_connect_sora(duckdb_instance):
+async def test_connect_sora(sqlite_instance):
     target = OpenAISoraTarget(
         endpoint=os.getenv("OPENAI_SORA_ENDPOINT"),
         api_key=os.getenv("OPENAI_SORA_KEY"),
@@ -226,7 +226,7 @@ async def test_connect_sora(duckdb_instance):
         ("OLLAMA_CHAT_ENDPOINT", "", "OLLAMA_MODEL"),
     ],
 )
-async def test_connect_non_required_openai_text_targets(duckdb_instance, endpoint, api_key, model_name):
+async def test_connect_non_required_openai_text_targets(sqlite_instance, endpoint, api_key, model_name):
     target = OpenAIChatTarget(
         endpoint=os.getenv(endpoint), api_key=os.getenv(api_key), model_name=os.getenv(model_name)
     )
