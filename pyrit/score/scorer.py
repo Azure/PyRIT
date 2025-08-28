@@ -46,6 +46,7 @@ class Scorer(abc.ABC):
         return CentralMemory.get_memory_instance()
     
     def __init__(self, **kwargs):
+        super().__init__()
         self._verify_paths(kwargs)
         
     @classmethod
