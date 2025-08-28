@@ -67,21 +67,20 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
     def __init__(
         self,
         *,
-        py_functions: Optional[Dict[str, ToolExecutor]] = None,
-        tool_executors: Optional[Dict[str, ToolExecutor]] = None,
+        custom_functions: Optional[Dict[str, ToolExecutor]] = None,
         api_version: Optional[str] = "2025-03-01-preview",
         max_output_tokens: Optional[int] = None,
         temperature: Optional[float] = None,
         top_p: Optional[float] = None,
         extra_body_parameters: Optional[dict[str, Any]] = None,
+        fail_on_missing_function: bool = False, 
         **kwargs,
     ):
         """
         Initializes the OpenAIResponseTarget with the provided parameters.
 
         Args:
-            py_functions: Mapping of user-defined function names (e.g., "my_func").
-            tool_executors: Mapping of built-in tool types (e.g., "web_search_call", "file_search_call").
+            custom_functions: Mapping of user-defined function names (e.g., "my_func").
             model_name (str, Optional): The name of the model.
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
@@ -104,6 +103,9 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
                 this target with different models, is_json_supported should be set correctly to avoid issues when
                 using adversarial infrastructure (e.g. Crescendo scorers will set this flag).
             extra_body_parameters (dict, Optional): Additional parameters to be included in the request body.
+            fail_on_missing_function: if True, raise when a function_call references
+                an unknown function; if False, return a structured error so we can
+                wrap it as function_call_output and let the model handle it.
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
                 httpx.AsyncClient() constructor.
                 For example, to specify a 3 minute timeout: httpx_client_kwargs={"timeout": 180}
@@ -128,8 +130,8 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         self._extra_body_parameters = extra_body_parameters
 
         # Per-instance tool/func registries:
-        self._py_fn_registry: Dict[str, ToolExecutor] = py_functions or {}
-        self._tool_executors: Dict[str, ToolExecutor] = tool_executors or {}
+        self._custom_functions: Dict[str, ToolExecutor] = custom_functions or {}
+        self._fail_on_missing_function: bool = fail_on_missing_function 
 
     def _set_openai_env_configuration_vars(self) -> None:
         self.model_name_environment_variable = "OPENAI_RESPONSES_MODEL"
@@ -344,7 +346,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
-        Send prompt, handle agentic tool calls (function_call, web_search_call), return assistant output.
+        Send prompt, handle agentic tool calls (function_call), return assistant output.
 
         Args:
             prompt_request: The initial prompt from the user.
@@ -458,7 +460,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
     def _find_last_pending_tool_call(self, reply: PromptRequestResponse) -> Optional[dict[str, Any]]:
         """
         Return the last tool-call section in assistant messages, or None.
-        Looks for a piece whose value parses as JSON with a 'type' key matching function_call, web_search_call, etc.
+        Looks for a piece whose value parses as JSON with a 'type' key matching function_call.
         """
         for piece in reversed(reply.request_pieces):
             if piece.role != "assistant":
@@ -470,29 +472,47 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             if section.get("type") == "function_call":
                 # Do NOT skip function_call even if status == "completed" — we still need to emit the output.
                 return section
-            if section.get("type") == "web_search_call":
-                # Only skip if a web_search_call is already completed
-                if section.get("status") == "completed":
-                    continue
-                return section
         return None
 
     async def _execute_call_section(self, section: dict[str, Any]) -> dict[str, Any]:
         """
-        Execute a function_call or custom tool type (per instance registry).
+        Execute a function_call from the custom_functions registry.
+
+        Returns:
+            A dict payload (will be serialized and sent as function_call_output).
+            If fail_on_missing_function=False and a function is missing, returns:
+            {"error": "function_not_found", "missing_function": "<name>", "available_functions": [...]}
         """
         if section["type"] == "function_call":
             name = section.get("name")
-            args = json.loads(section.get("arguments", "{}"))
-            fn = self._py_fn_registry.get(name)
-            if fn is None:
-                return {"error": f"function '{name}' is not registered"}
-            return await fn(args)
+            args_json = section.get("arguments", "{}")
+            try:
+                args = json.loads(args_json)
+            except Exception:
+                # If arguments are not valid JSON, surface a structured error (or raise)
+                if self._fail_on_missing_function:
+                    raise ValueError(f"Malformed arguments for function '{name}': {args_json}")
+                logger.warning("Malformed arguments for function '%s': %s", name, args_json)
+                return {
+                    "error": "malformed_arguments",
+                    "function": name,
+                    "raw_arguments": args_json,
+                }
 
-        exec_ = self._tool_executors.get(section["type"])
-        if exec_ is None:
-            return {"error": f"no executor for {section['type']}"}
-        return await exec_(json.loads(section.get("arguments", "{}")))
+            fn = self._custom_functions.get(name)
+            if fn is None:
+                if self._fail_on_missing_function:
+                    raise KeyError(f"Function '{name}' is not registered")
+                # Tolerant mode: return a structured error so we can wrap it as function_call_output
+                available = sorted(self._custom_functions.keys())
+                logger.warning("Function '%s' not registered. Available: %s", name, available)
+                return {
+                    "error": "function_not_found",
+                    "missing_function": name,
+                    "available_functions": available,
+                }
+
+            return await fn(args)
 
     def _make_tool_message(self, output: dict[str, Any], call_id: str) -> PromptRequestResponse:
         """
