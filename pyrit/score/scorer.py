@@ -10,7 +10,7 @@ import logging
 from pathlib import Path
 import uuid
 from abc import abstractmethod
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence, Union
 
 from pyrit.exceptions import (
     InvalidJsonException,
@@ -43,24 +43,19 @@ class Scorer(abc.ABC):
     @property
     def _memory(self) -> MemoryInterface:
         return CentralMemory.get_memory_instance()
-    
-    def __init__(self, **kwargs):
-        super().__init__()
-        self._verify_paths(kwargs)
         
     @classmethod
-    def _verify_paths(cls, kwargs: dict[str, Any]):
+    def _verify_paths(cls, paths: dict[str, Union[Path, str]]):
         """
         Verify that all paths that are passed to a Scorer on its creation
         are valid before beginning the scoring logic.
         
         Args:
-            kwargs (dict): All keyword arguments passed to the constructor of a Scorer, including paths.
+            paths (dict): All paths passed to the Scorer.
         """
-        for k, v in kwargs.items():
+        for k, v in paths.items():
             if not isinstance(v, (str, Path)):
-                continue
-            if "path" not in k:
+                logger.warning(f"Argument '{k}':'{v}' was passed to Scorer._verify_paths, but '{v}' is of type {type(v)}.")
                 continue
             if isinstance(v, str):
                 v = Path(v).resolve()

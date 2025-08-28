@@ -65,6 +65,7 @@ class SelfAskTrueFalseScorer(Scorer):
         true_false_question: Optional[TrueFalseQuestion] = None,
         true_false_system_prompt_path: Optional[Union[str, Path]] = None,
     ) -> None:
+        self._verify_paths({"true_false_question_path": true_false_question_path, "true_false_system_prompt_path": true_false_system_prompt_path})
         self._prompt_target = chat_target
         self.scorer_type = "true_false"
 

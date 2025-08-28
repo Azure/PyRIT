@@ -34,7 +34,13 @@ class SelfAskLikertScorer(Scorer):
     A class that represents a "self-ask" score for text scoring for a likert scale.
     """
 
-    def __init__(self, chat_target: PromptChatTarget, likert_scale_path: Union[str, Path]) -> None:
+    def __init__(
+        self, 
+        chat_target: PromptChatTarget, 
+        likert_scale_path: Union[str, Path]
+    ) -> None:
+        
+        self._verify_paths({"likert_scale_path": likert_scale_path})
         self._prompt_target = chat_target
         self.scorer_type = "float_scale"
 
@@ -51,6 +57,7 @@ class SelfAskLikertScorer(Scorer):
         Args:
             likert_scale_path (Path): The path to the YAML file containing the Likert scale description.
         """
+        super().__init__(likert_scale_path)
         likert_scale = yaml.safe_load(likert_scale_path.read_text(encoding="utf-8"))
 
         if likert_scale["category"]:

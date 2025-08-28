@@ -37,6 +37,7 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
             chat_target (PromptChatTarget): The chat target to use for the scorer.
             true_false_question_path (pathlib.Path): The path to the true/false question file.
         """
+        self._verify_paths({"true_false_question_path": true_false_question_path})
 
         if not true_false_question_path:
             true_false_question_path = pathlib.Path(

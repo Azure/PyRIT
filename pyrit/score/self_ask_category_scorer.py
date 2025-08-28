@@ -30,7 +30,7 @@ class SelfAskCategoryScorer(Scorer):
     def __init__(
         self,
         chat_target: PromptChatTarget,
-        content_classifier: Union[str, Path],
+        content_classifier_path: Union[str, Path],
     ) -> None:
         """
         Initializes a new instance of the SelfAskCategoryScorer class.
@@ -39,13 +39,15 @@ class SelfAskCategoryScorer(Scorer):
             chat_target (PromptChatTarget): The chat target to interact with.
             content_classifier (Path): The path to the classifier file.
         """
+        
+        self._verify_paths({"content_classifier_path": content_classifier_path})
         self._prompt_target = chat_target
         self.scorer_type = "true_false"
 
-        if isinstance(content_classifier, str):
-            content_classifier = Path(content_classifier)
+        if isinstance(content_classifier_path, str):
+            content_classifier_path = Path(content_classifier_path)
 
-        category_file_contents = yaml.safe_load(content_classifier.read_text(encoding="utf-8"))
+        category_file_contents = yaml.safe_load(content_classifier_path.read_text(encoding="utf-8"))
 
         self._no_category_found_category = category_file_contents["no_category_found"]
         categories_as_string = self._content_classifier_to_string(category_file_contents["categories"])
