@@ -44,7 +44,6 @@ class Scorer(abc.ABC):
     def _memory(self) -> MemoryInterface:
         return CentralMemory.get_memory_instance()
         
-    @classmethod
     def _verify_paths(cls, paths: dict[str, Union[Path, str]]):
         """
         Verify that all paths that are passed to a Scorer on its creation

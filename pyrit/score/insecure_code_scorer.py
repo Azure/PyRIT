@@ -4,7 +4,7 @@
 from pathlib import Path
 from typing import Optional, Union
 
-from pyrit.common.path import SCORER_CONFIGS
+from pyrit.common.path import SCORER_CONFIG_PATH
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt
 from pyrit.prompt_target import PromptChatTarget
@@ -31,7 +31,7 @@ class InsecureCodeScorer(Scorer):
 
         # Load the system prompt template as a SeedPrompt object
         self._system_prompt_path = (
-            system_prompt_path or SCORER_CONFIGS / "insecure_code" / "system_prompt.yaml"
+            system_prompt_path or SCORER_CONFIG_PATH / "insecure_code" / "system_prompt.yaml"
         )
         scoring_instructions_template = SeedPrompt.from_yaml_file(self._system_prompt_path)
 

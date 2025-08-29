@@ -18,8 +18,6 @@ class SelfAskScaleScorer(Scorer):
     A class that represents a "self-ask" score for text scoring for a customizable numeric scale.
     """
 
-    # This would go under SelfAskScaleScorerConfig
-    # TREE_OF_ATTACKS_SCALE, ..., CRITERIA_SYSTEM_PROMPT = selfaskscalescorer_config.vars
     class ScalePaths(enum.Enum):
         TREE_OF_ATTACKS_SCALE = Path(SCALES_PATH, "tree_of_attacks_scale.yaml").resolve()
         TASK_ACHIEVED_SCALE = Path(SCALES_PATH, "task_achieved_scale.yaml").resolve()

@@ -37,7 +37,7 @@ class SelfAskCategoryScorer(Scorer):
 
         Args:
             chat_target (PromptChatTarget): The chat target to interact with.
-            content_classifier (Path): The path to the classifier file.
+            content_classifier_path (Path): The path to the classifier file.
         """
         
         self._verify_paths({"content_classifier_path": content_classifier_path})
