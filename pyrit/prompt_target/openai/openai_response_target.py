@@ -100,7 +100,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
                 using adversarial infrastructure (e.g. Crescendo scorers will set this flag).
             extra_body_parameters (dict, Optional): Additional parameters to be included in the request body.
             fail_on_missing_function: if True, raise when a function_call references
-                an unknown function; if False, return a structured error so we can
+                an unknown function or does not output a function; if False, return a structured error so we can
                 wrap it as function_call_output and let the model potentially recover
                 (e.g., pick another tool or ask for clarification).
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
@@ -486,39 +486,48 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
 
         Returns:
             A dict payload (will be serialized and sent as function_call_output).
-            If fail_on_missing_function=False and a function is missing, returns:
-            {"error": "function_not_found", "missing_function": "<name>", "available_functions": [...]}
+            If fail_on_missing_function=False and a function is missing or no function is not called, returns:
+            {"error": "...", "missing_function": "<name>", "available_functions": [...]}
         """
-        if section["type"] == "function_call":
-            name = section.get("name")
-            args_json = section.get("arguments", "{}")
-            try:
-                args = json.loads(args_json)
-            except Exception:
-                # If arguments are not valid JSON, surface a structured error (or raise)
-                if self._fail_on_missing_function:
-                    raise ValueError(f"Malformed arguments for function '{name}': {args_json}")
-                logger.warning("Malformed arguments for function '%s': %s", name, args_json)
-                return {
-                    "error": "malformed_arguments",
-                    "function": name,
-                    "raw_arguments": args_json,
-                }
+        name = section.get("name")
+        if name is None:
+            if self._fail_on_missing_function:
+                raise KeyError("No function was called.")
+            # Tolerant mode: return a structured error so we can wrap it as function_call_output
+            available = sorted(self._custom_functions.keys())
+            logger.warning("Function '%s' not registered. Available: %s", name, available)
+            return {
+                "error": "no_function_called",
+                "available_functions": available,
+            }
+        args_json = section.get("arguments", "{}")
+        try:
+            args = json.loads(args_json)
+        except Exception:
+            # If arguments are not valid JSON, surface a structured error (or raise)
+            if self._fail_on_missing_function:
+                raise ValueError(f"Malformed arguments for function '{name}': {args_json}")
+            logger.warning("Malformed arguments for function '%s': %s", name, args_json)
+            return {
+                "error": "malformed_arguments",
+                "function": name,
+                "raw_arguments": args_json,
+            }
 
-            fn = self._custom_functions.get(name)
-            if fn is None:
-                if self._fail_on_missing_function:
-                    raise KeyError(f"Function '{name}' is not registered")
-                # Tolerant mode: return a structured error so we can wrap it as function_call_output
-                available = sorted(self._custom_functions.keys())
-                logger.warning("Function '%s' not registered. Available: %s", name, available)
-                return {
-                    "error": "function_not_found",
-                    "missing_function": name,
-                    "available_functions": available,
-                }
+        fn = self._custom_functions.get(name)
+        if fn is None:
+            if self._fail_on_missing_function:
+                raise KeyError(f"Function '{name}' is not registered")
+            # Tolerant mode: return a structured error so we can wrap it as function_call_output
+            available = sorted(self._custom_functions.keys())
+            logger.warning("Function '%s' not registered. Available: %s", name, available)
+            return {
+                "error": "function_not_found",
+                "missing_function": name,
+                "available_functions": available,
+            }
 
-            return await fn(args)
+        return await fn(args)
 
     def _make_tool_message(self, output: dict[str, Any], call_id: str) -> PromptRequestResponse:
         """
