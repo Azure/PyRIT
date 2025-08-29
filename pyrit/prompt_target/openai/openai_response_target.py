@@ -12,7 +12,6 @@ from typing import (
     List,
     MutableSequence,
     Optional,
-    Sequence,
 )
 
 from pyrit.common import convert_local_image_to_data_url
@@ -22,9 +21,6 @@ from pyrit.exceptions import (
     handle_bad_request_exception,
 )
 from pyrit.models import (
-    ChatMessage,
-    ChatMessageListDictContent,
-    ChatMessageRole,
     PromptDataType,
     PromptRequestPiece,
     PromptRequestResponse,
@@ -73,7 +69,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         temperature: Optional[float] = None,
         top_p: Optional[float] = None,
         extra_body_parameters: Optional[dict[str, Any]] = None,
-        fail_on_missing_function: bool = False, 
+        fail_on_missing_function: bool = False,
         **kwargs,
     ):
         """
@@ -131,7 +127,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
 
         # Per-instance tool/func registries:
         self._custom_functions: Dict[str, ToolExecutor] = custom_functions or {}
-        self._fail_on_missing_function: bool = fail_on_missing_function 
+        self._fail_on_missing_function: bool = fail_on_missing_function
 
     def _set_openai_env_configuration_vars(self) -> None:
         self.model_name_environment_variable = "OPENAI_RESPONSES_MODEL"
@@ -175,7 +171,9 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             return {"type": "input_image", "image_url": {"url": data_url}}
         raise ValueError(f"Unsupported piece type for inline content: {piece.converted_value_data_type}")
 
-    async def _build_input_for_multi_modal_async(self, conversation: MutableSequence[PromptRequestResponse]) -> List[Dict[str, Any]]:
+    async def _build_input_for_multi_modal_async(
+        self, conversation: MutableSequence[PromptRequestResponse]
+    ) -> List[Dict[str, Any]]:
         """
         Build the Responses API `input` array.
 
@@ -206,10 +204,12 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             if pieces[0].role == "system":
                 if len(pieces) != 1:
                     raise ValueError("System messages must have exactly one piece.")
-                input_items.append({
-                    "role": "system",
-                    "content": [{"type": "input_text", "text": pieces[0].converted_value}],
-                })
+                input_items.append(
+                    {
+                        "role": "system",
+                        "content": [{"type": "input_text", "text": pieces[0].converted_value}],
+                    }
+                )
                 continue
 
             role: Optional[str] = None
@@ -244,11 +244,13 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
                     if not isinstance(output, str):
                         # Responses API requires string output; serialize if needed
                         output = json.dumps(output, separators=(",", ":"))
-                    input_items.append({
-                        "type": "function_call_output",
-                        "call_id": payload["call_id"],
-                        "output": output,
-                    })
+                    input_items.append(
+                        {
+                            "type": "function_call_output",
+                            "call_id": payload["call_id"],
+                            "output": output,
+                        }
+                    )
                     continue
 
                 raise ValueError(f"Unsupported data type '{dtype}' in message index {msg_idx}")
@@ -259,7 +261,6 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         # Responses API maps system -> developer
         self._translate_roles(conversation=input_items)
         return input_items
-
 
     def _translate_roles(self, conversation: List[Dict[str, Any]]) -> None:
         # The "system" role is mapped to "developer" in the OpenAI Response API.

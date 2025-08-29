@@ -6,8 +6,6 @@ import logging
 from abc import abstractmethod
 from typing import Optional
 
-import httpx
-
 from pyrit.auth.azure_auth import (
     AzureAuth,
     get_default_scope,
