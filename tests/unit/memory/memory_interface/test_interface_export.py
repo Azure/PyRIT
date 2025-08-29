@@ -12,20 +12,20 @@ from pyrit.memory import MemoryExporter, MemoryInterface
 from pyrit.models import PromptRequestPiece
 
 
-def test_export_conversation_by_orchestrator_id_file_created(
+def test_export_conversation_by_attack_id_file_created(
     duckdb_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
 ):
-    orchestrator1_id = sample_conversations[0].orchestrator_identifier["id"]
+    attack1_id = sample_conversations[0].attack_identifier["id"]
 
     # Default path in export_conversations()
-    file_name = f"{orchestrator1_id}.json"
+    file_name = f"{attack1_id}.json"
     file_path = Path(DB_DATA_PATH, file_name)
 
     duckdb_instance.exporter = MemoryExporter()
 
     with patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_prompt_request_pieces") as mock_get:
         mock_get.return_value = sample_conversations
-        duckdb_instance.export_conversations(orchestrator_id=orchestrator1_id, file_path=file_path)
+        duckdb_instance.export_conversations(attack_id=attack1_id, file_path=file_path)
 
         # Verify file was created
         assert file_path.exists()

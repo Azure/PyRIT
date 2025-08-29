@@ -233,7 +233,7 @@ class TestSystemPromptHandling:
         mock_chat_target.set_system_prompt.assert_called_once_with(
             system_prompt=system_prompt,
             conversation_id=conversation_id,
-            orchestrator_identifier=attack_identifier,
+            attack_identifier=attack_identifier,
             labels=labels,
         )
 
@@ -480,11 +480,11 @@ class TestConversationStateUpdate:
         stored_conversation = manager.get_conversation(conversation_id)
         assert len(stored_conversation) == 2
 
-        # Verify that user and assistant pieces have the correct conversation_id and orchestrator_identifier
+        # Verify that user and assistant pieces have the correct conversation_id and attack_identifier
         for stored_response in stored_conversation:
             for piece in stored_response.request_pieces:
                 assert piece.conversation_id == conversation_id
-                assert piece.orchestrator_identifier == attack_identifier
+                assert piece.attack_identifier == attack_identifier
                 # Verify that IDs were regenerated
                 assert piece.id != original_user_id
                 assert piece.id != original_assistant_id
@@ -604,7 +604,7 @@ class TestConversationStateUpdate:
         assert stored_piece.labels == {"test": "label", "category": "user"}
         assert stored_piece.prompt_metadata == {"timestamp": "2023-01-01", "version": 1}
         assert stored_piece.conversation_id == conversation_id
-        assert stored_piece.orchestrator_identifier == attack_identifier
+        assert stored_piece.attack_identifier == attack_identifier
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_counts_turns_correctly(

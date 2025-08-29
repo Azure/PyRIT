@@ -103,7 +103,7 @@ for score in scores:
 # Remember that `GLOBAL_MEMORY_LABELS`, which will be assigned to every prompt sent through an attack, can be set as an environment variable (.env or env.local), and any additional custom memory labels can be passed in the `PromptSendingAttack` `execute_async` function. (Custom memory labels passed in will have precedence over `GLOBAL_MEMORY_LABELS` in case of collisions.) For more information on memory labels, see the [Memory Labels Guide](../memory/5_memory_labels.ipynb).
 #
 # All filters include:
-# - Orchestrator ID
+# - attack ID
 # - Conversation ID
 # - Prompt IDs
 # - Memory Labels
