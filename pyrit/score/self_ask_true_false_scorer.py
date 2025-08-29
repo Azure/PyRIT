@@ -73,6 +73,12 @@ class SelfAskTrueFalseScorer(Scorer):
         if true_false_question_path and true_false_question:
             raise ValueError("Only one of true_false_question_path or true_false_question should be provided.")
         
+        true_false_system_prompt_path = (
+            true_false_system_prompt_path
+            if true_false_system_prompt_path
+            else TRUE_FALSE_QUESTIONS_PATH / "true_false_system_prompt.yaml"
+        )
+        
         true_false_system_prompt_path = self._verify_and_resolve_paths(
             true_false_system_prompt_path=true_false_system_prompt_path
         ).get("true_false_system_prompt_path")
@@ -93,11 +99,7 @@ class SelfAskTrueFalseScorer(Scorer):
 
         metadata = true_false_question["metadata"] if "metadata" in true_false_question else ""
 
-        true_false_system_prompt_path = (
-            true_false_system_prompt_path
-            if true_false_system_prompt_path
-            else TRUE_FALSE_QUESTIONS_PATH / "true_false_system_prompt.yaml"
-        )
+
 
         scoring_instructions_template = SeedPrompt.from_yaml_file(true_false_system_prompt_path)
 

@@ -59,9 +59,9 @@ class Scorer(abc.ABC):
 
         for k, v in kwargs.items():
             if not isinstance(k, str):
-                raise ValueError(f"All keys (path variable names) must be strings.")
+                raise ValueError(f"All keys (path variable names) must be strings. Got kwargs: {kwargs} type(k): {type(k).__name__}")
             if not isinstance(v, (str, Path)):
-                raise ValueError(f"All values (path variables) must be strings or Path objects.")
+                raise ValueError(f"All values (path variables) must be strings or Path objects. Got kwargs: {kwargs} type(v): {type(v).__name__}")
             if isinstance(v, str):
                 v = Path(v).resolve()
             if not v.exists():
