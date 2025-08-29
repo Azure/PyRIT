@@ -12,7 +12,6 @@ from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 
 from pyrit.memory import AzureSQLMemory, CentralMemory, PromptMemoryEntry
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
 
 
@@ -181,10 +180,13 @@ def get_test_request_piece() -> PromptRequestPiece:
 
 def get_sample_conversations() -> MutableSequence[PromptRequestPiece]:
     with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
-        orchestrator1 = Orchestrator()
-        orchestrator2 = Orchestrator()
 
         conversation_1 = str(uuid.uuid4())
+        attack_identifier = {
+            "__type__": "MockPromptTarget",
+            "__module__": "unit.mocks",
+            "id": str(uuid.uuid4()),
+        }
 
         return [
             PromptRequestPiece(
@@ -193,7 +195,7 @@ def get_sample_conversations() -> MutableSequence[PromptRequestPiece]:
                 converted_value="Hello, how are you?",
                 conversation_id=conversation_1,
                 sequence=0,
-                orchestrator_identifier=orchestrator1.get_identifier(),
+                orchestrator_identifier=attack_identifier,
             ),
             PromptRequestPiece(
                 role="assistant",
@@ -201,14 +203,14 @@ def get_sample_conversations() -> MutableSequence[PromptRequestPiece]:
                 converted_value="I'm fine, thank you!",
                 conversation_id=conversation_1,
                 sequence=0,
-                orchestrator_identifier=orchestrator1.get_identifier(),
+                orchestrator_identifier=attack_identifier,
             ),
             PromptRequestPiece(
                 role="assistant",
                 original_value="original prompt text",
                 converted_value="I'm fine, thank you!",
                 conversation_id=str(uuid.uuid4()),
-                orchestrator_identifier=orchestrator2.get_identifier(),
+                orchestrator_identifier=attack_identifier,
             ),
         ]
 

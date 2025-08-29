@@ -16,6 +16,16 @@ class SimpleWordLevelConverter(WordLevelConverter):
         return word.upper()
 
 
+class CustomSplitWordLevelConverter(WordLevelConverter):
+    """Custom split implementation of WordLevelConverter for testing purposes"""
+
+    def __init__(self):
+        super().__init__(word_split_separator=None)
+
+    async def convert_word_async(self, word: str) -> str:
+        return word.upper()
+
+
 class TestWordLevelConverter:
     @pytest.mark.asyncio
     async def test_convert_async_all_mode(self):
@@ -47,6 +57,18 @@ class TestWordLevelConverter:
             converter = SimpleWordLevelConverter(proportion=0.5)
             result = await converter.convert_async(prompt="hello world this is")
             assert result.output_text == "HELLO world THIS is"
+
+    @pytest.mark.asyncio
+    async def test_split_separator_default(self):
+        converter = SimpleWordLevelConverter()
+        result = await converter.convert_async(prompt="hello\tworld\ntest")
+        assert result.output_text == "HELLO\tWORLD\nTEST"
+
+    @pytest.mark.asyncio
+    async def test_split_separator_override(self):
+        converter = CustomSplitWordLevelConverter()
+        result = await converter.convert_async(prompt="hello\tworld\ntest")
+        assert result.output_text == "HELLO WORLD TEST"
 
     @pytest.mark.asyncio
     async def test_join_words_override(self):

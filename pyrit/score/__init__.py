@@ -14,6 +14,7 @@ from pyrit.score.human_in_the_loop_scorer import HumanInTheLoopScorer
 from pyrit.score.human_in_the_loop_gradio import HumanInTheLoopScorerGradio
 from pyrit.score.insecure_code_scorer import InsecureCodeScorer
 from pyrit.score.markdown_injection import MarkdownInjectionScorer
+from pyrit.score.plagiarism_scorer import PlagiarismScorer
 from pyrit.score.prompt_shield_scorer import PromptShieldScorer
 from pyrit.score.score_aggregator import AND_, MAJORITY_, OR_, ScoreAggregator
 from pyrit.score.scorer_evaluation.metrics_type import MetricsType
@@ -70,6 +71,7 @@ __all__ = [
     "ObjectiveScorerEvaluator",
     "ObjectiveScorerMetrics",
     "OR_",
+    "PlagiarismScorer",
     "PromptShieldScorer",
     "QuestionAnswerScorer",
     "Scorer",
