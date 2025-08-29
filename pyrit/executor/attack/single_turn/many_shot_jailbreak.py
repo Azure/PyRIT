@@ -87,7 +87,7 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
         Args:
             context (SingleTurnAttackContext): The attack context containing attack parameters.
         Returns:
-            OrchestratorResult: The result of the orchestrated attack.
+            AttackResult: The result of the attack.
         """
         many_shot_prompt = self._template.render_template_value(prompt=context.objective, examples=self._examples)
         seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=many_shot_prompt, data_type="text")])

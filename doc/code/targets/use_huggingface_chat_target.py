@@ -47,7 +47,11 @@
 import time
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.executor.attack import AttackExecutor, PromptSendingAttack
+from pyrit.executor.attack import (
+    AttackExecutor,
+    ConsoleAttackResultPrinter,
+    PromptSendingAttack,
+)
 from pyrit.prompt_target import HuggingFaceChatTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
@@ -90,7 +94,8 @@ try:
     print(f"Average response time for {model_id}: {avg_time:.2f} seconds\n")
 
     # Print the conversations
-    await orchestrator.print_conversations_async()  # type: ignore
+    for result in responses:
+        await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
 
 except Exception as e:
     print(f"An error occurred with model {model_id}: {e}\n")
