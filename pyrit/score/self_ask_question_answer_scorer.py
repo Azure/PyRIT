@@ -43,7 +43,11 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
                 SCORER_CONFIG_PATH, "true_false_question", "question_answering.yaml"
             )
             
-        self._verify_paths({"true_false_question_path": true_false_question_path})
+        paths: dict = self._verify_and_resolve_paths(
+            true_false_question_path=true_false_question_path
+        )
+
+        true_false_question_path = paths.get("true_false_question_path")
 
         super().__init__(
             chat_target=chat_target,

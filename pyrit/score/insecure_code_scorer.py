@@ -23,7 +23,7 @@ class InsecureCodeScorer(Scorer):
         threshold: float = 0.5,
         system_prompt_path: Optional[Union[str, Path]] = None,
     ):
-        self._verify_paths({"system_prompt_path": system_prompt_path})
+        self._verify_and_resolve_paths({"system_prompt_path": system_prompt_path})
         self._prompt_target = chat_target
         self._threshold = threshold
         self.scorer_type = "float_scale"

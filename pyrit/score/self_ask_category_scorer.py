@@ -40,12 +40,14 @@ class SelfAskCategoryScorer(Scorer):
             content_classifier_path (Path): The path to the classifier file.
         """
         
-        self._verify_paths({"content_classifier_path": content_classifier_path})
+        paths: dict = self._verify_and_resolve_paths(
+            content_classifier_path=content_classifier_path
+        )
+
+        content_classifier_path = paths.get("content_classifier_path")
+
         self._prompt_target = chat_target
         self.scorer_type = "true_false"
-
-        if isinstance(content_classifier_path, str):
-            content_classifier_path = Path(content_classifier_path)
 
         category_file_contents = yaml.safe_load(content_classifier_path.read_text(encoding="utf-8"))
 

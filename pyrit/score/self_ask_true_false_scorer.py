@@ -65,7 +65,6 @@ class SelfAskTrueFalseScorer(Scorer):
         true_false_question: Optional[TrueFalseQuestion] = None,
         true_false_system_prompt_path: Optional[Union[str, Path]] = None,
     ) -> None:
-        self._verify_paths({"true_false_question_path": true_false_question_path, "true_false_system_prompt_path": true_false_system_prompt_path})
         self._prompt_target = chat_target
         self.scorer_type = "true_false"
 
@@ -73,13 +72,15 @@ class SelfAskTrueFalseScorer(Scorer):
             raise ValueError("Either true_false_question_path or true_false_question must be provided.")
         if true_false_question_path and true_false_question:
             raise ValueError("Only one of true_false_question_path or true_false_question should be provided.")
-
-        if isinstance(true_false_question_path, str):
-            true_false_question_path = Path(true_false_question_path)
-        if isinstance(true_false_system_prompt_path, str):
-            true_false_system_prompt_path = Path(true_false_system_prompt_path)
-
+        
+        true_false_system_prompt_path = self._verify_and_resolve_paths(
+            true_false_system_prompt_path=true_false_system_prompt_path
+        ).get("true_false_system_prompt_path")
+        
         if true_false_question_path:
+            true_false_question_path = self._verify_and_resolve_paths(
+                true_false_question_path=true_false_question_path
+            ).get("true_false_question_path")
             true_false_question = yaml.safe_load(true_false_question_path.read_text(encoding="utf-8"))
 
         for key in ["category", "true_description", "false_description"]:

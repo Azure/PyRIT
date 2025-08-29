@@ -35,21 +35,20 @@ class SelfAskScaleScorer(Scorer):
         scale_arguments_path: Optional[Union[Path, str]] = None,
         system_prompt_path: Optional[Union[Path, str]] = None,
     ) -> None:
-        self._verify_paths({"system_prompt_path": system_prompt_path, "scale_arguments_path": scale_arguments_path})
-        self._prompt_target = chat_target
-        self.scorer_type = "float_scale"
 
         if not system_prompt_path:
             system_prompt_path = self.SystemPaths.GENERAL_SYSTEM_PROMPT.value
 
         if not scale_arguments_path:
             scale_arguments_path = self.ScalePaths.TREE_OF_ATTACKS_SCALE.value
+            
+        paths: dict = self._verify_and_resolve_paths(
+            system_prompt_path=system_prompt_path,
+            scale_arguments_path=scale_arguments_path
+        )
 
-        if isinstance(scale_arguments_path, str):
-            scale_arguments_path = Path(scale_arguments_path)
-        
-        if isinstance(system_prompt_path, str):
-            system_prompt_path = Path(system_prompt_path)
+        system_prompt_path: Path = paths.get("system_prompt_path")
+        scale_arguments_path: Path = paths.get("scale_arguments_path")
 
         scale_args = yaml.safe_load(scale_arguments_path.read_text(encoding="utf-8"))
 

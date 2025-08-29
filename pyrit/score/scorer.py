@@ -44,22 +44,31 @@ class Scorer(abc.ABC):
     def _memory(self) -> MemoryInterface:
         return CentralMemory.get_memory_instance()
         
-    def _verify_paths(cls, paths: dict[str, Union[Path, str]]):
+    def _verify_and_resolve_paths(self, **kwargs) -> dict[str, Path]:
         """
         Verify that all paths that are passed to a Scorer on its creation
         are valid before beginning the scoring logic.
         
         Args:
             paths (dict): All paths passed to the Scorer.
+            
+        Returns:
+            dict[str, Path]: A dictionary mapping the original keys to their resolved Path objects.
         """
-        for k, v in paths.items():
+        resolved_paths: dict[str, Path] = {}
+
+        for k, v in kwargs.items():
+            if not isinstance(k, str):
+                raise ValueError(f"All keys (path variable names) must be strings.")
             if not isinstance(v, (str, Path)):
-                logger.warning(f"Argument '{k}':'{v}' was passed to Scorer._verify_paths, but '{v}' is of type {type(v)}.")
-                continue
+                raise ValueError(f"All values (path variables) must be strings or Path objects.")
             if isinstance(v, str):
                 v = Path(v).resolve()
             if not v.exists():
                 raise ValueError(f"Path not found: {v}")
+            resolved_paths[k] = v
+        
+        return resolved_paths
         
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
