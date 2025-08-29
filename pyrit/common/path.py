@@ -23,10 +23,13 @@ DOCS_PATH = pathlib.Path(PYRIT_PATH, "..", "doc").resolve()
 
 DOCS_CODE_PATH = pathlib.Path(PYRIT_PATH, "..", "doc", "code").resolve()
 DATASETS_PATH = pathlib.Path(PYRIT_PATH, "datasets").resolve()
-CONTENT_CLASSIFIERS_PATH = pathlib.Path(DATASETS_PATH, "score", "content_classifiers").resolve()
-LIKERT_SCALES_PATH = pathlib.Path(DATASETS_PATH, "score", "likert_scales").resolve()
-SCALES_PATH = pathlib.Path(DATASETS_PATH, "score", "scales").resolve()
-SCORER_EVALS_PATH = pathlib.Path(DATASETS_PATH, "score", "scorer_evals").resolve()
+
+SCORER_CONFIG_PATH = pathlib.Path(PYRIT_PATH, "score", "config").resolve()
+CONTENT_CLASSIFIERS_PATH = pathlib.Path(SCORER_CONFIG_PATH, "content_classifiers").resolve()
+LIKERT_SCALES_PATH = pathlib.Path(SCORER_CONFIG_PATH, "likert_scales").resolve()
+SCALES_PATH = pathlib.Path(SCORER_CONFIG_PATH, "scales").resolve()
+SCORER_EVALS_PATH = pathlib.Path(SCORER_CONFIG_PATH, "scorer_evals").resolve()
+
 SCORER_EVALS_HARM_PATH = pathlib.Path(SCORER_EVALS_PATH, "harm").resolve()
 SCORER_EVALS_OBJECTIVE_PATH = pathlib.Path(SCORER_EVALS_PATH, "objective").resolve()
 
