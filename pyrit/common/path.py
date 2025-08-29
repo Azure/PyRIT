@@ -24,7 +24,7 @@ DOCS_PATH = pathlib.Path(PYRIT_PATH, "..", "doc").resolve()
 DOCS_CODE_PATH = pathlib.Path(PYRIT_PATH, "..", "doc", "code").resolve()
 DATASETS_PATH = pathlib.Path(PYRIT_PATH, "datasets").resolve()
 
-SCORER_CONFIGS = pathlib.Path(PYRIT_PATH, "score", "config").resolve()
+SCORER_CONFIG_PATH = pathlib.Path(PYRIT_PATH, "score", "config").resolve()
 CONTENT_CLASSIFIERS_PATH = pathlib.Path(SCORER_CONFIGS, "content_classifiers").resolve()
 LIKERT_SCALES_PATH = pathlib.Path(SCORER_CONFIGS, "likert_scales").resolve()
 SCALES_PATH = pathlib.Path(SCORER_CONFIGS, "scales").resolve()
