@@ -1,3 +1,4 @@
+import uuid
 from typing import Optional, Dict, Literal, get_args
 from dataclasses import dataclass
 
@@ -47,10 +48,11 @@ class EnsembleScorer(Scorer):
 
         self._ground_truth_scorer = ground_truth_scorer
 
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         self.validate(request_response, task=task)
 
         ensemble_score_value = 0
+        ensemble_score_rationale = ""
         score_values = {}
         metadata = {}
         for scorer_name, weak_scorer_spec in self._weak_scorer_dict.items():
@@ -66,20 +68,27 @@ class EnsembleScorer(Scorer):
                     if scorer_name not in score_values:
                         score_values[scorer_name] = {}
                     score_values[scorer_name][score_category] = curr_score_value
+
+                    ensemble_score_rationale += f"{scorer_name}({score_category}) has value {curr_score_value} with weight {curr_weight}\n"
                 else:
                     curr_weight = weak_scorer_spec.weight
                     metadata_label = "_".join([scorer_name, "weight"])
                     curr_score_value = float(curr_score.get_value())
                     score_values[scorer_name] = curr_score_value
-                
+
+                    ensemble_score_rationale += f"{scorer_name} has value {curr_score_value} with weight {curr_weight}\n"
                 
                 ensemble_score_value += curr_weight * curr_score_value
 
                 metadata[metadata_label] = str(curr_weight)
 
-        ensemble_score_rationale = f"Total Ensemble Score is {ensemble_score_value}"
+        ensemble_score_rationale += f"Total Ensemble Score is {ensemble_score_value}"
+
+        id=uuid.uuid4()
+        print(id)
 
         ensemble_score = Score(
+            id=id,
             score_type="float_scale",
             score_value=str(ensemble_score_value),
             score_value_description=None,
@@ -119,9 +128,9 @@ class EnsembleScorer(Scorer):
             for scorer_name in score_values:
                 if scorer_name == "AzureContentFilterScorer":
                     self._weak_scorer_dict[scorer_name].class_weights = {score_category: 
-                                                                            self._weak_scorer_dict[scorer_name][1][score_category] -
+                                                                            self._weak_scorer_dict[scorer_name].class_weights[score_category] -
                                                                             self._lr * score_values[scorer_name][score_category] * d_loss_d_ensemble_score
-                                                                         for score_category in self._weak_scorer_dict[scorer_name][1]}
+                                                                         for score_category in self._weak_scorer_dict[scorer_name].class_weights.keys()}
                 else:
                     self._weak_scorer_dict[scorer_name].weight = self._weak_scorer_dict[scorer_name].weight - self._lr * score_values[scorer_name] * d_loss_d_ensemble_score
         
