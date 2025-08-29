@@ -73,7 +73,7 @@ class PromptMemoryEntry(Base):
     __tablename__ = "PromptMemoryEntries"
     __table_args__ = {"extend_existing": True}
     id = mapped_column(Uuid, nullable=False, primary_key=True)
-    role: Mapped[Literal["system", "user", "assistant"]] = mapped_column(String, nullable=False)
+    role: Mapped[Literal["system", "user", "assistant", "tool", "developer"]] = mapped_column(String, nullable=False)
     conversation_id = mapped_column(String, nullable=False)
     sequence = mapped_column(INTEGER, nullable=False)
     timestamp = mapped_column(DateTime, nullable=False)

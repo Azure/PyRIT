@@ -984,7 +984,10 @@ async def test_execute_call_section_missing_function_tolerant_mode(target: OpenA
 
 @pytest.mark.asyncio
 async def test_execute_call_section_malformed_arguments_tolerant_mode(target: OpenAIResponseTarget):
-    target._custom_functions["echo"] = lambda args: args  # not awaited here; will not be called due to malformed args
+    async def echo_fn(args: dict[str, Any]) -> dict[str, Any]:
+        return args
+
+    target._custom_functions["echo"] = echo_fn
     section = {"type": "function_call", "name": "echo", "arguments": "{not-json"}
     result = await target._execute_call_section(section)
     assert result["error"] == "malformed_arguments"
@@ -1043,13 +1046,13 @@ async def test_send_prompt_async_agentic_loop_executes_function_and_returns_fina
         request_piece=PromptRequestPiece(role="user", original_value="hi"),
     )
 
+    call_counter = {"n": 0}
+
     # 4) Mock the base class send to return first the function_call reply, then the final reply
     async def fake_send(prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         # Return first reply on first call, second on subsequent calls
-        if not hasattr(fake_send, "count"):
-            fake_send.count = 0
-        fake_send.count += 1
-        return first_reply if fake_send.count == 1 else second_reply
+        call_counter["n"] += 1
+        return first_reply if call_counter["n"] == 1 else second_reply
 
     monkeypatch.setattr(
         "pyrit.prompt_target.openai.openai_chat_target_base.OpenAIChatTargetBase.send_prompt_async",

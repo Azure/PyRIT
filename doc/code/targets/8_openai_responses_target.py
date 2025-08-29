@@ -64,6 +64,7 @@ from pyrit.prompt_target.openai.openai_response_target import OpenAIResponseTarg
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
+
 async def get_current_weather(args):
     return {
         "weather": "Sunny",
@@ -71,6 +72,7 @@ async def get_current_weather(args):
         "location": args["location"],
         "unit": args["unit"],
     }
+
 
 # Responses API function tool schema (flat, no nested "function" key)
 function_tool = {
@@ -109,7 +111,7 @@ prompt_piece = PromptRequestPiece(
 )
 prompt_request = PromptRequestResponse(request_pieces=[prompt_piece])
 
-response = await target.send_prompt_async(prompt_request=prompt_request)
+response = await target.send_prompt_async(prompt_request=prompt_request)  # type: ignore
 
 for idx, piece in enumerate(response.request_pieces):
     print(f"{idx} | {piece.role}: {piece.original_value}")
@@ -138,19 +140,15 @@ target = OpenAIResponseTarget(
         "tools": [web_search_tool()],
         "tool_choice": "auto",
     },
-    httpx_client_kwargs={"timeout": 60} 
+    httpx_client_kwargs={"timeout": 60},
 )
 
 prompt_piece = PromptRequestPiece(
-    role="user",
-    original_value="What is a positive news story from today?",
-    original_value_data_type="text"
+    role="user", original_value="What is a positive news story from today?", original_value_data_type="text"
 )
-prompt_request = PromptRequestResponse(
-    request_pieces=[prompt_piece]
-)
+prompt_request = PromptRequestResponse(request_pieces=[prompt_piece])
 
-response = await target.send_prompt_async(prompt_request=prompt_request)
+response = await target.send_prompt_async(prompt_request=prompt_request)  # type: ignore
 
 for idx, piece in enumerate(response.request_pieces):
     print(f"{idx} | {piece.role}: {piece.original_value}")

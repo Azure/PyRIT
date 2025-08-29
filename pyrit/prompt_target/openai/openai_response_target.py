@@ -101,7 +101,8 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             extra_body_parameters (dict, Optional): Additional parameters to be included in the request body.
             fail_on_missing_function: if True, raise when a function_call references
                 an unknown function; if False, return a structured error so we can
-                wrap it as function_call_output and let the model potentially recover (e.g., pick another tool or ask for clarification).
+                wrap it as function_call_output and let the model potentially recover
+                (e.g., pick another tool or ask for clarification).
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
                 httpx.AsyncClient() constructor.
                 For example, to specify a 3 minute timeout: httpx_client_kwargs={"timeout": 180}
@@ -133,6 +134,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         self.model_name_environment_variable = "OPENAI_RESPONSES_MODEL"
         self.endpoint_environment_variable = "OPENAI_RESPONSES_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_RESPONSES_KEY"
+        return
 
     # Helpers kept on the class for reuse + testability
     def _flush_message(self, role: Optional[str], content: List[Dict[str, Any]], out: List[Dict[str, Any]]) -> None:
@@ -150,6 +152,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         if role and content:
             out.append({"role": role, "content": list(content)})
             content.clear()
+        return
 
     async def _make_input_item_from_piece(self, piece: PromptRequestPiece) -> Dict[str, Any]:
         """
@@ -267,6 +270,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         for request in conversation:
             if request.get("role") == "system":
                 request["role"] = "developer"
+        return
 
     async def _construct_request_body(
         self, conversation: MutableSequence[PromptRequestResponse], is_json_response: bool
@@ -305,7 +309,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         """
         Parse the Responses API JSON into internal PromptRequestResponse.
         """
-        response = ""
+        response: dict[str, Any]
         try:
             response = json.loads(open_ai_str_response)
         except json.JSONDecodeError as e:
@@ -455,6 +459,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         for request_piece in prompt_request.request_pieces:
             if request_piece.converted_value_data_type not in allowed_types:
                 raise ValueError(f"Unsupported data type: {request_piece.converted_value_data_type}")
+        return
 
     # Agentic helpers (module scope)
 
