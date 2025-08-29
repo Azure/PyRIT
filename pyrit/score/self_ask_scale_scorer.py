@@ -35,6 +35,8 @@ class SelfAskScaleScorer(Scorer):
         scale_arguments_path: Optional[Union[Path, str]] = None,
         system_prompt_path: Optional[Union[Path, str]] = None,
     ) -> None:
+        self._prompt_target = chat_target
+        self.scorer_type = "float_scale"
 
         if not system_prompt_path:
             system_prompt_path = self.SystemPaths.GENERAL_SYSTEM_PROMPT.value

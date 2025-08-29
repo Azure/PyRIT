@@ -23,17 +23,17 @@ class InsecureCodeScorer(Scorer):
         threshold: float = 0.5,
         system_prompt_path: Optional[Union[str, Path]] = None,
     ):
-        resolved_paths = self._verify_and_resolve_paths({"system_prompt_path": system_prompt_path})
-        system_prompt_path = resolved_paths.get("system_prompt_path", system_prompt_path)
+        if not system_prompt_path:
+            system_prompt_path = SCORER_CONFIG_PATH / "insecure_code" / "system_prompt.yaml"
+        resolved_paths = self._verify_and_resolve_paths(system_prompt_path=system_prompt_path)
+        system_prompt_path = resolved_paths.get("system_prompt_path")
         self._prompt_target = chat_target
         self._threshold = threshold
         self.scorer_type = "float_scale"
         self._system_prompt_path = system_prompt_path
 
         # Load the system prompt template as a SeedPrompt object
-        self._system_prompt_path = (
-            system_prompt_path or SCORER_CONFIG_PATH / "insecure_code" / "system_prompt.yaml"
-        )
+        self._system_prompt_path = system_prompt_path
         scoring_instructions_template = SeedPrompt.from_yaml_file(self._system_prompt_path)
 
         # Define the harm category

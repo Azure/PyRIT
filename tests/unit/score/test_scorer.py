@@ -3,6 +3,7 @@
 
 import asyncio
 import os
+from pathlib import Path
 from textwrap import dedent
 from typing import Optional
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -238,7 +239,7 @@ def test_scorer_path_verification_rejection():
     scorer = MockScorer()
     mock_path: str = "this/does/not/exist.yaml"
     with pytest.raises(ValueError, match="Path not found"):
-        scorer._verify_and_resolve_paths({"mock_path": mock_path})
+        scorer._verify_and_resolve_paths(mock_path=mock_path)
         
 def test_scorer_path_verification_confirmation():
     """
@@ -246,9 +247,15 @@ def test_scorer_path_verification_confirmation():
     under the scorer configs. 
     """
     scorer = MockScorer()
-    mock_paths: list[str] = [f for f in os.listdir(SCORER_CONFIG_PATH) if os.path.isfile(os.path.join(SCORER_CONFIG_PATH, f))] # fetch all .yaml
-    mock_path_names: list[str] = [f"{i}_path" for i in range(len(mock_paths))]
-    assert scorer._verify_and_resolve_paths(dict(zip(mock_path_names, mock_paths))) is None
+    all_yamls_as_str: list[str] = []
+    full_paths: list[str] = []
+    for root, dirs, files in os.walk(SCORER_CONFIG_PATH):
+        full_paths.extend([os.path.join(root, f) for f in files if f.endswith(".yaml")])
+        all_yamls_as_str.extend([f for f in files if f.endswith(".yaml")])
+    mock_path_names = [f[:-5] + "_path" for f in all_yamls_as_str]
+    resolved_paths = [Path(p).resolve() for p in full_paths]
+    attempted_paths = list(scorer._verify_and_resolve_paths(**dict(zip(mock_path_names, full_paths))).values())
+    assert attempted_paths == resolved_paths
 
 def test_scorer_extract_task_from_response():
     """
