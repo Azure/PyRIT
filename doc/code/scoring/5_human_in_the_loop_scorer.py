@@ -60,7 +60,7 @@ from pyrit.score import (
 )
 
 memory = CentralMemory.get_memory_instance()
-prompt_pieces_to_score = memory.get_prompt_request_pieces(orchestrator_id=prompt_sending_attack_id)
+prompt_pieces_to_score = memory.get_prompt_request_pieces(attack_id=prompt_sending_attack_id)
 
 # This is the scorer we will use to score the prompts and to rescore the prompts
 self_ask_scorer = SelfAskCategoryScorer(

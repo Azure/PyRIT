@@ -27,7 +27,7 @@ class PromptChatTarget(PromptTarget):
         *,
         system_prompt: str,
         conversation_id: str,
-        orchestrator_identifier: Optional[dict[str, str]] = None,
+        attack_identifier: Optional[dict[str, str]] = None,
         labels: Optional[dict[str, str]] = None,
     ) -> None:
         """
@@ -45,7 +45,7 @@ class PromptChatTarget(PromptTarget):
                 original_value=system_prompt,
                 converted_value=system_prompt,
                 prompt_target_identifier=self.get_identifier(),
-                orchestrator_identifier=orchestrator_identifier,
+                attack_identifier=attack_identifier,
                 labels=labels,
             ).to_prompt_request_response()
         )

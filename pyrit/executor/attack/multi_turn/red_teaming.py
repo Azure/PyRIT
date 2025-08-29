@@ -236,7 +236,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         self._adversarial_chat.set_system_prompt(
             system_prompt=system_prompt,
             conversation_id=context.session.adversarial_chat_conversation_id,
-            orchestrator_identifier=self.get_identifier(),
+            attack_identifier=self.get_identifier(),
             labels=context.memory_labels,
         )
 
@@ -341,7 +341,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
             seed_prompt_group=prompt_grp,
             conversation_id=context.session.adversarial_chat_conversation_id,
             target=self._adversarial_chat,
-            orchestrator_identifier=self.get_identifier(),
+            attack_identifier=self.get_identifier(),
             labels=context.memory_labels,
         )
 
@@ -489,7 +489,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
             response_converter_configurations=self._response_converters,
             target=self._objective_target,
             labels=context.memory_labels,
-            orchestrator_identifier=self.get_identifier(),
+            attack_identifier=self.get_identifier(),
         )
 
         if response is None:

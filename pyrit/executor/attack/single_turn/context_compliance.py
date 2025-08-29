@@ -255,7 +255,7 @@ class ContextComplianceAttack(PromptSendingAttack):
         response = await self._prompt_normalizer.send_prompt_async(
             seed_prompt_group=seed_prompt_group,
             target=self._adversarial_chat,
-            orchestrator_identifier=self.get_identifier(),
+            attack_identifier=self.get_identifier(),
             labels=context.memory_labels,
         )
 
@@ -286,7 +286,7 @@ class ContextComplianceAttack(PromptSendingAttack):
         response = await self._prompt_normalizer.send_prompt_async(
             seed_prompt_group=seed_prompt_group,
             target=self._adversarial_chat,
-            orchestrator_identifier=self.get_identifier(),
+            attack_identifier=self.get_identifier(),
             labels=context.memory_labels,
         )
 
@@ -315,7 +315,7 @@ class ContextComplianceAttack(PromptSendingAttack):
         response = await self._prompt_normalizer.send_prompt_async(
             seed_prompt_group=seed_prompt_group,
             target=self._adversarial_chat,
-            orchestrator_identifier=self.get_identifier(),
+            attack_identifier=self.get_identifier(),
             labels=context.memory_labels,
         )
 

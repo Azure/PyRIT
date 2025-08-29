@@ -552,7 +552,7 @@ class TestContextComplianceAttackExecution:
             call_args = mock_prompt_normalizer.send_prompt_async.call_args
 
             assert call_args.kwargs["target"] == attack._adversarial_chat
-            assert call_args.kwargs["orchestrator_identifier"] == attack.get_identifier()
+            assert call_args.kwargs["attack_identifier"] == attack.get_identifier()
             assert call_args.kwargs["labels"] == basic_context.memory_labels
 
             # Verify seed prompt group was created correctly
@@ -603,7 +603,7 @@ class TestContextComplianceAttackExecution:
             call_args = mock_prompt_normalizer.send_prompt_async.call_args
 
             assert call_args.kwargs["target"] == attack._adversarial_chat
-            assert call_args.kwargs["orchestrator_identifier"] == attack.get_identifier()
+            assert call_args.kwargs["attack_identifier"] == attack.get_identifier()
             assert call_args.kwargs["labels"] == basic_context.memory_labels
 
             # Verify template was rendered with benign request
@@ -647,7 +647,7 @@ class TestContextComplianceAttackExecution:
             call_args = mock_prompt_normalizer.send_prompt_async.call_args
 
             assert call_args.kwargs["target"] == attack._adversarial_chat
-            assert call_args.kwargs["orchestrator_identifier"] == attack.get_identifier()
+            assert call_args.kwargs["attack_identifier"] == attack.get_identifier()
             assert call_args.kwargs["labels"] == basic_context.memory_labels
 
             # Verify template was rendered

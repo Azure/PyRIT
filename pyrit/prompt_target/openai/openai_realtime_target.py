@@ -190,7 +190,7 @@ class RealtimeTarget(OpenAITarget):
             self.set_system_prompt(
                 system_prompt=self.system_prompt,
                 conversation_id=convo_id,
-                orchestrator_identifier=self.get_identifier(),
+                attack_identifier=self.get_identifier(),
             )
 
         websocket = self._existing_conversation[convo_id]

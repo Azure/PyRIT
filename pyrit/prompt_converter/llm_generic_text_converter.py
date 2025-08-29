@@ -72,7 +72,7 @@ class LLMGenericTextConverter(PromptConverter):
             self._converter_target.set_system_prompt(
                 system_prompt=system_prompt,
                 conversation_id=conversation_id,
-                orchestrator_identifier=None,
+                attack_identifier=None,
             )
 
         if not self.input_supported(input_type):

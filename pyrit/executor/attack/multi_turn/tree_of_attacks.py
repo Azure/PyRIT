@@ -413,7 +413,7 @@ class _TreeOfAttacksNode:
             conversation_id=self.objective_target_conversation_id,
             target=self._objective_target,
             labels=self._memory_labels,
-            orchestrator_identifier=self._attack_id,
+            attack_identifier=self._attack_id,
         )
 
         # Store the last response text for reference
@@ -682,7 +682,7 @@ class _TreeOfAttacksNode:
         self._adversarial_chat.set_system_prompt(
             system_prompt=system_prompt,
             conversation_id=self.adversarial_chat_conversation_id,
-            orchestrator_identifier=self._attack_id,
+            attack_identifier=self._attack_id,
             labels=self._memory_labels,
         )
 
@@ -801,7 +801,7 @@ class _TreeOfAttacksNode:
             conversation_id=self.adversarial_chat_conversation_id,
             target=self._adversarial_chat,
             labels=self._memory_labels,
-            orchestrator_identifier=self._attack_id,
+            attack_identifier=self._attack_id,
         )
 
         return response.get_value()

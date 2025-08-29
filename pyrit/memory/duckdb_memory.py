@@ -109,8 +109,8 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         ]
         return and_(*conditions)
 
-    def _get_prompt_pieces_orchestrator_conditions(self, *, orchestrator_id: str):
-        return PromptMemoryEntry.orchestrator_identifier.op("->>")("id") == orchestrator_id
+    def _get_prompt_pieces_attack_conditions(self, *, attack_id: str):
+        return PromptMemoryEntry.attack_identifier.op("->>")("id") == attack_id
 
     def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]):
         conditions = [SeedPromptEntry.prompt_metadata.op("->>")(key) == value for key, value in metadata.items()]

@@ -960,7 +960,7 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
             requests=requests,
             target=self._objective_target,
             labels=context.memory_labels,
-            orchestrator_identifier=self.get_identifier(),
+            attack_identifier=self.get_identifier(),
             batch_size=self._batch_size,
         )
 
