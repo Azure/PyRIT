@@ -108,4 +108,3 @@ from pyrit.memory import CentralMemory
 
 memory = CentralMemory.get_memory_instance()
 memory.dispose_engine()
-
