@@ -11,15 +11,14 @@ from typing import Optional, cast
 
 from typing_extensions import LiteralString, deprecated
 
-from pyrit.attacks import (
+from pyrit.common import deprecation_message
+from pyrit.common.path import RED_TEAM_EXECUTOR_PATH
+from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackConverterConfig,
     AttackScoringConfig,
-    MultiTurnAttackContext,
     RedTeamingAttack,
 )
-from pyrit.common import deprecation_message
-from pyrit.common.path import RED_TEAM_ORCHESTRATOR_PATH
 from pyrit.models import AttackOutcome
 from pyrit.orchestrator import MultiTurnOrchestrator, OrchestratorResult
 from pyrit.prompt_converter import PromptConverter
@@ -33,12 +32,12 @@ from pyrit.score import Scorer
 logger = logging.getLogger(__name__)
 
 
-class RTOSystemPromptPaths(enum.Enum):
-    TEXT_GENERATION = Path(RED_TEAM_ORCHESTRATOR_PATH, "text_generation.yaml").resolve()
-    IMAGE_GENERATION = Path(RED_TEAM_ORCHESTRATOR_PATH, "image_generation.yaml").resolve()
-    NAIVE_CRESCENDO = Path(RED_TEAM_ORCHESTRATOR_PATH, "naive_crescendo.yaml").resolve()
-    VIOLENT_DURIAN = Path(RED_TEAM_ORCHESTRATOR_PATH, "violent_durian.yaml").resolve()
-    CRUCIBLE = Path(RED_TEAM_ORCHESTRATOR_PATH, "crucible.yaml").resolve()
+class RTASystemPromptPaths(enum.Enum):
+    TEXT_GENERATION = Path(RED_TEAM_EXECUTOR_PATH, "text_generation.yaml").resolve()
+    IMAGE_GENERATION = Path(RED_TEAM_EXECUTOR_PATH, "image_generation.yaml").resolve()
+    NAIVE_CRESCENDO = Path(RED_TEAM_EXECUTOR_PATH, "naive_crescendo.yaml").resolve()
+    VIOLENT_DURIAN = Path(RED_TEAM_EXECUTOR_PATH, "violent_durian.yaml").resolve()
+    CRUCIBLE = Path(RED_TEAM_EXECUTOR_PATH, "crucible.yaml").resolve()
 
 
 @deprecated(
@@ -55,7 +54,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
     """
     .. warning::
         `RedTeamingOrchestrator` is deprecated and will be removed in **v0.12.0**;
-        use `pyrit.attacks.RedTeamingAttack` instead.
+        use `pyrit.executor.attack.RedTeamingAttack` instead.
 
     The `RedTeamingOrchestrator` class orchestrates a multi-turn red teaming attack on a target system.
 
@@ -84,7 +83,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         *,
         objective_target: PromptTarget,
         adversarial_chat: PromptChatTarget,
-        adversarial_chat_system_prompt_path: Path = RTOSystemPromptPaths.TEXT_GENERATION.value,
+        adversarial_chat_system_prompt_path: Path = RTASystemPromptPaths.TEXT_GENERATION.value,
         adversarial_chat_seed_prompt: str = "How can I help you?",
         prompt_converters: Optional[list[PromptConverter]] = None,
         max_turns: int = 5,
@@ -147,13 +146,11 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         self, *, objective: str, memory_labels: Optional[dict[str, str]] = None
     ) -> OrchestratorResult:
 
-        # Transitions to the new attack model
-        context = MultiTurnAttackContext(
+        result = await self._attack.execute_async(
             objective=objective,
+            prepended_conversation=self._prepended_conversation,
             memory_labels=memory_labels or {},
         )
-
-        result = await self._attack.execute_with_context_async(context=context)
         objective_achieved = result.outcome == AttackOutcome.SUCCESS
 
         # Translating the result back to the orchestrator result format

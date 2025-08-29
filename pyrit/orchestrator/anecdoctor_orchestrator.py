@@ -17,10 +17,6 @@ from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
 
-# Suppress INFO and DEBUG messages from pyrit and httpx libraries
-logging.getLogger("pyrit").setLevel(logging.WARNING)
-logging.getLogger("httpx").setLevel(logging.WARNING)
-
 
 class AnecdoctorOrchestrator(Orchestrator):
     """
@@ -75,7 +71,7 @@ class AnecdoctorOrchestrator(Orchestrator):
         Loads a prompt template from a given YAML file (relative path).
         Returns the 'value' key as a string.
         """
-        prompt_path = Path(DATASETS_PATH, "orchestrators", "anecdoctor", yaml_filename)
+        prompt_path = Path(DATASETS_PATH, "executors", "anecdoctor", yaml_filename)
         prompt_data = prompt_path.read_text(encoding="utf-8")
         yaml_data = yaml.safe_load(prompt_data)
         return yaml_data["value"]
@@ -185,16 +181,14 @@ class AnecdoctorOrchestrator(Orchestrator):
         # 6. Extract the assistant's answer from the response pieces
         final_answer = response.get_value()
 
-        # 7. If verbose, print a nicely formatted message
-        if self._verbose:
-            # print the examples or knowledge graph
-            print(f"{Style.BRIGHT}{Fore.BLUE}user:{Style.RESET_ALL}")
-            wrapped_user_text = textwrap.fill(formatted_examples, width=100)
-            print(f"{Style.BRIGHT}{Fore.BLUE}{wrapped_user_text}{Style.RESET_ALL}")
+        # 7. log the examples or knowledge graph
+        logging.info(f"{Style.BRIGHT}{Fore.BLUE}user:{Style.RESET_ALL}")
+        wrapped_user_text = textwrap.fill(formatted_examples, width=100)
+        logging.info(f"{Style.BRIGHT}{Fore.BLUE}{wrapped_user_text}{Style.RESET_ALL}")
 
-            print(f"{Style.NORMAL}{Fore.YELLOW}assistant:{Style.RESET_ALL}")
-            wrapped_answer = textwrap.fill(final_answer, width=100)
-            print(f"{Style.NORMAL}{Fore.YELLOW}{wrapped_answer}{Style.RESET_ALL}")
+        logging.info(f"{Style.NORMAL}{Fore.YELLOW}assistant:{Style.RESET_ALL}")
+        wrapped_answer = textwrap.fill(final_answer, width=100)
+        logging.info(f"{Style.NORMAL}{Fore.YELLOW}{wrapped_answer}{Style.RESET_ALL}")
 
         # 8. Return the final answer
         return final_answer

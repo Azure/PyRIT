@@ -29,6 +29,8 @@ from sqlalchemy.types import Uuid  # type: ignore
 from pyrit.common.utils import to_sha256
 from pyrit.models import PromptDataType, PromptRequestPiece, Score, SeedPrompt
 from pyrit.models.attack_result import AttackOutcome, AttackResult
+from pyrit.models.conversation_reference import ConversationReference, ConversationType
+from pyrit.models.literals import ChatMessageRole
 
 
 class Base(DeclarativeBase):
@@ -196,7 +198,7 @@ class ScoreEntry(Base):  # type: ignore
     score_value = mapped_column(String, nullable=False)
     score_value_description = mapped_column(String, nullable=True)
     score_type: Mapped[Literal["true_false", "float_scale"]] = mapped_column(String, nullable=False)
-    score_category = mapped_column(String, nullable=False)
+    score_category = mapped_column(String, nullable=True)
     score_rationale = mapped_column(String, nullable=True)
     score_metadata = mapped_column(String, nullable=True)
     scorer_class_identifier: Mapped[dict[str, str]] = mapped_column(JSON)
@@ -269,7 +271,7 @@ class SeedPromptEntry(Base):
     Represents the raw prompt or prompt template data as found in open datasets.
 
     Note: This is different from the PromptMemoryEntry which is the processed prompt data.
-    SeedPrompt merely reflects basic prompts before plugging into orchestrators,
+    SeedPrompt merely reflects basic prompts before plugging into attacks,
     running through models with corresponding attack strategies, and applying converters.
     PromptMemoryEntry captures the processed prompt data before and after the above steps.
 
@@ -297,6 +299,7 @@ class SeedPromptEntry(Base):
             Groups are used to organize prompts for multi-turn conversations or multi-modal prompts.
         sequence (int): The turn of the seed prompt in a group. When entire multi-turn conversations
             are stored, this is used to order the prompts.
+        role (str): The role of the prompt (e.g., user, system, assistant).
 
     Methods:
         __str__(): Returns a string representation of the memory entry.
@@ -321,6 +324,7 @@ class SeedPromptEntry(Base):
     parameters: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
     prompt_group_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, nullable=True)
     sequence: Mapped[Optional[int]] = mapped_column(INTEGER, nullable=True)
+    role: Mapped[ChatMessageRole] = mapped_column(String, nullable=True)
 
     def __init__(self, *, entry: SeedPrompt):
         self.id = entry.id
@@ -340,6 +344,7 @@ class SeedPromptEntry(Base):
         self.parameters = entry.parameters  # type: ignore
         self.prompt_group_id = entry.prompt_group_id
         self.sequence = entry.sequence
+        self.role = entry.role
 
     def get_seed_prompt(self) -> SeedPrompt:
         return SeedPrompt(
@@ -360,6 +365,7 @@ class SeedPromptEntry(Base):
             parameters=self.parameters,
             prompt_group_id=self.prompt_group_id,
             sequence=self.sequence,
+            role=self.role,
         )
 
 
@@ -382,6 +388,8 @@ class AttackResultEntry(Base):
         outcome (AttackOutcome): The outcome of the attack, indicating success, failure, or undetermined.
         outcome_reason (str): Optional reason for the outcome, providing additional context.
         attack_metadata (dict[str, Any]): Metadata can be included as key-value pairs to provide extra context.
+        pruned_conversation_ids (List[str]): List of conversation IDs that were pruned from the attack.
+        adversarial_chat_conversation_ids (List[str]): List of conversation IDs used for adversarial chat.
         timestamp (DateTime): The timestamp of the attack result entry.
         last_response (PromptMemoryEntry): Relationship to the last response prompt memory entry.
         last_score (ScoreEntry): Relationship to the last score entry.
@@ -409,6 +417,8 @@ class AttackResultEntry(Base):
     )
     outcome_reason = mapped_column(String, nullable=True)
     attack_metadata: Mapped[dict[str, Union[str, int, float, bool]]] = mapped_column(JSON, nullable=True)
+    pruned_conversation_ids: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
+    adversarial_chat_conversation_ids: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
     timestamp = mapped_column(DateTime, nullable=False)
 
     last_response: Mapped[Optional["PromptMemoryEntry"]] = relationship(
@@ -436,6 +446,16 @@ class AttackResultEntry(Base):
         self.outcome = entry.outcome.value  # type: ignore
         self.outcome_reason = entry.outcome_reason
         self.attack_metadata = self.filter_json_serializable_metadata(entry.metadata)
+
+        # Persist conversation references by type
+        self.pruned_conversation_ids = [
+            ref.conversation_id for ref in entry.get_conversations_by_type(ConversationType.PRUNED)
+        ] or None
+
+        self.adversarial_chat_conversation_ids = [
+            ref.conversation_id for ref in entry.get_conversations_by_type(ConversationType.ADVERSARIAL)
+        ] or None
+
         self.timestamp = datetime.now()
 
     @staticmethod
@@ -485,6 +505,27 @@ class AttackResultEntry(Base):
         return filtered_metadata
 
     def get_attack_result(self) -> AttackResult:
+
+        related_conversations: set[ConversationReference] = set()
+
+        for cid in self.pruned_conversation_ids or []:
+            related_conversations.add(
+                ConversationReference(
+                    conversation_id=cid,
+                    conversation_type=ConversationType.PRUNED,
+                    description="pruned conversation",
+                )
+            )
+
+        for cid in self.adversarial_chat_conversation_ids or []:
+            related_conversations.add(
+                ConversationReference(
+                    conversation_id=cid,
+                    conversation_type=ConversationType.ADVERSARIAL,
+                    description="adversarial chat conversation",
+                )
+            )
+
         return AttackResult(
             conversation_id=self.conversation_id,
             objective=self.objective,
@@ -495,5 +536,6 @@ class AttackResultEntry(Base):
             execution_time_ms=self.execution_time_ms,
             outcome=AttackOutcome(self.outcome),
             outcome_reason=self.outcome_reason,
+            related_conversations=related_conversations,
             metadata=self.attack_metadata or {},
         )

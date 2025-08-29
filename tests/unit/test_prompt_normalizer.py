@@ -13,7 +13,8 @@ from pyrit.exceptions import EmptyResponseException
 from pyrit.memory import CentralMemory
 from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse
 from pyrit.models.filter_criteria import PromptFilterCriteria
-from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
+from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models.seed_prompt_group import SeedPromptGroup
 from pyrit.prompt_converter import (
     Base64Converter,
     ConverterResult,
@@ -50,6 +51,8 @@ def seed_prompt_group() -> SeedPromptGroup:
             SeedPrompt(
                 value="Hello",
                 data_type="text",
+                role="system",
+                sequence=1,
             )
         ]
     )
@@ -211,6 +214,38 @@ async def test_send_prompt_async_empty_exception(mock_memory_instance, seed_prom
 
 
 @pytest.mark.asyncio
+async def test_send_prompt_async_different_sequences():
+    """Test that sending prompts with different sequences raises ValueError."""
+    prompt_target = AsyncMock()
+    normalizer = PromptNormalizer()
+
+    prompts = [
+        SeedPrompt(value="test1", sequence=1, role="user"),
+        SeedPrompt(value="test2", sequence=2, role="user"),
+    ]  # Different sequence
+    group = SeedPromptGroup(prompts=prompts)
+
+    with pytest.raises(ValueError, match="All SeedPrompts in the SeedPromptGroup must have the same sequence"):
+        await normalizer.send_prompt_async(seed_prompt_group=group, target=prompt_target)
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_mixed_sequence_types():
+    """Test that sending prompts with mixed sequence types (None and int) raises ValueError."""
+    prompt_target = AsyncMock()
+    normalizer = PromptNormalizer()
+
+    prompts = [
+        SeedPrompt(value="test1", sequence=1, role="user"),
+        SeedPrompt(value="test2", role="user"),
+    ]  # No sequence (will default to None)
+    group = SeedPromptGroup(prompts=prompts)
+
+    with pytest.raises(ValueError, match="All SeedPrompts in the SeedPromptGroup must have the same sequence"):
+        await normalizer.send_prompt_async(seed_prompt_group=group, target=prompt_target)
+
+
+@pytest.mark.asyncio
 async def test_send_prompt_async_adds_memory_twice(
     mock_memory_instance, seed_prompt_group, response: PromptRequestResponse
 ):
@@ -342,7 +377,6 @@ async def test_prompt_normalizer_send_prompt_batch_async_throws(
 async def test_build_prompt_request_response(mock_memory_instance, seed_prompt_group):
 
     labels = {"label1": "value1", "label2": "value2"}
-    orchestrator_identifier = {"orchestrator_id": "123"}
 
     conversation_id = uuid.uuid4()
 
@@ -358,13 +392,17 @@ async def test_build_prompt_request_response(mock_memory_instance, seed_prompt_g
         conversation_id=conversation_id,
         request_converter_configurations=request_converters,
         target=prompt_target,
-        sequence=2,
         labels=labels,
-        orchestrator_identifier=orchestrator_identifier,
     )
 
     # Check all prompt pieces in the response have the same conversation ID
     assert len(set(prompt_piece.conversation_id for prompt_piece in response.request_pieces)) == 1
+
+    assert response.request_pieces[0].sequence == 1
+    assert len(set(prompt_piece.sequence for prompt_piece in response.request_pieces)) == 1
+
+    assert response.request_pieces[0].role == "system"
+    assert len(set(prompt_piece.role for prompt_piece in response.request_pieces)) == 1
 
     # Check sequence is set correctly
     assert len(set(prompt_piece.sequence for prompt_piece in response.request_pieces)) == 1

@@ -2,15 +2,18 @@
 # Licensed under the MIT License.
 
 import asyncio
-import inspect
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser, Namespace
 from datetime import datetime
 from pathlib import Path
 from typing import List
 
 from pyrit.common import initialize_pyrit
+from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
+    SingleTurnAttackStrategy,
+)
 from pyrit.memory import CentralMemory
-from pyrit.models.seed_prompt import SeedPromptDataset, SeedPromptGroup
+from pyrit.models.seed_prompt_dataset import SeedPromptDataset
+from pyrit.models.seed_prompt_group import SeedPromptGroup
 
 from .scanner_config import ScannerConfig
 
@@ -47,6 +50,7 @@ def load_seed_prompt_groups(dataset_paths: List[str]) -> List[SeedPromptGroup]:
         dataset = SeedPromptDataset.from_yaml_file(path)
         groups = SeedPromptDataset.group_seed_prompts_by_prompt_group_id(dataset.prompts)
         all_prompt_groups.extend(groups)
+
     return all_prompt_groups
 
 
@@ -87,21 +91,22 @@ async def run_scenarios_async(config: ScannerConfig) -> None:
 
     seed_prompt_groups = load_seed_prompt_groups(config.datasets)
     prompt_converters = config.create_prompt_converters()
-    orchestrators = config.create_orchestrators(prompt_converters=prompt_converters)
+    attacks = config.create_attacks(prompt_converters=prompt_converters)
 
-    for orchestrator in orchestrators:
+    for attack in attacks:
         objectives = _get_first_text_values_if_exist(seed_prompt_groups)
-        if hasattr(orchestrator, "run_attacks_async"):
-            args = {
-                "objectives": objectives,
-                "memory_labels": memory_labels,
-            }
-            sig = inspect.signature(orchestrator.run_attacks_async)
-            if "seed_prompts" in sig.parameters:
-                args["seed_prompts"] = seed_prompt_groups
-            await orchestrator.run_attacks_async(**args)
+        if hasattr(attack, "execute_async"):
+            for i in range(len(objectives)):
+                objective = objectives[i]
+                args = {
+                    "objective": objective,
+                    "memory_labels": memory_labels,
+                }
+                if isinstance(attack, SingleTurnAttackStrategy) and len(seed_prompt_groups) > i:
+                    args["seed_prompt_group"] = seed_prompt_groups[i]  # type: ignore
+                await attack.execute_async(**args)
         else:
-            raise ValueError(f"The orchestrator {type(orchestrator).__name__} does not have run_attacks_async.")
+            raise ValueError(f"The attack {type(attack).__name__} does not have execute_async.")
 
     # Print conversation pieces from memory
     memory = CentralMemory.get_memory_instance()

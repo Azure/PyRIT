@@ -6,7 +6,7 @@ Testing is an art to get right! But here are some best practices in terms of uni
 
 - Make a test that checks one thing and one thing only.
 - Use `fixtures` generally, and specifically, if you're using something across classes, use `unit.mocks` or `integration.mocks`.
-- Memory isolation: Use the `patch_central_database` fixture for test database isolation and reset. Because this is a singleton, never set memory in an object directly, as this will impact other tests (e.g. never do something like `orchestrator._memory.get_prompt_pieces = MagicMock()`). Patching central memory with a scope is okay (e.g. `with patch.object(orchestrator._memory.get_prompt_request_pieces):`).
+- Memory isolation: Use the `patch_central_database` fixture for test database isolation and reset.
 - Code coverage and functionality should be checked with unit tests. Notebooks and integration tests should not be relied on for coverage.
 - `MagicMock` and `AsyncMock`: these are the preferred way to mock calls.
 - `with patch` is acceptable to patch external calls.

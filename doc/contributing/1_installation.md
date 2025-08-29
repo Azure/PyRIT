@@ -10,7 +10,7 @@ You can set up PyRIT in one of two ways:
 
 To install PyRIT as a library, the simplest way to do it is just `pip install pyrit`. This is documented [here](../setup/install_pyrit.md).
 
-However, there are many reasons to install as a contributor. Yes, of course, if you want to contribute. But also because of the nature of the tool, it is often the case that targets/orchestrators/converters/core code needs to be modified. This section walks through how to install PyRIT as a contributor.
+However, there are many reasons to install as a contributor. Yes, of course, if you want to contribute. But also because of the nature of the tool, it is often the case that targets, attacks, converters, core, etc. code needs to be modified. This section walks through how to install PyRIT as a contributor.
 
 ### Prerequisite software
 
@@ -75,8 +75,7 @@ This is a guide for how to install PyRIT into a `conda` environment.
    ```bash
    pip install -e '.[dev]'
    ```
-
-   If you plan to use the Playwright integration (PlaywrightTarget), install with the playwright extra:
+   If you plan to use the [Playwright integration 3](../code/targets/playwright_target.py), install with the playwright extra:
    ```bash
    pip install -e '.[dev,playwright]'
    ```
@@ -86,7 +85,7 @@ This is a guide for how to install PyRIT into a `conda` environment.
    playwright install
    ```
 
-   See [this post](https://stackoverflow.com/questions/77134272/pip-install-dev-with-pyproject-toml-not-working) for more details.
+   If you are having problems getting pip to install, try this link for details here: [this post](https://stackoverflow.com/questions/77134272/pip-install-dev-with-pyproject-toml-not-working) for more details.
 
 
 ### Local Environment Setup

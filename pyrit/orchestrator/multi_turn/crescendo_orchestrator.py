@@ -74,7 +74,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
         adversarial_chat_system_prompt_path = (
             adversarial_chat_system_prompt_path
-            or Path(DATASETS_PATH) / "orchestrators" / "crescendo" / "crescendo_variant_1.yaml"
+            or Path(DATASETS_PATH) / "executors" / "crescendo" / "crescendo_variant_1.yaml"
         )
 
         objective_scorer = FloatScaleThresholdScorer(
@@ -419,7 +419,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
     def _log_target_memory(self, *, conversation_id: str) -> None:
         """
-        Prints the target memory for a given conversation ID.
+        Logs the target memory for a given conversation ID.
 
         Args:
             conversation_id (str): The ID of the conversation.
