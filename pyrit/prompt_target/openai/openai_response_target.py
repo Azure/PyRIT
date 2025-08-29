@@ -105,7 +105,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             extra_body_parameters (dict, Optional): Additional parameters to be included in the request body.
             fail_on_missing_function: if True, raise when a function_call references
                 an unknown function; if False, return a structured error so we can
-                wrap it as function_call_output and let the model handle it.
+                wrap it as function_call_output and let the model potentially recover (e.g., pick another tool or ask for clarification).
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
                 httpx.AsyncClient() constructor.
                 For example, to specify a 3 minute timeout: httpx_client_kwargs={"timeout": 180}
