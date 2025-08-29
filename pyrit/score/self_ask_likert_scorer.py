@@ -48,9 +48,8 @@ class SelfAskLikertScorer(Scorer):
         self._prompt_target = chat_target
         self.scorer_type = "float_scale"
 
-        if isinstance(likert_scale_path, str):
-            likert_scale_path = Path(likert_scale_path)
-        likert_scale_path = likert_scale_path.resolve()
+
+
 
         self.set_likert_scale_system_prompt(likert_scale_path=likert_scale_path)
         
