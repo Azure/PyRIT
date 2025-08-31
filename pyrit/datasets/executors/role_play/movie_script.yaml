@@ -1,7 +1,7 @@
 dataset_name: movie_script
 groups:
   - AI Red Team
-description: This is an example first turn response to a movie script role play scenario for the role_play orchestrator. Order matters for this orchestrator.
+description: This is an example first turn response to a movie script role play scenario for the role_play attack. Order matters for this attack.
 authors:
   - Mark Russinovich
 prompts:

@@ -113,8 +113,8 @@ class DataTypeSerializer(abc.ABC):
             ValueError: If the Azure Storage URL is detected but the datasets storage handle is not set.
         """
         if self._is_azure_storage_url(self.value):
-            # Scenarios where a user utilizes an in-memory SQLite but also needs to interact
-            # with an Azure Storage Account, ex., XPIAOrchestrator.
+            # Scenarios where a user utilizes an in-memory DuckDB but also needs to interact
+            # with an Azure Storage Account, ex., XPIAWorkflow.
             from pyrit.common import AZURE_SQL, initialize_pyrit
 
             initialize_pyrit(memory_db_type=AZURE_SQL)

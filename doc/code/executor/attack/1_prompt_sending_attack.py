@@ -128,7 +128,7 @@ from pyrit.prompt_target import TextTarget
 text_target = TextTarget()
 
 # use the image from our docs
-image_path = str(pathlib.Path(".") / ".." / ".." / ".." / "assets" / "pyrit_architecture.png")
+image_path = str(pathlib.Path(".") / ".." / ".." / ".." / ".." / "assets" / "pyrit_architecture.png")
 # For Azure SQL Memory
 # image_path = "https://airtstorageaccountdev.blob.core.windows.net/dbdata/prompt-memory-entries/images/1735941681066137.png"
 

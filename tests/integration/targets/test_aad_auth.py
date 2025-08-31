@@ -5,7 +5,7 @@ import os
 
 import pytest
 
-from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.executor.attack import PromptSendingAttack
 from pyrit.prompt_target import OpenAIChatTarget, RealtimeTarget
 
 
@@ -30,10 +30,10 @@ async def test_openai_chat_target_aad_auth(sqlite_instance, endpoint, model_name
     # e.g. Cognitive Services OpenAI Contributor role
     target = OpenAIChatTarget(**args)
 
-    orchestrator = PromptSendingOrchestrator(objective_target=target)
-    result = await orchestrator.send_prompts_async(prompt_list=["Hello, how are you?"])
+    attack = PromptSendingAttack(objective_target=target)
+    result = await attack.execute_async(objective="Hello, how are you?")
     assert result is not None
-    assert result[0].request_pieces[0].converted_value is not None
+    assert result.last_response is not None
 
 
 @pytest.mark.asyncio
@@ -51,7 +51,7 @@ async def test_openai_realtime_target_aad_auth(sqlite_instance, endpoint, model_
     # e.g.  Cognitive Services OpenAI Contributor role
     target = RealtimeTarget(**args)
 
-    orchestrator = PromptSendingOrchestrator(objective_target=target)
-    result = await orchestrator.send_prompts_async(prompt_list=["Hello, how are you?"])
+    attack = PromptSendingAttack(objective_target=target)
+    result = await attack.execute_async(objective="Hello, how are you?")
     assert result is not None
-    assert result[0].request_pieces[0].converted_value is not None
+    assert result.last_response is not None

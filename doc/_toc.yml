@@ -5,6 +5,8 @@ chapters:
     sections:
     - file: cookbooks/1_sending_prompts
     - file: cookbooks/2_precomputing_turns
+    - file: cookbooks/3_copyright_violations
+    - file: cookbooks/4_benchmarking_models
   - file: setup/install_pyrit
     sections:
     - file: setup/jupyter_setup
@@ -38,9 +40,22 @@ chapters:
           - file: code/executor/attack/2_red_teaming_attack
           - file: code/executor/attack/3_crescendo_attack
           - file: code/executor/attack/skeleton_key_attack
+          - file: code/executor/attack/violent_durian_attack
+          - file: code/executor/attack/flip_attack
+          - file: code/executor/attack/context_compliance_attack
+          - file: code/executor/attack/role_play_attack
+          - file: code/executor/attack/many_shot_jailbreak_attack
+          - file: code/executor/attack/tap_attack
         - file: code/executor/workflow/0_workflow
           sections:
           - file: code/executor/workflow/1_xpia_workflow
+        - file: code/executor/benchmark/0_benchmark
+          sections:
+          - file: code/executor/benchmark/1_qa_benchmark
+        - file: code/executor/promptgen/0_promptgen
+          sections:
+          - file: code/executor/promptgen/1_anecdoctor_generator
+          - file: code/executor/promptgen/fuzzer_generator
     - file: code/orchestrators/0_orchestrator
       sections:
       - file: code/orchestrators/1_prompt_sending_orchestrator
@@ -94,7 +109,7 @@ chapters:
       - file: code/scoring/2_true_false_scorers
       - file: code/scoring/3_classification_scorers
       - file: code/scoring/4_likert_scorers
-      - file: code/scoring/5_human_scorers
+      - file: code/scoring/5_human_in_the_loop_scorer
       - file: code/scoring/6_refusal_scorer
       - file: code/scoring/7_batch_scorer
       - file: code/scoring/insecure_code_scorer

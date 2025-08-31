@@ -1019,7 +1019,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         objective_scorer = attack_scoring_config.objective_scorer
         # If no objective scorer provided, create the default TAP scorer
         if objective_scorer is None:
-            # Use the adversarial chat target for scoring (as in old orchestrator)
+            # Use the adversarial chat target for scoring (as in old attack)
             objective_scorer = SelfAskScaleScorer(
                 chat_target=self._adversarial_chat,
                 scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
