@@ -83,15 +83,15 @@ def test_conversation_data_column_types(sqlite_instance):
 
     # Expected column types in ConversationData
     expected_column_types = {
-        "id": (UUID, CHAR),  # SQLite uses CHAR for UUID, PostgreSQL uses UUID
+        "id": (UUID, CHAR),
         "role": String,
         "conversation_id": String,
         "sequence": Integer,
         "timestamp": DateTime,
-        "labels": (String, JSON),  # SQLite might use JSON for complex data
-        "prompt_metadata": (String, JSON),  # SQLite might use JSON for complex data
-        "converter_identifiers": (String, JSON),  # SQLite might use JSON for complex data
-        "prompt_target_identifier": (String, JSON),  # SQLite might use JSON for complex data
+        "labels": (String, JSON),
+        "prompt_metadata": (String, JSON),
+        "converter_identifiers": (String, JSON),
+        "prompt_target_identifier": (String, JSON),
         "original_value_data_type": String,
         "original_value": String,
         "original_value_sha256": String,

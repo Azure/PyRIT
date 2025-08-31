@@ -154,7 +154,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         """
         Inserts embedding data into memory storage
         """
-        self._insert_entries(entries=list(embedding_data))
+        self._insert_entries(entries=embedding_data)
 
     def get_all_table_models(self) -> list[type[Base]]:  # type: ignore
         """
