@@ -72,10 +72,9 @@ class SelfAskGeneralScorer(Scorer):
         self.scorer_type = scorer_type
 
         # Convert category list to string for storage compatibility
+        self._score_category = None
         if category is not None:
             self._score_category = json.dumps(category) if isinstance(category, list) else str(category)
-        else:
-            self._score_category = None
 
         self.labels = labels
         self._min_value = min_value

@@ -7,6 +7,12 @@ from typing import Any, Literal, Optional, Union, get_args
 import dotenv
 
 from pyrit.common import path
+from pyrit.memory import (
+    AzureSQLMemory,
+    CentralMemory,
+    MemoryInterface,
+    SQLiteMemory,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -58,29 +64,12 @@ def initialize_pyrit(memory_db_type: Union[MemoryDatabaseType, str], **memory_in
             "Using in-memory SQLite instead."
         )
         memory_db_type = IN_MEMORY
-        logger.info("Setting memory type to default in-memory SQL database.")
 
     _load_environment_files()
 
-    from pyrit.memory import (
-        AzureSQLMemory,
-        CentralMemory,
-        MemoryInterface,
-        SQLiteMemory,
-    )
-
     memory: MemoryInterface = None
 
-    if memory_db_type == IN_MEMORY or memory_db_type == "DuckDB":
-        if memory_db_type == "DuckDB":
-            logger.warning(
-                "DuckDB is no longer supported and has been replaced by SQLite for better performance. "
-                "Please update your code to use SQLite instead. "
-                "For migration guidance, see the SQLite Memory documentation at: "
-                "doc/code/memory/1_sqlite_memory.ipynb."
-            )
-            logger.warning("Setting memory to in-memory SQLite instead.")
-
+    if memory_db_type == IN_MEMORY:
         logger.info("Using in-memory SQLite database.")
         memory = SQLiteMemory(db_path=":memory:", **memory_instance_kwargs)
     elif memory_db_type == SQLITE:
