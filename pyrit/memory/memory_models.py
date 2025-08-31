@@ -271,7 +271,7 @@ class SeedPromptEntry(Base):
     Represents the raw prompt or prompt template data as found in open datasets.
 
     Note: This is different from the PromptMemoryEntry which is the processed prompt data.
-    SeedPrompt merely reflects basic prompts before plugging into orchestrators,
+    SeedPrompt merely reflects basic prompts before plugging into attacks,
     running through models with corresponding attack strategies, and applying converters.
     PromptMemoryEntry captures the processed prompt data before and after the above steps.
 

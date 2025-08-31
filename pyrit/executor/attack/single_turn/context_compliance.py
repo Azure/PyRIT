@@ -165,7 +165,7 @@ class ContextComplianceAttack(PromptSendingAttack):
         )
 
         # Update context with the prepended conversation
-        context.prepended_conversation.extend(prepended_conversation)
+        context.prepended_conversation = prepended_conversation
 
         # Create the affirmative seed prompt group
         affirmative_seed_prompt = SeedPromptGroup(
