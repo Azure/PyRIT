@@ -369,7 +369,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         print("================")
         for table_name, table in Base.metadata.tables.items():
             print(f"\nTable: {table_name}")
-            print("-" * (len(table_name) + 7))
+            print("-" * (len(table_name) + 7))  # +7 to align to be under header ("table: " is 7 chars)
             for column in table.columns:
                 nullable = "NULL" if column.nullable else "NOT NULL"
                 default = f" DEFAULT {column.default}" if column.default else ""

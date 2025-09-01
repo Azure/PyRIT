@@ -42,23 +42,21 @@ def test_export_all_conversations_file_created(sqlite_instance: MemoryInterface)
             file_path = Path(temp_file.name)
 
             # Create mock with serializable data
-            mock_piece = MagicMock()
-            mock_piece.id = "1234"
-            mock_piece.original_prompt_id = "1234"
-            mock_piece.converted_value = "sample piece"
-            mock_piece.to_dict.return_value = {
-                "id": "1234",
-                "original_prompt_id": "1234",
-                "converted_value": "sample piece",
-            }
 
-            mock_score = MagicMock()
-            mock_score.prompt_request_response_id = "1234"
-            mock_score.score_value = 10
-            mock_score.to_dict.return_value = {"prompt_request_response_id": "1234", "score_value": 10}
-
-            mock_get_pieces.return_value = [mock_piece]
-            mock_get_scores.return_value = [mock_score]
+            mock_get_pieces.return_value = [
+                MagicMock(
+                    original_prompt_id="1234",
+                    converted_value="sample piece",
+                    to_dict=lambda: {"prompt_request_response_id": "1234", "conversation": ["sample piece"]},
+                )
+            ]
+            mock_get_scores.return_value = [
+                MagicMock(
+                    prompt_request_response_id="1234",
+                    score_value=10,
+                    to_dict=lambda: {"prompt_request_response_id": "1234", "score_value": 10},
+                )
+            ]
 
             result_path = sqlite_instance.export_conversations(file_path=file_path)
 

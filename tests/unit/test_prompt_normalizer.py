@@ -214,7 +214,7 @@ async def test_send_prompt_async_empty_exception(mock_memory_instance, seed_prom
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_different_sequences():
+async def test_send_prompt_async_different_sequences(mock_memory_instance):
     """Test that sending prompts with different sequences raises ValueError."""
     prompt_target = AsyncMock()
     normalizer = PromptNormalizer()
