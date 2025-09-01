@@ -16,4 +16,4 @@ scoring:
     type: "SelfAskTrueFalseScorer"
     true_false_question_path: "./pyrit/datasets/score/true_false_question/prompt_injection.yaml"
 database:
-  type: "DuckDB"
+  type: "SQLite"

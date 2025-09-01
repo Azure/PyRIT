@@ -147,7 +147,7 @@ def test_input_supported(pdf_converter_no_template):
 
 
 @pytest.mark.asyncio
-async def test_convert_async_end_to_end_no_reader(tmp_path, duckdb_instance):
+async def test_convert_async_end_to_end_no_reader(tmp_path, sqlite_instance):
     prompt = "Test for PDF generation."
     pdf_file_path = tmp_path / "output.pdf"
     converter = PDFConverter(prompt_template=None)
@@ -468,7 +468,7 @@ async def test_injection_on_last_page(mock_pdf_path):
 
 
 @pytest.mark.asyncio
-async def test_filename_extension_default(duckdb_instance):
+async def test_filename_extension_default(sqlite_instance):
     converter = PDFConverter(
         prompt_template=None,
         font_type="Helvetica",
@@ -482,7 +482,7 @@ async def test_filename_extension_default(duckdb_instance):
 
 
 @pytest.mark.asyncio
-async def test_filename_extension_existing_pdf(duckdb_instance):
+async def test_filename_extension_existing_pdf(sqlite_instance):
     import tempfile
 
     import requests

@@ -25,4 +25,4 @@ converters:
 attack_adversarial_config:
   type: "OpenAIChatTarget"
 database:
-  type: "DuckDB"
+  type: "SQLite"
