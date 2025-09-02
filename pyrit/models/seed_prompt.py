@@ -155,7 +155,7 @@ class SeedPrompt(YamlLoadable):
             ValueError: If parameters are missing or invalid in the template.
         """
         # Create a Jinja template with PartialUndefined placeholders
-        env = Environment(loader=BaseLoader, undefined=PartialUndefined)  # type: ignore
+        env = Environment(loader=BaseLoader, undefined=PartialUndefined,autoescape=True)  # type: ignore
         jinja_template = env.from_string(self.value)
 
         try:

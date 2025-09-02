@@ -30,7 +30,7 @@ def _get_cache_file_name(source: str, file_type: str) -> str:
     """
     Generate a cache file name based on the source URL and file type.
     """
-    hash_source = hashlib.md5(source.encode("utf-8")).hexdigest()
+    hash_source = hashlib.sha256(source.encode("utf-8")).hexdigest()
     return f"{hash_source}.{file_type}"
 
 
