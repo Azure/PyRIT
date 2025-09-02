@@ -25,12 +25,12 @@
 #
 # ```{mermaid}
 # flowchart LR
-#     start(("Start")) --> getPrompt["Get prompt from an unsafe model<br>(adversarial chat target) defined in AttackAdversarialConfig"]
+#     start("Start") --> getPrompt["Get prompt from an unsafe model<br>(adversarial chat target) defined in AttackAdversarialConfig"]
 #     getPrompt -- Prompt --> transform["Use converters defined in AttackConverterConfig to transform the<br>attack prompt"]
 #     transform -- Transformed&nbsp;Prompt --> sendPrompt["Send transformed prompt<br>to objective target"]
 #     sendPrompt -- Response --> scoreResp@{ label: "Score objective target's response<br>based on given criteria" }
 #     scoreResp -- Score --> decision{"Objective achieved<br>or turn limit reached?"}
-#     decision -- Yes --> done(("DONE"))
+#     decision -- Yes --> done("DONE")
 #     decision -- No --> feedback["Use score to generate<br>feedback"]
 #     feedback -- Feedback --> getPrompt
 #
