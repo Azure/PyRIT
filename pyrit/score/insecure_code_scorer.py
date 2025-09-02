@@ -25,8 +25,8 @@ class InsecureCodeScorer(Scorer):
     ):
         if not system_prompt_path:
             system_prompt_path = SCORER_CONFIG_PATH / "insecure_code" / "system_prompt.yaml"
-        resolved_paths = self._verify_and_resolve_paths(system_prompt_path=system_prompt_path)
-        system_prompt_path = resolved_paths.get("system_prompt_path")
+
+        system_prompt_path = self._verify_and_resolve_path(system_prompt_path)
         self._prompt_target = chat_target
         self._threshold = threshold
         self.scorer_type = "float_scale"

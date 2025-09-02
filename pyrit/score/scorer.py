@@ -7,10 +7,10 @@ import abc
 import asyncio
 import json
 import logging
-from pathlib import Path
 import uuid
 from abc import abstractmethod
-from typing import Dict, List, Optional, Sequence
+from pathlib import Path
+from typing import Dict, List, Optional, Sequence, Union
 
 from pyrit.exceptions import (
     InvalidJsonException,
@@ -33,6 +33,7 @@ from pyrit.score.scorer_evaluation.metrics_type import MetricsType
 
 logger = logging.getLogger(__name__)
 
+
 class Scorer(abc.ABC):
     """
     Abstract base class for scorers.
@@ -43,33 +44,26 @@ class Scorer(abc.ABC):
     @property
     def _memory(self) -> MemoryInterface:
         return CentralMemory.get_memory_instance()
-        
-    def _verify_and_resolve_paths(self, **kwargs) -> dict[str, Path]:
-        """
-        Verify that all paths that are passed to a Scorer on its creation
-        are valid before beginning the scoring logic.
-        
-        Args:
-            paths (dict): All paths passed to the Scorer.
-            
-        Returns:
-            dict[str, Path]: A dictionary mapping the original keys to their resolved Path objects.
-        """
-        resolved_paths: dict[str, Path] = {}
 
-        for k, v in kwargs.items():
-            if not isinstance(k, str):
-                raise ValueError(f"All keys (path variable names) must be strings. Got kwargs: {kwargs} type(k): {type(k).__name__}")
-            if not isinstance(v, (str, Path)):
-                raise ValueError(f"All values (path variables) must be strings or Path objects. Got kwargs: {kwargs} type(v): {type(v).__name__}")
-            if isinstance(v, str):
-                v = Path(v).resolve()
-            if not v.exists():
-                raise ValueError(f"Path not found: {v}")
-            resolved_paths[k] = v
-        
-        return resolved_paths
-        
+    def _verify_and_resolve_path(self, path: Union[str, Path]) -> Path:
+        """
+        Verify that a path passed to a Scorer on its creation
+        is valid before beginning the scoring logic.
+
+        Args:
+            path (Union[str, Path]): A pathlike argument passed to the Scorer.
+
+        Returns:
+            Path: The resolved Path object.
+        """
+        if not isinstance(path, (str, Path)):
+            raise ValueError(f"Path must be a string or Path object. Got type(path): {type(path).__name__}")
+
+        path_obj: Path = Path(path).resolve() if isinstance(path, str) else path.resolve()
+        if not path_obj.exists():
+            raise ValueError(f"Path not found: {str(path_obj)}")
+        return path_obj
+
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Score the request_response, add the results to the database

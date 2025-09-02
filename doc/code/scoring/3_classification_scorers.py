@@ -30,7 +30,8 @@ initialize_pyrit(memory_db_type=IN_MEMORY)
 azure_openai_chat_target = OpenAIChatTarget()
 
 harmful_content_classifier = SelfAskCategoryScorer(
-    content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value, chat_target=azure_openai_chat_target
+    content_classifier_path=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
+    chat_target=azure_openai_chat_target,
 )
 
 # Mocked response when an injection is successful

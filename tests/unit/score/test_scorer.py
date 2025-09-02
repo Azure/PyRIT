@@ -232,6 +232,7 @@ async def test_scorer_remove_markdown_json_called(good_json):
 
         mock_remove_markdown_json.assert_called_once()
 
+
 def test_scorer_path_verification_rejection():
     """
     Test that the scorer correctly refuses to verify a non-existent path.
@@ -239,12 +240,13 @@ def test_scorer_path_verification_rejection():
     scorer = MockScorer()
     mock_path: str = "this/does/not/exist.yaml"
     with pytest.raises(ValueError, match="Path not found"):
-        scorer._verify_and_resolve_paths(mock_path=mock_path)
-        
+        scorer._verify_and_resolve_path(mock_path)
+
+
 def test_scorer_path_verification_confirmation():
     """
     Test that the scorer verifies the paths that currently exist
-    under the scorer configs. 
+    under the scorer configs.
     """
     scorer = MockScorer()
     all_yamls_as_str: list[str] = []
@@ -252,10 +254,10 @@ def test_scorer_path_verification_confirmation():
     for root, dirs, files in os.walk(SCORER_CONFIG_PATH):
         full_paths.extend([os.path.join(root, f) for f in files if f.endswith(".yaml")])
         all_yamls_as_str.extend([f for f in files if f.endswith(".yaml")])
-    mock_path_names = [f[:-5] + "_path" for f in all_yamls_as_str]
     resolved_paths = [Path(p).resolve() for p in full_paths]
-    attempted_paths = list(scorer._verify_and_resolve_paths(**dict(zip(mock_path_names, full_paths))).values())
+    attempted_paths = [scorer._verify_and_resolve_path(p) for p in full_paths]
     assert attempted_paths == resolved_paths
+
 
 def test_scorer_extract_task_from_response():
     """

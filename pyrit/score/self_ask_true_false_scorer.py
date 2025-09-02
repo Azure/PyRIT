@@ -72,21 +72,17 @@ class SelfAskTrueFalseScorer(Scorer):
             raise ValueError("Either true_false_question_path or true_false_question must be provided.")
         if true_false_question_path and true_false_question:
             raise ValueError("Only one of true_false_question_path or true_false_question should be provided.")
-        
+
         true_false_system_prompt_path = (
             true_false_system_prompt_path
             if true_false_system_prompt_path
             else TRUE_FALSE_QUESTIONS_PATH / "true_false_system_prompt.yaml"
         )
-        
-        true_false_system_prompt_path = self._verify_and_resolve_paths(
-            true_false_system_prompt_path=true_false_system_prompt_path
-        ).get("true_false_system_prompt_path")
-        
+
+        true_false_system_prompt_path = self._verify_and_resolve_path(true_false_system_prompt_path)
+
         if true_false_question_path:
-            true_false_question_path = self._verify_and_resolve_paths(
-                true_false_question_path=true_false_question_path
-            ).get("true_false_question_path")
+            true_false_question_path = self._verify_and_resolve_path(true_false_question_path)
             true_false_question = yaml.safe_load(true_false_question_path.read_text(encoding="utf-8"))
 
         for key in ["category", "true_description", "false_description"]:
@@ -98,8 +94,6 @@ class SelfAskTrueFalseScorer(Scorer):
         false_category = true_false_question["false_description"]
 
         metadata = true_false_question["metadata"] if "metadata" in true_false_question else ""
-
-
 
         scoring_instructions_template = SeedPrompt.from_yaml_file(true_false_system_prompt_path)
 

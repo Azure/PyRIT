@@ -39,12 +39,8 @@ class SelfAskCategoryScorer(Scorer):
             chat_target (PromptChatTarget): The chat target to interact with.
             content_classifier_path (Path): The path to the classifier file.
         """
-        
-        paths: dict = self._verify_and_resolve_paths(
-            content_classifier_path=content_classifier_path
-        )
 
-        content_classifier_path = paths.get("content_classifier_path")
+        content_classifier_path = self._verify_and_resolve_path(content_classifier_path)
 
         self._prompt_target = chat_target
         self.scorer_type = "true_false"
@@ -54,9 +50,11 @@ class SelfAskCategoryScorer(Scorer):
         self._no_category_found_category = category_file_contents["no_category_found"]
         categories_as_string = self._content_classifier_to_string(category_file_contents["categories"])
 
-        scoring_instructions_template = SeedPrompt.from_yaml_file(
+        content_classifier_system_prompt = self._verify_and_resolve_path(
             CONTENT_CLASSIFIERS_PATH / "content_classifier_system_prompt.yaml"
         )
+
+        scoring_instructions_template = SeedPrompt.from_yaml_file(content_classifier_system_prompt)
 
         self._system_prompt = scoring_instructions_template.render_template_value(
             categories=categories_as_string,

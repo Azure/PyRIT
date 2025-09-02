@@ -43,14 +43,9 @@ class SelfAskScaleScorer(Scorer):
 
         if not scale_arguments_path:
             scale_arguments_path = self.ScalePaths.TREE_OF_ATTACKS_SCALE.value
-            
-        paths: dict = self._verify_and_resolve_paths(
-            system_prompt_path=system_prompt_path,
-            scale_arguments_path=scale_arguments_path
-        )
 
-        system_prompt_path: Path = paths.get("system_prompt_path")
-        scale_arguments_path: Path = paths.get("scale_arguments_path")
+        system_prompt_path = self._verify_and_resolve_path(system_prompt_path)
+        scale_arguments_path = self._verify_and_resolve_path(scale_arguments_path)
 
         scale_args = yaml.safe_load(scale_arguments_path.read_text(encoding="utf-8"))
 
