@@ -7,4 +7,3 @@ from .common import turn_off_transformers_warning  # noqa: F401
 __name__ = "pyrit"
 # Remove dev suffix when releasing and keep in sync with pyproject.toml
 __version__ = "1.0.0.rc0"
-
