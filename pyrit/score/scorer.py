@@ -10,7 +10,7 @@ import logging
 from pathlib import Path
 import uuid
 from abc import abstractmethod
-from typing import Dict, List, Optional, Sequence, Union
+from typing import Dict, List, Optional, Sequence
 
 from pyrit.exceptions import (
     InvalidJsonException,
