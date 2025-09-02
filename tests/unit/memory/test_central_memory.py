@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from pyrit.common import default_values
-from pyrit.memory import CentralMemory, DuckDBMemory
+from pyrit.memory import CentralMemory, SQLiteMemory
 
 
 @pytest.fixture(autouse=True)
@@ -18,7 +18,7 @@ def reset_memory_instance():
 
 def test_set_memory_instance():
     """Test that setting a memory instance overrides the default behavior."""
-    mock_memory_instance = MagicMock(spec=DuckDBMemory)
+    mock_memory_instance = MagicMock(spec=SQLiteMemory)
     CentralMemory.set_memory_instance(mock_memory_instance)
 
     memory_instance = CentralMemory.get_memory_instance()

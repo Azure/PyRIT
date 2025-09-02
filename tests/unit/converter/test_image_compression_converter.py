@@ -180,7 +180,7 @@ def test_image_compression_converter_quality_warning():
 )
 @pytest.mark.asyncio
 async def test_image_compression_converter_format_preservation_and_conversion(
-    duckdb_instance, sample_image_bytes, input_format, output_format, expected_output_format
+    sqlite_instance, sample_image_bytes, input_format, output_format, expected_output_format
 ):
     """Test format preservation and conversion between formats."""
     converter = ImageCompressionConverter(
@@ -220,7 +220,7 @@ async def test_image_compression_converter_format_preservation_and_conversion(
 )
 @pytest.mark.asyncio
 async def test_image_compression_converter_transparency_handling(
-    duckdb_instance,
+    sqlite_instance,
     sample_transparent_image_bytes,
     input_format,
     output_format,
@@ -243,7 +243,7 @@ async def test_image_compression_converter_transparency_handling(
 
 
 @pytest.mark.asyncio
-async def test_image_compression_converter_skip(duckdb_instance, sample_image_bytes):
+async def test_image_compression_converter_skip(sqlite_instance, sample_image_bytes):
     """Test cases for skipping compression and fallback to original image."""
 
     # 1: Skip compression for small images
@@ -284,7 +284,7 @@ async def test_image_compression_converter_skip(duckdb_instance, sample_image_by
 
 
 @pytest.mark.asyncio
-async def test_image_compression_converter_actually_compresses(duckdb_instance, sample_image_bytes):
+async def test_image_compression_converter_actually_compresses(sqlite_instance, sample_image_bytes):
     """Test that compression actually reduces file size for appropriate images."""
     converter = ImageCompressionConverter(compress_level=9)
 
@@ -300,7 +300,7 @@ async def test_image_compression_converter_actually_compresses(duckdb_instance, 
 
 
 @pytest.mark.asyncio
-async def test_image_compression_converter_url_format_conversion(duckdb_instance, sample_image_bytes):
+async def test_image_compression_converter_url_format_conversion(sqlite_instance, sample_image_bytes):
     """Test successful compression of image from URL."""
     converter = ImageCompressionConverter(output_format="WEBP", min_compression_threshold=100)
     test_url = "https://example.com/test_image.jpeg"
@@ -326,7 +326,7 @@ async def test_image_compression_converter_url_format_conversion(duckdb_instance
 
 
 @pytest.mark.asyncio
-async def test_image_compression_converter_url_input_fallback_scenarios(duckdb_instance, sample_image_bytes):
+async def test_image_compression_converter_url_input_fallback_scenarios(sqlite_instance, sample_image_bytes):
     """Test URL input fallback scenarios (small image size)."""
     converter = ImageCompressionConverter(min_compression_threshold=5000, fallback_to_original=True)
     test_url = "https://example.com/small_image.png"
