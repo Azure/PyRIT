@@ -6,10 +6,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -20,7 +16,7 @@
 # Passed-in labels will be combined with `GLOBAL_MEMORY_LABELS` into one dictionary. In the case of collisions,
 # the passed-in labels take precedence.
 #
-# You can then query the database (either AzureSQL or DuckDB) for prompts with specific labels, such as `username` and/or `op_name`
+# You can then query the database (either AzureSQL or SQLite) for prompts with specific labels, such as `username` and/or `op_name`
 # (which are standard), as well as any others you'd like, including `harm_category`, `language`, `technique`, etc.
 #
 # We take the following steps in this example:
@@ -31,7 +27,8 @@
 # %%
 import uuid
 
-from pyrit.common import DUCK_DB, initialize_pyrit
+from pyrit.common import initialize_pyrit
+from pyrit.common.initialization import SQLITE
 from pyrit.executor.attack import (
     AttackExecutor,
     ConsoleAttackResultPrinter,
@@ -39,7 +36,7 @@ from pyrit.executor.attack import (
 )
 from pyrit.prompt_target import OpenAIChatTarget
 
-initialize_pyrit(memory_db_type=DUCK_DB)
+initialize_pyrit(memory_db_type=SQLITE)
 
 target = OpenAIChatTarget()
 group1 = str(uuid.uuid4())

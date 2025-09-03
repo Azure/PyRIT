@@ -3,4 +3,4 @@ datasets:
 scenarios:
   - type: "PromptSendingAttack"
 database:
-  type: "DuckDB"
+  type: "SQLite"

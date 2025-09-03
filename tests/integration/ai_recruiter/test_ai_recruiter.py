@@ -10,7 +10,7 @@ import time
 import pytest
 import requests
 
-from pyrit.common import DUCK_DB, initialize_pyrit
+from pyrit.common import SQLITE, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH, HOME_PATH
 from pyrit.exceptions import PyritException
 from pyrit.executor.core import StrategyConverterConfig
@@ -26,7 +26,7 @@ FASTAPI_URL = "http://localhost:8000"
 MAX_WAIT_SECONDS = 300
 
 # Initialize PyRIT
-initialize_pyrit(memory_db_type=DUCK_DB)
+initialize_pyrit(memory_db_type=SQLITE)
 
 
 async def evaluate_candidate_selection(final_result: str, expected_candidate: str) -> bool:
