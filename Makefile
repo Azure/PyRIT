@@ -17,6 +17,7 @@ mypy:
 
 docs-build:
 	jb build -W -v ./doc
+	python ./build_scripts/generate_rss.py
 
 unit-test:
 	$(CMD) pytest --cov=$(PYMODULE) $(UNIT_TESTS)
