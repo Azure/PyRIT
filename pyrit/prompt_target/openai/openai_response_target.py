@@ -480,27 +480,17 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
                 return section
         return None
 
-    async def _execute_call_section(self, section: dict[str, Any]) -> dict[str, Any]:
+    async def _execute_call_section(self, tool_call_section: dict[str, Any]) -> dict[str, Any]:
         """
         Execute a function_call from the custom_functions registry.
 
         Returns:
             A dict payload (will be serialized and sent as function_call_output).
             If fail_on_missing_function=False and a function is missing or no function is not called, returns:
-            {"error": "...", "missing_function": "<name>", "available_functions": [...]}
+            {"error": "function_not_found", "missing_function": "<name>", "available_functions": [...]}
         """
-        name = section.get("name")
-        if name is None:
-            if self._fail_on_missing_function:
-                raise KeyError("No function was called.")
-            # Tolerant mode: return a structured error so we can wrap it as function_call_output
-            available = sorted(self._custom_functions.keys())
-            logger.warning("Function '%s' not registered. Available: %s", name, available)
-            return {
-                "error": "no_function_called",
-                "available_functions": available,
-            }
-        args_json = section.get("arguments", "{}")
+        name = tool_call_section.get("name")
+        args_json = tool_call_section.get("arguments", "{}")
         try:
             args = json.loads(args_json)
         except Exception:

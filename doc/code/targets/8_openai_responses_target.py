@@ -6,10 +6,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -19,6 +15,7 @@
 #
 # Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
 #
+#
 # ## OpenAI Configuration
 #
 # Like most targets, all `OpenAITarget`s need an `endpoint` and often also needs a `model` and a `key`. These can be passed into the constructor or configured with environment variables (or in .env).
@@ -27,9 +24,8 @@
 # - auth: The API key for authentication (`OPENAI_RESPONSES_KEY` environment variable).
 # - model_name: The model to use (`OPENAI_RESPONSES_MODEL` environment variable). For OpenAI, these are any available model name and are listed here: "https://platform.openai.com/docs/models".
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
-
 # %%
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
 from pyrit.prompt_target import OpenAIResponseTarget
 
@@ -101,7 +97,7 @@ target = OpenAIResponseTarget(
         "tool_choice": "auto",
     },
     httpx_client_kwargs={"timeout": 60.0},
-    api_version=None,  # using api.openai.com
+    # api_version=None,  # this can be uncommented if using api.openai.com
 )
 
 # Build the user prompt
@@ -112,7 +108,7 @@ prompt_piece = PromptRequestPiece(
 )
 prompt_request = PromptRequestResponse(request_pieces=[prompt_piece])
 
-response = await target.send_prompt_async(prompt_request=prompt_request)  # type: ignore
+response = await target.send_prompt_async(prompt_request=prompt_request) # type: ignore
 
 for idx, piece in enumerate(response.request_pieces):
     print(f"{idx} | {piece.role}: {piece.original_value}")
@@ -127,6 +123,8 @@ for idx, piece in enumerate(response.request_pieces):
 # The user prompt asks for a recent positive news story — an open-ended question that may prompt the model to issue a web search tool call. PyRIT will automatically execute the tool and return the output to the model as part of the response.
 #
 # This example demonstrates how retrieval-augmented generation (RAG) can be enabled in PyRIT through OpenAI's Responses API and integrated tool schema.
+#
+# NOTE that web search is NOT supported through an Azure OpenAI endpoint, only through the OpenAI platform endpoint (i.e. api.openai.com)
 
 # %%
 from pyrit.common import IN_MEMORY, initialize_pyrit
@@ -145,11 +143,14 @@ target = OpenAIResponseTarget(
 )
 
 prompt_piece = PromptRequestPiece(
-    role="user", original_value="What is a positive news story from today?", original_value_data_type="text"
+    role="user", original_value="Briefly, what is one positive news story from today?", original_value_data_type="text"
 )
 prompt_request = PromptRequestResponse(request_pieces=[prompt_piece])
 
-response = await target.send_prompt_async(prompt_request=prompt_request)  # type: ignore
+response = await target.send_prompt_async(prompt_request=prompt_request) # type: ignore
 
 for idx, piece in enumerate(response.request_pieces):
-    print(f"{idx} | {piece.role}: {piece.original_value}")
+    # Reasoning traces are necessary to be sent back to the endpoint for function calling even if they're empty.
+    # They are excluded here for a cleaner output. 
+    if piece.original_value_data_type != "reasoning":
+        print(f"{idx} | {piece.role}: {piece.original_value}")

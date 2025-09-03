@@ -996,23 +996,16 @@ async def test_execute_call_section_malformed_arguments_tolerant_mode(target: Op
 
 
 @pytest.mark.asyncio
-async def test_execute_call_section_missing_function_strict_mode():
-    strict_target = OpenAIResponseTarget(
-        model_name="gpt-o",
-        endpoint="http://x",
-        api_key="k",
-        api_version="2025-03-01-preview",
-        fail_on_missing_function=True,
-    )
+async def test_execute_call_section_missing_function_strict_mode(target: OpenAIResponseTarget):
+    target._custom_functions = {}
+    target._fail_on_missing_function = True
     section = {"type": "function_call", "name": "nope", "arguments": "{}"}
     with pytest.raises(KeyError, match="Function 'nope' is not registered"):
-        await strict_target._execute_call_section(section)
+        await target._execute_call_section(section)
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_agentic_loop_executes_function_and_returns_final_answer(
-    target: OpenAIResponseTarget, monkeypatch
-):
+async def test_send_prompt_async_agentic_loop_executes_function_and_returns_final_answer(target: OpenAIResponseTarget):
     # 1) Register a simple function
     async def times2(args: dict[str, Any]) -> dict[str, Any]:
         return {"result": args["x"] * 2}
@@ -1054,29 +1047,30 @@ async def test_send_prompt_async_agentic_loop_executes_function_and_returns_fina
         call_counter["n"] += 1
         return first_reply if call_counter["n"] == 1 else second_reply
 
-    monkeypatch.setattr(
-        "pyrit.prompt_target.openai.openai_chat_target_base.OpenAIChatTargetBase.send_prompt_async",
-        AsyncMock(side_effect=fake_send),
-    )
+    with patch.object(
+        target.__class__.__bases__[0],  # OpenAIChatTargetBase
+        "send_prompt_async",
+        new_callable=AsyncMock,
+        side_effect=fake_send,
+    ):
+        # 5) Kick it off with a user prompt
+        user_req = PromptRequestResponse(
+            request_pieces=[
+                PromptRequestPiece(
+                    role="user",
+                    original_value="double 7",
+                    converted_value="double 7",
+                    original_value_data_type="text",
+                    converted_value_data_type="text",
+                )
+            ]
+        )
+        final = await target.send_prompt_async(prompt_request=user_req)
 
-    # 5) Kick it off with a user prompt
-    user_req = PromptRequestResponse(
-        request_pieces=[
-            PromptRequestPiece(
-                role="user",
-                original_value="double 7",
-                converted_value="double 7",
-                original_value_data_type="text",
-                converted_value_data_type="text",
-            )
-        ]
-    )
-    final = await target.send_prompt_async(prompt_request=user_req)
-
-    # Should get the final (non-tool-call) assistant message
-    assert len(final.request_pieces) == 1
-    assert final.request_pieces[0].original_value_data_type == "text"
-    assert final.request_pieces[0].original_value == "Done: 14"
+        # Should get the final (non-tool-call) assistant message
+        assert len(final.request_pieces) == 1
+        assert final.request_pieces[0].original_value_data_type == "text"
+        assert final.request_pieces[0].original_value == "Done: 14"
 
 
 def test_construct_prompt_response_forwards_web_search_call(target: OpenAIResponseTarget, dummy_text_request_piece):
