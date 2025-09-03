@@ -108,7 +108,7 @@ prompt_piece = PromptRequestPiece(
 )
 prompt_request = PromptRequestResponse(request_pieces=[prompt_piece])
 
-response = await target.send_prompt_async(prompt_request=prompt_request) # type: ignore
+response = await target.send_prompt_async(prompt_request=prompt_request)  # type: ignore
 
 for idx, piece in enumerate(response.request_pieces):
     print(f"{idx} | {piece.role}: {piece.original_value}")
@@ -147,10 +147,10 @@ prompt_piece = PromptRequestPiece(
 )
 prompt_request = PromptRequestResponse(request_pieces=[prompt_piece])
 
-response = await target.send_prompt_async(prompt_request=prompt_request) # type: ignore
+response = await target.send_prompt_async(prompt_request=prompt_request)  # type: ignore
 
 for idx, piece in enumerate(response.request_pieces):
     # Reasoning traces are necessary to be sent back to the endpoint for function calling even if they're empty.
-    # They are excluded here for a cleaner output. 
+    # They are excluded here for a cleaner output.
     if piece.original_value_data_type != "reasoning":
         print(f"{idx} | {piece.role}: {piece.original_value}")
