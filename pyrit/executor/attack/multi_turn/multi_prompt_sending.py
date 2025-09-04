@@ -1,7 +1,9 @@
-b v
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import logging
 from dataclasses import dataclass, field
-from typing import List, Optional, overload
+from typing import List, Optional
 
 from pyrit.common.utils import combine_dict, get_kwarg_param
 from pyrit.executor.attack.component import ConversationManager
@@ -310,38 +312,6 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
             return None
 
         return objective_scores[0]
-
-    @overload
-    async def execute_async(
-        self,
-        *,
-        objective: str,
-        prompt_sequence: List[str],
-        prepended_conversation: Optional[List[PromptRequestResponse]] = None,
-        custom_prompt: Optional[str] = None,
-        memory_labels: Optional[dict[str, str]] = None,
-        **kwargs,
-    ) -> AttackResult:
-        """
-        Execute the multi-turn attack strategy asynchronously with the provided parameters.
-
-        Args:
-            objective (str): The objective of the attack.
-            prepended_conversation (Optional[List[PromptRequestResponse]]): Conversation to prepend.
-            custom_prompt (Optional[str]): Custom prompt for the attack.
-            memory_labels (Optional[Dict[str, str]]): Memory labels for the attack context.
-            **kwargs: Additional parameters for the attack.
-
-        Returns:
-            AttackResult: The result of the attack execution.
-        """
-        ...
-
-    @overload
-    async def execute_async(
-        self,
-        **kwargs,
-    ) -> AttackResult: ...
 
     async def execute_async(
         self,
