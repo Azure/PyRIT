@@ -75,9 +75,10 @@ first_entry = fg.entry()[-1]
 if first_entry.title() != "Multi-Turn orchestrators — PyRIT Documentation":
     print("Error: Title parsing failed. Exiting.")
     sys.exit(1)
-if (
-    first_entry.description()
-    != "In PyRIT, orchestrators are typically seen as the top-level component. This is where your attack logic is implemented, while notebooks should primarily be used to configure orchestrators."
+if first_entry.description() != (
+    "In PyRIT, orchestrators are typically seen as the top-level component. "
+    "This is where your attack logic is implemented, while notebooks should "
+    "primarily be used to configure orchestrators."
 ):
     print("Error: Description parsing failed. Exiting.")
     sys.exit(1)
