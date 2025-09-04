@@ -34,6 +34,7 @@ class BlogEntryParser(HTMLParser):
 
 
 # Generate the RSS feed structure
+print("Generating RSS feed structure...")
 fg = FeedGenerator()
 fg.link(href="https://azure.github.io/PyRIT/blog/rss.xml", rel="self")
 fg.title("PyRIT Blog")
@@ -41,12 +42,15 @@ fg.description("PyRIT Blog")
 fg.logo("https://azure.github.io/PyRIT/_static/roakey.png")
 fg.language("en")
 
-# Iterate over the blog files
+# Iterate over the blog files and sort them
+print("Pulling blog files...")
 directory = Path("doc/_build/html/blog/")
 files = [file for file in directory.iterdir() if file.is_file() and file.name.startswith("20")]
+files.sort(key=lambda x: x.name)
 
 # Add a feed entry for each file
 for file in files:
+    print(f"Parsing {file.name}...")
     fe = fg.add_entry()
     fe.link(href=f"https://azure.github.io/PyRIT/blog/{file.name}")
     fe.guid(f"https://azure.github.io/PyRIT/blog/{file.name}")
@@ -62,4 +66,7 @@ for file in files:
     fe.pubDate(f"{file.name[:10].replace('_', '-')}T10:00:00Z")
 
 # Export the RSS feed
+print("Exporting RSS feed...")
 fg.rss_file("doc/_build/html/blog/rss.xml", pretty=True)
+
+print("Done.")
