@@ -1,21 +1,21 @@
 datasets:
   - ./tests/integration/cli/illegal_integration_test.prompt
 scenarios:
-  - type: "PromptSendingOrchestrator"
-  - type: "RedTeamingOrchestrator"
-  - type: "CrescendoOrchestrator"
+  - type: "PromptSendingAttack"
+  - type: "RedTeamingAttack"
+  - type: "CrescendoAttack"
     max_turns: 5
     max_backtracks: 3
-  - type: "CrescendoOrchestrator"
+  - type: "CrescendoAttack"
     max_turns: 5
     max_backtracks: 5
-  - type: "TreeOfAttacksWithPruningOrchestrator"
-    depth: 3
-    width: 3
+  - type: "TreeOfAttacksWithPruningAttack"
+    tree_depth: 3
+    tree_width: 3
     branching_factor: 4
 objective_target:
   type: "OpenAIChatTarget"
-adversarial_chat:
+attack_adversarial_config:
   type: "OpenAIChatTarget"
 scoring:
   scoring_target:
@@ -23,4 +23,4 @@ scoring:
   objective_scorer:
     type: "SelfAskRefusalScorer"
 database:
-  type: "DuckDB"
+  type: "SQLite"

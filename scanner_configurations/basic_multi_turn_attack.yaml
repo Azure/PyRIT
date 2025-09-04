@@ -2,8 +2,8 @@ datasets:
   - ./pyrit/datasets/seed_prompts/illegal.prompt
 scenarios:
   - type: "RedTeamingAttack"
-  # - type: "CrescendoOrchestrator"
-  # - type: "TreeOfAttacksWithPruningOrchestrator"
+  # - type: "CrescendoAttack"
+  # - type: "TreeOfAttacksWithPruningAttack"
   #   depth: 2
 objective_target:
   type: "OpenAIChatTarget" # "AzureMLChatTarget" | "HuggingFaceEndpointTarget" | ...
@@ -25,7 +25,7 @@ scoring:
   objective_scorer:
     type: "SelfAskRefusalScorer"
 database:
-  type: "DuckDB"
+  type: "SQLite"
   memory_labels:
     operator: roakey
     operation: op_trash_panda

@@ -111,7 +111,7 @@ class FlipAttack(PromptSendingAttack):
             context (SingleTurnAttackContext): The attack context containing attack parameters.
 
         Returns:
-            OrchestratorResult: The result of the orchestrated attack.
+            AttackResult: The result of the attack.
         """
         initial_prompt = "TASK is '⟪" + context.objective.replace("'", "") + "⟫'"
         seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=initial_prompt, data_type="text")])
