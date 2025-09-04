@@ -15,6 +15,7 @@ from pyrit.score.true_false.gandalf_scorer import GandalfScorer
 from pyrit.score.human.human_in_the_loop_gradio import HumanInTheLoopScorerGradio
 from pyrit.score.float_scale.insecure_code_scorer import InsecureCodeScorer
 from pyrit.score.true_false.markdown_injection import MarkdownInjectionScorer
+from pyrit.score.plagiarism_scorer import PlagiarismScorer
 from pyrit.score.true_false.prompt_shield_scorer import PromptShieldScorer
 from pyrit.score.true_false.true_false_score_aggregator import AND_, MAJORITY_, OR_, TrueFalseScoreAggregator
 from pyrit.score.scorer_evaluation.metrics_type import MetricsType
@@ -70,6 +71,7 @@ __all__ = [
     "ObjectiveScorerEvaluator",
     "ObjectiveScorerMetrics",
     "OR_",
+    "PlagiarismScorer",
     "PromptShieldScorer",
     "QuestionAnswerScorer",
     "Scorer",

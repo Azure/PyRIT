@@ -278,7 +278,7 @@ class FuzzerResult(PromptGeneratorStrategyResult):
 
     def print_templates(self) -> None:
         """
-        Print only the successful templates (equivalent to original orchestrator method).
+        Print only the successful templates (equivalent to original attack method).
         """
         printer = FuzzerResultPrinter(enable_colors=True)
         printer.print_templates_only(self)
@@ -290,7 +290,7 @@ class FuzzerResultPrinter:
 
     This printer displays fuzzer-specific information including successful templates,
     jailbreak conversations, and execution statistics in a formatted, colorized output
-    similar to the original FuzzerOrchestrator result display.
+    similar to the original FuzzerAttack result display.
     """
 
     def __init__(self, *, width: int = 100, indent_size: int = 2, enable_colors: bool = True):

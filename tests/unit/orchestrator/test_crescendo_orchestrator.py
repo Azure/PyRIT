@@ -313,9 +313,7 @@ async def test_max_backtrack_init_exceptions():
 async def test_custom_crescendo_system_prompt_path_variants(mock_target: AsyncMock, variants: int):
 
     for num in range(1, variants + 1):
-        custom_system_prompt_path = (
-            Path(DATASETS_PATH) / "orchestrators" / "crescendo" / f"crescendo_variant_{num}.yaml"
-        )
+        custom_system_prompt_path = Path(DATASETS_PATH) / "executors" / "crescendo" / f"crescendo_variant_{num}.yaml"
 
         # This will throw an exception if the yaml is invalid or if there is no objective.
         CrescendoOrchestrator(

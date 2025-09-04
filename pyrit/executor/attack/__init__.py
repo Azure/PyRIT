@@ -27,7 +27,7 @@ from pyrit.executor.attack.multi_turn import (
     MultiTurnAttackStrategy,
     MultiTurnAttackContext,
     RedTeamingAttack,
-    RTOSystemPromptPaths,
+    RTASystemPromptPaths,
     CrescendoAttack,
     CrescendoAttackContext,
     CrescendoAttackResult,
@@ -37,7 +37,8 @@ from pyrit.executor.attack.multi_turn import (
     TAPAttackResult,
 )
 
-from pyrit.executor.attack.printer import ConsoleAttackResultPrinter, AttackResultPrinter
+from pyrit.executor.attack.printer import ConsoleAttackResultPrinter, AttackResultPrinter, MarkdownAttackResultPrinter
+
 from pyrit.executor.attack.component import ConversationManager, ConversationState, ObjectiveEvaluator
 
 __all__ = [
@@ -63,8 +64,9 @@ __all__ = [
     "MultiTurnAttackStrategy",
     "MultiTurnAttackContext",
     "RedTeamingAttack",
-    "RTOSystemPromptPaths",
+    "RTASystemPromptPaths",
     "ConsoleAttackResultPrinter",
+    "MarkdownAttackResultPrinter",
     "AttackResultPrinter",
     "AttackConverterConfig",
     "AttackScoringConfig",

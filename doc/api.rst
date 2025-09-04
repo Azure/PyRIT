@@ -206,7 +206,7 @@ API Reference
     ManyShotJailbreakAttack
     MultiTurnAttackContext
     PromptSendingAttack
-    RTOSystemPromptPaths
+    RTASystemPromptPaths
     RedTeamingAttack
     RolePlayAttack
     SingleTurnAttackContext
@@ -272,13 +272,13 @@ API Reference
     AttackResultEntry
     AzureSQLMemory
     CentralMemory
-    DuckDBMemory
     EmbeddingDataEntry
     MemoryInterface
     MemoryEmbedding
     MemoryExporter
     PromptMemoryEntry
     SeedPromptEntry
+    SQLiteMemory
 
 :py:mod:`pyrit.models`
 ======================
@@ -527,6 +527,7 @@ API Reference
     ObjectiveHumanLabeledEntry
     ObjectiveScorerEvaluator
     ObjectiveScorerMetrics
+    PlagiarismScorer
     PromptShieldScorer
     QuestionAnswerScorer
     Scorer

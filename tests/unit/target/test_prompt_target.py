@@ -2,14 +2,15 @@
 # Licensed under the MIT license.
 
 import json
+import uuid
 from typing import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from unit.mocks import get_sample_conversations, openai_chat_response_json_dict
 
+from pyrit.executor.attack.core.attack_strategy import AttackStrategy
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.orchestrator.orchestrator_class import Orchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 
 
@@ -31,11 +32,25 @@ def azure_openai_target(patch_central_database):
     )
 
 
-def test_set_system_prompt(azure_openai_target: OpenAIChatTarget):
+@pytest.fixture
+def mock_attack_strategy():
+    """Create a mock attack strategy for testing"""
+    strategy = MagicMock(spec=AttackStrategy)
+    strategy.execute_async = AsyncMock()
+    strategy.execute_with_context_async = AsyncMock()
+    strategy.get_identifier.return_value = {
+        "__type__": "TestAttack",
+        "__module__": "pyrit.executor.attack.test_attack",
+        "id": str(uuid.uuid4()),
+    }
+    return strategy
+
+
+def test_set_system_prompt(azure_openai_target: OpenAIChatTarget, mock_attack_strategy: AttackStrategy):
     azure_openai_target.set_system_prompt(
         system_prompt="system prompt",
         conversation_id="1",
-        orchestrator_identifier=Orchestrator().get_identifier(),
+        orchestrator_identifier=mock_attack_strategy.get_identifier(),
         labels={},
     )
 
@@ -47,11 +62,13 @@ def test_set_system_prompt(azure_openai_target: OpenAIChatTarget):
 
 @pytest.mark.asyncio
 @pytest.mark.asyncio
-async def test_set_system_prompt_adds_memory(azure_openai_target: OpenAIChatTarget):
+async def test_set_system_prompt_adds_memory(
+    azure_openai_target: OpenAIChatTarget, mock_attack_strategy: AttackStrategy
+):
     azure_openai_target.set_system_prompt(
         system_prompt="system prompt",
         conversation_id="1",
-        orchestrator_identifier=Orchestrator().get_identifier(),
+        orchestrator_identifier=mock_attack_strategy.get_identifier(),
         labels={},
     )
 
@@ -65,6 +82,7 @@ async def test_send_prompt_with_system_calls_chat_complete(
     azure_openai_target: OpenAIChatTarget,
     openai_response_json: dict,
     sample_entries: MutableSequence[PromptRequestPiece],
+    mock_attack_strategy: AttackStrategy,
 ):
 
     openai_mock_return = MagicMock()
@@ -77,7 +95,7 @@ async def test_send_prompt_with_system_calls_chat_complete(
         azure_openai_target.set_system_prompt(
             system_prompt="system prompt",
             conversation_id="1",
-            orchestrator_identifier=Orchestrator().get_identifier(),
+            orchestrator_identifier=mock_attack_strategy.get_identifier(),
             labels={},
         )
 
