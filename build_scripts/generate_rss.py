@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import sys
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -46,6 +47,9 @@ fg.language("en")
 print("Pulling blog files...")
 directory = Path("doc/_build/html/blog/")
 files = [file for file in directory.iterdir() if file.is_file() and file.name.startswith("20")]
+if len(files) == 0:
+    print("Error: No blog files found. Exiting.")
+    sys.exit(1)
 files.sort(key=lambda x: x.name)
 
 # Add a feed entry for each file
@@ -65,8 +69,25 @@ for file in files:
     # Extract publication date from file name
     fe.pubDate(f"{file.name[:10].replace('_', '-')}T10:00:00Z")
 
+# Validating the RSS feed
+print("Validating RSS feed...")
+first_entry = fg.entry()[-1]
+if first_entry.title() != "Multi-Turn orchestrators — PyRIT Documentation":
+    print("Error: Title parsing failed. Exiting.")
+    sys.exit(1)
+if (
+    first_entry.description()
+    != "In PyRIT, orchestrators are typically seen as the top-level component. This is where your attack logic is implemented, while notebooks should primarily be used to configure orchestrators."
+):
+    print("Error: Description parsing failed. Exiting.")
+    sys.exit(1)
+
 # Export the RSS feed
 print("Exporting RSS feed...")
 fg.rss_file("doc/_build/html/blog/rss.xml", pretty=True)
+file = Path("doc/_build/html/blog/rss.xml")
+if not file.exists() or file.stat().st_size == 0:
+    print("Error: RSS feed export failed. Exiting.")
+    sys.exit(1)
 
-print("Done.")
+print("RSS feed generated and exported successfully.")
