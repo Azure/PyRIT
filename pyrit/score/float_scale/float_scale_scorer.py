@@ -29,7 +29,7 @@ class FloatScaleScorer(Scorer):
         request_response: PromptRequestResponse,
         *,
         objective: Optional[str] = None,
-    role_filter: Optional[ChatMessageRole] = None,
+        role_filter: Optional[ChatMessageRole] = None,
     ) -> list[Score]:
         """
         Score the given request response asynchronously.

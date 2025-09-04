@@ -93,7 +93,7 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
             score_metadata=result.metadata,
             score_rationale=result.rationale,
             scorer_class_identifier=self.get_identifier(),
-            prompt_request_response_id=request_response.request_pieces[0].original_prompt_id,
+            prompt_request_response_id=request_response.request_pieces[0].id,
             objective=objective,
         )
 
