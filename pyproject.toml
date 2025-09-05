@@ -1,6 +1,6 @@
 [project]
 name = "pyrit"
-version = "0.9.1.dev0"
+version = "0.10.0.dev0"
 description = "The Python Risk Identification Tool for LLMs (PyRIT) is a library used to assess the robustness of LLMs"
 authors = [
     { name = "Microsoft AI Red Team", email = "airedteam@microsoft.com" },
@@ -67,6 +67,7 @@ dependencies = [
 # always make sure the individual ones are in sync with the all group
 dev = [
     "black>=25.1.0",
+    "feedgen>=1.0.0",
     "flake8>=7.2.0",
     "flake8-copyright>=0.2.4",
     "ipykernel>=6.29.5",

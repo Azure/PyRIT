@@ -304,6 +304,18 @@ result = await red_teaming_attack.execute_async(objective=objective, memory_labe
 await ConsoleAttackResultPrinter().print_result_async(result=result)  # type: ignore
 
 # %% [markdown]
+# ## Displaying Results with Better Formatting
+#
+# While `ConsoleAttackResultPrinter` works well for console output, Jupyter notebooks can display rich content more effectively.
+# The `MarkdownAttackResultPrinter` provides enhanced formatting capabilities, including proper inline display of generated images
+# and better visual organization of attack results.
+
+# %%
+from pyrit.executor.attack import MarkdownAttackResultPrinter
+
+await MarkdownAttackResultPrinter().print_result_async(result=result, include_auxiliary_scores=True)  # type: ignore
+
+# %% [markdown]
 # ## Other Multi-Turn Attacks
 #
 # The above examples should work using other multi-turn attacks with minimal modification. Check out attacks under `pyrit.executor.attack.multi_turn` for other examples, like Crescendo and Tree of Attacks. These algorithms are always more effective than `RedTeamingAttack`, which is a simple algorithm. However, `RedTeamingAttack` by its nature supports more targets - because it doesn't modify conversation history it can support any `PromptTarget` and not only `PromptChatTargets`.
