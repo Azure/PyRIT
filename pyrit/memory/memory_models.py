@@ -55,7 +55,9 @@ class CustomUUID(TypeDecorator):
         return str(value) if value else None
 
     def process_result_value(self, value, dialect):
-        return uuid.UUID(value) if value else None
+        if dialect.name == "sqlite":
+            return uuid.UUID(value) if value else None
+        return value
 
 
 class Base(DeclarativeBase):
