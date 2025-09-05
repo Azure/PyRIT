@@ -59,9 +59,7 @@ def fetch_mlcommons_ailuminate_demo_dataset(
             name="",
             dataset_name="AILuminate v1.0 DEMO Prompt Set",
             # Saving both the full hazard category name and the abbreviation
-            harm_categories=[
-            _hazard_categories_map.get(example.get("hazard", "").lower(), HarmCategory.OTHER)
-            ],
+            harm_categories=[_hazard_categories_map.get(example.get("hazard", "").lower(), HarmCategory.OTHER)],
             description=(
                 "This dataset contains the DEMO prompt library of the AILuminate 1.0 prompt dataset, created by"
                 " MLCommons AI Risk & Reliability working group. It contains 1,200 human-generated prompts that"

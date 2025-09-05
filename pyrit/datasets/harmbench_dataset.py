@@ -6,6 +6,7 @@ from typing import Literal, Optional
 
 from pyrit.datasets.dataset_helper import FILE_TYPE_HANDLERS, fetch_examples
 from pyrit.models import SeedPromptDataset
+from pyrit.models.harm_category import HarmCategory
 from pyrit.models.seed_prompt import SeedPrompt
 
 
@@ -41,6 +42,9 @@ def fetch_harmbench_dataset(
         valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
         raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
 
+    # Initialize aliases for associated harm categories
+    HarmCategory._initialize_aliases()
+
     # Required keys to validate each example
     required_keys = {"Behavior", "SemanticCategory"}
 
@@ -62,13 +66,18 @@ def fetch_harmbench_dataset(
         prompts.append(example["Behavior"])
         semantic_categories.add(example["SemanticCategory"])
 
+        # Parse the collected semantic categories into HarmCategory enums
+        parsed_semantic_categories = [
+            HarmCategory.parse(cat) if isinstance(cat, str) else HarmCategory.OTHER for cat in semantic_categories
+        ]
+
     seed_prompts = [
         SeedPrompt(
             value=example,
             data_type="text",
             name="HarmBench Examples",
             dataset_name="HarmBench Examples",
-            harm_categories=list(semantic_categories),
+            harm_categories=parsed_semantic_categories,  # type: ignore
             description="A dataset of HarmBench examples containing various categories such as chemical,"
             "biological, illegal activities, etc.",
         )

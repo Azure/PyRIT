@@ -31,9 +31,9 @@ from pyrit.memory.memory_models import (
 )
 from pyrit.models import (
     AttackResult,
-    HarmCategory,
     ChatMessage,
     DataTypeSerializer,
+    HarmCategory,
     PromptRequestPiece,
     PromptRequestResponse,
     Score,
@@ -857,7 +857,7 @@ class MemoryInterface(abc.ABC):
             dataset_name (Optional[str], Optional): Name of the dataset to filter seed prompts.
             data_types (Optional[Sequence[str]], Optional): List of data types to filter seed prompts by
             (e.g., text, image_path).
-            harm_categories (Optional[Sequence[HarmCategory]], Optional): List of harm categories to filter seed prompts by.
+            harm_categories (Optional[Sequence[HarmCategory]], Optional): List of harm categories to seed prompts by.
             added_by (Optional[str], Optional): The user who added the seed prompt groups to filter by.
             authors (Optional[Sequence[str]], Optional): List of authors to filter seed prompt groups by.
             groups (Optional[Sequence[str]], Optional): List of groups to filter seed prompt groups by.

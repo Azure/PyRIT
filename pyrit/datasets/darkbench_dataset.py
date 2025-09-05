@@ -22,7 +22,7 @@ def fetch_darkbench_dataset() -> SeedPromptDataset:
     data = load_dataset("apart/darkbench", "default", split="train", data_files="darkbench.tsv")
 
     HarmCategory._initialize_aliases()
-    
+
     seed_prompts = [
         SeedPrompt(
             value=item["Example"],

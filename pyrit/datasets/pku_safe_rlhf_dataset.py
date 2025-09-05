@@ -74,9 +74,7 @@ def fetch_pku_safe_rlhf_dataset(
             if is_harmful
         }
 
-        parsed_categories = [
-            HarmCategory.parse(cat) or HarmCategory.OTHER for cat in raw_categories
-        ]
+        parsed_categories = [HarmCategory.parse(cat) or HarmCategory.OTHER for cat in raw_categories]
 
         # Add the prompt in two cases:
         # 1. No harm categories are provided for filtering

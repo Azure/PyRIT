@@ -66,7 +66,7 @@ def fetch_equitymedqa_dataset_unique_values(
     prompts: list[str] = []
 
     HarmCategory._initialize_aliases()
-    
+
     if subset_name == "all":  # get all subsets
         targets: list[str] = DATA_SUBSETS
 

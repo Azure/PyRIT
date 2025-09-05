@@ -67,7 +67,7 @@ def fetch_adv_bench_dataset(
     )
 
     HarmCategory._initialize_aliases()
-    
+
     filtered = dataset["data"]  # type: ignore
 
     if main_categories or sub_categories:

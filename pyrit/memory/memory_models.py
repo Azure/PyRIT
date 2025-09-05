@@ -29,8 +29,8 @@ from sqlalchemy.types import Uuid  # type: ignore
 from pyrit.common.utils import to_sha256
 from pyrit.models import PromptDataType, PromptRequestPiece, Score, SeedPrompt
 from pyrit.models.attack_result import AttackOutcome, AttackResult
-from pyrit.models.harm_category import HarmCategory
 from pyrit.models.conversation_reference import ConversationReference, ConversationType
+from pyrit.models.harm_category import HarmCategory
 from pyrit.models.literals import ChatMessageRole
 
 

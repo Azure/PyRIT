@@ -69,7 +69,7 @@ def fetch_red_team_social_bias_dataset() -> SeedPromptDataset:
                 harm_categories.append(HarmCategory.parse(cat))
             except Exception:
                 harm_categories.append(HarmCategory.OTHER)
-                
+
         # Dictionary of metadata for the current prompt
         prompt_metadata = {
             **common_metadata,
