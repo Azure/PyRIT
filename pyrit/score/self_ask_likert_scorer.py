@@ -4,7 +4,7 @@
 import enum
 import logging
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 import yaml
 
@@ -34,7 +34,10 @@ class SelfAskLikertScorer(Scorer):
     A class that represents a "self-ask" score for text scoring for a likert scale.
     """
 
-    def __init__(self, chat_target: PromptChatTarget, likert_scale_path: Path) -> None:
+    def __init__(self, chat_target: PromptChatTarget, likert_scale_path: Union[str, Path]) -> None:
+
+        likert_scale_path = self._verify_and_resolve_path(likert_scale_path)
+
         self._prompt_target = chat_target
         self.scorer_type = "float_scale"
 

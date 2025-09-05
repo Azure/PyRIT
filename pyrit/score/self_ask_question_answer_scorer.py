@@ -6,7 +6,7 @@ from __future__ import annotations
 import pathlib
 from typing import Optional
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import SCORER_CONFIG_PATH
 from pyrit.models import (
     Score,
     UnvalidatedScore,
@@ -38,11 +38,11 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
             true_false_question_path (pathlib.Path): The path to the true/false question file.
         """
 
-        if not true_false_question_path:
-            true_false_question_path = pathlib.Path(
-                DATASETS_PATH, "score", "true_false_question", "question_answering.yaml"
-            )
-
+        true_false_question_path = self._verify_and_resolve_path(
+            true_false_question_path
+            if true_false_question_path
+            else SCORER_CONFIG_PATH / "true_false_question" / "question_answering.yaml"
+        )
         super().__init__(
             chat_target=chat_target,
             true_false_question_path=true_false_question_path,

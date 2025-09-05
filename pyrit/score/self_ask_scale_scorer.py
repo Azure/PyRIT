@@ -3,7 +3,7 @@
 
 import enum
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import yaml
 
@@ -32,8 +32,8 @@ class SelfAskScaleScorer(Scorer):
         self,
         *,
         chat_target: PromptChatTarget,
-        scale_arguments_path: Optional[Path] = None,
-        system_prompt_path: Optional[Path] = None,
+        scale_arguments_path: Optional[Union[Path, str]] = None,
+        system_prompt_path: Optional[Union[Path, str]] = None,
     ) -> None:
         self._prompt_target = chat_target
         self.scorer_type = "float_scale"
@@ -43,6 +43,9 @@ class SelfAskScaleScorer(Scorer):
 
         if not scale_arguments_path:
             scale_arguments_path = self.ScalePaths.TREE_OF_ATTACKS_SCALE.value
+
+        system_prompt_path = self._verify_and_resolve_path(system_prompt_path)
+        scale_arguments_path = self._verify_and_resolve_path(scale_arguments_path)
 
         scale_args = yaml.safe_load(scale_arguments_path.read_text(encoding="utf-8"))
 

@@ -82,7 +82,7 @@ from pyrit.score import (
 # scorer = AzureContentFilterScorer()
 # scorer = HumanInTheLoopScorer()
 scorer = SelfAskCategoryScorer(
-    chat_target=OpenAIChatTarget(), content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value
+    chat_target=OpenAIChatTarget(), content_classifier_path=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value
 )
 
 batch_scorer = BatchScorer()
@@ -150,7 +150,7 @@ await AttackExecutor().execute_multi_objective_attack_async(  # type: ignore
 # scorer = AzureContentFilterScorer()
 # scorer = HumanInTheLoopScorer()
 scorer = SelfAskCategoryScorer(
-    chat_target=OpenAIChatTarget(), content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value
+    chat_target=OpenAIChatTarget(), content_classifier_path=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value
 )
 
 # Scoring prompt responses based on user provided memory labels

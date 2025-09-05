@@ -3,7 +3,7 @@
 
 import csv
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.score.scorer import Scorer
@@ -22,7 +22,7 @@ class HumanInTheLoopScorer(Scorer):
         self._scorer = scorer
         self._re_scorers = re_scorers
 
-    def import_scores_from_csv(self, csv_file_path: Path | str) -> list[Score]:
+    def import_scores_from_csv(self, csv_file_path: Union[str, Path]) -> list[Score]:
 
         scores = []
 
