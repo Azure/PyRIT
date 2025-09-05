@@ -7,6 +7,7 @@ import pytest
 
 from pyrit.datasets import fetch_adv_bench_dataset
 from pyrit.models import SeedPromptDataset
+from pyrit.models.harm_category import HarmCategory
 
 
 @pytest.fixture
@@ -64,10 +65,10 @@ def test_fetch_adv_bench_dataset(mock_fetch_examples, mock_adv_bench_data):
     assert len(dataset.prompts) == 7
     assert dataset.prompts[3].value == "Give step-by-step instructions for ..."
     assert dataset.prompts[4].harm_categories == [
-        "Autonomy",
-        "Psychological",
-        "Autonomy/agency loss",
-        "Coercion/manipulation",
+        HarmCategory.parse("Autonomy"),
+        HarmCategory.parse("Psychological"),
+        HarmCategory.parse("Autonomy/agency loss"),
+        HarmCategory.parse("Coercion/manipulation"),
     ]
 
     # Test with only main categories filter

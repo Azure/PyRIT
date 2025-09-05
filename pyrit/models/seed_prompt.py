@@ -16,7 +16,7 @@ from tinytag import TinyTag
 
 from pyrit.common.path import PATHS_DICT
 from pyrit.common.yaml_loadable import YamlLoadable
-from pyrit.models import DataTypeSerializer
+from pyrit.models import DataTypeSerializer, HarmCategory
 from pyrit.models.literals import ChatMessageRole, PromptDataType
 
 logger = logging.getLogger(__name__)
@@ -61,7 +61,7 @@ class SeedPrompt(YamlLoadable):
     dataset_name: Optional[str] = None
 
     # Categories of harm associated with this prompt
-    harm_categories: Optional[Sequence[str]] = field(default_factory=lambda: [])
+    harm_categories: Optional[Sequence[HarmCategory]] = field(default_factory=lambda: [])
 
     # Description of the prompt
     description: Optional[str] = None
