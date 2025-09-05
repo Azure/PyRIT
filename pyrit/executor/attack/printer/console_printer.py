@@ -84,7 +84,9 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
         # Print footer
         self._print_footer()
 
-    async def print_conversation_async(self, result: AttackResult, *, include_auxiliary_scores: bool = False) -> None:
+    async def print_conversation_async(
+        self, result: AttackResult, *, include_auxiliary_scores: bool = False, include_reasoning_trace: bool = False
+    ) -> None:
         """
         Print the conversation history to console with enhanced formatting.
 
@@ -100,6 +102,8 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
                 Must have a valid conversation_id attribute.
             include_auxiliary_scores (bool): Whether to include auxiliary scores in the output.
                 Defaults to False.
+            include_reasoning_trace (bool): Whether to include model reasoning trace in the output
+                for applicable models. Defaults to False.
         """
         messages = self._memory.get_conversation(conversation_id=result.conversation_id)
 
@@ -136,13 +140,14 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
 
                     self._print_wrapped_text(piece.converted_value, Fore.MAGENTA)
                 else:
-                    # Assistant message header
-                    print()
-                    self._print_colored("─" * self._width, Fore.YELLOW)
-                    self._print_colored(f"🔸 {piece.role.upper()}", Style.BRIGHT, Fore.YELLOW)
-                    self._print_colored("─" * self._width, Fore.YELLOW)
+                    if piece.original_value_data_type != "reasoning" or include_reasoning_trace:
+                        # Assistant message header
+                        print()
+                        self._print_colored("─" * self._width, Fore.YELLOW)
+                        self._print_colored(f"🔸 {piece.role.upper()}", Style.BRIGHT, Fore.YELLOW)
+                        self._print_colored("─" * self._width, Fore.YELLOW)
 
-                    self._print_wrapped_text(piece.converted_value, Fore.YELLOW)
+                        self._print_wrapped_text(piece.converted_value, Fore.YELLOW)
 
                 # Display images if present
                 await display_image_response(piece)

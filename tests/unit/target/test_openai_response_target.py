@@ -4,7 +4,7 @@
 import json
 import os
 from tempfile import NamedTemporaryFile
-from typing import MutableSequence
+from typing import Any, MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
@@ -149,10 +149,7 @@ async def test_build_input_for_multi_modal_with_unsupported_data_types(target: O
 
     with pytest.raises(ValueError) as excinfo:
         await target._build_input_for_multi_modal_async([PromptRequestResponse(request_pieces=[entry])])
-    assert (
-        "Failed to process conversation message at index 0: "
-        "Multimodal data type 'audio_path' is not yet supported for role 'user'" in str(excinfo.value)
-    )
+    assert "Unsupported data type 'audio_path' in message index 0" in str(excinfo.value)
 
 
 @pytest.mark.asyncio
@@ -182,9 +179,9 @@ async def test_construct_request_body_includes_json(
 
     body = await target._construct_request_body(conversation=[request], is_json_response=is_json)
     if is_json:
-        assert body["text"] == {"format": {"type": "json_object"}}
+        assert body["response_format"] == {"type": "json_object"}
     else:
-        assert "format" not in body
+        assert "response_format" not in body
 
 
 @pytest.mark.asyncio
@@ -531,9 +528,7 @@ def test_validate_request_unsupported_data_types(target: OpenAIResponseTarget):
     with pytest.raises(ValueError) as excinfo:
         target._validate_request(prompt_request=prompt_request)
 
-    assert "This target only supports text and image_path." in str(
-        excinfo.value
-    ), "Error not raised for unsupported data types"
+    assert "Unsupported data type" in str(excinfo.value), "Error not raised for unsupported data types"
 
     os.remove(image_piece.original_value)
 
@@ -719,23 +714,28 @@ def test_construct_prompt_response_from_openai_json_reasoning(
     response = target._construct_prompt_response_from_openai_json(
         open_ai_str_response=json.dumps(reasoning_json), request_piece=dummy_text_request_piece
     )
-    assert response.request_pieces[0].original_value == "Reasoning summary."
-    assert response.request_pieces[0].original_value_data_type == "reasoning"
+    piece = response.request_pieces[0]
+    assert piece.original_value_data_type == "reasoning"
+    section = json.loads(piece.original_value)
+    assert section["type"] == "reasoning"
+    assert section["summary"][0]["text"] == "Reasoning summary."
 
 
 def test_construct_prompt_response_from_openai_json_unsupported_type(
     target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece
 ):
-    # Should raise ValueError for unsupported response type
-    bad_type_json = {
+    func_call_json = {
         "status": "completed",
-        "output": [{"type": "function_call", "content": [{"text": "some function call"}]}],
+        "output": [{"type": "function_call", "name": "do_something", "arguments": '{"x":1}'}],
     }
-    with pytest.raises(ValueError) as excinfo:
-        target._construct_prompt_response_from_openai_json(
-            open_ai_str_response=json.dumps(bad_type_json), request_piece=dummy_text_request_piece
-        )
-    assert "Unsupported response type" in str(excinfo.value)
+    resp = target._construct_prompt_response_from_openai_json(
+        open_ai_str_response=json.dumps(func_call_json), request_piece=dummy_text_request_piece
+    )
+    piece = resp.request_pieces[0]
+    assert piece.original_value_data_type == "function_call"
+    section = json.loads(piece.original_value)
+    assert section["type"] == "function_call"
+    assert section["name"] == "do_something"
 
 
 def test_validate_request_allows_text_and_image(target: OpenAIResponseTarget):
@@ -757,7 +757,7 @@ def test_validate_request_raises_for_invalid_type(target: OpenAIResponseTarget):
     )
     with pytest.raises(ValueError) as excinfo:
         target._validate_request(prompt_request=req)
-    assert "only supports text and image_path" in str(excinfo.value)
+    assert "Unsupported data type" in str(excinfo.value)
 
 
 def test_is_json_response_supported_returns_true(target: OpenAIResponseTarget):
@@ -766,11 +766,9 @@ def test_is_json_response_supported_returns_true(target: OpenAIResponseTarget):
 
 @pytest.mark.asyncio
 async def test_build_input_for_multi_modal_async_empty_conversation(target: OpenAIResponseTarget):
-    # Should raise ValueError if no request pieces
     req = PromptRequestResponse(request_pieces=[])
-    with pytest.raises(ValueError) as excinfo:
-        await target._build_input_for_multi_modal_async([req])
-    assert "Failed to process conversation message at index 0: Message contains no request pieces" in str(excinfo.value)
+    result = await target._build_input_for_multi_modal_async([req])
+    assert result == []  # nothing to serialize from an empty message
 
 
 @pytest.mark.asyncio
@@ -819,10 +817,16 @@ async def test_build_input_for_multi_modal_async_filters_reasoning(target: OpenA
         original_value_data_type="text",
         converted_value_data_type="text",
     )
+    # IMPORTANT: reasoning original_value must be JSON (Responses API section)
+    reasoning_section = {
+        "type": "reasoning",
+        "summary": [{"type": "summary_text", "text": "Reasoning summary."}],
+    }
+
     response_reasoning_piece = PromptRequestPiece(
         role="assistant",
-        original_value="Reasoning summary.",
-        converted_value="Reasoning summary.",
+        original_value=json.dumps(reasoning_section),
+        converted_value=json.dumps(reasoning_section),
         original_value_data_type="reasoning",
         converted_value_data_type="reasoning",
     )
@@ -850,11 +854,252 @@ async def test_build_input_for_multi_modal_async_filters_reasoning(target: OpenA
     with patch("pyrit.common.data_url_converter.convert_local_image_to_data_url", new_callable=AsyncMock):
         result = await target._build_input_for_multi_modal_async(conversation)
 
-    # Only the text piece should be present, reasoning should be filtered out
-    assert len(result) == 3
+    # We now have 4 items:
+    # 0: user role-batched message
+    # 1: top-level reasoning section (forwarded as-is)
+    # 2: assistant role-batched message (text)
+    # 3: user role-batched message
+    assert len(result) == 4
+
+    # 0: user input_text
     assert result[0]["role"] == "user"
     assert result[0]["content"][0]["type"] == "input_text"
-    assert result[1]["role"] == "assistant"
-    assert result[1]["content"][0]["type"] == "output_text"
-    assert result[2]["role"] == "user"
-    assert result[2]["content"][0]["type"] == "input_text"
+
+    # 1: reasoning section forwarded (no role, has "type": "reasoning")
+    assert result[1]["type"] == "reasoning"
+    assert result[1]["summary"][0]["text"] == "Reasoning summary."
+
+    # 2: assistant output_text
+    assert result[2]["role"] == "assistant"
+    assert result[2]["content"][0]["type"] == "output_text"
+    assert result[2]["content"][0]["text"] == "hello there"
+
+    # 3: user input_text
+    assert result[3]["role"] == "user"
+    assert result[3]["content"][0]["type"] == "input_text"
+    assert result[3]["content"][0]["text"] == "Hello indeed"
+
+
+# New pytests
+@pytest.mark.asyncio
+async def test_build_input_for_multi_modal_async_system_message_maps_to_developer(target: OpenAIResponseTarget):
+    system_piece = PromptRequestPiece(
+        role="system",
+        original_value="You are a helpful assistant",
+        converted_value="You are a helpful assistant",
+        original_value_data_type="text",
+        converted_value_data_type="text",
+    )
+    req = PromptRequestResponse(request_pieces=[system_piece])
+    items = await target._build_input_for_multi_modal_async([req])
+
+    assert len(items) == 1
+    assert items[0]["role"] == "developer"  # system -> developer mapping
+    assert items[0]["content"][0]["type"] == "input_text"
+    assert items[0]["content"][0]["text"] == "You are a helpful assistant"
+
+
+@pytest.mark.asyncio
+async def test_build_input_for_multi_modal_async_system_message_multiple_pieces_raises(target: OpenAIResponseTarget):
+    sys1 = PromptRequestPiece(role="system", original_value_data_type="text", original_value="A")
+    sys2 = PromptRequestPiece(role="system", original_value_data_type="text", original_value="B")
+    with pytest.raises(ValueError, match="System messages must have exactly one piece"):
+        await target._build_input_for_multi_modal_async([PromptRequestResponse(request_pieces=[sys1, sys2])])
+
+
+@pytest.mark.asyncio
+async def test_build_input_for_multi_modal_async_function_call_forwarded(target: OpenAIResponseTarget):
+    call = {"type": "function_call", "call_id": "abc123", "name": "sum", "arguments": '{"a":2,"b":3}'}
+    assistant_call_piece = PromptRequestPiece(
+        role="assistant",
+        original_value=json.dumps(call),
+        converted_value=json.dumps(call),
+        original_value_data_type="function_call",
+        converted_value_data_type="function_call",
+    )
+    items = await target._build_input_for_multi_modal_async(
+        [PromptRequestResponse(request_pieces=[assistant_call_piece])]
+    )
+    assert len(items) == 1
+    assert items[0]["type"] == "function_call"
+    assert items[0]["name"] == "sum"
+    assert items[0]["call_id"] == "abc123"
+
+
+@pytest.mark.asyncio
+async def test_build_input_for_multi_modal_async_function_call_output_stringifies(target: OpenAIResponseTarget):
+    # original_value is a function_call_output “artifact” (top level)
+    output_payload = {"type": "function_call_output", "call_id": "c1", "output": {"ok": True, "value": 5}}
+    piece = PromptRequestPiece(
+        role="assistant",
+        original_value=json.dumps(output_payload),
+        converted_value=json.dumps(output_payload),
+        original_value_data_type="function_call_output",
+        converted_value_data_type="function_call_output",
+    )
+    items = await target._build_input_for_multi_modal_async([PromptRequestResponse(request_pieces=[piece])])
+    assert len(items) == 1
+    assert items[0]["type"] == "function_call_output"
+    assert items[0]["call_id"] == "c1"
+    # The Output must be a string for Responses API
+    assert isinstance(items[0]["output"], str)
+    assert json.loads(items[0]["output"]) == {"ok": True, "value": 5}
+
+
+def test_make_tool_message_serializes_output_and_sets_call_id(target: OpenAIResponseTarget):
+    out = {"answer": 42}
+    msg = target._make_tool_message(out, call_id="tool-1")
+    assert len(msg.request_pieces) == 1
+    p = msg.request_pieces[0]
+    assert p.original_value_data_type == "function_call_output"
+    payload = json.loads(p.original_value)
+    assert payload["type"] == "function_call_output"
+    assert payload["call_id"] == "tool-1"
+    assert isinstance(payload["output"], str)
+    assert json.loads(payload["output"]) == {"answer": 42}
+
+
+@pytest.mark.asyncio
+async def test_execute_call_section_calls_registered_function(target: OpenAIResponseTarget):
+    async def add_fn(args: dict[str, Any]) -> dict[str, Any]:
+        return {"sum": args["a"] + args["b"]}
+
+    # inject registry
+    target._custom_functions["add"] = add_fn
+
+    section = {"type": "function_call", "name": "add", "arguments": json.dumps({"a": 2, "b": 3})}
+    result = await target._execute_call_section(section)
+    assert result == {"sum": 5}
+
+
+@pytest.mark.asyncio
+async def test_execute_call_section_missing_function_tolerant_mode(target: OpenAIResponseTarget):
+    # default fail_on_missing_function=False
+    section = {"type": "function_call", "name": "unknown_tool", "arguments": "{}"}
+    result = await target._execute_call_section(section)
+    assert result["error"] == "function_not_found"
+    assert result["missing_function"] == "unknown_tool"
+    assert "available_functions" in result
+
+
+@pytest.mark.asyncio
+async def test_execute_call_section_malformed_arguments_tolerant_mode(target: OpenAIResponseTarget):
+    async def echo_fn(args: dict[str, Any]) -> dict[str, Any]:
+        return args
+
+    target._custom_functions["echo"] = echo_fn
+    section = {"type": "function_call", "name": "echo", "arguments": "{not-json"}
+    result = await target._execute_call_section(section)
+    assert result["error"] == "malformed_arguments"
+    assert result["function"] == "echo"
+    assert result["raw_arguments"] == "{not-json"
+
+
+@pytest.mark.asyncio
+async def test_execute_call_section_missing_function_strict_mode(target: OpenAIResponseTarget):
+    target._custom_functions = {}
+    target._fail_on_missing_function = True
+    section = {"type": "function_call", "name": "nope", "arguments": "{}"}
+    with pytest.raises(KeyError, match="Function 'nope' is not registered"):
+        await target._execute_call_section(section)
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_agentic_loop_executes_function_and_returns_final_answer(target: OpenAIResponseTarget):
+    # 1) Register a simple function
+    async def times2(args: dict[str, Any]) -> dict[str, Any]:
+        return {"result": args["x"] * 2}
+
+    target._custom_functions["times2"] = times2
+
+    # 2) First "assistant" reply: a function_call section
+    func_call_section = {
+        "type": "function_call",
+        "call_id": "call-99",
+        "name": "times2",
+        "arguments": json.dumps({"x": 7}),
+    }
+    first_reply = PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(
+                role="assistant",
+                original_value=json.dumps(func_call_section, separators=(",", ":")),
+                original_value_data_type="function_call",
+            )
+        ]
+    )
+
+    # 3) Second "assistant" reply: final message content (no tool call)
+    final_output = {
+        "status": "completed",
+        "output": [{"type": "message", "content": [{"type": "output_text", "text": "Done: 14"}]}],
+    }
+    second_reply = target._construct_prompt_response_from_openai_json(
+        open_ai_str_response=json.dumps(final_output),
+        request_piece=PromptRequestPiece(role="user", original_value="hi"),
+    )
+
+    call_counter = {"n": 0}
+
+    # 4) Mock the base class send to return first the function_call reply, then the final reply
+    async def fake_send(prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+        # Return first reply on first call, second on subsequent calls
+        call_counter["n"] += 1
+        return first_reply if call_counter["n"] == 1 else second_reply
+
+    with patch.object(
+        target.__class__.__bases__[0],  # OpenAIChatTargetBase
+        "send_prompt_async",
+        new_callable=AsyncMock,
+        side_effect=fake_send,
+    ):
+        # 5) Kick it off with a user prompt
+        user_req = PromptRequestResponse(
+            request_pieces=[
+                PromptRequestPiece(
+                    role="user",
+                    original_value="double 7",
+                    converted_value="double 7",
+                    original_value_data_type="text",
+                    converted_value_data_type="text",
+                )
+            ]
+        )
+        final = await target.send_prompt_async(prompt_request=user_req)
+
+        # Should get the final (non-tool-call) assistant message
+        assert len(final.request_pieces) == 1
+        assert final.request_pieces[0].original_value_data_type == "text"
+        assert final.request_pieces[0].original_value == "Done: 14"
+
+
+def test_construct_prompt_response_forwards_web_search_call(target: OpenAIResponseTarget, dummy_text_request_piece):
+    body = {
+        "status": "completed",
+        "output": [{"type": "web_search_call", "query": "time in Tokyo", "provider": "bing"}],
+    }
+    resp = target._construct_prompt_response_from_openai_json(
+        open_ai_str_response=json.dumps(body), request_piece=dummy_text_request_piece
+    )
+    assert len(resp.request_pieces) == 1
+    p = resp.request_pieces[0]
+    assert p.original_value_data_type == "tool_call"
+    section = json.loads(p.original_value)
+    assert section["type"] == "web_search_call"
+    assert section["query"] == "time in Tokyo"
+
+
+def test_construct_prompt_response_skips_unhandled_types(target: OpenAIResponseTarget, dummy_text_request_piece):
+    body = {
+        "status": "completed",
+        "output": [
+            {"type": "image_generation_call", "prompt": "cat astronaut"},  # currently unhandled -> skipped
+            {"type": "message", "content": [{"type": "output_text", "text": "Hi"}]},
+        ],
+    }
+    resp = target._construct_prompt_response_from_openai_json(
+        open_ai_str_response=json.dumps(body), request_piece=dummy_text_request_piece
+    )
+    # Only the 'message' section becomes a piece; image_generation_call is skipped
+    assert len(resp.request_pieces) == 1
+    assert resp.request_pieces[0].original_value == "Hi"
