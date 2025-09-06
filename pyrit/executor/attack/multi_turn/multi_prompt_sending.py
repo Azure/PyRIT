@@ -170,9 +170,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
         response = None
         score = None
 
-        for prompt_index in range(len(context.prompt_sequence)):
-            prompt_text = context.prompt_sequence[prompt_index]
-
+        for prompt_index, prompt_text in enumerate(context.prompt_sequence):
             logger.info(f"Processing prompt {prompt_index + 1}/{len(context.prompt_sequence)}")
             logger.debug(f"Prompt content: {prompt_text}")
 
@@ -195,7 +193,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
                 self._logger.warning(f"Failed to send prompt {prompt_index + 1}, terminating")
                 break
 
-        # Score the final response including auxiliary and objective scoring
+        # Score the last response including auxiliary and objective scoring
         if response is not None:
             score = await self._evaluate_response_async(response=response, objective=context.objective)
         else:
@@ -251,8 +249,8 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
                 "Failed to achieve objective",
             )
 
-        # No response at all (all attempts filtered/failed)
-        return AttackOutcome.FAILURE, "All prompts were filtered or failed to get a response"
+        # At least one prompt was filtered or failed to get a response
+        return AttackOutcome.FAILURE, "At least one prompt was filtered or failed to get a response"
 
     async def _teardown_async(self, *, context: MultiPromptSendingAttackContext) -> None:
         """Clean up after attack execution"""

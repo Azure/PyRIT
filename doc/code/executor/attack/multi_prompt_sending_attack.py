@@ -6,10 +6,22 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.3
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
 # # Multi-Prompt Sending Attack - optional
+#
+# `MultiPromptSendingAttack` is a multi-turn prompt sending attack strategy that allows you to send a predefined sequence of prompts to a target one after the other to try to achieve a specific objective. This is functionally similar to iterating over single prompts with `PromptSendingAttack`, but as one single attack instead of separate ones.
+#
+# The use case is that some attacks are most effective as a predefined sequence of prompts, without the need for an adversarial target to generate prompts on the fly, but the attack does not work as a single prompt attack (or at least not as well). Think of it as some predefined crescendo attack.
+#
+# To keep it simple, there is no early stopping during the prompt sequence, neither in case of a refusal for one of the earlier steps, nor in case of early success before the last step.
+#
+# This simple demo showcases how to use the attack to send prompts, and how it is scored with a refusal scorer.
 
 # %%
 from pyrit.common import IN_MEMORY, initialize_pyrit
