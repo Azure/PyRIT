@@ -452,7 +452,7 @@ class TestDetermineAttackOutcome:
         outcome, reason = attack._determine_attack_outcome(response=None, score=None, context=basic_context)
 
         assert outcome == AttackOutcome.FAILURE
-        assert reason == "All prompts were filtered or failed to get a response"
+        assert reason == "At least one prompt was filtered or failed to get a response"
 
 
 @pytest.mark.usefixtures("patch_central_database")
