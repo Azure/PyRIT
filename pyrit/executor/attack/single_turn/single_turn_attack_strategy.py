@@ -22,16 +22,13 @@ class SingleTurnAttackContext(AttackContext):
     # Unique identifier of the main conversation between the attacker and model
     conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
-    # Conversation that is automatically prepended to the target model
-    prepended_conversation: List[PromptRequestResponse] = field(default_factory=list)
-
     # Group of seed prompts from which single-turn prompts will be drawn
     seed_prompt_group: Optional[SeedPromptGroup] = None
 
     # System prompt for chat-based targets
     system_prompt: Optional[str] = None
 
-    # Arbitrary metadata that downstream orchestrators or scorers may attach
+    # Arbitrary metadata that downstream attacks or scorers may attach
     metadata: Optional[dict[str, Union[str, int]]] = None
 
 
