@@ -20,26 +20,38 @@ class AttackStats:
 def _compute_stats(successes: int, failures: int, undetermined: int) -> AttackStats:
     total_decided = successes + failures
     success_rate = successes / total_decided if total_decided > 0 else None
-    return AttackStats(success_rate, total_decided, successes, failures, undetermined)
+    return AttackStats(
+        success_rate=success_rate,
+        total_decided=total_decided,
+        successes=successes,
+        failures=failures,
+        undetermined=undetermined,
+    )
 
 
 def analyze_results(attack_results: list[AttackResult]) -> dict:
     """
     Analyze a list of AttackResult objects and return overall and grouped statistics.
+
+    Returns:
+        {
+          "Overall": AttackStats,
+          "By_attack_identifier": dict[str, AttackStats]
+        }
+
+    Raises:
+        ValueError: if attack_results is empty.
+        TypeError: if any element is not an AttackResult.
     """
     if not attack_results:
-        empty_stats = AttackStats(None, 0, 0, 0, 0)
-        return {
-            "Overall": empty_stats,
-            "By_attack_identifier": {},
-        }
+        raise ValueError("attack_results cannot be empty")
 
     overall_counts: DefaultDict[str, int] = defaultdict(int)
     by_type_counts: DefaultDict[str, DefaultDict[str, int]] = defaultdict(lambda: defaultdict(int))
 
     for attack in attack_results:
         if not isinstance(attack, AttackResult):
-            continue
+            raise TypeError(f"Expected AttackResult, got {type(attack).__name__}: {attack!r}")
 
         outcome = attack.outcome
         attack_type = attack.attack_identifier.get("type", "unknown")

@@ -1,71 +1,134 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import pytest
 from pyrit.analytics.result_analysis import AttackStats, analyze_results
 from pyrit.models import AttackOutcome, AttackResult
 
 
-# Helper to create mock AttackResult with just enough fields
-def make_attack(outcome: AttackOutcome, attack_type: str = "default") -> AttackResult:
+# helpers
+def make_attack(
+    outcome: AttackOutcome,
+    attack_type: str | None = "default",
+    conversation_id: str = "conv-1",
+) -> AttackResult:
+    """
+    Minimal valid AttackResult for analytics tests.
+    """
+    attack_identifier: dict[str, str] = {}
+    if attack_type is not None:
+        attack_identifier["type"] = attack_type
+
     return AttackResult(
-        conversation_id="1", objective="test objective", attack_identifier={"type": attack_type}, outcome=outcome
+        conversation_id=conversation_id,
+        objective="test objective",
+        attack_identifier=attack_identifier,
+        outcome=outcome,
     )
 
 
-def test_analyze_results_empty():
-    result = analyze_results([])
+def test_analyze_results_empty_raises():
+    with pytest.raises(ValueError):
+        analyze_results([])
+
+
+def test_analyze_results_raises_on_invalid_object():
+    with pytest.raises(TypeError):
+        analyze_results(["not-an-AttackResult"])
+
+
+@pytest.mark.parametrize(
+    "outcomes, expected_successes, expected_failures, expected_undetermined, expected_rate",
+    [
+        # all successes
+        ([AttackOutcome.SUCCESS, AttackOutcome.SUCCESS], 2, 0, 0, 1.0),
+        # all failures
+        ([AttackOutcome.FAILURE, AttackOutcome.FAILURE], 0, 2, 0, 0.0),
+        # mixed decided
+        ([AttackOutcome.SUCCESS, AttackOutcome.FAILURE], 1, 1, 0, 0.5),
+        # include undetermined (excluded from denominator)
+        ([AttackOutcome.SUCCESS, AttackOutcome.UNDETERMINED], 1, 0, 1, 1.0),
+        ([AttackOutcome.FAILURE, AttackOutcome.UNDETERMINED], 0, 1, 1, 0.0),
+        # multiple with undetermined
+        (
+            [AttackOutcome.SUCCESS, AttackOutcome.FAILURE, AttackOutcome.UNDETERMINED],
+            1,
+            1,
+            1,
+            0.5,
+        ),
+    ],
+)
+def test_overall_success_rate_parametrized(
+    outcomes, expected_successes, expected_failures, expected_undetermined, expected_rate
+):
+    attacks = [make_attack(o) for o in outcomes]
+    result = analyze_results(attacks)
+
     assert isinstance(result["Overall"], AttackStats)
-    assert result["Overall"].success_rate is None
-    assert result["Overall"].total_decided == 0
-    assert result["By_attack_identifier"] == {}
-
-
-def test_overall_success_rate_only():
-    attacks = [
-        make_attack(AttackOutcome.SUCCESS),
-        make_attack(AttackOutcome.FAILURE),
-        make_attack(AttackOutcome.SUCCESS),
-        make_attack(AttackOutcome.UNDETERMINED),
-    ]
-    result = analyze_results(attacks)
     overall = result["Overall"]
-    assert overall.success_rate == 2 / 3
-    assert overall.total_decided == 3
-    assert overall.successes == 2
-    assert overall.failures == 1
-    assert overall.undetermined == 1
+    assert overall.successes == expected_successes
+    assert overall.failures == expected_failures
+    assert overall.undetermined == expected_undetermined
+    assert overall.total_decided == expected_successes + expected_failures
+    assert overall.success_rate == expected_rate
 
 
-def test_grouped_by_attack_type():
-    attacks = [
-        make_attack(AttackOutcome.SUCCESS, attack_type="crescendo"),
-        make_attack(AttackOutcome.FAILURE, attack_type="crescendo"),
-        make_attack(AttackOutcome.UNDETERMINED, attack_type="crescendo"),
-        make_attack(AttackOutcome.SUCCESS, attack_type="red_teaming"),
-        make_attack(AttackOutcome.FAILURE, attack_type="red_teaming"),
-    ]
+@pytest.mark.parametrize(
+    "items, type_key, exp_succ, exp_fail, exp_und, exp_rate",
+    [
+        # single type, mixed decided + undetermined
+        (
+            [
+                (AttackOutcome.SUCCESS, "crescendo"),
+                (AttackOutcome.FAILURE, "crescendo"),
+                (AttackOutcome.UNDETERMINED, "crescendo"),
+            ],
+            "crescendo",
+            1,
+            1,
+            1,
+            0.5,
+        ),
+        # two types with different balances
+        (
+            [
+                (AttackOutcome.SUCCESS, "crescendo"),
+                (AttackOutcome.FAILURE, "crescendo"),
+                (AttackOutcome.SUCCESS, "red_teaming"),
+                (AttackOutcome.FAILURE, "red_teaming"),
+                (AttackOutcome.SUCCESS, "red_teaming"),
+            ],
+            "red_teaming",
+            2,
+            1,
+            0,
+            2 / 3,
+        ),
+        # unknown type fallback (missing "type" key)
+        (
+            [
+                (AttackOutcome.FAILURE, None),
+                (AttackOutcome.UNDETERMINED, None),
+                (AttackOutcome.SUCCESS, None),
+            ],
+            "unknown",
+            1,
+            1,
+            1,
+            0.5,
+        ),
+    ],
+)
+def test_group_by_attack_type_parametrized(items, type_key, exp_succ, exp_fail, exp_und, exp_rate):
+    attacks = [make_attack(outcome=o, attack_type=t) for (o, t) in items]
     result = analyze_results(attacks)
 
-    crescendo = result["By_attack_identifier"]["crescendo"]
-    assert crescendo.success_rate == 1 / 2
-    assert crescendo.total_decided == 2
-    assert crescendo.undetermined == 1
-
-    red_teaming = result["By_attack_identifier"]["red_teaming"]
-    assert red_teaming.success_rate == 1 / 2
-    assert red_teaming.total_decided == 2
-    assert red_teaming.undetermined == 0
-
-
-def test_unknown_attack_type_fallback():
-    attack = make_attack(AttackOutcome.FAILURE, attack_type=None)
-    attack.attack_identifier = {}  # simulate missing 'type'
-    result = analyze_results([attack])
-    assert "unknown" in result["By_attack_identifier"]
-
-
-def test_skips_invalid_objects():
-    attacks = [make_attack(AttackOutcome.SUCCESS), "not_an_attack_result", 123, None]
-    result = analyze_results(attacks)
-    assert result["Overall"].successes == 1
-    assert result["Overall"].failures == 0
+    assert type_key in result["By_attack_identifier"]
+    stats = result["By_attack_identifier"][type_key]
+    assert isinstance(stats, AttackStats)
+    assert stats.successes == exp_succ
+    assert stats.failures == exp_fail
+    assert stats.undetermined == exp_und
+    assert stats.total_decided == exp_succ + exp_fail
+    assert stats.success_rate == exp_rate
