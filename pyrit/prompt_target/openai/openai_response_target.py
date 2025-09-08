@@ -144,7 +144,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         Args:
             role: Role to emit ("user" / "assistant" / "system").
             content: Accumulated content items for the role.
-            output: Destination list to append the message to. It holds a list of dicts containing 
+            output: Destination list to append the message to. It holds a list of dicts containing
                 key-value pairs representing the role and content.
 
         Returns:
@@ -166,7 +166,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             A dict in the Responses API content item shape.
 
         Raises:
-            ValueError: If the piece type is not supported for inline content. Supported types are text and 
+            ValueError: If the piece type is not supported for inline content. Supported types are text and
                 image paths.
         """
         if piece.converted_value_data_type == "text":
@@ -258,7 +258,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
                             "output": output,
                         }
                     )
-                    
+
             # Flush trailing role content for this message
             self._flush_message(role, content, input_items)
 
@@ -368,17 +368,17 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             conversation.append(assistant_reply)
 
             # Find a tool call in the output
-            call_section = self._find_last_pending_tool_call(assistant_reply)
-            if call_section is None:
+            tool_call_section = self._find_last_pending_tool_call(assistant_reply)
+            if tool_call_section is None:
                 # No tool call found, so assistant message is complete!
                 return assistant_reply
 
             # Execute the tool/function
-            tool_output = await self._execute_call_section(call_section)
+            tool_output = await self._execute_call_section(tool_call_section)
 
             # Add the tool result as a tool message to the conversation
             # NOTE: Responses API expects a top-level {type:function_call_output, call_id, output}
-            tool_message = self._make_tool_message(tool_output, call_section["call_id"])
+            tool_message = self._make_tool_message(tool_output, tool_call_section["call_id"])
             conversation.append(tool_message)
 
             # Re-ask with combined history (user + function_call + function_call_output)
@@ -470,15 +470,14 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         Looks for a piece whose value parses as JSON with a 'type' key matching function_call.
         """
         for piece in reversed(reply.request_pieces):
-            if piece.role != "assistant":
-                continue
-            try:
-                section = json.loads(piece.original_value)
-            except Exception:
-                continue
-            if section.get("type") == "function_call":
-                # Do NOT skip function_call even if status == "completed" — we still need to emit the output.
-                return section
+            if piece.role == "assistant":
+                try:
+                    section = json.loads(piece.original_value)
+                except Exception:
+                    continue
+                if section.get("type") == "function_call":
+                    # Do NOT skip function_call even if status == "completed" — we still need to emit the output.
+                    return section
         return None
 
     async def _execute_call_section(self, tool_call_section: dict[str, Any]) -> dict[str, Any]:
