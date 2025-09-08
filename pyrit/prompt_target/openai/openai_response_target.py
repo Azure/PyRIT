@@ -361,18 +361,18 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             The final PromptRequestResponse with the assistant's answer.
         """
         conversation: MutableSequence[PromptRequestResponse] = [prompt_request]
+        send_prompt_async = super().send_prompt_async  # bind for inner function
 
-        while True:
-            # Use the base implementation for sending the prompt and receiving the response
-            assistant_reply = await super().send_prompt_async(prompt_request=prompt_request)
+        async def _send_prompt_and_find_tool_call_async(
+            prompt_request: PromptRequestResponse,
+        ) -> Optional[dict[str, Any]]:
+            """Send the prompt and return the last pending tool call, if any."""
+            assistant_reply = await send_prompt_async(prompt_request=prompt_request)
             conversation.append(assistant_reply)
+            return self._find_last_pending_tool_call(assistant_reply)
 
-            # Find a tool call in the output
-            tool_call_section = self._find_last_pending_tool_call(assistant_reply)
-            if tool_call_section is None:
-                # No tool call found, so assistant message is complete!
-                return assistant_reply
-
+        tool_call_section = await _send_prompt_and_find_tool_call_async(prompt_request=prompt_request)
+        while tool_call_section:
             # Execute the tool/function
             tool_output = await self._execute_call_section(tool_call_section)
 
@@ -386,6 +386,12 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             for msg in conversation:
                 merged.extend(msg.request_pieces)
             prompt_request = PromptRequestResponse(request_pieces=merged)
+
+            # Send again and check for another tool call
+            tool_call_section = await _send_prompt_and_find_tool_call_async(prompt_request=prompt_request)
+
+        # No other tool call found, so assistant message is complete and return last assistant reply!
+        return conversation[-1]
 
     def _parse_response_output_section(
         self, *, section: dict, request_piece: PromptRequestPiece, error: Optional[PromptResponseError]
