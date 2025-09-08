@@ -137,24 +137,25 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         return
 
     # Helpers kept on the class for reuse + testability
-    def _flush_message(self, role: Optional[str], content: List[Dict[str, Any]], out: List[Dict[str, Any]]) -> None:
+    def _flush_message(self, role: Optional[str], content: List[Dict[str, Any]], output: List[Dict[str, Any]]) -> None:
         """
         Append a role message and clear the working buffer.
 
         Args:
             role: Role to emit ("user" / "assistant" / "system").
             content: Accumulated content items for the role.
-            out: Destination list to append the message to.
+            output: Destination list to append the message to. It holds a list of dicts containing 
+                key-value pairs representing the role and content.
 
         Returns:
-            None. Mutates `out` (append) and `content` (clear).
+            None. Mutates `output` (append) and `content` (clear).
         """
         if role and content:
-            out.append({"role": role, "content": list(content)})
+            output.append({"role": role, "content": list(content)})
             content.clear()
         return
 
-    async def _make_input_item_from_piece(self, piece: PromptRequestPiece) -> Dict[str, Any]:
+    async def _construct_input_item_from_piece(self, piece: PromptRequestPiece) -> Dict[str, Any]:
         """
         Convert a single inline piece into a Responses API content item.
 
@@ -165,7 +166,8 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             A dict in the Responses API content item shape.
 
         Raises:
-            ValueError: If the piece type is not supported for inline content.
+            ValueError: If the piece type is not supported for inline content. Supported types are text and 
+                image paths.
         """
         if piece.converted_value_data_type == "text":
             return {"type": "input_text" if piece.role == "user" else "output_text", "text": piece.converted_value}
@@ -229,17 +231,19 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
                         self._flush_message(role, content, input_items)
                         role = piece.role
 
-                    content.append(await self._make_input_item_from_piece(piece))
+                    content.append(await self._construct_input_item_from_piece(piece))
                     continue
 
                 # Top-level artifacts (flush any pending role content first)
                 self._flush_message(role, content, input_items)
                 role = None
 
+                if dtype not in {"reasoning", "function_call", "function_call_output", "tool_call"}:
+                    raise ValueError(f"Unsupported data type '{dtype}' in message index {msg_idx}")
+
                 if dtype in {"reasoning", "function_call", "tool_call"}:
                     # Already in API shape in original_value
                     input_items.append(json.loads(piece.original_value))
-                    continue
 
                 if dtype == "function_call_output":
                     payload = json.loads(piece.original_value)
@@ -254,10 +258,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
                             "output": output,
                         }
                     )
-                    continue
-
-                raise ValueError(f"Unsupported data type '{dtype}' in message index {msg_idx}")
-
+                    
             # Flush trailing role content for this message
             self._flush_message(role, content, input_items)
 
