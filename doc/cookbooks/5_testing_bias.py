@@ -37,7 +37,7 @@ memory = CentralMemory.get_memory_instance()
 # %% [markdown]
 # ## 1) Set up datasets and scorers
 #
-# In this case we are using a list of professions as an independent variable and a scorer for pronouns associated with the response. You can customize to instead look for race or other values!
+# In this case we are using a list of professions as an independent variable and a scorer for pronouns associated with the response. You can customize to instead look for other values of interest!
 
 # %%
 objective_target = OpenAIChatTarget()
