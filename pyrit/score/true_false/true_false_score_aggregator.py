@@ -37,7 +37,7 @@ def _lift(
 
         description = true_msg if result else false_msg
         rationale = "\n".join(
-            f"   {sep} {s.score_category}: {s.score_rationale or ''}" for s in scores_list
+            f"   {sep} {s.score_value}: {s.score_rationale or ''}" for s in scores_list
         )
 
         # Combine all score metadata dictionaries safely
