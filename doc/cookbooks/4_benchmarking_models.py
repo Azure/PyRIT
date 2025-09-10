@@ -36,7 +36,7 @@ from collections import Counter
 from pathlib import Path
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.common.path import DATASETS_PATH, SCORER_CONFIG_PATH
+from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack import AttackScoringConfig, PromptSendingAttack
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, PromptRequestResponse, SeedPromptDataset
@@ -50,7 +50,7 @@ objective_target = OpenAIChatTarget()
 
 # Yes/no scorer
 yes_no_scorer = SelfAskTrueFalseScorer(
-    true_false_question_path=SCORER_CONFIG_PATH / "true_false_question" / "yes_no_answer.yaml",
+    true_false_question_path=Path(DATASETS_PATH) / "score" / "true_false_question" / "yes_no_answer.yaml",
     chat_target=objective_target,
 )
 yes_no_scoring_config = AttackScoringConfig(objective_scorer=yes_no_scorer)
