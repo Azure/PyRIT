@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import os
+import uuid
 import pytest
 from datetime import datetime
 from unittest.mock import MagicMock, patch, AsyncMock
@@ -18,6 +19,7 @@ def mock_memory():
     memory = MagicMock(spec=CentralMemory)
     with patch('pyrit.executor.attack.printer.markdown_printer.CentralMemory') as mock_central_memory:
         mock_central_memory.get_memory_instance.return_value = memory
+        mock_central_memory.get_conversation.return_value = []
         yield memory
 
 
@@ -27,15 +29,30 @@ def markdown_printer():
 
 
 @pytest.fixture
-def sample_score():
+def sample_boolean_score():
     return Score(
-        score_type="test",
-        score_value=0.85,
-        score_category="accuracy",
-        score_rationale="Test rationale",
-        score_metadata={"key": "value"}
+        score_type="true_false",
+        score_value="true",
+        score_category="test",
+        score_value_description="Test true score",
+        score_rationale="Line 1\nLine 2\nLine 3",
+        score_metadata="{}",
+        prompt_request_response_id=str(uuid.uuid4()),
+        scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
     )
 
+@pytest.fixture
+def sample_float_score():
+    return Score(
+            score_type="float_scale",
+            score_value="0.5",
+            score_category="other",
+            score_value_description="Other score",
+            score_rationale="Other rationale",
+            score_metadata="{}",
+            prompt_request_response_id=str(uuid.uuid4()),
+            scorer_class_identifier={"__type__": "OtherScorer", "__module__": "test_module"},
+        )
 
 @pytest.fixture
 def sample_attack_result():
@@ -48,10 +65,14 @@ def sample_attack_result():
         outcome=AttackOutcome.SUCCESS,
         outcome_reason="Test successful",
         last_score=Score(
-            score_type="final",
-            score_value=0.9,
-            score_category="overall",
-            score_rationale="Final test score"
+            score_type="float_scale",
+            score_value="0.5",
+            score_category="other",
+            score_value_description="Other score",
+            score_rationale="Other rationale",
+            score_metadata="{}",
+            prompt_request_response_id=str(uuid.uuid4()),
+            scorer_class_identifier={"__type__": "OtherScorer", "__module__": "test_module"},
         )
     )
 
@@ -68,9 +89,7 @@ def sample_prompt_piece():
 
 @pytest.fixture
 def sample_prompt_response(sample_prompt_piece):
-    response = PromptRequestResponse()
-    response.add_piece(sample_prompt_piece)
-    return response
+    return PromptRequestResponse(request_pieces=[sample_prompt_piece])
 
 
 def test_init(mock_memory):
@@ -80,33 +99,26 @@ def test_init(mock_memory):
     assert printer._memory is mock_memory
 
 
-def test_format_score_float(markdown_printer, sample_score):
-    """Test score formatting with float value."""
-    formatted = markdown_printer._format_score(sample_score)
-    assert "**0.85**" in formatted
-    assert "**Score Type:** test" in formatted
-    assert "**Category:** accuracy" in formatted
-    assert "**Rationale:** Test rationale" in formatted
-    assert "**Metadata:** `{'key': 'value'}`" in formatted
-
-
-def test_format_score_bool(markdown_printer):
+def test_format_score_bool(markdown_printer, sample_boolean_score):
     """Test score formatting with boolean value."""
-    score = Score(score_type="test", score_value=True)
-    formatted = markdown_printer._format_score(score)
-    assert "True" in formatted
-    assert "**Score Type:** test" in formatted
-    assert "**Category:** N/A" in formatted
+    formatted = markdown_printer._format_score(sample_boolean_score)
+    assert "**Value:** True" in formatted
+    assert "**Score Type:** true_false" in formatted
+    assert "**Category:** test" in formatted
+    assert "**Metadata:** `{}`" in formatted
 
 
-def test_format_score_multiline_rationale(markdown_printer):
+def test_format_score_float(markdown_printer, sample_float_score):
+    """Test score formatting with float value."""
+    formatted = markdown_printer._format_score(sample_float_score)
+    assert "0.5" in formatted
+    assert "**Score Type:** float_scale" in formatted
+    assert "**Category:** other" in formatted
+
+
+def test_format_score_multiline_rationale(markdown_printer, sample_boolean_score):
     """Test score formatting with multi-line rationale."""
-    score = Score(
-        score_type="test",
-        score_value=1,
-        score_rationale="Line 1\nLine 2\nLine 3"
-    )
-    formatted = markdown_printer._format_score(score)
+    formatted = markdown_printer._format_score(sample_boolean_score)
     assert "Line 1" in formatted
     assert "Line 2" in formatted
     assert "Line 3" in formatted
@@ -141,18 +153,18 @@ def test_format_error_content(markdown_printer, sample_prompt_piece):
     """Test error content formatting."""
     sample_prompt_piece.response_error = "TestError"
     formatted = markdown_printer._format_error_content(piece=sample_prompt_piece)
-    assert "**Error Response:**" in formatted
-    assert "*Error Type: TestError*" in formatted
+    assert "**Error Response:**\n" in formatted
+    assert "*Error Type: TestError*\n" in formatted
     assert "```json" in formatted
 
 
 def test_format_text_content_with_conversion(markdown_printer, sample_prompt_piece):
     """Test text content formatting when original and converted values differ."""
     formatted = markdown_printer._format_text_content(piece=sample_prompt_piece, show_original=True)
-    assert "**Original:**" in formatted
-    assert "Original text" in formatted
-    assert "**Converted:**" in formatted
-    assert "Converted text" in formatted
+    assert "**Original:**\n" in formatted
+    assert "Original text\n" in formatted
+    assert "\n**Converted:**\n" in formatted
+    assert "Converted text\n" in formatted
 
 
 def test_format_text_content_without_conversion(markdown_printer, sample_prompt_piece):
@@ -160,7 +172,7 @@ def test_format_text_content_without_conversion(markdown_printer, sample_prompt_
     sample_prompt_piece.converted_value = sample_prompt_piece.original_value
     formatted = markdown_printer._format_text_content(piece=sample_prompt_piece, show_original=True)
     assert "**Original:**" not in formatted
-    assert sample_prompt_piece.original_value in formatted
+    assert sample_prompt_piece.original_value + "\n" in formatted
 
 
 @pytest.mark.asyncio
@@ -192,13 +204,12 @@ async def test_format_piece_content_error(markdown_printer, sample_prompt_piece)
 @pytest.mark.asyncio
 async def test_print_result_async(markdown_printer, sample_attack_result, mock_memory, capsys):
     """Test full attack result printing."""
-    mock_memory.get_conversation.return_value = []
     
     await markdown_printer.print_result_async(sample_attack_result)
     captured = capsys.readouterr()
     
     # Check for main sections
-    assert "# 🎯 Attack Result: SUCCESS" in captured.out
+    assert "Attack Result: SUCCESS" in captured.out
     assert "## Attack Summary" in captured.out
     assert "### Basic Information" in captured.out
     assert "### Execution Metrics" in captured.out
@@ -209,9 +220,7 @@ async def test_print_result_async(markdown_printer, sample_attack_result, mock_m
 
 @pytest.mark.asyncio
 async def test_print_conversation_async(markdown_printer, sample_attack_result, mock_memory, capsys):
-    """Test conversation history printing."""
-    mock_memory.get_conversation.return_value = []
-    
+    """Test conversation history printing."""    
     await markdown_printer.print_conversation_async(sample_attack_result)
     captured = capsys.readouterr()
     
