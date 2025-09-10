@@ -20,6 +20,7 @@ class EnsembleScorer(Scorer):
                  weak_scorer_dict: Dict[str, WeakScorerSpec],
                  ground_truth_scorer: Scorer,
                  fit_weights: bool = False,
+                 num_steps: int = 100,
                  lr: float = 1e-2,
                  category: str = "jailbreak"):
         self.scorer_type = "float_scale"
@@ -44,6 +45,7 @@ class EnsembleScorer(Scorer):
         self._weak_scorer_dict = weak_scorer_dict
 
         self._fit_weights = fit_weights
+        self._num_steps_remaining = num_steps
         self._lr = lr
 
         self._ground_truth_scorer = ground_truth_scorer
@@ -84,11 +86,8 @@ class EnsembleScorer(Scorer):
 
         ensemble_score_rationale += f"Total Ensemble Score is {ensemble_score_value}"
 
-        id=uuid.uuid4()
-        print(id)
-
         ensemble_score = Score(
-            id=id,
+            id=uuid.uuid4(),
             score_type="float_scale",
             score_value=str(ensemble_score_value),
             score_value_description=None,
@@ -99,9 +98,9 @@ class EnsembleScorer(Scorer):
             prompt_request_response_id=request_response.id,
             task=task,
         )
-        self._memory.add_scores_to_memory(scores=[ensemble_score])
 
-        if self._fit_weights:
+        if self._fit_weights and self._num_steps_remaining > 0:
+            self._num_steps_remaining -= 1
             await self.step_weights(score_values=score_values, ensemble_score=ensemble_score, request_response=request_response, task=task)
 
         return [ensemble_score]
@@ -118,12 +117,20 @@ class EnsembleScorer(Scorer):
 
         ground_truth_scores = await self._ground_truth_scorer.score_async(request_response=request_response, task=task)
         for ground_truth_score in ground_truth_scores:
+            print(f"Ground Truth Score: {ground_truth_score.get_value()}")
+            print(f"Ensemble Score: {ensemble_score.get_value()}")
             if loss_metric == "MSE":
                 diff = ensemble_score.get_value() - float(ground_truth_score.get_value())
                 d_loss_d_ensemble_score = 2 * diff
             elif loss_metric == "MAE":
                 diff = ensemble_score.get_value() - float(ground_truth_score.get_value())
-                d_loss_d_ensemble_score = -1 if diff < 0 else 1
+                if diff == 0:
+                    d_loss_d_ensemble_score = 0
+                elif diff < 0:
+                    d_loss_d_ensemble_score = -1
+                else:
+                    d_loss_d_ensemble_score = 1
+
 
             for scorer_name in score_values:
                 if scorer_name == "AzureContentFilterScorer":
@@ -134,6 +141,7 @@ class EnsembleScorer(Scorer):
                 else:
                     self._weak_scorer_dict[scorer_name].weight = self._weak_scorer_dict[scorer_name].weight - self._lr * score_values[scorer_name] * d_loss_d_ensemble_score
         
+            print(f"Updated Weights: {self._weak_scorer_dict}")
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
         if request_response.original_value_data_type != "text":
