@@ -17,12 +17,12 @@ from pyrit.prompt_target.openai.openai_realtime_target import RealtimeTargetResu
 
 
 @pytest.fixture
-def target(duckdb_instance):
+def target(sqlite_instance):
     return RealtimeTarget(api_key="test_key", endpoint="wss://test_url", model_name="test", api_version="v1")
 
 
 @pytest.fixture
-def target_with_aad(duckdb_instance):
+def target_with_aad(sqlite_instance):
     target = RealtimeTarget(endpoint="wss://test_url", api_key="test_api_key")
     target._azure_auth = MagicMock()
     target._azure_auth.refresh_token = MagicMock(return_value="test_access_token")

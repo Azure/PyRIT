@@ -379,9 +379,9 @@ class MemoryInterface(abc.ABC):
             prompt_ids = [str(pi) for pi in prompt_ids]
             conditions.append(PromptMemoryEntry.id.in_(prompt_ids))
         if labels:
-            conditions.append(self._get_prompt_pieces_memory_label_conditions(memory_labels=labels))
+            conditions.extend(self._get_prompt_pieces_memory_label_conditions(memory_labels=labels))
         if prompt_metadata:
-            conditions.append(self._get_prompt_pieces_prompt_metadata_conditions(prompt_metadata=prompt_metadata))
+            conditions.extend(self._get_prompt_pieces_prompt_metadata_conditions(prompt_metadata=prompt_metadata))
         if sent_after:
             conditions.append(PromptMemoryEntry.timestamp >= sent_after)
         if sent_before:
@@ -983,6 +983,7 @@ class MemoryInterface(abc.ABC):
             conditions.append(AttackResultEntry.conversation_id == conversation_id)
         if objective:
             conditions.append(AttackResultEntry.objective.contains(objective))
+
         if objective_sha256:
             conditions.append(AttackResultEntry.objective_sha256.in_(objective_sha256))
         if outcome:

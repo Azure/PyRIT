@@ -84,7 +84,9 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
         # Print footer
         self._print_footer()
 
-    async def print_conversation_async(self, result: AttackResult, *, include_auxiliary_scores: bool = False) -> None:
+    async def print_conversation_async(
+        self, result: AttackResult, *, include_auxiliary_scores: bool = False, include_reasoning_trace: bool = False
+    ) -> None:
         """
         Print the conversation history to console with enhanced formatting.
 
@@ -100,6 +102,8 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
                 Must have a valid conversation_id attribute.
             include_auxiliary_scores (bool): Whether to include auxiliary scores in the output.
                 Defaults to False.
+            include_reasoning_trace (bool): Whether to include model reasoning trace in the output
+                for applicable models. Defaults to False.
         """
         messages = self._memory.get_conversation(conversation_id=result.conversation_id)
 
@@ -136,13 +140,14 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
 
                     self._print_wrapped_text(piece.converted_value, Fore.MAGENTA)
                 else:
-                    # Assistant message header
-                    print()
-                    self._print_colored("─" * self._width, Fore.YELLOW)
-                    self._print_colored(f"🔸 {piece.role.upper()}", Style.BRIGHT, Fore.YELLOW)
-                    self._print_colored("─" * self._width, Fore.YELLOW)
+                    if piece.original_value_data_type != "reasoning" or include_reasoning_trace:
+                        # Assistant message header
+                        print()
+                        self._print_colored("─" * self._width, Fore.YELLOW)
+                        self._print_colored(f"🔸 {piece.role.upper()}", Style.BRIGHT, Fore.YELLOW)
+                        self._print_colored("─" * self._width, Fore.YELLOW)
 
-                    self._print_wrapped_text(piece.converted_value, Fore.YELLOW)
+                        self._print_wrapped_text(piece.converted_value, Fore.YELLOW)
 
                 # Display images if present
                 await display_image_response(piece)
@@ -376,47 +381,3 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
             AttackOutcome.FAILURE: Fore.RED,
             AttackOutcome.UNDETERMINED: Fore.YELLOW,
         }.get(outcome, Fore.WHITE)
-
-    def _get_outcome_icon(self, outcome: AttackOutcome) -> str:
-        """
-        Get an icon for an outcome.
-
-        Maps AttackOutcome enum values to appropriate Unicode emoji icons.
-
-        Args:
-            outcome (AttackOutcome): The attack outcome enum value.
-
-        Returns:
-            str: Unicode emoji string.
-        """
-        return {AttackOutcome.SUCCESS: "✅", AttackOutcome.FAILURE: "❌", AttackOutcome.UNDETERMINED: "❓"}.get(
-            outcome, ""
-        )
-
-    def _format_time(self, milliseconds: int) -> str:
-        """
-        Format time in a human-readable way.
-
-        Converts milliseconds to appropriate units (ms, s, or m + s) based
-        on the magnitude of the value.
-
-        Args:
-            milliseconds (int): Time duration in milliseconds. Should be
-                non-negative.
-
-        Returns:
-            str: Formatted time string (e.g., "500ms", "2.50s", "1m 30s").
-
-        Raises:
-            TypeError: If milliseconds is not an integer.
-            ValueError: If milliseconds is negative.
-        """
-        if milliseconds < 1000:
-            return f"{milliseconds}ms"
-
-        if milliseconds < 60000:
-            return f"{milliseconds / 1000:.2f}s"
-
-        minutes = milliseconds // 60000
-        seconds = (milliseconds % 60000) / 1000
-        return f"{minutes}m {seconds:.0f}s"

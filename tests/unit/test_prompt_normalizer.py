@@ -214,7 +214,7 @@ async def test_send_prompt_async_empty_exception(mock_memory_instance, seed_prom
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_different_sequences():
+async def test_send_prompt_async_different_sequences(mock_memory_instance):
     """Test that sending prompts with different sequences raises ValueError."""
     prompt_target = AsyncMock()
     normalizer = PromptNormalizer()
@@ -230,7 +230,7 @@ async def test_send_prompt_async_different_sequences():
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_mixed_sequence_types():
+async def test_send_prompt_async_mixed_sequence_types(mock_memory_instance):
     """Test that sending prompts with mixed sequence types (None and int) raises ValueError."""
     prompt_target = AsyncMock()
     normalizer = PromptNormalizer()

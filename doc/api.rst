@@ -272,13 +272,13 @@ API Reference
     AttackResultEntry
     AzureSQLMemory
     CentralMemory
-    DuckDBMemory
     EmbeddingDataEntry
     MemoryInterface
     MemoryEmbedding
     MemoryExporter
     PromptMemoryEntry
     SeedPromptEntry
+    SQLiteMemory
 
 :py:mod:`pyrit.models`
 ======================
