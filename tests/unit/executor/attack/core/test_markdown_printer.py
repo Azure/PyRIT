@@ -3,13 +3,13 @@
 
 import os
 import uuid
+from unittest.mock import MagicMock, patch
+
 import pytest
-from datetime import datetime
-from unittest.mock import MagicMock, patch, AsyncMock
 
 from pyrit.executor.attack.printer.markdown_printer import MarkdownAttackResultPrinter
 from pyrit.memory import CentralMemory
-from pyrit.models import AttackResult, Score, AttackOutcome
+from pyrit.models import AttackOutcome, AttackResult, Score
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
 
@@ -17,7 +17,7 @@ from pyrit.models.prompt_request_response import PromptRequestResponse
 @pytest.fixture
 def mock_memory():
     memory = MagicMock(spec=CentralMemory)
-    with patch('pyrit.executor.attack.printer.markdown_printer.CentralMemory') as mock_central_memory:
+    with patch("pyrit.executor.attack.printer.markdown_printer.CentralMemory") as mock_central_memory:
         mock_central_memory.get_memory_instance.return_value = memory
         mock_central_memory.get_conversation.return_value = []
         yield memory
@@ -41,18 +41,20 @@ def sample_boolean_score():
         scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
     )
 
+
 @pytest.fixture
 def sample_float_score():
     return Score(
-            score_type="float_scale",
-            score_value="0.5",
-            score_category="other",
-            score_value_description="Other score",
-            score_rationale="Other rationale",
-            score_metadata="{}",
-            prompt_request_response_id=str(uuid.uuid4()),
-            scorer_class_identifier={"__type__": "OtherScorer", "__module__": "test_module"},
-        )
+        score_type="float_scale",
+        score_value="0.5",
+        score_category="other",
+        score_value_description="Other score",
+        score_rationale="Other rationale",
+        score_metadata="{}",
+        prompt_request_response_id=str(uuid.uuid4()),
+        scorer_class_identifier={"__type__": "OtherScorer", "__module__": "test_module"},
+    )
+
 
 @pytest.fixture
 def sample_attack_result():
@@ -73,17 +75,14 @@ def sample_attack_result():
             score_metadata="{}",
             prompt_request_response_id=str(uuid.uuid4()),
             scorer_class_identifier={"__type__": "OtherScorer", "__module__": "test_module"},
-        )
+        ),
     )
 
 
 @pytest.fixture
 def sample_prompt_piece():
     return PromptRequestPiece(
-        role="user",
-        original_value="Original text",
-        converted_value="Converted text",
-        converted_value_data_type="text"
+        role="user", original_value="Original text", converted_value="Converted text", converted_value_data_type="text"
     )
 
 
@@ -204,10 +203,10 @@ async def test_format_piece_content_error(markdown_printer, sample_prompt_piece)
 @pytest.mark.asyncio
 async def test_print_result_async(markdown_printer, sample_attack_result, mock_memory, capsys):
     """Test full attack result printing."""
-    
+
     await markdown_printer.print_result_async(sample_attack_result)
     captured = capsys.readouterr()
-    
+
     # Check for main sections
     assert "Attack Result: SUCCESS" in captured.out
     assert "## Attack Summary" in captured.out
@@ -220,10 +219,10 @@ async def test_print_result_async(markdown_printer, sample_attack_result, mock_m
 
 @pytest.mark.asyncio
 async def test_print_conversation_async(markdown_printer, sample_attack_result, mock_memory, capsys):
-    """Test conversation history printing."""    
+    """Test conversation history printing."""
     await markdown_printer.print_conversation_async(sample_attack_result)
     captured = capsys.readouterr()
-    
+
     assert "*No conversation found for ID: test-conv-123*" in captured.out
 
 
@@ -232,7 +231,7 @@ async def test_print_summary_async(markdown_printer, sample_attack_result, capsy
     """Test attack summary printing."""
     await markdown_printer.print_summary_async(sample_attack_result)
     captured = capsys.readouterr()
-    
+
     assert "## Attack Summary" in captured.out
     assert "Test objective" in captured.out
     assert "TestAttack" in captured.out
