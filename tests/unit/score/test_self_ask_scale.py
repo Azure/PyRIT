@@ -9,8 +9,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, UnvalidatedScore
-from pyrit.score.self_ask_category_scorer import ContentClassifierPaths
-from pyrit.score.self_ask_scale_scorer import SelfAskScaleScorer
+from pyrit.score import ContentClassifierPaths
+from pyrit.score import SelfAskScaleScorer
 
 tree_scale_path = SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value
 task_scale_path = SelfAskScaleScorer.ScalePaths.TASK_ACHIEVED_SCALE.value

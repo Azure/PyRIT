@@ -7,7 +7,7 @@ from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 from pyrit.score.float_scale.azure_content_filter_scorer import AzureContentFilterScorer
 from pyrit.score.batch_scorer import BatchScorer
-from pyrit.score.true_false.composite_scorer import TrueFalseCompositeScorer
+from pyrit.score.true_false.true_false_composite_scorer import TrueFalseCompositeScorer
 from pyrit.score.true_false.float_scale_threshold_scorer import FloatScaleThresholdScorer
 from pyrit.score.true_false.self_ask_general_true_false_scorer import SelfAskGeneralTrueFalseScorer
 from pyrit.score.float_scale.self_ask_general_float_scale_scorer import SelfAskGeneralFloatScaleScorer

@@ -35,10 +35,17 @@ def _lift(
         bool_values = [bool(s.get_value()) for s in scores_list]
         result = result_func(bool_values)
 
-        description = true_msg if result else false_msg
-        rationale = "\n".join(
-            f"   {sep} {s.score_value}: {s.score_rationale or ''}" for s in scores_list
-        )
+        # If there is only one score we're aggregating, use that. Else combine them
+        # This makes scores more intuitive in many cases, where there is a single
+        # text response, for example.
+        if len(scores_list) == 1:
+            description = scores_list[0].score_value_description or ""
+            rationale = scores_list[0].score_rationale or ""
+        else:
+            description = true_msg if result else false_msg
+            rationale = "\n".join(
+                f"   {sep} {s.score_value}: {s.score_rationale or ''}" for s in scores_list
+            )
 
         # Combine all score metadata dictionaries safely
         metadata: Dict[str, Union[str, int]] = {}

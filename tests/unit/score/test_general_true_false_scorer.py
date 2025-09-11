@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.score import SelfAskGeneralScorer
+from pyrit.score import SelfAskGeneralTrueFalseScorer
 
 
 @pytest.fixture
@@ -15,7 +15,7 @@ def general_scorer_response() -> PromptRequestResponse:
     json_response = (
         dedent(
             """
-        {"score_value": "1",
+        {"score_value": "True",
          "rationale": "This is the rationale.",
          "description": "This is the description."}
         """
@@ -32,13 +32,10 @@ async def test_general_scorer_score_async(patch_central_database, general_scorer
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=general_scorer_response)
 
-    scorer = SelfAskGeneralScorer(
+    scorer = SelfAskGeneralTrueFalseScorer(
         chat_target=chat_target,
         system_prompt_format_string="This is a system prompt.",
-        scorer_type="float_scale",
-        category=["test_category"],
-        min_value=1,
-        max_value=5,
+        category="test_category",
     )
     assert scorer
 
@@ -47,21 +44,10 @@ async def test_general_scorer_score_async(patch_central_database, general_scorer
     )
 
     assert len(score) == 1
-    assert score[0].score_value == "0.0"
+    assert score[0].score_value == "true"
     assert "This is the rationale." in score[0].score_rationale
     assert "This is the description." in score[0].score_value_description
 
-
-@pytest.mark.asyncio
-async def test_general_scorer_invalid_scorer_type():
-    chat_target = MagicMock()
-
-    with pytest.raises(ValueError, match="Scorer type invalid_type is not a valid scorer type."):
-        SelfAskGeneralScorer(
-            chat_target=chat_target,
-            system_prompt_format_string="This is a system prompt.",
-            scorer_type="invalid_type",
-        )
 
 
 @pytest.mark.asyncio
@@ -71,14 +57,11 @@ async def test_general_scorer_score_async_with_prompt_f_string(
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=general_scorer_response)
 
-    scorer = SelfAskGeneralScorer(
+    scorer = SelfAskGeneralTrueFalseScorer(
         chat_target=chat_target,
         system_prompt_format_string="This is a system prompt.",
         prompt_format_string="Is this cyberbullying? {prompt}",
-        scorer_type="float_scale",
-        category=["test_category"],
-        min_value=1,
-        max_value=5,
+        category="test_category",
     )
 
     score = await scorer.score_text_async(
@@ -86,7 +69,7 @@ async def test_general_scorer_score_async_with_prompt_f_string(
     )
 
     assert len(score) == 1
-    assert score[0].score_value == "0.0"
+    assert score[0].score_value == "true"
     assert "This is the rationale." in score[0].score_rationale
     assert "This is the description." in score[0].score_value_description
     args = chat_target.send_prompt_async.call_args
@@ -102,7 +85,7 @@ async def test_general_scorer_score_async_handles_custom_keys(patch_central_data
     json_response = (
         dedent(
             """
-        {"score_value": "1",
+        {"score_value": "false",
          "rationale_diff_key": "This is the rationale.",
          "description": "This is the description."}
         """
@@ -118,12 +101,15 @@ async def test_general_scorer_score_async_handles_custom_keys(patch_central_data
 
     assert chat_target
 
-    scorer = SelfAskGeneralScorer(
+    scorer = SelfAskGeneralTrueFalseScorer(
         chat_target=chat_target,
         system_prompt_format_string="This is a system prompt.",
         prompt_format_string="This is a prompt format string.",
-        scorer_type="float_scale",
-        category=["test_category"],
+        category="test_category",
         rationale_output_key="rationale_diff_key",
     )
-    await scorer.score_text_async(text="this is a test prompt")
+    score = await scorer.score_text_async(text="this is a test prompt")
+    assert len(score) == 1
+    assert score[0].score_value == "false"
+    assert "This is the rationale." in score[0].score_rationale
+    assert "This is the description." in score[0].score_value_description

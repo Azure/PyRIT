@@ -41,7 +41,7 @@ class SelfAskGeneralTrueFalseScorer(TrueFalseScorer):
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text"],
-        is_objective_required=True,
+        is_objective_required=False,
     )
 
     def __init__(
@@ -49,8 +49,8 @@ class SelfAskGeneralTrueFalseScorer(TrueFalseScorer):
         *,
         chat_target: PromptChatTarget,
         system_prompt_format_string: str,
-    prompt_format_string: Optional[str] = None,
-    category: Optional[str] = None,
+        prompt_format_string: Optional[str] = None,
+        category: Optional[str] = None,
         validator: Optional[ScorerPromptValidator] = None,
         score_value_output_key: str = "score_value",
         rationale_output_key: str = "rationale",
