@@ -148,6 +148,7 @@ class AttackBuilder:
         self.converters: Optional[AttackConverterConfig] = None
         self.successful_threshold: float = 0.8
         self.prompt_normalizer: Optional[PromptNormalizer] = None
+        self.error_score_map: Dict[str, float] = {}
 
     def with_default_mocks(self):
         """Set up default mocks for all required components."""
@@ -176,6 +177,11 @@ class AttackBuilder:
         normalizer = MagicMock(spec=PromptNormalizer)
         normalizer.send_prompt_async = AsyncMock(return_value=None)
         self.prompt_normalizer = cast(PromptNormalizer, normalizer)
+        return self
+    
+    def with_error_score_map(self, error_score_map: Dict[str, float]):
+        """Set the error score mapping."""
+        self.error_score_map = error_score_map
         return self
 
     def build(self) -> TreeOfAttacksWithPruningAttack:
@@ -495,11 +501,15 @@ class TestPruningLogic:
         assert context.best_objective_score == existing_score
         assert context.best_conversation_id == "existing_conv_id"
 
-    def test_prune_blocked_nodes_with_score_zero(self, basic_attack, node_factory, helpers):
+    def test_prune_blocked_nodes_with_score_zero(self, attack_builder, node_factory, helpers):
         """Test that nodes with 'blocked' response are assigned objective_score=0 and only pruned when width exceeded."""
-        # Configure error_score_map to assign 0.0 for blocked responses
-        basic_attack._error_score_map = {"blocked": 0.0}
-        basic_attack._tree_width = 3
+        # Configure error_score_map using the builder
+        attack = (
+            attack_builder.with_default_mocks()
+            .with_tree_params(tree_width=3)
+            .with_error_score_map({"blocked": 0.0})  # Set error score map here
+            .build()
+        )
 
         context = helpers.create_basic_context()
 
@@ -541,7 +551,7 @@ class TestPruningLogic:
         helpers.add_nodes_to_tree(context, nodes)
 
         # Execute pruning
-        basic_attack._prune_nodes_to_maintain_width(context=context)
+        attack._prune_nodes_to_maintain_width(context=context)
 
         # 1. Check that blocked nodes have objective_score=0
         for node in nodes[:2]:

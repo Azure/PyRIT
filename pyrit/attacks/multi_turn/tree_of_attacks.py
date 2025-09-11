@@ -211,7 +211,7 @@ class _TreeOfAttacksNode:
         memory_labels: Optional[dict[str, str]] = None,
         parent_id: Optional[str] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
-        error_score_map: dict[str, float],
+        error_score_map: Optional[dict[str, float]] = None
     ) -> None:
         """
         Initialize a tree node.
@@ -494,7 +494,7 @@ class _TreeOfAttacksNode:
             self.objective_score = Score(
                 score_value=str(assigned_score),  # Convert float to string
                 score_value_description=f"Assigned score {assigned_score} for {response_piece.response_error} response",
-                score_type="float_scale",  # Adjust if ScoreType is an enum
+                score_type="float_scale",  
                 score_category="error_handling",
                 score_rationale=f"Assigned score {assigned_score} for {response_piece.response_error} error",
                 score_metadata=str(response_piece.prompt_metadata) if response_piece.prompt_metadata else "",
