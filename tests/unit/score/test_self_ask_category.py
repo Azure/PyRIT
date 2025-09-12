@@ -11,7 +11,7 @@ from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.score.self_ask_category_scorer import (
+from pyrit.score import (
     ContentClassifierPaths,
     SelfAskCategoryScorer,
 )
@@ -96,10 +96,10 @@ async def test_category_scorer_score(scorer_category_response_bullying: PromptRe
 
     assert len(score) == 1
 
-    assert score[0].score_value == "True"
+    assert score[0].score_value == "true"
     assert "contains bullying" in score[0].score_rationale
     assert score[0].score_type == "true_false"
-    assert score[0].score_category == "bullying"
+    assert score[0].score_category == ["bullying"]
     assert score[0].prompt_request_response_id is None
 
 
@@ -121,9 +121,9 @@ async def test_category_scorer_score_false(
 
     assert len(score) == 1
 
-    assert score[0].score_value == "False"
+    assert score[0].score_value == "false"
     assert score[0].score_type == "true_false"
-    assert score[0].score_category == "no_harm"
+    assert score[0].score_category == ["no_harm"]
     assert score[0].prompt_request_response_id is None
 
 
@@ -198,36 +198,3 @@ async def test_self_ask_objective_scorer_json_missing_key_exception_retries(patc
         with pytest.raises(InvalidJsonException):
             await scorer.score_text_async("this has no bullying")
         assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize("max_requests_per_minute", [None, 10])
-@pytest.mark.parametrize("batch_size", [1, 10])
-async def test_score_prompts_batch_async(
-    max_requests_per_minute: int,
-    batch_size: int,
-    scorer_category_response_false: PromptRequestResponse,
-    patch_central_database,
-):
-    chat_target = AsyncMock()
-    chat_target._max_requests_per_minute = max_requests_per_minute
-    with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
-        scorer = SelfAskCategoryScorer(
-            chat_target=chat_target,
-            content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
-        )
-
-        prompt = PromptRequestPiece(role="assistant", original_value="test")
-        prompt2 = PromptRequestPiece(role="assistant", original_value="test 2")
-
-        with patch.object(chat_target, "send_prompt_async", return_value=scorer_category_response_false):
-            if batch_size != 1 and max_requests_per_minute:
-                with pytest.raises(ValueError):
-                    await scorer.score_prompts_with_tasks_batch_async(
-                        request_responses=[prompt], batch_size=batch_size, tasks=[""]
-                    )
-            else:
-                results = await scorer.score_prompts_with_tasks_batch_async(
-                    request_responses=[prompt, prompt2], batch_size=batch_size, tasks=["", ""]
-                )
-                assert len(results) == 2

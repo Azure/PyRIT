@@ -20,7 +20,7 @@ class ScorerPromptValidator:
         if supported_data_types:
             self._supported_data_types = supported_data_types
         else:
-            self._supported_data_types = PromptDataType
+            self._supported_data_types = get_args(PromptDataType)
 
         self._required_metadata = required_metadata or []
 
@@ -40,7 +40,17 @@ class ScorerPromptValidator:
                 )
         
         if valid_pieces_count < 1:
-            raise ValueError("There are no valid pieces to score")
+            attempted_metadata = [getattr(piece, 'prompt_metadata', None) for piece in request_response.request_pieces]
+            raise ValueError(
+                "There are no valid pieces to score. \n\n"
+                f"Requireed types: {self._supported_data_types}. "
+                f"Required metadata: {self._required_metadata}. "
+                f"Length limit: {self._multi_part_response_length_limit}. "
+                f"Objective required: {self._is_objective_required}. "
+                f"Prompt pieces: {request_response.request_pieces}. "
+                f"Prompt metadata: {attempted_metadata}. "
+                f"Objective included: {objective}. "
+            )
                 
         if self._multi_part_response_length_limit is not None:
             if len(request_response.request_pieces) > self._multi_part_response_length_limit:
@@ -53,7 +63,7 @@ class ScorerPromptValidator:
             raise ValueError("Objective is required but not provided.")
 
     def is_request_piece_supported(self, request_piece: PromptRequestPiece) -> bool:
-        if request_piece.converted_value_data_type not in get_args(PromptDataType):
+        if request_piece.converted_value_data_type not in self._supported_data_types:
             return False
         
         for metadata in self._required_metadata:
