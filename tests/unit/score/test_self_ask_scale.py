@@ -67,13 +67,14 @@ async def test_scale_scorer_set_system_prompt(
 ):
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_scale_response)
+
     scorer = SelfAskScaleScorer(
         chat_target=chat_target,
         scale_arguments_path=scale_arguments_path,
         system_prompt_path=system_prompt_path,
     )
 
-    await scorer.score_text_async(text="string", task="task")
+    await scorer.score_text_async(text="string", objective="task")
 
     chat_target.set_system_prompt.assert_called_once()
 
@@ -127,7 +128,7 @@ def test_scale_scorer_invalid_scale_file_contents():
         },
     ],
 )
-def test_validate_scale_arguments_missing_args_raises_value_error(scale_args, scale_scorer):
+def test_validate_scale_arguments_missing_args_raises_value_error(scale_args, scale_scorer: SelfAskScaleScorer) -> None:
     with pytest.raises(ValueError):
         scale_scorer._validate_scale_arguments_set(scale_args)
 
@@ -138,13 +139,14 @@ async def test_scale_scorer_score(scorer_scale_response: PromptRequestResponse, 
     chat_target = MagicMock()
 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_scale_response)
+
     scorer = SelfAskScaleScorer(
         chat_target=chat_target,
         scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
         system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
     )
 
-    score = await scorer.score_text_async(text="example text", task="task")
+    score = await scorer.score_text_async(text="example text", objective="task")
 
     assert len(score) == 1
 
@@ -153,9 +155,9 @@ async def test_scale_scorer_score(scorer_scale_response: PromptRequestResponse, 
     assert "description" in score[0].score_value_description
     assert "rationale" in score[0].score_rationale
     assert score[0].score_type == "float_scale"
-    assert score[0].score_category == "jailbreak"
+    assert score[0].score_category == ["jailbreak"]
     assert score[0].prompt_request_response_id is None
-    assert score[0].task == "task"
+    assert score[0].objective == "task"
 
 
 @pytest.mark.asyncio
@@ -170,6 +172,7 @@ async def test_scale_scorer_score_custom_scale(scorer_scale_response: PromptRequ
     scorer_scale_response.request_pieces[0].converted_value = scorer_scale_response.request_pieces[0].original_value
 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_scale_response)
+
     scorer = SelfAskScaleScorer(
         chat_target=chat_target,
         scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
@@ -179,7 +182,7 @@ async def test_scale_scorer_score_custom_scale(scorer_scale_response: PromptRequ
     scorer._minimum_value = 1
     scorer._maximum_value = 100
 
-    score = await scorer.score_text_async(text="example text", task="task")
+    score = await scorer.score_text_async(text="example text", objective="task")
 
     assert len(score) == 1
 
@@ -189,9 +192,9 @@ async def test_scale_scorer_score_custom_scale(scorer_scale_response: PromptRequ
     assert "description" in score[0].score_value_description
     assert "rationale" in score[0].score_rationale
     assert score[0].score_type == "float_scale"
-    assert score[0].score_category == "jailbreak"
+    assert score[0].score_category == ["jailbreak"]
     assert score[0].prompt_request_response_id is None
-    assert score[0].task == "task"
+    assert score[0].objective == "task"
 
 
 @pytest.mark.asyncio
@@ -199,27 +202,26 @@ async def test_scale_scorer_score_calls_send_chat(patch_central_database):
 
     chat_target = MagicMock()
 
+
     scorer = SelfAskScaleScorer(
         chat_target=chat_target,
         scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
         system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
     )
 
+
     score = UnvalidatedScore(
         raw_score_value="1",
         score_rationale="rationale",
-        score_type="float_scale",
-        score_category="jailbreak",
-        task="task",
+        score_category=["jailbreak"],
         score_value_description="description",
-        score_metadata="metadata",
-        scorer_class_identifier="identifier",
-        prompt_request_response_id=uuid.uuid4(),
+        score_metadata={"meta": "metadata"},
+        scorer_class_identifier={"id": "identifier"},
+        prompt_request_response_id=str(uuid.uuid4()),
+        objective="task",
     )
-
-    score.prompt_request_response_id = None
 
     scorer._score_value_with_llm = AsyncMock(return_value=score)
 
-    await scorer.score_text_async(text="example text", task="task")
+    await scorer.score_text_async(text="example text", objective="task")
     assert scorer._score_value_with_llm.call_count == int(1)
