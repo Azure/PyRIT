@@ -20,8 +20,6 @@ class MockScorer(Scorer):
     async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         return []
 
-    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
-        pass
 
 
 @pytest.fixture

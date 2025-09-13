@@ -16,14 +16,14 @@ def _lift(
     name: str,
     *,
     result_func: FloatScaleOp,
-    description: str,
+    aggregate_description: str,
 ) -> FloatScaleScoreAggregator:
     """Create a float-scale aggregator using a result function over float values.
 
     Args:
         name (str): Name of the aggregator variant.
         result_func (FloatScaleOp): Function applied to the list of float values to compute the aggregation result.
-        description (str): Base description for the aggregated result.
+        aggregate_description (str): Base description for the aggregated result.
 
     Returns:
         FloatScaleScoreAggregator: Aggregator function that reduces a sequence of float-scale Scores
@@ -55,9 +55,14 @@ def _lift(
         # Clamp result to [0, 1] defensively
         result = max(0.0, min(1.0, result))
 
-        rationale = "\n".join(
-            f"   {sep} {s.score_category}: {s.score_rationale or ''}" for s in scores_list
-        )
+        if len(scores_list) == 1:
+            description = scores_list[0].score_value_description or ""
+            rationale = scores_list[0].score_rationale or ""
+        else:
+            description=aggregate_description
+            rationale = "\n".join(
+                f"   {sep} {s.score_category}: {s.score_rationale or ''}" for s in scores_list
+            )
 
         # Combine all score metadata dictionaries safely
         metadata: Dict[str, Union[str, int]] = {}
@@ -82,17 +87,17 @@ def _lift(
 AVERAGE_ = _lift(
     "AVERAGE",
     result_func=lambda xs: sum(xs) / len(xs) if xs else 0.0,
-    description="Average of constituent scorers in an AVERAGE composite scorer.",
+    aggregate_description="Average of constituent scorers in an AVERAGE composite scorer.",
 )
 
 MAX_ = _lift(
     "MAX",
     result_func=max,
-    description="Maximum value among constituent scorers in a MAX composite scorer.",
+    aggregate_description="Maximum value among constituent scorers in a MAX composite scorer.",
 )
 
 MIN_ = _lift(
     "MIN",
     result_func=min,
-    description="Minimum value among constituent scorers in a MIN composite scorer.",
+    aggregate_description="Minimum value among constituent scorers in a MIN composite scorer.",
 )

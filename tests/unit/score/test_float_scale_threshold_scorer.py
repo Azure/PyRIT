@@ -18,7 +18,6 @@ async def test_float_scale_threshold_scorer_adds_to_memory(threshold, score_valu
     memory = MagicMock(MemoryInterface)
 
     scorer = AsyncMock()
-    scorer.scorer_type = "float_scale"
     scorer.score_async = AsyncMock(
         return_value=[
             Score(

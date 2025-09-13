@@ -20,7 +20,8 @@ from pyrit.score import (
     ObjectiveHumanLabeledEntry,
     ObjectiveScorerEvaluator,
     ObjectiveScorerMetrics,
-    Scorer,
+    FloatScaleScorer,
+    TrueFalseScorer,
     ScorerEvaluator,
 )
 
@@ -37,7 +38,7 @@ def sample_objective_csv_path():
 
 @pytest.fixture
 def mock_harm_scorer():
-    scorer = MagicMock(spec=Scorer)
+    scorer = MagicMock(spec=FloatScaleScorer)
     scorer.scorer_type = "float_scale"
     scorer._memory = MagicMock()
     return scorer
@@ -45,8 +46,7 @@ def mock_harm_scorer():
 
 @pytest.fixture
 def mock_objective_scorer():
-    scorer = MagicMock(spec=Scorer)
-    scorer.scorer_type = "true_false"
+    scorer = MagicMock(spec=TrueFalseScorer)
     scorer._memory = MagicMock()
     return scorer
 

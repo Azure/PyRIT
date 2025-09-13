@@ -57,7 +57,7 @@ class TestBatchScorerScorePromptsById:
         memory.get_prompt_request_pieces.return_value = sample_conversations
 
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-            scorer = SubStringScorer(substring="test", category="test")
+            scorer = SubStringScorer(substring="test", categories=["test"])
             scorer.score_prompts_with_tasks_batch_async = AsyncMock(return_value=[])  # type: ignore
 
             batch_scorer = BatchScorer()

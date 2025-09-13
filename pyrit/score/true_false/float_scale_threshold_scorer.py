@@ -81,3 +81,16 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
         score.scorer_class_identifier = self.get_identifier()
         score.scorer_class_identifier["sub_identifier"] = str(self._scorer.get_identifier())
         return scores
+    
+
+    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
+        """Float Scale scorers do not support piecewise scoring.
+
+        Args:
+            request_piece (PromptRequestPiece): Unused.
+            objective (Optional[str]): Unused.
+
+        Raises:
+            NotImplementedError: Always, since composite scoring operates at the response level.
+        """
+        raise NotImplementedError("TrueFalseCompositeScorer does not support piecewise scoring.")

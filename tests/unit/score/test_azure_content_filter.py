@@ -44,7 +44,7 @@ async def test_score_piece_async_invalid_type(patch_central_database, audio_requ
     )
 
     # Should raise ValueError for unsupported data type
-    with pytest.raises(ValueError, match="converted_value_data_type is not 'text' or 'image_path'"):
+    with pytest.raises(ValueError, match="There are no valid pieces to score"):
         await scorer.score_async(request_response=request)
     os.remove(audio_request_piece.converted_value)
 

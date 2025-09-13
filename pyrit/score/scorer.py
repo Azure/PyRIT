@@ -406,6 +406,11 @@ class Scorer(abc.ABC):
 
         return score
 
+
+    ###################
+    # It probably makes sense to remove all below this
+    ###################
+
     @staticmethod
     async def score_response_async(
         *,

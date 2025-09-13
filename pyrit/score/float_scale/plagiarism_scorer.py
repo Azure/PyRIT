@@ -8,7 +8,8 @@ from typing import List, Optional
 import numpy as np
 
 from pyrit.models import PromptRequestPiece, Score
-from pyrit.score.scorer import Scorer
+from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
+from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
 
 class PlagiarismMetric(Enum):
@@ -17,7 +18,7 @@ class PlagiarismMetric(Enum):
     JACCARD = "jaccard"
 
 
-class PlagiarismScorer(Scorer):
+class PlagiarismScorer(FloatScaleScorer):
     """A scorer that measures plagiarism by computing word-level similarity
     between the AI response and a reference text.
 
@@ -27,11 +28,16 @@ class PlagiarismScorer(Scorer):
     3. Word-level n-gram Jaccard similarity
     """
 
+    _default_validator: ScorerPromptValidator = ScorerPromptValidator(
+        supported_data_types=["text"]
+    )
+
     def __init__(
         self,
         reference_text: str,
         metric: PlagiarismMetric = PlagiarismMetric.LCS,
         n: int = 5,
+        validator: Optional[ScorerPromptValidator] = None,
     ) -> None:
         """Initializes the PlagiarismScorer.
 
@@ -40,7 +46,9 @@ class PlagiarismScorer(Scorer):
             metric (PlagiarismMetric, optional): The plagiarism detection metric to use.
             n (int, optional): The n-gram size for n-gram similarity (default is 5).
         """
-        self.scorer_type = "float_scale"
+
+        super().__init__(validator=validator or self._default_validator)
+
         self.reference_text = reference_text
         self.metric = metric
         self.n = n
@@ -124,35 +132,18 @@ class PlagiarismScorer(Scorer):
         else:
             raise ValueError("metric must be 'lcs', 'levenshtein', or 'jaccard'")
 
-    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> None:
-        """Validates the request_response piece to score.
+    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
 
-        Args:
-            request_response (PromptRequestPiece): The request response to be validated.
-            task (Optional[str]): Not applicable for this scorer.
-
-        Raises:
-            ValueError: If the request_response is not text data type.
-        """
-        if request_response.converted_value_data_type != "text":
-            raise ValueError("PlagiarismScorer only supports text data type")
-
-    async def _score_async(
-        self,
-        request_response: PromptRequestPiece,
-        *,
-        task: Optional[str] = None,
-    ) -> list[Score]:
         """Scores the AI response against the reference text using the specified metric.
 
         Args:
-            request_response (PromptRequestPiece): The piece to score.
-            task (Optional[str]): Not applicable for this scorer.
+            request_piece (PromptRequestPiece): The piece to score.
+            objective (Optional[str]): Not applicable for this scorer.
 
         Returns:
             list[Score]: A list containing the computed score.
         """
-        response_to_evaluate = request_response.converted_value
+        response_to_evaluate = request_piece.converted_value
         score_value = self._plagiarism_score(response_to_evaluate, self.reference_text, metric=self.metric, n=self.n)
 
         return [
@@ -160,8 +151,8 @@ class PlagiarismScorer(Scorer):
                 score_value=str(score_value),
                 score_value_description=f"Plagiarism score using '{self.metric.value}' metric",
                 score_metadata=None,
-                score_type=self.scorer_type,
+                score_type="float_scale",
                 score_rationale="Score is deterministic.",
-                prompt_request_response_id=request_response.id,
+                prompt_request_response_id=request_piece.id,
             )
         ]
