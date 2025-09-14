@@ -41,6 +41,22 @@ class PromptRequestResponse:
 
         return self.request_pieces[n]
     
+    def get_role(self) -> ChatMessageRole:
+        """Return the role of the first request."""
+        if len(self.request_pieces) == 0:
+            raise ValueError("Empty request pieces.")
+        
+        return self.request_pieces[0].role
+    
+    def is_error(self) -> bool:
+        """
+        Returns True if any of the request pieces has an error response.
+        """
+        for piece in self.request_pieces:
+            if piece.response_error != "none" or piece.converted_value_data_type == "error":
+                return True
+        return False
+    
     def set_response_not_in_database(self):
         """
         Set that the prompt is not in the database.

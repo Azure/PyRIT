@@ -83,7 +83,7 @@ class PromptRequestPiece:
         if role not in ChatMessageRole.__args__:  # type: ignore
             raise ValueError(f"Role {role} is not a valid role.")
 
-        self.role = role
+        self.role: ChatMessageRole = role
 
         if converted_value is None:
             converted_value = original_value

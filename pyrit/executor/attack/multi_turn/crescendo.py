@@ -609,31 +609,25 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         """
         if not context.last_response:
             raise ValueError("No response available in context to score")
-        
-        objective_score = (await self._objective_scorer.score_async(
-            request_response=context.last_response,
-            objective=context.objective,
-        ))[0]
+    
 
         for scorer in self._auxiliary_scorers:
             await scorer.score_async(request_response=context.last_response, objective=context.objective)
 
-        scoring_results = await Scorer.score_response_with_objective_async(
+        scoring_results = await Scorer.score_response_async(
             response=context.last_response,
+            objective_scorer=self._objective_scorer,
             auxiliary_scorers=self._auxiliary_scorers,
-            objective_scorers=[self._objective_scorer],
             role_filter="assistant",
             objective=context.objective,
         )
 
-        objective_scores = scoring_results["objective_scores"]
-        if not objective_scores:
+        objective_score = scoring_results["objective_scores"]
+        if not objective_score:
             raise RuntimeError("No objective scores returned from scoring process.")
 
-        score = objective_scores[0]
-
+        score = objective_score[0]
         self._logger.debug(f"Objective score: {score.get_value():.2f} - {score.score_rationale}")
-
         return score
 
     async def _backtrack_memory_async(self, *, conversation_id: str) -> str:

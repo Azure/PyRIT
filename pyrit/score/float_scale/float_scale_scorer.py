@@ -28,8 +28,7 @@ class FloatScaleScorer(Scorer):
         self,
         request_response: PromptRequestResponse,
         *,
-        objective: Optional[str] = None,
-        role_filter: Optional[ChatMessageRole] = None,
+        objective: Optional[str] = None
     ) -> list[Score]:
         """
         Score the given request response asynchronously.
@@ -42,9 +41,6 @@ class FloatScaleScorer(Scorer):
         
         # score the supported pieces
         supported_pieces = self._get_supported_pieces(request_response)
-        # If a role filter is provided, skip pieces that don't match
-        if role_filter is not None:
-            supported_pieces = [p for p in supported_pieces if p.role == role_filter]
 
         tasks = [
             self._score_piece_async(request_piece=piece, objective=objective)

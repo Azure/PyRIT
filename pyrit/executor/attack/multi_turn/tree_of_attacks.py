@@ -455,10 +455,10 @@ class _TreeOfAttacksNode:
             the TAP algorithm explores in subsequent iterations.
         """
         # Use the Scorer utility method to handle all scoring
-        scoring_results = await Scorer.score_response_with_objective_async(
+        scoring_results = await Scorer.score_response_async(
             response=response,
+            objective_scorer=self._objective_scorer,
             auxiliary_scorers=self._auxiliary_scorers,
-            objective_scorers=[self._objective_scorer],
             role_filter="assistant",
             objective=objective,
             skip_on_error=True,
