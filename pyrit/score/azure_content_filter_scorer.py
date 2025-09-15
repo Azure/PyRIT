@@ -170,8 +170,9 @@ class AzureContentFilterScorer(Scorer):
         if (
             request_response.converted_value_data_type != "text"
             and request_response.converted_value_data_type != "image_path"
+            and request_response.converted_value_data_type != "video_path"
         ):
-            raise ValueError("Azure Content Filter Scorer only supports text and image_path data type")
+            raise ValueError("Azure Content Filter Scorer only supports text, image_path, and video_path data types")
         if request_response.converted_value_data_type == "image_path":
             ext = DataTypeSerializer.get_extension(request_response.converted_value)
             if ext.lower() not in AZURE_CONTENT_FILTER_SCORER_SUPPORTED_IMAGE_FORMATS:
