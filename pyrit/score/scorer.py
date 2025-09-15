@@ -96,7 +96,7 @@ class Scorer(abc.ABC):
                     original_value=request_response.original_value,
                     converted_value=frame,
                     original_value_data_type="video_path",
-                    converted_value_data_type="image_bytes",
+                    converted_value_data_type="image_path",
                     prompt_metadata=request_response.prompt_metadata,
                     conversation_id=request_response.conversation_id,
                     sequence=request_response.sequence,
