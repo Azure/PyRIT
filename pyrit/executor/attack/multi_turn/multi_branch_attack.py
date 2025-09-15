@@ -20,6 +20,11 @@ MultiBranchAttackContextT = TypeVar("MultiBranchAttackContextT", bound="MultiBra
 
 
 class MultiBranchCommand(Enum):
+    """
+    All possible commands that can be executed in a multi-branch attack.
+    You can think of this as the possible states of the attack object, where
+    the handler is a transition function between states.
+    """
     AUTOCOMPLETE = "autocomplete"
     BRANCH = "branch"
     RESPOND = "respond"
