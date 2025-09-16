@@ -226,8 +226,7 @@ class Scorer(abc.ABC):
                 raise ValueError("The number of tasks must match the number of image_paths.")
         if len(image_paths) == 0:
             return []
-        # prompt_target = getattr(self, "_prompt_target")
-        prompt_target = OpenAIChatTarget()
+        prompt_target = getattr(self, "_prompt_target", None)
         results = await batch_task_async(
             task_func=self.score_image_async,
             task_arguments=["image_path", "task"] if tasks else ["image_path"],
@@ -326,7 +325,7 @@ class Scorer(abc.ABC):
         frame_scores = await self.score_image_batch_async(image_paths=image_frame_paths, tasks=tasks, batch_size=num_frames)
 
         for path in image_frame_paths:
-                # Clean up the temporary image file
+            # Clean up the temporary image files created when extracting frames
             try:
                 os.remove(path)
             except OSError as e:
