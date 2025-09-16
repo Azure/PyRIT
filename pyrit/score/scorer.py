@@ -332,8 +332,16 @@ class Scorer(abc.ABC):
             except OSError as e:
                 logger.warning(f"Error removing temporary frame file {path}: {e}")
 
-        # TODO: aggregate frame scores into a single score (how would we judge this without knowing the scorer used? this might need to be a user action)
-        return frame_scores
+        if self.scorer_type == "true_false":
+            # Aggregate frame scores into single score
+            aggregate_score = frame_scores[0]
+            for score in frame_scores:
+                if score.score_value == True:
+                    aggregate_score = score
+
+            return [aggregate_score]
+        else:
+            return frame_scores
 
     def scale_value_float(self, value: float, min_value: float, max_value: float) -> float:
         """
