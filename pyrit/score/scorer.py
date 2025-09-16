@@ -68,7 +68,7 @@ class Scorer(abc.ABC):
             raise ValueError(f"Path not found: {str(path_obj)}")
         return path_obj
 
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None, num_frames: Optional[int] = None) -> list[Score]:
         """
         Score the request_response, add the results to the database
         and return a list of Score objects.
@@ -76,18 +76,21 @@ class Scorer(abc.ABC):
         Args:
             request_response (PromptRequestPiece): The request response to be scored.
             task (str): The task based on which the text should be scored (the original attacker model's objective).
+            num_frames (int, optional): The number of frames to extract from a video for scoring. Only applicable if the request_response is a video.
 
         Returns:
             list[Score]: A list of Score objects representing the results.
         """
         self.validate(request_response, task=task)
+        if not num_frames:
+            num_frames = 5
+
         scores: List[Score] = []
 
         # If the request_response is a video, extract frames and score each frame
         # This handling will no longer be needed once there are models that can score videos in their entirety
         # For now, there only exist models that can score images and text
         if request_response.converted_value_data_type == "video_path":
-            num_frames = getattr(self, "_num_frames", 5)
             scores = await self.score_video_async(request_response.converted_value, task=task, num_frames=num_frames)
         else:
             scores = await self._score_async(request_response, task=task)
@@ -258,6 +261,7 @@ class Scorer(abc.ABC):
         *,
         request_responses: Sequence[PromptRequestPiece],
         tasks: Sequence[str],
+        num_frames: int = 5,
         batch_size: int = 10,
     ) -> list[Score]:
         if not tasks:
@@ -271,7 +275,7 @@ class Scorer(abc.ABC):
         prompt_target = getattr(self, "_prompt_target", None)
         results = await batch_task_async(
             task_func=self.score_async,
-            task_arguments=["request_response", "task"],
+            task_arguments=["request_response", "task", "num_frames"],
             prompt_target=prompt_target,
             batch_size=batch_size,
             items_to_batch=[request_responses, tasks],
@@ -512,6 +516,7 @@ class Scorer(abc.ABC):
         role_filter: ChatMessageRole = "assistant",
         task: Optional[str] = None,
         skip_on_error: bool = True,
+        num_frames: Optional[int] = None,
     ) -> List[Score]:
         """
         Score a response using multiple scorers in parallel.
@@ -525,6 +530,7 @@ class Scorer(abc.ABC):
             role_filter: Only score pieces with this role (default: "assistant")
             task: Optional task description for scoring context
             skip_on_error: If True, skip scoring pieces that have errors (default: True)
+            num_frames: Optional number of frames to extract from a video for scoring. Only applicable if the response is a video.
 
         Returns:
             List of all scores from all scorers
@@ -546,7 +552,7 @@ class Scorer(abc.ABC):
 
         # Create all scoring tasks, note TEMPORARY fix to prevent multi-piece responses from breaking scoring logic
         tasks = [
-            scorer.score_async(request_response=piece, task=task) for piece in filtered_pieces[:1] for scorer in scorers
+            scorer.score_async(request_response=piece, task=task, num_frames=num_frames) for piece in filtered_pieces[:1] for scorer in scorers
         ]
 
         if not tasks:
@@ -566,6 +572,7 @@ class Scorer(abc.ABC):
         role_filter: ChatMessageRole = "assistant",
         task: Optional[str] = None,
         skip_on_error: bool = True,
+        num_frames: Optional[int] = None,
     ) -> Optional[Score]:
         """
         Score response pieces sequentially until finding a successful score.
@@ -580,6 +587,7 @@ class Scorer(abc.ABC):
             role_filter: Only score pieces with this role (default: "assistant")
             task: Optional task description for scoring context
             skip_on_error: If True, skip scoring pieces that have errors (default: True)
+            num_frames: Optional number of frames to extract from a video for scoring. Only applicable if the response is a video.
 
         Returns:
             The first successful score, or the first score if no success found, or None if no scores
@@ -606,7 +614,7 @@ class Scorer(abc.ABC):
         # TEMPORARY fix to prevent multi-piece responses from breaking scoring logic of attack
         for piece in scorable_pieces[:1]:
             # Run all scorers on this piece in parallel
-            tasks = [scorer.score_async(request_response=piece, task=task) for scorer in scorers]
+            tasks = [scorer.score_async(request_response=piece, task=task, num_frames=num_frames) for scorer in scorers]
             score_lists = await asyncio.gather(*tasks)
 
             # Flatten the results
@@ -633,6 +641,7 @@ class Scorer(abc.ABC):
         role_filter: ChatMessageRole = "assistant",
         task: Optional[str] = None,
         skip_on_error: bool = True,
+        num_frames: Optional[int] = None,
     ) -> Dict[str, List[Score]]:
         """
         Score a response using both auxiliary and objective scorers.
@@ -647,6 +656,7 @@ class Scorer(abc.ABC):
             role_filter (ChatMessageRole): Only score pieces with this role (default: `assistant`)
             task (Optional[str]): Optional task description for scoring context
             skip_on_error (bool): If True, skip scoring pieces that have errors (default: `True`)
+            num_frames (Optional[int]): Optional number of frames to extract from a video for scoring. Only applicable if the response is a video.
 
         Returns:
             Dict[str,List[Score]]: Dictionary with keys `auxiliary_scores` and `objective_scores`
@@ -670,6 +680,7 @@ class Scorer(abc.ABC):
                 role_filter=role_filter,
                 task=task,
                 skip_on_error=skip_on_error,
+                num_frames=num_frames,
             )
 
             objective_task = Scorer.score_response_select_first_success_async(
@@ -678,6 +689,7 @@ class Scorer(abc.ABC):
                 role_filter=role_filter,
                 task=task,
                 skip_on_error=skip_on_error,
+                num_frames=num_frames,
             )
 
             # Run them in parallel and unpack results
@@ -695,6 +707,7 @@ class Scorer(abc.ABC):
                 role_filter=role_filter,
                 task=task,
                 skip_on_error=skip_on_error,
+                num_frames=num_frames,
             )
 
         # Run only objective scoring
@@ -705,6 +718,7 @@ class Scorer(abc.ABC):
                 role_filter=role_filter,
                 task=task,
                 skip_on_error=skip_on_error,
+                num_frames=num_frames,
             )
             result["objective_scores"] = [objective_score] if objective_score else []
 

@@ -48,7 +48,6 @@ class AzureContentFilterScorer(Scorer):
         api_key: Optional[str] = None,
         use_aad_auth: bool = False,
         harm_categories: Optional[list[TextCategory]] = None,
-        num_frames: Optional[int] = None,
     ) -> None:
         """
         Class that initializes an Azure Content Filter Scorer
@@ -65,7 +64,6 @@ class AzureContentFilterScorer(Scorer):
         """
 
         self.scorer_type = "float_scale"
-        self._num_frames = num_frames
         if harm_categories:
             self._score_categories = [category.value for category in harm_categories]
         else:
