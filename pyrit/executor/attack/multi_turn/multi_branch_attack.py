@@ -83,6 +83,11 @@ class MultiBranchAttackConfig:
 
 
 @dataclass
+class MultiBranchAttackNode(Node):
+    parent_id: Optional[str] = None
+    prompt_request_response: Optional[PromptRequestResponse] = None
+
+@dataclass
 class MultiBranchAttackContext(AttackContext):
     """
     Context for multi-branch attacks.
@@ -91,19 +96,19 @@ class MultiBranchAttackContext(AttackContext):
     """
 
     # Tree structure to hold the branches of the attack
-    attack_tree: Tree = field(default_factory=lambda: Tree())
+    attack_tree: Tree = field(default_factory=lambda: Tree(node_class=MultiBranchAttackNode))
 
     # Current node in the attack tree
-    current_node: Optional[Node] = None
+    current_node: Optional[Node] = field(default=attack_tree.get_node("root"))
     
     # Current conversation_id
-    current_conversation_id: Optional[str] = None
+    current_conversation_id: Optional[str] = field(default=None)
 
     # Cache for all leaves of the tree with their respective conversation IDs
     leaves_cache: dict[str, Node] = field(default_factory=dict)
     
     # Timesteps
-    turn_count: int = 0
+    turn_count: int = field(default=0)
     
     # Actions taken so far (for undo functionality)
     # actions: list[tuple[MultiBranchCommand, Optional[str]]] = field(default_factory=list)
@@ -142,6 +147,7 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, AttackStrategy
         super().__init__(context_type=MultiBranchAttackContext, logger=logger)
         
         self._memory = CentralMemory.get_memory_instance()
+        self.context = None
         
     def __repr__(self):
         # Retrieve current path and format it before returning.
@@ -169,6 +175,8 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, AttackStrategy
         """
         
         """
+        if self.context is None:
+            raise ValueError("Context is not initialized. Please run execute_async first.")
         self._validate_command(cmd, txt)
         match cmd:
             case MultiBranchCommand.UP:
@@ -193,7 +201,7 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, AttackStrategy
 
         return self
 
-    async def execute_async(self, commands: list[tuple[CmdT, str | None]]) -> AttackStrategyResultT:
+    async def execute_async(self, objective: str) -> Self:
         """
         
         """
@@ -202,30 +210,15 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, AttackStrategy
         # if commands: run commands start to finish
         # else: enter while loop and each input -> step until close
 
-        if commands:
-            raise NotImplementedError("Batch execution of commands is not implemented yet.")
-        else:
-            # add with x open for context management
-            while True:
-                """
-                TODO: Make a few changes incl. timeout, txt parsing, etc.
-                """
-                user_input = input("Enter command (UP, DOWN, CLOSE) and optional text: ")
-                # add help command to see command syntax
-                # add undo command to revert last action
-                
-                parts = user_input.split(maxsplit=1)
-                cmd_str = parts[0].upper()
-                txt = parts[1] if len(parts) > 1 else None
-                try:
-                    cmd = MultiBranchCommand[cmd_str]
-                except KeyError:
-                    print(f"Invalid command: {cmd_str}. Valid commands are: {[c.name for c in MultiBranchCommand]}")
-                    continue
-                await self.step(cmd, txt)
-                if cmd == MultiBranchCommand.CLOSE:
-                    break
-
+        if self.context is None:
+            await self._setup_async(context=MultiBranchAttackContext())
+            self.context.objective = objective
+            
+        print(f"Starting multi-branch attack with objective: {objective}")
+        print("Use the `step` method to interact with the attack.")
+        return self
+        
+        
     def close(self) -> AttackStrategyResultT:
         """
         Finalize the attack and return the result.
@@ -290,9 +283,10 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, AttackStrategy
     
     def _setup_async(self, *, context):
         """
-        1. Create tree and ensure it's properly formatted
+        
         """
         return super()._setup_async(context=context)
+    
     
     def _teardown_async(self, *, context):
         """
