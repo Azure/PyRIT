@@ -34,6 +34,7 @@ from pyrit.models import (
 from pyrit.models.literals import ChatMessageRole
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
+from pyrit.prompt_target.openai.openai_chat_target import OpenAIChatTarget
 from pyrit.score.scorer_evaluation.metrics_type import MetricsType
 
 logger = logging.getLogger(__name__)
@@ -89,32 +90,11 @@ class Scorer(abc.ABC):
         # For now, there only exist models that can score images and text
         if request_response.converted_value_data_type == "video_path":
             # TODO: make num_frames configurable
-            image_frame_paths = self._extract_frames(video_path=request_response.converted_value)
-            if not image_frame_paths:
-                raise ValueError("No frames extracted from video for scoring.")
-
-            frame_scores = []
-            for path in image_frame_paths:
-                # Create a new PromptRequestPiece for each frame
-                image_request_piece = request_response
-                image_request_piece.converted_value = path
-                image_request_piece.converted_value_data_type = "image_path"
-
-                score = await self._score_async(image_request_piece, task=task)
-                frame_scores.extend(score)
-
-                # Clean up the temporary image file
-                try:
-                    os.remove(path)
-                except OSError as e:
-                    logger.warning(f"Error removing temporary frame file {path}: {e}")
-
-            # TODO: aggregate frame scores into a single score (how would we judge this without knowing the scorer used? this might need to be a user action)
-            scores = frame_scores
+            scores = await self.score_video_async(request_response.converted_value, task=task, num_frames=5)
         else:
             scores = await self._score_async(request_response, task=task)
+            self._memory.add_scores_to_memory(scores=scores)
 
-        self._memory.add_scores_to_memory(scores=scores)
         return scores
 
     @abstractmethod
@@ -237,6 +217,25 @@ class Scorer(abc.ABC):
             items_to_batch=[texts, tasks] if tasks else [texts],
         )
         return [score for sublist in results for score in sublist]
+    
+    async def score_image_batch_async(
+        self, *, image_paths: Sequence[str], tasks: Optional[Sequence[str]] = None, batch_size: int = 10
+    ) -> list[Score]:
+        if tasks:
+            if len(tasks) != len(image_paths):
+                raise ValueError("The number of tasks must match the number of image_paths.")
+        if len(image_paths) == 0:
+            return []
+        # prompt_target = getattr(self, "_prompt_target")
+        prompt_target = OpenAIChatTarget()
+        results = await batch_task_async(
+            task_func=self.score_image_async,
+            task_arguments=["image_path", "task"] if tasks else ["image_path"],
+            prompt_target=prompt_target,
+            batch_size=batch_size,
+            items_to_batch=[image_paths, tasks] if tasks else [image_paths],
+        )
+        return [score for sublist in results for score in sublist]
 
     async def score_responses_inferring_tasks_batch_async(
         self,
@@ -319,12 +318,21 @@ class Scorer(abc.ABC):
         """
 
         image_frame_paths = self._extract_frames(video_path, num_frames=num_frames)
+        if not image_frame_paths:
+            raise ValueError("No frames extracted from video for scoring.")
 
-        frame_scores = []
+        # create sequence of tasks the same length as image_frame_paths
+        tasks = [task] * len(image_frame_paths)
+        frame_scores = await self.score_image_batch_async(image_paths=image_frame_paths, tasks=tasks, batch_size=num_frames)
+
         for path in image_frame_paths:
-            # TODO: Consider batch scoring / aggregating the scores
-            frame_scores.extend(await self.score_image_async(image_path=path, task=task))
+                # Clean up the temporary image file
+            try:
+                os.remove(path)
+            except OSError as e:
+                logger.warning(f"Error removing temporary frame file {path}: {e}")
 
+        # TODO: aggregate frame scores into a single score (how would we judge this without knowing the scorer used? this might need to be a user action)
         return frame_scores
 
     def scale_value_float(self, value: float, min_value: float, max_value: float) -> float:
