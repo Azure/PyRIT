@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import abc
 import asyncio
-import base64
 import os
 import random
 import tempfile
@@ -34,7 +33,6 @@ from pyrit.models import (
 from pyrit.models.literals import ChatMessageRole
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
-from pyrit.prompt_target.openai.openai_chat_target import OpenAIChatTarget
 from pyrit.score.scorer_evaluation.metrics_type import MetricsType
 
 logger = logging.getLogger(__name__)
@@ -89,8 +87,8 @@ class Scorer(abc.ABC):
         # This handling will no longer be needed once there are models that can score videos in their entirety
         # For now, there only exist models that can score images and text
         if request_response.converted_value_data_type == "video_path":
-            # TODO: make num_frames configurable
-            scores = await self.score_video_async(request_response.converted_value, task=task, num_frames=5)
+            num_frames = getattr(self, "_num_frames", 5)
+            scores = await self.score_video_async(request_response.converted_value, task=task, num_frames=num_frames)
         else:
             scores = await self._score_async(request_response, task=task)
             self._memory.add_scores_to_memory(scores=scores)
@@ -315,7 +313,6 @@ class Scorer(abc.ABC):
         Returns:
             list[Score]: A list of Score objects representing the results. This list will be the same length as the number of frames extracted from the video.
         """
-
         image_frame_paths = self._extract_frames(video_path, num_frames=num_frames)
         if not image_frame_paths:
             raise ValueError("No frames extracted from video for scoring.")
