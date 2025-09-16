@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import abc
 import asyncio
+import base64
 import os
 import random
+import tempfile
 import cv2
 import json
 import logging
@@ -80,35 +82,38 @@ class Scorer(abc.ABC):
             list[Score]: A list of Score objects representing the results.
         """
         self.validate(request_response, task=task)
-        print(request_response)
-        # check if the request_response is a video and extract frames if so
+        scores: List[Score] = []
+
+        # If the request_response is a video, extract frames and score each frame
+        # This handling will no longer be needed once there are models that can score videos in their entirety
+        # For now, there only exist models that can score images and text
         if request_response.converted_value_data_type == "video_path":
             # TODO: make num_frames configurable
-            frames = await self._extract_video_frames(request_response.converted_value, num_frames=5)
-            if not frames:
+            image_frame_paths = self._extract_frames(video_path=request_response.converted_value)
+            if not image_frame_paths:
                 raise ValueError("No frames extracted from video for scoring.")
-            scores = []
-            print(frames)
-            for frame in frames:
+
+            frame_scores = []
+            for path in image_frame_paths:
                 # Create a new PromptRequestPiece for each frame
-                frame_request_piece = PromptRequestPiece(
-                    role=request_response.role,
-                    original_value=request_response.original_value,
-                    converted_value=frame,
-                    original_value_data_type="video_path",
-                    converted_value_data_type="image_path",
-                    prompt_metadata=request_response.prompt_metadata,
-                    conversation_id=request_response.conversation_id,
-                    sequence=request_response.sequence,
-                    prompt_target_identifier=request_response.prompt_target_identifier,
-                )
-                frame_scores = await self._score_async(frame_request_piece, task=task)
-                print(frame_scores)
-                scores.extend(frame_scores)
-            # TODO: aggregate frame scores into a single score if needed
-            self._memory.add_scores_to_memory(scores=scores)
-            return scores
-        scores = await self._score_async(request_response, task=task)
+                image_request_piece = request_response
+                image_request_piece.converted_value = path
+                image_request_piece.converted_value_data_type = "image_path"
+
+                score = await self._score_async(image_request_piece, task=task)
+                frame_scores.extend(score)
+
+                # Clean up the temporary image file
+                try:
+                    os.remove(path)
+                except OSError as e:
+                    logger.warning(f"Error removing temporary frame file {path}: {e}")
+
+            # TODO: aggregate frame scores into a single score (how would we judge this without knowing the scorer used? this might need to be a user action)
+            scores = frame_scores
+        else:
+            scores = await self._score_async(request_response, task=task)
+
         self._memory.add_scores_to_memory(scores=scores)
         return scores
 
@@ -127,17 +132,18 @@ class Scorer(abc.ABC):
             task (str): The task based on which the text should be scored (the original attacker model's objective).
         """
         raise NotImplementedError("score_async method not implemented")
-    
-    async def _extract_video_frames(self, video_path: str, num_frames: int) -> list[bytes]:
+
+    def _extract_frames(self, video_path: str, num_frames: int = 5) -> list[str]:
         """
-        Extracts a specified number of frames from a video file and returns them as a list of image bytes.
+        Extracts a specified number of image frames from a video file and returns them as a list of (temp) image file paths.
         Args:
             video_path (str): The path to the video file.
-            num_frames (int): The number of frames to extract from the video.
+            num_frames (int): The number of image frames to extract from the video.
 
         """
+        
         video_capture = cv2.VideoCapture(video_path)
-        frames = []
+        frame_paths = []
         total_frames = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
         if total_frames > 0:
             # Choose up to num_frames random unique frame indices
@@ -150,21 +156,19 @@ class Scorer(abc.ABC):
                     print(f"Failed to read frame at index {frame_index}")
                     continue
 
-                # Encode frame to PNG bytes
-                ret, buf = cv2.imencode('.png', frame)
-                if not ret:
-                    print(f"Failed to encode frame at index {frame_index}")
-                    continue
-                image_bytes = buf.tobytes()
-
-                frame_image_file_name = os.path.splitext(video_path)[0] + f"_frame_{frame_index}.png"
-                with open(frame_image_file_name, "wb") as frame_image_file:
-                    frame_image_file.write(image_bytes)
-
-                frames.append(image_bytes)
+                # Create a temporary file for the frame
+                with tempfile.NamedTemporaryFile(suffix=f'_frame_{frame_index}.png', delete=False) as temp_file:
+                    # Encode and write frame to temporary file
+                    ret, _ = cv2.imencode('.png', frame)
+                    if not ret:
+                        print(f"Failed to encode frame at index {frame_index}")
+                        continue
+                    
+                    cv2.imwrite(temp_file.name, frame)
+                    frame_paths.append(temp_file.name)
 
         video_capture.release()
-        return frames
+        return frame_paths
 
     def get_scorer_metrics(self, dataset_name: str, metrics_type: Optional[MetricsType] = None):
         """
@@ -304,27 +308,24 @@ class Scorer(abc.ABC):
 
     async def score_video_async(self, video_path: str, *, task: Optional[str] = None, num_frames: int = 5) -> list[Score]:
         """
-        Scores the given video using the chat target.
+        Scores the given video by breaking it up into specified number of image frames and passing those through to the chat target for evaluation.
 
         Args:
             video_path (str): The path to the video to be scored.
             task (str): The task based on which the video should be scored (the original attacker model's objective).
 
         Returns:
-            list[Score]: A list of Score objects representing the results.
+            list[Score]: A list of Score objects representing the results. This list will be the same length as the number of frames extracted from the video.
         """
 
-        image_frames = self._extract_video_frames(video_path, num_frames=num_frames)
-        request_piece = PromptRequestPiece(
-            role="user",
-            original_value=video_path,
-            converted_value=video_path,
-            original_value_data_type="video_path",
-            converted_value_data_type="video_path",
-        )
+        image_frame_paths = self._extract_frames(video_path, num_frames=num_frames)
 
-        request_piece.id = None
-        return await self.score_async(request_piece, task=task)
+        frame_scores = []
+        for path in image_frame_paths:
+            # TODO: Consider batch scoring / aggregating the scores
+            frame_scores.extend(await self.score_image_async(image_path=path, task=task))
+
+        return frame_scores
 
     def scale_value_float(self, value: float, min_value: float, max_value: float) -> float:
         """
