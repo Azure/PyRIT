@@ -7,7 +7,6 @@ from pathlib import Path
 import pytest
 
 from pyrit.models import PromptResponse
-from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
 
 
@@ -24,32 +23,7 @@ def prompt_response_1() -> PromptResponse:
         object="test",
         created_at=1,
         logprobs=True,
-        index=1,
-        finish_reason="test",
-        api_request_time_to_complete_ns=1,
     )
-
-
-@pytest.fixture
-def prompt_request_pieces() -> list[PromptRequestPiece]:
-    return [
-        PromptRequestPiece(
-            role="user",
-            original_value="First piece",
-            conversation_id="test-conversation-1",
-        ),
-        PromptRequestPiece(
-            role="assistant",
-            original_value="Second piece",
-            conversation_id="test-conversation-1",
-        ),
-        PromptRequestPiece(
-            role="user",
-            original_value="Third piece",
-            conversation_id="test-conversation-1",
-        ),
-    ]
-
 
 @pytest.fixture
 def prompt_request_response(prompt_request_pieces) -> PromptRequestResponse:
@@ -97,31 +71,3 @@ def test_get_piece_raises_value_error_for_empty_request() -> None:
     empty_response = PromptRequestResponse(request_pieces=[])
     with pytest.raises(ValueError, match="Empty request pieces"):
         empty_response.get_piece()
-
-
-def test_filter_by_role_returns_correct_pieces(prompt_request_response: PromptRequestResponse) -> None:
-    # Filter by user role
-    user_pieces = prompt_request_response.filter_by_role(role="user")
-    assert len(user_pieces) == 2
-    assert all(piece.role == "user" for piece in user_pieces)
-    assert user_pieces[0].original_value == "First piece"
-    assert user_pieces[1].original_value == "Third piece"
-
-    # Filter by assistant role
-    assistant_pieces = prompt_request_response.filter_by_role(role="assistant")
-    assert len(assistant_pieces) == 1
-    assert assistant_pieces[0].role == "assistant"
-    assert assistant_pieces[0].original_value == "Second piece"
-
-
-def test_filter_by_role_returns_empty_for_nonexistent_role(prompt_request_response: PromptRequestResponse) -> None:
-    system_pieces = prompt_request_response.filter_by_role(role="system")
-    assert len(system_pieces) == 0
-    assert isinstance(system_pieces, list)
-
-
-def test_filter_by_role_with_empty_request() -> None:
-    empty_response = PromptRequestResponse(request_pieces=[])
-    filtered_pieces = empty_response.filter_by_role(role="user")
-    assert len(filtered_pieces) == 0
-    assert isinstance(filtered_pieces, list)

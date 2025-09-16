@@ -27,7 +27,7 @@ async def test_score_prompts_by_request_id_async(sample_conversations: MutableSe
 
         memory.get_prompt_request_pieces.return_value = sample_conversations
 
-        scorer = SubStringScorer(substring="test", category="test")
+        scorer = SubStringScorer(substring="test", categories=["test"])
         scorer.score_async = AsyncMock()  # type: ignore
 
         orchestrator = ScoringOrchestrator()

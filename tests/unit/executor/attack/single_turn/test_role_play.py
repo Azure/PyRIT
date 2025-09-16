@@ -20,7 +20,7 @@ from pyrit.models.attack_result import AttackResult
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.score import Scorer
+from pyrit.score import TrueFalseScorer
 
 
 @pytest.fixture
@@ -44,7 +44,7 @@ def mock_adversarial_chat_target():
 @pytest.fixture
 def mock_scorer():
     """Create a mock true/false scorer for testing"""
-    scorer = MagicMock(spec=Scorer)
+    scorer = MagicMock(spec=TrueFalseScorer)
     scorer.scorer_type = "true_false"
     scorer.score_text_async = AsyncMock()
     return scorer

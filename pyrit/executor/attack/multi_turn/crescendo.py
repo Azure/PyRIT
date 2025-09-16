@@ -609,10 +609,6 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         """
         if not context.last_response:
             raise ValueError("No response available in context to score")
-    
-
-        for scorer in self._auxiliary_scorers:
-            await scorer.score_async(request_response=context.last_response, objective=context.objective)
 
         scoring_results = await Scorer.score_response_async(
             response=context.last_response,

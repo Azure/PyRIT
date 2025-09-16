@@ -200,9 +200,8 @@ def test_prompt_request_response_inconsistent_roles_throws(sample_conversations:
     for c in sample_conversations:
         c.conversation_id = sample_conversations[0].conversation_id
 
-    request_response = PromptRequestResponse(request_pieces=sample_conversations)
     with pytest.raises(ValueError, match="Inconsistent roles within the same prompt request response entry."):
-        request_response.validate()
+        PromptRequestResponse(request_pieces=sample_conversations)
 
 
 def test_prompt_request_response_inconsistent_sequence_throws(

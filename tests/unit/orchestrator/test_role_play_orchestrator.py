@@ -11,7 +11,7 @@ from pyrit.orchestrator import RolePlayOrchestrator
 from pyrit.orchestrator.single_turn.role_play_orchestrator import RolePlayPaths
 from pyrit.prompt_converter import LLMGenericTextConverter
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
-from pyrit.score import Scorer
+from pyrit.score import TrueFalseScorer
 
 
 @pytest.fixture
@@ -33,8 +33,7 @@ def mock_prompt_converter():
 @pytest.fixture
 def mock_scorer():
     # Example scorer mock if needed
-    scorer = MagicMock(spec=Scorer)
-    scorer.scorer_type = "true_false"  # Add the required scorer_type attribute
+    scorer = MagicMock(spec=TrueFalseScorer)
     return scorer
 
 

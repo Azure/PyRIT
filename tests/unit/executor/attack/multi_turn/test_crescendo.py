@@ -814,9 +814,9 @@ class TestResponseScoring:
 
         basic_context.last_response = sample_response
 
-        # Mock the Scorer.score_response_with_objective_async method
+        # Mock the Scorer.score_response_async method
         with patch(
-            "pyrit.score.Scorer.score_response_with_objective_async",
+            "pyrit.score.Scorer.score_response_async",
             new_callable=AsyncMock,
             return_value={"objective_scores": [success_objective_score], "auxiliary_scores": []},
         ):
@@ -867,7 +867,7 @@ class TestResponseScoring:
         basic_context.last_response = sample_response
         mock_refusal_scorer.score_async.return_value = [refusal_score]
 
-        result = await attack._check_refusal_async(context=basic_context, task="test task")
+        result = await attack._check_refusal_async(context=basic_context, objective="test task")
 
         assert result == refusal_score
         mock_refusal_scorer.score_async.assert_called_once()
@@ -1032,7 +1032,7 @@ class TestAttackExecution:
 
         with patch.object(attack, "_check_refusal_async", new_callable=AsyncMock, return_value=no_refusal_score):
             with patch(
-                "pyrit.score.Scorer.score_response_with_objective_async",
+                "pyrit.score.Scorer.score_response_async",
                 new_callable=AsyncMock,
                 return_value={"objective_scores": [success_objective_score], "auxiliary_scores": []},
             ):
@@ -1088,7 +1088,7 @@ class TestAttackExecution:
 
         with patch.object(attack, "_check_refusal_async", new_callable=AsyncMock, return_value=no_refusal_score):
             with patch(
-                "pyrit.score.Scorer.score_response_with_objective_async",
+                "pyrit.score.Scorer.score_response_async",
                 new_callable=AsyncMock,
                 return_value={"objective_scores": [failure_objective_score], "auxiliary_scores": []},
             ):
@@ -1159,7 +1159,7 @@ class TestAttackExecution:
         with patch.object(attack, "_check_refusal_async", new_callable=AsyncMock, side_effect=check_refusal_results):
             with patch.object(attack, "_backtrack_memory_async", new_callable=AsyncMock, return_value="new_conv_id"):
                 with patch(
-                    "pyrit.score.Scorer.score_response_with_objective_async",
+                    "pyrit.score.Scorer.score_response_async",
                     new_callable=AsyncMock,
                     return_value={"objective_scores": [success_objective_score], "auxiliary_scores": []},
                 ):
@@ -1235,7 +1235,7 @@ class TestAttackExecution:
         ) as mock_backtrack:
             with patch.object(attack, "_check_refusal_async", mock_check_refusal):
                 with patch(
-                    "pyrit.score.Scorer.score_response_with_objective_async",
+                    "pyrit.score.Scorer.score_response_async",
                     new_callable=AsyncMock,
                     return_value={"objective_scores": [failure_objective_score], "auxiliary_scores": []},
                 ):
@@ -1517,7 +1517,7 @@ class TestIntegrationScenarios:
         ):
             with patch.object(attack, "_check_refusal_async", new_callable=AsyncMock, return_value=no_refusal):
                 with patch(
-                    "pyrit.score.Scorer.score_response_with_objective_async", new_callable=AsyncMock
+                    "pyrit.score.Scorer.score_response_async", new_callable=AsyncMock
                 ) as mock_score:
                     mock_score.side_effect = [
                         {"objective_scores": [scores[0]], "auxiliary_scores": []},
@@ -1611,7 +1611,7 @@ class TestIntegrationScenarios:
                     attack, "_backtrack_memory_async", new_callable=AsyncMock, return_value="new_conv_id"
                 ):
                     with patch(
-                        "pyrit.score.Scorer.score_response_with_objective_async", new_callable=AsyncMock
+                        "pyrit.score.Scorer.score_response_async", new_callable=AsyncMock
                     ) as mock_score:
                         mock_score.return_value = {
                             "objective_scores": [success_objective_score],
@@ -1706,7 +1706,7 @@ class TestEdgeCases:
         basic_context.last_response = sample_response
 
         # Mock scoring to return empty list
-        with patch("pyrit.score.Scorer.score_response_with_objective_async", new_callable=AsyncMock) as mock_score:
+        with patch("pyrit.score.Scorer.score_response_async", new_callable=AsyncMock) as mock_score:
             mock_score.return_value = {"objective_scores": [], "auxiliary_scores": []}
 
             with pytest.raises(RuntimeError, match="No objective scores returned"):
@@ -1784,7 +1784,7 @@ class TestEdgeCases:
         ):
             with patch.object(attack, "_check_refusal_async", new_callable=AsyncMock, return_value=no_refusal_score):
                 with patch(
-                    "pyrit.score.Scorer.score_response_with_objective_async",
+                    "pyrit.score.Scorer.score_response_async",
                     new_callable=AsyncMock,
                     return_value={"objective_scores": [success_objective_score], "auxiliary_scores": []},
                 ):

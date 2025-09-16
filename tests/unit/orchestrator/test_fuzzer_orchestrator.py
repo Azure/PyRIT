@@ -122,13 +122,13 @@ async def test_execute_fuzzer(
                     return_value=prompt_target_response
                 )
                 fuzzer_orchestrator._scorer = AsyncMock()
-                fuzzer_orchestrator._scorer.score_prompts_with_tasks_batch_async = AsyncMock()
+                fuzzer_orchestrator._scorer.score_prompts_batch_async = AsyncMock()
                 if success_pattern == "1_per_round":
-                    fuzzer_orchestrator._scorer.score_prompts_with_tasks_batch_async.return_value = [false_score] * (
+                    fuzzer_orchestrator._scorer.score_prompts_batch_async.return_value = [false_score] * (
                         len(simple_prompts) - 1
                     ) + [true_score]
                 elif success_pattern == "1_every_other_round":
-                    fuzzer_orchestrator._scorer.score_prompts_with_tasks_batch_async.side_effect = [
+                    fuzzer_orchestrator._scorer.score_prompts_batch_async.side_effect = [
                         [false_score] * len(simple_prompts),
                         [false_score] * (len(simple_prompts) - 1) + [true_score],
                     ] * rounds

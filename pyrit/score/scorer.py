@@ -223,12 +223,36 @@ class Scorer(abc.ABC):
         self,
         *,
         request_responses: Sequence[PromptRequestResponse],
-        tasks: Sequence[str],
+        objectives: Sequence[str],
         batch_size: int = 10,
+        role_filter: Optional[ChatMessageRole] = None,
+        skip_on_error: bool = False,
+        infer_objective_from_request: bool = False,
     ) -> list[Score]:
-        if not tasks:
+        """
+        Score multiple prompts in batches using the provided objectives.
+
+        Args:
+            request_responses (Sequence[PromptRequestResponse]): The request responses to be scored.
+            objectives (Sequence[str]): The objectives/tasks based on which the prompts should be scored.
+                Must have the same length as request_responses.
+            batch_size (int): The maximum batch size for processing prompts. Defaults to 10.
+            role_filter (Optional[ChatMessageRole]): If provided, only score pieces with this role.
+                Defaults to None (no filtering).
+            skip_on_error (bool): If True, skip scoring pieces that have errors. Defaults to False.
+            infer_objective_from_request (bool): If True and objective is empty, attempt to infer
+                the objective from the request. Defaults to False.
+
+        Returns:
+            list[Score]: A flattened list of Score objects from all scored prompts.
+
+        Raises:
+            ValueError: If objectives is empty or if the number of objectives doesn't match
+                the number of request_responses.
+        """
+        if not objectives:
             raise ValueError("Objectives must be provided.")
-        if len(tasks) != len(request_responses):
+        if len(objectives) != len(request_responses):
             raise ValueError("The number of tasks must match the number of request_responses.")
 
         if len(request_responses) == 0:
@@ -241,7 +265,10 @@ class Scorer(abc.ABC):
             task_arguments=["request_response", "objective"],
             prompt_target=cast(PromptTarget, prompt_target),
             batch_size=batch_size,
-            items_to_batch=[request_responses, tasks],
+            items_to_batch=[request_responses, objectives],
+            role_filter=role_filter,
+            skip_on_error=skip_on_error,
+            infer_objective_from_request=infer_objective_from_request,
         )
 
         # results is a list[list[Score]] and needs to be flattened
@@ -482,6 +509,9 @@ class Scorer(abc.ABC):
                 containing lists of scores from each type of scorer.
         """
         result: Dict[str, List[Score]] = {"auxiliary_scores": [], "objective_scores": []}
+
+        if not response:
+            raise ValueError("Response must be provided for scoring.")
 
         # If no objective_scorer is provided, only run auxiliary_scorers if present
         if objective_scorer is None:

@@ -19,7 +19,10 @@ class PromptRequestResponse:
     """
 
     def __init__(self, request_pieces: Sequence[PromptRequestPiece]):
+        if not request_pieces:
+            raise ValueError("PromptRequestResponse must have at least one request piece.")
         self.request_pieces = request_pieces
+        self.validate()
 
     def get_value(self, n: int = 0) -> str:
         """Return the converted value of the nth request piece."""
@@ -96,17 +99,6 @@ class PromptRequestResponse:
             ret += str(request_piece) + "\n"
         return "\n".join([str(request_piece) for request_piece in self.request_pieces])
 
-    def filter_by_role(self, *, role: ChatMessageRole) -> Sequence[PromptRequestPiece]:
-        """
-        Filters the request pieces by role.
-
-        Args:
-            role (ChatMessageRole): The role to filter by.
-
-        Returns:
-            Sequence[PromptRequestPiece]: A sequence of request pieces that match the specified role.
-        """
-        return [piece for piece in self.request_pieces if piece.role == role]
 
     @staticmethod
     def flatten_to_prompt_request_pieces(

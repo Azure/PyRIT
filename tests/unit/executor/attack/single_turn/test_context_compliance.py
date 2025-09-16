@@ -23,7 +23,7 @@ from pyrit.models import (
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.score import Scorer
+from pyrit.score import TrueFalseScorer
 
 
 @pytest.fixture
@@ -55,8 +55,7 @@ def mock_attack_adversarial_config(mock_adversarial_chat):
 @pytest.fixture
 def mock_scorer():
     """Create a mock true/false scorer"""
-    scorer = MagicMock(spec=Scorer)
-    scorer.scorer_type = "true_false"
+    scorer = MagicMock(spec=TrueFalseScorer)
     scorer.score_text_async = AsyncMock()
     return scorer
 

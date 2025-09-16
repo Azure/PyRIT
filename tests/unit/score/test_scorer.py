@@ -18,7 +18,7 @@ from pyrit.score import Scorer, ScorerPromptValidator
 
 @pytest.fixture
 def good_json():
-    return '{"score_value": "1", "score_rationale": "Valid response"}'
+    return '{"score_value": "1", "rationale": "Valid response"}'
 
 # Add missing BAD_JSON, KEY_ERROR_JSON, KEY_ERROR2_JSON definitions for test parametrize
 BAD_JSON = "this is not json"
@@ -75,7 +75,7 @@ def test_validate_request_raises_on_empty():
 async def test_scorer_send_chat_target_async_bad_json_exception_retries(bad_json: str):
     chat_target = MagicMock(PromptChatTarget)
     bad_json_resp = PromptRequestResponse(
-        request_pieces=[PromptRequestPiece(role="assistant", original_value=bad_json)]
+    request_pieces=[PromptRequestPiece(role="assistant", original_value=bad_json, conversation_id="test-convo")]
     )
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
     scorer = MockScorer()
@@ -120,7 +120,7 @@ async def test_scorer_score_value_with_llm_use_provided_orchestrator_identifier(
     scorer.scorer_type = "true_false"
 
     prompt_response = PromptRequestResponse(
-        request_pieces=[PromptRequestPiece(role="assistant", original_value=good_json)]
+    request_pieces=[PromptRequestPiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
     )
     chat_target = MagicMock(PromptChatTarget)
     chat_target.send_prompt_async = AsyncMock(return_value=prompt_response)
@@ -156,7 +156,7 @@ async def test_scorer_score_value_with_llm_does_not_add_score_prompt_id_for_empt
     scorer.scorer_type = "true_false"
 
     prompt_response = PromptRequestResponse(
-        request_pieces=[PromptRequestPiece(role="assistant", original_value=good_json)]
+    request_pieces=[PromptRequestPiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
     )
     chat_target = MagicMock(PromptChatTarget)
     chat_target.send_prompt_async = AsyncMock(return_value=prompt_response)
@@ -188,7 +188,7 @@ async def test_scorer_send_chat_target_async_good_response(good_json):
     chat_target = MagicMock(PromptChatTarget)
 
     good_json_resp = PromptRequestResponse(
-        request_pieces=[PromptRequestPiece(role="assistant", original_value=good_json)]
+    request_pieces=[PromptRequestPiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
     )
     chat_target.send_prompt_async = AsyncMock(return_value=good_json_resp)
 
@@ -213,7 +213,7 @@ async def test_scorer_remove_markdown_json_called(good_json):
 
     chat_target = MagicMock(PromptChatTarget)
     good_json_resp = PromptRequestResponse(
-        request_pieces=[PromptRequestPiece(role="assistant", original_value=good_json)]
+    request_pieces=[PromptRequestPiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
     )
     chat_target.send_prompt_async = AsyncMock(return_value=good_json_resp)
 
@@ -237,7 +237,7 @@ async def test_scorer_remove_markdown_json_called(good_json):
 @pytest.mark.asyncio
 async def test_score_response_async_empty_scorers():
     """Test that score_response_async returns empty list when no scorers provided."""
-    response = PromptRequestResponse(request_pieces=[PromptRequestPiece(role="assistant", original_value="test")])
+    response = PromptRequestResponse(request_pieces=[PromptRequestPiece(role="assistant", original_value="test", conversation_id="test-convo")])
 
     result = await Scorer.score_response_async(response=response, objective="test task")
     assert result == {"auxiliary_scores": [], "objective_scores": []}
@@ -248,8 +248,8 @@ async def test_score_response_async_no_matching_role():
     """Test that score_response_async returns empty list when no pieces match role filter."""
     response = PromptRequestResponse(
         request_pieces=[
-            PromptRequestPiece(role="user", original_value="test1"),
-            PromptRequestPiece(role="system", original_value="test2"),
+            PromptRequestPiece(role="user", original_value="test1", conversation_id="test-convo"),
+            PromptRequestPiece(role="user", original_value="test2", conversation_id="test-convo"),
         ]
     )
 
@@ -270,9 +270,9 @@ async def test_score_response_async_no_matching_role():
 @pytest.mark.asyncio
 async def test_score_response_async_parallel_execution():
     """Test that score_response_async runs all scorers in parallel on all filtered pieces."""
-    piece1 = PromptRequestPiece(role="assistant", original_value="response1")
-    piece2 = PromptRequestPiece(role="assistant", original_value="response2")
-    piece3 = PromptRequestPiece(role="user", original_value="user input")
+    piece1 = PromptRequestPiece(role="assistant", original_value="response1", conversation_id="test-convo")
+    piece2 = PromptRequestPiece(role="assistant", original_value="response2", conversation_id="test-convo")
+    piece3 = PromptRequestPiece(role="assistant", original_value="user input", conversation_id="test-convo")
 
     response = PromptRequestResponse(request_pieces=[piece1, piece2, piece3])
 
@@ -302,7 +302,7 @@ async def test_score_response_async_parallel_execution():
 @pytest.mark.asyncio
 async def test_score_response_select_first_success_async_empty_scorers():
     """Test that score_response_select_first_success_async returns None when no scorers provided."""
-    response = PromptRequestResponse(request_pieces=[PromptRequestPiece(role="assistant", original_value="test")])
+    response = PromptRequestResponse(request_pieces=[PromptRequestPiece(role="assistant", original_value="test", conversation_id="test-convo")])
 
     result = await Scorer.score_response_multiple_scorers_async(response=response, scorers=[], objective="test task")
 
@@ -312,7 +312,7 @@ async def test_score_response_select_first_success_async_empty_scorers():
 @pytest.mark.asyncio
 async def test_score_async_no_matching_role():
     """Test that score_response_select_first_success_async returns None when no pieces match role filter."""
-    response = PromptRequestResponse(request_pieces=[PromptRequestPiece(role="user", original_value="test")])
+    response = PromptRequestResponse(request_pieces=[PromptRequestPiece(role="user", original_value="test", conversation_id="test-convo")])
     scorer = MockScorer()
     result = await scorer.score_async(
         request_response=response, role_filter="assistant", objective="test task"
@@ -323,8 +323,8 @@ async def test_score_async_no_matching_role():
 @pytest.mark.asyncio
 async def test_score_response_async_finds_success():
     """Test that score_response_async returns first successful score."""
-    piece1 = PromptRequestPiece(role="assistant", original_value="response1")
-    piece2 = PromptRequestPiece(role="assistant", original_value="response2")
+    piece1 = PromptRequestPiece(role="assistant", original_value="response1", conversation_id="test-convo")
+    piece2 = PromptRequestPiece(role="assistant", original_value="response2", conversation_id="test-convo")
 
     response = PromptRequestResponse(request_pieces=[piece1, piece2])
 
@@ -362,8 +362,8 @@ async def test_score_response_async_finds_success():
 @pytest.mark.asyncio
 async def test_score_response_success_async_no_success_returns_first():
     """Test that score_response_success_async returns first score when no success found."""
-    piece1 = PromptRequestPiece(role="assistant", original_value="response1")
-    piece2 = PromptRequestPiece(role="assistant", original_value="response2")
+    piece1 = PromptRequestPiece(role="assistant", original_value="response1", conversation_id="test-convo")
+    piece2 = PromptRequestPiece(role="assistant", original_value="response2", conversation_id="test-convo")
 
     response = PromptRequestResponse(request_pieces=[piece1, piece2])
 
@@ -401,8 +401,8 @@ async def test_score_response_success_async_no_success_returns_first():
 @pytest.mark.asyncio
 async def test_score_response_success_async_parallel_scoring_per_piece():
     """Test that score_response_success_async runs scorers in parallel for each piece."""
-    piece1 = PromptRequestPiece(role="assistant", original_value="response1")
-    piece2 = PromptRequestPiece(role="assistant", original_value="response2")
+    piece1 = PromptRequestPiece(role="assistant", original_value="response1", conversation_id="test-convo")
+    piece2 = PromptRequestPiece(role="assistant", original_value="response2", conversation_id="test-convo")
 
     response = PromptRequestResponse(request_pieces=[piece1, piece2])
 
@@ -435,21 +435,6 @@ async def test_score_response_success_async_parallel_scoring_per_piece():
 
     assert ("scorer1", "response1") in call_order[:2]
     assert ("scorer2", "response1") in call_order[:2]
-
-
-
-@pytest.mark.asyncio
-async def test_score_response_async_empty_response():
-    """Test score_response_async with empty response."""
-    response = PromptRequestResponse(request_pieces=[])
-
-    aux_scorer = MockScorer()
-    obj_scorer = MockScorer()
-
-    with pytest.raises(ValueError, match="Empty request pieces"):
-        await Scorer.score_response_async(
-            response=response, auxiliary_scorers=[aux_scorer], objective_scorer=obj_scorer, objective="test task"
-        )
 
 
 @pytest.mark.asyncio
@@ -548,8 +533,8 @@ async def test_score_response_async_both_types():
 @pytest.mark.asyncio
 async def test_score_response_async_multiple_pieces():
     """Test score_response_async with multiple response pieces."""
-    piece1 = PromptRequestPiece(role="assistant", original_value="response1")
-    piece2 = PromptRequestPiece(role="assistant", original_value="response2")
+    piece1 = PromptRequestPiece(role="assistant", original_value="response1", conversation_id="test-convo")
+    piece2 = PromptRequestPiece(role="assistant", original_value="response2", conversation_id="test-convo")
     response = PromptRequestResponse(request_pieces=[piece1, piece2])
 
     # Create mock scores
@@ -590,61 +575,10 @@ async def test_score_response_async_multiple_pieces():
 
 
 @pytest.mark.asyncio
-async def test_score_response_async_role_filter():
-    """Test score_response_async with different role filters."""
-    pieces = [
-        PromptRequestPiece(role="assistant", original_value="assistant response"),
-        PromptRequestPiece(role="user", original_value="user input"),
-        PromptRequestPiece(role="system", original_value="system message"),
-    ]
-    response = PromptRequestResponse(request_pieces=pieces)
-
-    # Create mock scores
-    aux_score = MagicMock(spec=Score)
-    obj_score = MagicMock(spec=Score)
-    obj_score.get_value.return_value = True
-
-    # Create mock scorers with tracking
-    aux_scored_pieces = []
-    obj_scored_pieces = []
-
-    async def track_aux_score(request_response: PromptRequestResponse, **kwargs) -> list[Score]:
-        aux_scored_pieces.append(request_response.request_pieces[0])
-        return [aux_score]
-
-    async def track_obj_score(request_response: PromptRequestResponse, **kwargs) -> list[Score]:
-        obj_scored_pieces.append(request_response.request_pieces[0])
-        return [obj_score]
-
-    aux_scorer = MockScorer()
-    aux_scorer.score_async = track_aux_score
-
-    obj_scorer = MockScorer()
-    obj_scorer.score_async = track_obj_score
-
-    result = await Scorer.score_response_async(
-        response=response,
-        auxiliary_scorers=[aux_scorer],
-        objective_scorer=obj_scorer,
-        role_filter="assistant",
-        objective="test task",
-    )
-
-    # Should only score assistant pieces
-    assert len(aux_scored_pieces) == 1
-    assert aux_scored_pieces[0].role == "assistant"
-    assert len(obj_scored_pieces) == 1
-    assert obj_scored_pieces[0].role == "assistant"
-
-    assert len(result["auxiliary_scores"]) == 1
-    assert len(result["objective_scores"]) == 1
-
-
-@pytest.mark.asyncio
 async def test_score_response_async_skip_on_error_true():
     """Test score_response_async skips error pieces when skip_on_error=True."""
-    piece1 = PromptRequestPiece(role="assistant", original_value="good response")
-    piece2 = PromptRequestPiece(role="assistant", original_value="error", response_error="blocked")
+    piece1 = PromptRequestPiece(role="assistant", original_value="good response", conversation_id="test-convo")
+    piece2 = PromptRequestPiece(role="assistant", original_value="error", response_error="blocked", conversation_id="test-convo")
     response = PromptRequestResponse(request_pieces=[piece1, piece2])
 
     # Create mock scores
@@ -679,8 +613,8 @@ async def test_score_response_async_skip_on_error_true():
 @pytest.mark.asyncio
 async def test_score_response_async_skip_on_error_false():
     """Test score_response_async includes error pieces when skip_on_error=False."""
-    piece1 = PromptRequestPiece(role="assistant", original_value="good response")
-    piece2 = PromptRequestPiece(role="assistant", original_value="error", response_error="blocked")
+    piece1 = PromptRequestPiece(role="assistant", original_value="good response", conversation_id="test-convo")
+    piece2 = PromptRequestPiece(role="assistant", original_value="error", response_error="blocked", conversation_id="test-convo")
     response = PromptRequestResponse(request_pieces=[piece1, piece2])
 
     # Create mock scores
@@ -797,58 +731,6 @@ async def test_score_response_async_empty_lists():
     )
 
     assert result == {"auxiliary_scores": [], "objective_scores": []}
-
-
-
-@pytest.mark.asyncio
-async def test_score_response_async_mixed_roles():
-    """Test score_response_async filters roles correctly."""
-    pieces = [
-        PromptRequestPiece(role="system", original_value="system prompt"),
-        PromptRequestPiece(role="user", original_value="user message"),
-        PromptRequestPiece(role="assistant", original_value="assistant response"),
-    ]
-    response = PromptRequestResponse(request_pieces=pieces)
-
-    # Create mock scores
-    aux_score = MagicMock(spec=Score)
-    obj_score = MagicMock(spec=Score)
-    obj_score.get_value.return_value = True
-
-    # Create mock scorers with tracking
-    aux_scored_pieces = []
-    obj_scored_pieces = []
-
-    async def track_aux_score(request_response: PromptRequestResponse, **kwargs) -> list[Score]:
-        aux_scored_pieces.append(request_response.request_pieces[0])
-        return [aux_score]
-
-    async def track_obj_score(request_response: PromptRequestResponse, **kwargs) -> list[Score]:
-        obj_scored_pieces.append(request_response.request_pieces[0])
-        return [obj_score]
-
-    aux_scorer = MockScorer()
-    aux_scorer.score_async = track_aux_score
-
-    obj_scorer = MockScorer()
-    obj_scorer.score_async = track_obj_score
-
-    result = await Scorer.score_response_async(
-        response=response,
-        auxiliary_scorers=[aux_scorer],
-        objective_scorer=obj_scorer,
-        role_filter="assistant",
-        objective="test task",
-    )
-
-    # Should only score assistant pieces
-    assert len(aux_scored_pieces) == 1
-    assert aux_scored_pieces[0].role == "assistant"
-    assert len(obj_scored_pieces) == 1
-    assert obj_scored_pieces[0].role == "assistant"
-
-    assert len(result["auxiliary_scores"]) == 1
-    assert len(result["objective_scores"]) == 1
 
 
 def test_get_scorer_metrics(tmp_path):

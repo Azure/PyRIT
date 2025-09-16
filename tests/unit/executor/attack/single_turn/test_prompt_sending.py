@@ -25,7 +25,7 @@ from pyrit.models import (
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptTarget
-from pyrit.score import Scorer
+from pyrit.score import TrueFalseScorer, Scorer
 
 
 @pytest.fixture
@@ -40,7 +40,7 @@ def mock_target():
 @pytest.fixture
 def mock_true_false_scorer():
     """Create a mock true/false scorer for testing"""
-    scorer = MagicMock(spec=Scorer)
+    scorer = MagicMock(spec=TrueFalseScorer)
     scorer.scorer_type = "true_false"
     scorer.score_text_async = AsyncMock()
     return scorer

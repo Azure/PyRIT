@@ -45,92 +45,6 @@ class TestBatchScorerInitialization:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestBatchScorerScorePromptsById:
-    """Test score_prompts_by_id_async method functionality."""
-
-    @pytest.mark.asyncio
-    async def test_score_prompts_by_id_basic_functionality(
-        self, sample_conversations: MutableSequence[PromptRequestPiece]
-    ) -> None:
-        """Test basic scoring functionality with prompt IDs."""
-        memory = MagicMock()
-        memory.get_prompt_request_pieces.return_value = sample_conversations
-
-        with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-            scorer = SubStringScorer(substring="test", categories=["test"])
-            scorer.score_prompts_with_tasks_batch_async = AsyncMock(return_value=[])  # type: ignore
-
-            batch_scorer = BatchScorer()
-
-            await batch_scorer.score_prompts_by_id_async(scorer=scorer, prompt_ids=["id1"])
-
-            memory.get_prompt_request_pieces.assert_called_once_with(prompt_ids=["id1"])
-            scorer.score_prompts_with_tasks_batch_async.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_score_prompts_by_id_with_responses_only(
-        self, sample_conversations: MutableSequence[PromptRequestPiece]
-    ) -> None:
-        """Test scoring with responses_only flag."""
-        memory = MagicMock()
-        memory.get_prompt_request_pieces.return_value = sample_conversations
-
-        with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-            scorer = MagicMock()
-            scorer.score_prompts_with_tasks_batch_async = AsyncMock(return_value=[])
-
-            batch_scorer = BatchScorer()
-
-            await batch_scorer.score_prompts_by_id_async(scorer=scorer, prompt_ids=["id1"], responses_only=True)
-
-            # Verify that only assistant responses are passed to scorer
-            _, kwargs = scorer.score_prompts_with_tasks_batch_async.call_args
-            request_responses = kwargs["request_responses"]
-            assert all(piece.role == "assistant" for piece in request_responses)
-
-    @pytest.mark.asyncio
-    async def test_score_prompts_by_id_with_task(
-        self, sample_conversations: MutableSequence[PromptRequestPiece]
-    ) -> None:
-        """Test scoring with custom task."""
-        memory = MagicMock()
-        memory.get_prompt_request_pieces.return_value = sample_conversations
-
-        with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-            scorer = MagicMock()
-            scorer.score_prompts_with_tasks_batch_async = AsyncMock(return_value=[])
-
-            batch_scorer = BatchScorer()
-            test_task = "custom task"
-
-            await batch_scorer.score_prompts_by_id_async(scorer=scorer, prompt_ids=["id1"], task=test_task)
-
-            _, kwargs = scorer.score_prompts_with_tasks_batch_async.call_args
-            tasks = kwargs["tasks"]
-            assert all(task == test_task for task in tasks)
-
-    @pytest.mark.asyncio
-    async def test_score_prompts_by_id_uses_correct_batch_size(
-        self, sample_conversations: MutableSequence[PromptRequestPiece]
-    ) -> None:
-        """Test that correct batch size is passed to scorer."""
-        memory = MagicMock()
-        memory.get_prompt_request_pieces.return_value = sample_conversations
-
-        with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-            scorer = MagicMock()
-            scorer.score_prompts_with_tasks_batch_async = AsyncMock(return_value=[])
-
-            custom_batch_size = 15
-            batch_scorer = BatchScorer(batch_size=custom_batch_size)
-
-            await batch_scorer.score_prompts_by_id_async(scorer=scorer, prompt_ids=["id1"])
-
-            _, kwargs = scorer.score_prompts_with_tasks_batch_async.call_args
-            assert kwargs["batch_size"] == custom_batch_size
-
-
-@pytest.mark.usefixtures("patch_central_database")
 class TestBatchScorerScoreResponsesByFilters:
     """Test score_responses_by_filters_async method functionality."""
 
@@ -269,59 +183,10 @@ class TestBatchScorerUtilityMethods:
                 assert piece.id in [prompt_id1, prompt_id2]
                 assert piece.id == piece.original_prompt_id
 
-    def test_extract_responses_only(self) -> None:
-        """Test extraction of assistant responses only."""
-        with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
-            batch_scorer = BatchScorer()
-
-            pieces = [
-                PromptRequestPiece(
-                    role="user",
-                    original_value="user message",
-                    converted_value="user message",
-                    sequence=0,
-                ),
-                PromptRequestPiece(
-                    role="assistant",
-                    original_value="assistant response",
-                    converted_value="assistant response",
-                    sequence=1,
-                ),
-                PromptRequestPiece(
-                    role="system",
-                    original_value="system message",
-                    converted_value="system message",
-                    sequence=2,
-                ),
-            ]
-
-            responses = batch_scorer._extract_responses_only(pieces)
-
-            assert len(responses) == 1
-            assert responses[0].role == "assistant"
-            assert responses[0].original_value == "assistant response"
-
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestBatchScorerErrorHandling:
     """Test error handling scenarios for BatchScorer."""
-
-    @pytest.mark.asyncio
-    async def test_score_prompts_by_id_empty_prompt_ids(self) -> None:
-        """Test scoring with empty prompt_ids list."""
-        memory = MagicMock()
-        memory.get_prompt_request_pieces.return_value = []
-
-        with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-            scorer = MagicMock()
-            scorer.score_prompts_with_tasks_batch_async = AsyncMock(return_value=[])
-
-            batch_scorer = BatchScorer()
-
-            result = await batch_scorer.score_prompts_by_id_async(scorer=scorer, prompt_ids=[])
-
-            assert result == []
-            memory.get_prompt_request_pieces.assert_called_once_with(prompt_ids=[])
 
     @pytest.mark.asyncio
     async def test_score_responses_by_filters_no_filters_provided(

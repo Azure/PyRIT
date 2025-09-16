@@ -1032,9 +1032,9 @@ class TestResponseScoring:
         basic_context.last_response = sample_response
         basic_context.objective = "Test objective"
 
-        # Mock the Scorer.score_response_with_objective_async method
+        # Mock the Scorer.score_response_async method
         with patch(
-            "pyrit.score.Scorer.score_response_with_objective_async",
+            "pyrit.score.Scorer.score_response_async",
             new_callable=AsyncMock,
             return_value={"objective_scores": [success_score], "auxiliary_scores": []},
         ):
@@ -1418,7 +1418,7 @@ class TestRedTeamingConversationTracking:
         with (
             patch.object(attack._conversation_manager, "update_conversation_state_async") as mock_update,
             patch.object(attack._prompt_normalizer, "send_prompt_async", new_callable=AsyncMock) as mock_send,
-            patch.object(Scorer, "score_response_with_objective_async", new_callable=AsyncMock) as mock_score,
+            patch.object(Scorer, "score_response_async", new_callable=AsyncMock) as mock_score,
             patch.object(attack, "_generate_next_prompt_async", new_callable=AsyncMock) as mock_generate,
         ):
             mock_update.return_value = ConversationState(

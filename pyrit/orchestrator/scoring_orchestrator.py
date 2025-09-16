@@ -67,7 +67,7 @@ class ScoringOrchestrator(Orchestrator):
         request_pieces = self._remove_duplicates(request_pieces)
 
         return await scorer.score_prompts_batch_async(
-            request_responses=request_pieces, batch_size=self._batch_size, tasks=[task] * len(request_pieces)
+            request_responses=request_pieces, batch_size=self._batch_size, objectives=[task] * len(request_pieces)
         )
 
     async def score_responses_by_filters_async(

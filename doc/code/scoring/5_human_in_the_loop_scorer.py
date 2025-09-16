@@ -76,7 +76,7 @@ scorer = HumanInTheLoopScorer(scorer=self_ask_scorer, re_scorers=[self_ask_score
 batch_scorer = BatchScorer()
 
 start = time.time()
-scores = await batch_scorer.score_prompts_by_id_async(  # type: ignore
+scores = await batch_scorer.score_responses_by_filters_async(  # type: ignore
     scorer=scorer, prompt_ids=[str(prompt.id) for prompt in prompt_pieces_to_score]
 )
 end = time.time()
@@ -95,7 +95,7 @@ for score in scores:
 scorer = HumanInTheLoopScorer()
 
 start = time.time()
-scores = await batch_scorer.score_prompts_by_id_async(  # type: ignore
+scores = await batch_scorer.score_responses_by_filters_async(  # type: ignore
     scorer=scorer, prompt_ids=[str(prompt.id) for prompt in prompt_pieces_to_score]
 )
 end = time.time()

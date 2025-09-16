@@ -74,7 +74,6 @@ from pyrit.score import (
     AzureContentFilterScorer,
     BatchScorer,
     ContentClassifierPaths,
-    HumanInTheLoopScorer,
     SelfAskCategoryScorer,
 )
 
@@ -87,7 +86,7 @@ scorer = SelfAskCategoryScorer(
 
 batch_scorer = BatchScorer()
 
-scores = await batch_scorer.score_prompts_by_id_async(scorer=scorer, prompt_ids=prompt_ids)  # type: ignore
+scores = await batch_scorer.score_responses_by_filters_async(scorer=scorer, prompt_ids=prompt_ids)  # type: ignore
 
 memory = CentralMemory.get_memory_instance()
 

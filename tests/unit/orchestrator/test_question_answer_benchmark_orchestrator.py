@@ -15,7 +15,7 @@ from pyrit.orchestrator import (
     QuestionAnsweringBenchmarkOrchestrator,
 )
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
-from pyrit.score import Scorer
+from pyrit.score import TrueFalseScorer
 
 
 @pytest.fixture
@@ -27,8 +27,7 @@ def mock_objective_target() -> MagicMock:
 
 @pytest.fixture
 def mock_scorer():
-    scorer = MagicMock(spec=Scorer)
-    scorer.scorer_type = "true_false"
+    scorer = MagicMock(spec=TrueFalseScorer)
     return scorer
 
 

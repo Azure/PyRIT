@@ -73,7 +73,7 @@ memory = CentralMemory.get_memory_instance()
 prompt_to_score = memory.get_prompt_request_pieces(conversation_id=result.conversation_id)[0]
 
 batch_scorer = BatchScorer()
-scores = await batch_scorer.score_prompts_by_id_async(  # type: ignore
+scores = await batch_scorer.score_responses_by_filters_async(  # type: ignore
     scorer=scorer, prompt_ids=[str(prompt_to_score.id)]
 )
 

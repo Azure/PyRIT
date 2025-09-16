@@ -113,9 +113,9 @@ class TreeOfAttacksNode:
                 labels=self._global_memory_labels,
                 orchestrator_identifier=self._orchestrator_id,
             )
-        ).request_pieces[0]
+        )
 
-        logger.debug(f"saving score with prompt_request_response_id: {response.id}")
+        logger.debug(f"saving score with prompt_id: {response.request_pieces[0].id}")
 
         self.objective_score = (
             await self._objective_scorer.score_async(

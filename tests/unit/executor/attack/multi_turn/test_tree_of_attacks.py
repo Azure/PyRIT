@@ -899,12 +899,12 @@ class TestTreeOfAttacksNode:
         obj_score.scorer_class_identifier = {"__type__": "ObjectiveScorer"}
         node._objective_scorer.score_async = AsyncMock(return_value=[obj_score])
 
-        # Mock for Scorer.score_response_with_objective_async
+        # Mock for Scorer.score_response_async
         def mock_score_response(*args, **kwargs):
             return {"objective_scores": [obj_score], "auxiliary_scores": [aux_score1, aux_score2]}
 
         with patch(
-            "pyrit.score.Scorer.score_response_with_objective_async",
+            "pyrit.score.Scorer.score_response_async",
             new_callable=AsyncMock,
             side_effect=mock_score_response,
         ):
