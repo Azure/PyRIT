@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 from pyrit.score.scorer import Scorer
+from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
@@ -79,6 +80,7 @@ __all__ = [
     "TrueFalseScoreAggregator",
     "ScorerEvaluator",
     "ScorerMetrics",
+    "ScorerPromptValidator",
     "SelfAskCategoryScorer",
     "SelfAskLikertScorer",
     "SelfAskRefusalScorer",

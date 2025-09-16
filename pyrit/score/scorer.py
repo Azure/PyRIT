@@ -56,6 +56,7 @@ class Scorer(abc.ABC):
         objective: Optional[str] = None,
         role_filter: Optional[ChatMessageRole] = None,
         skip_on_error: bool = False,
+        infer_objective_from_request: bool = False,
     ) -> list[Score]:
         """
         Score the request_response, add the results to the database
@@ -77,6 +78,9 @@ class Scorer(abc.ABC):
         if skip_on_error and request_response.is_error():
             logger.debug("Skipping scoring due to error in request_response and skip_on_error=True.")
             return []
+        
+        if infer_objective_from_request and (not objective):
+            objective = self._extract_objective_from_response(request_response)
 
 
         scores = await self._score_async(
@@ -415,6 +419,40 @@ class Scorer(abc.ABC):
             raise InvalidJsonException(message=f"Invalid JSON response, missing Key: {response_json}")
 
         return score
+    
+
+    def _extract_objective_from_response(self, response: PromptRequestResponse) -> str:
+        """
+        Extracts an objective from the response using the last request (if it exists).
+
+        Args:
+            response (PromptRequestResponse): The response to extract the objective from.
+
+        Returns:
+            str: The objective extracted from the response.
+        """
+
+        if not response.request_pieces:
+            return ""
+        
+        piece = response.get_piece()
+
+        if piece.role != "assistant":
+            return ""
+
+        conversation = self._memory.get_prompt_request_pieces(conversation_id=piece.conversation_id)
+        last_prompt = max(conversation, key=lambda x: x.sequence)
+
+        # Every text request piece from the last turn
+        last_turn_text = "\n".join(
+            [
+                piece.original_value
+                for piece in conversation
+                if piece.sequence == last_prompt.sequence - 1 and piece.original_value_data_type == "text"
+            ]
+        )
+
+        return last_turn_text
 
 
 
@@ -422,7 +460,7 @@ class Scorer(abc.ABC):
     async def score_response_async(
         *,
         response: PromptRequestResponse,
-        objective_scorer: Scorer,
+        objective_scorer: Optional[Scorer] = None,
         auxiliary_scorers: Optional[List[Scorer]] = None,
         role_filter: ChatMessageRole = "assistant",
         objective: Optional[str] = None,
@@ -445,13 +483,27 @@ class Scorer(abc.ABC):
         """
         result: Dict[str, List[Score]] = {"auxiliary_scores": [], "objective_scores": []}
 
+        # If no objective_scorer is provided, only run auxiliary_scorers if present
+        if objective_scorer is None:
+            if auxiliary_scorers:
+                aux_scores = await Scorer.score_response_multiple_scorers_async(
+                    response=response,
+                    scorers=auxiliary_scorers,
+                    role_filter=role_filter,
+                    objective=objective,
+                    skip_on_error=skip_on_error,
+                )
+                result["auxiliary_scores"] = aux_scores
+            # objective_scores remains empty
+            return result
+
         # Run auxiliary and objective scoring in parallel if auxiliary_scorers is provided
         if auxiliary_scorers:
             aux_task = Scorer.score_response_multiple_scorers_async(
                 response=response,
                 scorers=auxiliary_scorers,
                 role_filter=role_filter,
-                task=objective,
+                objective=objective,
                 skip_on_error=skip_on_error,
             )
             obj_task = objective_scorer.score_async(
@@ -481,7 +533,7 @@ class Scorer(abc.ABC):
         response: PromptRequestResponse,
         scorers: List[Scorer],
         role_filter: ChatMessageRole = "assistant",
-        task: Optional[str] = None,
+        objective: Optional[str] = None,
         skip_on_error: bool = True,
     ) -> List[Score]:
         """
@@ -494,7 +546,7 @@ class Scorer(abc.ABC):
             response (PromptRequestResponse): The response containing pieces to score.
             scorers (List[Scorer]): List of scorers to apply.
             role_filter (ChatMessageRole): Only score pieces with this role (default: "assistant").
-            task (Optional[str]): Optional task description for scoring context.
+            objective (Optional[str]): Optional objective description for scoring context.
             skip_on_error (bool): If True, skip scoring pieces that have errors (default: True).
 
         Returns:
@@ -508,7 +560,7 @@ class Scorer(abc.ABC):
         tasks = []
 
         for scorer in scorers:
-            tasks.append(scorer.score_async(request_response=response, objective=task, role_filter=role_filter, skip_on_error=skip_on_error))
+            tasks.append(scorer.score_async(request_response=response, objective=objective, role_filter=role_filter, skip_on_error=skip_on_error))
 
         if not tasks:
             return []

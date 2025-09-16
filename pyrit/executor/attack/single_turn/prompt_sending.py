@@ -318,8 +318,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
                 no objective scorer is set. Note that auxiliary scorer results are not returned
                 but are still executed and stored.
         """
-        if not self._objective_scorer:
-            return None
+
         scoring_results = await Scorer.score_response_async(
             response=response,
             objective_scorer=self._objective_scorer,
@@ -327,6 +326,10 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
             role_filter="assistant",
             objective=objective,
         )
+
+        if not self._objective_scorer:
+            return None
+        
         objective_scores = scoring_results["objective_scores"]
         if not objective_scores:
             return None
