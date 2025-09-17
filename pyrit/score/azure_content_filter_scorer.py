@@ -1,5 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+from unittest import result
+import cv2
+import random
+import base64
+import os
+from collections import defaultdict
 
 from typing import Optional
 
@@ -12,6 +18,7 @@ from azure.ai.contentsafety.models import (
 )
 from azure.core.credentials import AzureKeyCredential
 from azure.identity import DefaultAzureCredential
+
 
 from pyrit.common import default_values
 from pyrit.models import (
@@ -130,6 +137,17 @@ class AzureContentFilterScorer(Scorer):
             )
             filter_result = self._azure_cf_client.analyze_image(image_request_options)  # type: ignore
 
+        elif request_response.converted_value_data_type == "video_path":
+            video_frames = await self._get_video_frames(request_response)
+            for video_frame in video_frames:
+                base64_video_frame_data = base64.b64encode(video_frame).decode("utf-8")
+                image_data = ImageData(content=video_frame)
+                image_request_options = AnalyzeImageOptions(
+                    image=image_data, categories=self._score_categories, output_type="FourSeverityLevels"
+                )
+                frame_result = self._azure_cf_client.analyze_image(image_request_options)
+                filter_result = self._aggregate_video_frame_results(filter_result, frame_result) # type: ignore
+
         scores = []
 
         for score in filter_result["categoriesAnalysis"]:
@@ -166,10 +184,68 @@ class AzureContentFilterScorer(Scorer):
         base64_encoded_data = await image_serializer.read_data_base64()
         return base64_encoded_data
 
+    def _aggregate_video_frame_results(self, aggregate_result: dict, base_result: dict) -> dict:
+        if aggregate_result is None or not aggregate_result:
+            aggregate_result = base_result
+        else:
+            data_list = [aggregate_result, base_result]
+            aggregate_result = self._aggregate_categories(data_list)
+            aggregate_result = base_result # TODO: Implement actual aggregation
+
+        return aggregate_result
+    
+    def _aggregate_categories(self, data_list: list[dict]) -> dict:
+        aggregated = defaultdict(int)
+        for data in data_list:
+            for item in data.get('categoriesAnalysis', []):
+                category = item['category']
+                aggregated[category] = max(item['severity'], aggregated[category])
+
+        # Convert back to desired format
+        result = {'categoriesAnalysis': [{'category': k, 'severity': v} for k, v in aggregated.items()]}
+        return result
+
+    async def _get_video_frames(self, request_response: PromptRequestPiece, num_frames=6) -> list[bytes]:
+        video_path = request_response.converted_value
+        video_frames = await self._extract_video_frames(video_path, num_frames)
+        return video_frames
+
+    async def _extract_video_frames(self, video_path: str, num_frames: int) -> list[bytes]:
+        video_capture = cv2.VideoCapture(video_path)
+        frames = []
+        total_frames = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
+        if total_frames > 0:
+            # Choose up to num_frames random unique frame indices
+            frame_indices = sorted(random.sample(range(total_frames), min(num_frames, total_frames)))
+            for frame_index in frame_indices:
+                # Set the video position to the selected frame
+                video_capture.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
+                ret, frame = video_capture.read()
+                if not ret:
+                    print(f"Failed to read frame at index {frame_index}")
+                    continue
+            
+                # Encode frame to PNG bytes
+                ret, buf = cv2.imencode('.png', frame)
+                if not ret:
+                    print(f"Failed to encode frame at index {frame_index}")
+                    continue
+                image_bytes = buf.tobytes()
+                
+                frame_image_file_name = os.path.splitext(video_path)[0] + f"_frame_{frame_index}.png"
+                with open(frame_image_file_name, "wb") as frame_image_file:
+                    frame_image_file.write(image_bytes)
+
+                frames.append(image_bytes)
+
+        video_capture.release()
+        return frames
+
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
         if (
             request_response.converted_value_data_type != "text"
             and request_response.converted_value_data_type != "image_path"
+            and request_response.converted_value_data_type != "video_path"
         ):
             raise ValueError("Azure Content Filter Scorer only supports text and image_path data type")
         if request_response.converted_value_data_type == "image_path":
