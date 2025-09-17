@@ -19,6 +19,7 @@ __all__ = [
     "PromptSendingAttack",
     "ContextComplianceAttack",
     "FlipAttack",
+    "ImplicareAttack",
     "ManyShotJailbreakAttack",
     "RolePlayAttack",
     "RolePlayPaths",
