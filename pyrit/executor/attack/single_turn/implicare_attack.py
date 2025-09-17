@@ -69,23 +69,6 @@ class ImplicareAttack(PromptSendingAttack):
             raise ValueError("Implicare does not support prepended conversations.")
         super()._validate_context(context=context)
 
-    async def _setup_async(self, *, context: SingleTurnAttackContext) -> None:
-        """
-        Set up the FlipAttack by preparing conversation context.
-
-        Args:
-            context (SingleTurnAttackContext): The attack context containing attack parameters.
-        """
-        context.prepended_conversation = [self._system_prompt]
-
-        # System prompt should not be converted, and the new implementation correctly
-        # skips converters for system messages
-        await self._conversation_manager.update_conversation_state_async(
-            target=self._objective_target,
-            conversation_id=context.conversation_id,
-            prepended_conversation=context.prepended_conversation,
-        )
-
     async def _perform_async(self, *, context: SingleTurnAttackContext) -> AttackResult:
         """
         Perform the Attack.
