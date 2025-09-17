@@ -15,7 +15,8 @@ from pyrit.score import BatchScorer, SubStringScorer
 
 @pytest.fixture
 def sample_conversations() -> MutableSequence[PromptRequestPiece]:
-    return get_sample_conversations()
+    conversations = get_sample_conversations()
+    return PromptRequestResponse.flatten_to_prompt_request_pieces(conversations)
 
 
 @pytest.mark.usefixtures("patch_central_database")

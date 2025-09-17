@@ -13,7 +13,8 @@ from pyrit.score import PromptShieldScorer
 
 @pytest.fixture
 def sample_conversations() -> MutableSequence[PromptRequestPiece]:
-    return get_sample_conversations()
+    conversations = get_sample_conversations()
+    return PromptRequestResponse.flatten_to_prompt_request_pieces(conversations)
 
 
 @pytest.fixture

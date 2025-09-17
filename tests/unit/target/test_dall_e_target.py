@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
-from unit.mocks import get_sample_conversations
+from unit.mocks import get_sample_conversations, get_image_request_piece
 
 from pyrit.exceptions.exception_classes import (
     EmptyResponseException,
@@ -43,7 +43,8 @@ def dalle_response_json() -> dict:
 
 @pytest.fixture
 def sample_conversations() -> MutableSequence[PromptRequestPiece]:
-    return get_sample_conversations()
+    conversations = get_sample_conversations()
+    return PromptRequestResponse.flatten_to_prompt_request_pieces(conversations)
 
 
 def test_initialization_with_required_parameters(dalle_target: OpenAIDALLETarget):
@@ -161,21 +162,21 @@ async def test_send_prompt_async_bad_request_error(
 
 
 @pytest.mark.asyncio
-async def test_dalle_validate_request_length(
-    dalle_target: OpenAIDALLETarget, sample_conversations: MutableSequence[PromptRequestPiece]
-):
-    request = PromptRequestResponse(request_pieces=sample_conversations)
+async def test_dalle_validate_request_length(dalle_target: OpenAIDALLETarget):
+    request = PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(role="user", conversation_id="123", original_value="test"),
+            PromptRequestPiece(role="user", conversation_id="123", original_value="test2"),
+        ]
+    )
+
     with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
         await dalle_target.send_prompt_async(prompt_request=request)
 
 
 @pytest.mark.asyncio
-async def test_dalle_validate_prompt_type(
-    dalle_target: OpenAIDALLETarget, sample_conversations: MutableSequence[PromptRequestPiece]
-):
-    request_piece = sample_conversations[0]
-    request_piece.converted_value_data_type = "image_path"
-    request = PromptRequestResponse(request_pieces=[request_piece])
+async def test_dalle_validate_prompt_type(dalle_target: OpenAIDALLETarget):
+    request = PromptRequestResponse(request_pieces=[get_image_request_piece()])
     with pytest.raises(ValueError, match="This target only supports text prompt input."):
         await dalle_target.send_prompt_async(prompt_request=request)
 

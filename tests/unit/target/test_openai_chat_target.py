@@ -32,7 +32,8 @@ def fake_construct_response_from_request(request, response_text_pieces):
 
 @pytest.fixture
 def sample_conversations() -> MutableSequence[PromptRequestPiece]:
-    return get_sample_conversations()
+    conversations = get_sample_conversations()
+    return PromptRequestResponse.flatten_to_prompt_request_pieces(conversations)
 
 
 @pytest.fixture
@@ -96,6 +97,7 @@ async def test_build_chat_messages_for_multi_modal(target: OpenAIChatTarget):
                     role="user",
                     converted_value_data_type="text",
                     original_value="Hello",
+                    conversation_id=image_request.conversation_id
                 ),
                 image_request,
             ]
@@ -494,7 +496,12 @@ def test_validate_request_unsupported_data_types(target: OpenAIChatTarget):
     image_piece.converted_value_data_type = "new_unknown_type"  # type: ignore
     prompt_request = PromptRequestResponse(
         request_pieces=[
-            PromptRequestPiece(role="user", original_value="Hello", converted_value_data_type="text"),
+            PromptRequestPiece(
+                role="user",
+                original_value="Hello",
+                converted_value_data_type="text",
+                conversation_id=image_piece.conversation_id
+            ),
             image_piece,
         ]
     )

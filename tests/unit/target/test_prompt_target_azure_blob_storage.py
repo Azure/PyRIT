@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from azure.storage.blob.aio import BlobClient as AsyncBlobClient
 from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
-from unit.mocks import get_sample_conversations
+from unit.mocks import get_sample_conversations, get_image_request_piece
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import AzureBlobStorageTarget
@@ -16,7 +16,8 @@ from pyrit.prompt_target import AzureBlobStorageTarget
 
 @pytest.fixture
 def sample_entries() -> MutableSequence[PromptRequestPiece]:
-    return get_sample_conversations()
+    conversations = get_sample_conversations()
+    return PromptRequestResponse.flatten_to_prompt_request_pieces(conversations)
 
 
 @pytest.fixture
@@ -73,12 +74,9 @@ async def test_azure_blob_storage_validate_request_length(
 async def test_azure_blob_storage_validate_prompt_type(
     mock_upload_async,
     azure_blob_storage_target: AzureBlobStorageTarget,
-    sample_entries: MutableSequence[PromptRequestPiece],
 ):
     mock_upload_async.return_value = None
-    request_piece = sample_entries[0]
-    request_piece.converted_value_data_type = "image_path"
-    request = PromptRequestResponse(request_pieces=[request_piece])
+    request = PromptRequestResponse(request_pieces=[get_image_request_piece()])
     with pytest.raises(ValueError, match="This target only supports text and url prompt input."):
         await azure_blob_storage_target.send_prompt_async(prompt_request=request)
 

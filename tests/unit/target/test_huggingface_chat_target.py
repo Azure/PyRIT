@@ -196,10 +196,10 @@ def test_invalid_prompt_request_validation():
 
     # Create an invalid prompt request with multiple request pieces
     request_piece1 = PromptRequestPiece(
-        role="user", original_value="First piece", converted_value="First piece", converted_value_data_type="text"
+        role="user", original_value="First piece", converted_value="First piece", converted_value_data_type="text", conversation_id="123"
     )
     request_piece2 = PromptRequestPiece(
-        role="user", original_value="Second piece", converted_value="Second piece", converted_value_data_type="text"
+        role="user", original_value="Second piece", converted_value="Second piece", converted_value_data_type="text", conversation_id="123"
     )
     prompt_request = PromptRequestResponse(request_pieces=[request_piece1, request_piece2])
 

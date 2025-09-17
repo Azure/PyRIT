@@ -23,7 +23,7 @@ from pyrit.models import (
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
-from pyrit.score import TrueFalseScorer
+from pyrit.score import TrueFalseScorer, Scorer
 
 
 @pytest.fixture
@@ -87,10 +87,10 @@ def success_score():
     return Score(
         score_type="true_false",
         score_value="true",
-        score_category="test",
+        score_category=["test"],
         score_value_description="Test success score",
         score_rationale="Test rationale for success",
-        score_metadata="{}",
+        score_metadata={},
         prompt_request_response_id=str(uuid.uuid4()),
     )
 
@@ -101,10 +101,10 @@ def failure_score():
     return Score(
         score_type="true_false",
         score_value="false",
-        score_category="test",
+        score_category=["test"],
         score_value_description="Test failure score",
         score_rationale="Test rationale for failure",
-        score_metadata="{}",
+        score_metadata={},
         prompt_request_response_id=str(uuid.uuid4()),
     )
 

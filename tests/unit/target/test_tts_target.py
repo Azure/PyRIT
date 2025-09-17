@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from httpx import HTTPStatusError
 from openai import RateLimitError
-from unit.mocks import get_sample_conversations
+from unit.mocks import get_sample_conversations, get_image_request_piece
 
 from pyrit.common import net_utility
 from pyrit.exceptions import RateLimitException
@@ -21,7 +21,8 @@ from pyrit.prompt_target.openai.openai_tts_target import TTSResponseFormat
 
 @pytest.fixture
 def sample_conversations() -> MutableSequence[PromptRequestPiece]:
-    return get_sample_conversations()
+    conversations = get_sample_conversations()
+    return PromptRequestResponse.flatten_to_prompt_request_pieces(conversations)
 
 
 @pytest.fixture
@@ -49,21 +50,20 @@ def test_tts_initializes_calls_get_required_parameters(patch_central_database):
 
 
 @pytest.mark.asyncio
-async def test_tts_validate_request_length(
-    tts_target: OpenAITTSTarget, sample_conversations: MutableSequence[PromptRequestPiece]
-):
-    request = PromptRequestResponse(request_pieces=sample_conversations)
+async def test_tts_validate_request_length(tts_target: OpenAITTSTarget):
+    request = PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(role="user", conversation_id="123", original_value="test"),
+            PromptRequestPiece(role="user", conversation_id="123", original_value="test2"),
+        ]
+    )
     with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
         await tts_target.send_prompt_async(prompt_request=request)
 
 
 @pytest.mark.asyncio
-async def test_tts_validate_prompt_type(
-    tts_target: OpenAITTSTarget, sample_conversations: MutableSequence[PromptRequestPiece]
-):
-    request_piece = sample_conversations[0]
-    request_piece.converted_value_data_type = "image_path"
-    request = PromptRequestResponse(request_pieces=[request_piece])
+async def test_tts_validate_prompt_type(tts_target: OpenAITTSTarget):
+    request = PromptRequestResponse(request_pieces=[get_image_request_piece()])
     with pytest.raises(ValueError, match="This target only supports text prompt input."):
         await tts_target.send_prompt_async(prompt_request=request)
 
