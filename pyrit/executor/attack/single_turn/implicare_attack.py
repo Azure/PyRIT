@@ -6,7 +6,6 @@ import uuid
 from typing import Optional
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.common.utils import combine_dict
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
@@ -80,9 +79,6 @@ class ImplicareAttack(PromptSendingAttack):
         # Ensure the context has a conversation ID
         context.conversation_id = str(uuid.uuid4())
         context.prepended_conversation = [self._system_prompt]
-
-        # Combine memory labels from context and attack strategy
-        context.memory_labels = combine_dict(self._memory_labels, context.memory_labels)
 
         # System prompt should not be converted, and the new implementation correctly
         # skips converters for system messages
