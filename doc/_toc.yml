@@ -36,6 +36,7 @@ chapters:
       sections:
         - file: code/executor/attack/0_attack
           sections:
+          - file: code/executor/attack/implicare_attack
           - file: code/executor/attack/1_prompt_sending_attack
           - file: code/executor/attack/2_red_teaming_attack
           - file: code/executor/attack/3_crescendo_attack
