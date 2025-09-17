@@ -76,8 +76,6 @@ class ImplicareAttack(PromptSendingAttack):
         Args:
             context (SingleTurnAttackContext): The attack context containing attack parameters.
         """
-        # Ensure the context has a conversation ID
-        context.conversation_id = str(uuid.uuid4())
         context.prepended_conversation = [self._system_prompt]
 
         # System prompt should not be converted, and the new implementation correctly
