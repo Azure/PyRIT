@@ -61,10 +61,14 @@ def test_initialization_with_no_container_url_raises():
 async def test_azure_blob_storage_validate_request_length(
     mock_upload_async,
     azure_blob_storage_target: AzureBlobStorageTarget,
-    sample_entries: MutableSequence[PromptRequestPiece],
 ):
     mock_upload_async.return_value = None
-    request = PromptRequestResponse(request_pieces=sample_entries)
+    request = PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(role="user", conversation_id="123", original_value="test1"),
+            PromptRequestPiece(role="user", conversation_id="123", original_value="test2"),
+        ]
+    )
     with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
         await azure_blob_storage_target.send_prompt_async(prompt_request=request)
 

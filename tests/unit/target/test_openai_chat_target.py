@@ -191,7 +191,9 @@ async def test_construct_request_body_serializes_text_message(
 async def test_construct_request_body_serializes_complex_message(
     target: OpenAIChatTarget, dummy_text_request_piece: PromptRequestPiece
 ):
-    request = PromptRequestResponse(request_pieces=[dummy_text_request_piece, get_image_request_piece()])
+    image_piece = get_image_request_piece()
+    image_piece.conversation_id = dummy_text_request_piece.conversation_id  # Match conversation IDs
+    request = PromptRequestResponse(request_pieces=[dummy_text_request_piece, image_piece])
 
     body = await target._construct_request_body(conversation=[request], is_json_response=False)
     messages = body["messages"][0]["content"]

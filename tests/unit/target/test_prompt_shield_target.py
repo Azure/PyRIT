@@ -54,12 +54,14 @@ def test_promptshield_init(promptshield_target: PromptShieldTarget):
 
 
 @pytest.mark.asyncio
-async def test_prompt_shield_validate_request_length(
-    promptshield_target: PromptShieldTarget, sample_conversations: MutableSequence[PromptRequestPiece]
-):
-    request = PromptRequestResponse(request_pieces=sample_conversations)
+async def test_prompt_shield_validate_request_length(promptshield_target: PromptShieldTarget):
+    request = PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(role="user", conversation_id="123", original_value="test1"),
+            PromptRequestPiece(role="user", conversation_id="123", original_value="test2"),
+        ]
+    )
     with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
-
         await promptshield_target.send_prompt_async(prompt_request=request)
 
 
