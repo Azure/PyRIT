@@ -86,12 +86,12 @@ def test_executors_serialize():
         role="user",
         original_value="Hello",
         converted_value="Hello",
-        orchestrator_identifier=attack.get_identifier(),
+        attack_identifier=attack.get_identifier(),
     )
 
-    assert entry.orchestrator_identifier["id"] is not None
-    assert entry.orchestrator_identifier["__type__"] == "PromptSendingAttack"
-    assert entry.orchestrator_identifier["__module__"] == "pyrit.executor.attack.single_turn.prompt_sending"
+    assert entry.attack_identifier["id"] is not None
+    assert entry.attack_identifier["__type__"] == "PromptSendingAttack"
+    assert entry.attack_identifier["__module__"] == "pyrit.executor.attack.single_turn.prompt_sending"
 
 
 @pytest.mark.asyncio
@@ -561,7 +561,7 @@ def test_prompt_request_piece_to_dict():
             {"__type__": "Base64Converter", "__module__": "pyrit.prompt_converter.base64_converter"}
         ],
         prompt_target_identifier={"__type__": "MockPromptTarget", "__module__": "unit.mocks"},
-        orchestrator_identifier={
+        attack_identifier={
             "id": str(uuid.uuid4()),
             "__type__": "PromptSendingAttack",
             "__module__": "pyrit.executor.attack.single_turn.prompt_sending_attack",
@@ -602,7 +602,7 @@ def test_prompt_request_piece_to_dict():
         "prompt_metadata",
         "converter_identifiers",
         "prompt_target_identifier",
-        "orchestrator_identifier",
+        "attack_identifier",
         "scorer_identifier",
         "original_value_data_type",
         "original_value",
@@ -628,7 +628,7 @@ def test_prompt_request_piece_to_dict():
     assert result["prompt_metadata"] == entry.prompt_metadata
     assert result["converter_identifiers"] == entry.converter_identifiers
     assert result["prompt_target_identifier"] == entry.prompt_target_identifier
-    assert result["orchestrator_identifier"] == entry.orchestrator_identifier
+    assert result["attack_identifier"] == entry.attack_identifier
     assert result["scorer_identifier"] == entry.scorer_identifier
     assert result["original_value_data_type"] == entry.original_value_data_type
     assert result["original_value"] == entry.original_value

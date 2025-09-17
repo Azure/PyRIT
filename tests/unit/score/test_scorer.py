@@ -114,7 +114,7 @@ async def test_scorer_score_value_with_llm_exception_display_prompt_id():
 
 
 @pytest.mark.asyncio
-async def test_scorer_score_value_with_llm_use_provided_orchestrator_identifier(good_json):
+async def test_scorer_score_value_with_llm_use_provided_attack_identifier(good_json):
     scorer = MockScorer()
     scorer.scorer_type = "true_false"
 
@@ -126,7 +126,7 @@ async def test_scorer_score_value_with_llm_use_provided_orchestrator_identifier(
     chat_target.set_system_prompt = MagicMock()
 
     expected_system_prompt = "system_prompt"
-    expected_orchestrator_id = "orchestrator_id"
+    expected_attack_id = "attack_id"
     expected_scored_prompt_id = "123"
 
     await scorer._score_value_with_llm(
@@ -137,7 +137,7 @@ async def test_scorer_score_value_with_llm_use_provided_orchestrator_identifier(
         scored_prompt_id=expected_scored_prompt_id,
         category="category",
         task="task",
-        orchestrator_identifier={"id": expected_orchestrator_id},
+        attack_identifier={"id": expected_attack_id},
     )
 
     chat_target.set_system_prompt.assert_called_once()
@@ -145,12 +145,12 @@ async def test_scorer_score_value_with_llm_use_provided_orchestrator_identifier(
     _, set_sys_prompt_args = chat_target.set_system_prompt.call_args
     assert set_sys_prompt_args["system_prompt"] == expected_system_prompt
     assert isinstance(set_sys_prompt_args["conversation_id"], str)
-    assert set_sys_prompt_args["orchestrator_identifier"]["id"] == expected_orchestrator_id
-    assert set_sys_prompt_args["orchestrator_identifier"]["scored_prompt_id"] == expected_scored_prompt_id
+    assert set_sys_prompt_args["attack_identifier"]["id"] == expected_attack_id
+    assert set_sys_prompt_args["attack_identifier"]["scored_prompt_id"] == expected_scored_prompt_id
 
 
 @pytest.mark.asyncio
-async def test_scorer_score_value_with_llm_does_not_add_score_prompt_id_for_empty_orchestrator_identifier(good_json):
+async def test_scorer_score_value_with_llm_does_not_add_score_prompt_id_for_empty_attack_identifier(good_json):
     scorer = MockScorer()
     scorer.scorer_type = "true_false"
 
@@ -178,7 +178,7 @@ async def test_scorer_score_value_with_llm_does_not_add_score_prompt_id_for_empt
     _, set_sys_prompt_args = chat_target.set_system_prompt.call_args
     assert set_sys_prompt_args["system_prompt"] == expected_system_prompt
     assert isinstance(set_sys_prompt_args["conversation_id"], str)
-    assert not set_sys_prompt_args["orchestrator_identifier"]
+    assert not set_sys_prompt_args["attack_identifier"]
 
 
 @pytest.mark.asyncio

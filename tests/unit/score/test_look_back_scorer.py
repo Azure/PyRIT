@@ -22,7 +22,7 @@ async def test_score_async_success(patch_central_database):
         original_value="User message",
         role="user",
         conversation_id=conversation_id,
-        orchestrator_identifier={"test": "test"},
+        attack_identifier={"test": "test"},
         id=piece_id,
     )
     memory.add_request_pieces_to_memory(request_pieces=[request_piece])
@@ -66,7 +66,7 @@ async def test_score_async_conversation_not_found(patch_central_database):
         original_value="User message",
         role="user",
         conversation_id=nonexistent_conversation_id,
-        orchestrator_identifier={"test": "test"},
+        attack_identifier={"test": "test"},
     )
 
     # Act & Assert
@@ -97,7 +97,7 @@ async def test_score_async_handles_persuasion_conversation(patch_central_databas
             original_value=message.content,
             role=message.role,
             conversation_id=conversation_id,
-            orchestrator_identifier={"test": "test"},
+            attack_identifier={"test": "test"},
             id=uuid.uuid4(),
             sequence=i + 1,
         )

@@ -332,37 +332,6 @@ API Reference
     TextDataTypeSerializer
     UnvalidatedScore
 
-:py:mod:`pyrit.orchestrator`
-============================
-
-.. automodule:: pyrit.orchestrator
-    :no-members:
-    :no-inherited-members:
-
-.. autosummary::
-    :nosignatures:
-    :toctree: _autosummary/
-
-    AnecdoctorOrchestrator
-    ContextComplianceOrchestrator
-    CrescendoOrchestrator
-    FlipAttackOrchestrator
-    FuzzerOrchestrator
-    ManyShotJailbreakOrchestrator
-    MultiTurnOrchestrator
-    Orchestrator
-    OrchestratorResult
-    PAIROrchestrator
-    PromptSendingOrchestrator
-    QuestionAnsweringBenchmarkOrchestrator
-    RedTeamingOrchestrator
-    RolePlayOrchestrator
-    ScoringOrchestrator
-    SkeletonKeyOrchestrator
-    TreeOfAttacksWithPruningOrchestrator
-    XPIAManualProcessingOrchestrator
-    XPIAOrchestrator
-    XPIATestOrchestrator
 
 :py:mod:`pyrit.prompt_converter`
 ================================

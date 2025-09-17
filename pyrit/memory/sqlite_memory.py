@@ -127,12 +127,12 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         condition = text(json_conditions).bindparams(**{key: str(value) for key, value in prompt_metadata.items()})
         return [condition]
 
-    def _get_prompt_pieces_orchestrator_conditions(self, *, orchestrator_id: str):
+    def _get_prompt_pieces_orchestrator_conditions(self, *, attack_id: str):
         """
         Generates SQLAlchemy filter conditions for filtering by orchestrator ID.
         """
-        return text("JSON_EXTRACT(orchestrator_identifier, '$.id') = :orchestrator_id").bindparams(
-            orchestrator_id=str(orchestrator_id)
+        return text("JSON_EXTRACT(orchestrator_identifier, '$.id') = :attack_id").bindparams(
+            attack_id=str(attack_id)
         )
 
     def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]):

@@ -15,7 +15,7 @@ class PromptFilterCriteria:
     An object that contains properties that can be used to filter memory queries to PromptReequestPieces.
     """
 
-    orchestrator_id: Optional[str | uuid.UUID] = None
+    attack_id: Optional[str | uuid.UUID] = None
     conversation_id: Optional[str | uuid.UUID] = None
     prompt_ids: Optional[list[str] | list[uuid.UUID]] = None
     labels: Optional[dict[str, str]] = None

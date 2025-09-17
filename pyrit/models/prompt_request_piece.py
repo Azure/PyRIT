@@ -12,7 +12,7 @@ from pyrit.models.chat_message import ChatMessage, ChatMessageRole
 from pyrit.models.literals import PromptDataType, PromptResponseError
 from pyrit.models.score import Score
 
-Originator = Literal["orchestrator", "converter", "undefined", "scorer"]
+Originator = Literal["attack", "converter", "undefined", "scorer"]
 
 
 class PromptRequestPiece:
@@ -38,7 +38,7 @@ class PromptRequestPiece:
         prompt_metadata: Optional[Dict[str, Union[str, int]]] = None,
         converter_identifiers: Optional[List[Dict[str, str]]] = None,
         prompt_target_identifier: Optional[Dict[str, str]] = None,
-        orchestrator_identifier: Optional[Dict[str, str]] = None,
+        attack_identifier: Optional[Dict[str, str]] = None,
         scorer_identifier: Optional[Dict[str, str]] = None,
         original_value_data_type: PromptDataType = "text",
         converted_value_data_type: PromptDataType = "text",
@@ -67,7 +67,7 @@ class PromptRequestPiece:
                 Defaults to None.
             converter_identifiers: The converter identifiers for the prompt. Defaults to None.
             prompt_target_identifier: The target identifier for the prompt. Defaults to None.
-            orchestrator_identifier: The orchestrator identifier for the prompt. Defaults to None.
+            attack_identifier: The attack identifier for the prompt. Defaults to None.
             scorer_identifier: The scorer identifier for the prompt. Defaults to None.
             original_value_data_type: The data type of the original prompt (text, image). Defaults to "text".
             converted_value_data_type: The data type of the converted prompt (text, image). Defaults to "text".
@@ -99,7 +99,7 @@ class PromptRequestPiece:
         self.converter_identifiers = converter_identifiers if converter_identifiers else []
 
         self.prompt_target_identifier = prompt_target_identifier or {}
-        self.orchestrator_identifier = orchestrator_identifier or {}
+        self.attack_identifier = attack_identifier or {}
         self.scorer_identifier = scorer_identifier or {}
 
         self.original_value = original_value
@@ -186,7 +186,7 @@ class PromptRequestPiece:
             "prompt_metadata": self.prompt_metadata,
             "converter_identifiers": self.converter_identifiers,
             "prompt_target_identifier": self.prompt_target_identifier,
-            "orchestrator_identifier": self.orchestrator_identifier,
+            "attack_identifier": self.attack_identifier,
             "scorer_identifier": self.scorer_identifier,
             "original_value_data_type": self.original_value_data_type,
             "original_value": self.original_value,

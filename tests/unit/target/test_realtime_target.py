@@ -103,7 +103,7 @@ async def test_send_prompt_async_adds_system_prompt_to_memory(target):
     target.set_system_prompt.assert_called_once_with(
         system_prompt=target.system_prompt,
         conversation_id="new_conversation_id",
-        orchestrator_identifier=target.get_identifier(),
+        attack_identifier=target.get_identifier(),
     )
 
     # Assert that the system_prompt is the default value

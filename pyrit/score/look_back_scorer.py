@@ -84,7 +84,7 @@ class LookBackScorer(Scorer):
             prompt_request_data_type="text",
             scored_prompt_id=conversation[0].request_pieces[0].original_prompt_id,
             category="illegal",
-            orchestrator_identifier=conversation[0].request_pieces[0].orchestrator_identifier,
+            attack_identifier=conversation[0].request_pieces[0].attack_identifier,
         )
 
         score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value)
