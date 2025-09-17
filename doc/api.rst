@@ -203,6 +203,7 @@ API Reference
     ConversationSession
     CrescendoAttack
     FlipAttack
+    ImplicareAttack
     ManyShotJailbreakAttack
     MultiTurnAttackContext
     PromptSendingAttack
