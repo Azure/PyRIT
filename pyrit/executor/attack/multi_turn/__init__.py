@@ -3,10 +3,9 @@
 
 from pyrit.executor.attack.multi_turn.multi_branch_attack import (
     MultiBranchAttack,
-    MultiBranchAttackConfig,
     MultiBranchAttackContext,
     MultiBranchAttackResult,
-    MultiBranchCommand
+    MultiBranchCommandEnum
 )
 
 from pyrit.executor.attack.multi_turn.multi_turn_attack_strategy import (
@@ -28,10 +27,9 @@ __all__ = [
     "ConversationSession",
     
     "MultiBranchAttack",
-    "MultiBranchAttackConfig",
     "MultiBranchAttackContext",
     "MultiBranchAttackResult",
-    "MultiBranchCommand",
+    "MultiBranchCommandEnum",
     
     "MultiTurnAttackContext",
     "MultiTurnAttackStrategy",

@@ -12,7 +12,17 @@ from contextlib import asynccontextmanager
 from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, AsyncIterator, Dict, Generic, MutableMapping, Optional, TypeVar
+from typing import (
+    Any, 
+    AsyncIterator,
+    Dict, 
+    Generic, 
+    MutableMapping, 
+    Optional, 
+    Self, 
+    Union, 
+    TypeVar
+)
 
 from pyrit.common import default_values
 from pyrit.common.logger import logger
@@ -215,7 +225,7 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
         pass
 
     @abstractmethod
-    async def _perform_async(self, *, context: StrategyContextT) -> StrategyResultT:
+    async def _perform_async(self, *, context: StrategyContextT) -> Union[StrategyResultT, Self]:
         """
         Core implementation to be defined by subclasses.
         This contains the actual strategy logic that subclasses must implement.
