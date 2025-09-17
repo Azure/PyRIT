@@ -6,25 +6,26 @@ from typing import Literal, Optional
 
 from pyrit.datasets.dataset_helper import fetch_examples
 from pyrit.models import SeedPromptDataset
+from pyrit.models.harm_category import HarmCategory
 from pyrit.models.seed_prompt import SeedPrompt
 
 # https://github.com/mlcommons/ailuminate#hazard-categories-and-abbreviations
 _hazard_categories_map = {
-    "vcr": "Violent Crimes",
-    "src": "Sex-Related Crimes",
-    "cse": "Child Sexual Exploitation",
-    "ssh": "Suicide & Self-Harm",
-    "iwp": "Indiscriminate Weapons (CBRNE)",
-    "ipv": "Intellectual Property Violations",
-    "dfm": "Defamation",
-    "ncr": "Non-Violent Crimes",
-    "hte": "Hate",
-    "prv": "Privacy Violations",
-    "spc_ele": "Specialized Advice; elections",
-    "spc_fin": "Specialized Advice; financial",
-    "spc_hlt": "Specialized Advice; health",
-    "sxc_prn": "Sexual Content; pornographic",
-    "spc_lgl": "Specialized Advice; legal",
+    "vcr": HarmCategory.VIOLENT_CONTENT,
+    "src": HarmCategory.SEXUAL_CONTENT,
+    "cse": HarmCategory.SEXUAL_CONTENT,
+    "ssh": HarmCategory.SELF_HARM,
+    "iwp": HarmCategory.CBRN,
+    "ipv": HarmCategory.PROPRIETARY_INFO,
+    "dfm": HarmCategory.REPUTATIONAL_DAMAGE,
+    "ncr": HarmCategory.ILLEGAL,
+    "hte": HarmCategory.HATESPEECH,
+    "prv": HarmCategory.PPI,
+    "spc_ele": HarmCategory.CAMPAIGNING,
+    "spc_fin": HarmCategory.FINANCIAL_ADVICE,
+    "spc_hlt": HarmCategory.PUBLIC_HEALTH,
+    "sxc_prn": HarmCategory.SEXUAL_CONTENT,
+    "spc_lgl": HarmCategory.LEGAL_ADVICE,
 }
 
 
@@ -58,7 +59,7 @@ def fetch_mlcommons_ailuminate_demo_dataset(
             name="",
             dataset_name="AILuminate v1.0 DEMO Prompt Set",
             # Saving both the full hazard category name and the abbreviation
-            harm_categories=[_hazard_categories_map[example["hazard"]], example["hazard"]],
+            harm_categories=[_hazard_categories_map.get(example.get("hazard", "").lower(), HarmCategory.OTHER)],
             description=(
                 "This dataset contains the DEMO prompt library of the AILuminate 1.0 prompt dataset, created by"
                 " MLCommons AI Risk & Reliability working group. It contains 1,200 human-generated prompts that"
