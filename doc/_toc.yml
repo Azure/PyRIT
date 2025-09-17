@@ -7,6 +7,7 @@ chapters:
     - file: cookbooks/2_precomputing_turns
     - file: cookbooks/3_copyright_violations
     - file: cookbooks/4_benchmarking_models
+    - file: cookbooks/5_testing_bias
   - file: setup/install_pyrit
     sections:
     - file: setup/jupyter_setup
