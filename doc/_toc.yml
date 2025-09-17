@@ -46,6 +46,7 @@ chapters:
           - file: code/executor/attack/role_play_attack
           - file: code/executor/attack/many_shot_jailbreak_attack
           - file: code/executor/attack/tap_attack
+          - file: code/executor/attack/multi_prompt_sending_attack
         - file: code/executor/workflow/0_workflow
           sections:
           - file: code/executor/workflow/1_xpia_workflow
@@ -120,7 +121,7 @@ chapters:
       - file: code/scoring/scorer_evals
     - file: code/memory/0_memory
       sections:
-      - file: code/memory/1_duck_db_memory
+      - file: code/memory/1_sqlite_memory
       - file: code/memory/2_basic_memory_programming
       - file: code/memory/3_prompt_request
       - file: code/memory/4_manually_working_with_memory

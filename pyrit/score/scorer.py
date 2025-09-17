@@ -9,7 +9,8 @@ import json
 import logging
 import uuid
 from abc import abstractmethod
-from typing import Dict, List, Optional, Sequence
+from pathlib import Path
+from typing import Dict, List, Optional, Sequence, Union
 
 from pyrit.exceptions import (
     InvalidJsonException,
@@ -43,6 +44,25 @@ class Scorer(abc.ABC):
     @property
     def _memory(self) -> MemoryInterface:
         return CentralMemory.get_memory_instance()
+
+    def _verify_and_resolve_path(self, path: Union[str, Path]) -> Path:
+        """
+        Verify that a path passed to a Scorer on its creation
+        is valid before beginning the scoring logic.
+
+        Args:
+            path (Union[str, Path]): A pathlike argument passed to the Scorer.
+
+        Returns:
+            Path: The resolved Path object.
+        """
+        if not isinstance(path, (str, Path)):
+            raise ValueError(f"Path must be a string or Path object. Got type(path): {type(path).__name__}")
+
+        path_obj: Path = Path(path).resolve() if isinstance(path, str) else path.resolve()
+        if not path_obj.exists():
+            raise ValueError(f"Path not found: {str(path_obj)}")
+        return path_obj
 
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """

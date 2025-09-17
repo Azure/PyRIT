@@ -7,13 +7,19 @@ from typing import Any, Literal, Optional, Union, get_args
 import dotenv
 
 from pyrit.common import path
+from pyrit.memory import (
+    AzureSQLMemory,
+    CentralMemory,
+    MemoryInterface,
+    SQLiteMemory,
+)
 
 logger = logging.getLogger(__name__)
 
 IN_MEMORY = "InMemory"
-DUCK_DB = "DuckDB"
+SQLITE = "SQLite"
 AZURE_SQL = "AzureSQL"
-MemoryDatabaseType = Literal["InMemory", "DuckDB", "AzureSQL"]
+MemoryDatabaseType = Literal["InMemory", "SQLite", "AzureSQL"]
 
 
 def _load_environment_files() -> None:
@@ -45,32 +51,35 @@ def initialize_pyrit(memory_db_type: Union[MemoryDatabaseType, str], **memory_in
 
     Args:
         memory_db_type (MemoryDatabaseType): The MemoryDatabaseType string literal which indicates the memory
-            instance to use for central memory. Options include "InMemory", "DuckDB", and "AzureSQL".
+            instance to use for central memory. Options include "InMemory", "SQLite", and "AzureSQL".
         **memory_instance_kwargs (Optional[Any]): Additional keyword arguments to pass to the memory instance.
     """
-    if memory_db_type not in get_args(MemoryDatabaseType):
-        raise ValueError(
-            f"Memory database type '{memory_db_type}' is not a supported type {get_args(MemoryDatabaseType)}"
+    # Handle DuckDB deprecation before validation
+    if memory_db_type == "DuckDB":
+        logger.warning(
+            "DuckDB is no longer supported and has been replaced by SQLite for better compatibility and performance. "
+            "Please update your code to use SQLite instead. "
+            "For migration guidance, see the SQLite Memory documentation at: "
+            "doc/code/memory/1_sqlite_memory.ipynb. "
+            "Using in-memory SQLite instead."
         )
+        memory_db_type = IN_MEMORY
 
     _load_environment_files()
 
-    from pyrit.memory import (
-        AzureSQLMemory,
-        CentralMemory,
-        DuckDBMemory,
-        MemoryInterface,
-    )
-
     memory: MemoryInterface = None
+
     if memory_db_type == IN_MEMORY:
-        logger.info("Using in-memory DuckDB database.")
-        memory = DuckDBMemory(db_path=":memory:", **memory_instance_kwargs)
-    elif memory_db_type == DUCK_DB:
-        logger.info("Using persistent DuckDB database.")
-        memory = DuckDBMemory(**memory_instance_kwargs)
-    else:
+        logger.info("Using in-memory SQLite database.")
+        memory = SQLiteMemory(db_path=":memory:", **memory_instance_kwargs)
+    elif memory_db_type == SQLITE:
+        logger.info("Using persistent SQLite database.")
+        memory = SQLiteMemory(**memory_instance_kwargs)
+    elif memory_db_type == AZURE_SQL:
         logger.info("Using AzureSQL database.")
         memory = AzureSQLMemory(**memory_instance_kwargs)
-
+    else:
+        raise ValueError(
+            f"Memory database type '{memory_db_type}' is not a supported type {get_args(MemoryDatabaseType)}"
+        )
     CentralMemory.set_memory_instance(memory)

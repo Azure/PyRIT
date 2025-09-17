@@ -3,12 +3,14 @@
 
 import asyncio
 import os
+from pathlib import Path
 from textwrap import dedent
 from typing import Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from pyrit.common.path import SCORER_CONFIG_PATH
 from pyrit.exceptions import InvalidJsonException, remove_markdown_json
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
@@ -229,6 +231,32 @@ async def test_scorer_remove_markdown_json_called(good_json):
         )
 
         mock_remove_markdown_json.assert_called_once()
+
+
+def test_scorer_path_verification_rejection():
+    """
+    Test that the scorer correctly refuses to verify a non-existent path.
+    """
+    scorer = MockScorer()
+    mock_path: str = "this/does/not/exist.yaml"
+    with pytest.raises(ValueError, match="Path not found"):
+        scorer._verify_and_resolve_path(mock_path)
+
+
+def test_scorer_path_verification_confirmation():
+    """
+    Test that the scorer verifies the paths that currently exist
+    under the scorer configs.
+    """
+    scorer = MockScorer()
+    all_yamls_as_str: list[str] = []
+    full_paths: list[str] = []
+    for root, dirs, files in os.walk(SCORER_CONFIG_PATH):
+        full_paths.extend([os.path.join(root, f) for f in files if f.endswith(".yaml")])
+        all_yamls_as_str.extend([f for f in files if f.endswith(".yaml")])
+    resolved_paths = [Path(p).resolve() for p in full_paths]
+    attempted_paths = [scorer._verify_and_resolve_path(p) for p in full_paths]
+    assert attempted_paths == resolved_paths
 
 
 def test_scorer_extract_task_from_response():

@@ -204,6 +204,8 @@ API Reference
     CrescendoAttack
     FlipAttack
     ManyShotJailbreakAttack
+    MultiPromptSendingAttack
+    MultiPromptSendingAttackContext
     MultiTurnAttackContext
     PromptSendingAttack
     RTASystemPromptPaths
@@ -272,13 +274,13 @@ API Reference
     AttackResultEntry
     AzureSQLMemory
     CentralMemory
-    DuckDBMemory
     EmbeddingDataEntry
     MemoryInterface
     MemoryEmbedding
     MemoryExporter
     PromptMemoryEntry
     SeedPromptEntry
+    SQLiteMemory
 
 :py:mod:`pyrit.models`
 ======================

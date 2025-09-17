@@ -13,4 +13,4 @@ scoring:
   objective_scorer:
     type: "SelfAskTrueFalseScorer"
 database:
-  type: "DuckDB"
+  type: "SQLite"
