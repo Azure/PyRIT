@@ -15,7 +15,6 @@ from pyrit.models import (
     AttackResult,
     PromptRequestResponse,
     SeedPrompt,
-    SeedPromptGroup,
 )
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
@@ -50,7 +49,6 @@ class ImplicareAttack(PromptSendingAttack):
             prompt_normalizer=prompt_normalizer,
             max_attempts_on_failure=max_attempts_on_failure,
         )
-
         # This system prompt is sent to the target for getting the requested information
         system_prompt_path = pathlib.Path(DATASETS_PATH) / "executors" / "implicare_attack.yaml"
         system_prompt = SeedPrompt.from_yaml_file(system_prompt_path).value
@@ -72,7 +70,6 @@ class ImplicareAttack(PromptSendingAttack):
     async def _perform_async(self, *, context: SingleTurnAttackContext) -> AttackResult:
         """
         Perform the Attack.
-
         Args:
             context (SingleTurnAttackContext): The attack context containing attack parameters.
 
@@ -80,6 +77,4 @@ class ImplicareAttack(PromptSendingAttack):
             AttackResult: The result of the attack.
         """
         self._system_prompt = PromptRequestResponse.from_system_prompt(system_prompt=system_prompt)
-        context.seed_prompt_group = seed_prompt_group
-
         return await super()._perform_async(context=context)
