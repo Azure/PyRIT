@@ -318,43 +318,40 @@ class Scorer(abc.ABC):
         Returns:
             list[Score]: A list of Score objects representing the results. This list will be the same length as the number of frames extracted from the video.
         """
+        # Extract frames from the video and score each frame
         image_frame_paths = self._extract_frames(video_path, num_frames=num_frames)
         if not image_frame_paths:
             raise ValueError("No frames extracted from video for scoring.")
-
-        # create sequence of tasks the same length as image_frame_paths
         tasks = [task] * len(image_frame_paths)
         frame_scores = await self.score_image_batch_async(image_paths=image_frame_paths, tasks=tasks, batch_size=num_frames)
-
         if not frame_scores:
             raise ValueError("No scores returned for image frames extracted from video.")
 
+        # Clean up temporary frame files
         for path in image_frame_paths:
-            # Clean up the temporary image files created when extracting frames
             try:
                 os.remove(path)
             except OSError as e:
                 logger.warning(f"Error removing temporary frame file {path}: {e}")
 
+        # Aggregate frame scores into one score for the entire video
         aggregate_score = frame_scores[0]
         original_rationale = ""
+        # For true_false scorers, if any of the scores are True, the aggregate is True
         if self.scorer_type == "true_false":
-            # Aggregate frame scores by taking the most severe (True) score
-            aggregate_score = frame_scores[0]
-            original_rationale = aggregate_score.score_rationale
-            true_count = 0
-            
-            for score in frame_scores:
-                if score.score_value == True:
-                    aggregate_score = score
-                    true_count += 1
-            
-            # Update the rationale to reflect the aggregation logic
-            if aggregate_score.score_value == True:
-                aggregate_score.score_rationale = f"Found harmful content in {true_count} out of {len(frame_scores)} video frames. "
-            else:
-                aggregate_score.score_rationale = f"No harmful content detected across {len(frame_scores)} video frames. "
+            true_scores = [score for score in frame_scores if score.score_value == True]
+            true_count = len(true_scores)
 
+            # Update the rationale to reflect the aggregation logic
+            if true_count > 0:
+                aggregate_score = true_scores[0]
+                aggregate_score.score_rationale = f"{true_count} out of {len(frame_scores)} video frames meet objective."
+                original_rationale += "Original frame rationales: \n"
+                original_rationale = ",\n".join([score.score_rationale for score in true_scores])
+            else:
+                aggregate_score.score_rationale = f"Objective not met within {len(frame_scores)} video frames."
+
+        # For float_scale scorers, use the highest score value (i.e., the most severe value) to represent the aggregate score
         elif self.scorer_type == "float_scale":
             # Aggregate frame scores by taking the highest score
             aggregate_score = max(frame_scores, key=lambda score: score.get_value())
@@ -366,7 +363,7 @@ class Scorer(abc.ABC):
 
         if original_rationale:
             # Append the original rationale to the updated rationale
-            aggregate_score.score_rationale += original_rationale
+            aggregate_score.score_rationale += original_rationale 
 
         return [aggregate_score]
 
@@ -377,7 +374,7 @@ class Scorer(abc.ABC):
         Args:
             value (float): The value to be scaled.
             min_value (float): The minimum value of the range.
-            max_value (float): The maximum value of the range.more s
+            max_value (float): The maximum value of the range.
 
         Returns:
             float: The scaled value.
