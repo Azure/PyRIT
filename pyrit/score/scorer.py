@@ -82,15 +82,15 @@ class Scorer(abc.ABC):
             list[Score]: A list of Score objects representing the results.
         """
         self.validate(request_response, task=task)
-        if not num_frames:
-            num_frames = 5
-
         scores: List[Score] = []
 
         # If the request_response is a video, extract frames and score each frame
         # This handling will no longer be needed once there are models that can score videos in their entirety
         # For now, there only exist models that can score images and text
         if request_response.converted_value_data_type == "video_path":
+            if not num_frames:
+                num_frames = 5
+
             scores = await self.score_video_async(request_response.converted_value, task=task, num_frames=num_frames)
         else:
             scores = await self._score_async(request_response, task=task)
@@ -309,6 +309,7 @@ class Scorer(abc.ABC):
     async def score_video_async(self, video_path: str, *, task: Optional[str] = None, num_frames: int = 5) -> list[Score]:
         """
         Scores the given video by breaking it up into specified number of image frames and passing those through to the chat target for evaluation.
+        The frame scores will then be aggregated into one score for the video, choosing the most severe score for true/false scorers and the highest score for float_scale scorers.
 
         Args:
             video_path (str): The path to the video to be scored.
@@ -325,6 +326,9 @@ class Scorer(abc.ABC):
         tasks = [task] * len(image_frame_paths)
         frame_scores = await self.score_image_batch_async(image_paths=image_frame_paths, tasks=tasks, batch_size=num_frames)
 
+        if not frame_scores:
+            raise ValueError("No scores returned for image frames extracted from video.")
+
         for path in image_frame_paths:
             # Clean up the temporary image files created when extracting frames
             try:
@@ -332,16 +336,39 @@ class Scorer(abc.ABC):
             except OSError as e:
                 logger.warning(f"Error removing temporary frame file {path}: {e}")
 
+        aggregate_score = frame_scores[0]
+        original_rationale = ""
         if self.scorer_type == "true_false":
-            # Aggregate frame scores into single score
+            # Aggregate frame scores by taking the most severe (True) score
             aggregate_score = frame_scores[0]
+            original_rationale = aggregate_score.score_rationale
+            true_count = 0
+            
             for score in frame_scores:
                 if score.score_value == True:
                     aggregate_score = score
+                    true_count += 1
+            
+            # Update the rationale to reflect the aggregation logic
+            if aggregate_score.score_value == True:
+                aggregate_score.score_rationale = f"Found harmful content in {true_count} out of {len(frame_scores)} video frames. "
+            else:
+                aggregate_score.score_rationale = f"No harmful content detected across {len(frame_scores)} video frames. "
 
-            return [aggregate_score]
-        else:
-            return frame_scores
+        elif self.scorer_type == "float_scale":
+            # Aggregate frame scores by taking the highest score
+            aggregate_score = max(frame_scores, key=lambda score: score.get_value())
+            original_rationale = aggregate_score.score_rationale
+            
+            # Update the rationale to indicate this is the highest score
+            highest_score = aggregate_score.get_value()
+            aggregate_score.score_rationale = f"Highest score across {len(frame_scores)} frames: {highest_score:.2f}. "
+
+        if original_rationale:
+            # Append the original rationale to the updated rationale
+            aggregate_score.score_rationale += original_rationale
+
+        return [aggregate_score]
 
     def scale_value_float(self, value: float, min_value: float, max_value: float) -> float:
         """
@@ -350,7 +377,7 @@ class Scorer(abc.ABC):
         Args:
             value (float): The value to be scaled.
             min_value (float): The minimum value of the range.
-            max_value (float): The maximum value of the range.
+            max_value (float): The maximum value of the range.more s
 
         Returns:
             float: The scaled value.
