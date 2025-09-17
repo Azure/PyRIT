@@ -205,6 +205,8 @@ API Reference
     FlipAttack
     ImplicareAttack
     ManyShotJailbreakAttack
+    MultiPromptSendingAttack
+    MultiPromptSendingAttackContext
     MultiTurnAttackContext
     PromptSendingAttack
     RTASystemPromptPaths
