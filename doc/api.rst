@@ -346,6 +346,7 @@ API Reference
     ContextComplianceOrchestrator
     CrescendoOrchestrator
     FlipAttackOrchestrator
+    ImplicareAttackOrchestrator
     FuzzerOrchestrator
     ManyShotJailbreakOrchestrator
     MultiTurnOrchestrator
