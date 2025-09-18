@@ -15,6 +15,10 @@ from pyrit.executor.attack.multi_turn.multi_turn_attack_strategy import (
 )
 
 from pyrit.executor.attack.multi_turn.crescendo import CrescendoAttack, CrescendoAttackContext, CrescendoAttackResult
+from pyrit.executor.attack.multi_turn.multi_prompt_sending import (
+    MultiPromptSendingAttack,
+    MultiPromptSendingAttackContext,
+)
 from pyrit.executor.attack.multi_turn.red_teaming import RedTeamingAttack, RTASystemPromptPaths
 from pyrit.executor.attack.multi_turn.tree_of_attacks import (
     TreeOfAttacksWithPruningAttack,
@@ -33,6 +37,8 @@ __all__ = [
     
     "MultiTurnAttackContext",
     "MultiTurnAttackStrategy",
+    "MultiPromptSendingAttack",
+    "MultiPromptSendingAttackContext",
     "CrescendoAttack",
     "CrescendoAttackContext",
     "CrescendoAttackResult",
