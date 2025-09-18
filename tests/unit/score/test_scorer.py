@@ -3,13 +3,13 @@
 
 import asyncio
 import os
-from unittest import mock
-import numpy as np
 from pathlib import Path
 from textwrap import dedent
 from typing import Optional
+from unittest import mock
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import numpy as np
 import pytest
 
 from pyrit.common.path import SCORER_CONFIG_PATH
@@ -47,9 +47,10 @@ def video_converter_sample_video():
         output_video.release()
     return video_path
 
+
 class TestScorerVideo(Scorer):
     """Test implementation of Scorer for video tests"""
-    
+
     def __init__(self, scorer_type="true_false"):
         self.scorer_type = scorer_type
         super().__init__()
@@ -57,25 +58,29 @@ class TestScorerVideo(Scorer):
     async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         # For testing, always return a Score object with a predefined value
         if self.scorer_type == "true_false":
-            return [Score(
-                score_type=self.scorer_type,
-                score_value="True",
-                score_rationale="Test true rationale",
-                score_category="test_category",
-                score_metadata="tf metadata",
-                score_value_description="test_tf_description",
-                prompt_request_response_id="test_id"
-            )]
+            return [
+                Score(
+                    score_type=self.scorer_type,
+                    score_value="True",
+                    score_rationale="Test true rationale",
+                    score_category="test_category",
+                    score_metadata="tf metadata",
+                    score_value_description="test_tf_description",
+                    prompt_request_response_id="test_id",
+                )
+            ]
         else:  # float_scale
-            return [Score(
-                score_type=self.scorer_type,
-                score_value="0.8",
-                score_rationale="Test float rationale",
-                score_category="test_category",
-                score_metadata="float metadata",
-                score_value_description="test_float_description",
-                prompt_request_response_id="test_id"
-            )]
+            return [
+                Score(
+                    score_type=self.scorer_type,
+                    score_value="0.8",
+                    score_rationale="Test float rationale",
+                    score_category="test_category",
+                    score_metadata="float metadata",
+                    score_value_description="test_float_description",
+                    prompt_request_response_id="test_id",
+                )
+            ]
 
     async def score_image_async(self, image_path: str, *, task: Optional[str] = None) -> list[Score]:
         """Mock implementation for image scoring needed by video scoring"""
@@ -1271,6 +1276,7 @@ async def test_score_response_with_objective_async_mixed_roles():
     assert len(result["auxiliary_scores"]) == 1
     assert len(result["objective_scores"]) == 1
 
+
 # TODO: fix this test
 # @pytest.mark.asyncio
 # async def test_extract_frames(video_converter_sample_video):
@@ -1278,9 +1284,9 @@ async def test_score_response_with_objective_async_mixed_roles():
 #     scorer = TestScorerVideo()
 #     num_frames = 5
 #     frame_paths = scorer._extract_frames(video_converter_sample_video, num_frames=num_frames)
-    
+
 #     assert len(frame_paths) == num_frames, f"Expected {num_frames} frames, got {len(frame_paths)}"
-    
+
 #     # Verify frames are valid images and cleanup
 #     for path in frame_paths:
 #         assert os.path.exists(path), f"Frame file {path} does not exist"
@@ -1295,7 +1301,7 @@ async def test_score_video_true_false(video_converter_sample_video):
     """Test video scoring with a true/false scorer"""
     scorer = TestScorerVideo(scorer_type="true_false")
     scores = await scorer.score_video_async(video_converter_sample_video, num_frames=3)
-    
+
     assert len(scores) == 1, "Expected one aggregated score"
     assert scores[0].score_type == "true_false"
     assert scores[0].score_value is True
@@ -1308,7 +1314,7 @@ async def test_score_video_float_scale(video_converter_sample_video):
     """Test video scoring with a float_scale scorer"""
     scorer = TestScorerVideo(scorer_type="float_scale")
     scores = await scorer.score_video_async(video_converter_sample_video, num_frames=3)
-    
+
     assert len(scores) == 1, "Expected one aggregated score"
     assert scores[0].score_type == "float_scale"
     assert scores[0].score_value == 0.8  # Value from _score_async
@@ -1320,18 +1326,19 @@ async def test_score_video_cleanup(video_converter_sample_video):
     """Test that temporary frame files are cleaned up after scoring"""
     scorer = TestScorerVideo()
     frame_paths = []
-    
+
     # Mock _extract_frames to capture the frame paths
     original_extract_frames = scorer._extract_frames
+
     def mock_extract_frames(*args, **kwargs):
         nonlocal frame_paths
         frame_paths = original_extract_frames(*args, **kwargs)
         return frame_paths
-    
+
     scorer._extract_frames = mock_extract_frames
-    
+
     await scorer.score_video_async(video_converter_sample_video, num_frames=3)
-    
+
     # Verify all temporary files were cleaned up
     for path in frame_paths:
         assert not os.path.exists(path), f"Temporary frame file {path} was not cleaned up"
@@ -1341,10 +1348,10 @@ async def test_score_video_cleanup(video_converter_sample_video):
 async def test_score_video_no_frames(video_converter_sample_video):
     """Test error handling when no frames can be extracted"""
     scorer = TestScorerVideo()
-    
+
     # Mock _extract_frames to return empty list
     scorer._extract_frames = MagicMock(return_value=[])
-    
+
     with pytest.raises(ValueError, match="No frames extracted from video for scoring."):
         await scorer.score_video_async(video_converter_sample_video, num_frames=3)
 
@@ -1353,10 +1360,10 @@ async def test_score_video_no_frames(video_converter_sample_video):
 async def test_score_video_no_scores(video_converter_sample_video):
     """Test error handling when frame scoring returns no scores"""
     scorer = TestScorerVideo()
-    
+
     # Mock score_image_batch_async to return empty list
     scorer.score_image_batch_async = AsyncMock(return_value=[])
-    
+
     with pytest.raises(ValueError, match="No scores returned for image frames extracted from video."):
         await scorer.score_video_async(video_converter_sample_video, num_frames=3)
 

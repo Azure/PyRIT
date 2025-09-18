@@ -182,7 +182,9 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
                 continue  # Retry if no response (filtered or error)
 
             # Score the response including auxiliary and objective scoring
-            score = await self._evaluate_response_async(response=response, objective=context.objective, num_frames=self._num_frames)
+            score = await self._evaluate_response_async(
+                response=response, objective=context.objective, num_frames=self._num_frames
+            )
 
             # If there is no objective, we have a response but can't determine success
             if not self._objective_scorer:
@@ -300,7 +302,9 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
             orchestrator_identifier=self.get_identifier(),
         )
 
-    async def _evaluate_response_async(self, *, response: PromptRequestResponse, objective: str, num_frames: Optional[int] = None) -> Optional[Score]:
+    async def _evaluate_response_async(
+        self, *, response: PromptRequestResponse, objective: str, num_frames: Optional[int] = None
+    ) -> Optional[Score]:
         """
         Evaluate the response against the objective using the configured scorers.
 
@@ -310,7 +314,8 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         Args:
             response (PromptRequestResponse): The response from the model.
             objective (str): The natural-language description of the attack's objective.
-            num_frames (Optional[int]): Optional number of frames to extract from a video for scoring. Only applicable if the response is a video.
+            num_frames (Optional[int]): Optional number of frames to extract from a video for scoring.
+                Only applicable if the response is a video.
 
         Returns:
             Optional[Score]: The score from the objective scorer if configured, or None if
