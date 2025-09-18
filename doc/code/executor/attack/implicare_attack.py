@@ -23,7 +23,7 @@ from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     AttackScoringConfig,
     ConsoleAttackResultPrinter,
-    FlipAttack,
+    ImplicareAttack,
 )
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskRefusalScorer, TrueFalseInverterScorer
