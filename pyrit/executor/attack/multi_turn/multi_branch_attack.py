@@ -260,9 +260,6 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, AttackResult])
             MultiBranchAttackContext: The updated attack context after executing the command.
         """
         
-        intermediate_result: MultiBranchAttackResultT = self._self_intermediate_result_factory(ctx)   
-
-        
         if cmd not in MultiBranchCommandEnum:
             raise ValueError(f"Unknown command: {cmd}")
         
@@ -271,51 +268,51 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, AttackResult])
         
         match cmd:
             case CmdT.RETURN:
-                result = MultiBranchAttackResultT(
-                    self._return_handler(arg)
-                )
+                ctx = await self._return_handler(ctx, arg)
                 message = f"Returned to node {self._ctx.pointer.tag}."
             case CmdT.CONTINUE:
-                response = await self._continue_handler(arg)
+                ctx = await self._continue_handler(ctx, arg)
                 message = f"Continued and added node {self._ctx.pointer.tag}."
             case CmdT.GOTO:
-                self._goto_handler(arg)
+                ctx = await self._goto_handler(ctx, arg)
                 message = f"Moved to node {self._ctx.pointer.tag}."
             case CmdT.CLOSE:
-                print("WARNING: Closing the attack will return the final result" \
-                    "and not the attack object. Call `result = await mb_attack.close()`" \
-                    "if this is what you want. (This command has not changed the state of the attack.)")
+                ctx = await self._close_handler(ctx)
+                # Guarantee teardown and context frozen
+                message = f"Closed the attack and returned the result."
             case _:
                 raise ValueError(f"Unknown command: {cmd}")
             
         print(message)
         print(f"Current tree state: {self._ctx.tree.show()}")
-                          
-    def _return_handler(self, arg: str) -> None:
+        intermediate_result: MultiBranchAttackResultT = self._self_intermediate_result_factory(ctx)   
+        return intermediate_result
+
+    async def _return_handler(self, ctx: MultiBranchAttackContext, arg: str) -> None:
         """
         Handle the RETURN command, moving the pointer to the parent node.
         
         Args:
             arg (str): Not used for this command.
         """
-        context = self._ctx
-        if context.pointer == "root":
+        if ctx.pointer == "root":
             raise ValueError("Already at root node; cannot return to parent.")
-        parent = context.tree.parent(context.pointer)
+        parent = ctx.tree.parent(ctx.pointer)
         if parent is None:
             raise ValueError("Current node has no parent; cannot return.")
-        context.pointer = parent.identifier
-        
-    async def _continue_handler(self, arg: str) -> None:
+        ctx.pointer = parent.identifier
+        return ctx
+
+    async def _continue_handler(self, ctx: MultiBranchAttackContext, arg: str) -> MultiBranchAttackContext:
         """
         Handle the CONTINUE command, getting a model response.
         This command creates a new child node with the model's response to the provided
         prompt (arg).
         """
-        response = await self._objective_target.send_prompt_async(arg)
-        self._new_leaf_handler(response)
-        return response
-
+        user_input: PromptRequestResponse = self._create_user_input(arg)
+        model_response: PromptRequestResponse = await self._objective_target.send_prompt_async(user_input)
+        return self._new_leaf_handler(user_input, model_response, ctx)
+    
     def _goto_handler(self, arg: str) -> None:
         """
         Handle the GOTO command, moving the pointer to a specified node by its tag.
@@ -324,6 +321,27 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, AttackResult])
         if target is None:
             raise ValueError(f"Unknown node tag: {arg}")
         self._ctx.pointer = target.identifier
+
+    def _create_user_input(self, prompt: str) -> PromptRequestResponse:
+        """
+        Create a PromptRequestResponse object from the user's input prompt.
+        
+        Args:
+            prompt (str): The user's input prompt.
+        
+        Returns:
+            PromptRequestResponse: The constructed PromptRequestResponse object.
+        """
+        if not prompt or not isinstance(prompt, str):
+            raise ValueError("Prompt must be a non-empty string.")
+        
+        conversation_id = self._ctx.conversation_id or default_values.DEFAULT_CONVERSATION_ID
+        user_input = PromptRequestResponse(
+            conversation_id=conversation_id,
+            requests=[prompt],
+            responses=[]
+        )
+        return user_input
 
     async def _close_handler(self) -> MultiBranchAttackResult:
         """
@@ -335,7 +353,12 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, AttackResult])
     
         return await self._perform_async(context=self._ctx)
 
-    def _new_leaf_handler(self, prompt_request_response: PromptRequestResponse) -> None:
+    def _new_leaf_handler(
+        self, 
+        user_input: PromptRequestResponse,
+        model_output: PromptRequestResponse,
+        ctx: MultiBranchAttackContext
+    ) -> MultiBranchAttackContext:
         """
         Handle the creation of a new leaf after CONTINUE is executed.
         """

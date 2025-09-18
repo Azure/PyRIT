@@ -24,6 +24,7 @@ from typing import (
     TypeVar
 )
 
+from pyrit.models.strategy_result import StrategyResultIntermediate
 from pyrit.common import default_values
 from pyrit.common.logger import logger
 from pyrit.models import StrategyResultT
@@ -349,9 +350,12 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
                 await self._handle_event(event=StrategyEvent.ON_PRE_EXECUTE, context=context)
                 
                 result = await self._perform_async(context=context)
-                while result.context is not None:
-                    result = await self._perform_async(context=context)
-                    
+                if isinstance(result, StrategyResultIntermediate):
+                    while not result.final:
+                        context = result.context
+                        await self._handle_event(event=StrategyEvent.ON_PRE_EXECUTE, context=context)
+                        result = await self._perform_async(context=context)
+                
                 await self._handle_event(event=StrategyEvent.ON_POST_EXECUTE, context=context, result=result)
                 return result
         except Exception as e:
