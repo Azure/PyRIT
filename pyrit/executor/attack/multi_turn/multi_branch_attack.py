@@ -10,55 +10,19 @@ from typing import Optional, TypeVar
 
 from treelib import Tree, Node
 
+from pyrit.models.attack_result import AttackOutcome
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.prompt_normalizer.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.executor.attack.core import AttackStrategy, AttackContext, AttackScoringConfig
 from pyrit.models import AttackResult, PromptRequestResponse
 
+
 MultiBranchAttackContextT = TypeVar("MultiBranchAttackContextT", bound="MultiBranchAttackContext")
 MultiBranchAttackResultT = TypeVar("MultiBranchResultT", bound="MultiBranchAttackResult")
 CmdT = TypeVar("CmdT", bound="MultiBranchCommandEnum")
 
 logger = logging.getLogger(__name__)
-
-# class MultiBranchStrategy(AttackStrategy[MultiBranchAttackContextT, MultiBranchAttackResultT]):
-#     """
-#     Placeholder for the multi-branch attack strategy.
-#     This class is intended to implement an interactive attack strategy
-#     that allows users to explore multiple branches of an attack tree.
-#     """
-    
-#     @abstractmethod
-#     async def _perform_async_step(self, *, context: MultiBranchAttackContextT) -> MultiBranchAttackContextT:
-#         """
-#         Core implementation to be defined by subclasses.
-#         This contains the actual strategy logic that subclasses must implement;
-#         for strategies that require frequent intervention from either users or other inputs,
-#         this method should implement a single step of the strategy and return the updated context.    
-#         """
-#         pass
-
-#     @abstractmethod
-#     async def execute_with_context_async_step(self, *, context: MultiBranchAttackContextT) -> MultiBranchAttackContextT:
-#         """
-#         Execute the strategy asynchronously with an existing context.
-        
-#         This is highly dependent on the implementation of the strategy; the changes to
-#         the context are basically infinite in range.
-#         """
-#         pass
-
-#     @abstractmethod
-#     async def execute_async_step(self, *, context: MultiBranchAttackContextT) -> MultiBranchAttackContextT:
-#         """
-#         Execute the strategy asynchronously with an existing context.
-        
-#         This is highly dependent on the implementation of the strategy; the changes to
-#         the context are basically infinite in range.
-#         """
-#         pass
-
 
 @dataclass
 class MultiBranchAttackResult(AttackResult):
@@ -76,7 +40,10 @@ class MultiBranchAttackResult(AttackResult):
     
     Everything else is stashed in metadata but is otherwise lost.
     """
-    pass
+    
+    #TODO: Remove debugging fields
+    magic_caller: MultiBranchAttack = field(repr=False, compare=False, default=None)
+    
     
 @dataclass
 class MultiBranchAttackContext(AttackContext):
@@ -114,7 +81,7 @@ class MultiBranchCommandEnum(Enum):
     CONTINUE = "continue" # Provide a response to the model. By default, this branches.
     GOTO = "goto" # Go to a specific node by its name (label).
 
-class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, MultiBranchAttackResultT]):
+class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, AttackResult]):
     """
     Attach strategy that allows the user to explore multiple branches of an attack tree
     interactively; the full list of commands is defined in MultiBranchCommandEnum.
@@ -171,14 +138,10 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, MultiBranchAtt
         self._objective_target = objective_target
         self._objective_scorer = scoring_config.objective_scorer if scoring_config else AttackScoringConfig()
         
-        # Very important detail about context: it should not be initialized here,
-        # because there is no objective yet. However, to make this class interactive,
-        # we have to have a persistent context that survives multiple _perform_async calls.
-        self._ctx = None
         
     """ Public methods (interface) """
     
-    async def execute_step_async(self, cmd: CmdT, arg: Optional[str] = None) -> MultiBranchAttack:
+    async def execute_async(self, cmd: CmdT, arg: Optional[str] = None) -> MultiBranchAttackResultT:
         """
         Execute a single command in the multi-branch attack strategy.
         
@@ -204,7 +167,7 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, MultiBranchAtt
         # mb_attack = await mb_attack.step_async(cmd, arg)
         # or just
         # await mb_attack.step_async(cmd, arg).
-        await self._cmd_handler(cmd, arg)
+        await self._perform_async(context=self._ctx)
         return self
     
     async def close(self) -> MultiBranchAttackResult:
@@ -223,37 +186,54 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, MultiBranchAtt
         Returns:
             MultiBranchAttackResult: The result of the multi-branch attack.
         """
-        if self._ctx is None:
-            raise ValueError("Context is not initialized. Please run execute_async first.")
-        
-        await self._perform_async_step(context=self._ctx)
-        await self._teardown_async(context=self._ctx)
         return await self._close_handler()
 
-    """ Strategy Methods (AttackStrategyABC) """
+    """ Lifecycle Methods (from Strategy base class) """
 
-    # All of these methods use a hack to persist the context between calls.
-    # This is because the base class implementation of execute_async assumes
-    # that context is mutated without user intervention, which is not the case for
-    # this attack.
-    
     async def _validate_context(self, *, context):
-        return super()._validate_context(context=context)   
+        if not context.objective:
+            raise ValueError("Objective must be provided for MultiBranchAttack.")   
     
     async def _setup_async(self, *, context):
-        self._ctx = context if context else MultiBranchAttackContext()
-        return await super()._setup_async(context=context)
+        context = context if context else MultiBranchAttackContext()
 
-    async def _perform_async(self, *, context):
-        return await super()._perform_async(context=context)
+    async def _perform_async(
+        self, 
+        cmd: CmdT,
+        txt: str,
+        context: MultiBranchAttackContextT
+    ) -> MultiBranchAttackResultT:
+        new_context = await self._cmd_handler(cmd=cmd, ctx=context, arg=txt)
+        return self._intermediate_result_factory(new_context)
+        return await self._cmd_handler(cmd=cmd, ctx=context, txt=txt)
 
     async def _teardown_async(self, *, context):
         return await super()._teardown_async(context=context)
-
-    """ Stepwise Strategy Methods (internal and used only for MultiBranch) """
-
+    
     """ Helper methods (internal and used only for MultiBranch) """
-    async def _cmd_handler(self, cmd: CmdT, arg: Optional[str] = None) -> MultiBranchAttackContext:
+    async def _self_intermediate_result_factory(
+        self,
+        context: MultiBranchAttackContextT
+    ) -> MultiBranchAttackResultT:
+        return MultiBranchAttackResultT(
+            conversation_id=self._ctx.conversation_id,
+            objective=self._ctx.objective,
+            attack_identifier={"strategy": "multi_branch"},
+            last_response=None,
+            executed_turns=0,
+            execution_time_ms=0, 
+            outcome=AttackOutcome.UNDETERMINED, 
+            related_conversations=set(),
+            metadata={"tree": self._ctx.tree},
+            context=context
+        )
+    
+    async def _cmd_handler(
+        self, 
+        cmd: CmdT, 
+        ctx: MultiBranchAttackContext,
+        arg: Optional[str] = None
+    ) -> MultiBranchAttackContext:
         """
         Parse the command and its arguments for execution.
         You will notice some problems immediately; this is a very rough implementation.
@@ -280,6 +260,9 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, MultiBranchAtt
             MultiBranchAttackContext: The updated attack context after executing the command.
         """
         
+        intermediate_result: MultiBranchAttackResultT = self._self_intermediate_result_factory(ctx)   
+
+        
         if cmd not in MultiBranchCommandEnum:
             raise ValueError(f"Unknown command: {cmd}")
         
@@ -288,7 +271,9 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, MultiBranchAtt
         
         match cmd:
             case CmdT.RETURN:
-                self._return_handler(arg)
+                result = MultiBranchAttackResultT(
+                    self._return_handler(arg)
+                )
                 message = f"Returned to node {self._ctx.pointer.tag}."
             case CmdT.CONTINUE:
                 response = await self._continue_handler(arg)
@@ -347,31 +332,8 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, MultiBranchAtt
         Returns:
             MultiBranchAttackResult: The result of the multi-branch attack.
         """
-        
-        context = self._ctx
-        # The current pointer is the "winning" conversation.
-        winning_node = context.tree.get_node(context.pointer)
-        if winning_node is None or not winning_node.data:
-            raise ValueError("Current node has no associated conversation data.")
-        
-        # Extract the conversation ID and last response from the winning node's data.
-        conversation_id = winning_node.data.conversation_id
-        last_response = winning_node.data.responses[-1] if winning_node.data.responses else None
-        
-        # Construct the attack result.
-        result = MultiBranchAttackResult(
-            conversation_id=conversation_id,
-            objective=context.objective,
-            attack_identifier={"strategy": "multi_branch"},
-            last_response=last_response,
-            executed_turns=len(winning_node.data.responses),
-            execution_time_ms=0, 
-            outcome=AttackOutcome.UNDETERMINED, 
-            related_conversations={conversation_id},
-            metadata={"tree": context.tree},
-        )
-        
-        return result
+    
+        return await self._perform_async(context=self._ctx)
 
     def _new_leaf_handler(self, prompt_request_response: PromptRequestResponse) -> None:
         """

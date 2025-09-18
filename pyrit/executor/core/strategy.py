@@ -225,10 +225,14 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
         pass
 
     @abstractmethod
-    async def _perform_async(self, *, context: StrategyContextT) -> Union[StrategyResultT, Self]:
+    async def _perform_async(self, *, context: StrategyContextT) -> StrategyResultT:
         """
         Core implementation to be defined by subclasses.
         This contains the actual strategy logic that subclasses must implement.
+        
+        The contract is that this method returns a StrategyResult; the result may be 
+        intermediate and possess a non-null context, indicating that the strategy should be
+        invoked again with the same context.
 
         Args:
             context (StrategyContextT): The context for the strategy.
@@ -343,7 +347,11 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
         try:
             async with self._execution_context(context):
                 await self._handle_event(event=StrategyEvent.ON_PRE_EXECUTE, context=context)
+                
                 result = await self._perform_async(context=context)
+                while result.context is not None:
+                    result = await self._perform_async(context=context)
+                    
                 await self._handle_event(event=StrategyEvent.ON_POST_EXECUTE, context=context, result=result)
                 return result
         except Exception as e:
