@@ -243,7 +243,7 @@ class Scorer(abc.ABC):
         self,
         *,
         request_responses: Sequence[PromptRequestResponse],
-        objectives: Sequence[str],
+        objectives: Optional[Sequence[str]] = None,
         batch_size: int = 10,
         role_filter: Optional[ChatMessageRole] = None,
         skip_on_error: bool = False,
@@ -271,8 +271,9 @@ class Scorer(abc.ABC):
                 the number of request_responses.
         """
         if not objectives:
-            raise ValueError("Objectives must be provided.")
-        if len(objectives) != len(request_responses):
+            objectives = [""] * len(request_responses)
+
+        elif len(objectives) != len(request_responses):
             raise ValueError("The number of tasks must match the number of request_responses.")
 
         if len(request_responses) == 0:

@@ -29,7 +29,7 @@ class InsecureCodeScorer(FloatScaleScorer):
         system_prompt_path: Optional[Union[str, Path]] = None,
         validator: Optional[ScorerPromptValidator] = None,
     ):
-        super().__init__()
+        super().__init__(validator=validator or self._default_validator)
 
         if not system_prompt_path:
             system_prompt_path = SCORER_CONFIG_PATH / "insecure_code" / "system_prompt.yaml"

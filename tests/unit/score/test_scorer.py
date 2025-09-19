@@ -3,18 +3,20 @@
 
 import asyncio
 import os
+import pytest
+
 from pathlib import Path
 from textwrap import dedent
 from typing import Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 
 from pyrit.common.path import SCORER_CONFIG_PATH
 from pyrit.exceptions import InvalidJsonException, remove_markdown_json
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer, ScorerPromptValidator
+from pyrit.memory import CentralMemory
 
 
 
@@ -262,7 +264,7 @@ def test_scorer_path_verification_confirmation():
     assert attempted_paths == resolved_paths
 
 
-def test_scorer_extract_task_from_response():
+def test_scorer_extract_task_from_response(patch_central_database):
     """
     Test that _extract_task_from_response properly gathers text from the
     last turn. We'll mock out the memory's get_prompt_request_pieces method.
@@ -286,7 +288,7 @@ def test_scorer_extract_task_from_response():
 
     with patch.object(CentralMemory, "get_memory_instance", return_value=mock_memory):
 
-        extracted_task = scorer._extract_task_from_response(response_piece)
+        extracted_task = scorer._extract_objective_from_response(response_piece.to_prompt_request_response())
         assert "User's question about the universe" in extracted_task
 
 
@@ -298,27 +300,30 @@ async def test_scorer_score_responses_batch_async(patch_central_database):
     """
     scorer = MockScorer()
 
-    with patch.object(scorer, "score_prompts_with_tasks_batch_async", new_callable=AsyncMock) as mock_batch:
+    with patch.object(scorer, "score_async", new_callable=AsyncMock) as mock_score_async:
         fake_scores = [MagicMock(), MagicMock()]
-        mock_batch.return_value = fake_scores
+        mock_score_async.return_value = fake_scores
 
-        user_piece = PromptRequestPiece(role="user", original_value="Hello user", sequence=1)
-        assistant_piece = PromptRequestPiece(role="assistant", original_value="Hello from assistant", sequence=2)
+        user_req = PromptRequestPiece(role="user", original_value="Hello user", sequence=1).to_prompt_request_response()
+        assistant_resp = PromptRequestPiece(role="assistant", original_value="Hello from assistant", sequence=2).to_prompt_request_response()
 
-        results = await scorer.score_responses_inferring_tasks_batch_async(
-            request_responses=[user_piece, assistant_piece], batch_size=10
+        results = await scorer.score_prompts_batch_async(
+            request_responses=[user_req, assistant_resp], batch_size=10, infer_objective_from_request=True
         )
 
-        mock_batch.assert_awaited_once()
-        _, call_kwargs = mock_batch.call_args
+        # Verify mock_score_async was called twice
+        assert mock_score_async.call_count == 2
+        
+        # Get the call_args for the first call
+        _, first_call_kwargs = mock_score_async.call_args_list[0]
 
-        assert "request_responses" in call_kwargs
-        assert "tasks" in call_kwargs
-        assert len(call_kwargs["request_responses"]) == 1
-        assert call_kwargs["request_responses"][0] == assistant_piece
+        assert "request_response" in first_call_kwargs
+        assert "objective" in first_call_kwargs
+        assert "infer_objective_from_request" in first_call_kwargs
+        assert first_call_kwargs["request_response"] == user_req
 
-        assert len(call_kwargs["tasks"]) == 1
-        assert results == fake_scores
+        assert fake_scores[0] in results
+        assert len(fake_scores) == 2
 
 
 @pytest.mark.asyncio
