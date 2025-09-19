@@ -3,7 +3,7 @@
 
 import enum
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 import yaml
 
@@ -36,7 +36,7 @@ class SelfAskCategoryScorer(TrueFalseScorer):
         self,
         *,
         chat_target: PromptChatTarget,
-        content_classifier: Path,
+        content_classifier_path: Union[str, Path],
         score_aggregator: TrueFalseScoreAggregator = OR_,
         validator: Optional[ScorerPromptValidator] = None,
     ) -> None:
@@ -45,20 +45,24 @@ class SelfAskCategoryScorer(TrueFalseScorer):
 
         Args:
             chat_target (PromptChatTarget): The chat target to interact with.
-            content_classifier (Path): The path to the classifier file.
+            content_classifier_path (Path): The path to the classifier file.
         """
+
         super().__init__(score_aggregator=score_aggregator, validator=validator or self._default_validator)
-        
+        content_classifier_path = self._verify_and_resolve_path(content_classifier_path)
+
         self._prompt_target = chat_target
 
-        category_file_contents = yaml.safe_load(content_classifier.read_text(encoding="utf-8"))
+        category_file_contents = yaml.safe_load(content_classifier_path.read_text(encoding="utf-8"))
 
         self._no_category_found_category = category_file_contents["no_category_found"]
         categories_as_string = self._content_classifier_to_string(category_file_contents["categories"])
 
-        scoring_instructions_template = SeedPrompt.from_yaml_file(
+        content_classifier_system_prompt = self._verify_and_resolve_path(
             CONTENT_CLASSIFIERS_PATH / "content_classifier_system_prompt.yaml"
         )
+
+        scoring_instructions_template = SeedPrompt.from_yaml_file(content_classifier_system_prompt)
 
         self._system_prompt = scoring_instructions_template.render_template_value(
             categories=categories_as_string,

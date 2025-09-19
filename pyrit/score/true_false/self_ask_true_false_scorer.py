@@ -3,11 +3,11 @@
 
 import enum
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import yaml
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import SCORER_CONFIG_PATH
 from pyrit.models import PromptRequestPiece, SeedPrompt
 from pyrit.models.score import Score, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
@@ -16,7 +16,7 @@ from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import OR_, TrueFalseScoreAggregator
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
-TRUE_FALSE_QUESTIONS_PATH = Path(DATASETS_PATH, "score", "true_false_question").resolve()
+TRUE_FALSE_QUESTIONS_PATH = Path(SCORER_CONFIG_PATH, "true_false_question").resolve()
 
 
 class TrueFalseQuestionPaths(enum.Enum):
@@ -68,9 +68,9 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
         self,
         *,
         chat_target: PromptChatTarget,
-        true_false_question_path: Optional[Path] = None,
+        true_false_question_path: Optional[Union[str, Path]] = None,
         true_false_question: Optional[TrueFalseQuestion] = None,
-        true_false_system_prompt_path: Optional[Path] = None,
+        true_false_system_prompt_path: Optional[Union[str, Path]] = None,
         validator: Optional[ScorerPromptValidator] = None,
         score_aggregator: TrueFalseScoreAggregator = OR_
     ) -> None:
@@ -81,7 +81,17 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
             raise ValueError("Either true_false_question_path or true_false_question must be provided.")
         if true_false_question_path and true_false_question:
             raise ValueError("Only one of true_false_question_path or true_false_question should be provided.")
+
+        true_false_system_prompt_path = (
+            true_false_system_prompt_path
+            if true_false_system_prompt_path
+            else TRUE_FALSE_QUESTIONS_PATH / "true_false_system_prompt.yaml"
+        )
+
+        true_false_system_prompt_path = self._verify_and_resolve_path(true_false_system_prompt_path)
+
         if true_false_question_path:
+            true_false_question_path = self._verify_and_resolve_path(true_false_question_path)
             true_false_question = yaml.safe_load(true_false_question_path.read_text(encoding="utf-8"))
 
         for key in ["category", "true_description", "false_description"]:
@@ -93,12 +103,6 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
         false_category = true_false_question["false_description"]
 
         metadata = true_false_question["metadata"] if "metadata" in true_false_question else ""
-
-        true_false_system_prompt_path = (
-            true_false_system_prompt_path
-            if true_false_system_prompt_path
-            else TRUE_FALSE_QUESTIONS_PATH / "true_false_system_prompt.yaml"
-        )
 
         scoring_instructions_template = SeedPrompt.from_yaml_file(true_false_system_prompt_path)
 

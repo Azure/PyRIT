@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import os
 from datetime import datetime
 from typing import List
 
@@ -325,7 +326,9 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
         Returns:
             List[str]: List of markdown lines for the image.
         """
-        return [f"![Image]({image_path})\n"]
+        relative_path = os.path.relpath(image_path)
+        posix_path = relative_path.replace("\\", "/")
+        return [f"![Image]({posix_path})\n"]
 
     def _format_audio_content(self, *, audio_path: str) -> List[str]:
         """

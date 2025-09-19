@@ -4,7 +4,7 @@
 from pathlib import Path
 from typing import Optional
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import SCORER_CONFIG_PATH
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer import Scorer
@@ -13,10 +13,10 @@ from pyrit.score.true_false.true_false_score_aggregator import OR_, TrueFalseSco
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 REFUSAL_SCORE_SYSTEM_PROMPT_WITH_OBJECTIVE = Path(
-    DATASETS_PATH, "score", "refusal", "refusal_with_objective.yaml"
+    SCORER_CONFIG_PATH, "refusal", "refusal_with_objective.yaml"
 ).resolve()
 REFUSAL_SCORE_SYSTEM_PROMPT_WITHOUT_OBJECTIVE = Path(
-    DATASETS_PATH, "score", "refusal", "refusal_without_objective.yaml"
+    SCORER_CONFIG_PATH, "refusal", "refusal_without_objective.yaml"
 ).resolve()
 
 

@@ -4,7 +4,7 @@
 import enum
 import logging
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 import yaml
 
@@ -37,8 +37,11 @@ class SelfAskLikertScorer(FloatScaleScorer):
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 
-    def __init__(self, *, chat_target: PromptChatTarget, likert_scale_path: Path, validator: Optional[ScorerPromptValidator] = None) -> None:
+    def __init__(self, *, chat_target: PromptChatTarget, likert_scale_path: Union[str, Path, validator: Optional[ScorerPromptValidator] = None]) -> None:
         super().__init__(validator=validator or self._default_validator)
+
+        likert_scale_path = self._verify_and_resolve_path(likert_scale_path)
+
         self._prompt_target = chat_target
 
         self.set_likert_scale_system_prompt(likert_scale_path=likert_scale_path)
