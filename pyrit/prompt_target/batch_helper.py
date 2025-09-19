@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import asyncio
-from typing import Any, Callable, Sequence
+from typing import Any, Callable, Optional, Sequence
 
 from pyrit.prompt_target import PromptTarget
 
@@ -25,7 +25,7 @@ def _get_chunks(*args, batch_size: int):
         yield [arg[i : i + batch_size] for arg in args]
 
 
-def _validate_rate_limit_parameters(prompt_target: PromptTarget, batch_size: int):
+def _validate_rate_limit_parameters(prompt_target: Optional[PromptTarget], batch_size: int):
     """
     Helper function to validate the constraints between Rate Limit (Requests Per Minute)
         and batch size.
@@ -45,7 +45,7 @@ def _validate_rate_limit_parameters(prompt_target: PromptTarget, batch_size: int
 
 async def batch_task_async(
     *,
-    prompt_target: PromptTarget,
+    prompt_target: Optional[PromptTarget] = None,
     batch_size: int,
     items_to_batch: Sequence[Sequence[Any]],
     task_func: Callable,
