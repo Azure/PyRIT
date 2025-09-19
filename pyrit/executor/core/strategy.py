@@ -9,30 +9,20 @@ import logging
 import uuid
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
-from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, AsyncIterator, Dict, Generic, MutableMapping, Optional, TypeVar
+from typing import Any, AsyncIterator, Dict, Generic, MutableMapping, TypeVar, Optional, overload
 
-from pyrit.common import default_values
+from pyrit.common import Duplicable, default_values
 from pyrit.common.logger import logger
 from pyrit.models import StrategyResultT
 
 StrategyContextT = TypeVar("StrategyContextT", bound="StrategyContext")
 
-
 @dataclass
-class StrategyContext(ABC):
+class StrategyContext(ABC, Duplicable):
     """Base class for all strategy contexts"""
-
-    def duplicate(self: StrategyContextT) -> StrategyContextT:
-        """
-        Create a deep copy of the context.
-
-        Returns:
-            StrategyContext: A deep copy of the context.
-        """
-        return deepcopy(self)
+    pass
 
 
 class StrategyEvent(Enum):
@@ -342,9 +332,11 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
             # Raise a specific execution error
             raise RuntimeError(f"Strategy execution failed for {self.__class__.__name__}: {str(e)}") from e
 
-    async def execute_async(self, **kwargs) -> StrategyResultT:
+    async def execute_async(self, context: Optional[StrategyContextT] = None, **kwargs) -> StrategyResultT:
         """
         Execute the strategy asynchronously with the given keyword arguments.
+        Iterative attacks may call this multiple times, with one new context object per call.
         """
-        context = self._context_type(**kwargs)
+        if not context:
+            context = self._context_type(**kwargs)
         return await self.execute_with_context_async(context=context)

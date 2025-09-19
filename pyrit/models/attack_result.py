@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, Optional, TypeVar
 
+from pyrit.executor.core.strategy import StrategyContext
 from pyrit.models.conversation_reference import ConversationReference, ConversationType
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.score import Score
@@ -85,3 +86,30 @@ class AttackResult(StrategyResult):
 
     def __str__(self):
         return f"AttackResult: {self.conversation_id}: {self.outcome.value}: " f"{self.objective[:50]}..."
+
+@dataclass
+class IntermediateAttackResult(AttackResult):
+    """
+    Subclass for AttackResult to indicate that the result is intermediate
+    and that the attack should be invoked repeatedly with the same context.
+    
+    Iterative attacks return this result to indicate that the attack is not yet complete;
+    it is expected that attacks using this class will manage their own lifecycle guarantees
+    using the AttackStrategy methods.
+    
+    The inner attribute contains the actual AttackResult produced so far. It should not be
+    another instance of IntermediateAttackResult, because we want to avoid recursion.
+    """
+    context: Optional[StrategyContext] = None
+    
+    # Note that we subclass from AttackResult to inherit all its fields;
+    # this instance will likely be another IntermediateAttackResult,
+    # but we use AttackResult to keep the implementation ergonomic.
+        
+    @property
+    def final(self) -> bool:
+        """
+        Whether this result is final (i.e., not intermediate).
+        """
+        return self.context is None
+    
