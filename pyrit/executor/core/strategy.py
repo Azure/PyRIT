@@ -345,6 +345,9 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
 
         # Execution with lifecycle management
         # This uses an async context manager to ensure setup and teardown are handled correctly
+        
+        # Note on iterative strategies:
+        
         try:
             async with self._execution_context(context):
                 await self._handle_event(event=StrategyEvent.ON_PRE_EXECUTE, context=context)
