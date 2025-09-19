@@ -9,7 +9,7 @@ import pytest
 from unit.mocks import get_sample_conversations
 
 from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestPiece
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.orchestrator.scoring_orchestrator import ScoringOrchestrator
 from pyrit.score import SubStringScorer
 

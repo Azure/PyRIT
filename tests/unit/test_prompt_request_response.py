@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from pyrit.models import PromptResponse
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models.prompt_request_response import PromptRequestResponse, PromptRequestPiece
 
 
 @pytest.fixture
@@ -24,6 +24,27 @@ def prompt_response_1() -> PromptResponse:
         created_at=1,
         logprobs=True,
     )
+
+
+@pytest.fixture
+def prompt_request_pieces() -> list[PromptRequestPiece]:
+    return [
+        PromptRequestPiece(
+            role="user",
+            original_value="First piece",
+            conversation_id="test-conversation-1",
+        ),
+        PromptRequestPiece(
+            role="user",
+            original_value="Second piece",
+            conversation_id="test-conversation-1",
+        ),
+        PromptRequestPiece(
+            role="user",
+            original_value="Third piece",
+            conversation_id="test-conversation-1",
+        ),
+    ]
 
 @pytest.fixture
 def prompt_request_response(prompt_request_pieces) -> PromptRequestResponse:
@@ -55,7 +76,7 @@ def test_get_piece_returns_correct_piece(prompt_request_response: PromptRequestR
     # Test getting specific pieces by index
     second_piece = prompt_request_response.get_piece(1)
     assert second_piece.original_value == "Second piece"
-    assert second_piece.role == "assistant"
+    assert second_piece.role == "user"
 
     third_piece = prompt_request_response.get_piece(2)
     assert third_piece.original_value == "Third piece"
@@ -68,6 +89,5 @@ def test_get_piece_raises_index_error_for_invalid_index(prompt_request_response:
 
 
 def test_get_piece_raises_value_error_for_empty_request() -> None:
-    empty_response = PromptRequestResponse(request_pieces=[])
-    with pytest.raises(ValueError, match="Empty request pieces"):
-        empty_response.get_piece()
+    with pytest.raises(ValueError, match="at least one request piece"):
+        PromptRequestResponse(request_pieces=[])

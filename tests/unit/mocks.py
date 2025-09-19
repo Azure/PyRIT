@@ -202,7 +202,7 @@ def get_sample_conversations() -> MutableSequence[PromptRequestResponse]:
                 original_value="original prompt text",
                 converted_value="I'm fine, thank you!",
                 conversation_id=conversation_1,
-                sequence=0,
+                sequence=1,
                 orchestrator_identifier=attack_identifier,
             ).to_prompt_request_response(),
             PromptRequestPiece(

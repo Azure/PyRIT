@@ -9,14 +9,13 @@ import pytest
 from unit.mocks import get_sample_conversations
 
 from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestPiece
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.score import BatchScorer, SubStringScorer
 
 
 @pytest.fixture
-def sample_conversations() -> MutableSequence[PromptRequestPiece]:
-    conversations = get_sample_conversations()
-    return PromptRequestResponse.flatten_to_prompt_request_pieces(conversations)
+def sample_conversations() -> MutableSequence[PromptRequestResponse]:
+    return get_sample_conversations()
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -51,16 +50,16 @@ class TestBatchScorerScoreResponsesByFilters:
 
     @pytest.mark.asyncio
     async def test_score_responses_by_filters_basic_functionality(
-        self, sample_conversations: MutableSequence[PromptRequestPiece]
+        self, sample_conversations: MutableSequence[PromptRequestResponse]
     ) -> None:
         """Test basic scoring functionality with filters."""
         memory = MagicMock()
-        memory.get_prompt_request_pieces.return_value = sample_conversations
+        memory.get_prompt_request_pieces.return_value = [sample_conversations[1].request_pieces[0]]
 
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
             scorer = MagicMock()
             test_score = MagicMock()
-            scorer.score_responses_inferring_tasks_batch_async = AsyncMock(return_value=[test_score])
+            scorer.score_prompts_batch_async = AsyncMock(return_value=[test_score])
 
             batch_scorer = BatchScorer()
 
@@ -69,20 +68,20 @@ class TestBatchScorerScoreResponsesByFilters:
             )
 
             memory.get_prompt_request_pieces.assert_called_once()
-            scorer.score_responses_inferring_tasks_batch_async.assert_called_once()
+            scorer.score_prompts_batch_async.assert_called_once()
             assert scores[0] == test_score
 
     @pytest.mark.asyncio
     async def test_score_responses_by_filters_with_all_parameters(
-        self, sample_conversations: MutableSequence[PromptRequestPiece]
+        self, sample_conversations: MutableSequence[PromptRequestResponse]
     ) -> None:
         """Test scoring with all filter parameters."""
         memory = MagicMock()
-        memory.get_prompt_request_pieces.return_value = sample_conversations
+        memory.get_prompt_request_pieces.return_value =  [sample_conversations[1].request_pieces[0]]
 
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
             scorer = MagicMock()
-            scorer.score_responses_inferring_tasks_batch_async = AsyncMock(return_value=[])
+            scorer.score_prompts_batch_async = AsyncMock(return_value=[])
 
             batch_scorer = BatchScorer()
 
@@ -191,15 +190,15 @@ class TestBatchScorerErrorHandling:
 
     @pytest.mark.asyncio
     async def test_score_responses_by_filters_no_filters_provided(
-        self, sample_conversations: MutableSequence[PromptRequestPiece]
+        self, sample_conversations: MutableSequence[PromptRequestResponse]
     ) -> None:
         """Test scoring when no filters are provided."""
         memory = MagicMock()
-        memory.get_prompt_request_pieces.return_value = sample_conversations
+        memory.get_prompt_request_pieces.return_value = [sample_conversations[1].request_pieces[0]]
 
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
             scorer = MagicMock()
-            scorer.score_responses_inferring_tasks_batch_async = AsyncMock(return_value=[])
+            scorer.score_prompts_batch_async = AsyncMock(return_value=[])
 
             batch_scorer = BatchScorer()
 

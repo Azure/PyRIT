@@ -87,7 +87,7 @@ class PromptRequestResponse:
             if request_piece.sequence != sequence:
                 raise ValueError("Inconsistent sequences within the same prompt request response entry.")
 
-            if not request_piece.converted_value:
+            if request_piece.converted_value == None:
                 raise ValueError("Converted prompt text is None.")
 
             if request_piece.role != role:
