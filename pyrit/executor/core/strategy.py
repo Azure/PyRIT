@@ -9,41 +9,20 @@ import logging
 import uuid
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
-from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
-from typing import (
-    Any, 
-    AsyncIterator,
-    Dict, 
-    Generic, 
-    MutableMapping, 
-    Optional, 
-    Self, 
-    Union, 
-    TypeVar
-)
+from typing import Any, AsyncIterator, Dict, Generic, MutableMapping, TypeVar, Optional, overload
 
-from pyrit.models.strategy_result import StrategyResultIntermediate
-from pyrit.common import default_values
+from pyrit.common import Duplicable, default_values
 from pyrit.common.logger import logger
 from pyrit.models import StrategyResultT
 
 StrategyContextT = TypeVar("StrategyContextT", bound="StrategyContext")
 
-
 @dataclass
-class StrategyContext(ABC):
+class StrategyContext(ABC, Duplicable):
     """Base class for all strategy contexts"""
-
-    def duplicate(self: StrategyContextT) -> StrategyContextT:
-        """
-        Create a deep copy of the context.
-
-        Returns:
-            StrategyContext: A deep copy of the context.
-        """
-        return deepcopy(self)
+    pass
 
 
 class StrategyEvent(Enum):
@@ -230,10 +209,6 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
         """
         Core implementation to be defined by subclasses.
         This contains the actual strategy logic that subclasses must implement.
-        
-        The contract is that this method returns a StrategyResult; the result may be 
-        intermediate and possess a non-null context, indicating that the strategy should be
-        invoked again with the same context.
 
         Args:
             context (StrategyContextT): The context for the strategy.
@@ -345,20 +320,10 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
 
         # Execution with lifecycle management
         # This uses an async context manager to ensure setup and teardown are handled correctly
-        
-        # Note on iterative strategies:
-        
         try:
             async with self._execution_context(context):
                 await self._handle_event(event=StrategyEvent.ON_PRE_EXECUTE, context=context)
-                
                 result = await self._perform_async(context=context)
-                if isinstance(result, StrategyResultIntermediate):
-                    while not result.final:
-                        context = result.context
-                        await self._handle_event(event=StrategyEvent.ON_PRE_EXECUTE, context=context)
-                        result = await self._perform_async(context=context)
-                
                 await self._handle_event(event=StrategyEvent.ON_POST_EXECUTE, context=context, result=result)
                 return result
         except Exception as e:
@@ -367,9 +332,11 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
             # Raise a specific execution error
             raise RuntimeError(f"Strategy execution failed for {self.__class__.__name__}: {str(e)}") from e
 
-    async def execute_async(self, **kwargs) -> StrategyResultT:
+    async def execute_async(self, context: Optional[StrategyContextT] = None, **kwargs) -> StrategyResultT:
         """
         Execute the strategy asynchronously with the given keyword arguments.
+        Iterative attacks may call this multiple times, with one new context object per call.
         """
-        context = self._context_type(**kwargs)
+        if not context:
+            context = self._context_type(**kwargs)
         return await self.execute_with_context_async(context=context)

@@ -24,7 +24,6 @@ from pyrit.models import (
     AttackOutcome,
     AttackResult, 
     PromptRequestResponse,
-    IntermediateAttackResult
 )
 
 
@@ -35,7 +34,7 @@ CmdT = TypeVar("CmdT", bound="MultiBranchCommandEnum")
 logger = logging.getLogger(__name__)
 
 @dataclass
-class MultiBranchAttackResult(IntermediateAttackResult):
+class MultiBranchAttackResult(AttackResult):
     """
     The multibranch attack result is basically a wrapper for the AttackResult base
     class, but with a tree structure in the metadata for reference.
@@ -78,11 +77,6 @@ class MultiBranchAttackContext(AttackContext):
     tree: Tree = field(default_factory=Tree)
     pointer: str = "root" # This is the node identifier.
     
-    def __init__(self, **kwargs):
-        for K, V in kwargs.items():
-            if isinstance(V, MultiBranchAttackContext):
-                self = self.duplicate(V)
-
 class MultiBranchCommandEnum(Enum):
     """
     All possible commands that can be executed at each step of the multibranch attack.
@@ -114,13 +108,22 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, AttackResult])
         Implementation of the multi-branch attack strategy, an interactive strategy where
         users can explore different branches of an attack tree.
         
-        Things that should be supported, but aren't yet:
-        * Config objects (constraints on tree size, depth, branching factor, etc.)
-        * Prompt converters
-        * Replay using a list of commands (interactive is the only way right now)
-        * Unit tests (none exist, and this doesn't extend the base AttackStrategy contracts
-        faithfully, so it can't)
+        Usage Pattern:
+        >>> attack = MultiBranchAttack(objective_target, objective)
+        >>> result = await attack.step(MultiBranchCommandEnum.CONTINUE, "Prompt text")
+        >>> result = 
+        >>> result = await attack.close()
+        
+        alternatively,
+        
+        ```
+        attack = MultiBranchAttack(objective_target, objective)
+        while result.context:
+            command, argument = get_user_input()  # Pseudo-function to get user input
+            result = await attack.step(command, argument)
+        ```
 
+       
         Attributes:
             objective_target: The target model for the attack.
             prompt_normalizer: Optional prompt normalizer to use for the attack.
@@ -156,8 +159,8 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, AttackResult])
     async def step(
         self, 
         cmd: CmdT, 
-        arg: Optional[str] = None,
-        last_step: Optional[IntermediateAttackResult] = None,
+        prev: MultiBranchAttackResultT,
+        arg: Optional[str] = None
     ) -> MultiBranchAttackResultT:
         """
         Execute a single command in the multi-branch attack strategy.
@@ -173,29 +176,19 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, AttackResult])
         Raises:
             ValueError: If an invalid command is provided or if required arguments are missing.
         """
-        if last_step:
-            # In this scenario we are resuming from a previous state.
-            ...
+
             
-        else:
-            # In this scenario we are starting fresh.
-            ...
+        return await self.execute_async(cmd=cmd, context=prev, arg=arg)
     
     async def execute_async(
         self, 
         cmd: CmdT,
-        context: MultiBranchAttackContext,
+        context: MultiBranchAttackContext = None,
         arg: Optional[str] = None
     ) -> AttackResult:
         """
-        Context is a mandatory field here because 
         """
-        if ...:
-            ...
-            
-        result = await self._perform_async(cmd=cmd, txt=arg, ctx=self._ctx)
-        self._ctx = result.context
-        return result
+        return await super().execute_async(context=context)
 
     async def close(self) -> MultiBranchAttackResult:
         """
@@ -204,9 +197,6 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, AttackResult])
         Returns:
             MultiBranchAttackResult: The result of the multi-branch attack.
         """
-        # 1 Freeze the current context.
-        
-        # 2 Send the context to a handler to process it into a Result.
         return await self._close_handler()
 
     """ Lifecycle Methods (from Strategy base class) """
@@ -237,15 +227,15 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, AttackResult])
     ) -> MultiBranchAttackResultT:
 
         return MultiBranchAttackResultT(
-            conversation_id=self._ctx.conversation_id,
-            objective=self._ctx.objective,
+            conversation_id=context.pointer.id,
+            objective=context.objective,
             attack_identifier={"strategy": "multi_branch"},
-            last_response=None,
-            executed_turns=0,
+            last_response=context.pointer.data.get("responses", [])[-1] if context.pointer.data else None,
+            executed_turns=len(context.tree.path) - 1,
             execution_time_ms=0, 
             outcome=AttackOutcome.UNDETERMINED, 
             related_conversations=set(),
-            metadata={"tree": self._ctx.tree},
+            metadata={"tree": context.tree},
             context=context
         )
     
