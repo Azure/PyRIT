@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import abc
 import asyncio
-import cv2
 import json
 import logging
 import os
@@ -15,6 +14,8 @@ import uuid
 from abc import abstractmethod
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Union
+
+import cv2
 
 from pyrit.exceptions import (
     InvalidJsonException,
@@ -351,13 +352,25 @@ class Scorer(abc.ABC):
             except OSError as e:
                 logger.warning(f"Error removing temporary frame file {path}: {e}")
 
+        return self._aggregate_frame_scores(frame_scores)
+
+    def _aggregate_frame_scores(self, frame_scores: list[Score]) -> list[Score]:
+        """
+        Aggregates a list of frame scores into a single score for the entire video.
+
+        Args:
+            frame_scores (list[Score]): The list of frame scores to aggregate.
+
+        Returns:
+            Score (list[Score]): The aggregated scores for the entire video.
+        """
         # Aggregate frame scores into one score for the entire video
         aggregate_score = None
         original_rationale = None
 
         # For true_false scorers, if any of the scores are True, the aggregate score is True
         if self.scorer_type == "true_false":
-            true_scores = [score for score in frame_scores if score.get_value() == True]
+            true_scores = [score for score in frame_scores if score.get_value()]
             true_count = len(true_scores)
 
             # Update the rationale to reflect the aggregation logic
@@ -591,7 +604,8 @@ class Scorer(abc.ABC):
             role_filter: Only score pieces with this role (default: "assistant")
             task: Optional task description for scoring context
             skip_on_error: If True, skip scoring pieces that have errors (default: True)
-            num_frames: Optional number of frames to extract from a video for scoring. Only applicable if the response is a video.
+            num_frames: Optional number of frames to extract from a video for scoring. Only applicable
+                if the response is a video.
 
         Returns:
             List of all scores from all scorers
@@ -650,7 +664,8 @@ class Scorer(abc.ABC):
             role_filter: Only score pieces with this role (default: "assistant")
             task: Optional task description for scoring context
             skip_on_error: If True, skip scoring pieces that have errors (default: True)
-            num_frames: Optional number of frames to extract from a video for scoring. Only applicable if the response is a video.
+            num_frames: Optional number of frames to extract from a video for scoring. Only applicable
+                if the response is a video.
 
         Returns:
             The first successful score, or the first score if no success found, or None if no scores
@@ -719,7 +734,8 @@ class Scorer(abc.ABC):
             role_filter (ChatMessageRole): Only score pieces with this role (default: `assistant`)
             task (Optional[str]): Optional task description for scoring context
             skip_on_error (bool): If True, skip scoring pieces that have errors (default: `True`)
-            num_frames (Optional[int]): Optional number of frames to extract from a video for scoring. Only applicable if the response is a video.
+            num_frames (Optional[int]): Optional number of frames to extract from a video for scoring.
+                Only applicable if the response is a video.
 
         Returns:
             Dict[str,List[Score]]: Dictionary with keys `auxiliary_scores` and `objective_scores`
