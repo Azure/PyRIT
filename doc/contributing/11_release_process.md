@@ -28,6 +28,11 @@ not stable and anything may change at any time.
 For that reason, the minor version may indicate breaking changes, too,
 at least until we hit major version `1`.
 
+We will always have a .dev version in main, but there are circumstances when
+we might want to release versions that aren't final; consult
+https://packaging.python.org/en/latest/discussions/versioning/ to determine whether
+there should be any postfixes on the release version.
+
 With that in mind, the reason for the release and the set of changes
 that happened since the last release will influence the new version number.
 
@@ -100,7 +105,9 @@ Before running the demos, execute `az login` or `az login --use-device-code`, as
 
 Additionally, verify that your environment file includes all the test secrets needed to run the demos. If not, update your .env file using the secrets from the key vault.
 
-In the new location, run all notebooks that are currently skipped by integration tests (there are less than 10) in VS Code. These are listed in `skipped_files` in each `tests/integration/<folder>/test_notebooks_*.py` file. Note that some of these notebooks have known issues and it may make sense to skip testing them until those are fixed. Check with the last person to deploy or look for the relevant release work item for more information. In running the notebooks, you may also see exceptions. If this happens, make sure to look for existing bugs open on the ADO board or create a new one if it does not exist! If it is easy to fix, we prefer to fix the issue before the release continues.
+In the new location, run all notebooks that are currently skipped by integration tests (there are less than 10) in VS Code. These are listed in `skipped_files` in each `tests/integration/<folder>/test_notebooks_*.py` file and are located in the doc folder that you copied into your new `releases\releasevx.y.z` folder. Note that some of these notebooks have known issues and it may make sense to skip testing them until those are fixed. Check with the last person to deploy or look for the relevant release work item for more information. In running the notebooks, you may also see exceptions. If this happens, make sure to look for existing bugs open on the ADO board or create a new one if it does not exist! If it is easy to fix, we prefer to fix the issue before the release continues.
+
+A reminder that you should ensure that the integration tests pass in the version you are releasing in addition to the skipped files.
 
 Note: copying the doc folder elsewhere is essential since we store data files
 in the repository that should be shipped with the package.
@@ -125,7 +132,7 @@ Note: You may need to build the package again if those changes modify any depend
 Create an account on pypi.org if you don't have one yet.
 Ask one of the other maintainers to add you to the `pyrit` project on PyPI.
 
-Note: Before publishing to PyPI, have your API token for scope 'Project: pyrit' handy. You can create one under your PyPI Account settings. This token will be used to publish the release.
+Note: Before publishing to PyPI, have your API token for scope 'Project: pyrit' handy. You can create one by going to the Settings in the pyrit project and "Create a token for pyrit" under API tokens. This token will be used to publish the release.
 
 ```bash
 pip install twine
@@ -139,16 +146,18 @@ If successful, it will print
 
 After the release is on PyPI, make sure to create a PR for the `main` branch
 where the only change is the version increase in `__init__.py` (while keeping
-suffix `.dev0`).
+suffix `.dev0`). The PR should be made from your fork and should be a different
+branch than the releases branch you created earlier.
 This should be something like `x.y.z+1.dev0`.
 
 ## 7. Create GitHub Release
 
-Finally, go to the [releases page](https://github.com/Azure/PyRIT/releases), select the "tag"
+Finally, go to the [releases page](https://github.com/Azure/PyRIT/releases), select "Draft a new release" and the "tag"
 for which you want to create the release notes. It should match the version that you just released
 to PyPI. Hit "Generate release notes". This will pre-populate the text field with all changes.
 Make sure that it starts where the last release left off.
 Sometimes this tool adds too many changes, or leaves a few out, so it's best to check.
+Be sure to check and update the new contributors as well.
 Add a header "## Full list of changes" below "## What's changed?".
 In addition to the full notes, we also want a shorter section with just the relevant
 changes that users should be aware of. The shorter section will be under "## What's changed"

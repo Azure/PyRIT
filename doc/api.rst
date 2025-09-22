@@ -204,6 +204,8 @@ API Reference
     CrescendoAttack
     FlipAttack
     ManyShotJailbreakAttack
+    MultiPromptSendingAttack
+    MultiPromptSendingAttackContext
     MultiTurnAttackContext
     PromptSendingAttack
     RTASystemPromptPaths

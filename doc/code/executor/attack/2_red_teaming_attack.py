@@ -25,16 +25,15 @@
 #
 # ```{mermaid}
 # flowchart LR
-#     start(("Start")) --> getPrompt["Get prompt from an unsafe model<br>(adversarial chat target) defined in AttackAdversarialConfig"]
+#     start("Start") --> getPrompt["Get prompt from an unsafe model<br>(adversarial chat target) defined in AttackAdversarialConfig"]
 #     getPrompt -- Prompt --> transform["Use converters defined in AttackConverterConfig to transform the<br>attack prompt"]
 #     transform -- Transformed&nbsp;Prompt --> sendPrompt["Send transformed prompt<br>to objective target"]
-#     sendPrompt -- Response --> scoreResp@{ label: "Score objective target's response<br>based on given criteria" }
-#     scoreResp -- Score --> decision{"Objective achieved<br>or turn limit reached?"}
-#     decision -- Yes --> done(("DONE"))
+#     sendPrompt -- Response --> scoreResp["Score objective target's response<br>based on given criteria" ]
+#     scoreResp -- Score --> decision["Objective achieved<br>or turn limit reached?"]
+#     decision -- Yes --> done("DONE")
 #     decision -- No --> feedback["Use score to generate<br>feedback"]
 #     feedback -- Feedback --> getPrompt
-#
-#     scoreResp@{ shape: rect}
+
 #      start:::Ash
 #      getPrompt:::Aqua
 #      getPrompt:::Node
@@ -57,7 +56,7 @@
 #     classDef Sky stroke-width:1px, stroke-dasharray:none, stroke:#374D7C, fill:#E2EBFF, color:#374D7C
 #     classDef Node color:#000000, fill:#BBDEFB, stroke:transparent
 #     classDef Ash stroke-width:1px, stroke-dasharray:none, stroke:#999999, fill:#EEEEEE, color:#000000
-#     linkStyle 5 stroke:#00C853,fill:none
+#     linkStyle 5 stroke:#00C853, fill:none
 #     linkStyle 6 stroke:#D50000
 # ```
 #
