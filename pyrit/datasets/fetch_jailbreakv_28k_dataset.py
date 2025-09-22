@@ -32,7 +32,6 @@ HarmLiteral = Literal[
 
 def fetch_jailbreakv_28k_dataset(
     *,
-    cache: bool = True,
     data_home: Optional[str] = None,
     split: Literal["JailBreakV_28K", "mini_JailBreakV_28K"] = "mini_JailBreakV_28K",
     text_field: Literal["jailbreak_query", "redteam_query"] = "redteam_query",
@@ -42,10 +41,7 @@ def fetch_jailbreakv_28k_dataset(
     Fetch examples from the JailBreakV 28k Dataset with optional filtering and create a SeedPromptDataset.
 
     Args:
-        cache (bool): Whether to cache the fetched examples. Defaults to True.
         data_home: Directory used as cache_dir in call to HF to store cached data. Defaults to None.
-        subset (str): The subset of the dataset to fetch. Defaults to "JailBreakV_28K".
-            Options are "JailBreakV_28K" and "RedTeam_2K".
         split (str): The split of the dataset to fetch. Defaults to "mini_JailBreakV_28K".
             Options are "JailBreakV_28K" and "mini_JailBreakV_28K".
         text_field (str): The field to use as the prompt text. Defaults to "redteam_query".
