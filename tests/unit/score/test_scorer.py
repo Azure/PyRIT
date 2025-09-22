@@ -8,6 +8,7 @@ from textwrap import dedent
 from typing import Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import cv2
 import numpy as np
 import pytest
 
@@ -19,34 +20,23 @@ from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer
 
 
-def is_opencv_installed():
-    try:
-        import cv2  # noqa: F401
-
-        return True
-    except ModuleNotFoundError:
-        return False
-
-
 @pytest.fixture(autouse=True)
 def video_converter_sample_video():
     # Create a sample video file
     video_path = "tests/unit/score/test_video.mp4"
     width, height = 512, 512
-    if is_opencv_installed():
-        import cv2  # noqa: F401
 
-        # Create a video writer object
-        video_encoding = cv2.VideoWriter_fourcc(*"mp4v")
-        output_video = cv2.VideoWriter(video_path, video_encoding, 20, (width, height))
-        # Create a few frames for video
-        for i in range(10):
-            frame = np.zeros((height, width, 3), dtype=np.uint8)
-            processed_frame = cv2.flip(frame, 0)
-            output_video.write(processed_frame)
-            print("frame wrote")
+    # Create a video writer object
+    video_encoding = cv2.VideoWriter_fourcc(*"mp4v")
+    output_video = cv2.VideoWriter(video_path, video_encoding, 20, (width, height))
+    # Create a few frames for video
+    for i in range(10):
+        frame = np.zeros((height, width, 3), dtype=np.uint8)
+        processed_frame = cv2.flip(frame, 0)
+        output_video.write(processed_frame)
+        print("frame wrote")
 
-        output_video.release()
+    output_video.release()
     return video_path
 
 
@@ -1279,23 +1269,23 @@ async def test_score_response_with_objective_async_mixed_roles():
     assert len(result["objective_scores"]) == 1
 
 
-# @pytest.mark.asyncio
-# @pytest.mark.skipif(not is_opencv_installed(), reason="opencv is not installed")
-# async def test_extract_frames(video_converter_sample_video):
-#     """Test that frame extraction produces the expected number of frames"""
-#     scorer = TestScorerVideo()
-#     num_frames = 5
-#     frame_paths = scorer._extract_frames(video_path=video_converter_sample_video, num_frames=num_frames)
+@pytest.mark.asyncio
+async def test_extract_frames(video_converter_sample_video):
+    """Test that frame extraction produces the expected number of frames"""
+    scorer = TestScorerVideo()
+    num_frames = 5
+    frame_paths = scorer._extract_frames(video_path=video_converter_sample_video, num_frames=num_frames)
 
-#     assert len(frame_paths) == num_frames, f"Expected {num_frames} frames, got {len(frame_paths)}"
+    assert len(frame_paths) == num_frames, f"Expected {num_frames} frames, got {len(frame_paths)}"
 
-#     # Verify frames are valid images and cleanup
-#     for path in frame_paths:
-#         assert os.path.exists(path), f"Frame file {path} does not exist"
-#         img = cv2.imread(path)
-#         assert img is not None, f"Failed to read frame file {path}"
-#         assert img.shape == (64, 64, 3), f"Unexpected frame dimensions: {img.shape}"
-#         os.remove(path)  # Cleanup
+    # Verify frames are valid images and cleanup
+    for path in frame_paths:
+        assert os.path.exists(path), f"Frame file {path} does not exist"
+        img = cv2.imread(path)
+        assert img is not None, f"Failed to read frame file {path}"
+        assert img.shape == (512, 512, 3), f"Unexpected frame dimensions: {img.shape}"
+        os.remove(path)  # Cleanup
+    os.remove(video_converter_sample_video)
 
 
 @pytest.mark.asyncio
