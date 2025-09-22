@@ -131,9 +131,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         """
         Generates SQLAlchemy filter conditions for filtering by orchestrator ID.
         """
-        return text("JSON_EXTRACT(orchestrator_identifier, '$.id') = :attack_id").bindparams(
-            attack_id=str(attack_id)
-        )
+        return text("JSON_EXTRACT(attack_identifier, '$.id') = :attack_id").bindparams(attack_identifier=str(attack_id))
 
     def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]):
         """
@@ -290,7 +288,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
     def export_conversations(
         self,
         *,
-        orchestrator_id: Optional[str | uuid.UUID] = None,
+        attack_id: Optional[str | uuid.UUID] = None,
         conversation_id: Optional[str | uuid.UUID] = None,
         prompt_ids: Optional[Sequence[str] | Sequence[uuid.UUID]] = None,
         labels: Optional[dict[str, str]] = None,
@@ -315,7 +313,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
 
         # Get prompt pieces using the parent class method with appropriate filters
         prompt_pieces = self.get_prompt_request_pieces(
-            orchestrator_id=orchestrator_id,
+            attack_id=attack_id,
             conversation_id=conversation_id,
             prompt_ids=prompt_ids,
             labels=labels,
@@ -330,8 +328,8 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
 
         # Create the filename if not provided
         if not file_path:
-            if orchestrator_id:
-                file_name = f"{orchestrator_id}.{export_type}"
+            if attack_id:
+                file_name = f"{attack_id}.{export_type}"
             elif conversation_id:
                 file_name = f"{conversation_id}.{export_type}"
             else:
