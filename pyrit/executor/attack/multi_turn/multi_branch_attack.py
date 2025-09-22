@@ -6,7 +6,7 @@ from abc import abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
 import logging
-from typing import Optional, TypeVar
+from typing import Optional, TypeVar, overload
 
 from treelib import Tree, Node
 
@@ -73,9 +73,11 @@ class MultiBranchAttackContext(AttackContext):
     For validation, the root node should have as many PromptRequestResponses as there
     are leaves, because each leaf represents a complete conversation.
     """
-    objective: str = None
+    objective: str = None # Attack objective
     tree: Tree = field(default_factory=Tree)
-    pointer: str = "root" # This is the node identifier.
+    pointer: str = "root" # Current node identifier
+    cmd: Optional[CmdT] = None # Last command
+    arg: Optional[str] = None # Last argument
     
 class MultiBranchCommandEnum(Enum):
     """
@@ -123,6 +125,18 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, AttackResult])
             result = await attack.step(command, argument)
         ```
 
+        Commands Available:
+        - RETURN: Move back to the parent node in the tree. No argument needed.
+          ex: result = await attack.step(MultiBranchCommandEnum.RETURN)
+        - CONTINUE: Add a new response to the current node and branch out. Requires a
+                    string argument representing the user input.
+          ex: result = await attack.step(MultiBranchCommandEnum.CONTINUE, "User response")
+        - GOTO: Move to a specific node in the tree by its tag. Requires a string argument
+                representing the node's tag.
+          ex: result = await attack.step(MultiBranchCommandEnum.GOTO, "A")
+        
+        To finish the attack and get the final result, call the `close()` method.
+            
        
         Attributes:
             objective_target: The target model for the attack.
@@ -139,10 +153,6 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, AttackResult])
         Returns:
             None.
         """
-        
-        # Very important note about central memory: it is called very often here, because
-        # each leaf node adds a conversation id and as many PromptRequestResponses as the
-        # current path is deep.
         
         super().__init__(logger=logger, context_type=MultiBranchAttackContext)
         
@@ -177,18 +187,10 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, AttackResult])
             ValueError: If an invalid command is provided or if required arguments are missing.
         """
 
-            
-        return await self.execute_async(cmd=cmd, context=prev, arg=arg)
-    
-    async def execute_async(
-        self, 
-        cmd: CmdT,
-        context: MultiBranchAttackContext = None,
-        arg: Optional[str] = None
-    ) -> AttackResult:
-        """
-        """
-        return await super().execute_async(context=context)
+        prev.context.cmd = cmd
+        prev.context.arg = arg
+        return await self.execute_async(context=prev)
+
 
     async def close(self) -> MultiBranchAttackResult:
         """
@@ -207,14 +209,15 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, AttackResult])
     
     async def _setup_async(self, *, context):
         context = context if context else MultiBranchAttackContext()
+        print(f"Setting up MultiBranchAttack with objective: {self._objective}")
+        print("Read this class docstring for a list of commands and usage patterns.")
 
     async def _perform_async(
-        self, 
-        cmd: CmdT,
-        txt: str,
+        self,
         context: MultiBranchAttackContextT
     ) -> MultiBranchAttackResultT:
-        new_context = await self._cmd_handler(cmd=cmd, ctx=context, arg=txt)
+        cmd, arg = context.cmd, context.arg
+        new_context = await self._cmd_handler(cmd=cmd, ctx=context, arg=arg)
         return await self._intermediate_result_factory(new_context)
 
     async def _teardown_async(self, *, context):
@@ -250,6 +253,7 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, AttackResult])
 
         Args:
             cmd (MultiBranchCommandEnum): The command to parse.
+            ctx (MultiBranchAttackContext): The current attack context.
             arg (Optional[str]): An optional argument for the command.
         
         Returns:
@@ -264,13 +268,16 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, AttackResult])
         
         match cmd:
             case CmdT.RETURN:
-                ctx = await self._return_handler(ctx, arg)
+                parent_tag = ctx.tree.parent(ctx.pointer).tag if ctx.pointer != "root" else None
+                if not parent_tag:
+                    raise ValueError("Already at root node; cannot return to parent.")
+                ctx = await self._goto_handler(ctx, tag=parent_tag)
                 message = f"Returned to node {self._ctx.pointer.tag}."
             case CmdT.CONTINUE:
-                ctx = await self._continue_handler(ctx, arg)
+                ctx = await self._continue_handler(ctx, tag=arg)
                 message = f"Continued and added node {self._ctx.pointer.tag}."
             case CmdT.GOTO:
-                ctx = await self._goto_handler(ctx, arg)
+                ctx = await self._goto_handler(ctx, tag=arg)
                 message = f"Moved to node {self._ctx.pointer.tag}."
             case CmdT.CLOSE:
                 ctx = ctx # No-op, handled elsewhere.
@@ -282,110 +289,27 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, AttackResult])
         print(f"Current tree state: {self._ctx.tree.show()}")
         intermediate_result: MultiBranchAttackResultT = self._self_intermediate_result_factory(ctx)   
         return intermediate_result
-
-    async def _return_handler(self, ctx: MultiBranchAttackContext, arg: str) -> None:
+    
+    async def _goto_handler(context: MultiBranchAttackContext, tag: Optional[str]) -> MultiBranchAttackContext:
         """
-        Handle the RETURN command, moving the pointer to the parent node.
-        
+        Handle the RETURN command to navigate to the parent node.
+
         Args:
-            arg (str): Not used for this command.
-        """
-        if ctx.pointer == "root":
-            raise ValueError("Already at root node; cannot return to parent.")
-        parent = ctx.tree.parent(ctx.pointer)
-        if parent is None:
-            raise ValueError("Current node has no parent; cannot return.")
-        ctx.pointer = parent.identifier
-        return ctx
+            context (MultiBranchAttackContext): The current attack context.
+            arg (Optional[str]): Not used for this command.
 
-    async def _continue_handler(self, ctx: MultiBranchAttackContext, arg: str) -> MultiBranchAttackContext:
-        """
-        Handle the CONTINUE command, getting a model response.
-        This command creates a new child node with the model's response to the provided
-        prompt (arg).
-        """
-        user_input: PromptRequestResponse = self._create_user_input(arg)
-        model_response: PromptRequestResponse = await self._objective_target.send_prompt_async(user_input)
-        return self._new_leaf_handler(user_input, model_response, ctx)
-    
-    def _goto_handler(self, arg: str) -> None:
-        """
-        Handle the GOTO command, moving the pointer to a specified node by its tag.
-        """
-        target = self._ctx.tree.get_node_by_tag(arg)
-        if target is None:
-            raise ValueError(f"Unknown node tag: {arg}")
-        self._ctx.pointer = target.identifier
-
-    def _create_user_input(self, prompt: str) -> PromptRequestResponse:
-        """
-        Create a PromptRequestResponse object from the user's input prompt.
-        
-        Args:
-            prompt (str): The user's input prompt.
-        
         Returns:
-            PromptRequestResponse: The constructed PromptRequestResponse object.
+            MultiBranchAttackContext: The updated attack context after returning to the parent node.
         """
-        if not prompt or not isinstance(prompt, str):
-            raise ValueError("Prompt must be a non-empty string.")
-        
-        conversation_id = self._ctx.conversation_id or default_values.DEFAULT_CONVERSATION_ID
-        user_input = PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(
-                    role="user",
-                    conversation_id=conversation_id,
-                    original_value=prompt,
-                    converted_value=self._prompt_normalizer.normalize(prompt),
-                    prompt_target_identifier=self._objective_target.get_identifier(),
-                )
-            ]
-        )
-        return user_input
-
-    async def _close_handler(self) -> MultiBranchAttackResult:
-        """
-        Handle the CLOSE command, finalizing the attack and returning the result.
-        
-        Returns:
-            MultiBranchAttackResult: The result of the multi-branch attack.
-        """
+        # Validate that tag is in tree first
+        all_tags = [node.tag for node in context.tree.all_nodes()]
+        if tag and tag not in all_tags:
+            raise ValueError(f"Node with tag {tag} does not exist in the tree.")
+        context.pointer = tag
+        return context
     
-        return await self._perform_async(context=)
-
-    
-    def _new_leaf_handler(
-        self, 
-        user_input: PromptRequestResponse,
-        model_output: PromptRequestResponse,
-        ctx: MultiBranchAttackContext
-    ) -> MultiBranchAttackContext:
+    async def _continue_handler(context: MultiBranchAttackContext, command: Optional[str]) -> MultiBranchAttackContext:
         """
-        Handle the creation of a new leaf after CONTINUE is executed.
+        Get a model response and get a completion from the model target.
         """
         
-        # 1 First extract the unique conversation ID from the PromptRequestResponse
-        conversation_id = prompt_request_response.conversation_id
-        
-        # 2 Then create the node and assign it a tag (letter) and the prompt request response
-        node = Node(
-            tag=chr(65 + len(self._ctx.tree.nodes)),
-            data={
-                "responses": [prompt_request_response]
-            }
-        )
-        self._ctx.tree.add_node(node, parent=self._ctx.pointer)
-        self._ctx.pointer = node.identifier
-        logger.debug(f"Added new node {node.tag} with conversation ID {conversation_id}")
-        
-        # 3 Add all parent nodes to the conversation in memory using the new conversation ID
-        
-        full_path = [ancestor for ancestor in self._ctx.tree.rsearch(self._ctx.pointer)]
-        for ancestor in full_path:
-            new_prr = PromptRequestResponse(
-                conversation_id=conversation_id,
-                requests=ancestor.data.requests if ancestor.data else [],
-                responses=ancestor.data.responses if ancestor.data else [],
-            )
-            self._memory.add_request_response_to_memory(new_prr)
