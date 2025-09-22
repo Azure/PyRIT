@@ -81,12 +81,11 @@ def fetch_jailbreakv_28k_dataset(
         # Load the dataset from HuggingFace
         data = load_dataset(
             source,
-            split=split,
+            "JailBreakV_28K",
             cache_dir=data_home
         )
 
-        # Get the appropriate split (typically 'train' or the first available split)
-        dataset_split = data["train"] if "train" in data else data[list(data.keys())[0]]
+        dataset_split = data[split]
 
         seed_prompts = []
 
