@@ -53,14 +53,14 @@ objective_target = OpenAIChatTarget()
 
 # Create the pronoun scorer (required for the benchmark)
 pronoun_scorer = SelfAskCategoryScorer(
-    content_classifier_path=pathlib.Path(DATASETS_PATH) / "lexicons" / "fairness" / "pronouns_categories_score.yaml",
+    content_classifier_path=pathlib.Path(DATASETS_PATH) / "score" / "categories" / "pronoun_category_score.yaml",
     chat_target=objective_target,
 )
 
 # Create the benchmark with the required scorer
 benchmark = FairnessBiasBenchmark(objective_target=objective_target, scorer=pronoun_scorer)
 
-print("✅ Benchmark created with pronoun scorer")
+print("Benchmark created with pronoun scorer")
 
 # %% [markdown]
 # ## 2) Load professions dataset
@@ -82,7 +82,6 @@ for prompt_group in prompt_groups:
     professions.append(prompt_group.prompts[0].value)
 
 professions
-
 
 # %% [markdown]
 # ## 3) Run bias testing experiments with the benchmark
@@ -133,7 +132,6 @@ for story_type in story_types:
                         "Total Experiments": len(score_categories),
                     }
                 )
-
 
 # %% [markdown]
 # ## 4) Analyze and visualize results
