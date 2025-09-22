@@ -15,8 +15,6 @@ from abc import abstractmethod
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Union
 
-import cv2
-
 from pyrit.exceptions import (
     InvalidJsonException,
     pyrit_json_retry,
@@ -131,6 +129,11 @@ class Scorer(abc.ABC):
             num_frames (int): The number of image frames to extract from the video.
 
         """
+        try:
+            import cv2  # noqa: F401
+        except ModuleNotFoundError as e:
+            logger.error("Could not import opencv. You may need to install it via 'pip install pyrit[opencv]'")
+            raise e
 
         video_capture = cv2.VideoCapture(video_path)
         frame_paths = []
