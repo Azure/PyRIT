@@ -3,33 +3,32 @@
 
 import logging
 from typing import List, Literal, Optional
-from pathlib import Path
 
 from datasets import load_dataset
-from pyrit.datasets.dataset_helper import fetch_examples
-from pyrit.models import SeedPromptDataset
+
 from pyrit.models import SeedPrompt, SeedPromptDataset
 
 logger = logging.getLogger(__name__)
 
 HarmLiteral = Literal[
-                "Unethical Behavior", 
-                "Economic Harm", 
-                "Hate Speech", 
-                "Government Decision", 
-                "Physical Harm", 
-                "Fraud", 
-                "Political Sensitivity", 
-                "Malware", 
-                "Illegal Activity", 
-                "Bias", 
-                "Violence", 
-                "Animal Abuse", 
-                "Tailored Unlicensed Advice", 
-                "Privacy Violation", 
-                "Health Consultation", 
-                "Child Abuse Content"
-            ]
+    "Unethical Behavior",
+    "Economic Harm",
+    "Hate Speech",
+    "Government Decision",
+    "Physical Harm",
+    "Fraud",
+    "Political Sensitivity",
+    "Malware",
+    "Illegal Activity",
+    "Bias",
+    "Violence",
+    "Animal Abuse",
+    "Tailored Unlicensed Advice",
+    "Privacy Violation",
+    "Health Consultation",
+    "Child Abuse Content",
+]
+
 
 def fetch_jailbreakv_28k_dataset(
     *,
@@ -74,16 +73,12 @@ def fetch_jailbreakv_28k_dataset(
         logger.info(f"Loading JailBreakV-28k dataset from {source}")
 
         # Normalize the harm categories to match pyrit harm category conventions
-        harm_categories_normalized = None if not harm_categories else [
-            _normalize_policy(policy) for policy in harm_categories
-        ]
+        harm_categories_normalized = (
+            None if not harm_categories else [_normalize_policy(policy) for policy in harm_categories]
+        )
 
         # Load the dataset from HuggingFace
-        data = load_dataset(
-            source,
-            "JailBreakV_28K",
-            cache_dir=data_home
-        )
+        data = load_dataset(source, "JailBreakV_28K", cache_dir=data_home)
 
         dataset_split = data[split]
 
@@ -94,7 +89,7 @@ def fetch_jailbreakv_28k_dataset(
             "dataset_name": "JailbreakV-28K",
             "authors": ["Weidi Luo", "Siyuan Ma", "Xiaogeng Liu", "Chaowei Xiao"],
             "description": (
-                "A Benchmark for Assessing the Robustness of MultiModal Large Language Models against Jailbreak Attacks. "
+                "Benchmark for Assessing the Robustness of Large Language Models against Jailbreak Attacks. "
             ),
             "source": source,
             "data_type": "text",
@@ -107,9 +102,9 @@ def fetch_jailbreakv_28k_dataset(
             if harm_categories_normalized and policy not in harm_categories_normalized:
                 continue
             seed_prompt = SeedPrompt(
-                value = item.get(text_field, ""),
-                harm_categories=[policy],
-                **common_metadata
+                value=item.get(text_field, ""), 
+                harm_categories=[policy], 
+                **common_metadata,  # type: ignore[arg-type]
             )
             seed_prompts.append(seed_prompt)
         seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
