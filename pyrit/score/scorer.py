@@ -273,7 +273,6 @@ class Scorer(abc.ABC):
         *,
         request_responses: Sequence[PromptRequestPiece],
         tasks: Sequence[str],
-        num_frames: int = 5,
         batch_size: int = 10,
     ) -> list[Score]:
         if not tasks:
@@ -287,7 +286,7 @@ class Scorer(abc.ABC):
         prompt_target = getattr(self, "_prompt_target", None)
         results = await batch_task_async(
             task_func=self.score_async,
-            task_arguments=["request_response", "task", "num_frames"],
+            task_arguments=["request_response", "task"],
             prompt_target=prompt_target,
             batch_size=batch_size,
             items_to_batch=[request_responses, tasks],

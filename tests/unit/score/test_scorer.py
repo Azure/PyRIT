@@ -460,8 +460,8 @@ async def test_score_response_async_parallel_execution():
     assert len(result) == 2
     assert score1_1 in result
     assert score2_1 in result
-    scorer1.score_async.assert_any_call(request_response=piece1, task="test task")
-    scorer2.score_async.assert_any_call(request_response=piece1, task="test task")
+    scorer1.score_async.assert_any_call(request_response=piece1, task="test task", num_frames=None)
+    scorer2.score_async.assert_any_call(request_response=piece1, task="test task", num_frames=None)
 
     # The following commented-out lines should be uncommented when the permanent solution is implemented
     # # Should have 4 scores total (2 scorers x 2 assistant pieces)
@@ -601,13 +601,17 @@ async def test_score_response_select_first_success_async_parallel_scoring_per_pi
     # Track call order
     call_order = []
 
-    async def mock_score_async_1(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def mock_score_async_1(
+        request_response: PromptRequestPiece, *, task: Optional[str] = None, num_frames: Optional[int] = None
+    ) -> list[Score]:
         call_order.append(("scorer1", request_response.original_value))
         score = MagicMock(spec=Score)
         score.get_value.return_value = False
         return [score]
 
-    async def mock_score_async_2(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def mock_score_async_2(
+        request_response: PromptRequestPiece, *, task: Optional[str] = None, num_frames: Optional[int] = None
+    ) -> list[Score]:
         call_order.append(("scorer2", request_response.original_value))
         score = MagicMock(spec=Score)
         score.get_value.return_value = False
@@ -661,7 +665,7 @@ async def test_score_response_select_first_success_async_skip_on_error_true():
     assert result == score
     # Scorer should only be called once (for piece2)
     assert scorer.score_async.call_count == 1
-    scorer.score_async.assert_called_with(request_response=piece2, task="test task")
+    scorer.score_async.assert_called_with(request_response=piece2, task="test task", num_frames=None)
 
 
 @pytest.mark.asyncio
@@ -691,7 +695,7 @@ async def test_score_response_select_first_success_async_skip_on_error_false():
     assert result == score1
     # Scorer should only be called once (found success in piece1)
     assert scorer.score_async.call_count == 1
-    scorer.score_async.assert_called_with(request_response=piece1, task="test task")
+    scorer.score_async.assert_called_with(request_response=piece1, task="test task", num_frames=None)
 
 
 @pytest.mark.asyncio
@@ -784,8 +788,8 @@ async def test_score_response_select_first_success_async_mixed_errors_skip_on_er
     assert scorer1.score_async.call_count == 1
     assert scorer2.score_async.call_count == 1
     # Verify they were called with the non-error piece
-    scorer1.score_async.assert_called_with(request_response=piece2, task="test task")
-    scorer2.score_async.assert_called_with(request_response=piece2, task="test task")
+    scorer1.score_async.assert_called_with(request_response=piece2, task="test task", num_frames=None)
+    scorer2.score_async.assert_called_with(request_response=piece2, task="test task", num_frames=None)
 
 
 @pytest.mark.asyncio
@@ -816,7 +820,7 @@ async def test_score_response_select_first_success_async_skip_on_error_no_succes
 
     # Temporary fix means the scorer should only be called once for the first piece
     assert scorer.score_async.call_count == 1
-    scorer.score_async.assert_called_with(request_response=piece1, task="test task")
+    scorer.score_async.assert_called_with(request_response=piece1, task="test task", num_frames=None)
     # The following commented-out lines should be uncommented when the permanent solution is implemented
     # # Should have been called twice (for piece1 and piece3, skipping piece2)
     # assert scorer.score_async.call_count == 2
@@ -844,7 +848,7 @@ async def test_score_response_select_first_success_async_skip_on_error_empty_sco
     assert result is None
     # Should only be called for non-error piece
     assert scorer.score_async.call_count == 1
-    scorer.score_async.assert_called_with(request_response=piece1, task="test task")
+    scorer.score_async.assert_called_with(request_response=piece1, task="test task", num_frames=None)
 
 
 @pytest.mark.asyncio
@@ -856,7 +860,11 @@ async def test_score_response_with_objective_async_empty_response():
     obj_scorer = MockScorer()
 
     result = await Scorer.score_response_with_objective_async(
-        response=response, auxiliary_scorers=[aux_scorer], objective_scorers=[obj_scorer], task="test task"
+        response=response,
+        auxiliary_scorers=[aux_scorer],
+        objective_scorers=[obj_scorer],
+        task="test task",
+        num_frames=None,
     )
 
     assert result == {"auxiliary_scores": [], "objective_scores": []}
@@ -868,7 +876,7 @@ async def test_score_response_with_objective_async_no_scorers():
     response = PromptRequestResponse(request_pieces=[PromptRequestPiece(role="assistant", original_value="test")])
 
     result = await Scorer.score_response_with_objective_async(
-        response=response, auxiliary_scorers=None, objective_scorers=None, task="test task"
+        response=response, auxiliary_scorers=None, objective_scorers=None, task="test task", num_frames=None
     )
 
     assert result == {"auxiliary_scores": [], "objective_scores": []}
@@ -1018,11 +1026,15 @@ async def test_score_response_with_objective_async_role_filter():
     aux_scored_pieces = []
     obj_scored_pieces = []
 
-    async def track_aux_score(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def track_aux_score(
+        request_response: PromptRequestPiece, *, task: Optional[str] = None, num_frames: Optional[int] = None
+    ) -> list[Score]:
         aux_scored_pieces.append(request_response)
         return [aux_score]
 
-    async def track_obj_score(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def track_obj_score(
+        request_response: PromptRequestPiece, *, task: Optional[str] = None, num_frames: Optional[int] = None
+    ) -> list[Score]:
         obj_scored_pieces.append(request_response)
         return [obj_score]
 
@@ -1165,14 +1177,18 @@ async def test_score_response_with_objective_async_concurrent_execution():
     # Track call order to verify concurrent execution
     call_order = []
 
-    async def mock_aux_score_async(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def mock_aux_score_async(
+        request_response: PromptRequestPiece, *, task: Optional[str] = None, num_frames: Optional[int] = None
+    ) -> list[Score]:
         call_order.append("aux_start")
         # Simulate some async work
         await asyncio.sleep(0.01)
         call_order.append("aux_end")
         return [MagicMock(spec=Score)]
 
-    async def mock_obj_score_async(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def mock_obj_score_async(
+        request_response: PromptRequestPiece, *, task: Optional[str] = None, num_frames: Optional[int] = None
+    ) -> list[Score]:
         call_order.append("obj_start")
         # Simulate some async work
         await asyncio.sleep(0.01)
@@ -1246,11 +1262,15 @@ async def test_score_response_with_objective_async_mixed_roles():
     aux_scored_pieces = []
     obj_scored_pieces = []
 
-    async def track_aux_score(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def track_aux_score(
+        request_response: PromptRequestPiece, *, task: Optional[str] = None, num_frames: Optional[int] = None
+    ) -> list[Score]:
         aux_scored_pieces.append(request_response)
         return [aux_score]
 
-    async def track_obj_score(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def track_obj_score(
+        request_response: PromptRequestPiece, *, task: Optional[str] = None, num_frames: Optional[int] = None
+    ) -> list[Score]:
         obj_scored_pieces.append(request_response)
         return [obj_score]
 
@@ -1301,6 +1321,7 @@ async def test_extract_frames(video_converter_sample_video):
 
 
 @pytest.mark.asyncio
+@pytest.mark.skipif(not is_opencv_installed(), reason="opencv is not installed")
 async def test_score_video_true_false(video_converter_sample_video):
     """Test video scoring with a true/false scorer"""
     scorer = TestScorerVideo(scorer_type="true_false")
@@ -1314,6 +1335,7 @@ async def test_score_video_true_false(video_converter_sample_video):
 
 
 @pytest.mark.asyncio
+@pytest.mark.skipif(not is_opencv_installed(), reason="opencv is not installed")
 async def test_score_video_float_scale(video_converter_sample_video):
     """Test video scoring with a float_scale scorer"""
     scorer = TestScorerVideo(scorer_type="float_scale")
@@ -1326,6 +1348,7 @@ async def test_score_video_float_scale(video_converter_sample_video):
 
 
 @pytest.mark.asyncio
+@pytest.mark.skipif(not is_opencv_installed(), reason="opencv is not installed")
 async def test_score_video_cleanup(video_converter_sample_video):
     """Test that temporary frame files are cleaned up after scoring"""
     scorer = TestScorerVideo()
@@ -1349,6 +1372,7 @@ async def test_score_video_cleanup(video_converter_sample_video):
 
 
 @pytest.mark.asyncio
+@pytest.mark.skipif(not is_opencv_installed(), reason="opencv is not installed")
 async def test_score_video_no_frames(video_converter_sample_video):
     """Test error handling when no frames can be extracted"""
     scorer = TestScorerVideo()
@@ -1361,6 +1385,7 @@ async def test_score_video_no_frames(video_converter_sample_video):
 
 
 @pytest.mark.asyncio
+@pytest.mark.skipif(not is_opencv_installed(), reason="opencv is not installed")
 async def test_score_video_no_scores(video_converter_sample_video):
     """Test error handling when frame scoring returns no scores"""
     scorer = TestScorerVideo()
