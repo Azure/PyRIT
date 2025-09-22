@@ -15,7 +15,7 @@
 # %% [markdown]
 # # Testing for Fairness and Bias with FairnessBiasBenchmark
 #
-# In this notebook we show how PyRIT's `FairnessBiasBenchmark` can be used to help test for fairness and bias in an experimental way. 
+# In this notebook we show how PyRIT's `FairnessBiasBenchmark` can be used to help test for fairness and bias in an experimental way.
 #
 # The benchmark provides a clean interface to:
 # 1) Generate fictional biographies for given professions/roles, etc
@@ -32,8 +32,8 @@ import pandas as pd
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
-from pyrit.executor.benchmark.fairness_bias import FairnessBiasBenchmark
 from pyrit.executor.attack import ConsoleAttackResultPrinter
+from pyrit.executor.benchmark.fairness_bias import FairnessBiasBenchmark
 from pyrit.memory import CentralMemory
 from pyrit.models import SeedPromptDataset
 from pyrit.prompt_target import OpenAIChatTarget
@@ -53,15 +53,12 @@ objective_target = OpenAIChatTarget()
 
 # Create the pronoun scorer (required for the benchmark)
 pronoun_scorer = SelfAskCategoryScorer(
-    content_classifier_path=pathlib.Path(DATASETS_PATH) / "lexicons" / "fairness" / "pronouns_categories_score.yaml", 
-    chat_target=objective_target
+    content_classifier_path=pathlib.Path(DATASETS_PATH) / "lexicons" / "fairness" / "pronouns_categories_score.yaml",
+    chat_target=objective_target,
 )
 
 # Create the benchmark with the required scorer
-benchmark = FairnessBiasBenchmark(
-    objective_target=objective_target,
-    scorer=pronoun_scorer
-)
+benchmark = FairnessBiasBenchmark(objective_target=objective_target, scorer=pronoun_scorer)
 
 print("✅ Benchmark created with pronoun scorer")
 
@@ -104,38 +101,38 @@ summary_data = []
 
 for story_type in story_types:
     all_results[story_type] = {}
-    
-    for profession in professions[:3]: # For demo purposes we just show first 3 professions
-        
+
+    for profession in professions[:3]:  # For demo purposes we just show first 3 professions
+
         # Run the benchmark for this profession and story type
         result = await benchmark.execute_async(
-            subject=profession,
-            story_type=story_type,
-            num_experiments=num_experiments
+            subject=profession, story_type=story_type, num_experiments=num_experiments
         )
         await ConsoleAttackResultPrinter().print_conversation_async(result)
-        
+
         # Get the context and results
         context = benchmark.get_last_context()
         if context:
             # Store the detailed results
             all_results[story_type][profession] = context.experiment_results
-            
+
             # Extract score categories for analysis
             score_categories = [r["score_category"] for r in context.experiment_results]
             score_counts = Counter(score_categories)
-            
+
             # Add to summary data
             for category, count in score_counts.items():
                 proportion = count / len(score_categories)
-                summary_data.append({
-                    "Story Type": story_type,
-                    "Profession": profession,
-                    "Score Category": category,
-                    "Count": count,
-                    "Proportion": f"{proportion:.2%}",
-                    "Total Experiments": len(score_categories)
-                })
+                summary_data.append(
+                    {
+                        "Story Type": story_type,
+                        "Profession": profession,
+                        "Score Category": category,
+                        "Count": count,
+                        "Proportion": f"{proportion:.2%}",
+                        "Total Experiments": len(score_categories),
+                    }
+                )
 
 
 # %% [markdown]
@@ -149,27 +146,31 @@ summary_dfs = {}
 
 for story_type in story_types:
     print(f"Results for '{story_type}':")
-    
+
     # Filter summary data for this story type
     story_data = [row for row in summary_data if row["Story Type"] == story_type]
-    
+
     # Create DataFrame
     df = pd.DataFrame(story_data)
-    
+
     # Calculate totals
     total_experiments = df["Count"].sum()
-    total_row = pd.DataFrame([{
-        "Story Type": story_type,
-        "Profession": "TOTAL",
-        "Score Category": "All",
-        "Count": total_experiments,
-        "Proportion": "100.00%",
-        "Total Experiments": total_experiments
-    }])
-    
+    total_row = pd.DataFrame(
+        [
+            {
+                "Story Type": story_type,
+                "Profession": "TOTAL",
+                "Score Category": "All",
+                "Count": total_experiments,
+                "Proportion": "100.00%",
+                "Total Experiments": total_experiments,
+            }
+        ]
+    )
+
     # Combine and store
     df_with_total = pd.concat([df, total_row], ignore_index=True)
     summary_dfs[story_type] = df_with_total
-    
+
     # Display the results
     display(df_with_total[["Profession", "Score Category", "Count", "Proportion"]])

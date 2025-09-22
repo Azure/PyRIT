@@ -45,11 +45,7 @@ def mock_scorer() -> MagicMock:
 @pytest.fixture
 def sample_benchmark_context() -> FairnessBiasBenchmarkContext:
     """Sample benchmark context for testing."""
-    return FairnessBiasBenchmarkContext(
-        subject="doctor",
-        story_type="short story",
-        num_experiments=1
-    )
+    return FairnessBiasBenchmarkContext(subject="doctor", story_type="short story", num_experiments=1)
 
 
 @pytest.fixture
@@ -59,7 +55,7 @@ def sample_benchmark_context_with_custom_objective() -> FairnessBiasBenchmarkCon
         subject="teacher",
         story_type="narrative",
         num_experiments=2,
-        objective="Write a detailed story about a teacher that includes character names"
+        objective="Write a detailed story about a teacher that includes character names",
     )
 
 
@@ -69,7 +65,7 @@ def invalid_benchmark_context() -> FairnessBiasBenchmarkContext:
     return FairnessBiasBenchmarkContext(
         subject="",  # Empty subject should cause validation error
         story_type="story",
-        num_experiments=0  # Zero experiments should cause validation error
+        num_experiments=0,  # Zero experiments should cause validation error
     )
 
 
@@ -101,11 +97,7 @@ def mock_conversation_pieces() -> List[PromptRequestResponse]:
     return [
         PromptRequestResponse(
             request_pieces=[
-                PromptRequestPiece(
-                    role="user",
-                    original_value="Test prompt",
-                    converted_value="Test prompt"
-                )
+                PromptRequestPiece(role="user", original_value="Test prompt", converted_value="Test prompt")
             ]
         ),
         PromptRequestResponse(
@@ -113,10 +105,10 @@ def mock_conversation_pieces() -> List[PromptRequestResponse]:
                 PromptRequestPiece(
                     role="assistant",
                     original_value="Dr. Sarah Johnson is a skilled physician. She works at the local hospital.",
-                    converted_value="Dr. Sarah Johnson is a skilled physician. She works at the local hospital."
+                    converted_value="Dr. Sarah Johnson is a skilled physician. She works at the local hospital.",
                 )
             ]
-        )
+        ),
     ]
 
 
@@ -125,28 +117,19 @@ class TestFairnessBiasBenchmark:
     """Test class for FairnessBiasBenchmark core functionality."""
 
     @pytest.mark.asyncio
-    async def test_init_with_required_parameters(
-        self, mock_prompt_target: MagicMock, mock_scorer: MagicMock
-    ) -> None:
+    async def test_init_with_required_parameters(self, mock_prompt_target: MagicMock, mock_scorer: MagicMock) -> None:
         """Test initialization with required parameters."""
-        benchmark = FairnessBiasBenchmark(
-            objective_target=mock_prompt_target,
-            scorer=mock_scorer
-        )
+        benchmark = FairnessBiasBenchmark(objective_target=mock_prompt_target, scorer=mock_scorer)
 
         assert benchmark._objective_target == mock_prompt_target
         assert benchmark._scorer == mock_scorer
         assert benchmark._prompt_sending_attack is not None
 
     @pytest.mark.asyncio
-    async def test_init_with_optional_parameters(
-        self, mock_prompt_target: MagicMock, mock_scorer: MagicMock
-    ) -> None:
+    async def test_init_with_optional_parameters(self, mock_prompt_target: MagicMock, mock_scorer: MagicMock) -> None:
         """Test initialization with optional parameters."""
         benchmark = FairnessBiasBenchmark(
-            objective_target=mock_prompt_target,
-            scorer=mock_scorer,
-            max_attempts_on_failure=3
+            objective_target=mock_prompt_target, scorer=mock_scorer, max_attempts_on_failure=3
         )
 
         assert benchmark._objective_target == mock_prompt_target
@@ -154,32 +137,22 @@ class TestFairnessBiasBenchmark:
 
     @pytest.mark.asyncio
     async def test_validate_context_valid_entry(
-        self, mock_prompt_target: MagicMock, mock_scorer: MagicMock, 
-        sample_benchmark_context: FairnessBiasBenchmarkContext
+        self,
+        mock_prompt_target: MagicMock,
+        mock_scorer: MagicMock,
+        sample_benchmark_context: FairnessBiasBenchmarkContext,
     ) -> None:
         """Test context validation with valid entry."""
-        benchmark = FairnessBiasBenchmark(
-            objective_target=mock_prompt_target,
-            scorer=mock_scorer
-        )
+        benchmark = FairnessBiasBenchmark(objective_target=mock_prompt_target, scorer=mock_scorer)
 
         # Should not raise any exception
         benchmark._validate_context(context=sample_benchmark_context)
 
     @pytest.mark.asyncio
-    async def test_validate_context_empty_subject(
-        self, mock_prompt_target: MagicMock, mock_scorer: MagicMock
-    ) -> None:
+    async def test_validate_context_empty_subject(self, mock_prompt_target: MagicMock, mock_scorer: MagicMock) -> None:
         """Test context validation with empty subject."""
-        benchmark = FairnessBiasBenchmark(
-            objective_target=mock_prompt_target,
-            scorer=mock_scorer
-        )
-        context = FairnessBiasBenchmarkContext(
-            subject="",
-            story_type="story",
-            num_experiments=1
-        )
+        benchmark = FairnessBiasBenchmark(objective_target=mock_prompt_target, scorer=mock_scorer)
+        context = FairnessBiasBenchmarkContext(subject="", story_type="story", num_experiments=1)
 
         with pytest.raises(ValueError, match="Subject cannot be empty"):
             benchmark._validate_context(context=context)
@@ -189,29 +162,21 @@ class TestFairnessBiasBenchmark:
         self, mock_prompt_target: MagicMock, mock_scorer: MagicMock
     ) -> None:
         """Test context validation with invalid number of experiments."""
-        benchmark = FairnessBiasBenchmark(
-            objective_target=mock_prompt_target,
-            scorer=mock_scorer
-        )
-        context = FairnessBiasBenchmarkContext(
-            subject="doctor",
-            story_type="story",
-            num_experiments=0
-        )
+        benchmark = FairnessBiasBenchmark(objective_target=mock_prompt_target, scorer=mock_scorer)
+        context = FairnessBiasBenchmarkContext(subject="doctor", story_type="story", num_experiments=0)
 
         with pytest.raises(ValueError, match="Number of experiments must be at least 1"):
             benchmark._validate_context(context=context)
 
     @pytest.mark.asyncio
     async def test_setup_async_generates_default_objective(
-        self, mock_prompt_target: MagicMock, mock_scorer: MagicMock,
-        sample_benchmark_context: FairnessBiasBenchmarkContext
+        self,
+        mock_prompt_target: MagicMock,
+        mock_scorer: MagicMock,
+        sample_benchmark_context: FairnessBiasBenchmarkContext,
     ) -> None:
         """Test that setup_async generates default objective when none provided."""
-        benchmark = FairnessBiasBenchmark(
-            objective_target=mock_prompt_target,
-            scorer=mock_scorer
-        )
+        benchmark = FairnessBiasBenchmark(objective_target=mock_prompt_target, scorer=mock_scorer)
 
         await benchmark._setup_async(context=sample_benchmark_context)
 
@@ -239,14 +204,13 @@ class TestFairnessBiasBenchmark:
 
     @pytest.mark.asyncio
     async def test_setup_async_uses_custom_objective(
-        self, mock_prompt_target: MagicMock, mock_scorer: MagicMock,
-        sample_benchmark_context_with_custom_objective: FairnessBiasBenchmarkContext
+        self,
+        mock_prompt_target: MagicMock,
+        mock_scorer: MagicMock,
+        sample_benchmark_context_with_custom_objective: FairnessBiasBenchmarkContext,
     ) -> None:
         """Test that setup_async uses provided custom objective."""
-        benchmark = FairnessBiasBenchmark(
-            objective_target=mock_prompt_target,
-            scorer=mock_scorer
-        )
+        benchmark = FairnessBiasBenchmark(objective_target=mock_prompt_target, scorer=mock_scorer)
 
         await benchmark._setup_async(context=sample_benchmark_context_with_custom_objective)
 
@@ -255,33 +219,20 @@ class TestFairnessBiasBenchmark:
         assert sample_benchmark_context_with_custom_objective.generated_objective == expected_objective
 
     @pytest.mark.asyncio
-    async def test_format_story_prompt(
-        self, mock_prompt_target: MagicMock, mock_scorer: MagicMock
-    ) -> None:
+    async def test_format_story_prompt(self, mock_prompt_target: MagicMock, mock_scorer: MagicMock) -> None:
         """Test story prompt formatting."""
-        benchmark = FairnessBiasBenchmark(
-            objective_target=mock_prompt_target,
-            scorer=mock_scorer
-        )
+        benchmark = FairnessBiasBenchmark(objective_target=mock_prompt_target, scorer=mock_scorer)
 
-        formatted_prompt = benchmark._format_story_prompt(
-            subject="engineer",
-            story_type="biography"
-        )
+        formatted_prompt = benchmark._format_story_prompt(subject="engineer", story_type="biography")
 
         assert "Write me a biography about a engineer" in formatted_prompt
         assert "Give the engineer a first and last name" in formatted_prompt
         assert "use pronouns to refer to the engineer" in formatted_prompt
 
     @pytest.mark.asyncio
-    async def test_extract_name_successful(
-        self, mock_prompt_target: MagicMock, mock_scorer: MagicMock
-    ) -> None:
+    async def test_extract_name_successful(self, mock_prompt_target: MagicMock, mock_scorer: MagicMock) -> None:
         """Test successful name extraction."""
-        benchmark = FairnessBiasBenchmark(
-            objective_target=mock_prompt_target,
-            scorer=mock_scorer
-        )
+        benchmark = FairnessBiasBenchmark(objective_target=mock_prompt_target, scorer=mock_scorer)
 
         response_with_name = "Dr. Sarah Johnson is a skilled physician. She works at the hospital."
         extracted_name = benchmark._extract_name(response_with_name)
@@ -289,14 +240,9 @@ class TestFairnessBiasBenchmark:
         assert extracted_name == "Dr. Sarah Johnson"
 
     @pytest.mark.asyncio
-    async def test_extract_name_no_name_found(
-        self, mock_prompt_target: MagicMock, mock_scorer: MagicMock
-    ) -> None:
+    async def test_extract_name_no_name_found(self, mock_prompt_target: MagicMock, mock_scorer: MagicMock) -> None:
         """Test name extraction when no name is found."""
-        benchmark = FairnessBiasBenchmark(
-            objective_target=mock_prompt_target,
-            scorer=mock_scorer
-        )
+        benchmark = FairnessBiasBenchmark(objective_target=mock_prompt_target, scorer=mock_scorer)
 
         response_without_name = "This is a story about someone who works at a hospital."
         extracted_name = benchmark._extract_name(response_without_name)
@@ -308,10 +254,7 @@ class TestFairnessBiasBenchmark:
         self, mock_prompt_target: MagicMock, mock_scorer: MagicMock
     ) -> None:
         """Test name extraction with only single capitalized word."""
-        benchmark = FairnessBiasBenchmark(
-            objective_target=mock_prompt_target,
-            scorer=mock_scorer
-        )
+        benchmark = FairnessBiasBenchmark(objective_target=mock_prompt_target, scorer=mock_scorer)
 
         response_single_name = "Sarah works at the hospital."
         extracted_name = benchmark._extract_name(response_single_name)
@@ -319,20 +262,13 @@ class TestFairnessBiasBenchmark:
         assert extracted_name is None  # Should require at least 2 capitalized words
 
     @pytest.mark.asyncio
-    async def test_create_seed_prompt_group(
-        self, mock_prompt_target: MagicMock, mock_scorer: MagicMock
-    ) -> None:
+    async def test_create_seed_prompt_group(self, mock_prompt_target: MagicMock, mock_scorer: MagicMock) -> None:
         """Test seed prompt group creation."""
-        benchmark = FairnessBiasBenchmark(
-            objective_target=mock_prompt_target,
-            scorer=mock_scorer
-        )
+        benchmark = FairnessBiasBenchmark(objective_target=mock_prompt_target, scorer=mock_scorer)
         story_prompt = "Test story prompt"
 
         seed_prompt_group = benchmark._create_seed_prompt_group(
-            subject="lawyer",
-            story_type="tale",
-            story_prompt=story_prompt
+            subject="lawyer", story_type="tale", story_prompt=story_prompt
         )
 
         assert isinstance(seed_prompt_group, SeedPromptGroup)
@@ -354,7 +290,7 @@ class TestFairnessBiasBenchmark:
         mock_scorer: MagicMock,
         sample_benchmark_context: FairnessBiasBenchmarkContext,
         sample_attack_result: AttackResult,
-        mock_conversation_pieces: List[PromptRequestResponse]
+        mock_conversation_pieces: List[PromptRequestResponse],
     ) -> None:
         """Test that perform_async calls the underlying PromptSendingAttack."""
         with patch("pyrit.executor.benchmark.fairness_bias.PromptSendingAttack") as mock_attack_class:
@@ -367,10 +303,7 @@ class TestFairnessBiasBenchmark:
                 mock_memory_instance.get_conversation.return_value = mock_conversation_pieces
                 mock_memory_class.get_memory_instance.return_value = mock_memory_instance
 
-                benchmark = FairnessBiasBenchmark(
-                    objective_target=mock_prompt_target,
-                    scorer=mock_scorer
-                )
+                benchmark = FairnessBiasBenchmark(objective_target=mock_prompt_target, scorer=mock_scorer)
 
                 # Setup context first
                 await benchmark._setup_async(context=sample_benchmark_context)
@@ -406,7 +339,7 @@ class TestFairnessBiasBenchmark:
         mock_prompt_target: MagicMock,
         sample_benchmark_context: FairnessBiasBenchmarkContext,
         sample_attack_result: AttackResult,
-        mock_conversation_pieces: List[PromptRequestResponse]
+        mock_conversation_pieces: List[PromptRequestResponse],
     ) -> None:
         """Test that perform_async handles scorer errors gracefully."""
         # Create a scorer that raises an exception
@@ -423,16 +356,13 @@ class TestFairnessBiasBenchmark:
                 mock_memory_instance.get_conversation.return_value = mock_conversation_pieces
                 mock_memory_class.get_memory_instance.return_value = mock_memory_instance
 
-                benchmark = FairnessBiasBenchmark(
-                    objective_target=mock_prompt_target,
-                    scorer=mock_scorer
-                )
+                benchmark = FairnessBiasBenchmark(objective_target=mock_prompt_target, scorer=mock_scorer)
 
                 # Setup context first
                 await benchmark._setup_async(context=sample_benchmark_context)
 
-                # Perform the attack
-                result = await benchmark._perform_async(context=sample_benchmark_context)
+                # Perform0 the attack
+                await benchmark._perform_async(context=sample_benchmark_context)
 
                 # Verify experiment results were stored with error handling
                 assert len(sample_benchmark_context.experiment_results) == 1
@@ -445,16 +375,9 @@ class TestFairnessBiasBenchmark:
         self, mock_prompt_target: MagicMock, mock_scorer: MagicMock
     ) -> None:
         """Test experiment summary generation with results."""
-        benchmark = FairnessBiasBenchmark(
-            objective_target=mock_prompt_target,
-            scorer=mock_scorer
-        )
+        benchmark = FairnessBiasBenchmark(objective_target=mock_prompt_target, scorer=mock_scorer)
 
-        context = FairnessBiasBenchmarkContext(
-            subject="nurse",
-            story_type="story",
-            num_experiments=2
-        )
+        context = FairnessBiasBenchmarkContext(subject="nurse", story_type="story", num_experiments=2)
         context.experiment_results = [
             {
                 "experiment_number": "1",
@@ -462,7 +385,7 @@ class TestFairnessBiasBenchmark:
                 "story_type": "story",
                 "generated_name": "Maria Garcia",
                 "score_category": "biased",
-                "score_rationale": "Test rationale 1"
+                "score_rationale": "Test rationale 1",
             },
             {
                 "experiment_number": "2",
@@ -470,8 +393,8 @@ class TestFairnessBiasBenchmark:
                 "story_type": "story",
                 "generated_name": "Not found",
                 "score_category": "unbiased",
-                "score_rationale": "Test rationale 2"
-            }
+                "score_rationale": "Test rationale 2",
+            },
         ]
 
         summary = benchmark.get_experiment_summary(context=context)
@@ -489,16 +412,9 @@ class TestFairnessBiasBenchmark:
         self, mock_prompt_target: MagicMock, mock_scorer: MagicMock
     ) -> None:
         """Test experiment summary generation with no results."""
-        benchmark = FairnessBiasBenchmark(
-            objective_target=mock_prompt_target,
-            scorer=mock_scorer
-        )
+        benchmark = FairnessBiasBenchmark(objective_target=mock_prompt_target, scorer=mock_scorer)
 
-        context = FairnessBiasBenchmarkContext(
-            subject="teacher",
-            story_type="narrative",
-            num_experiments=1
-        )
+        context = FairnessBiasBenchmarkContext(subject="teacher", story_type="narrative", num_experiments=1)
         # No experiment results
 
         summary = benchmark.get_experiment_summary(context=context)
@@ -507,14 +423,13 @@ class TestFairnessBiasBenchmark:
 
     @pytest.mark.asyncio
     async def test_get_last_context(
-        self, mock_prompt_target: MagicMock, mock_scorer: MagicMock,
-        sample_benchmark_context: FairnessBiasBenchmarkContext
+        self,
+        mock_prompt_target: MagicMock,
+        mock_scorer: MagicMock,
+        sample_benchmark_context: FairnessBiasBenchmarkContext,
     ) -> None:
         """Test getting the last context."""
-        benchmark = FairnessBiasBenchmark(
-            objective_target=mock_prompt_target,
-            scorer=mock_scorer
-        )
+        benchmark = FairnessBiasBenchmark(objective_target=mock_prompt_target, scorer=mock_scorer)
 
         # Initially should return None
         assert benchmark.get_last_context() is None
@@ -526,14 +441,13 @@ class TestFairnessBiasBenchmark:
 
     @pytest.mark.asyncio
     async def test_teardown_async_stores_context(
-        self, mock_prompt_target: MagicMock, mock_scorer: MagicMock,
-        sample_benchmark_context: FairnessBiasBenchmarkContext
+        self,
+        mock_prompt_target: MagicMock,
+        mock_scorer: MagicMock,
+        sample_benchmark_context: FairnessBiasBenchmarkContext,
     ) -> None:
         """Test that teardown_async stores the context."""
-        benchmark = FairnessBiasBenchmark(
-            objective_target=mock_prompt_target,
-            scorer=mock_scorer
-        )
+        benchmark = FairnessBiasBenchmark(objective_target=mock_prompt_target, scorer=mock_scorer)
 
         # Should complete without raising any exceptions
         await benchmark._teardown_async(context=sample_benchmark_context)
@@ -550,7 +464,7 @@ class TestFairnessBiasBenchmarkExecuteAsync:
         mock_prompt_target: MagicMock,
         mock_scorer: MagicMock,
         sample_attack_result: AttackResult,
-        mock_conversation_pieces: List[PromptRequestResponse]
+        mock_conversation_pieces: List[PromptRequestResponse],
     ) -> None:
         """Test execute_async with only required parameters."""
         with patch("pyrit.executor.benchmark.fairness_bias.PromptSendingAttack") as mock_attack_class:
@@ -563,15 +477,9 @@ class TestFairnessBiasBenchmarkExecuteAsync:
                 mock_memory_instance.get_conversation.return_value = mock_conversation_pieces
                 mock_memory_class.get_memory_instance.return_value = mock_memory_instance
 
-                benchmark = FairnessBiasBenchmark(
-                    objective_target=mock_prompt_target,
-                    scorer=mock_scorer
-                )
+                benchmark = FairnessBiasBenchmark(objective_target=mock_prompt_target, scorer=mock_scorer)
 
-                result = await benchmark.execute_async(
-                    subject="doctor",
-                    story_type="biography"
-                )
+                result = await benchmark.execute_async(subject="doctor", story_type="biography")
 
                 assert result == sample_attack_result
                 mock_attack_instance.execute_async.assert_called_once()
@@ -582,7 +490,7 @@ class TestFairnessBiasBenchmarkExecuteAsync:
         mock_prompt_target: MagicMock,
         mock_scorer: MagicMock,
         sample_attack_result: AttackResult,
-        mock_conversation_pieces: List[PromptRequestResponse]
+        mock_conversation_pieces: List[PromptRequestResponse],
     ) -> None:
         """Test execute_async with optional parameters."""
         prepended_conversation: List[PromptRequestResponse] = []
@@ -599,10 +507,7 @@ class TestFairnessBiasBenchmarkExecuteAsync:
                 mock_memory_instance.get_conversation.return_value = mock_conversation_pieces
                 mock_memory_class.get_memory_instance.return_value = mock_memory_instance
 
-                benchmark = FairnessBiasBenchmark(
-                    objective_target=mock_prompt_target,
-                    scorer=mock_scorer
-                )
+                benchmark = FairnessBiasBenchmark(objective_target=mock_prompt_target, scorer=mock_scorer)
 
                 result = await benchmark.execute_async(
                     subject="engineer",
@@ -627,10 +532,7 @@ class TestFairnessBiasBenchmarkExecuteAsync:
         self, mock_prompt_target: MagicMock, mock_scorer: MagicMock
     ) -> None:
         """Test that execute_async validates required parameters."""
-        benchmark = FairnessBiasBenchmark(
-            objective_target=mock_prompt_target,
-            scorer=mock_scorer
-        )
+        benchmark = FairnessBiasBenchmark(objective_target=mock_prompt_target, scorer=mock_scorer)
 
         # Should raise error when subject is missing
         with pytest.raises(ValueError):
@@ -646,7 +548,7 @@ class TestFairnessBiasBenchmarkExecuteAsync:
         mock_prompt_target: MagicMock,
         mock_scorer: MagicMock,
         sample_attack_result: AttackResult,
-        mock_conversation_pieces: List[PromptRequestResponse]
+        mock_conversation_pieces: List[PromptRequestResponse],
     ) -> None:
         """Test execute_async with multiple experiments."""
         with patch("pyrit.executor.benchmark.fairness_bias.PromptSendingAttack") as mock_attack_class:
@@ -659,16 +561,9 @@ class TestFairnessBiasBenchmarkExecuteAsync:
                 mock_memory_instance.get_conversation.return_value = mock_conversation_pieces
                 mock_memory_class.get_memory_instance.return_value = mock_memory_instance
 
-                benchmark = FairnessBiasBenchmark(
-                    objective_target=mock_prompt_target,
-                    scorer=mock_scorer
-                )
+                benchmark = FairnessBiasBenchmark(objective_target=mock_prompt_target, scorer=mock_scorer)
 
-                result = await benchmark.execute_async(
-                    subject="teacher",
-                    story_type="narrative",
-                    num_experiments=3
-                )
+                result = await benchmark.execute_async(subject="teacher", story_type="narrative", num_experiments=3)
 
                 assert result == sample_attack_result
                 # Should be called 3 times for 3 experiments
@@ -690,7 +585,7 @@ class TestFairnessBiasBenchmarkIntegration:
         mock_prompt_target: MagicMock,
         mock_scorer: MagicMock,
         sample_attack_result: AttackResult,
-        mock_conversation_pieces: List[PromptRequestResponse]
+        mock_conversation_pieces: List[PromptRequestResponse],
     ) -> None:
         """Test full benchmark workflow from start to finish."""
         with patch("pyrit.executor.benchmark.fairness_bias.PromptSendingAttack") as mock_attack_class:
@@ -703,17 +598,10 @@ class TestFairnessBiasBenchmarkIntegration:
                 mock_memory_instance.get_conversation.return_value = mock_conversation_pieces
                 mock_memory_class.get_memory_instance.return_value = mock_memory_instance
 
-                benchmark = FairnessBiasBenchmark(
-                    objective_target=mock_prompt_target,
-                    scorer=mock_scorer
-                )
+                benchmark = FairnessBiasBenchmark(objective_target=mock_prompt_target, scorer=mock_scorer)
 
                 # Execute the benchmark
-                result = await benchmark.execute_async(
-                    subject="scientist",
-                    story_type="biography",
-                    num_experiments=2
-                )
+                result = await benchmark.execute_async(subject="scientist", story_type="biography", num_experiments=2)
 
                 # Verify the workflow completed successfully
                 assert result == sample_attack_result
@@ -738,7 +626,7 @@ class TestFairnessBiasBenchmarkIntegration:
         mock_prompt_target: MagicMock,
         mock_scorer: MagicMock,
         sample_attack_result: AttackResult,
-        mock_conversation_pieces: List[PromptRequestResponse]
+        mock_conversation_pieces: List[PromptRequestResponse],
     ) -> None:
         """Test benchmark execution with memory labels."""
         memory_labels = {"experiment_type": "fairness_test", "model": "test_model"}
@@ -753,16 +641,9 @@ class TestFairnessBiasBenchmarkIntegration:
                 mock_memory_instance.get_conversation.return_value = mock_conversation_pieces
                 mock_memory_class.get_memory_instance.return_value = mock_memory_instance
 
-                benchmark = FairnessBiasBenchmark(
-                    objective_target=mock_prompt_target,
-                    scorer=mock_scorer
-                )
+                benchmark = FairnessBiasBenchmark(objective_target=mock_prompt_target, scorer=mock_scorer)
 
-                result = await benchmark.execute_async(
-                    subject="artist",
-                    story_type="profile",
-                    memory_labels=memory_labels
-                )
+                await benchmark.execute_async(subject="artist", story_type="profile", memory_labels=memory_labels)
 
                 # Verify memory labels were passed correctly
                 call_kwargs = mock_attack_instance.execute_async.call_args.kwargs
