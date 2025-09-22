@@ -106,7 +106,6 @@ from pyrit.executor.attack import (
 )
 from pyrit.prompt_target import OpenAIChatTarget, OpenAISoraTarget
 from pyrit.score import (
-    AzureContentFilterScorer,
     SelfAskTrueFalseScorer,
     TrueFalseQuestion,
 )
@@ -124,15 +123,10 @@ scorer = SelfAskTrueFalseScorer(
     true_false_question=TrueFalseQuestion(true_description="A raccoon dressed as a pirate is actively eating a pastry"),
 )
 
-acf = AzureContentFilterScorer(
-    harm_categories=[TextCategory.VIOLENCE],
-)
-
 attack = PromptSendingAttack(
     objective_target=sora_target,
     attack_scoring_config=AttackScoringConfig(
         objective_scorer=scorer,
-        auxiliary_scorers=[acf],
         num_frames=6,
     ),
 )
