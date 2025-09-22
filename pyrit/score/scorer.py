@@ -382,13 +382,13 @@ class Scorer(abc.ABC):
 
                 aggregate_score = true_scores[0]
                 aggregate_score.score_rationale = (
-                    f"{true_count} out of {len(frame_scores)} video frames meet objective."
+                    f"{true_count} out of {len(frame_scores)} video frames meet objective.\n"
                 )
             else:
                 aggregate_score = frame_scores[0]
                 original_rationale = aggregate_score.score_rationale
 
-                aggregate_score.score_rationale = f"Objective not met within {len(frame_scores)} video frames."
+                aggregate_score.score_rationale = f"Objective not met within {len(frame_scores)} video frames.\n"
 
         # For float_scale scorers, use the highest score value as the aggregate score value
         elif self.scorer_type == "float_scale":
@@ -397,7 +397,7 @@ class Scorer(abc.ABC):
 
             # Update the rationale to indicate this is the highest score
             highest_score = aggregate_score.get_value()
-            aggregate_score.score_rationale = f"Highest score across {len(frame_scores)} frames: {highest_score:.2f}. "
+            aggregate_score.score_rationale = f"Highest score across {len(frame_scores)} frames: {highest_score:.2f}.\n"
 
         else:
             raise ValueError(f"Unsupported scorer type for video scoring: {self.scorer_type}")

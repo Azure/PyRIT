@@ -462,14 +462,6 @@ class OpenAISoraTarget(OpenAITarget):
         if piece_type != "text":
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
-        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request_piece.conversation_id)
-        n_messages = len(messages)
-
-        if n_messages > 0:
-            raise ValueError(
-                "This target only supports a single turn conversation. "
-                f"Received: {n_messages} messages which indicates a prior turn."
-            )
 
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""
