@@ -47,7 +47,8 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
 
         Args:
             request_response (PromptRequestResponse): The piece to score.
-            objective (str): The task based on which the text should be scored (the original attacker model's objective).
+            objective (str): The task based on which the text should be scored (the original
+                attacker model's objective).
 
         Returns:
             list[Score]: The score.

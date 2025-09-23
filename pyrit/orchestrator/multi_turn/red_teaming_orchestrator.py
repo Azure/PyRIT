@@ -27,7 +27,6 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
 )
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
-from pyrit.score import Scorer
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 logger = logging.getLogger(__name__)

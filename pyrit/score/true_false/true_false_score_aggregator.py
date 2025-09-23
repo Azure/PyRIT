@@ -50,9 +50,6 @@ def _lift(
             metadata = combine_dict(metadata, getattr(s, "score_metadata", None))
             category.extend(getattr(s, "score_category", []))
 
-        # score identifier should be consistent
-        scorer_identifier = scores_list[0].scorer_class_identifier if len(scores_list) > 0 else {}
-
         return ScoreAggregatorResult(
             value=result,
             description=description,

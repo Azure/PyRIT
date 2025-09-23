@@ -32,9 +32,9 @@ def test_get_scores_by_orchestrator_id_and_label(
         score_value=str(0.8),
         score_value_description="High score",
         score_type="float_scale",
-        score_category="test",
+        score_category=["test"],
         score_rationale="Test score",
-        score_metadata="Test metadata",
+        score_metadata={"test": "metadata"},
         scorer_class_identifier={"__type__": "TestScorer"},
         prompt_request_response_id=prompt_id,
     )
@@ -93,9 +93,9 @@ def test_add_score_get_score(
         score_value=score_value,
         score_value_description="High score",
         score_type=score_type,
-        score_category="test",
+        score_category=["test"],
         score_rationale="Test score",
-        score_metadata="Test metadata",
+        score_metadata={"test": "metadata"},
         scorer_class_identifier={"__type__": "TestScorer"},
         prompt_request_response_id=prompt_id,
     )
@@ -109,9 +109,9 @@ def test_add_score_get_score(
     assert db_score[0].score_value == score_value
     assert db_score[0].score_value_description == "High score"
     assert db_score[0].score_type == score_type
-    assert db_score[0].score_category == "test"
+    assert db_score[0].score_category == ["test"]
     assert db_score[0].score_rationale == "Test score"
-    assert db_score[0].score_metadata == "Test metadata"
+    assert db_score[0].score_metadata == {"test": "metadata"}
     assert db_score[0].scorer_class_identifier == {"__type__": "TestScorer"}
     assert db_score[0].prompt_request_response_id == prompt_id
 
@@ -145,9 +145,9 @@ def test_add_score_duplicate_prompt(sqlite_instance: MemoryInterface):
         score_value=str(0.8),
         score_value_description="High score",
         score_type="float_scale",
-        score_category="test",
+        score_category=["test"],
         score_rationale="Test score",
-        score_metadata="Test metadata",
+        score_metadata={"test": "metadata"},
         scorer_class_identifier={"__type__": "TestScorer"},
         prompt_request_response_id=dupe_id,
     )
@@ -176,9 +176,9 @@ def test_get_scores_by_memory_labels(sqlite_instance: MemoryInterface):
         score_value=str(0.8),
         score_value_description="High score",
         score_type="float_scale",
-        score_category="test",
+        score_category=["test"],
         score_rationale="Test score",
-        score_metadata="Test metadata",
+        score_metadata={"test": "metadata"},
         scorer_class_identifier={"__type__": "TestScorer"},
         prompt_request_response_id=prompt_id,
     )

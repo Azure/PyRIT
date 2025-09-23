@@ -10,7 +10,7 @@ from unit.mocks import get_sample_conversations
 
 from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.score import BatchScorer, SubStringScorer
+from pyrit.score import BatchScorer
 
 
 @pytest.fixture

@@ -1,4 +1,5 @@
-import uuid
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
 
 from pyrit.models.score import Score
 from pyrit.score.true_false.true_false_score_aggregator import AND_, MAJORITY_, OR_

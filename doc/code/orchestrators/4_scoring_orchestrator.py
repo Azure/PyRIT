@@ -56,13 +56,13 @@ from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import (
     AzureContentFilterScorer,
     ContentClassifierPaths,
-    HumanInTheLoopScorer,
+    HumanInTheLoopScorerGradio,
     SelfAskCategoryScorer,
 )
 
 # The scorer is interchangeable with other scorers
 # scorer = AzureContentFilterScorer()
-# scorer = HumanInTheLoopScorer()
+# scorer = HumanInTheLoopScorerGradio()
 scorer = SelfAskCategoryScorer(
     chat_target=OpenAIChatTarget(), content_classifier_path=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value
 )
@@ -107,7 +107,7 @@ from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import (
     AzureContentFilterScorer,
     ContentClassifierPaths,
-    HumanInTheLoopScorer,
+    HumanInTheLoopScorerGradio,
     SelfAskCategoryScorer,
 )
 

@@ -123,7 +123,7 @@ from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import (
     AzureContentFilterScorer,
     ContentClassifierPaths,
-    HumanInTheLoopScorer,
+    HumanInTheLoopScorerGradio,
     SelfAskCategoryScorer,
 )
 

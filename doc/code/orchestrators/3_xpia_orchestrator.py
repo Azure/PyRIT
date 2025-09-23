@@ -82,7 +82,7 @@ from pyrit.score import SubStringScorer
 
 abs_target = AzureBlobStorageTarget(container_url=os.environ.get("AZURE_STORAGE_ACCOUNT_CONTAINER_URL"))
 
-scorer = SubStringScorer(substring="space pirate", category="jailbreak")
+scorer = SubStringScorer(substring="space pirate", categories=["jailbreak"])
 
 xpia_orchestrator = XPIATestOrchestrator(
     attack_content=jailbreak_prompt,

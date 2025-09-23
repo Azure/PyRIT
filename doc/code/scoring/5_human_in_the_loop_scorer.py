@@ -55,7 +55,7 @@ from pyrit.score import (
     AzureContentFilterScorer,
     BatchScorer,
     ContentClassifierPaths,
-    HumanInTheLoopScorer,
+    HumanInTheLoopScorerGradio,
     SelfAskCategoryScorer,
 )
 
@@ -72,7 +72,7 @@ azure_content_filter_scorer = AzureContentFilterScorer(
     api_key=os.environ.get("AZURE_CONTENT_SAFETY_API_KEY"), endpoint=os.environ.get("AZURE_CONTENT_SAFETY_API_ENDPOINT")
 )
 
-scorer = HumanInTheLoopScorer(scorer=self_ask_scorer, re_scorers=[self_ask_scorer, azure_content_filter_scorer])
+scorer = HumanInTheLoopScorerGradio(scorer=self_ask_scorer, re_scorers=[self_ask_scorer, azure_content_filter_scorer])
 batch_scorer = BatchScorer()
 
 start = time.time()
@@ -92,7 +92,7 @@ for score in scores:
 # pylint: disable=W0611
 
 # This will force you to manually score the prompt
-scorer = HumanInTheLoopScorer()
+scorer = HumanInTheLoopScorerGradio()
 
 start = time.time()
 scores = await batch_scorer.score_responses_by_filters_async(  # type: ignore

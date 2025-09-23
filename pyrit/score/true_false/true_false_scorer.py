@@ -2,10 +2,9 @@
 # Licensed under the MIT license.
 
 import asyncio
-from typing import Dict, Optional
+from typing import Optional
 
-from pyrit.models import PromptRequestPiece, Score
-from pyrit.models.literals import ChatMessageRole
+from pyrit.models import Score
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.score.scorer import Scorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator

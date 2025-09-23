@@ -13,7 +13,6 @@ from pyrit.score import (
     MAJORITY_,
     OR_,
     FloatScaleScorer,
-    Scorer,
     TrueFalseCompositeScorer,
     TrueFalseScorer,
 )

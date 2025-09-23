@@ -778,12 +778,9 @@ class TestEdgeCasesAndErrorHandling:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_with_empty_request_pieces(self, attack_identifier: dict[str, str]):
-        manager = ConversationManager(attack_identifier=attack_identifier)
-        conversation_id = str(uuid.uuid4())
-
         # Create request with empty pieces list should raise ValueError
         with pytest.raises(ValueError, match="PromptRequestResponse must have at least one request piece"):
-            conversation = [PromptRequestResponse(request_pieces=[])]
+            PromptRequestResponse(request_pieces=[])
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_with_none_request(self, attack_identifier: dict[str, str]):

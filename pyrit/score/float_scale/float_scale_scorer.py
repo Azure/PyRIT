@@ -2,13 +2,12 @@
 # Licensed under the MIT license.
 
 import asyncio
-from abc import abstractmethod
 from typing import Dict, Optional
 from uuid import UUID
 
 from pyrit.exceptions.exception_classes import InvalidJsonException
-from pyrit.models import PromptRequestPiece, Score
-from pyrit.models.literals import ChatMessageRole, PromptDataType
+from pyrit.models import Score
+from pyrit.models.literals import PromptDataType
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.models.score import UnvalidatedScore
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
@@ -90,9 +89,8 @@ class FloatScaleScorer(Scorer):
             # raise an exception if it's not parsable as a float
             float(score.raw_score_value)
         except ValueError:
+            score_value = score.raw_score_value if score else "None"
             raise InvalidJsonException(
-                message=(
-                    f"Invalid JSON response, score_value should be a float not this: {score.raw_score_value if score else 'None'}"
-                )
+                message=(f"Invalid JSON response, score_value should be a float not this: {score_value}")
             )
         return score

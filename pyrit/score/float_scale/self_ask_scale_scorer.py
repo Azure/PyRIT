@@ -75,7 +75,8 @@ class SelfAskScaleScorer(FloatScaleScorer):
 
         Args:
             request_piece (PromptRequestPiece): The prompt request piece containing the text to be scored.
-            objective (str): The task based on which the text should be scored (the original attacker model's objective).
+            objective (str): The task based on which the text should be scored (the original
+                attacker model's objective).
 
         Returns:
             list[Score]: The request_response scored.

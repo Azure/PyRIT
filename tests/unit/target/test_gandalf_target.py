@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import MutableSequence
-
 import pytest
 from unit.mocks import get_image_request_piece
 

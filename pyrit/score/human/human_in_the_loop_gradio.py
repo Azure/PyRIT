@@ -5,7 +5,6 @@ import asyncio
 from typing import Optional
 
 from pyrit.models import PromptRequestPiece, Score
-from pyrit.score.scorer import Scorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 

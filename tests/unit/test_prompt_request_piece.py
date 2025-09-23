@@ -237,7 +237,7 @@ def test_group_conversation_request_pieces_throws():
 
 def test_group_conversation_request_pieces(sample_conversations: MutableSequence[PromptRequestResponse]):
     # Get pieces from the first conversation
-    all_pieces = []
+    all_pieces: list[PromptRequestPiece] = []
     for response in sample_conversations:
         if response.request_pieces[0].conversation_id == sample_conversations[0].request_pieces[0].conversation_id:
             pieces = response.flatten_to_prompt_request_pieces([response])
@@ -255,7 +255,7 @@ def test_group_conversation_request_pieces_multiple_groups(
     sample_conversations: MutableSequence[PromptRequestResponse],
 ):
     # Get pieces from the first conversation
-    all_pieces = []
+    all_pieces: list[PromptRequestPiece] = []
     for response in sample_conversations:
         pieces = response.flatten_to_prompt_request_pieces([response])
         all_pieces.extend(pieces)
