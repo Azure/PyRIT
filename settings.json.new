@@ -1,0 +1,5 @@
+{
+    "python.defaultInterpreterPath": "/Users/msinghal/miniconda3/envs/ai-trust-db-new/bin/python",
+    "python.terminal.activateEnvironment": true,
+    "python.envFile": "${workspaceFolder}/.env"
+}
