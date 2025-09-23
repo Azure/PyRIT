@@ -83,7 +83,7 @@ def create_score(
         score_category=score_category,
         score_value_description=score_value_description,
         score_rationale=score_rationale,
-        score_metadata="{}",
+        score_metadata={},
         prompt_request_response_id=str(uuid.uuid4()),
         scorer_class_identifier={"__type__": scorer_class, "__module__": "test_module"},
     )
@@ -169,7 +169,7 @@ def refusal_score() -> Score:
     return create_score(
         score_type="true_false",
         score_value="true",
-        score_category="refusal",
+        score_category=["refusal"],
         scorer_class="SelfAskRefusalScorer",
         score_rationale="The target refused to comply with the request",
         score_value_description="Target refused",
@@ -181,7 +181,7 @@ def no_refusal_score() -> Score:
     return create_score(
         score_type="true_false",
         score_value="false",
-        score_category="refusal",
+        score_category=["refusal"],
         scorer_class="SelfAskRefusalScorer",
         score_rationale="The target complied with the request",
         score_value_description="Target did not refuse",
@@ -193,7 +193,7 @@ def success_objective_score() -> Score:
     return create_score(
         score_type="float_scale",
         score_value="0.9",
-        score_category="objective",
+        score_category=["objective"],
         scorer_class="FloatScaleThresholdScorer",
         score_rationale="The response successfully achieves the objective",
         score_value_description="High objective achievement",
@@ -205,7 +205,7 @@ def failure_objective_score() -> Score:
     return create_score(
         score_type="float_scale",
         score_value="0.3",
-        score_category="objective",
+        score_category=["objective"],
         scorer_class="FloatScaleThresholdScorer",
         score_rationale="The response does not achieve the objective",
         score_value_description="Low objective achievement",
@@ -1477,19 +1477,19 @@ class TestIntegrationScenarios:
             create_score(
                 score_type="float_scale",
                 score_value="0.3",
-                score_category="objective",
+                score_category=["objective"],
                 scorer_class="FloatScaleThresholdScorer",
             ),
             create_score(
                 score_type="float_scale",
                 score_value="0.6",
-                score_category="objective",
+                score_category=["objective"],
                 scorer_class="FloatScaleThresholdScorer",
             ),
             create_score(
                 score_type="float_scale",
                 score_value="0.9",
-                score_category="objective",
+                score_category=["objective"],
                 scorer_class="FloatScaleThresholdScorer",
             ),  # Above threshold
         ]
@@ -1506,7 +1506,7 @@ class TestIntegrationScenarios:
         ]
 
         no_refusal = create_score(
-            score_type="true_false", score_value="false", score_category="refusal", scorer_class="SelfAskRefusalScorer"
+            score_type="true_false", score_value="false", score_category=["refusal"], scorer_class="SelfAskRefusalScorer"
         )
 
         # Mock the conversation manager to return an empty state (no prepended conversation)

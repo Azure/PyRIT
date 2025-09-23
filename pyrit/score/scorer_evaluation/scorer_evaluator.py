@@ -334,8 +334,8 @@ class HarmScorerEvaluator(ScorerEvaluator):
 
         all_model_scores_list = []
         for _ in range(num_scorer_trials):
-            scores = await self.scorer.score_responses_inferring_tasks_batch_async(
-                request_responses=assistant_responses
+            scores = await self.scorer.score_prompts_batch_async(
+                request_responses=assistant_responses, infer_objective_from_request=True
             )
 
             score_values = [score.get_value() for score in scores]
@@ -502,7 +502,7 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
         all_model_scores_list = []
         for _ in range(num_scorer_trials):
             scores = await self.scorer.score_prompts_batch_async(
-                request_responses=assistant_responses, objectives=objectives
+                request_responses=[piece.to_prompt_request_response() for piece in assistant_responses], objectives=objectives
             )
 
             score_values = [score.get_value() for score in scores]

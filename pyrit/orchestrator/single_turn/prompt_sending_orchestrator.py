@@ -106,7 +106,7 @@ class PromptSendingOrchestrator(Orchestrator):
                 response_converters=self._response_converter_configurations,
             ),
             attack_scoring_config=AttackScoringConfig(
-                objective_scorer=objective_scorer,
+                objective_scorer=cast(TrueFalseScorer, objective_scorer),
                 auxiliary_scorers=self._auxiliary_scorers,
             ),
             prompt_normalizer=self._prompt_normalizer,

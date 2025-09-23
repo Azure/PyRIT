@@ -66,8 +66,11 @@ class ScoringOrchestrator(Orchestrator):
 
         request_pieces = self._remove_duplicates(request_pieces)
 
+        # Convert PromptRequestPieces to PromptRequestResponses
+        request_responses = [piece.to_prompt_request_response() for piece in request_pieces]
+
         return await scorer.score_prompts_batch_async(
-            request_responses=request_pieces, batch_size=self._batch_size, objectives=[task] * len(request_pieces)
+            request_responses=request_responses, batch_size=self._batch_size, objectives=[task] * len(request_responses)
         )
 
     async def score_responses_by_filters_async(
@@ -129,8 +132,13 @@ class ScoringOrchestrator(Orchestrator):
         if not request_pieces:
             raise ValueError("No entries match the provided filters. Please check your filters.")
 
-        return await scorer.score_responses_inferring_tasks_batch_async(
-            request_responses=request_pieces, batch_size=self._batch_size
+        # Convert PromptRequestPieces to PromptRequestResponses
+        request_responses = [piece.to_prompt_request_response() for piece in request_pieces]
+
+        return await scorer.score_prompts_batch_async(
+            request_responses=request_responses, 
+            batch_size=self._batch_size,
+            infer_objective_from_request=True
         )
 
     def _extract_responses_only(self, request_responses: Sequence[PromptRequestPiece]) -> list[PromptRequestPiece]:

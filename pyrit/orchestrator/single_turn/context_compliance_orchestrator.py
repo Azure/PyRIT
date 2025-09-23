@@ -94,7 +94,7 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
             objective_target=objective_target,
             request_converter_configurations=request_converter_configurations,
             response_converter_configurations=response_converter_configurations,
-            objective_scorer=objective_scorer,
+            objective_scorer=cast(TrueFalseScorer, objective_scorer),
             auxiliary_scorers=auxiliary_scorers,
             should_convert_prepended_conversation=True,
             batch_size=batch_size,

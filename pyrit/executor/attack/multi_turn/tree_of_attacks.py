@@ -44,6 +44,7 @@ from pyrit.score import (
     SelfAskScaleScorer,
     SelfAskTrueFalseScorer,
     TrueFalseQuestion,
+    TrueFalseQuestionPaths,
 )
 
 logger = logging.getLogger(__name__)
@@ -1020,10 +1021,9 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         # If no objective scorer provided, create the default TAP scorer
         if objective_scorer is None:
             # Use the adversarial chat target for scoring (as in old attack)
-            objective_scorer = SelfAskScaleScorer(
+            objective_scorer = SelfAskTrueFalseScorer(
                 chat_target=self._adversarial_chat,
-                scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
-                system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
+                true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value,
             )
             self._logger.warning("No objective scorer provided, using default scorer")
 

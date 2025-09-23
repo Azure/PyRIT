@@ -48,7 +48,7 @@ async def test_score_prompts_by_filters_async(sample_conversations: MutableSeque
         scorer = MagicMock()
         test_score = MagicMock()
 
-        with patch.object(scorer, "score_responses_inferring_tasks_batch_async", new_callable=AsyncMock) as mock_score:
+        with patch.object(scorer, "score_prompts_batch_async", new_callable=AsyncMock) as mock_score:
             mock_score.return_value = [test_score]
             scores = await orchestrator.score_responses_by_filters_async(
                 scorer=scorer, orchestrator_id=str(uuid.uuid4())

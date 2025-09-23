@@ -57,7 +57,7 @@ def create_score(score_value: float) -> Score:
         prompt_request_response_id="",
         score_value=str(score_value),
         score_type="float_scale",
-        score_category="test",
+        score_category=["test"],
         score_metadata="",
         score_value_description="Test score",
         score_rationale="Test rationale",

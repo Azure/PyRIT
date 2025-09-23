@@ -69,19 +69,23 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
         ]
 
         # Run all response scorings concurrently
-        score_list = await asyncio.gather(*tasks)
+        score_list_results = await asyncio.gather(*tasks)
 
-        for score in score_list:
+        for score in score_list_results:
             if len(score) != 1:
                 raise ValueError("Each TrueFalseScorer must return exactly one score.")
 
         # Use score aggregator to return a single score
-        score_list = [score[0] for score in score_list]
+        score_list = [score[0] for score in score_list_results]
 
         if len(score_list) == 0:
             raise ValueError("No scores were generated from the request response pieces.")
 
         result = self._score_aggregator(score_list)
+
+        # Ensure the request piece has an ID
+        piece_id = request_response.request_pieces[0].id
+        assert piece_id is not None, "Request piece must have an ID"
 
         return_score = Score(
             score_value=str(result.value),
@@ -91,7 +95,7 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
             score_metadata=result.metadata,
             score_rationale=result.rationale,
             scorer_class_identifier=self.get_identifier(),
-            prompt_request_response_id=request_response.request_pieces[0].id,
+            prompt_request_response_id=piece_id,
             objective=objective,
         )
 

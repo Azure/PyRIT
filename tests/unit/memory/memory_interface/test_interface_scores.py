@@ -25,6 +25,7 @@ def test_get_scores_by_orchestrator_id_and_label(
     # assert that that list of scores is the same as expected :-)
 
     prompt_id = sample_conversations[0].id
+    assert prompt_id is not None, "Prompt ID should not be None"
 
     sqlite_instance.add_request_pieces_to_memory(request_pieces=sample_conversations)
 
@@ -84,6 +85,7 @@ def test_add_score_get_score(
     score_type: Literal["float_scale"] | Literal["true_false"],
 ):
     prompt_id = sample_conversation_entries[0].id
+    assert prompt_id is not None, "Prompt ID should not be None"
 
     sqlite_instance._insert_entries(entries=sample_conversation_entries)
 
@@ -137,6 +139,7 @@ def test_add_score_duplicate_prompt(sqlite_instance: MemoryInterface):
     sqlite_instance.duplicate_conversation(new_orchestrator_id=new_orchestrator_id, conversation_id=conversation_id)
     dupe_piece = sqlite_instance.get_prompt_request_pieces(orchestrator_id=new_orchestrator_id)[0]
     dupe_id = dupe_piece.id
+    assert dupe_id is not None, "Dupe ID should not be None"
 
     score_id = uuid4()
     # score with prompt_request_response_id as dupe_id

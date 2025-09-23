@@ -73,7 +73,7 @@ def _lift_binary(
     """
     return _lift(
         name,
-        result_func=lambda bs, _op=op: functools.reduce(_op, bs),
+        result_func=lambda bs, _op=op: functools.reduce(_op, bs),  # type: ignore[misc]
         true_msg=true_msg,
         false_msg=false_msg,
     )

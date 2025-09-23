@@ -71,9 +71,9 @@ from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import (
     AND_,
     AzureContentFilterScorer,
-    TrueFalseCompositeScorer,
     FloatScaleThresholdScorer,
     SelfAskRefusalScorer,
+    TrueFalseCompositeScorer,
     TrueFalseInverterScorer,
 )
 

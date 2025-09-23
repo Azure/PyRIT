@@ -95,10 +95,10 @@ def success_score() -> Score:
     return Score(
         score_type="true_false",
         score_value="true",
-        score_category="test",
+        score_category=["test"],
         score_value_description="Test success score",
         score_rationale="Test rationale for success",
-        score_metadata="{}",
+        score_metadata={},
         prompt_request_response_id=str(uuid.uuid4()),
         scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
     )
@@ -109,10 +109,10 @@ def failure_score() -> Score:
     return Score(
         score_type="true_false",
         score_value="false",
-        score_category="test",
+        score_category=["test"],
         score_value_description="Test failure score",
         score_rationale="Test rationale for failure",
-        score_metadata="{}",
+        score_metadata={},
         prompt_request_response_id=str(uuid.uuid4()),
         scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
     )
@@ -123,10 +123,10 @@ def float_score() -> Score:
     return Score(
         score_type="float_scale",
         score_value="0.9",
-        score_category="test",
+        score_category=["test"],
         score_value_description="High score",
         score_rationale="Test rationale for high score",
-        score_metadata="{}",
+        score_metadata={},
         prompt_request_response_id=str(uuid.uuid4()),
         scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
     )
@@ -614,10 +614,10 @@ class TestSetupPhase:
         other_score = Score(
             score_type="float_scale",
             score_value="0.5",
-            score_category="other",
+            score_category=["other"],
             score_value_description="Other score",
             score_rationale="Other rationale",
-            score_metadata="{}",
+            score_metadata={},
             prompt_request_response_id=str(uuid.uuid4()),
             scorer_class_identifier={"__type__": "OtherScorer", "__module__": "test_module"},
         )
@@ -1142,10 +1142,10 @@ class TestAttackExecution:
         score = Score(
             score_type=scorer_type,
             score_value=score_value,
-            score_category="test",
+            score_category=["test"],
             score_value_description=f"Score: {score_value}",
             score_rationale="Test rationale",
-            score_metadata="{}",
+            score_metadata={},
             prompt_request_response_id=str(uuid.uuid4()),
             scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
         )
