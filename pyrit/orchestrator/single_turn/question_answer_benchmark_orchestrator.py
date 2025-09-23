@@ -13,7 +13,7 @@ from pyrit.orchestrator import OrchestratorResult, PromptSendingOrchestrator
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
-from pyrit.score import Scorer
+from pyrit.score import Scorer, TrueFalseScorer
 
 
 class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
@@ -51,7 +51,7 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
         self,
         *,
         objective_target: PromptChatTarget,
-        objective_scorer: Optional[Scorer] = None,
+        objective_scorer: Optional[TrueFalseScorer] = None,
         objective_format_string: str = OBJECTIVE_FORMAT_STRING,
         question_asking_format_string: str = QUESTION_ASKING_FORMAT_STRING,
         options_format_string: str = OPTIONS_FORMAT_STRING,

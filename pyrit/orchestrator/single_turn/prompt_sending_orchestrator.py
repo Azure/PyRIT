@@ -58,7 +58,7 @@ class PromptSendingOrchestrator(Orchestrator):
         objective_target: PromptTarget,
         request_converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
         response_converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
-        objective_scorer: Optional[Scorer] = None,
+        objective_scorer: Optional[TrueFalseScorer] = None,
         auxiliary_scorers: Optional[list[Scorer]] = None,
         should_convert_prepended_conversation: bool = True,
         batch_size: int = 10,
@@ -86,8 +86,8 @@ class PromptSendingOrchestrator(Orchestrator):
         if objective_scorer and not isinstance(objective_scorer, TrueFalseScorer):
             raise ValueError("Objective scorer must be a true/false scorer")
 
-        self._objective_scorer = objective_scorer or None
-        self._auxiliary_scorers = auxiliary_scorers or []
+        self._objective_scorer: Optional[TrueFalseScorer] = objective_scorer or None
+        self._auxiliary_scorers: list[Scorer] = list(auxiliary_scorers or [])
 
         self._objective_target = objective_target
 
@@ -106,7 +106,7 @@ class PromptSendingOrchestrator(Orchestrator):
                 response_converters=self._response_converter_configurations,
             ),
             attack_scoring_config=AttackScoringConfig(
-                objective_scorer=cast(TrueFalseScorer, objective_scorer),
+                objective_scorer=self._objective_scorer,
                 auxiliary_scorers=self._auxiliary_scorers,
             ),
             prompt_normalizer=self._prompt_normalizer,

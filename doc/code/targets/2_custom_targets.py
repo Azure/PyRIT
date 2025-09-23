@@ -158,7 +158,6 @@ import textwrap
 from pyrit.executor.attack import RedTeamingAttack, RTASystemPromptPaths
 from pyrit.prompt_converter.string_join_converter import StringJoinConverter
 from pyrit.prompt_target import CrucibleTarget, OpenAIChatTarget
-from pyrit.score.substring_scorer import SubStringScorer
 
 conversation_objective = textwrap.dedent(
     """\

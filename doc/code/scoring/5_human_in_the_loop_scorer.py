@@ -46,53 +46,17 @@ prompt_sending_attack_id = prompt_sending_attack.get_identifier()["id"]
 # %%
 # pylint: disable=W0611
 
-import os
 import time
 
 from pyrit.memory import CentralMemory
-from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import (
-    AzureContentFilterScorer,
-    BatchScorer,
-    ContentClassifierPaths,
-    HumanInTheLoopScorerGradio,
-    SelfAskCategoryScorer,
-)
+from pyrit.score import BatchScorer, HumanInTheLoopScorerGradio
 
 memory = CentralMemory.get_memory_instance()
 prompt_pieces_to_score = memory.get_prompt_request_pieces(orchestrator_id=prompt_sending_attack_id)
 
-# This is the scorer we will use to score the prompts and to rescore the prompts
-self_ask_scorer = SelfAskCategoryScorer(
-    chat_target=OpenAIChatTarget(), content_classifier_path=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value
-)
-
-# This is for additional re-scorers:
-azure_content_filter_scorer = AzureContentFilterScorer(
-    api_key=os.environ.get("AZURE_CONTENT_SAFETY_API_KEY"), endpoint=os.environ.get("AZURE_CONTENT_SAFETY_API_ENDPOINT")
-)
-
-scorer = HumanInTheLoopScorerGradio(scorer=self_ask_scorer, re_scorers=[self_ask_scorer, azure_content_filter_scorer])
-batch_scorer = BatchScorer()
-
-start = time.time()
-scores = await batch_scorer.score_responses_by_filters_async(  # type: ignore
-    scorer=scorer, prompt_ids=[str(prompt.id) for prompt in prompt_pieces_to_score]
-)
-end = time.time()
-
-print(f"Elapsed time for operation: {end-start}")
-
-for score in scores:
-    prompt_text = memory.get_prompt_request_pieces(prompt_ids=[str(score.prompt_request_response_id)])[0].original_value
-    print(f"{score} : {prompt_text}")
-
-
-# %%
-# pylint: disable=W0611
-
-# This will force you to manually score the prompt
+# This will force you to manually score each prompt.
 scorer = HumanInTheLoopScorerGradio()
+batch_scorer = BatchScorer()
 
 start = time.time()
 scores = await batch_scorer.score_responses_by_filters_async(  # type: ignore

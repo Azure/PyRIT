@@ -101,6 +101,14 @@ class PromptRequestResponse:
         return "\n".join([str(request_piece) for request_piece in self.request_pieces])
 
     @staticmethod
+    def get_all_values(request_responses: Sequence["PromptRequestResponse"]) -> list[str]:
+        """Return all converted values across the provided request responses."""
+        values: list[str] = []
+        for request_response in request_responses:
+            values.extend(request_response.get_values())
+        return values
+
+    @staticmethod
     def flatten_to_prompt_request_pieces(
         request_responses: Sequence["PromptRequestResponse"],
     ) -> MutableSequence[PromptRequestPiece]:

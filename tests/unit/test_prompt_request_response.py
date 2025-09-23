@@ -95,3 +95,12 @@ def test_get_piece_raises_index_error_for_invalid_index(prompt_request_response:
 def test_get_piece_raises_value_error_for_empty_request() -> None:
     with pytest.raises(ValueError, match="at least one request piece"):
         PromptRequestResponse(request_pieces=[])
+
+
+def test_get_all_values_returns_all_converted_strings(prompt_request_pieces: list[PromptRequestPiece]) -> None:
+    response_one = PromptRequestResponse(request_pieces=prompt_request_pieces[:2])
+    response_two = PromptRequestResponse(request_pieces=prompt_request_pieces[2:])
+
+    flattened = PromptRequestResponse.get_all_values([response_one, response_two])
+
+    assert flattened == ["First piece", "Second piece", "Third piece"]

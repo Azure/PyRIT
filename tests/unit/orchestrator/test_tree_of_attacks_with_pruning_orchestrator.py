@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 from pathlib import Path
+from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -58,7 +59,7 @@ def create_score(score_value: float) -> Score:
         score_value=str(score_value),
         score_type="float_scale",
         score_category=["test"],
-        score_metadata="",
+        score_metadata={},
         score_value_description="Test score",
         score_rationale="Test rationale",
     )
@@ -325,7 +326,7 @@ def test_prune_nodes_over_width():
 
     tree = MagicMock()
 
-    pruned_nodes = tap_orchestrator._prune_nodes_over_width(nodes=nodes, tree_visualization=tree)
+    pruned_nodes = tap_orchestrator._prune_nodes_over_width(nodes=cast(list[Any], nodes), tree_visualization=tree)
 
     assert len(pruned_nodes) == 2
     assert pruned_nodes[0].node_id == "2", "Highest score should be first"

@@ -41,7 +41,6 @@ from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormaliz
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import (
     Scorer,
-    SelfAskScaleScorer,
     SelfAskTrueFalseScorer,
     TrueFalseQuestion,
     TrueFalseQuestionPaths,

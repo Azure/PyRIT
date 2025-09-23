@@ -136,9 +136,7 @@ class ScoringOrchestrator(Orchestrator):
         request_responses = [piece.to_prompt_request_response() for piece in request_pieces]
 
         return await scorer.score_prompts_batch_async(
-            request_responses=request_responses, 
-            batch_size=self._batch_size,
-            infer_objective_from_request=True
+            request_responses=request_responses, batch_size=self._batch_size, infer_objective_from_request=True
         )
 
     def _extract_responses_only(self, request_responses: Sequence[PromptRequestPiece]) -> list[PromptRequestPiece]:

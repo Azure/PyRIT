@@ -1506,7 +1506,10 @@ class TestIntegrationScenarios:
         ]
 
         no_refusal = create_score(
-            score_type="true_false", score_value="false", score_category=["refusal"], scorer_class="SelfAskRefusalScorer"
+            score_type="true_false",
+            score_value="false",
+            score_category=["refusal"],
+            scorer_class="SelfAskRefusalScorer",
         )
 
         # Mock the conversation manager to return an empty state (no prepended conversation)

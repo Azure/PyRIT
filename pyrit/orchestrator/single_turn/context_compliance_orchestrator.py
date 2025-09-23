@@ -21,7 +21,7 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
 )
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.score import Scorer
+from pyrit.score import Scorer, TrueFalseScorer
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
         context_description_instructions_path: Optional[pathlib.Path] = None,
         request_converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
         response_converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
-        objective_scorer: Optional[Scorer] = None,
+        objective_scorer: Optional[TrueFalseScorer] = None,
         auxiliary_scorers: Optional[list[Scorer]] = None,
         batch_size: int = 10,
         retries_on_objective_failure: int = 0,
@@ -79,7 +79,7 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
                 converters.
             response_converter_configurations (list[PromptConverterConfiguration], Optional): List of response
                 converters.
-            objective_scorer (Scorer, Optional): Scorer to use for evaluating if the objective was achieved.
+            objective_scorer (TrueFalseScorer, Optional): Scorer to use for evaluating if the objective was achieved.
             auxiliary_scorers (list[Scorer], Optional): List of additional scorers to use for each prompt request
                 response.
             batch_size (int, Optional): The (max) batch size for sending prompts. Defaults to 10.
@@ -94,7 +94,7 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
             objective_target=objective_target,
             request_converter_configurations=request_converter_configurations,
             response_converter_configurations=response_converter_configurations,
-            objective_scorer=cast(TrueFalseScorer, objective_scorer),
+            objective_scorer=objective_scorer,
             auxiliary_scorers=auxiliary_scorers,
             should_convert_prepended_conversation=True,
             batch_size=batch_size,

@@ -26,8 +26,8 @@ def did_refuse_score() -> Score:
         score_rationale="Refusal Rationale",
         score_value_description="description",
         score_type="true_false",
-        score_metadata="",
-        score_category="category",
+        score_metadata={},
+        score_category=["category"],
         scorer_class_identifier=None,
         prompt_request_response_id="id",
     )
@@ -40,8 +40,8 @@ def did_not_refuse_score() -> Score:
         score_rationale="Refusal Rationale",
         score_value_description="description",
         score_type="true_false",
-        score_metadata="",
-        score_category="category",
+        score_metadata={},
+        score_category=["category"],
         scorer_class_identifier=None,
         prompt_request_response_id="id",
     )
@@ -54,8 +54,8 @@ def true_eval_score() -> Score:
         score_rationale="Refusal Rationale",
         score_value_description="description",
         score_type="true_false",
-        score_metadata="",
-        score_category="category",
+        score_metadata={},
+        score_category=["category"],
         scorer_class_identifier=None,
         prompt_request_response_id="id",
     )
@@ -68,8 +68,8 @@ def false_eval_score() -> Score:
         score_rationale="Refusal Rationale",
         score_value_description="description",
         score_type="true_false",
-        score_metadata="",
-        score_category="category",
+        score_metadata={},
+        score_category=["category"],
         scorer_class_identifier=None,
         prompt_request_response_id="id",
     )
@@ -331,7 +331,7 @@ async def test_invalid_system_prompt_path_raises():
             objective_target=MagicMock(),
             adversarial_chat=MagicMock(),
             scoring_target=MagicMock(),
-            adversarial_chat_system_prompt_path="does_not_exist.yaml",
+            adversarial_chat_system_prompt_path=Path("does_not_exist.yaml"),
         )
 
 
@@ -368,7 +368,7 @@ async def test_get_attack_invalid_json_exceptions(orchestrator: CrescendoOrchest
                 max_turns=10,
                 objective_score=None,
             )
-        assert mock_prompt_normalizer.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
+        assert mock_prompt_normalizer.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS", "0"))
 
 
 @pytest.mark.asyncio

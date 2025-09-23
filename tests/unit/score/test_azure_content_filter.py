@@ -72,8 +72,8 @@ async def test_score_piece_async_image(patch_central_database, image_request_pie
     mock_client.analyze_image.return_value = {"categoriesAnalysis": [{"severity": "3", "category": "Hate"}]}
     scorer._azure_cf_client = mock_client
     # Patch _get_base64_image_data to avoid actual file IO
-    scorer._get_base64_image_data = AsyncMock(return_value="base64data")
-    scores = await scorer._score_piece_async(image_request_piece)
+    with patch.object(scorer, "_get_base64_image_data", AsyncMock(return_value="base64data")):
+        scores = await scorer._score_piece_async(image_request_piece)
     assert len(scores) == 1
     score = scores[0]
     assert score.score_type == "float_scale"

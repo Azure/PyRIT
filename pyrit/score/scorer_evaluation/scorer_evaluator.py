@@ -7,7 +7,7 @@ import logging
 import os
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import List, Optional, Set, Type, TypeVar, Union
+from typing import List, Optional, Set, Tuple, Type, TypeVar, Union, cast
 
 import krippendorff
 import numpy as np
@@ -18,6 +18,7 @@ from pyrit.common.path import (
     SCORER_EVALS_HARM_PATH,
     SCORER_EVALS_OBJECTIVE_PATH,
 )
+from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.score import Scorer
 from pyrit.score.scorer_evaluation.human_labeled_dataset import (
     HarmHumanLabeledEntry,
@@ -324,7 +325,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
             for request_response in entry.conversation:
                 self.scorer._memory.add_request_response_to_memory(request=request_response)
                 # Logic may need to change for multi-turn scoring
-                assistant_responses.append(request_response.get_piece())
+                assistant_responses.append(request_response)
             human_scores_list.append(entry.human_scores)
             harms.append(entry.harm_category)
 
@@ -352,7 +353,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
             csv_results_path = self._get_csv_results_path(dataset_name=labeled_dataset.name)
             self._save_model_scores_to_csv(
                 objectives_or_harms=harms,
-                responses=[response.converted_value for response in assistant_responses],
+                responses=PromptRequestResponse.get_all_values(assistant_responses),
                 all_model_scores=all_model_scores,
                 file_path=csv_results_path,
             )
@@ -378,11 +379,12 @@ class HarmScorerEvaluator(ScorerEvaluator):
         diff[np.abs(diff) < 1e-10] = 0.0
 
         abs_error = np.abs(diff)
+        t_statistic, p_value = cast(Tuple[float, float], ttest_1samp(diff, 0))
         metrics = {
             "mean_absolute_error": np.mean(abs_error),
             "mae_standard_error": np.std(abs_error) / np.sqrt(len(abs_error)),
-            "t_statistic": ttest_1samp(diff, 0).statistic,
-            "p_value": ttest_1samp(diff, 0).pvalue,
+            "t_statistic": t_statistic,
+            "p_value": p_value,
             "krippendorff_alpha_combined": krippendorff.alpha(
                 reliability_data=reliability_data, level_of_measurement="ordinal"
             ),
@@ -502,7 +504,8 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
         all_model_scores_list = []
         for _ in range(num_scorer_trials):
             scores = await self.scorer.score_prompts_batch_async(
-                request_responses=[piece.to_prompt_request_response() for piece in assistant_responses], objectives=objectives
+                request_responses=[piece.to_prompt_request_response() for piece in assistant_responses],
+                objectives=objectives,
             )
 
             score_values = [score.get_value() for score in scores]

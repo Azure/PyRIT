@@ -92,18 +92,18 @@ async def test_execute_fuzzer(
         score_value="True",
         score_value_description="",
         score_type="true_false",
-        score_category="",
+        score_category=["test"],
         score_rationale="",
-        score_metadata="",
+        score_metadata={},
         prompt_request_response_id="",
     )
     false_score = Score(
         score_value="False",
         score_value_description="",
         score_type="true_false",
-        score_category="",
+        score_category=["test"],
         score_rationale="",
-        score_metadata="",
+        score_metadata={},
         prompt_request_response_id="",
     )
     prompt_target_response = [
