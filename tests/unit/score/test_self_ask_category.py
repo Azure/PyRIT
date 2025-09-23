@@ -217,17 +217,17 @@ async def test_score_prompts_batch_async(
             content_classifier_path=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
         )
 
-        prompt = PromptRequestPiece(role="assistant", original_value="test")
-        prompt2 = PromptRequestPiece(role="assistant", original_value="test 2")
+        prompt = PromptRequestPiece(role="assistant", original_value="test").to_prompt_request_response()
+        prompt2 = PromptRequestPiece(role="assistant", original_value="test 2").to_prompt_request_response()
 
         with patch.object(chat_target, "send_prompt_async", return_value=scorer_category_response_false):
             if batch_size != 1 and max_requests_per_minute:
                 with pytest.raises(ValueError):
-                    await scorer.score_prompts_with_tasks_batch_async(
-                        request_responses=[prompt], batch_size=batch_size, tasks=[""]
+                    await scorer.score_prompts_batch_async(
+                        request_responses=[prompt], batch_size=batch_size, objectives=[""]
                     )
             else:
-                results = await scorer.score_prompts_with_tasks_batch_async(
-                    request_responses=[prompt, prompt2], batch_size=batch_size, tasks=["", ""]
+                results = await scorer.score_prompts_batch_async(
+                    request_responses=[prompt, prompt2], batch_size=batch_size, objectives=["", ""]
                 )
                 assert len(results) == 2

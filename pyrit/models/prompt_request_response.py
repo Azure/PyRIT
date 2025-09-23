@@ -18,11 +18,12 @@ class PromptRequestResponse:
         request_pieces (Sequence[PromptRequestPiece]): The list of prompt request pieces.
     """
 
-    def __init__(self, request_pieces: Sequence[PromptRequestPiece]):
+    def __init__(self, request_pieces: Sequence[PromptRequestPiece], *, skip_validation: Optional[bool] = False):
         if not request_pieces:
             raise ValueError("PromptRequestResponse must have at least one request piece.")
         self.request_pieces = request_pieces
-        self.validate()
+        if not skip_validation:
+            self.validate()
 
     def get_value(self, n: int = 0) -> str:
         """Return the converted value of the nth request piece."""
