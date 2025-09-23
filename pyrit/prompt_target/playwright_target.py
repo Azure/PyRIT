@@ -4,7 +4,6 @@
 from typing import TYPE_CHECKING, Protocol
 
 from pyrit.models import (
-    PromptRequestPiece,
     PromptRequestResponse,
     construct_response_from_request,
 )
@@ -22,17 +21,24 @@ class InteractionFunction(Protocol):
     Defines the structure of interaction functions used with PlaywrightTarget.
     """
 
-    async def __call__(self, page: "Page", request_piece: PromptRequestPiece) -> str: ...
+    async def __call__(self, page: "Page", prompt_request: PromptRequestResponse) -> str: ...
 
 
 class PlaywrightTarget(PromptTarget):
     """
     PlaywrightTarget uses Playwright to interact with a web UI.
 
+    The interaction function receives the complete PromptRequestResponse and can process
+    multiple pieces as needed. All pieces must be of type 'text' or 'image_path'.
+
     Parameters:
         interaction_func (InteractionFunction): The function that defines how to interact with the page.
+            This function receives the Playwright page and the complete PromptRequestResponse.
         page (Page): The Playwright page object to use for interaction.
     """
+
+    # Supported data types
+    SUPPORTED_DATA_TYPES = {"text", "image_path"}
 
     def __init__(
         self,
@@ -51,21 +57,26 @@ class PlaywrightTarget(PromptTarget):
                 "Playwright page is not initialized. Please pass a Page object when initializing PlaywrightTarget."
             )
 
-        request_piece = prompt_request.request_pieces[0]
-
         try:
-            text = await self._interaction_func(self._page, request_piece)
+            text = await self._interaction_func(self._page, prompt_request)
         except Exception as e:
             raise RuntimeError(f"An error occurred during interaction: {str(e)}") from e
 
+        # For response construction, we'll use the first piece as reference
+        # but the interaction function can process all pieces
+        request_piece = prompt_request.request_pieces[0]
         response_entry = construct_response_from_request(request=request_piece, response_text_pieces=[text])
         return response_entry
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
-        n_pieces = len(prompt_request.request_pieces)
-        if n_pieces != 1:
-            raise ValueError(f"This target only supports a single prompt request piece. Received: {n_pieces} pieces.")
+        if not prompt_request.request_pieces:
+            raise ValueError("This target requires at least one prompt request piece.")
 
-        piece_type = prompt_request.request_pieces[0].converted_value_data_type
-        if piece_type != "text":
-            raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
+        # Validate that all pieces are supported types
+        for i, piece in enumerate(prompt_request.request_pieces):
+            piece_type = piece.converted_value_data_type
+            if piece_type not in self.SUPPORTED_DATA_TYPES:
+                supported_types = ", ".join(self.SUPPORTED_DATA_TYPES)
+                raise ValueError(
+                    f"This target only supports {supported_types} prompt input. " f"Piece {i} has type: {piece_type}."
+                )

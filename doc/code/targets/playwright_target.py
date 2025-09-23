@@ -89,14 +89,14 @@ flask_process = start_flask_app()
 from playwright.async_api import Page, async_playwright
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.models import PromptRequestPiece
+from pyrit.models import PromptRequestResponse
 from pyrit.prompt_target import PlaywrightTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
 
 # Define the interaction function
-async def interact_with_my_app(page: Page, request_piece: PromptRequestPiece) -> str:
+async def interact_with_my_app(page: Page, prompt_request: PromptRequestResponse) -> str:
     # Define selectors
     input_selector = "#message-input"
     send_button_selector = "#send-button"
@@ -109,8 +109,8 @@ async def interact_with_my_app(page: Page, request_piece: PromptRequestPiece) ->
     # Wait for the page to be ready
     await page.wait_for_selector(input_selector)
 
-    # Send the prompt text
-    prompt_text = request_piece.converted_value
+    # Send the prompt text (get from first request piece)
+    prompt_text = prompt_request.request_pieces[0].converted_value
     await page.fill(input_selector, prompt_text)
     await page.click(send_button_selector)
 
