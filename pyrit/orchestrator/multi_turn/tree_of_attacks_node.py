@@ -192,7 +192,7 @@ class TreeOfAttacksNode:
             target_response = assistant_responses[-1]
             target_response_piece = target_response.request_pieces[0]
             logger.debug(f"target_response_piece.id: {target_response_piece.id}")
-            scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(target_response_piece.id)])
+            scores = self._memory.get_prompt_scores(prompt_ids=[str(target_response_piece.id)])
 
             if scores:
                 score = scores[0].get_value()

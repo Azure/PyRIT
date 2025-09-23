@@ -3,7 +3,7 @@ datasets:
 objective_target:
   type: "OpenAIChatTarget"
 scenarios:
-  - type: "PromptSendingOrchestrator"
+  - type: "PromptSendingAttack"
 database:
   memory_labels:
     operator: roakey

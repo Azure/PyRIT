@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import json
 from typing import Literal, Optional
 
 from pyrit.models import PromptRequestPiece
@@ -12,10 +13,11 @@ from pyrit.score.scorer import Scorer
 class SelfAskGeneralScorer(Scorer):
     """
     A general scorer that uses a chat target to score a prompt request piece.
+
     It can be configured to use different scoring types (e.g., true/false, float scale)
     It can also format the prompt using a system-level prompt and a format string.
 
-    Params:
+    Parameters:
         chat_target (PromptChatTarget): The chat target to use for scoring.
         system_prompt (str): The system-level prompt that guides the behavior of the target LLM.
             Defaults to None.
@@ -69,7 +71,11 @@ class SelfAskGeneralScorer(Scorer):
 
         self.scorer_type = scorer_type
 
-        self._score_category = category
+        # Convert category list to string for storage compatibility
+        self._score_category = None
+        if category is not None:
+            self._score_category = json.dumps(category) if isinstance(category, list) else str(category)
+
         self.labels = labels
         self._min_value = min_value
         self._max_value = max_value

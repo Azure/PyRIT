@@ -1,7 +1,7 @@
 datasets:
   - ./pyrit/datasets/seed_prompts/illegal.prompt
 scenarios:
-  - type: "PromptSendingOrchestrator"
+  - type: "PromptSendingAttack"
 objective_target:
   type: "OpenAIChatTarget" # "AzureMLChatTarget" | "HuggingFaceEndpointTarget" | ...
   # endpoint_env_variable: # in case one wants to use multiple you need to specify the env vars - not yet supported
@@ -15,7 +15,7 @@ objective_target:
 # scoring:
 #   objective_scorer: ...
 database:
-  type: "DuckDB"
+  type: "SQLite"
   memory_labels:
     operator: roakey
     operation: op_trash_panda

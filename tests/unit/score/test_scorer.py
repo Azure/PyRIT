@@ -3,12 +3,14 @@
 
 import asyncio
 import os
+from pathlib import Path
 from textwrap import dedent
 from typing import Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from pyrit.common.path import SCORER_CONFIG_PATH
 from pyrit.exceptions import InvalidJsonException, remove_markdown_json
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
@@ -231,6 +233,32 @@ async def test_scorer_remove_markdown_json_called(good_json):
         mock_remove_markdown_json.assert_called_once()
 
 
+def test_scorer_path_verification_rejection():
+    """
+    Test that the scorer correctly refuses to verify a non-existent path.
+    """
+    scorer = MockScorer()
+    mock_path: str = "this/does/not/exist.yaml"
+    with pytest.raises(ValueError, match="Path not found"):
+        scorer._verify_and_resolve_path(mock_path)
+
+
+def test_scorer_path_verification_confirmation():
+    """
+    Test that the scorer verifies the paths that currently exist
+    under the scorer configs.
+    """
+    scorer = MockScorer()
+    all_yamls_as_str: list[str] = []
+    full_paths: list[str] = []
+    for root, dirs, files in os.walk(SCORER_CONFIG_PATH):
+        full_paths.extend([os.path.join(root, f) for f in files if f.endswith(".yaml")])
+        all_yamls_as_str.extend([f for f in files if f.endswith(".yaml")])
+    resolved_paths = [Path(p).resolve() for p in full_paths]
+    attempted_paths = [scorer._verify_and_resolve_path(p) for p in full_paths]
+    assert attempted_paths == resolved_paths
+
+
 def test_scorer_extract_task_from_response():
     """
     Test that _extract_task_from_response properly gathers text from the
@@ -347,22 +375,30 @@ async def test_score_response_async_parallel_execution():
         response=response, scorers=[scorer1, scorer2], role_filter="assistant", task="test task"
     )
 
-    # Should have 4 scores total (2 scorers x 2 assistant pieces)
-    assert len(result) == 4
+    # TEMPORARY fix means there should only be 2 scores, one per scorer, and each scorer scores only the first piece
+    assert len(result) == 2
     assert score1_1 in result
-    assert score1_2 in result
     assert score2_1 in result
-    assert score2_2 in result
-
-    # Verify each scorer was called twice (once per assistant piece)
-    assert scorer1.score_async.call_count == 2
-    assert scorer2.score_async.call_count == 2
-
-    # Verify the correct pieces were passed
     scorer1.score_async.assert_any_call(request_response=piece1, task="test task")
-    scorer1.score_async.assert_any_call(request_response=piece2, task="test task")
     scorer2.score_async.assert_any_call(request_response=piece1, task="test task")
-    scorer2.score_async.assert_any_call(request_response=piece2, task="test task")
+
+    # The following commented-out lines should be uncommented when the permanent solution is implemented
+    # # Should have 4 scores total (2 scorers x 2 assistant pieces)
+    # assert len(result) == 4
+    # assert score1_1 in result
+    # assert score1_2 in result
+    # assert score2_1 in result
+    # assert score2_2 in result
+
+    # # Verify each scorer was called twice (once per assistant piece)
+    # assert scorer1.score_async.call_count == 2
+    # assert scorer2.score_async.call_count == 2
+
+    # # Verify the correct pieces were passed
+    # scorer1.score_async.assert_any_call(request_response=piece1, task="test task")
+    # scorer1.score_async.assert_any_call(request_response=piece2, task="test task")
+    # scorer2.score_async.assert_any_call(request_response=piece1, task="test task")
+    # scorer2.score_async.assert_any_call(request_response=piece2, task="test task")
 
 
 @pytest.mark.asyncio
@@ -464,9 +500,13 @@ async def test_score_response_select_first_success_async_no_success_returns_firs
     # Should return the first score encountered (score1)
     assert result == score1
 
-    # All scorers should be called for all pieces
-    assert scorer1.score_async.call_count == 2
-    assert scorer2.score_async.call_count == 2
+    # TEMPORARY fix means each scorer should only be called once for the first piece
+    assert scorer1.score_async.call_count == 1
+    assert scorer2.score_async.call_count == 1
+    # The following commented-out lines should be uncommented when the permanent solution is implemented
+    # # All scorers should be called for all pieces
+    # assert scorer1.score_async.call_count == 2
+    # assert scorer2.score_async.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -502,15 +542,18 @@ async def test_score_response_select_first_success_async_parallel_scoring_per_pi
         response=response, scorers=[scorer1, scorer2], task="test task"
     )
 
-    # Verify that for each piece, both scorers are called before moving to next piece
-    # (parallel execution per piece, but sequential piece processing)
-    assert len(call_order) == 4
+    # TEMPORARY fix means there should only be 2 calls, one per PromptRequestResponse
+    assert len(call_order) == 2
+    # The following commented-out lines should be uncommented when the permanent solution is implemented
+    # # Verify that for each piece, both scorers are called before moving to next piece
+    # # (parallel execution per piece, but sequential piece processing)
+    # assert len(call_order) == 4
     # First piece should be scored by both scorers
     assert ("scorer1", "response1") in call_order[:2]
     assert ("scorer2", "response1") in call_order[:2]
-    # Then second piece
-    assert ("scorer1", "response2") in call_order[2:]
-    assert ("scorer2", "response2") in call_order[2:]
+    # # Then second piece
+    # assert ("scorer1", "response2") in call_order[2:]
+    # assert ("scorer2", "response2") in call_order[2:]
 
 
 @pytest.mark.asyncio
@@ -619,8 +662,12 @@ async def test_score_response_select_first_success_async_all_errors_skip_on_erro
 
     # Should process error pieces and return first score
     assert result == score1
-    # Should have called scorer for both pieces
-    assert scorer.score_async.call_count == 2
+
+    # TEMPORARY fix means the scorer should only be called once for the first piece
+    assert scorer.score_async.call_count == 1
+    # The following commented-out lines should be uncommented when the permanent solution is implemented
+    # # Should have called scorer for both pieces
+    # assert scorer.score_async.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -685,10 +732,15 @@ async def test_score_response_select_first_success_async_skip_on_error_no_succes
 
     # Should return the first score as failure indicator
     assert result == score1
-    # Should have been called twice (for piece1 and piece3, skipping piece2)
-    assert scorer.score_async.call_count == 2
-    scorer.score_async.assert_any_call(request_response=piece1, task="test task")
-    scorer.score_async.assert_any_call(request_response=piece3, task="test task")
+
+    # Temporary fix means the scorer should only be called once for the first piece
+    assert scorer.score_async.call_count == 1
+    scorer.score_async.assert_called_with(request_response=piece1, task="test task")
+    # The following commented-out lines should be uncommented when the permanent solution is implemented
+    # # Should have been called twice (for piece1 and piece3, skipping piece2)
+    # assert scorer.score_async.call_count == 2
+    # scorer.score_async.assert_any_call(request_response=piece1, task="test task")
+    # scorer.score_async.assert_any_call(request_response=piece3, task="test task")
 
 
 @pytest.mark.asyncio
@@ -852,10 +904,14 @@ async def test_score_response_with_objective_async_multiple_pieces():
         task="test task",
     )
 
-    # Should have all auxiliary scores
-    assert len(result["auxiliary_scores"]) == 4
-    for score in aux_scores:
-        assert score in result["auxiliary_scores"]
+    # TEMPORARY fix means there should only be 2 auxiliary scores, one per PromptRequestResponse
+    assert len(result["auxiliary_scores"]) == 2
+
+    # The following commented-out lines should be uncommented when the permanent solution is implemented
+    # # Should have all auxiliary scores
+    # assert len(result["auxiliary_scores"]) == 4
+    # for score in aux_scores:
+    #     assert score in result["auxiliary_scores"]
 
     # Should have only one objective score (first success)
     assert len(result["objective_scores"]) == 1
@@ -976,13 +1032,17 @@ async def test_score_response_with_objective_async_skip_on_error_false():
         skip_on_error=False,
     )
 
-    # Should score both pieces for auxiliary
-    assert len(result["auxiliary_scores"]) == 2
+    # Temporary fix means there should only be 1 auxiliary score (first piece)
+    assert len(result["auxiliary_scores"]) == 1
+    # The following commented-out lines should be uncommented when the permanent solution is implemented
+    # # Should score both pieces for auxiliary
+    # assert len(result["auxiliary_scores"]) == 2
+
     # But only one objective score (first success)
     assert len(result["objective_scores"]) == 1
 
-    # Verify both pieces were scored for auxiliary
-    assert aux_scorer.score_async.call_count == 2
+    # # Verify both pieces were scored for auxiliary
+    # assert aux_scorer.score_async.call_count == 2
 
 
 @pytest.mark.asyncio

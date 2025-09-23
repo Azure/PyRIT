@@ -9,7 +9,8 @@ import json
 import logging
 import uuid
 from abc import abstractmethod
-from typing import Dict, List, Optional, Sequence
+from pathlib import Path
+from typing import Dict, List, Optional, Sequence, Union
 
 from pyrit.exceptions import (
     InvalidJsonException,
@@ -43,6 +44,25 @@ class Scorer(abc.ABC):
     @property
     def _memory(self) -> MemoryInterface:
         return CentralMemory.get_memory_instance()
+
+    def _verify_and_resolve_path(self, path: Union[str, Path]) -> Path:
+        """
+        Verify that a path passed to a Scorer on its creation
+        is valid before beginning the scoring logic.
+
+        Args:
+            path (Union[str, Path]): A pathlike argument passed to the Scorer.
+
+        Returns:
+            Path: The resolved Path object.
+        """
+        if not isinstance(path, (str, Path)):
+            raise ValueError(f"Path must be a string or Path object. Got type(path): {type(path).__name__}")
+
+        path_obj: Path = Path(path).resolve() if isinstance(path, str) else path.resolve()
+        if not path_obj.exists():
+            raise ValueError(f"Path not found: {str(path_obj)}")
+        return path_obj
 
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
@@ -426,9 +446,9 @@ class Scorer(abc.ABC):
                 logger.debug("All response pieces have errors, skipping scoring")
                 return []
 
-        # Create all scoring tasks
+        # Create all scoring tasks, note TEMPORARY fix to prevent multi-piece responses from breaking scoring logic
         tasks = [
-            scorer.score_async(request_response=piece, task=task) for piece in filtered_pieces for scorer in scorers
+            scorer.score_async(request_response=piece, task=task) for piece in filtered_pieces[:1] for scorer in scorers
         ]
 
         if not tasks:
@@ -485,7 +505,8 @@ class Scorer(abc.ABC):
 
         first_score = None
 
-        for piece in scorable_pieces:
+        # TEMPORARY fix to prevent multi-piece responses from breaking scoring logic of attack
+        for piece in scorable_pieces[:1]:
             # Run all scorers on this piece in parallel
             tasks = [scorer.score_async(request_response=piece, task=task) for scorer in scorers]
             score_lists = await asyncio.gather(*tasks)

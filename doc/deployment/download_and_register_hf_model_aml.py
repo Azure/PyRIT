@@ -9,7 +9,7 @@
 # - ["cognitivecomputations/Wizard-Vicuna-30B-Uncensored"](https://huggingface.co/cognitivecomputations/Wizard-Vicuna-30B-Uncensored)
 # - ["lmsys/vicuna-13b-v1.1"](https://huggingface.co/lmsys/vicuna-13b-v1.1)
 #
-# are particularly useful for generating prompts or scenarios without content moderation. These can be configured as part of a red teaming orchestrator in PyRIT to create challenging and uncensored prompts/scenarios. These prompts are then submitted to the target chat bot, helping assess its ability to handle potentially unsafe, unexpected, or adversarial inputs.
+# are particularly useful for generating prompts or scenarios without content moderation. These can be configured as part of a red teaming attack in PyRIT to create challenging and uncensored prompts/scenarios. These prompts are then submitted to the target chat bot, helping assess its ability to handle potentially unsafe, unexpected, or adversarial inputs.
 #
 # ## Important Note on Deploying Quantized Models
 # When deploying quantized models, especially those suffixed with GGML, FP16, or GPTQ, it's crucial to have GPU support. These models are optimized for performance but require the computational capabilities of GPUs to run. Ensure your deployment environment is equipped with the necessary GPU resources to handle these models.
@@ -98,7 +98,7 @@ from dotenv import load_dotenv
 #
 # 9. **AZURE_ML_COMPUTE_NAME**
 #    - If you already have an Azure ML compute cluster, provide its name. If not, the script will create one based on the instance size and the specified minimum and maximum instances.
-#    <br> <img src="./../../assets/aml_compute_cluster.png" alt="aml_compute_cluster.png" height="400"/> <br>
+#    <br> <img src="./../../assets/aml_compute_cluster.png" alt="AML compute cluster" height="400"/> <br>
 #
 # 10. **IDLE_TIME_BEFORE_SCALE_DOWN**
 #     - Set the duration for the Azure ML cluster to remain active before scaling down due to inactivity, ensuring efficient resource use. Typically, 3-4 hours is ideal for large size models.

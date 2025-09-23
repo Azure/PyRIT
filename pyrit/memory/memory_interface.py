@@ -9,9 +9,10 @@ import uuid
 import weakref
 from datetime import datetime
 from pathlib import Path
-from typing import MutableSequence, Optional, Sequence, TypeVar, Union
+from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
 
-from sqlalchemy import Engine, MetaData, and_
+from sqlalchemy import MetaData, and_
+from sqlalchemy.engine.base import Engine
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql.elements import ColumnElement
 
@@ -213,56 +214,104 @@ class MemoryInterface(abc.ABC):
                     score.prompt_request_response_id = prompt_piece[0].original_prompt_id
         self._insert_entries(entries=[ScoreEntry(entry=score) for score in scores])
 
-    def get_scores_by_prompt_ids(self, *, prompt_request_response_ids: Sequence[str]) -> Sequence[Score]:
+    def get_scores(
+        self,
+        *,
+        score_ids: Optional[Sequence[str]] = None,
+        score_type: Optional[str] = None,
+        score_category: Optional[str] = None,
+        sent_after: Optional[datetime] = None,
+        sent_before: Optional[datetime] = None,
+    ) -> Sequence[Score]:
         """
-        Gets a list of scores based on prompt_request_response_ids.
-        """
-        prompt_pieces = self.get_prompt_request_pieces(prompt_ids=prompt_request_response_ids)
-        # Get the original prompt IDs from the prompt pieces so correct scores can be obtained
-        prompt_request_response_ids = [str(piece.original_prompt_id) for piece in prompt_pieces]
-        entries: Sequence[ScoreEntry] = self._query_entries(
-            ScoreEntry, conditions=ScoreEntry.prompt_request_response_id.in_(prompt_request_response_ids)
-        )
+        Retrieves a list of Score objects based on the specified filters.
 
+        Args:
+            score_ids (Optional[Sequence[str]]): A list of score IDs to filter by.
+            score_type (Optional[str]): The type of the score to filter by.
+            score_category (Optional[str]): The category of the score to filter by.
+            sent_after (Optional[datetime]): Filter for scores sent after this datetime.
+            sent_before (Optional[datetime]): Filter for scores sent before this datetime.
+
+        Returns:
+            Sequence[Score]: A list of Score objects that match the specified filters.
+        """
+        conditions: list[Any] = []
+
+        if score_ids:
+            conditions.append(ScoreEntry.id.in_(score_ids))
+        if score_type:
+            conditions.append(ScoreEntry.score_type == score_type)
+        if score_category:
+            conditions.append(ScoreEntry.score_category == score_category)
+        if sent_after:
+            conditions.append(ScoreEntry.timestamp >= sent_after)
+        if sent_before:
+            conditions.append(ScoreEntry.timestamp <= sent_before)
+
+        if not conditions:
+            return []
+
+        entries: Sequence[ScoreEntry] = self._query_entries(ScoreEntry, conditions=and_(*conditions))
         return [entry.get_score() for entry in entries]
 
-    def get_scores_by_orchestrator_id(self, *, orchestrator_id: str) -> Sequence[Score]:
+    def get_prompt_scores(
+        self,
+        *,
+        orchestrator_id: Optional[str | uuid.UUID] = None,
+        role: Optional[str] = None,
+        conversation_id: Optional[str | uuid.UUID] = None,
+        prompt_ids: Optional[Sequence[str | uuid.UUID]] = None,
+        labels: Optional[dict[str, str]] = None,
+        prompt_metadata: Optional[dict[str, Union[str, int]]] = None,
+        sent_after: Optional[datetime] = None,
+        sent_before: Optional[datetime] = None,
+        original_values: Optional[Sequence[str]] = None,
+        converted_values: Optional[Sequence[str]] = None,
+        data_type: Optional[str] = None,
+        not_data_type: Optional[str] = None,
+        converted_value_sha256: Optional[Sequence[str]] = None,
+    ) -> Sequence[Score]:
         """
-        Retrieves a list of Score objects associated with the PromptRequestPiece objects
-        which have the specified orchestrator ID.
+        Retrieves scores attached to prompt request pieces based on the specified filters.
 
         Args:
-            orchestrator_id (str): The id of the orchestrator.
-                Can be retrieved by calling orchestrator.get_identifier()["id"]
+            Same as `get_prompt_request_pieces`.
 
         Returns:
-            Sequence[Score]: A list of Score objects associated with the PromptRequestPiece objects
-                which match the specified orchestrator ID.
+            Sequence[Score]: A list of scores extracted from the prompt request pieces.
         """
-        prompt_pieces = self.get_prompt_request_pieces(orchestrator_id=orchestrator_id)
-        # Since duplicate pieces do not have their own score entries, get the original prompt IDs from the pieces.
-        prompt_ids = [str(piece.original_prompt_id) for piece in prompt_pieces]
-        return self.get_scores_by_prompt_ids(prompt_request_response_ids=prompt_ids)
+        prompt_pieces = self.get_prompt_request_pieces(
+            orchestrator_id=orchestrator_id,
+            role=role,
+            conversation_id=conversation_id,
+            prompt_ids=prompt_ids,
+            labels=labels,
+            prompt_metadata=prompt_metadata,
+            sent_after=sent_after,
+            sent_before=sent_before,
+            original_values=original_values,
+            converted_values=converted_values,
+            data_type=data_type,
+            not_data_type=not_data_type,
+            converted_value_sha256=converted_value_sha256,
+        )
 
-    def get_scores_by_memory_labels(self, *, memory_labels: dict[str, str]) -> Sequence[Score]:
-        """
-        Retrieves a list of Score objects associated with the PromptRequestPiece objects
-        which have the specified memory labels.
+        # Deduplicate prompt pieces by original_prompt_id to avoid duplicate scores
+        # since duplicated pieces share scores with their originals
+        seen_original_ids = set()
+        unique_pieces = []
+        for piece in prompt_pieces:
+            if piece.original_prompt_id not in seen_original_ids:
+                seen_original_ids.add(piece.original_prompt_id)
+                unique_pieces.append(piece)
 
-        Args:
-            memory_labels (dict[str, str]): A free-form dictionary for tagging prompts with custom labels.
-                These labels can be used to track all prompts sent as part of an operation, score prompts based on
-                the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
-                Users can define any key-value pairs according to their needs.
+        scores = []
+        for piece in unique_pieces:
+            if piece.scores:
+                scores.extend(piece.scores)
 
-        Returns:
-            Sequence[Score]: A list of Score objects associated with the PromptRequestPiece objects
-                which match the specified memory labels.
-        """
-        prompt_pieces = self.get_prompt_request_pieces(labels=memory_labels)
-        # Since duplicate pieces do not have their own score entries, get the original prompt IDs from the pieces.
-        prompt_ids = [str(piece.original_prompt_id) for piece in prompt_pieces]
-        return self.get_scores_by_prompt_ids(prompt_request_response_ids=prompt_ids)
+        return list(scores)
 
     def get_conversation(self, *, conversation_id: str) -> MutableSequence[PromptRequestResponse]:
         """
@@ -330,9 +379,9 @@ class MemoryInterface(abc.ABC):
             prompt_ids = [str(pi) for pi in prompt_ids]
             conditions.append(PromptMemoryEntry.id.in_(prompt_ids))
         if labels:
-            conditions.append(self._get_prompt_pieces_memory_label_conditions(memory_labels=labels))
+            conditions.extend(self._get_prompt_pieces_memory_label_conditions(memory_labels=labels))
         if prompt_metadata:
-            conditions.append(self._get_prompt_pieces_prompt_metadata_conditions(prompt_metadata=prompt_metadata))
+            conditions.extend(self._get_prompt_pieces_prompt_metadata_conditions(prompt_metadata=prompt_metadata))
         if sent_after:
             conditions.append(PromptMemoryEntry.timestamp >= sent_after)
         if sent_before:
@@ -801,7 +850,7 @@ class MemoryInterface(abc.ABC):
         groups: Optional[Sequence[str]] = None,
         source: Optional[str] = None,
     ) -> Sequence[SeedPromptGroup]:
-        """Retrieves groups of seed prompts based on the provided filtering criteria.
+        """Retrieves groups of seed prompts based on the provided filtering criteria
 
         Args:
             value_sha256 (Optional[Sequence[str]], Optional): SHA256 hash of value to filter seed prompt groups by.
@@ -934,6 +983,7 @@ class MemoryInterface(abc.ABC):
             conditions.append(AttackResultEntry.conversation_id == conversation_id)
         if objective:
             conditions.append(AttackResultEntry.objective.contains(objective))
+
         if objective_sha256:
             conditions.append(AttackResultEntry.objective_sha256.in_(objective_sha256))
         if outcome:

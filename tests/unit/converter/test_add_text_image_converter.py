@@ -82,7 +82,7 @@ async def test_add_text_image_converter_invalid_input_image() -> None:
 
 
 @pytest.mark.asyncio
-async def test_add_text_image_converter_convert_async(duckdb_instance) -> None:
+async def test_add_text_image_converter_convert_async(sqlite_instance) -> None:
     converter = AddTextImageConverter(text_to_add="test")
     mock_image = Image.new("RGB", (400, 300), (255, 255, 255))
     mock_image.save("test.png")

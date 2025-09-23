@@ -2,7 +2,7 @@
 datasets:
   - ./pyrit/datasets/seed_prompts/illegal.prompt
 scenarios:
-  - type: "PromptSendingOrchestrator"
+  - type: "PromptSendingAttack"
 objective_target:
   type: "OpenAIChatTarget"
 converters:
@@ -11,4 +11,4 @@ converters:
     converter_target:
       type: "OpenAIChatTarget"
 database:
-  type: "DuckDB"
+  type: "SQLite"

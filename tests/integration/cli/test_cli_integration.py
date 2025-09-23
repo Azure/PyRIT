@@ -11,10 +11,9 @@ import pytest
 import yaml
 
 from pyrit.cli.__main__ import main
-from pyrit.exceptions import AttackExecutionException
 
 test_cases_success = [
-    "--config-file 'tests/integration/cli/mixed_multiple_orchestrators_args_success.yaml'",
+    "--config-file 'tests/integration/cli/mixed_multiple_attacks_args_success.yaml'",
     "--config-file 'tests/integration/cli/prompt_send_success.yaml'",
     "--config-file 'tests/unit/cli/prompt_send_success_converters_custom_target.yaml'",
     "--config-file 'tests/unit/cli/prompt_send_success_converters_no_target.yaml'",
@@ -88,6 +87,10 @@ converters = [
     (
         "text",
         {"type": "EmojiConverter"},
+    ),
+    (
+        "text",
+        {"type": "FirstLetterConverter"},
     ),
     (
         "text",
@@ -222,10 +225,10 @@ converters = [
 
 def _create_data(data_type: str) -> dict[str, Collection[Collection[str]]]:
     data = {
-        "scenarios": [{"type": "PromptSendingOrchestrator"}],
-        "adversarial_chat": {"type": "OpenAIChatTarget"},
+        "scenarios": [{"type": "PromptSendingAttack"}],
+        "attack_adversarial_config": {"type": "OpenAIChatTarget"},
         "objective_target": {"type": "OpenAIChatTarget"},
-        "database": {"type": "DuckDB"},
+        "database": {"type": "SQLite"},
     }
 
     if data_type == "text":
@@ -273,7 +276,7 @@ test_cases_error = [
     (
         "--config-file 'tests/integration/cli/prompt_send_converters_wrong_data_type.yaml'",
         "Input type not supported",
-        AttackExecutionException,
+        RuntimeError,
     ),
 ]
 

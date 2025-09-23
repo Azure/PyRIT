@@ -23,7 +23,7 @@ def mock_target(patch_central_database) -> MockPromptTarget:
 @pytest.fixture
 def skeleton_key_prompt():
     skeleton_key = SeedPromptDataset.from_yaml_file(
-        Path(DATASETS_PATH) / "orchestrators" / "skeleton_key" / "skeleton_key.prompt"
+        Path(DATASETS_PATH) / "executors" / "skeleton_key" / "skeleton_key.prompt"
     )
     skeleton_key_prompt = skeleton_key.prompts[0].value
     return skeleton_key_prompt

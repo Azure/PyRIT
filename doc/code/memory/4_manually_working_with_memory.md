@@ -8,14 +8,14 @@ There are many ways to do this, but this section gives some general ideas on how
 
 There are two ways to share prompt and score data between users. The first is to use a central database shared among users hosted on an Azure SQL Server! See [here](../memory/6_azure_sql_memory.ipynb) for instructions on set up.
 
-The second way to share data is to use local DuckDB Memory (see [here](../memory/1_duck_db_memory.ipynb)) and do the following:
+The second way to share data is to use local SQLite Memory (see [here](../memory/1_sqlite_memory.ipynb)) and do the following:
 
 1. Export and import the database as described [here](https://dbeaver.com/docs/dbeaver/Data-transfer/). This allows a lot of flexibility and can include partial exports (for example based on labels or time):
 2. Copy the PyRIT `results/dbdata` directory over; it will contain multi-modal data that the database references.
 
-See https://duckdb.org/docs/guides/sql_editors/dbeaver.html for a more comprehensive guide on using DBeaver.
+See https://dbeaver.com/docs/guides/sql_editors/sqlite.html for a more comprehensive guide on using DBeaver with SQLite.
 
-## Using DuckDB and Excel to Query and Visualize Data
+## Using SQLite and Excel to Query and Visualize Data
 
 This is especially nice with scoring. There are countless ways to do this, but this shows one example;
 
@@ -45,7 +45,7 @@ If you are using an AzureSQL Database, you can use the Query Editor to run SQL q
 3. Now that you have your data in a format of your choice, feel free to analyze, interpret, and visualize it in whatever way you desire!
 
 ## Updating DB Entries Manually
-If you catch entries you want to update (e.g., if you want to correct scores or change labels of a prompt), you could either change them in the database or in Excel and re-import. (Note: the most stable way of doing this is in the database since the mapping can be off in some cases when reimporting.) Entries in the database can be updated using a PyRIT function located in `memory_interface.py` such as `update_entries` or `update_labels_by_conversation_id` (work for both AzureSQLMemory and DuckDBMemory). Alternatively, a data management tool like DBeaver can be used to directly update locally stored memory entries in DuckDB.
+If you catch entries you want to update (e.g., if you want to correct scores or change labels of a prompt), you could either change them in the database or in Excel and re-import. (Note: the most stable way of doing this is in the database since the mapping can be off in some cases when reimporting.) Entries in the database can be updated using a PyRIT function located in `memory_interface.py` such as `update_entries` or `update_labels_by_conversation_id` (work for both AzureSQLMemory and SQLiteMemory). Alternatively, a data management tool like DBeaver can be used to directly update locally stored memory entries in SQLite.
 
 ## Entering Manual Prompts
 

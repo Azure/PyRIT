@@ -26,6 +26,7 @@ from pyrit.prompt_converter.codechameleon_converter import CodeChameleonConverte
 from pyrit.prompt_converter.colloquial_wordswap_converter import ColloquialWordswapConverter
 from pyrit.prompt_converter.diacritic_converter import DiacriticConverter
 from pyrit.prompt_converter.emoji_converter import EmojiConverter
+from pyrit.prompt_converter.first_letter_converter import FirstLetterConverter
 from pyrit.prompt_converter.flip_converter import FlipConverter
 from pyrit.prompt_converter.fuzzer_converter import (
     FuzzerConverter,
@@ -58,6 +59,7 @@ from pyrit.prompt_converter.tense_converter import TenseConverter
 from pyrit.prompt_converter.text_to_hex_converter import TextToHexConverter
 from pyrit.prompt_converter.tone_converter import ToneConverter
 from pyrit.prompt_converter.translation_converter import TranslationConverter
+from pyrit.prompt_converter.random_translation_converter import RandomTranslationConverter
 from pyrit.prompt_converter.unicode_confusable_converter import UnicodeConfusableConverter
 from pyrit.prompt_converter.unicode_replacement_converter import UnicodeReplacementConverter
 from pyrit.prompt_converter.unicode_sub_converter import UnicodeSubstitutionConverter
@@ -93,6 +95,7 @@ __all__ = [
     "DiacriticConverter",
     "ConverterResult",
     "EmojiConverter",
+    "FirstLetterConverter",
     "FlipConverter",
     "FuzzerConverter",
     "FuzzerCrossOverConverter",
@@ -127,12 +130,14 @@ __all__ = [
     "TenseConverter",
     "ToneConverter",
     "TranslationConverter",
+    "RandomTranslationConverter",
     "UnicodeConfusableConverter",
     "UnicodeReplacementConverter",
     "UnicodeSubstitutionConverter",
     "UrlConverter",
     "VariationConverter",
     "VariationSelectorSmugglerConverter",
+    "WordLevelConverter",
     "ZalgoConverter",
     "ZeroWidthConverter",
     "ToxicSentenceGeneratorConverter",

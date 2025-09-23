@@ -104,20 +104,6 @@ def test_seed_prompt_group_sequence_default():
     assert seed_prompt_group.prompts[0].sequence == 0
 
 
-def test_group_seed_prompts_by_prompt_group_id(seed_prompt_fixture):
-    # Grouping two prompts
-    prompt_2 = SeedPrompt(
-        value="Another prompt", data_type="text", prompt_group_id=seed_prompt_fixture.prompt_group_id, sequence=2
-    )
-
-    groups = SeedPromptDataset.group_seed_prompts_by_prompt_group_id([seed_prompt_fixture, prompt_2])
-    assert len(groups) == 1
-    assert len(groups[0].prompts) == 2
-    assert groups[0].prompts[0].sequence is not None
-    assert groups[0].prompts[1].sequence is not None
-    assert groups[0].prompts[0].sequence < groups[0].prompts[1].sequence
-
-
 def test_seed_prompt_dataset_initialization(seed_prompt_fixture):
     dataset = SeedPromptDataset(prompts=[seed_prompt_fixture])
     assert len(dataset.prompts) == 1
@@ -176,25 +162,25 @@ def test_prompt_dataset_from_yaml_defaults():
 
 
 @pytest.mark.asyncio
-async def test_group_seed_prompt_groups_from_yaml(duckdb_instance):
+async def test_group_seed_prompt_groups_from_yaml(sqlite_instance):
     prompts = SeedPromptDataset.from_yaml_file(
         pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal-dataset.prompt"
     )
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=prompts.prompts, added_by="rlundeen")
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=prompts.prompts, added_by="rlundeen")
 
-    groups = duckdb_instance.get_seed_prompt_groups()
+    groups = sqlite_instance.get_seed_prompt_groups()
     # there are 8 SeedPrompts, 6 SeedPromptGroups
     assert len(groups) == 6
 
 
 @pytest.mark.asyncio
-async def test_group_seed_prompt_alias_sets_group_id(duckdb_instance):
+async def test_group_seed_prompt_alias_sets_group_id(sqlite_instance):
     prompts = SeedPromptDataset.from_yaml_file(
         pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal-dataset.prompt"
     )
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=prompts.prompts, added_by="rlundeen")
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=prompts.prompts, added_by="rlundeen")
 
-    groups = duckdb_instance.get_seed_prompt_groups()
+    groups = sqlite_instance.get_seed_prompt_groups()
     # there are 8 SeedPrompts, 6 SeedPromptGroups
     assert len(groups) == 6
 
@@ -242,6 +228,97 @@ def test_group_id_set_unequally_raises():
     assert "Inconsistent group IDs found across prompts" in str(exc_info.value)
 
 
+def test_enforce_consistent_role_with_no_roles_by_sequence():
+    """Test that if only one role is set, all prompts in each sequence get that role."""
+    prompts = [
+        SeedPrompt(value="test1", sequence=1, role="user"),
+        SeedPrompt(value="test2", sequence=1),
+        SeedPrompt(value="test3", sequence=2, role="user"),
+    ]
+    group = SeedPromptGroup(prompts=prompts)
+
+    assert all(prompt.role == "user" for prompt in group.prompts)
+
+
+def test_enforce_consistent_role_with_undefined_role_by_sequence():
+    """Test that when prompts in different sequences have roles defined, ValueError is raised."""
+    prompts = [
+        SeedPrompt(value="test1", sequence=1, role="user"),
+        SeedPrompt(value="test2", sequence=2),  # undefined role raises error
+    ]
+
+    with pytest.raises(ValueError) as exc_info:
+        SeedPromptGroup(prompts=prompts)
+
+    assert (
+        f"No roles set for sequence 2 in a multi-sequence group. Please ensure at least one prompt within a sequence"
+        f" has an assigned role."
+    ) in str(exc_info.value)
+
+
+def test_enforce_consistent_role_with_unassigned_role_single_sequence():
+    """Test that when no prompt in a sequence has a role, all prompts are assigned user."""
+    prompts = [
+        SeedPrompt(value="test1", sequence=1),
+        SeedPrompt(value="test2", sequence=1),
+    ]
+    group = SeedPromptGroup(prompts=prompts)
+
+    # Check sequence 1 prompts
+    seq1_prompts = [p for p in group.prompts if p.sequence == 1]
+    assert all(p.role == "user" for p in seq1_prompts)
+
+
+def test_enforce_consistent_role_with_single_role_by_sequence():
+    """Test that when one prompt in a sequence has a role, all prompts in that sequence get that role."""
+    prompts = [
+        SeedPrompt(value="test1", sequence=1, role="assistant"),
+        SeedPrompt(value="test2", sequence=1, role=None),
+        SeedPrompt(value="test3", sequence=2, role="user"),  # Different sequence can have different role
+    ]
+    group = SeedPromptGroup(prompts=prompts)
+
+    # Check sequence 1 prompts
+    seq1_prompts = [p for p in group.prompts if p.sequence == 1]
+    assert all(p.role == "assistant" for p in seq1_prompts)
+
+    # Check sequence 2 prompts
+    seq2_prompts = [p for p in group.prompts if p.sequence == 2]
+    assert all(p.role == "user" for p in seq2_prompts)
+
+
+def test_enforce_consistent_role_with_conflicting_roles_in_sequence():
+    """Test that when prompts in the same sequence have different roles, ValueError is raised."""
+    prompts = [
+        SeedPrompt(value="test1", sequence=1, role="user"),
+        SeedPrompt(value="test2", sequence=1, role="assistant"),  # Conflict in sequence 1
+        SeedPrompt(value="test3", sequence=2, role="user"),  # Different sequence, no conflict
+    ]
+
+    with pytest.raises(ValueError) as exc_info:
+        SeedPromptGroup(prompts=prompts)
+
+    assert "Inconsistent roles found for sequence 1" in str(exc_info.value)
+
+
+def test_enforce_consistent_role_with_different_roles_across_sequences():
+    """Test that different sequences can have different roles without raising an error."""
+    prompts = [
+        SeedPrompt(value="test1", sequence=1, role="assistant"),
+        SeedPrompt(value="test2", sequence=1, role="assistant"),
+        SeedPrompt(value="test3", sequence=2, role="user"),
+        SeedPrompt(value="test4", sequence=2, role="user"),
+    ]
+
+    group = SeedPromptGroup(prompts=prompts)  # Should not raise an error
+
+    # Check that roles are maintained per sequence
+    seq1_prompts = [p for p in group.prompts if p.sequence == 1]
+    seq2_prompts = [p for p in group.prompts if p.sequence == 2]
+    assert all(p.role == "assistant" for p in seq1_prompts)
+    assert all(p.role == "user" for p in seq2_prompts)
+
+
 @pytest.mark.asyncio
 async def test_hashes_generated():
     entry = SeedPrompt(
@@ -271,15 +348,15 @@ async def test_hashes_generated_files():
 
 
 @pytest.mark.asyncio
-async def test_memory_encoding_metadata_image(duckdb_instance):
+async def test_memory_encoding_metadata_image(sqlite_instance):
     mock_image = Image.new("RGB", (400, 300), (255, 255, 255))
     mock_image.save("test.png")
     sp = SeedPrompt(
         value="test.png",
         data_type="image_path",
     )
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=[sp], added_by="test")
-    entry = duckdb_instance.get_seed_prompts()[0]
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=[sp], added_by="test")
+    entry = sqlite_instance.get_seed_prompts()[0]
     assert len(entry.metadata) == 1
     assert entry.metadata["format"] == "png"
     os.remove("test.png")
@@ -287,7 +364,7 @@ async def test_memory_encoding_metadata_image(duckdb_instance):
 
 @pytest.mark.asyncio
 @patch("pyrit.models.seed_prompt.TinyTag")
-async def test_memory_encoding_metadata_audio(mock_tinytag, duckdb_instance):
+async def test_memory_encoding_metadata_audio(mock_tinytag, sqlite_instance):
     # Simulate WAV data
     sample_rate = 44100
     mock_audio_data = np.random.randint(-32768, 32767, size=(100,), dtype=np.int16)
@@ -308,8 +385,8 @@ async def test_memory_encoding_metadata_audio(mock_tinytag, duckdb_instance):
     mock_tag.duration = 180
     mock_tinytag.get.return_value = mock_tag
 
-    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=[sp], added_by="test")
-    entry = duckdb_instance.get_seed_prompts()[0]
+    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=[sp], added_by="test")
+    entry = sqlite_instance.get_seed_prompts()[0]
     assert entry.metadata["format"] == "wav"
     assert entry.metadata["bitrate"] == 128
     assert entry.metadata["samplerate"] == 44100

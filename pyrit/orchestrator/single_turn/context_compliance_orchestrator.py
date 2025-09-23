@@ -8,14 +8,14 @@ from typing import Optional, cast
 
 from typing_extensions import LiteralString, deprecated
 
-from pyrit.attacks import (
+from pyrit.common import deprecation_message
+from pyrit.common.path import DATASETS_PATH
+from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackConverterConfig,
     AttackScoringConfig,
     ContextComplianceAttack,
 )
-from pyrit.common import deprecation_message
-from pyrit.common.path import DATASETS_PATH
 from pyrit.orchestrator import OrchestratorResult, PromptSendingOrchestrator
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 class ContextDescriptionPaths(enum.Enum):
-    GENERAL = pathlib.Path(DATASETS_PATH) / "orchestrators" / "context_compliance" / "context_description.yaml"
+    GENERAL = pathlib.Path(DATASETS_PATH) / "executors" / "context_compliance" / "context_description.yaml"
 
 
 @deprecated(
@@ -44,7 +44,7 @@ class ContextComplianceOrchestrator(PromptSendingOrchestrator):
     """
     .. warning::
         `ContextComplianceOrchestrator` is deprecated and will be removed in **v0.12.0**;
-        use `pyrit.attacks.ContextComplianceAttack` instead.
+        use `pyrit.executor.attack.ContextComplianceAttack` instead.
 
     This orchestrator implements a context compliance attack that attempts to bypass safety measures by
     rephrasing the objective into a more benign context. It uses an adversarial chat target to:
