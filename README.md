@@ -21,6 +21,13 @@ Any use of third-party trademarks or logos are subject to those third-party's
 policies.
 
 ## Citing PyRIT
+## Feature Parity Tracking
+
+PyRIT is actively working toward feature parity with other LLM vulnerability scanners such as **Garak**, **Giskard**, and **CyberSecEval**.  
+See [Issue #511](https://github.com/Azure/PyRIT/issues/511) for details on progress and open tasks.  
+
+Contributors are welcome to suggest or implement missing features (e.g., insecure coding tests, multi-language support improvements).
+
 
 If you use PyRIT in your research, please cite our preprint paper as follows:
 
