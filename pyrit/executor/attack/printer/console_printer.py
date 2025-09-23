@@ -157,9 +157,8 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
                 if scores:
                     print()
                     self._print_colored(f"{self._indent}📊 Scores:", Style.DIM, Fore.MAGENTA)
-                    for score in scores:
-                        if score.score_category == "objective":
-                            self._print_score(score)
+                    objective_score = [score for score in scores if score.score_category == "objective"][0]
+                    self.print_score(objective_score)
                 
                 # Print auxiliary scores only if requested
                 if include_auxiliary_scores:
