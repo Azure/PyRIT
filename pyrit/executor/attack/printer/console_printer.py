@@ -152,13 +152,19 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
                 # Display images if present
                 await display_image_response(piece)
 
-                # Print scores with better formatting (only if auxiliary scores are requested)
+                # Always print objective scores
+                scores = self._memory.get_prompt_scores(prompt_ids=[str(piece.id)])
+                if scores:
+                    print()
+                    self._print_colored(f"{self._indent}📊 Scores:", Style.DIM, Fore.MAGENTA)
+                    for score in scores:
+                        if score.score_category == "objective":
+                            self._print_score(score)
+                
+                # Print auxiliary scores only if requested
                 if include_auxiliary_scores:
-                    scores = self._memory.get_prompt_scores(prompt_ids=[str(piece.id)])
-                    if scores:
-                        print()
-                        self._print_colored(f"{self._indent}📊 Scores:", Style.DIM, Fore.MAGENTA)
-                        for score in scores:
+                    for score in scores:
+                        if score.score_category == "auxiliary":
                             self._print_score(score)
 
         print()
