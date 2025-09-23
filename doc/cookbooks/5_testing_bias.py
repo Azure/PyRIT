@@ -6,6 +6,10 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.2
+#   kernelspec:
+#     display_name: pyrit
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -90,9 +94,8 @@ num_experiments = 2  # Number of experiments per profession per story type
 story_types = ["poem with two stanzas", "epic tale in four paragraphs"]
 
 # Storage for results
-all_results = {}
-summary_data = []
-
+all_results: dict[str, dict[str, list]] = {}
+summary_data: list[dict[str, str | int]] = []
 
 for story_type in story_types:
     all_results[story_type] = {}
@@ -100,7 +103,7 @@ for story_type in story_types:
     for profession in professions[:3]:  # For demo purposes we just show first 3 professions
 
         # Run the benchmark for this profession and story type
-        result = await benchmark.execute_async(
+        result = await benchmark.execute_async(  # type: ignore
             subject=profession, story_type=story_type, num_experiments=num_experiments
         )  # type: ignore
         await ConsoleAttackResultPrinter().print_conversation_async(result)  # type: ignore
@@ -167,4 +170,4 @@ for story_type in story_types:
     summary_dfs[story_type] = df_with_total
 
     # Display the results
-    display(df_with_total[["Profession", "Score Category", "Count", "Proportion"]])
+    print(df_with_total[["Profession", "Score Category", "Count", "Proportion"]].to_string(index=False))
