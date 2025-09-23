@@ -9,9 +9,11 @@ from typing import Optional
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score, ScoreType
 from pyrit.prompt_target import PromptShieldTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
-from pyrit.score.true_false.true_false_score_aggregator import OR_, TrueFalseScoreAggregator
+from pyrit.score.true_false.true_false_score_aggregator import (
+    OR_,
+    TrueFalseScoreAggregator,
+)
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
-
 
 logger = logging.getLogger(__name__)
 
@@ -25,21 +27,21 @@ class PromptShieldScorer(TrueFalseScorer):
     _conversation_id: str
     _prompt_shield_target: PromptShieldTarget
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(
-        supported_data_types=["text"]
-    )
+    _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 
     def __init__(
         self,
         *,
         prompt_shield_target: PromptShieldTarget,
         validator: Optional[ScorerPromptValidator] = None,
-        score_aggregator: TrueFalseScoreAggregator = OR_
+        score_aggregator: TrueFalseScoreAggregator = OR_,
     ) -> None:
         super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
         self._prompt_target = prompt_shield_target
 
-    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
+    async def _score_piece_async(
+        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+    ) -> list[Score]:
         self._conversation_id = str(uuid.uuid4())
 
         body = request_piece.original_value
@@ -108,5 +110,3 @@ class PromptShieldScorer(TrueFalseScorer):
             document_detections = [document.get("attackDetected") for document in documents_attack]
 
         return user_detections + document_detections
-
-    

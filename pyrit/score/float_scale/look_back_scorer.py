@@ -29,7 +29,13 @@ class LookBackScorer(FloatScaleScorer):
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator()
 
-    def __init__(self, chat_target: PromptChatTarget, *, exclude_instruction_prompts: bool, validator: Optional[ScorerPromptValidator] = None) -> None:
+    def __init__(
+        self,
+        chat_target: PromptChatTarget,
+        *,
+        exclude_instruction_prompts: bool,
+        validator: Optional[ScorerPromptValidator] = None,
+    ) -> None:
         super().__init__(validator=validator or self._default_validator)
         self._prompt_target = chat_target
 
@@ -45,7 +51,9 @@ class LookBackScorer(FloatScaleScorer):
             step_description=behavior_change_scale
         )
 
-    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
+    async def _score_piece_async(
+        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+    ) -> list[Score]:
         """
         Scores the entire conversation based on detected behavior change.
 
@@ -98,5 +106,3 @@ class LookBackScorer(FloatScaleScorer):
             "LookBackScorer:", score.score_value, score.score_value_description, "Rationale: ", score.score_rationale
         )
         return [score]
-
-    

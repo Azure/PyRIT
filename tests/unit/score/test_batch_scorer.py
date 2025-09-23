@@ -77,7 +77,7 @@ class TestBatchScorerScoreResponsesByFilters:
     ) -> None:
         """Test scoring with all filter parameters."""
         memory = MagicMock()
-        memory.get_prompt_request_pieces.return_value =  [sample_conversations[1].request_pieces[0]]
+        memory.get_prompt_request_pieces.return_value = [sample_conversations[1].request_pieces[0]]
 
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
             scorer = MagicMock()

@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
-from unit.mocks import get_sample_conversations, get_image_request_piece
+from unit.mocks import get_image_request_piece, get_sample_conversations
 
 from pyrit.exceptions.exception_classes import (
     EmptyResponseException,

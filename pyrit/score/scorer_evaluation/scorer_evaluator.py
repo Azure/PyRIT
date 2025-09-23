@@ -19,13 +19,13 @@ from pyrit.common.path import (
     SCORER_EVALS_OBJECTIVE_PATH,
 )
 from pyrit.score import Scorer
-from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 from pyrit.score.scorer_evaluation.human_labeled_dataset import (
     HarmHumanLabeledEntry,
     HumanLabeledDataset,
     ObjectiveHumanLabeledEntry,
 )
 from pyrit.score.scorer_evaluation.metrics_type import MetricsType
+from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 logger = logging.getLogger(__name__)
 

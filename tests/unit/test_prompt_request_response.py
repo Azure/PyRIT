@@ -7,7 +7,10 @@ from pathlib import Path
 import pytest
 
 from pyrit.models import PromptResponse
-from pyrit.models.prompt_request_response import PromptRequestResponse, PromptRequestPiece
+from pyrit.models.prompt_request_response import (
+    PromptRequestPiece,
+    PromptRequestResponse,
+)
 
 
 @pytest.fixture
@@ -45,6 +48,7 @@ def prompt_request_pieces() -> list[PromptRequestPiece]:
             conversation_id="test-conversation-1",
         ),
     ]
+
 
 @pytest.fixture
 def prompt_request_response(prompt_request_pieces) -> PromptRequestResponse:

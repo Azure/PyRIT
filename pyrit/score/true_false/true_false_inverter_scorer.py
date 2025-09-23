@@ -5,8 +5,8 @@ import uuid
 from typing import Optional
 
 from pyrit.models import PromptRequestPiece, Score
-from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.models.literals import ChatMessageRole
+from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
@@ -21,7 +21,6 @@ class TrueFalseInverterScorer(TrueFalseScorer):
         if not isinstance(scorer, TrueFalseScorer):
             raise ValueError("The scorer must be a true false scorer")
         self._scorer = scorer
-
 
     async def _score_async(
         self,
@@ -59,8 +58,10 @@ class TrueFalseInverterScorer(TrueFalseScorer):
         inv_score.scorer_class_identifier["sub_identifier"] = str(self._scorer.get_identifier())
 
         return [inv_score]
-    
-    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
+
+    async def _score_piece_async(
+        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+    ) -> list[Score]:
         """True False Inverter scorers do not support piecewise scoring.
 
         Args:
@@ -71,4 +72,3 @@ class TrueFalseInverterScorer(TrueFalseScorer):
             NotImplementedError: Always, since composite scoring operates at the response level.
         """
         raise NotImplementedError("TrueFalseCompositeScorer does not support piecewise scoring.")
-

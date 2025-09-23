@@ -67,7 +67,9 @@ class SelfAskScaleScorer(FloatScaleScorer):
 
         self._system_prompt = scoring_instructions_template.render_template_value(**scale_args)
 
-    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
+    async def _score_piece_async(
+        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+    ) -> list[Score]:
         """
         Scores the given request_piece using "self-ask" for the chat target.
 
@@ -101,8 +103,6 @@ class SelfAskScaleScorer(FloatScaleScorer):
         )
 
         return [score]
-
-    
 
     def _validate_scale_arguments_set(self, scale_args: dict):
 

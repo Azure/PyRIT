@@ -174,7 +174,7 @@ class PromptRequestPiece:
         Check if the prompt request piece is blocked.
         """
         return self.response_error == "blocked"
-    
+
     def set_piece_not_in_database(self):
         """
         Set that the prompt is not in the database.

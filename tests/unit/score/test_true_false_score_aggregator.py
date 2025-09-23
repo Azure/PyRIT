@@ -1,7 +1,7 @@
 import uuid
 
-from pyrit.score.true_false.true_false_score_aggregator import AND_, OR_, MAJORITY_
 from pyrit.models.score import Score
+from pyrit.score.true_false.true_false_score_aggregator import AND_, MAJORITY_, OR_
 
 
 def _mk_score(val: bool, *, prr_id: str, rationale: str = "") -> Score:

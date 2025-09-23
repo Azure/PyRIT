@@ -9,7 +9,7 @@ import pytest
 
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import Score, PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
 from pyrit.score import HumanInTheLoopScorerGradio
 
 
@@ -41,7 +41,6 @@ class TestHiTLGradio:
         scorer.__del__()
         mock_rpc_server.return_value.stop.assert_called_once()
 
-
     @patch("pyrit.ui.rpc.AppRPCServer")
     def test_scorer_retrieve_score(self, mock_rpc_server, score: Score):
         scorer = HumanInTheLoopScorerGradio()
@@ -67,7 +66,9 @@ class TestHiTLGradio:
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
             scorer = HumanInTheLoopScorerGradio()
             prompt = PromptRequestResponse(
-                request_pieces=[PromptRequestPiece(role="user", original_value="test", converted_value_data_type="text")]
+                request_pieces=[
+                    PromptRequestPiece(role="user", original_value="test", converted_value_data_type="text")
+                ]
             )
 
             rpc_mocked = mock_rpc_server.return_value

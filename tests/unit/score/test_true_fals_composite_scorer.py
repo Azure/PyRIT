@@ -1,19 +1,27 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from unittest.mock import MagicMock
-import pytest
-
 from typing import Optional
+from unittest.mock import MagicMock
+
+import pytest
 
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import PromptRequestPiece, Score
-from pyrit.score import TrueFalseCompositeScorer, FloatScaleScorer
-from pyrit.score import TrueFalseScorer, Scorer, AND_, MAJORITY_, OR_
+from pyrit.score import (
+    AND_,
+    MAJORITY_,
+    OR_,
+    FloatScaleScorer,
+    Scorer,
+    TrueFalseCompositeScorer,
+    TrueFalseScorer,
+)
 
 
 class MockScorer(TrueFalseScorer):
     """A mock scorer for testing purposes."""
+
     def _score_aggregator(self, score_list):
         # Use the AND_ aggregator from the true_false_score_aggregator module (already imported)
         return AND_(score_list)
@@ -25,7 +33,9 @@ class MockScorer(TrueFalseScorer):
         self._validator = MagicMock()
         self.aggregator = aggregator
 
-    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
+    async def _score_piece_async(
+        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+    ) -> list[Score]:
         return [
             Score(
                 score_value=str(self._score_value),
@@ -81,7 +91,6 @@ async def test_composite_scorer_and_one_false(mock_request, true_scorer, false_s
     assert "This is a true score" in scores[0].score_rationale
 
 
-
 @pytest.mark.asyncio
 async def test_composite_scorer_or_all_false(mock_request, false_scorer):
     scorer = TrueFalseCompositeScorer(aggregator=OR_, scorers=[false_scorer, false_scorer])
@@ -91,7 +100,6 @@ async def test_composite_scorer_or_all_false(mock_request, false_scorer):
     assert scores[0].get_value() is False
     assert "This is a false score" in scores[0].score_rationale
     assert "All constituent scorers returned False in an OR composite scorer." in scores[0].score_value_description
-
 
 
 @pytest.mark.asyncio
@@ -112,7 +120,10 @@ async def test_composite_scorer_majority_true(mock_request, true_scorer, false_s
     assert len(scores) == 1
     assert scores[0].get_value() is True
     assert "This is a true score" in scores[0].score_rationale
-    assert "A strict majority of constituent scorers returned True in a MAJORITY composite scorer." in scores[0].score_value_description
+    assert (
+        "A strict majority of constituent scorers returned True in a MAJORITY composite scorer."
+        in scores[0].score_value_description
+    )
 
 
 @pytest.mark.asyncio
@@ -126,18 +137,19 @@ async def test_composite_scorer_majority_false(mock_request, true_scorer, false_
     assert "This is a false score" in scores[0].score_rationale
 
 
-
 def test_composite_scorer_invalid_scorer_type():
 
     class InvalidScorer(FloatScaleScorer):
         def __init__(self):
             self._validator = MagicMock()
 
-        async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
+        async def _score_piece_async(
+            self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+        ) -> list[Score]:
             return []
 
     with pytest.raises(ValueError, match="All scorers must be true_false scorers"):
-        TrueFalseCompositeScorer(aggregator=AND_, scorers=[InvalidScorer()]) # type: ignore
+        TrueFalseCompositeScorer(aggregator=AND_, scorers=[InvalidScorer()])  # type: ignore
 
 
 @pytest.mark.asyncio

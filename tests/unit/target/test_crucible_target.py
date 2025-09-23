@@ -2,12 +2,10 @@
 # Licensed under the MIT license.
 
 import pytest
-
+from unit.mocks import get_image_request_piece
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import CrucibleTarget
-
-from unit.mocks import get_image_request_piece
 
 
 @pytest.fixture

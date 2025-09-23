@@ -3,13 +3,11 @@
 
 import functools
 import operator
-from typing import Callable, Dict, Iterable, TypeAlias, Union, List
+from typing import Callable, Dict, Iterable, List, TypeAlias, Union
 
 from pyrit.common.utils import combine_dict
 from pyrit.models import Score
 from pyrit.score.score_aggregator_result import ScoreAggregatorResult
-
-
 
 BinaryBoolOp: TypeAlias = Callable[[bool, bool], bool]
 TrueFalseScoreAggregator: TypeAlias = Callable[[Iterable[Score]], ScoreAggregatorResult]
@@ -43,9 +41,7 @@ def _lift(
             rationale = scores_list[0].score_rationale or ""
         else:
             description = true_msg if result else false_msg
-            rationale = "\n".join(
-                f"   {sep} {s.score_value}: {s.score_rationale or ''}" for s in scores_list
-            )
+            rationale = "\n".join(f"   {sep} {s.score_value}: {s.score_rationale or ''}" for s in scores_list)
 
         # Combine all score metadata dictionaries safely
         metadata: Dict[str, Union[str, int]] = {}
@@ -55,9 +51,7 @@ def _lift(
             category.extend(getattr(s, "score_category", []))
 
         # score identifier should be consistent
-        scorer_identifier = (
-            scores_list[0].scorer_class_identifier if len(scores_list) > 0 else {}
-        )
+        scorer_identifier = scores_list[0].scorer_class_identifier if len(scores_list) > 0 else {}
 
         return ScoreAggregatorResult(
             value=result,

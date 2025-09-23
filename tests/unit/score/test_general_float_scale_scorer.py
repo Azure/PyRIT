@@ -7,7 +7,9 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.score.float_scale.self_ask_general_float_scale_scorer import SelfAskGeneralFloatScaleScorer
+from pyrit.score.float_scale.self_ask_general_float_scale_scorer import (
+    SelfAskGeneralFloatScaleScorer,
+)
 
 
 @pytest.fixture
@@ -27,7 +29,9 @@ def general_float_scorer_response() -> PromptRequestResponse:
 
 
 @pytest.mark.asyncio
-async def test_general_float_scorer_score_async(patch_central_database, general_float_scorer_response: PromptRequestResponse):
+async def test_general_float_scorer_score_async(
+    patch_central_database, general_float_scorer_response: PromptRequestResponse
+):
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=general_float_scorer_response)
 
@@ -38,10 +42,7 @@ async def test_general_float_scorer_score_async(patch_central_database, general_
     )
     assert scorer
 
-    score = await scorer.score_text_async(
-        text="test prompt",
-        objective="test objective"
-    )
+    score = await scorer.score_text_async(text="test prompt", objective="test objective")
 
     assert len(score) == 1
     # 75/100 = 0.75
@@ -64,10 +65,7 @@ async def test_general_float_scorer_score_async_with_prompt_f_string(
         category="test_category",
     )
 
-    score = await scorer.score_text_async(
-        text="this is a test prompt",
-        objective="test objective"
-    )
+    score = await scorer.score_text_async(text="this is a test prompt", objective="test objective")
 
     assert len(score) == 1
     assert abs(float(score[0].score_value) - 0.75) < 1e-6

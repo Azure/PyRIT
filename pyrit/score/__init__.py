@@ -38,7 +38,11 @@ from pyrit.score.true_false.self_ask_category_scorer import ContentClassifierPat
 from pyrit.score.float_scale.self_ask_likert_scorer import LikertScalePaths, SelfAskLikertScorer
 from pyrit.score.true_false.self_ask_refusal_scorer import SelfAskRefusalScorer
 from pyrit.score.float_scale.self_ask_scale_scorer import SelfAskScaleScorer
-from pyrit.score.true_false.self_ask_true_false_scorer import SelfAskTrueFalseScorer, TrueFalseQuestion, TrueFalseQuestionPaths
+from pyrit.score.true_false.self_ask_true_false_scorer import (
+    SelfAskTrueFalseScorer,
+    TrueFalseQuestion,
+    TrueFalseQuestionPaths,
+)
 from pyrit.score.true_false.substring_scorer import SubStringScorer
 from pyrit.score.true_false.true_false_inverter_scorer import TrueFalseInverterScorer
 from pyrit.score.true_false.self_ask_question_answer_scorer import SelfAskQuestionAnswerScorer

@@ -13,7 +13,10 @@ from pyrit.models.score import Score, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer import Scorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
-from pyrit.score.true_false.true_false_score_aggregator import OR_, TrueFalseScoreAggregator
+from pyrit.score.true_false.true_false_score_aggregator import (
+    OR_,
+    TrueFalseScoreAggregator,
+)
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 TRUE_FALSE_QUESTIONS_PATH = Path(SCORER_CONFIG_PATH, "true_false_question").resolve()
@@ -72,7 +75,7 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
         true_false_question: Optional[TrueFalseQuestion] = None,
         true_false_system_prompt_path: Optional[Union[str, Path]] = None,
         validator: Optional[ScorerPromptValidator] = None,
-        score_aggregator: TrueFalseScoreAggregator = OR_
+        score_aggregator: TrueFalseScoreAggregator = OR_,
     ) -> None:
         super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
         self._prompt_target = chat_target
@@ -110,7 +113,9 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
             true_description=true_category, false_description=false_category, metadata=metadata
         )
 
-    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
+    async def _score_piece_async(
+        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+    ) -> list[Score]:
         """
         Scores the given request_response using "self-ask" for the chat target.
 
@@ -139,6 +144,3 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
 
         score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value, score_type="true_false")
         return [score]
-
-    
-

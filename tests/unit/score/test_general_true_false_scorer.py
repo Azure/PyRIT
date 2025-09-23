@@ -49,7 +49,6 @@ async def test_general_scorer_score_async(patch_central_database, general_scorer
     assert "This is the description." in score[0].score_value_description
 
 
-
 @pytest.mark.asyncio
 async def test_general_scorer_score_async_with_prompt_f_string(
     general_scorer_response: PromptRequestResponse, patch_central_database

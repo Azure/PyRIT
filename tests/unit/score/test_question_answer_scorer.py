@@ -54,9 +54,7 @@ async def test_question_answer_scorer_validate_missing_metadata():
         prompt_metadata={},
     ).to_prompt_request_response()
     scorer = QuestionAnswerScorer(category=["new_category"])
-    with pytest.raises(
-        ValueError, match="There are no valid pieces to score."
-    ):
+    with pytest.raises(ValueError, match="There are no valid pieces to score."):
         await scorer.score_async(request)
 
 

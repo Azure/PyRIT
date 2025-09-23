@@ -5,7 +5,10 @@ from typing import Optional
 
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
-from pyrit.score.true_false.true_false_score_aggregator import OR_, TrueFalseScoreAggregator
+from pyrit.score.true_false.true_false_score_aggregator import (
+    OR_,
+    TrueFalseScoreAggregator,
+)
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
@@ -20,13 +23,13 @@ class SubStringScorer(TrueFalseScorer):
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 
     def __init__(
-            self,
-            *,
-            substring: str,
-            categories: Optional[list[str]] = None,
-            aggregator: TrueFalseScoreAggregator = OR_,
-            validator: Optional[ScorerPromptValidator] = None
-        ) -> None:
+        self,
+        *,
+        substring: str,
+        categories: Optional[list[str]] = None,
+        aggregator: TrueFalseScoreAggregator = OR_,
+        validator: Optional[ScorerPromptValidator] = None,
+    ) -> None:
         """Initialize the SubStringScorer.
 
         Args:
@@ -37,7 +40,9 @@ class SubStringScorer(TrueFalseScorer):
         self._substring = substring
         self._score_categories = categories if categories else []
 
-    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
+    async def _score_piece_async(
+        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+    ) -> list[Score]:
         """Score the given request_response based on presence of the substring.
 
         Args:
@@ -65,4 +70,3 @@ class SubStringScorer(TrueFalseScorer):
         ]
 
         return score
-

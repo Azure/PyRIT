@@ -1,17 +1,19 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from abc import abstractmethod
 import asyncio
+from abc import abstractmethod
 from typing import Dict, Optional
 from uuid import UUID
+
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.models import PromptRequestPiece, Score
-from pyrit.models.literals import PromptDataType, ChatMessageRole
+from pyrit.models.literals import ChatMessageRole, PromptDataType
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.models.score import UnvalidatedScore
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.score.scorer import Scorer
+
 
 class FloatScaleScorer(Scorer):
 
@@ -22,13 +24,9 @@ class FloatScaleScorer(Scorer):
         for score in scores:
             if not (0 <= score.get_value() <= 1):
                 raise ValueError("FloatScaleScorer score value must be between 0 and 1.")
-            
 
     async def _score_async(
-        self,
-        request_response: PromptRequestResponse,
-        *,
-        objective: Optional[str] = None
+        self, request_response: PromptRequestResponse, *, objective: Optional[str] = None
     ) -> list[Score]:
         """
         Score the given request response asynchronously.
@@ -38,14 +36,11 @@ class FloatScaleScorer(Scorer):
         """
         if not request_response.request_pieces:
             return []
-        
+
         # score the supported pieces
         supported_pieces = self._get_supported_pieces(request_response)
 
-        tasks = [
-            self._score_piece_async(request_piece=piece, objective=objective)
-            for piece in supported_pieces
-        ]
+        tasks = [self._score_piece_async(request_piece=piece, objective=objective) for piece in supported_pieces]
 
         if not tasks:
             return []
@@ -55,7 +50,6 @@ class FloatScaleScorer(Scorer):
 
         # Flatten list[list[Score]] -> list[Score]
         return [score for sublist in piece_score_lists for score in sublist]
-
 
     async def _score_value_with_llm(
         self,

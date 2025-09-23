@@ -15,7 +15,10 @@ from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import SelfAskTrueFalseScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
-from pyrit.score.true_false.true_false_score_aggregator import OR_, TrueFalseScoreAggregator
+from pyrit.score.true_false.true_false_score_aggregator import (
+    OR_,
+    TrueFalseScoreAggregator,
+)
 
 
 class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
@@ -37,7 +40,7 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
         chat_target: PromptChatTarget,
         true_false_question_path: Optional[pathlib.Path] = None,
         validator: Optional[ScorerPromptValidator] = None,
-        score_aggregator: TrueFalseScoreAggregator = OR_
+        score_aggregator: TrueFalseScoreAggregator = OR_,
     ) -> None:
         """
         Initializes the SelfAskQuestionAnswerScorer object.
@@ -59,7 +62,9 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
             score_aggregator=score_aggregator,
         )
 
-    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
+    async def _score_piece_async(
+        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+    ) -> list[Score]:
         """
         Score the request_reponse using the QuestionAnsweringEntry
         and return a single score object

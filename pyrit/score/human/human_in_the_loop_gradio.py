@@ -25,11 +25,14 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
     def __init__(self, *, open_browser=False, validator: Optional[ScorerPromptValidator] = None) -> None:
         # Import here to avoid importing rpyc in the main module that might not be installed
         from pyrit.ui.rpc import AppRPCServer
+
         super().__init__(validator=validator or self._default_validator)
         self._rpc_server = AppRPCServer(open_browser=open_browser)
         self._rpc_server.start()
 
-    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
+    async def _score_piece_async(
+        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+    ) -> list[Score]:
 
         try:
             score = await asyncio.to_thread(self.retrieve_score, request_piece, objective=objective)

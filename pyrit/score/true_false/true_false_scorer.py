@@ -4,16 +4,18 @@
 import asyncio
 from typing import Dict, Optional
 
-
 from pyrit.models import PromptRequestPiece, Score
-from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.models.literals import ChatMessageRole
+from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.score.scorer import Scorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
-from pyrit.score.true_false.true_false_score_aggregator import OR_, TrueFalseScoreAggregator
+from pyrit.score.true_false.true_false_score_aggregator import (
+    OR_,
+    TrueFalseScoreAggregator,
+)
+
 
 class TrueFalseScorer(Scorer):
-
 
     def __init__(self, *, validator: ScorerPromptValidator, score_aggregator: TrueFalseScoreAggregator = OR_) -> None:
         super().__init__(validator=validator)
@@ -26,17 +28,13 @@ class TrueFalseScorer(Scorer):
         if scores[0].score_value.lower() not in ["true", "false"]:
             raise ValueError("TrueFalseScorer score value must be True or False.")
 
-
     async def _score_async(
-        self,
-        request_response: PromptRequestResponse,
-        *,
-        objective: Optional[str] = None
+        self, request_response: PromptRequestResponse, *, objective: Optional[str] = None
     ) -> list[Score]:
         """
         Score the given request response asynchronously.
 
-        For TrueFalseScorer, the scoring is a single score. 
+        For TrueFalseScorer, the scoring is a single score.
         """
 
         tasks = [
@@ -58,7 +56,7 @@ class TrueFalseScorer(Scorer):
                 objective=objective,
             )
             return [return_score]
-    
+
         # Run all piece-level scorings concurrently
         piece_score_lists = await asyncio.gather(*tasks)
 
@@ -77,7 +75,7 @@ class TrueFalseScorer(Scorer):
             score_category=result.category,
             score_metadata=result.metadata,
             score_rationale=result.rationale,
-            scorer_class_identifier= self.get_identifier(),
+            scorer_class_identifier=self.get_identifier(),
             prompt_request_response_id=request_response.request_pieces[0].id,
             objective=objective,
         )

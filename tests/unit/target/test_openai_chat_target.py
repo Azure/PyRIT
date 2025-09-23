@@ -97,7 +97,7 @@ async def test_build_chat_messages_for_multi_modal(target: OpenAIChatTarget):
                     role="user",
                     converted_value_data_type="text",
                     original_value="Hello",
-                    conversation_id=image_request.conversation_id
+                    conversation_id=image_request.conversation_id,
                 ),
                 image_request,
             ]
@@ -502,7 +502,7 @@ def test_validate_request_unsupported_data_types(target: OpenAIChatTarget):
                 role="user",
                 original_value="Hello",
                 converted_value_data_type="text",
-                conversation_id=image_piece.conversation_id
+                conversation_id=image_piece.conversation_id,
             ),
             image_piece,
         ]

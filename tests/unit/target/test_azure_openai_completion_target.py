@@ -7,7 +7,7 @@ from typing import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from unit.mocks import get_sample_conversations, get_image_request_piece
+from unit.mocks import get_image_request_piece, get_sample_conversations
 
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
@@ -65,7 +65,6 @@ async def test_azure_completion_validate_prompt_type(azure_completion_target: Op
     request = PromptRequestResponse(request_pieces=[get_image_request_piece()])
     with pytest.raises(ValueError, match="This target only supports text prompt input."):
         await azure_completion_target.send_prompt_async(prompt_request=request)
-
 
 
 @pytest.mark.asyncio

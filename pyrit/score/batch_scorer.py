@@ -7,7 +7,12 @@ from datetime import datetime
 from typing import Optional, Sequence
 
 from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestPiece, Score, PromptRequestResponse, group_conversation_request_pieces_by_sequence
+from pyrit.models import (
+    PromptRequestPiece,
+    PromptRequestResponse,
+    Score,
+    group_conversation_request_pieces_by_sequence,
+)
 from pyrit.score.scorer import Scorer
 
 logger = logging.getLogger(__name__)

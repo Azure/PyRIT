@@ -25,7 +25,7 @@ from pyrit.models import (
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptTarget
-from pyrit.score import TrueFalseScorer, Scorer
+from pyrit.score import Scorer, TrueFalseScorer
 
 
 @pytest.fixture

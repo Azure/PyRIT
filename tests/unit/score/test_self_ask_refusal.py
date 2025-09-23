@@ -167,7 +167,9 @@ async def test_score_async_filtered_response(patch_central_database):
     chat_target = MagicMock()
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
-    request = PromptRequestPiece(role="assistant", original_value="blocked response", response_error="blocked").to_prompt_request_response()
+    request = PromptRequestPiece(
+        role="assistant", original_value="blocked response", response_error="blocked"
+    ).to_prompt_request_response()
     memory.add_request_pieces_to_memory(request_pieces=request.request_pieces)
     scores = await scorer.score_async(request)
 

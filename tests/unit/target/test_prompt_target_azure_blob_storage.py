@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from azure.storage.blob.aio import BlobClient as AsyncBlobClient
 from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
-from unit.mocks import get_sample_conversations, get_image_request_piece
+from unit.mocks import get_image_request_piece, get_sample_conversations
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import AzureBlobStorageTarget

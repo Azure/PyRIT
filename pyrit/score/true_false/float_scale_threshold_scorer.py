@@ -5,12 +5,15 @@ import uuid
 from typing import Optional
 
 from pyrit.models import PromptRequestPiece, Score
-from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.models.literals import ChatMessageRole
-from pyrit.score.float_scale.float_scale_score_aggregator import MAX_, FloatScaleScoreAggregator
+from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.score.float_scale.float_scale_score_aggregator import (
+    MAX_,
+    FloatScaleScoreAggregator,
+)
+from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
-from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 
 
 class FloatScaleThresholdScorer(TrueFalseScorer):
@@ -22,7 +25,6 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
         scorer: FloatScaleScorer,
         threshold: float,
         float_scale_aggregator: FloatScaleScoreAggregator = MAX_,
-
     ) -> None:
         self._scorer = scorer
         self._threshold = threshold
@@ -81,9 +83,10 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
         score.scorer_class_identifier = self.get_identifier()
         score.scorer_class_identifier["sub_identifier"] = str(self._scorer.get_identifier())
         return scores
-    
 
-    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
+    async def _score_piece_async(
+        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+    ) -> list[Score]:
         """Float Scale scorers do not support piecewise scoring.
 
         Args:

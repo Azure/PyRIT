@@ -11,8 +11,8 @@ from openai import BadRequestError
 from pyrit.exceptions import PyritException, pyrit_target_retry
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
 from pyrit.prompt_target import GandalfLevel, PromptChatTarget
-from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
+from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
 class GandalfScorer(TrueFalseScorer):
@@ -20,12 +20,8 @@ class GandalfScorer(TrueFalseScorer):
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 
     def __init__(
-            self,
-            *,
-            level: GandalfLevel,
-            chat_target: PromptChatTarget,
-            validator: Optional[ScorerPromptValidator] = None
-        ) -> None:
+        self, *, level: GandalfLevel, chat_target: PromptChatTarget, validator: Optional[ScorerPromptValidator] = None
+    ) -> None:
 
         super().__init__(validator=validator or self._default_validator)
         self._prompt_target = chat_target
@@ -91,7 +87,9 @@ class GandalfScorer(TrueFalseScorer):
             return ""
         return response_text
 
-    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
+    async def _score_piece_async(
+        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+    ) -> list[Score]:
         """Scores the text based on the password found in the text.
 
         Args:
@@ -162,5 +160,3 @@ class GandalfScorer(TrueFalseScorer):
                 )
 
         return [score]
-
-    

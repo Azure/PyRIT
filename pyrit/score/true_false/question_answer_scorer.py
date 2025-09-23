@@ -8,7 +8,10 @@ from typing import Optional
 from pyrit.models import Score
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
-from pyrit.score.true_false.true_false_score_aggregator import OR_, TrueFalseScoreAggregator
+from pyrit.score.true_false.true_false_score_aggregator import (
+    OR_,
+    TrueFalseScoreAggregator,
+)
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
@@ -20,8 +23,7 @@ class QuestionAnswerScorer(TrueFalseScorer):
     CORRECT_ANSWER_MATCHING_PATTERNS = ["{correct_answer_index}:", "{correct_answer}"]
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(
-        supported_data_types=["text"],
-        required_metadata=["correct_answer_index", "correct_answer"]
+        supported_data_types=["text"], required_metadata=["correct_answer_index", "correct_answer"]
     )
 
     def __init__(
@@ -30,7 +32,7 @@ class QuestionAnswerScorer(TrueFalseScorer):
         correct_answer_matching_patterns: list[str] = CORRECT_ANSWER_MATCHING_PATTERNS,
         category: Optional[list[str]] = None,
         validator: Optional[ScorerPromptValidator] = None,
-        score_aggregator: TrueFalseScoreAggregator = OR_
+        score_aggregator: TrueFalseScoreAggregator = OR_,
     ) -> None:
         """
         Scores PromptRequestResponse objects that contain correct_answer_index and/or correct_answer metadata
@@ -44,7 +46,9 @@ class QuestionAnswerScorer(TrueFalseScorer):
         self._correct_answer_matching_patterns = correct_answer_matching_patterns
         self._score_category = category if category is not None else []
 
-    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
+    async def _score_piece_async(
+        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+    ) -> list[Score]:
         """
         Score the request_reponse using the QuestionAnsweringEntry
         and return a single score object

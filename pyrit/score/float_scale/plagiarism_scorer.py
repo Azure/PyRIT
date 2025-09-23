@@ -28,9 +28,7 @@ class PlagiarismScorer(FloatScaleScorer):
     3. Word-level n-gram Jaccard similarity
     """
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(
-        supported_data_types=["text"]
-    )
+    _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 
     def __init__(
         self,
@@ -132,8 +130,9 @@ class PlagiarismScorer(FloatScaleScorer):
         else:
             raise ValueError("metric must be 'lcs', 'levenshtein', or 'jaccard'")
 
-    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
-
+    async def _score_piece_async(
+        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+    ) -> list[Score]:
         """Scores the AI response against the reference text using the specified metric.
 
         Args:

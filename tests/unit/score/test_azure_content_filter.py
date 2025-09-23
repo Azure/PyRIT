@@ -7,7 +7,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from azure.ai.contentsafety.models import TextCategory
-from pyrit.models.prompt_request_response import PromptRequestResponse
 from unit.mocks import (
     get_audio_request_piece,
     get_image_request_piece,
@@ -17,6 +16,7 @@ from unit.mocks import (
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece
+from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.score.float_scale.azure_content_filter_scorer import AzureContentFilterScorer
 
 
@@ -35,7 +35,6 @@ def text_request_piece() -> PromptRequestPiece:
     return get_test_request_piece()
 
 
-
 @pytest.mark.asyncio
 async def test_score_piece_async_invalid_type(patch_central_database, audio_request_piece: PromptRequestPiece):
     scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
@@ -47,6 +46,7 @@ async def test_score_piece_async_invalid_type(patch_central_database, audio_requ
     with pytest.raises(ValueError, match="There are no valid pieces to score"):
         await scorer.score_async(request_response=request)
     os.remove(audio_request_piece.converted_value)
+
 
 @pytest.mark.asyncio
 async def test_score_piece_async_text(patch_central_database, text_request_piece: PromptRequestPiece):
@@ -63,6 +63,7 @@ async def test_score_piece_async_text(patch_central_database, text_request_piece
     assert isinstance(score.score_metadata, dict)
     assert score.score_metadata["azure_severity"] == 2
     assert "AzureContentFilterScorer" in str(score.scorer_class_identifier)
+
 
 @pytest.mark.asyncio
 async def test_score_piece_async_image(patch_central_database, image_request_piece: PromptRequestPiece):
@@ -84,9 +85,11 @@ async def test_score_piece_async_image(patch_central_database, image_request_pie
     assert "AzureContentFilterScorer" in str(score.scorer_class_identifier)
     os.remove(image_request_piece.converted_value)
 
+
 def test_default_category():
     scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar")
     assert len(scorer._score_categories) == 4
+
 
 def test_explicit_category():
     scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])

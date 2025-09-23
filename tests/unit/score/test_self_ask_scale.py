@@ -9,8 +9,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, UnvalidatedScore
-from pyrit.score import ContentClassifierPaths
-from pyrit.score import SelfAskScaleScorer
+from pyrit.score import ContentClassifierPaths, SelfAskScaleScorer
 
 tree_scale_path = SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value
 task_scale_path = SelfAskScaleScorer.ScalePaths.TASK_ACHIEVED_SCALE.value
@@ -202,13 +201,11 @@ async def test_scale_scorer_score_calls_send_chat(patch_central_database):
 
     chat_target = MagicMock()
 
-
     scorer = SelfAskScaleScorer(
         chat_target=chat_target,
         scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
         system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
     )
-
 
     score = UnvalidatedScore(
         raw_score_value="1",

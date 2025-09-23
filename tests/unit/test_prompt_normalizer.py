@@ -36,16 +36,8 @@ def response() -> PromptRequestResponse:
     image_request_piece.conversation_id = conversation_id
     return PromptRequestResponse(
         request_pieces=[
-            PromptRequestPiece(
-                role="assistant",
-                original_value="Hello",
-                conversation_id=conversation_id
-            ),
-            PromptRequestPiece(
-                role="assistant",
-                original_value="part 2",
-                conversation_id=conversation_id
-            ),
+            PromptRequestPiece(role="assistant", original_value="Hello", conversation_id=conversation_id),
+            PromptRequestPiece(role="assistant", original_value="part 2", conversation_id=conversation_id),
             image_request_piece,
         ]
     )

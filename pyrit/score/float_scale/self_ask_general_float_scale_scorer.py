@@ -52,7 +52,7 @@ class SelfAskGeneralFloatScaleScorer(FloatScaleScorer):
         chat_target: PromptChatTarget,
         system_prompt_format_string: str,
         prompt_format_string: Optional[str] = None,
-    category: Optional[str] = None,
+        category: Optional[str] = None,
         min_value: int = 0,
         max_value: int = 100,
         validator: Optional[ScorerPromptValidator] = None,
@@ -81,7 +81,9 @@ class SelfAskGeneralFloatScaleScorer(FloatScaleScorer):
         self._metadata_output_key = metadata_output_key
         self._category_output_key = category_output_key
 
-    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
+    async def _score_piece_async(
+        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+    ) -> list[Score]:
         """
         Score a single request piece using the configured prompts and scale to [0, 1].
 
@@ -129,9 +131,7 @@ class SelfAskGeneralFloatScaleScorer(FloatScaleScorer):
 
         score = unvalidated.to_score(
             score_value=str(
-                self.scale_value_float(
-                    float(unvalidated.raw_score_value), self._min_value, self._max_value
-                )
+                self.scale_value_float(float(unvalidated.raw_score_value), self._min_value, self._max_value)
             ),
             score_type="float_scale",
         )

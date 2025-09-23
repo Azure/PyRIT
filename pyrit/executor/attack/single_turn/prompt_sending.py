@@ -329,7 +329,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
 
         if not self._objective_scorer:
             return None
-        
+
         objective_scores = scoring_results["objective_scores"]
         if not objective_scores:
             return None

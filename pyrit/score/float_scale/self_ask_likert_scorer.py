@@ -6,7 +6,6 @@ import logging
 from pathlib import Path
 from typing import Dict, Optional, Union
 
-
 import yaml
 
 from pyrit.common.path import LIKERT_SCALES_PATH
@@ -38,7 +37,13 @@ class SelfAskLikertScorer(FloatScaleScorer):
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 
-    def __init__(self, *, chat_target: PromptChatTarget, likert_scale_path: Union[str, Path], validator: Optional[ScorerPromptValidator] = None) -> None:
+    def __init__(
+        self,
+        *,
+        chat_target: PromptChatTarget,
+        likert_scale_path: Union[str, Path],
+        validator: Optional[ScorerPromptValidator] = None,
+    ) -> None:
         super().__init__(validator=validator or self._default_validator)
 
         likert_scale_path = self._verify_and_resolve_path(likert_scale_path)
@@ -99,7 +104,9 @@ class SelfAskLikertScorer(FloatScaleScorer):
 
         return likert_scale_description
 
-    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
+    async def _score_piece_async(
+        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+    ) -> list[Score]:
         """
         Scores the given request_piece using "self-ask" for the chat target.
 
@@ -125,11 +132,9 @@ class SelfAskLikertScorer(FloatScaleScorer):
 
         score = unvalidated_score.to_score(
             score_value=str(self.scale_value_float(float(unvalidated_score.raw_score_value), 1, 5)),
-            score_type="float_scale"
+            score_type="float_scale",
         )
 
         score.score_metadata = {"likert_value": int(unvalidated_score.raw_score_value)}
 
         return [score]
-
-    

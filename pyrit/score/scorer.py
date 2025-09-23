@@ -10,7 +10,7 @@ import logging
 import uuid
 from abc import abstractmethod
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Union, cast, Union
+from typing import Dict, List, Optional, Sequence, Union, cast
 
 from pyrit.exceptions import (
     InvalidJsonException,
@@ -48,7 +48,6 @@ class Scorer(abc.ABC):
     @property
     def _memory(self) -> MemoryInterface:
         return CentralMemory.get_memory_instance()
-
 
     def _verify_and_resolve_path(self, path: Union[str, Path]) -> Path:
         """
@@ -94,14 +93,13 @@ class Scorer(abc.ABC):
         if role_filter is not None and request_response.get_role() != role_filter:
             logger.debug("Skipping scoring due to role filter mismatch.")
             return []
-        
+
         if skip_on_error and request_response.is_error():
             logger.debug("Skipping scoring due to error in request_response and skip_on_error=True.")
             return []
-        
+
         if infer_objective_from_request and (not objective):
             objective = self._extract_objective_from_response(request_response)
-
 
         scores = await self._score_async(
             request_response,
@@ -115,17 +113,15 @@ class Scorer(abc.ABC):
 
     @abstractmethod
     async def _score_async(
-        self,
-        request_response: PromptRequestResponse,
-        *,
-        objective: Optional[str] = None
+        self, request_response: PromptRequestResponse, *, objective: Optional[str] = None
     ) -> list[Score]:
         raise NotImplementedError()
-    
+
     @abstractmethod
-    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
+    async def _score_piece_async(
+        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+    ) -> list[Score]:
         raise NotImplementedError()
-    
 
     def validate_request(self, request_piece: PromptRequestResponse, *, objective: Optional[str] = None) -> None:
         """Validate the request/response prior to scoring.
@@ -143,16 +139,16 @@ class Scorer(abc.ABC):
         if request_piece is None or not getattr(request_piece, "request_pieces", None):
             raise ValueError("PromptRequestResponse must contain at least one request piece.")
 
-
-
     def _get_supported_pieces(self, request_response: PromptRequestResponse) -> list[PromptRequestPiece]:
         """
         Returns a list of supported request pieces for this scorer.
         """
-        return [piece for piece in request_response.request_pieces 
-                if self._validator.is_request_piece_supported(request_piece=piece)]
+        return [
+            piece
+            for piece in request_response.request_pieces
+            if self._validator.is_request_piece_supported(request_piece=piece)
+        ]
 
-    
     @abstractmethod
     def validate_return_scores(self, scores: list[Score]):
         """
@@ -213,7 +209,7 @@ class Scorer(abc.ABC):
 
         request.request_pieces[0].id = None
         return await self.score_async(request, objective=objective)
-    
+
     async def score_image_async(self, image_path: str, *, objective: Optional[str] = None) -> list[Score]:
         """
         Scores the given image using the chat target.
@@ -237,7 +233,6 @@ class Scorer(abc.ABC):
 
         request.request_pieces[0].id = None
         return await self.score_async(request, objective=objective)
-
 
     async def score_prompts_batch_async(
         self,
@@ -294,8 +289,6 @@ class Scorer(abc.ABC):
 
         # results is a list[list[Score]] and needs to be flattened
         return [score for sublist in results for score in sublist]
-
-
 
     def scale_value_float(self, value: float, min_value: float, max_value: float) -> float:
         """
@@ -436,11 +429,7 @@ class Scorer(abc.ABC):
                 normalized_md = None
             elif isinstance(raw_md, dict):
                 # Coerce keys to str and filter to str/int values only
-                normalized_md = {
-                    str(k): v
-                    for k, v in raw_md.items()
-                    if isinstance(v, (str, int))
-                }
+                normalized_md = {str(k): v for k, v in raw_md.items() if isinstance(v, (str, int))}
                 # If dictionary becomes empty after filtering, keep as empty dict
             elif isinstance(raw_md, (str, int)):
                 # Wrap primitive metadata into a namespaced field
@@ -467,7 +456,6 @@ class Scorer(abc.ABC):
             raise InvalidJsonException(message=f"Invalid JSON response, missing Key: {response_json}")
 
         return score
-    
 
     def _extract_objective_from_response(self, response: PromptRequestResponse) -> str:
         """
@@ -482,7 +470,7 @@ class Scorer(abc.ABC):
 
         if not response.request_pieces:
             return ""
-        
+
         piece = response.get_piece()
 
         if piece.role != "assistant":
@@ -501,8 +489,6 @@ class Scorer(abc.ABC):
         )
 
         return last_turn_text
-
-
 
     @staticmethod
     async def score_response_async(
@@ -576,8 +562,6 @@ class Scorer(abc.ABC):
             result["objective_scores"] = obj_scores
         return result
 
-
-
     @staticmethod
     async def score_response_multiple_scorers_async(
         *,
@@ -606,12 +590,15 @@ class Scorer(abc.ABC):
         if not scorers:
             return []
 
-
         # Create all scoring tasks, note TEMPORARY fix to prevent multi-piece responses from breaking scoring logic
         tasks = []
 
         for scorer in scorers:
-            tasks.append(scorer.score_async(request_response=response, objective=objective, role_filter=role_filter, skip_on_error=skip_on_error))
+            tasks.append(
+                scorer.score_async(
+                    request_response=response, objective=objective, role_filter=role_filter, skip_on_error=skip_on_error
+                )
+            )
 
         if not tasks:
             return []
@@ -621,5 +608,3 @@ class Scorer(abc.ABC):
 
         # Flatten the list of lists into a single list
         return [score for scores in score_lists for score in scores]
-
-

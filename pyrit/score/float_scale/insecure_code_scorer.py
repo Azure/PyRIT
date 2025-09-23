@@ -18,9 +18,7 @@ class InsecureCodeScorer(FloatScaleScorer):
     Configuration is loaded from a YAML file for dynamic prompts and instructions.
     """
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(
-        supported_data_types=["text"]
-    )
+    _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 
     def __init__(
         self,
@@ -46,7 +44,9 @@ class InsecureCodeScorer(FloatScaleScorer):
         # Render the system prompt with the harm category
         self._system_prompt = scoring_instructions_template.render_template_value(harm_categories=self._harm_category)
 
-    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
+    async def _score_piece_async(
+        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+    ) -> list[Score]:
         """
         Scores the given request response using LLM to detect vulnerabilities.
 
@@ -82,6 +82,4 @@ class InsecureCodeScorer(FloatScaleScorer):
             score_type="float_scale",
         )
 
-        return [score]  
-
-    
+        return [score]

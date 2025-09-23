@@ -23,6 +23,7 @@ from pyrit.models import (
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
+
 class AzureContentFilterScorer(FloatScaleScorer):
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(
@@ -39,7 +40,7 @@ class AzureContentFilterScorer(FloatScaleScorer):
         api_key: Optional[str | None] = None,
         use_aad_auth: bool = False,
         harm_categories: Optional[list[TextCategory]] = None,
-        validator: Optional[ScorerPromptValidator] = None
+        validator: Optional[ScorerPromptValidator] = None,
     ) -> None:
         """
         Class that initializes an Azure Content Filter Scorer
@@ -83,7 +84,9 @@ class AzureContentFilterScorer(FloatScaleScorer):
         else:
             raise ValueError("Please provide the Azure Content Safety endpoint")
 
-    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
+    async def _score_piece_async(
+        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+    ) -> list[Score]:
         """Evaluating the input text or image using the Azure Content Filter API
 
         Args:
@@ -134,7 +137,6 @@ class AzureContentFilterScorer(FloatScaleScorer):
             # https://learn.microsoft.com/en-us/azure/ai-services/content-safety/concepts/harm-categories?tabs=definitions#severity-levels
             metadata: dict[str, str | int] = {"azure_severity": int(value)}
 
-
             score = Score(
                 score_type="float_scale",
                 score_value=str(normalized_value),
@@ -158,4 +160,3 @@ class AzureContentFilterScorer(FloatScaleScorer):
         )
         base64_encoded_data = await image_serializer.read_data_base64()
         return base64_encoded_data
-

@@ -10,8 +10,11 @@ import yaml
 from pyrit.common.path import CONTENT_CLASSIFIERS_PATH
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.score.true_false.true_false_score_aggregator import TrueFalseScoreAggregator, OR_
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
+from pyrit.score.true_false.true_false_score_aggregator import (
+    OR_,
+    TrueFalseScoreAggregator,
+)
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
@@ -94,7 +97,9 @@ class SelfAskCategoryScorer(TrueFalseScorer):
 
         return category_descriptions
 
-    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
+    async def _score_piece_async(
+        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+    ) -> list[Score]:
         """
         Scores the given request_response using the chat target.
 
@@ -122,5 +127,3 @@ class SelfAskCategoryScorer(TrueFalseScorer):
         score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value, score_type="true_false")
 
         return [score]
-
-    

@@ -5,8 +5,8 @@ import asyncio
 from typing import List, Optional
 
 from pyrit.models import PromptRequestPiece, Score
-from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.models.literals import ChatMessageRole
+from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import TrueFalseScoreAggregator
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
@@ -19,7 +19,6 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
     reduces their single-score outputs into one final true/false score using the supplied
     aggregation function (e.g., ``AND_``, ``OR_``, ``MAJORITY_``).
     """
-
 
     def __init__(
         self,
@@ -37,7 +36,6 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
         # Initialize base with the selected aggregator used by TrueFalseScorer logic
         # Validation is used by sub-scorers
         super().__init__(score_aggregator=aggregator, validator=ScorerPromptValidator())
-
 
         if not scorers:
             raise ValueError("At least one scorer must be provided.")
@@ -69,7 +67,7 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
             scorer.score_async(request_response=request_response, objective=objective, role_filter=role_filter)
             for scorer in self._scorers
         ]
-    
+
         # Run all response scorings concurrently
         score_list = await asyncio.gather(*tasks)
 
@@ -99,7 +97,9 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
 
         return [return_score]
 
-    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
+    async def _score_piece_async(
+        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+    ) -> list[Score]:
         """Composite scorers do not support piecewise scoring.
 
         Args:
@@ -110,6 +110,3 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
             NotImplementedError: Always, since composite scoring operates at the response level.
         """
         raise NotImplementedError("TrueFalseCompositeScorer does not support piecewise scoring.")
-
-    
-

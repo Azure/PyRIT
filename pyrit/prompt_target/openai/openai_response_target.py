@@ -203,7 +203,9 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         for msg_idx, message in enumerate(conversation):
             pieces = message.request_pieces
             if not pieces:
-                raise ValueError(f"Failed to process conversation message at index {msg_idx}: Message contains no request pieces")
+                raise ValueError(
+                    f"Failed to process conversation message at index {msg_idx}: Message contains no request pieces"
+                )
 
             # System message -> single role message (remapped to developer later)
             if pieces[0].role == "system":

@@ -117,7 +117,7 @@ async def test_score_async_handles_persuasion_conversation(patch_central_databas
     mock_prompt_target = MagicMock()
 
     for rp in request_pieces:
-        if not getattr(rp, 'id', None):
+        if not getattr(rp, "id", None):
             rp.id = uuid.uuid4()
     request_piece = request_pieces[-1]
     unvalidated_score = UnvalidatedScore(

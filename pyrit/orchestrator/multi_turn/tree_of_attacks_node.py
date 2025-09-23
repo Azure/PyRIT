@@ -104,15 +104,13 @@ class TreeOfAttacksNode:
         seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=prompt, data_type="text")])
         converters = PromptConverterConfiguration(converters=self._prompt_converters)
 
-        response = (
-            await self._prompt_normalizer.send_prompt_async(
-                seed_prompt_group=seed_prompt_group,
-                request_converter_configurations=[converters],
-                conversation_id=self.objective_target_conversation_id,
-                target=self._objective_target,
-                labels=self._global_memory_labels,
-                orchestrator_identifier=self._orchestrator_id,
-            )
+        response = await self._prompt_normalizer.send_prompt_async(
+            seed_prompt_group=seed_prompt_group,
+            request_converter_configurations=[converters],
+            conversation_id=self.objective_target_conversation_id,
+            target=self._objective_target,
+            labels=self._global_memory_labels,
+            orchestrator_identifier=self._orchestrator_id,
         )
 
         logger.debug(f"saving score with prompt_id: {response.request_pieces[0].id}")

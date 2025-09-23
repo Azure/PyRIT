@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from httpx import HTTPStatusError
 from openai import RateLimitError
-from unit.mocks import get_sample_conversations, get_image_request_piece
+from unit.mocks import get_image_request_piece, get_sample_conversations
 
 from pyrit.chat_message_normalizer import (
     ChatMessageNop,
@@ -203,7 +203,7 @@ async def test_azure_ml_validate_request_length(aml_online_chat: AzureMLChatTarg
             PromptRequestPiece(role="user", conversation_id="123", original_value="test2"),
         ]
     )
-    
+
     with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
         await aml_online_chat.send_prompt_async(prompt_request=request)
 

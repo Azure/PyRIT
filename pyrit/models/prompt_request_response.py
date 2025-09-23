@@ -44,14 +44,14 @@ class PromptRequestResponse:
             raise IndexError(f"No request piece at index {n}.")
 
         return self.request_pieces[n]
-    
+
     def get_role(self) -> ChatMessageRole:
         """Return the role of the first request."""
         if len(self.request_pieces) == 0:
             raise ValueError("Empty request pieces.")
-        
+
         return self.request_pieces[0].role
-    
+
     def is_error(self) -> bool:
         """
         Returns True if any of the request pieces has an error response.
@@ -60,7 +60,7 @@ class PromptRequestResponse:
             if piece.response_error != "none" or piece.converted_value_data_type == "error":
                 return True
         return False
-    
+
     def set_response_not_in_database(self):
         """
         Set that the prompt is not in the database.
@@ -99,7 +99,6 @@ class PromptRequestResponse:
         for request_piece in self.request_pieces:
             ret += str(request_piece) + "\n"
         return "\n".join([str(request_piece) for request_piece in self.request_pieces])
-
 
     @staticmethod
     def flatten_to_prompt_request_pieces(

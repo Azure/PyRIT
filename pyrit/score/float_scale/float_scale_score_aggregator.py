@@ -7,7 +7,6 @@ from pyrit.common.utils import combine_dict
 from pyrit.models import Score
 from pyrit.score.score_aggregator_result import ScoreAggregatorResult
 
-
 FloatScaleOp: TypeAlias = Callable[[List[float]], float]
 FloatScaleScoreAggregator: TypeAlias = Callable[[Iterable[Score]], ScoreAggregatorResult]
 
@@ -59,10 +58,8 @@ def _lift(
             description = scores_list[0].score_value_description or ""
             rationale = scores_list[0].score_rationale or ""
         else:
-            description=aggregate_description
-            rationale = "\n".join(
-                f"   {sep} {s.score_category}: {s.score_rationale or ''}" for s in scores_list
-            )
+            description = aggregate_description
+            rationale = "\n".join(f"   {sep} {s.score_category}: {s.score_rationale or ''}" for s in scores_list)
 
         # Combine all score metadata dictionaries safely
         metadata: Dict[str, Union[str, int]] = {}
@@ -70,7 +67,6 @@ def _lift(
         for s in scores_list:
             metadata = combine_dict(metadata, getattr(s, "score_metadata", None))
             category.extend(getattr(s, "score_category", []) or [])
-
 
         return ScoreAggregatorResult(
             value=result,

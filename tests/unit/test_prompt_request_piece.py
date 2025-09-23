@@ -159,10 +159,7 @@ def test_hashes_generated_files_unknown_type():
 def test_prompt_response_get_value(sample_conversations: MutableSequence[PromptRequestResponse]):
     # Create a simple valid response for testing
     piece = PromptRequestPiece(
-        role="user", 
-        conversation_id="test", 
-        original_value="Hello, how are you?",
-        converted_value="Hello, how are you?"
+        role="user", conversation_id="test", original_value="Hello, how are you?", converted_value="Hello, how are you?"
     )
     request_response = PromptRequestResponse(request_pieces=[piece])
     assert request_response.get_value() == "Hello, how are you?"
@@ -174,18 +171,18 @@ def test_prompt_response_get_value(sample_conversations: MutableSequence[PromptR
 def test_prompt_response_get_values(sample_conversations: MutableSequence[PromptRequestResponse]):
     # Create a valid response with multiple user pieces with same conversation ID and sequence
     piece1 = PromptRequestPiece(
-        role="user", 
-        conversation_id="test", 
+        role="user",
+        conversation_id="test",
         sequence=1,
-        original_value="Hello, how are you?", 
-        converted_value="Hello, how are you?"
+        original_value="Hello, how are you?",
+        converted_value="Hello, how are you?",
     )
     piece2 = PromptRequestPiece(
-        role="user", 
-        conversation_id="test", 
+        role="user",
+        conversation_id="test",
         sequence=1,  # Same sequence for consistent validation
-        original_value="Another message", 
-        converted_value="Another message"
+        original_value="Another message",
+        converted_value="Another message",
     )
     request_response = PromptRequestResponse(request_pieces=[piece1, piece2])
     assert request_response.get_values() == ["Hello, how are you?", "Another message"]
@@ -195,6 +192,7 @@ def test_prompt_response_validate(sample_conversations: MutableSequence[PromptRe
     for c in sample_conversations:
         c.validate()
 
+
 def test_prompt_response_empty_throws():
     with pytest.raises(ValueError, match="PromptRequestResponse must have at least one request piece."):
         PromptRequestResponse(request_pieces=[])
@@ -203,8 +201,8 @@ def test_prompt_response_empty_throws():
 def test_prompt_response_validate_conversation_id_throws():
     # Create pieces with different conversation IDs (this should fail validation)
     piece1 = PromptRequestPiece(role="user", conversation_id="conv1", original_value="test1")
-    piece2 = PromptRequestPiece(role="user", conversation_id="conv2", original_value="test2") 
-    
+    piece2 = PromptRequestPiece(role="user", conversation_id="conv2", original_value="test2")
+
     with pytest.raises(ValueError, match="Conversation ID mismatch."):
         PromptRequestResponse(request_pieces=[piece1, piece2])
 
@@ -213,7 +211,7 @@ def test_prompt_request_response_inconsistent_roles_throws():
     # Create pieces with mixed roles (this should fail validation)
     piece1 = PromptRequestPiece(role="user", conversation_id="conv1", original_value="test1")
     piece2 = PromptRequestPiece(role="assistant", conversation_id="conv1", original_value="test2")
-    
+
     with pytest.raises(ValueError, match="Inconsistent roles within the same prompt request response entry."):
         PromptRequestResponse(request_pieces=[piece1, piece2])
 
@@ -222,7 +220,7 @@ def test_prompt_request_response_inconsistent_sequence_throws():
     # Create pieces with different sequences (this should fail validation during construction)
     piece1 = PromptRequestPiece(role="user", conversation_id="conv1", sequence=1, original_value="test1")
     piece2 = PromptRequestPiece(role="user", conversation_id="conv1", sequence=2, original_value="test2")
-    
+
     with pytest.raises(ValueError, match="Inconsistent sequences within the same prompt request response entry."):
         PromptRequestResponse(request_pieces=[piece1, piece2])
 
@@ -244,7 +242,7 @@ def test_group_conversation_request_pieces(sample_conversations: MutableSequence
         if response.request_pieces[0].conversation_id == sample_conversations[0].request_pieces[0].conversation_id:
             pieces = response.flatten_to_prompt_request_pieces([response])
             all_pieces.extend(pieces)
-    
+
     # Filter to get pieces from the same conversation
 
     groups = group_conversation_request_pieces_by_sequence(all_pieces)
@@ -253,18 +251,18 @@ def test_group_conversation_request_pieces(sample_conversations: MutableSequence
     assert groups[0].request_pieces[0].sequence == 0
 
 
-def test_group_conversation_request_pieces_multiple_groups(sample_conversations: MutableSequence[PromptRequestResponse]):
+def test_group_conversation_request_pieces_multiple_groups(
+    sample_conversations: MutableSequence[PromptRequestResponse],
+):
     # Get pieces from the first conversation
     all_pieces = []
     for response in sample_conversations:
         pieces = response.flatten_to_prompt_request_pieces([response])
         all_pieces.extend(pieces)
-    
+
     # Filter to get pieces from the same conversation and add another piece
     if all_pieces:
-        convo_group = [
-            entry for entry in all_pieces if entry.conversation_id == all_pieces[0].conversation_id
-        ]
+        convo_group = [entry for entry in all_pieces if entry.conversation_id == all_pieces[0].conversation_id]
         convo_group.append(
             PromptRequestPiece(
                 role="assistant",
@@ -290,6 +288,7 @@ def test_prompt_request_piece_no_roles():
                 )
             ]
         )
+
 
 @pytest.mark.asyncio
 async def test_prompt_request_piece_sets_original_sha256():
@@ -607,7 +606,7 @@ def test_prompt_request_piece_to_dict():
                 scorer_class_identifier={"class": "Scorer1"},
                 prompt_request_response_id=str(uuid.uuid4()),
                 timestamp=datetime.now(),
-                objective="Task1"
+                objective="Task1",
             )
         ],
     )

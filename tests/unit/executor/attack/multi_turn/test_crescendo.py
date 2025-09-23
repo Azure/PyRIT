@@ -1516,9 +1516,7 @@ class TestIntegrationScenarios:
             attack._conversation_manager, "update_conversation_state_async", return_value=mock_conversation_state
         ):
             with patch.object(attack, "_check_refusal_async", new_callable=AsyncMock, return_value=no_refusal):
-                with patch(
-                    "pyrit.score.Scorer.score_response_async", new_callable=AsyncMock
-                ) as mock_score:
+                with patch("pyrit.score.Scorer.score_response_async", new_callable=AsyncMock) as mock_score:
                     mock_score.side_effect = [
                         {"objective_scores": [scores[0]], "auxiliary_scores": []},
                         {"objective_scores": [scores[1]], "auxiliary_scores": []},
@@ -1610,9 +1608,7 @@ class TestIntegrationScenarios:
                 with patch.object(
                     attack, "_backtrack_memory_async", new_callable=AsyncMock, return_value="new_conv_id"
                 ):
-                    with patch(
-                        "pyrit.score.Scorer.score_response_async", new_callable=AsyncMock
-                    ) as mock_score:
+                    with patch("pyrit.score.Scorer.score_response_async", new_callable=AsyncMock) as mock_score:
                         mock_score.return_value = {
                             "objective_scores": [success_objective_score],
                             "auxiliary_scores": [],

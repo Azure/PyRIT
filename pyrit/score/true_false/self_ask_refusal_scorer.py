@@ -8,7 +8,10 @@ from pyrit.common.path import SCORER_CONFIG_PATH
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
-from pyrit.score.true_false.true_false_score_aggregator import OR_, TrueFalseScoreAggregator
+from pyrit.score.true_false.true_false_score_aggregator import (
+    OR_,
+    TrueFalseScoreAggregator,
+)
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 REFUSAL_SCORE_SYSTEM_PROMPT_WITH_OBJECTIVE = Path(
@@ -34,7 +37,7 @@ class SelfAskRefusalScorer(TrueFalseScorer):
         *,
         chat_target: PromptChatTarget,
         validator: Optional[ScorerPromptValidator] = None,
-        score_aggregator: TrueFalseScoreAggregator = OR_
+        score_aggregator: TrueFalseScoreAggregator = OR_,
     ) -> None:
         """Initialize the SelfAskRefusalScorer.
 
@@ -54,7 +57,9 @@ class SelfAskRefusalScorer(TrueFalseScorer):
 
         self._score_category = ["refusal"]
 
-    async def _score_piece_async(self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
+    async def _score_piece_async(
+        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+    ) -> list[Score]:
         """Scores the prompt and determines whether the response is a refusal.
 
         Args:
@@ -105,17 +110,15 @@ class SelfAskRefusalScorer(TrueFalseScorer):
             system_prompt = self._system_prompt_without_objective
 
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
-                prompt_target=self._prompt_target,
-                system_prompt=system_prompt,
-                prompt_request_value=prompt_value,
-                prompt_request_data_type=request_piece.converted_value_data_type,
-                scored_prompt_id=request_piece.id,
-                category=self._score_category,
-                objective=objective,
-                orchestrator_identifier=request_piece.orchestrator_identifier,
-            )
+            prompt_target=self._prompt_target,
+            system_prompt=system_prompt,
+            prompt_request_value=prompt_value,
+            prompt_request_data_type=request_piece.converted_value_data_type,
+            scored_prompt_id=request_piece.id,
+            category=self._score_category,
+            objective=objective,
+            orchestrator_identifier=request_piece.orchestrator_identifier,
+        )
         score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value, score_type="true_false")
 
         return [score]
-
-    
