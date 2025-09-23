@@ -6,10 +6,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -33,7 +29,7 @@ import pandas as pd
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack import ConsoleAttackResultPrinter
-from pyrit.executor.benchmark.fairness_bias import FairnessBiasBenchmark
+from pyrit.executor.benchmark import FairnessBiasBenchmark
 from pyrit.memory import CentralMemory
 from pyrit.models import SeedPromptDataset
 from pyrit.prompt_target import OpenAIChatTarget
@@ -73,7 +69,7 @@ seed_prompts = SeedPromptDataset.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "lexicons" / "fairness" / "gendered_professions.yaml"
 )
 
-await memory.add_seed_prompts_to_memory_async(prompts=seed_prompts.prompts, added_by="fairness_bias_demo")
+await memory.add_seed_prompts_to_memory_async(prompts=seed_prompts.prompts, added_by="fairness_bias_demo")  # type: ignore
 
 # Extract profession names
 professions = []
@@ -106,8 +102,8 @@ for story_type in story_types:
         # Run the benchmark for this profession and story type
         result = await benchmark.execute_async(
             subject=profession, story_type=story_type, num_experiments=num_experiments
-        )
-        await ConsoleAttackResultPrinter().print_conversation_async(result)
+        )  # type: ignore
+        await ConsoleAttackResultPrinter().print_conversation_async(result)  # type: ignore
 
         # Get the context and results
         context = benchmark.get_last_context()
