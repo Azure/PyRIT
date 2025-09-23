@@ -192,14 +192,25 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, AttackResult])
         return await self.execute_async(context=prev)
 
 
-    async def close(self) -> MultiBranchAttackResult:
+    async def close(self, prev: MultiBranchAttackResultT) -> MultiBranchAttackResult:
         """
         Finalize the multi-branch attack and return the result.
         
         Returns:
             MultiBranchAttackResult: The result of the multi-branch attack.
         """
-        return await self._close_handler()
+        context = prev.context
+        if not context:
+            raise ValueError("No active context to close.")
+        
+        result = None
+        
+        # Extract path to current pointer and convert to conversation
+        
+        # Call scorer to get outcome
+        
+        # Return final result object
+        return result
 
     """ Lifecycle Methods (from Strategy base class) """
 
@@ -290,9 +301,12 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, AttackResult])
         intermediate_result: MultiBranchAttackResultT = self._self_intermediate_result_factory(ctx)   
         return intermediate_result
     
-    async def _goto_handler(context: MultiBranchAttackContext, tag: Optional[str]) -> MultiBranchAttackContext:
+    async def _goto_handler(self, context: MultiBranchAttackContext, tag: Optional[str]) -> MultiBranchAttackContext:
         """
-        Handle the RETURN command to navigate to the parent node.
+        Handle the RETURN command to navigate to the parent node,
+        or GOTO command to navigate to a specific node by its tag.
+        
+        By default, RETURN just calls GOTO on the pointer's parent node.
 
         Args:
             context (MultiBranchAttackContext): The current attack context.
@@ -308,8 +322,46 @@ class MultiBranchAttack(AttackStrategy[MultiBranchAttackContextT, AttackResult])
         context.pointer = tag
         return context
     
-    async def _continue_handler(context: MultiBranchAttackContext, command: Optional[str]) -> MultiBranchAttackContext:
+    async def _continue_handler(self, context: MultiBranchAttackContext, command: Optional[str]) -> MultiBranchAttackContext:
         """
         Get a model response and get a completion from the model target.
         """
         
+        # If we are not at a leaf node, we will branch, backpropagating the conversation ID.
+        branch = context.tree.children(context.pointer) not in [None, []]
+        if branch:
+            conversation_id = 12345 # TODO New conversation ID
+            await self._add_conversation_up_path(context, conversation_id)
+        else:
+            conversation_id = context.pointer.data.get("responses", [])[-1].conversation_id if context.pointer.data else None
+        
+        # Then create a PromptRequestResponse, get a response, and add a new node.
+        request_prr = PromptRequestPiece.from_messages(
+            conversation_id=conversation_id,
+            messages=[{"role": "user", "content": command}],
+            prompt_normalizer=self._prompt_normalizer
+        ).to_prompt_request_response()
+        response_prr = await self._objective_target.get_response_async(request_prr)
+        
+        context.tree.create_node(
+            tag=chr(65 + len(context.tree.all_nodes())), # A, B, C, ...
+            identifier=str(len(context.tree.all_nodes())), # 0, 1, 2, ...
+            parent=context.pointer,
+            data={
+                "requests": [request_prr],
+                "responses": [response_prr]
+            }
+        )
+        
+        return context
+        
+    async def _add_conversation_up_path(self, context: MultiBranchAttackContext, conversation_id: str):
+        """
+        Add the conversation_id to all nodes up the path to the root.
+        """
+        node = context.tree.get_node(context.pointer)
+        while node:
+            if "related_conversations" not in node.data:
+                node.data["related_conversations"] = set()
+            node.data["related_conversations"].add(conversation_id)
+            node = context.tree.parent(node)
