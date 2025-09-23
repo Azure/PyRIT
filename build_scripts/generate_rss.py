@@ -72,13 +72,13 @@ for file in files:
 # Validating the RSS feed
 print("Validating RSS feed...")
 first_entry = fg.entry()[-1]
-if first_entry.title() != "Multi-Turn orchestrators — PyRIT Documentation":
+if first_entry.title() != "Multi-Turn attacks — PyRIT Documentation":
     print("Error: Title parsing failed. Exiting.")
     sys.exit(1)
 if first_entry.description() != (
-    "In PyRIT, orchestrators are typically seen as the top-level component. "
+    "In PyRIT, attacks are typically seen as the top-level component. "
     "This is where your attack logic is implemented, while notebooks should "
-    "primarily be used to configure orchestrators."
+    "primarily be used to configure attacks."
 ):
     print("Error: Description parsing failed. Exiting.")
     sys.exit(1)
