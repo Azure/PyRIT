@@ -75,6 +75,7 @@ def fetch_harmbench_multimodal_dataset(
                 "behavior_id": behavior_id,
             },
         )
+        prompts.append(text_prompt)
 
         image_prompt = SeedPrompt(
             # Note: All images in the HarmBench dataset are stored as .png files, even if
@@ -95,8 +96,7 @@ def fetch_harmbench_multimodal_dataset(
                 "redacted_image_description": redacted_description,
             },
         )
-
-        prompts.append((text_prompt, image_prompt))
+        prompts.append(image_prompt)
 
     seed_prompt_dataset = SeedPromptDataset(prompts=prompts)
     return seed_prompt_dataset
