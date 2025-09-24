@@ -56,10 +56,6 @@ class AttackScoringConfig:
     # Only applies to float_scale scorers
     successful_objective_threshold: float = 0.8
 
-    # Optional number of frames to extract from a video for scoring. Only applicable if the response is a video.
-    # If not set, the default number of frames is set to 5.
-    num_frames: Optional[int] = None
-
     def __post_init__(self):
         """Validate configuration values."""
         if not 0.0 <= self.successful_objective_threshold <= 1.0:

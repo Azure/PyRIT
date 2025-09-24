@@ -68,8 +68,7 @@ class Scorer(abc.ABC):
         return path_obj
 
     async def score_async(
-        self, request_response: PromptRequestPiece, *, task: Optional[str] = None, num_frames: Optional[int] = None
-    ) -> list[Score]:
+        self, request_response: PromptRequestPiece, *, task: Optional[str] = None ) -> list[Score]:
         """
         Score the request_response, add the results to the database
         and return a list of Score objects.
@@ -77,29 +76,12 @@ class Scorer(abc.ABC):
         Args:
             request_response (PromptRequestPiece): The request response to be scored.
             task (str): The task based on which the text should be scored (the original attacker model's objective).
-            num_frames (int, optional): The number of frames to extract from a video for scoring.
-                Only applicable if the request_response is a video.
 
         Returns:
             list[Score]: A list of Score objects representing the results.
         """
         self.validate(request_response, task=task)
-        scores: List[Score] = []
-
-        # If the request_response is a video, extract frames and score each frame
-        # This handling will no longer be needed once there are models that can score videos in their entirety
-        # For now, there only exist models that can score images and text
-        if request_response.converted_value_data_type == "video_path":
-            scores = await self.score_video_async(
-                video_path=request_response.converted_value,
-                task=task,
-                num_frames=num_frames,
-            )
-
-            scores[0].prompt_request_response_id = request_response.id
-        else:
-            scores = await self._score_async(request_response, task=task)
-
+        scores = await self._score_async(request_response, task=task)
         self._memory.add_scores_to_memory(scores=scores)
         return scores
 
@@ -118,50 +100,6 @@ class Scorer(abc.ABC):
             task (str): The task based on which the text should be scored (the original attacker model's objective).
         """
         raise NotImplementedError("score_async method not implemented")
-
-    def _extract_frames(self, video_path: str, num_frames: int = 5) -> list[str]:
-        """
-        Extracts a specified number of image frames from a video file and returns them as a list of (temp)
-        image file paths.
-
-        Args:
-            video_path (str): The path to the video file.
-            num_frames (int): The number of image frames to extract from the video.
-
-        """
-        try:
-            import cv2  # noqa: F401
-        except ModuleNotFoundError as e:
-            logger.error("Could not import opencv. You may need to install it via 'pip install pyrit[opencv]'")
-            raise e
-
-        video_capture = cv2.VideoCapture(video_path)
-        frame_paths = []
-        total_frames = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
-        if total_frames > 0:
-            # Choose up to num_frames random unique frame indices
-            frame_indices = sorted(random.sample(range(total_frames), min(num_frames, total_frames)))
-            for frame_index in frame_indices:
-                # Set the video position to the selected frame
-                video_capture.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
-                ret, frame = video_capture.read()
-                if not ret:
-                    print(f"Failed to read frame at index {frame_index}")
-                    continue
-
-                # Create a temporary file for the frame
-                with tempfile.NamedTemporaryFile(suffix=f"_frame_{frame_index}.png", delete=False) as temp_file:
-                    # Encode and write frame to temporary file
-                    ret, _ = cv2.imencode(".png", frame)
-                    if not ret:
-                        print(f"Failed to encode frame at index {frame_index}")
-                        continue
-
-                    cv2.imwrite(temp_file.name, frame)
-                    frame_paths.append(temp_file.name)
-
-        video_capture.release()
-        return frame_paths
 
     def get_scorer_metrics(self, dataset_name: str, metrics_type: Optional[MetricsType] = None):
         """
@@ -337,100 +275,6 @@ class Scorer(abc.ABC):
 
         request_piece.id = None
         return await self.score_async(request_piece, task=task)
-
-    async def score_video_async(
-        self, video_path: str, *, task: Optional[str] = None, num_frames: Optional[int] = None
-    ) -> list[Score]:
-        """
-        Scores the given video by breaking it up into specified number of image frames and passing those through
-        to the chat target for evaluation. The frame scores will then be aggregated into one score for the video,
-        choosing the most severe score based on the scorer type.
-
-        Args:
-            video_path (str): The path to the video to be scored.
-            task (str): The task based on which the video should be scored (the original attacker model's objective).
-
-        Returns:
-            list[Score]: A list of Score objects representing the results.
-        """
-        if not num_frames:
-            num_frames = 5  # Default to 5 frames if not specified
-
-        # Extract frames from the video and score each frame
-        image_frame_paths = self._extract_frames(video_path, num_frames=num_frames)
-        if not image_frame_paths:
-            raise ValueError("No frames extracted from video for scoring.")
-
-        tasks = [task] * len(image_frame_paths)
-        frame_scores = await self.score_image_batch_async(
-            image_paths=image_frame_paths, tasks=tasks, batch_size=num_frames
-        )
-        if not frame_scores:
-            raise ValueError("No scores returned for image frames extracted from video.")
-
-        # Clean up temporary frame files
-        for path in image_frame_paths:
-            try:
-                os.remove(path)
-            except OSError as e:
-                logger.warning(f"Error removing temporary frame file {path}: {e}")
-
-        return self._aggregate_frame_scores(frame_scores)
-
-    def _aggregate_frame_scores(self, frame_scores: list[Score]) -> list[Score]:
-        """
-        Aggregates a list of frame scores into a single score for the entire video.
-
-        Args:
-            frame_scores (list[Score]): The list of frame scores to aggregate.
-
-        Returns:
-            Score (list[Score]): The aggregated scores for the entire video.
-        """
-        # Aggregate frame scores into one score for the entire video
-        aggregate_score = None
-        original_rationale = None
-
-        # For true_false scorers, if any of the scores are True, the aggregate score is True
-        if self.scorer_type == "true_false":
-            true_scores = [score for score in frame_scores if score.get_value()]
-            true_count = len(true_scores)
-
-            # Update the rationale to reflect the aggregation logic
-            if true_count > 0:
-                original_rationale = "\nSee original score rationales for each frame as follows:\n* "
-                original_rationale += "\n* ".join([score.score_rationale for score in true_scores])
-
-                aggregate_score = true_scores[0]
-                aggregate_score.score_rationale = (
-                    f"{true_count} out of {len(frame_scores)} video frames meet objective.\n"
-                )
-            else:
-                aggregate_score = frame_scores[0]
-                original_rationale = aggregate_score.score_rationale
-
-                aggregate_score.score_rationale = f"Objective not met within {len(frame_scores)} video frames.\n"
-
-        # For float_scale scorers, use the highest score value as the aggregate score value
-        elif self.scorer_type == "float_scale":
-            aggregate_score = max(frame_scores, key=lambda score: score.get_value())
-            original_rationale = aggregate_score.score_rationale
-
-            # Update the rationale to indicate this is the highest score
-            highest_score = aggregate_score.get_value()
-            aggregate_score.score_rationale = f"Highest score across {len(frame_scores)} frames: {highest_score:.2f}.\n"
-
-        else:
-            raise ValueError(f"Unsupported scorer type for video scoring: {self.scorer_type}")
-
-        if original_rationale:
-            # Append the original rationale to the updated rationale
-            aggregate_score.score_rationale += original_rationale
-
-        # Set the Score ID
-        aggregate_score.id = uuid.uuid4()
-
-        return [aggregate_score]
 
     def scale_value_float(self, value: float, min_value: float, max_value: float) -> float:
         """
@@ -613,7 +457,6 @@ class Scorer(abc.ABC):
         role_filter: ChatMessageRole = "assistant",
         task: Optional[str] = None,
         skip_on_error: bool = True,
-        num_frames: Optional[int] = None,
     ) -> List[Score]:
         """
         Score a response using multiple scorers in parallel.
@@ -627,8 +470,6 @@ class Scorer(abc.ABC):
             role_filter: Only score pieces with this role (default: "assistant")
             task: Optional task description for scoring context
             skip_on_error: If True, skip scoring pieces that have errors (default: True)
-            num_frames: Optional number of frames to extract from a video for scoring. Only applicable
-                if the response is a video.
 
         Returns:
             List of all scores from all scorers
@@ -650,7 +491,7 @@ class Scorer(abc.ABC):
 
         # Create all scoring tasks, note TEMPORARY fix to prevent multi-piece responses from breaking scoring logic
         tasks = [
-            scorer.score_async(request_response=piece, task=task, num_frames=num_frames)
+            scorer.score_async(request_response=piece, task=task)
             for piece in filtered_pieces[:1]
             for scorer in scorers
         ]
@@ -672,7 +513,6 @@ class Scorer(abc.ABC):
         role_filter: ChatMessageRole = "assistant",
         task: Optional[str] = None,
         skip_on_error: bool = True,
-        num_frames: Optional[int] = None,
     ) -> Optional[Score]:
         """
         Score response pieces sequentially until finding a successful score.
@@ -687,8 +527,6 @@ class Scorer(abc.ABC):
             role_filter: Only score pieces with this role (default: "assistant")
             task: Optional task description for scoring context
             skip_on_error: If True, skip scoring pieces that have errors (default: True)
-            num_frames: Optional number of frames to extract from a video for scoring. Only applicable
-                if the response is a video.
 
         Returns:
             The first successful score, or the first score if no success found, or None if no scores
@@ -715,7 +553,7 @@ class Scorer(abc.ABC):
         # TEMPORARY fix to prevent multi-piece responses from breaking scoring logic of attack
         for piece in scorable_pieces[:1]:
             # Run all scorers on this piece in parallel
-            tasks = [scorer.score_async(request_response=piece, task=task, num_frames=num_frames) for scorer in scorers]
+            tasks = [scorer.score_async(request_response=piece, task=task) for scorer in scorers]
             score_lists = await asyncio.gather(*tasks)
 
             # Flatten the results
@@ -742,7 +580,6 @@ class Scorer(abc.ABC):
         role_filter: ChatMessageRole = "assistant",
         task: Optional[str] = None,
         skip_on_error: bool = True,
-        num_frames: Optional[int] = None,
     ) -> Dict[str, List[Score]]:
         """
         Score a response using both auxiliary and objective scorers.
@@ -757,8 +594,6 @@ class Scorer(abc.ABC):
             role_filter (ChatMessageRole): Only score pieces with this role (default: `assistant`)
             task (Optional[str]): Optional task description for scoring context
             skip_on_error (bool): If True, skip scoring pieces that have errors (default: `True`)
-            num_frames (Optional[int]): Optional number of frames to extract from a video for scoring.
-                Only applicable if the response is a video.
 
         Returns:
             Dict[str,List[Score]]: Dictionary with keys `auxiliary_scores` and `objective_scores`
@@ -782,7 +617,6 @@ class Scorer(abc.ABC):
                 role_filter=role_filter,
                 task=task,
                 skip_on_error=skip_on_error,
-                num_frames=num_frames,
             )
 
             objective_task = Scorer.score_response_select_first_success_async(
@@ -791,7 +625,6 @@ class Scorer(abc.ABC):
                 role_filter=role_filter,
                 task=task,
                 skip_on_error=skip_on_error,
-                num_frames=num_frames,
             )
 
             # Run them in parallel and unpack results
@@ -809,7 +642,6 @@ class Scorer(abc.ABC):
                 role_filter=role_filter,
                 task=task,
                 skip_on_error=skip_on_error,
-                num_frames=num_frames,
             )
 
         # Run only objective scoring
@@ -820,7 +652,6 @@ class Scorer(abc.ABC):
                 role_filter=role_filter,
                 task=task,
                 skip_on_error=skip_on_error,
-                num_frames=num_frames,
             )
             result["objective_scores"] = [objective_score] if objective_score else []
 

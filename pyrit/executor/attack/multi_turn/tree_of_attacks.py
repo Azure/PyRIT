@@ -175,7 +175,6 @@ class _TreeOfAttacksNode:
         adversarial_chat_system_seed_prompt: SeedPrompt,
         desired_response_prefix: str,
         objective_scorer: Scorer,
-        num_frames: Optional[int] = None,
         on_topic_scorer: Optional[Scorer],
         request_converters: List[PromptConverterConfiguration],
         response_converters: List[PromptConverterConfiguration],
@@ -196,8 +195,6 @@ class _TreeOfAttacksNode:
             adversarial_chat_system_seed_prompt (SeedPrompt): The system prompt for the adversarial chat
             desired_response_prefix (str): The prefix for the desired response.
             objective_scorer (Scorer): The scorer for evaluating the objective target's response.
-            num_frames (Optional[int]): Optional number of frames to extract from a video for scoring.
-                Only applicable if the response is a video.
             on_topic_scorer (Optional[Scorer]): Optional scorer to check if the prompt is on-topic.
             request_converters (List[PromptConverterConfiguration]): Converters for request normalization
             response_converters (List[PromptConverterConfiguration]): Converters for response normalization
@@ -211,7 +208,6 @@ class _TreeOfAttacksNode:
         self._objective_target = objective_target
         self._adversarial_chat = adversarial_chat
         self._objective_scorer = objective_scorer
-        self._num_frames = num_frames
         self._adversarial_chat_seed_prompt = adversarial_chat_seed_prompt
         self._desired_response_prefix = desired_response_prefix
         self._adversarial_chat_prompt_template = adversarial_chat_prompt_template
@@ -466,7 +462,6 @@ class _TreeOfAttacksNode:
             role_filter="assistant",
             task=objective,
             skip_on_error=True,
-            num_frames=self._num_frames,
         )
 
         # Extract objective score
@@ -1037,7 +1032,6 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
 
         self._auxiliary_scorers = attack_scoring_config.auxiliary_scorers or []
         self._objective_scorer = objective_scorer
-        self._num_frames = attack_scoring_config.num_frames
         self._successful_objective_threshold = attack_scoring_config.successful_objective_threshold
 
         # Use the adversarial chat target for scoring, as in CrescendoAttack
@@ -1455,7 +1449,6 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
             adversarial_chat_system_seed_prompt=self._adversarial_chat_system_seed_prompt,
             adversarial_chat_prompt_template=self._adversarial_chat_prompt_template,
             objective_scorer=self._objective_scorer,
-            num_frames=self._num_frames,
             on_topic_scorer=self._create_on_topic_scorer(context.objective),
             request_converters=self._request_converters,
             response_converters=self._response_converters,

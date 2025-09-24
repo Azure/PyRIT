@@ -137,7 +137,6 @@ class VideoScorer(Scorer):
         image file paths.
         Args:
             video_path (str): The path to the video file.
-            num_frames (int): The number of image frames to extract from the video.
         """
         try:
             import cv2  # noqa: F401

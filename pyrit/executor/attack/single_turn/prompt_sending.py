@@ -89,7 +89,6 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
 
         self._auxiliary_scorers = attack_scoring_config.auxiliary_scorers
         self._objective_scorer = attack_scoring_config.objective_scorer
-        self._num_frames = attack_scoring_config.num_frames
         if self._objective_scorer and self._objective_scorer.scorer_type != "true_false":
             raise ValueError("Objective scorer must be a true/false scorer")
 
@@ -182,9 +181,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
                 continue  # Retry if no response (filtered or error)
 
             # Score the response including auxiliary and objective scoring
-            score = await self._evaluate_response_async(
-                response=response, objective=context.objective, num_frames=self._num_frames
-            )
+            score = await self._evaluate_response_async(response=response, objective=context.objective)
 
             # If there is no objective, we have a response but can't determine success
             if not self._objective_scorer:
@@ -303,7 +300,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         )
 
     async def _evaluate_response_async(
-        self, *, response: PromptRequestResponse, objective: str, num_frames: Optional[int] = None
+        self, *, response: PromptRequestResponse, objective: str,
     ) -> Optional[Score]:
         """
         Evaluate the response against the objective using the configured scorers.
@@ -314,8 +311,6 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         Args:
             response (PromptRequestResponse): The response from the model.
             objective (str): The natural-language description of the attack's objective.
-            num_frames (Optional[int]): Optional number of frames to extract from a video for scoring.
-                Only applicable if the response is a video.
 
         Returns:
             Optional[Score]: The score from the objective scorer if configured, or None if
@@ -328,7 +323,6 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
             objective_scorers=[self._objective_scorer] if self._objective_scorer else None,
             role_filter="assistant",
             task=objective,
-            num_frames=num_frames,
         )
 
         objective_scores = scoring_results["objective_scores"]
