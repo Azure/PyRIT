@@ -8,11 +8,10 @@ from pathlib import Path
 from typing import List
 
 from pyrit.common import initialize_pyrit
+from pyrit.executor.attack import ConsoleAttackResultPrinter
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackStrategy,
 )
-from pyrit.executor.attack import ConsoleAttackResultPrinter
-from pyrit.memory import CentralMemory
 from pyrit.models.seed_prompt_dataset import SeedPromptDataset
 from pyrit.models.seed_prompt_group import SeedPromptGroup
 
