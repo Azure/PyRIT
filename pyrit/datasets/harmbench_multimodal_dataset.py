@@ -34,10 +34,9 @@ def fetch_harmbench_multimodal_dataset(
     Fetch HarmBench multimodal examples and create a SeedPromptDataset.
 
     The HarmBench multimodal dataset contains 110 harmful multimodal behaviors.
-    Each example consists of an image (with data type "image_path") and a behavior string
-    that references the image (with data type "text"). The text and image prompts that
-    belong to the same example are linked using the same ``prompt_group_id``. You can
-    extract the grouped prompts using the ``group_seed_prompts_by_prompt_group_id`` method.
+    Each example consists of an image ("image_path") and a behavior string referencing the image ("text").
+    The text and image prompts that belong to the same example are linked using the same ``prompt_group_id``.
+    You can extract the grouped prompts using the ``group_seed_prompts_by_prompt_group_id`` method.
 
     Args:
         source (str): The source from which to fetch examples. Defaults to the HarmBench repository.
