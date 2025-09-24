@@ -295,6 +295,27 @@ class Scorer(abc.ABC):
         # results is a list[list[Score]] and needs to be flattened
         return [score for sublist in results for score in sublist]
 
+    async def score_image_batch_async(
+        self, *, image_paths: Sequence[str], tasks: Optional[Sequence[str]] = None, batch_size: int = 10
+    ) -> list[Score]:
+        if tasks:
+            if len(tasks) != len(image_paths):
+                raise ValueError("The number of tasks must match the number of image_paths.")
+
+        if len(image_paths) == 0:
+            return []
+
+        prompt_target = getattr(self, "_prompt_target", None)
+        results = await batch_task_async(
+            task_func=self.score_image_async,
+            task_arguments=["image_path", "task"] if tasks else ["image_path"],
+            prompt_target=prompt_target,
+            batch_size=batch_size,
+            items_to_batch=[image_paths, tasks] if tasks else [image_paths],
+        )
+
+        return [score for sublist in results for score in sublist]
+
     async def score_image_async(self, image_path: str, *, task: Optional[str] = None) -> list[Score]:
         """
         Scores the given image using the chat target.

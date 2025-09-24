@@ -93,6 +93,7 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 # ## Sora Target (Text --> Video)
 #
 # This example demonstrates how to use the Sora target to create a video from a text-based prompt.
+
 # %%
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
@@ -103,8 +104,10 @@ from pyrit.executor.attack import (
 )
 from pyrit.prompt_target import OpenAIChatTarget, OpenAISoraTarget
 from pyrit.score import (
+    AzureContentFilterScorer,
     SelfAskTrueFalseScorer,
     TrueFalseQuestion,
+    VideoScorer,
 )
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
@@ -115,16 +118,21 @@ objectives = [
 ]
 
 sora_target = OpenAISoraTarget()
-scorer = SelfAskTrueFalseScorer(
+objective_scorer = SelfAskTrueFalseScorer(
     chat_target=OpenAIChatTarget(),
     true_false_question=TrueFalseQuestion(true_description="A raccoon dressed as a pirate is actively eating a pastry"),
+)
+
+video_scorer = VideoScorer(
+    image_capable_scorer=objective_scorer,
+    num_frames=10,
 )
 
 attack = PromptSendingAttack(
     objective_target=sora_target,
     attack_scoring_config=AttackScoringConfig(
-        objective_scorer=scorer,
-        num_frames=6,
+        objective_scorer=video_scorer,
+        auxiliary_scorers=[VideoScorer(AzureContentFilterScorer())],
     ),
 )
 
