@@ -32,8 +32,9 @@ def fetch_harmbench_multimodal_dataset(
         SeedPromptDataset: A SeedPromptDataset containing the multimodal examples.
 
     Note:
-        For more information related to the HarmBench project and the original dataset, visit: https://www.harmbench.org/
-        Paper: https://arxiv.org/abs/2402.04249
+        For more information related to the HarmBench project and the original dataset, visit:
+        https://www.harmbench.org/ \n
+        Paper: https://arxiv.org/abs/2402.04249 \n
         Authors:
             Mantas Mazeika & Long Phan & Xuwang Yin & Andy Zou & Zifan Wang & Norman Mu & Elham Sakhaee
             & Nathaniel Li & Steven Basart & Bo Li & David Forsyth & Dan Hendrycks
