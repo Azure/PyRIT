@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from azure.identity import DefaultAzureCredential
 import logging
 from typing import TYPE_CHECKING, Literal, Optional
 
@@ -106,13 +105,10 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
 
         audio_serializer_file = None
         try:
-            credential = DefaultAzureCredential()
-            aad_token = credential.get_token("https://cognitiveservices.azure.com/.default").token
-            # auth_token = "aad#" + resourceID + "#" + aad_token
             speech_config = speechsdk.SpeechConfig(
+                subscription=self._azure_speech_key,
                 region=self._azure_speech_region,
             )
-            speech_config.authorization_token = aad_token
             pull_stream = speechsdk.audio.PullAudioOutputStream()
             audio_cfg = speechsdk.audio.AudioOutputConfig(stream=pull_stream)
             speech_config.speech_synthesis_language = self._synthesis_language
