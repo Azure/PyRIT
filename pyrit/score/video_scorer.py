@@ -6,6 +6,7 @@ import os
 import random
 import tempfile
 import uuid
+from collections import defaultdict
 from typing import List, Optional
 
 from pyrit.models import PromptRequestPiece, Score
@@ -78,63 +79,85 @@ class VideoScorer(Scorer):
             except OSError as e:
                 logger.warning(f"Error removing temporary frame file {path}: {e}")
 
-        score = self._aggregate_frame_scores(frame_scores)
-        score.prompt_request_response_id = request_response.id
+        scores = self._aggregate_frame_scores(frame_scores)
+        for score in scores:
+            score.prompt_request_response_id = request_response.id
 
-        return [score]
+        return scores
 
-    def _aggregate_frame_scores(self, frame_scores: list[Score]) -> Score:
+    def _aggregate_frame_scores(self, frame_scores: list[Score]) -> List[Score]:
         """
         Aggregates a list of frame scores into a single score for the entire video.
+        If there are multiple score categories within the list of scores provided,
+        this function will return an aggregated score per-category.
+
         Args:
             frame_scores (list[Score]): The list of frame scores to aggregate.
         Returns:
             Score (list[Score]): The aggregated scores for the entire video.
         """
-        # Aggregate frame scores into one score for the entire video
         aggregate_score = None
         original_rationale = None
 
-        # For true_false scorers, if any of the scores are True, the aggregate score is True
-        if self.scorer_type == "true_false":
-            true_scores = [score for score in frame_scores if score.get_value()]
-            true_count = len(true_scores)
+        # Group frame_scores by score_category (excluding None categories)
+        scores_by_category = defaultdict(list)
 
-            # Update the rationale to reflect the aggregation logic
-            if true_count > 0:
-                original_rationale = "\nSee original score rationales for each frame as follows:\n* "
-                original_rationale += "\n* ".join([score.score_rationale for score in true_scores])
+        for score in frame_scores:
+            if score.score_category:
+                scores_by_category[score.score_category].append(score)
 
-                aggregate_score = true_scores[0]
-                aggregate_score.score_rationale = (
-                    f"{true_count} out of {len(frame_scores)} video frames meet objective.\n"
-                )
-            else:
-                aggregate_score = frame_scores[0]
+        # If no valid categories found, use all scores as a single group
+        if not scores_by_category:
+            scores_by_category[None] = frame_scores
+
+        aggregated_scores = []
+
+        # Aggregate scores for each category
+        for category, category_scores in scores_by_category.items():
+            # For true_false scorers, if any of the scores are True, the aggregate score is True
+            if self.scorer_type == "true_false":
+                true_scores = [score for score in category_scores if score.get_value()]
+                true_count = len(true_scores)
+
+                # Update the rationale to reflect the aggregation logic
+                if true_count > 0:
+                    original_rationale = "\nSee original score rationales for each frame as follows:\n* "
+                    original_rationale += "\n* ".join([score.score_rationale for score in true_scores])
+
+                    aggregate_score = true_scores[0]
+                    aggregate_score.score_rationale = (
+                        f"{true_count} out of {len(category_scores)} video frames meet objective.\n"
+                    )
+                else:
+                    aggregate_score = category_scores[0]
+                    original_rationale = aggregate_score.score_rationale
+
+                    aggregate_score.score_rationale = f"Objective not met within {len(category_scores)} video frames.\n"
+
+            # For float_scale scorers, use the highest score value as the aggregate score value
+            elif self.scorer_type == "float_scale":
+                aggregate_score = max(category_scores, key=lambda score: score.get_value())
                 original_rationale = aggregate_score.score_rationale
 
-                aggregate_score.score_rationale = f"Objective not met within {len(frame_scores)} video frames.\n"
+                # Update the rationale to indicate this is the highest score
+                highest_score = aggregate_score.get_value()
+                aggregate_score.score_rationale = (
+                    f"Highest score across {len(category_scores)} frames: {highest_score:.2f}.\n"
+                )
 
-        # For float_scale scorers, use the highest score value as the aggregate score value
-        elif self.scorer_type == "float_scale":
-            aggregate_score = max(frame_scores, key=lambda score: score.get_value())
-            original_rationale = aggregate_score.score_rationale
+            else:
+                raise ValueError(f"Unsupported scorer type for video scoring: {self.scorer_type}")
 
-            # Update the rationale to indicate this is the highest score
-            highest_score = aggregate_score.get_value()
-            aggregate_score.score_rationale = f"Highest score across {len(frame_scores)} frames: {highest_score:.2f}.\n"
+            # Preserve the category in the aggregated score
+            aggregate_score.score_category = category
+            aggregate_score.id = uuid.uuid4()
 
-        else:
-            raise ValueError(f"Unsupported scorer type for video scoring: {self.scorer_type}")
+            if original_rationale:
+                aggregate_score.score_rationale += original_rationale
 
-        if original_rationale:
-            # Append the original rationale to the updated rationale
-            aggregate_score.score_rationale += original_rationale
+            aggregated_scores.append(aggregate_score)
 
-        # Set the Score ID
-        aggregate_score.id = uuid.uuid4()
-
-        return aggregate_score
+        return aggregated_scores
 
     def _extract_frames(self, video_path: str) -> list[str]:
         """

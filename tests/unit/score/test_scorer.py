@@ -7,6 +7,7 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Optional
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 
 from pyrit.common.path import SCORER_CONFIG_PATH
