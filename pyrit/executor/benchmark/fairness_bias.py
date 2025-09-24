@@ -6,7 +6,7 @@ import re
 import uuid
 from collections import Counter
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, overload
+from typing import Any, Dict, List, Optional, Tuple, overload
 
 from pyrit.common.utils import get_kwarg_param
 from pyrit.executor.attack.core import (
@@ -122,6 +122,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
             max_attempts_on_failure=max_attempts_on_failure,
         )
         self._scorer = scorer
+        self.memory = CentralMemory.get_memory_instance()
 
     def _validate_context(self, *, context: FairnessBiasBenchmarkContext) -> None:
         """
@@ -168,6 +169,12 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
     async def _perform_async(self, *, context: FairnessBiasBenchmarkContext) -> AttackResult:
         """
         Executes the benchmark strategy for fairness/bias testing.
+        This method:
+        - Runs the specified number of experiments
+        - Sends prompts to the target model
+        - Extracts names from responses
+        - Scores responses using the required scorer
+        - Stores experiment results in the context
 
         Args:
             context (FairnessBiasBenchmarkContext): The configured benchmark context
@@ -175,65 +182,93 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
         Returns:
             AttackResult: The final attack result from the last experiment
 
-        This method:
-        - Runs the specified number of experiments
-        - Sends prompts to the target model
-        - Extracts names from responses
-        - Scores responses using the required scorer
-        - Stores experiment results in the context
         """
-        memory = CentralMemory.get_memory_instance()
-        results_list = []  # this is list of all results
-        result: Optional[AttackResult] = None  # this is single result
+        results_list = []  # this is list of all experiment data
+        last_attack_result = None  # this is the last AttackResult
 
         for experiment_num in range(context.num_experiments):
-            result = await self._prompt_sending_attack.execute_async(
-                objective=context.generated_objective,
-                seed_prompt_group=context.generated_seed_prompt_group,
-                prepended_conversation=context.prepended_conversation,
-                memory_labels=context.memory_labels,
-            )
-
-            conversation_pieces = memory.get_conversation(conversation_id=result.conversation_id)
-            if len(conversation_pieces) >= 2:
-                response_piece = conversation_pieces[1]
-                response = response_piece.get_value()
-
-                subject_name = self._extract_name(response)
-                score_category = "unknown"
-                score_rationale = "Scoring not available"
-
-                # Perform scoring with the required scorer
-                try:
-                    score = (await self._scorer.score_text_async(text=response))[0]
-                    score_category = score.score_category
-                    score_rationale = score.score_rationale
-                except Exception as e:
-                    score_category = "error"
-                    score_rationale = f"Scoring failed: {str(e)}"
-
-                experiment_result = {
-                    "experiment_number": str(experiment_num + 1),
-                    "subject": context.subject,
-                    "story_type": context.story_type,
-                    "generated_name": subject_name or "Not found",
-                    "generated_content": response,
-                    "score_category": score_category,
-                    "score_rationale": score_rationale,
-                }
-                results_list.append(experiment_result)
+            experiment_data, attack_result = await self._run_experiment(context=context, experiment_num=experiment_num)
+            results_list.append(experiment_data)
+            last_attack_result = attack_result
 
         context.experiment_results = results_list
 
-        if result is not None:
-            return result
+        if last_attack_result is None:
+            return AttackResult(
+                conversation_id=str(uuid.UUID(int=0)),
+                objective=context.generated_objective,
+                outcome=AttackOutcome.FAILURE,
+                attack_identifier=self.get_identifier(),
+            )
 
-        return AttackResult(
-            conversation_id=str(uuid.UUID(int=0)),
+        return last_attack_result
+
+    async def _run_experiment(
+        self, context: FairnessBiasBenchmarkContext, experiment_num: int
+    ) -> Tuple[Dict[str, str], AttackResult]:
+        """
+        Run a single experiment for the benchmark.
+
+        Args:
+            context (FairnessBiasBenchmarkContext): The benchmark context
+            experiment_num (int): The current experiment number
+
+        Returns:
+            Tuple[Dict[str, str], AttackResult]: (experiment_data_dict, attack_result)
+        """
+        attack_result = await self._prompt_sending_attack.execute_async(
             objective=context.generated_objective,
-            outcome=AttackOutcome.FAILURE,
-            attack_identifier=self.get_identifier(),
+            seed_prompt_group=context.generated_seed_prompt_group,
+            prepended_conversation=context.prepended_conversation,
+            memory_labels=context.memory_labels,
         )
+
+        experimental_result = {}
+        conversation_pieces = self.memory.get_conversation(conversation_id=attack_result.conversation_id)
+        if len(conversation_pieces) >= 2:
+            experimental_result = await self._score_piece(
+                response_piece=conversation_pieces[1], experiment_num=experiment_num, context=context
+            )
+
+        return experimental_result, attack_result
+
+    async def _score_piece(
+        self, response_piece: PromptRequestResponse, experiment_num: int, context: FairnessBiasBenchmarkContext
+    ) -> Dict[str, str]:
+        """
+        scores conversation piece
+        Args:
+            response_piece (PromptRequestResponse): The response piece to score
+            experiment_num (int): current value of experiment number
+            context (FairnessBiasBenchmarkContext): The configured benchmark context
+        Returns:
+            Dict[str, str]: dictionary with scored response values
+        """
+        response = response_piece.get_value()
+
+        subject_name = self._extract_name(response)
+        score_category = "unknown"
+        score_rationale = "Scoring not available"
+
+        # Perform scoring with the required scorer
+        try:
+            score = (await self._scorer.score_text_async(text=response))[0]
+            score_category = score.score_category
+            score_rationale = score.score_rationale
+        except Exception as e:
+            score_category = "error"
+            score_rationale = f"Scoring failed: {str(e)}"
+
+        experiment_result = {
+            "experiment_number": str(experiment_num + 1),
+            "subject": context.subject,
+            "story_type": context.story_type,
+            "generated_name": subject_name or "Not found",
+            "generated_content": response,
+            "score_category": score_category,
+            "score_rationale": score_rationale,
+        }
+        return experiment_result
 
     def _format_story_prompt(self, *, subject: str, story_type: str) -> str:
         """
