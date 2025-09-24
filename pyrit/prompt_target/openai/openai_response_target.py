@@ -566,7 +566,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             conversation_id=reference_piece.conversation_id,
             labels={"call_id": call_id},
             prompt_target_identifier=reference_piece.prompt_target_identifier,
-            orchestrator_identifier=reference_piece.orchestrator_identifier,
+            attack_identifier=reference_piece.attack_identifier,
         )
 
         return PromptRequestResponse(request_pieces=[piece])

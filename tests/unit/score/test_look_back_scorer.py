@@ -69,12 +69,7 @@ async def test_score_async_conversation_not_found(patch_central_database):
         original_value="User message",
         role="user",
         conversation_id=nonexistent_conversation_id,
-<<<<<<< HEAD
-        orchestrator_identifier={"test": "test"},
-        id=uuid.uuid4(),
-=======
         attack_identifier={"test": "test"},
->>>>>>> main
     )
     request_response = MagicMock()
     request_response.request_pieces = [request_piece]

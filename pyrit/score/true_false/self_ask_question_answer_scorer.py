@@ -88,13 +88,8 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
             prompt_request_data_type="text",
             scored_prompt_id=request_piece.id,
             category=self._score_category,
-<<<<<<< HEAD:pyrit/score/true_false/self_ask_question_answer_scorer.py
             objective=objective,
-            orchestrator_identifier=request_piece.orchestrator_identifier,
-=======
-            task=task,
-            attack_identifier=request_response.attack_identifier,
->>>>>>> main:pyrit/score/self_ask_question_answer_scorer.py
+            attack_identifier=request_piece.attack_identifier,
         )
 
         score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value, score_type="true_false")

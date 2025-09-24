@@ -171,13 +171,8 @@ async def test_scorer_score_value_with_llm_use_provided_attack_identifier(good_j
         prompt_request_data_type="text",
         scored_prompt_id=expected_scored_prompt_id,
         category="category",
-<<<<<<< HEAD
         objective="task",
-        orchestrator_identifier={"id": expected_orchestrator_id},
-=======
-        task="task",
         attack_identifier={"id": expected_attack_id},
->>>>>>> main
     )
 
     chat_target.set_system_prompt.assert_called_once()

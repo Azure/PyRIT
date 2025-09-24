@@ -65,7 +65,7 @@ class FloatScaleScorer(Scorer):
         description_output_key: str = "description",
         metadata_output_key: str = "metadata",
         category_output_key: str = "category",
-        orchestrator_identifier: Optional[Dict[str, str]] = None,
+        attack_identifier: Optional[Dict[str, str]] = None,
     ) -> UnvalidatedScore:
         score: UnvalidatedScore | None = None
         try:
@@ -82,7 +82,7 @@ class FloatScaleScorer(Scorer):
                 description_output_key=description_output_key,
                 metadata_output_key=metadata_output_key,
                 category_output_key=category_output_key,
-                orchestrator_identifier=orchestrator_identifier,
+                attack_identifier=attack_identifier,
             )
             if score is None:
                 raise ValueError("Score returned None")

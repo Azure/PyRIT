@@ -65,13 +65,8 @@ class InsecureCodeScorer(FloatScaleScorer):
             prompt_request_data_type=request_piece.converted_value_data_type,
             scored_prompt_id=request_piece.id,
             category=self._harm_category,
-<<<<<<< HEAD:pyrit/score/float_scale/insecure_code_scorer.py
             objective=objective,
-            orchestrator_identifier=request_piece.orchestrator_identifier,
-=======
-            task=task,
-            attack_identifier=request_response.attack_identifier,
->>>>>>> main:pyrit/score/insecure_code_scorer.py
+            attack_identifier=request_piece.attack_identifier,
         )
 
         # Modify the UnvalidatedScore parsing to check for 'score_value'
