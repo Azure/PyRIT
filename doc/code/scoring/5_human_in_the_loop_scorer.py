@@ -52,7 +52,7 @@ from pyrit.memory import CentralMemory
 from pyrit.score import BatchScorer, HumanInTheLoopScorerGradio
 
 memory = CentralMemory.get_memory_instance()
-prompt_pieces_to_score = memory.get_prompt_request_pieces(orchestrator_id=prompt_sending_attack_id)
+prompt_pieces_to_score = memory.get_prompt_request_pieces(attack_id=prompt_sending_attack_id)
 
 # This will force you to manually score each prompt.
 scorer = HumanInTheLoopScorerGradio()

@@ -117,11 +117,19 @@ class SelfAskCategoryScorer(TrueFalseScorer):
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=self._system_prompt,
+<<<<<<< HEAD:pyrit/score/true_false/self_ask_category_scorer.py
             prompt_request_value=request_piece.converted_value,
             prompt_request_data_type=request_piece.converted_value_data_type,
             scored_prompt_id=request_piece.id,
             objective=objective,
             orchestrator_identifier=request_piece.orchestrator_identifier,
+=======
+            prompt_request_value=request_response.converted_value,
+            prompt_request_data_type=request_response.converted_value_data_type,
+            scored_prompt_id=request_response.id,
+            task=task,
+            attack_identifier=request_response.attack_identifier,
+>>>>>>> main:pyrit/score/self_ask_category_scorer.py
         )
 
         score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value, score_type="true_false")

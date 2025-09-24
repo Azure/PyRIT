@@ -110,7 +110,7 @@ def test_duplicate_memory(sqlite_instance: MemoryInterface):
             converted_value="Hello, how are you?",
             conversation_id=conversation_id_1,
             sequence=0,
-            orchestrator_identifier=attack1.get_identifier(),
+            attack_identifier=attack1.get_identifier(),
         ),
         PromptRequestPiece(
             role="assistant",
@@ -118,14 +118,14 @@ def test_duplicate_memory(sqlite_instance: MemoryInterface):
             converted_value="I'm fine, thank you!",
             conversation_id=conversation_id_1,
             sequence=0,
-            orchestrator_identifier=attack1.get_identifier(),
+            attack_identifier=attack1.get_identifier(),
         ),
         PromptRequestPiece(
             role="assistant",
             original_value="original prompt text",
             converted_value="I'm fine, thank you!",
             conversation_id=conversation_id_3,
-            orchestrator_identifier=attack2.get_identifier(),
+            attack_identifier=attack2.get_identifier(),
         ),
         PromptRequestPiece(
             role="user",
@@ -133,7 +133,7 @@ def test_duplicate_memory(sqlite_instance: MemoryInterface):
             converted_value="Hello, how are you?",
             conversation_id=conversation_id_2,
             sequence=0,
-            orchestrator_identifier=attack1.get_identifier(),
+            attack_identifier=attack1.get_identifier(),
         ),
         PromptRequestPiece(
             role="assistant",
@@ -141,25 +141,25 @@ def test_duplicate_memory(sqlite_instance: MemoryInterface):
             converted_value="I'm fine, thank you!",
             conversation_id=conversation_id_2,
             sequence=0,
-            orchestrator_identifier=attack1.get_identifier(),
+            attack_identifier=attack1.get_identifier(),
         ),
     ]
     sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
     assert len(sqlite_instance.get_prompt_request_pieces()) == 5
     attack3 = PromptSendingAttack(objective_target=MagicMock())
     new_conversation_id1 = sqlite_instance.duplicate_conversation(
-        new_orchestrator_id=attack3.get_identifier()["id"],
+        new_attack_id=attack3.get_identifier()["id"],
         conversation_id=conversation_id_1,
     )
     new_conversation_id2 = sqlite_instance.duplicate_conversation(
-        new_orchestrator_id=attack3.get_identifier()["id"],
+        new_attack_id=attack3.get_identifier()["id"],
         conversation_id=conversation_id_2,
     )
     all_pieces = sqlite_instance.get_prompt_request_pieces()
     assert len(all_pieces) == 9
-    assert len([p for p in all_pieces if p.orchestrator_identifier["id"] == attack1.get_identifier()["id"]]) == 4
-    assert len([p for p in all_pieces if p.orchestrator_identifier["id"] == attack2.get_identifier()["id"]]) == 1
-    assert len([p for p in all_pieces if p.orchestrator_identifier["id"] == attack3.get_identifier()["id"]]) == 4
+    assert len([p for p in all_pieces if p.attack_identifier["id"] == attack1.get_identifier()["id"]]) == 4
+    assert len([p for p in all_pieces if p.attack_identifier["id"] == attack2.get_identifier()["id"]]) == 1
+    assert len([p for p in all_pieces if p.attack_identifier["id"] == attack3.get_identifier()["id"]]) == 4
     assert len([p for p in all_pieces if p.conversation_id == conversation_id_1]) == 2
     assert len([p for p in all_pieces if p.conversation_id == conversation_id_2]) == 2
     assert len([p for p in all_pieces if p.conversation_id == conversation_id_3]) == 1
@@ -182,7 +182,7 @@ def test_duplicate_conversation_pieces_not_score(sqlite_instance: MemoryInterfac
             converted_value="Hello, how are you?",
             conversation_id=conversation_id,
             sequence=0,
-            orchestrator_identifier=attack1.get_identifier(),
+            attack_identifier=attack1.get_identifier(),
             labels=memory_labels,
         ),
         PromptRequestPiece(
@@ -192,7 +192,7 @@ def test_duplicate_conversation_pieces_not_score(sqlite_instance: MemoryInterfac
             converted_value="I'm fine, thank you!",
             conversation_id=conversation_id,
             sequence=0,
-            orchestrator_identifier=attack1.get_identifier(),
+            attack_identifier=attack1.get_identifier(),
             labels=memory_labels,
         ),
     ]
@@ -225,7 +225,7 @@ def test_duplicate_conversation_pieces_not_score(sqlite_instance: MemoryInterfac
     sqlite_instance.add_scores_to_memory(scores=scores)
     attack2 = PromptSendingAttack(objective_target=MagicMock())
     new_conversation_id = sqlite_instance.duplicate_conversation(
-        new_orchestrator_id=attack2.get_identifier()["id"],
+        new_attack_id=attack2.get_identifier()["id"],
         conversation_id=conversation_id,
     )
     new_pieces = sqlite_instance.get_prompt_request_pieces(conversation_id=new_conversation_id)
@@ -237,8 +237,8 @@ def test_duplicate_conversation_pieces_not_score(sqlite_instance: MemoryInterfac
     for piece in new_pieces:
         assert piece.id not in (prompt_id_1, prompt_id_2)
     assert len(sqlite_instance.get_prompt_scores(labels=memory_labels)) == 2
-    assert len(sqlite_instance.get_prompt_scores(orchestrator_id=attack1.get_identifier()["id"])) == 2
-    assert len(sqlite_instance.get_prompt_scores(orchestrator_id=attack2.get_identifier()["id"])) == 2
+    assert len(sqlite_instance.get_prompt_scores(attack_id=attack1.get_identifier()["id"])) == 2
+    assert len(sqlite_instance.get_prompt_scores(attack_id=attack2.get_identifier()["id"])) == 2
 
     # The duplicate prompts ids should not have scores so only two scores are returned
     assert len(sqlite_instance.get_prompt_scores(prompt_ids=[str(prompt_id_1), str(prompt_id_2)] + new_pieces_ids)) == 2
@@ -255,14 +255,14 @@ def test_duplicate_conversation_excluding_last_turn(sqlite_instance: MemoryInter
             original_value="original prompt text",
             conversation_id=conversation_id_1,
             sequence=0,
-            orchestrator_identifier=attack1.get_identifier(),
+            attack_identifier=attack1.get_identifier(),
         ),
         PromptRequestPiece(
             role="assistant",
             original_value="original prompt text",
             conversation_id=conversation_id_1,
             sequence=1,
-            orchestrator_identifier=attack1.get_identifier(),
+            attack_identifier=attack1.get_identifier(),
         ),
         PromptRequestPiece(
             role="user",
@@ -270,7 +270,7 @@ def test_duplicate_conversation_excluding_last_turn(sqlite_instance: MemoryInter
             converted_value="I'm fine, thank you!",
             sequence=2,
             conversation_id=conversation_id_1,
-            orchestrator_identifier=attack2.get_identifier(),
+            attack_identifier=attack2.get_identifier(),
         ),
         PromptRequestPiece(
             role="user",
@@ -278,7 +278,7 @@ def test_duplicate_conversation_excluding_last_turn(sqlite_instance: MemoryInter
             converted_value="Hello, how are you?",
             conversation_id=conversation_id_2,
             sequence=2,
-            orchestrator_identifier=attack2.get_identifier(),
+            attack_identifier=attack2.get_identifier(),
         ),
         PromptRequestPiece(
             role="assistant",
@@ -286,7 +286,7 @@ def test_duplicate_conversation_excluding_last_turn(sqlite_instance: MemoryInter
             converted_value="I'm fine, thank you!",
             conversation_id=conversation_id_2,
             sequence=3,
-            orchestrator_identifier=attack1.get_identifier(),
+            attack_identifier=attack1.get_identifier(),
         ),
     ]
     sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
@@ -294,7 +294,7 @@ def test_duplicate_conversation_excluding_last_turn(sqlite_instance: MemoryInter
     attack3 = PromptSendingAttack(objective_target=MagicMock())
 
     new_conversation_id1 = sqlite_instance.duplicate_conversation_excluding_last_turn(
-        new_orchestrator_id=attack3.get_identifier()["id"],
+        new_attack_id=attack3.get_identifier()["id"],
         conversation_id=conversation_id_1,
     )
 
@@ -322,7 +322,7 @@ def test_duplicate_conversation_excluding_last_turn_not_score(sqlite_instance: M
             converted_value="Hello, how are you?",
             conversation_id=conversation_id,
             sequence=0,
-            orchestrator_identifier=attack1.get_identifier(),
+            attack_identifier=attack1.get_identifier(),
             labels=memory_labels,
         ),
         PromptRequestPiece(
@@ -332,7 +332,7 @@ def test_duplicate_conversation_excluding_last_turn_not_score(sqlite_instance: M
             converted_value="I'm fine, thank you!",
             conversation_id=conversation_id,
             sequence=1,
-            orchestrator_identifier=attack1.get_identifier(),
+            attack_identifier=attack1.get_identifier(),
             labels=memory_labels,
         ),
         PromptRequestPiece(
@@ -341,7 +341,7 @@ def test_duplicate_conversation_excluding_last_turn_not_score(sqlite_instance: M
             converted_value="That's good.",
             conversation_id=conversation_id,
             sequence=2,
-            orchestrator_identifier=attack1.get_identifier(),
+            attack_identifier=attack1.get_identifier(),
             labels=memory_labels,
         ),
         PromptRequestPiece(
@@ -350,7 +350,7 @@ def test_duplicate_conversation_excluding_last_turn_not_score(sqlite_instance: M
             converted_value="Thanks.",
             conversation_id=conversation_id,
             sequence=3,
-            orchestrator_identifier=attack1.get_identifier(),
+            attack_identifier=attack1.get_identifier(),
             labels=memory_labels,
         ),
     ]
@@ -384,7 +384,7 @@ def test_duplicate_conversation_excluding_last_turn_not_score(sqlite_instance: M
     attack2 = PromptSendingAttack(objective_target=MagicMock())
 
     new_conversation_id = sqlite_instance.duplicate_conversation_excluding_last_turn(
-        new_orchestrator_id=attack2.get_identifier()["id"],
+        new_attack_id=attack2.get_identifier()["id"],
         conversation_id=conversation_id,
     )
     new_pieces = sqlite_instance.get_prompt_request_pieces(conversation_id=new_conversation_id)
@@ -395,13 +395,13 @@ def test_duplicate_conversation_excluding_last_turn_not_score(sqlite_instance: M
     assert new_pieces[0].id != prompt_id_1
     assert new_pieces[1].id != prompt_id_2
     assert len(sqlite_instance.get_prompt_scores(labels=memory_labels)) == 2
-    assert len(sqlite_instance.get_prompt_scores(orchestrator_id=attack1.get_identifier()["id"])) == 2
-    assert len(sqlite_instance.get_prompt_scores(orchestrator_id=attack2.get_identifier()["id"])) == 2
+    assert len(sqlite_instance.get_prompt_scores(attack_id=attack1.get_identifier()["id"])) == 2
+    assert len(sqlite_instance.get_prompt_scores(attack_id=attack2.get_identifier()["id"])) == 2
     # The duplicate prompts ids should not have scores so only two scores are returned
     assert len(sqlite_instance.get_prompt_scores(prompt_ids=[str(prompt_id_1), str(prompt_id_2)] + new_pieces_ids)) == 2
 
 
-def test_duplicate_conversation_excluding_last_turn_same_orchestrator(sqlite_instance: MemoryInterface):
+def test_duplicate_conversation_excluding_last_turn_same_attack(sqlite_instance: MemoryInterface):
     attack1 = PromptSendingAttack(objective_target=MagicMock())
     conversation_id_1 = "11111"
     pieces = [
@@ -410,28 +410,28 @@ def test_duplicate_conversation_excluding_last_turn_same_orchestrator(sqlite_ins
             original_value="original prompt text",
             conversation_id=conversation_id_1,
             sequence=0,
-            orchestrator_identifier=attack1.get_identifier(),
+            attack_identifier=attack1.get_identifier(),
         ),
         PromptRequestPiece(
             role="assistant",
             original_value="original prompt text",
             conversation_id=conversation_id_1,
             sequence=1,
-            orchestrator_identifier=attack1.get_identifier(),
+            attack_identifier=attack1.get_identifier(),
         ),
         PromptRequestPiece(
             role="user",
             original_value="original prompt text",
             conversation_id=conversation_id_1,
             sequence=2,
-            orchestrator_identifier=attack1.get_identifier(),
+            attack_identifier=attack1.get_identifier(),
         ),
         PromptRequestPiece(
             role="assistant",
             original_value="original prompt text",
             conversation_id=conversation_id_1,
             sequence=3,
-            orchestrator_identifier=attack1.get_identifier(),
+            attack_identifier=attack1.get_identifier(),
         ),
     ]
     sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
@@ -451,7 +451,7 @@ def test_duplicate_conversation_excluding_last_turn_same_orchestrator(sqlite_ins
         assert piece.sequence < 2
 
 
-def test_duplicate_memory_orchestrator_id_collision(sqlite_instance: MemoryInterface):
+def test_duplicate_memory_attack_id_collision(sqlite_instance: MemoryInterface):
     attack1 = PromptSendingAttack(objective_target=MagicMock())
     conversation_id = "11111"
     pieces = [
@@ -461,14 +461,14 @@ def test_duplicate_memory_orchestrator_id_collision(sqlite_instance: MemoryInter
             converted_value="Hello, how are you?",
             conversation_id=conversation_id,
             sequence=0,
-            orchestrator_identifier=attack1.get_identifier(),
+            attack_identifier=attack1.get_identifier(),
         ),
     ]
     sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
     assert len(sqlite_instance.get_prompt_request_pieces()) == 1
     with pytest.raises(ValueError):
         sqlite_instance.duplicate_conversation(
-            new_orchestrator_id=str(attack1.get_identifier()["id"]),
+            new_attack_id=str(attack1.get_identifier()["id"]),
             conversation_id=conversation_id,
         )
 
@@ -676,7 +676,7 @@ def test_get_prompt_request_pieces_id(sqlite_instance: MemoryInterface):
     assert_original_value_in_list("Hello 2", retrieved_entries)
 
 
-def test_get_prompt_request_pieces_orchestrator(sqlite_instance: MemoryInterface):
+def test_get_prompt_request_pieces_attack(sqlite_instance: MemoryInterface):
 
     attack1 = PromptSendingAttack(objective_target=MagicMock())
     attack2 = PromptSendingAttack(objective_target=MagicMock())
@@ -686,28 +686,28 @@ def test_get_prompt_request_pieces_orchestrator(sqlite_instance: MemoryInterface
             entry=PromptRequestPiece(
                 role="user",
                 original_value="Hello 1",
-                orchestrator_identifier=attack1.get_identifier(),
+                attack_identifier=attack1.get_identifier(),
             )
         ),
         PromptMemoryEntry(
             entry=PromptRequestPiece(
                 role="assistant",
                 original_value="Hello 2",
-                orchestrator_identifier=attack2.get_identifier(),
+                attack_identifier=attack2.get_identifier(),
             )
         ),
         PromptMemoryEntry(
             entry=PromptRequestPiece(
                 role="user",
                 original_value="Hello 3",
-                orchestrator_identifier=attack1.get_identifier(),
+                attack_identifier=attack1.get_identifier(),
             )
         ),
     ]
 
     sqlite_instance._insert_entries(entries=entries)
 
-    attack1_entries = sqlite_instance.get_prompt_request_pieces(orchestrator_id=attack1.get_identifier()["id"])
+    attack1_entries = sqlite_instance.get_prompt_request_pieces(attack_id=attack1.get_identifier()["id"])
 
     assert len(attack1_entries) == 2
     assert_original_value_in_list("Hello 1", attack1_entries)
@@ -864,7 +864,7 @@ def test_get_prompt_request_pieces_with_non_matching_memory_labels(sqlite_instan
                 role="user",
                 original_value="Hello 3",
                 converted_value="Hello 1",
-                orchestrator_identifier=attack.get_identifier(),
+                attack_identifier=attack.get_identifier(),
             )
         ),
     ]
