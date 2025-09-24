@@ -68,7 +68,6 @@ chapters:
       - file: code/orchestrators/context_compliance_orchestrator
       - file: code/orchestrators/flip_orchestrator
       - file: code/orchestrators/fuzzing_jailbreak_templates
-      - file: code/orchestrators/HITL_Scoring_Orchestrator
       - file: code/orchestrators/many_shot_jailbreak
       - file: code/orchestrators/pair_orchestrator
       - file: code/orchestrators/qa_benchmark_orchestrator
@@ -110,7 +109,6 @@ chapters:
       - file: code/scoring/2_true_false_scorers
       - file: code/scoring/3_classification_scorers
       - file: code/scoring/4_likert_scorers
-      - file: code/scoring/5_human_in_the_loop_scorer
       - file: code/scoring/6_refusal_scorer
       - file: code/scoring/7_batch_scorer
       - file: code/scoring/insecure_code_scorer

@@ -28,11 +28,11 @@ class SelfAskGeneralFloatScaleScorer(FloatScaleScorer):
         chat_target (PromptChatTarget): The chat target used to score.
         system_prompt_format_string (str): System prompt template with placeholders for
             objective, task (alias of objective), prompt, and request_piece.
-        prompt_format_string (str, optional): User prompt template with the same placeholders.
-    category (str | None): Category for the score.
+        prompt_format_string (Optional[str]): User prompt template with the same placeholders.
+        category (Optional[str]): Category for the score.
         min_value (int): Minimum of the model's native scale. Defaults to 0.
         max_value (int): Maximum of the model's native scale. Defaults to 100.
-        validator (ScorerPromptValidator, optional): Custom validator. If omitted, a default
+        validator (Optional[ScorerPromptValidator]): Custom validator. If omitted, a default
             validator will be used requiring text input and an objective.
         score_value_output_key (str): JSON key for the score value. Defaults to "score_value".
         rationale_output_key (str): JSON key for the rationale. Defaults to "rationale".
