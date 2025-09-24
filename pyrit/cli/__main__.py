@@ -11,6 +11,7 @@ from pyrit.common import initialize_pyrit
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackStrategy,
 )
+from pyrit.executor.attack import ConsoleAttackResultPrinter
 from pyrit.memory import CentralMemory
 from pyrit.models.seed_prompt_dataset import SeedPromptDataset
 from pyrit.models.seed_prompt_group import SeedPromptGroup
@@ -93,6 +94,7 @@ async def run_scenarios_async(config: ScannerConfig) -> None:
     prompt_converters = config.create_prompt_converters()
     attacks = config.create_attacks(prompt_converters=prompt_converters)
 
+    attack_results = []
     for attack in attacks:
         objectives = _get_first_text_values_if_exist(seed_prompt_groups)
         if hasattr(attack, "execute_async"):
@@ -104,20 +106,14 @@ async def run_scenarios_async(config: ScannerConfig) -> None:
                 }
                 if isinstance(attack, SingleTurnAttackStrategy) and len(seed_prompt_groups) > i:
                     args["seed_prompt_group"] = seed_prompt_groups[i]  # type: ignore
-                await attack.execute_async(**args)
+                attack_results.append(await attack.execute_async(**args))
         else:
             raise ValueError(f"The attack {type(attack).__name__} does not have execute_async.")
 
-    # Print conversation pieces from memory
-    memory = CentralMemory.get_memory_instance()
-    all_pieces = memory.get_prompt_request_pieces(labels=memory_labels)
-    conversation_id = None
-    for piece in all_pieces:
-        if piece.conversation_id != conversation_id:
-            conversation_id = piece.conversation_id
-            print("===================================================")
-            print(f"Conversation ID: {conversation_id}")
-        print(f"{piece.role}: {piece.converted_value}")
+    # Print conversations
+    printer = ConsoleAttackResultPrinter()
+    for result in attack_results:
+        await printer.print_result_async(result=result, include_auxiliary_scores=True)  # type: ignore
 
 
 def main(args=None):
