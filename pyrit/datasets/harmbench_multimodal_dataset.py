@@ -3,14 +3,24 @@
 
 import uuid
 from pathlib import Path
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 
 from pyrit.datasets.dataset_helper import fetch_examples
 from pyrit.models import SeedPromptDataset
 from pyrit.models.seed_prompt import SeedPrompt
 
+SemanticCategoriesLiteral = Literal[
+    "cybercrime_intrusion",  # n=54
+    "illegal",  # 36
+    "harmful",  # 9
+    "chemical_biological",  # 4
+    "harassment_bullying",  # 4
+    "misinformation_disinformation",  # 3
+]
+
 
 def fetch_harmbench_multimodal_dataset(
+    *,
     source: str = (
         "https://raw.githubusercontent.com/centerforaisafety/HarmBench/c0423b9/data/behavior_datasets/"
         "harmbench_behaviors_multimodal_all.csv"
@@ -18,18 +28,29 @@ def fetch_harmbench_multimodal_dataset(
     source_type: Literal["public_url", "file"] = "public_url",
     cache: bool = True,
     data_home: Optional[Path] = None,
+    categories: Optional[List[SemanticCategoriesLiteral]] = None,
 ) -> SeedPromptDataset:
     """
     Fetch HarmBench multimodal examples and create a SeedPromptDataset.
+
+    The HarmBench multimodal dataset contains 110 harmful multimodal behaviors.
+    Each example consists of an image ("image_path") and a behavior string referencing the image ("text").
+    The text and image prompts that belong to the same example are linked using the same ``prompt_group_id``.
+    You can extract the grouped prompts using the ``group_seed_prompts_by_prompt_group_id`` method.
 
     Args:
         source (str): The source from which to fetch examples. Defaults to the HarmBench repository.
         source_type (Literal["public_url", "file"]): The type of source. Defaults to 'public_url'.
         cache (bool): Whether to cache the fetched examples. Defaults to True.
         data_home (Optional[Path]): Directory to store cached data. Defaults to None.
+        categories (Optional[List[SemanticCategoriesLiteral]]): List of semantic categories
+            to filter examples. If None, all categories are included (default).
 
     Returns:
         SeedPromptDataset: A SeedPromptDataset containing the multimodal examples.
+
+    Raises:
+        ValueError: If any of the specified categories are invalid.
 
     Note:
         For more information related to the HarmBench project and the original dataset, visit:
@@ -39,6 +60,11 @@ def fetch_harmbench_multimodal_dataset(
             Mantas Mazeika & Long Phan & Xuwang Yin & Andy Zou & Zifan Wang & Norman Mu & Elham Sakhaee
             & Nathaniel Li & Steven Basart & Bo Li & David Forsyth & Dan Hendrycks
     """
+    if categories is not None:
+        invalid_categories = set(categories) - set(SemanticCategoriesLiteral.__args__)
+        if invalid_categories:
+            raise ValueError(f"Invalid semantic categories: {', '.join(invalid_categories)}")
+
     required_keys = {"Behavior", "BehaviorID", "FunctionalCategory", "SemanticCategory", "ImageFileName"}
     examples = fetch_examples(source, source_type, cache, data_home)
     prompts = []
@@ -51,9 +77,13 @@ def fetch_harmbench_multimodal_dataset(
         if example["FunctionalCategory"] != "multimodal":
             continue
 
+        semantic_category = example["SemanticCategory"]
+
+        if categories is not None and semantic_category not in categories:
+            continue
+
         behavior_text = example["Behavior"]
         behavior_id = example["BehaviorID"]
-        semantic_category = example["SemanticCategory"]
         image_filename = example["ImageFileName"]
         image_description = example.get("ImageDescription", "")
         redacted_description = example.get("RedactedImageDescription", "")
