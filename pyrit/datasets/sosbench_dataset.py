@@ -3,8 +3,7 @@
 
 from datasets import load_dataset
 
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import HarmCategory, SeedPrompt, SeedPromptDataset
 
 
 def fetch_sosbench_dataset() -> SeedPromptDataset:
@@ -20,14 +19,14 @@ def fetch_sosbench_dataset() -> SeedPromptDataset:
         - https://arxiv.org/abs/2505.21605 \n
     """
     data = load_dataset("SOSBench/SOSBench", "default")
-
+    HarmCategory._initialize_aliases()
     seed_prompts = [
         SeedPrompt(
             value=item["goal"],
             data_type="text",
             name="",
             dataset_name="SOSBench",
-            harm_categories=[item["subject"]],
+            harm_categories=[HarmCategory.parse(item["subject"])],
             description=(
                 "SOSBench is a regulation-grounded, hazard-focused benchmark encompassing "
                 "six high-risk scientific domains: chemistry, biology, medicine, pharmacology, "

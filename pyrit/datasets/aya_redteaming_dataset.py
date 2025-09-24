@@ -6,8 +6,7 @@ from pathlib import Path
 from typing import List, Literal, Optional
 
 from pyrit.datasets.dataset_helper import fetch_examples
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import HarmCategory, SeedPrompt, SeedPromptDataset
 
 
 def fetch_aya_redteaming_dataset(
@@ -75,11 +74,16 @@ def fetch_aya_redteaming_dataset(
         data_home=data_home,
     )
 
+    HarmCategory._initialize_aliases()
+
+    parsed_filter_categories = [HarmCategory.parse(c) for c in harm_categories] if harm_categories else None
+
     seed_prompts = []
 
     for example in examples:
-        categories = ast.literal_eval(example["harm_category"])
-        if harm_categories is None or any(cat in categories for cat in harm_categories):
+        raw_categories = ast.literal_eval(example["harm_category"])
+        parsed_categories = [HarmCategory.parse(c) for c in raw_categories]
+        if parsed_filter_categories is None or any(cat in parsed_categories for cat in parsed_filter_categories):
             if harm_scope is None or example["global_or_local"] == harm_scope:
                 seed_prompts.append(
                     SeedPrompt(
@@ -87,7 +91,7 @@ def fetch_aya_redteaming_dataset(
                         data_type="text",
                         name="Aya Red-teaming Examples",
                         dataset_name="Aya Red-teaming Examples",
-                        harm_categories=categories,
+                        harm_categories=parsed_categories,
                         source="https://huggingface.co/datasets/CohereForAI/aya_redteaming",
                     )
                 )
