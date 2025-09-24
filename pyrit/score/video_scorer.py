@@ -105,10 +105,8 @@ class VideoScorer(Scorer):
         for score in frame_scores:
             if score.score_category:
                 scores_by_category[score.score_category].append(score)
-
-        # If no valid categories found, use all scores as a single group
-        if not scores_by_category:
-            scores_by_category[None] = frame_scores
+            else:
+                scores_by_category[None].append(score)
 
         aggregated_scores = []
 
