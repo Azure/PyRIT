@@ -94,9 +94,6 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 #
 # This example demonstrates how to use the Sora target to create a video from a text-based prompt.
 # %%
-
-from azure.ai.contentsafety.models import TextCategory
-
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     AttackExecutor,
