@@ -245,7 +245,7 @@ async def test_send_prompt_async_empty_response_adds_to_memory(
                 original_value_data_type="text",
                 converted_value_data_type="text",
                 prompt_target_identifier={"target": "target-identifier"},
-                orchestrator_identifier={"test": "test"},
+                attack_identifier={"test": "test"},
                 labels={"test": "test"},
             ),
             PromptRequestPiece(
@@ -256,7 +256,7 @@ async def test_send_prompt_async_empty_response_adds_to_memory(
                 original_value_data_type="image_path",
                 converted_value_data_type="image_path",
                 prompt_target_identifier={"target": "target-identifier"},
-                orchestrator_identifier={"test": "test"},
+                attack_identifier={"test": "test"},
                 labels={"test": "test"},
             ),
         ]
@@ -354,7 +354,7 @@ async def test_send_prompt_async(openai_response_json: dict, target: OpenAIRespo
                 original_value_data_type="text",
                 converted_value_data_type="text",
                 prompt_target_identifier={"target": "target-identifier"},
-                orchestrator_identifier={"test": "test"},
+                attack_identifier={"test": "test"},
                 labels={"test": "test"},
             ),
             PromptRequestPiece(
@@ -365,7 +365,7 @@ async def test_send_prompt_async(openai_response_json: dict, target: OpenAIRespo
                 original_value_data_type="image_path",
                 converted_value_data_type="image_path",
                 prompt_target_identifier={"target": "target-identifier"},
-                orchestrator_identifier={"test": "test"},
+                attack_identifier={"test": "test"},
                 labels={"test": "test"},
             ),
         ]
@@ -401,7 +401,7 @@ async def test_send_prompt_async_empty_response_retries(openai_response_json: di
                 original_value_data_type="text",
                 converted_value_data_type="text",
                 prompt_target_identifier={"target": "target-identifier"},
-                orchestrator_identifier={"test": "test"},
+                attack_identifier={"test": "test"},
                 labels={"test": "test"},
             ),
             PromptRequestPiece(
@@ -412,7 +412,7 @@ async def test_send_prompt_async_empty_response_retries(openai_response_json: di
                 original_value_data_type="image_path",
                 converted_value_data_type="image_path",
                 prompt_target_identifier={"target": "target-identifier"},
-                orchestrator_identifier={"test": "test"},
+                attack_identifier={"test": "test"},
                 labels={"test": "test"},
             ),
         ]

@@ -85,7 +85,7 @@ class PromptMemoryEntry(Base):
             e.g. the URI from a file uploaded to a blob store, or a document type you want to upload.
         converters (list[PromptConverter]): The converters for the prompt.
         prompt_target (PromptTarget): The target for the prompt.
-        orchestrator_identifier (Dict[str, str]): The orchestrator identifier for the prompt.
+        attack_identifier (Dict[str, str]): The attack identifier for the prompt.
         original_value_data_type (PromptDataType): The data type of the original prompt (text, image)
         original_value (str): The text of the original prompt. If prompt is an image, it's a link.
         original_value_sha256 (str): The SHA256 hash of the original prompt data.
@@ -110,7 +110,7 @@ class PromptMemoryEntry(Base):
     prompt_metadata: Mapped[dict[str, Union[str, int]]] = mapped_column(JSON)
     converter_identifiers: Mapped[Optional[List[dict[str, str]]]] = mapped_column(JSON)
     prompt_target_identifier: Mapped[dict[str, str]] = mapped_column(JSON)
-    orchestrator_identifier: Mapped[dict[str, str]] = mapped_column(JSON)
+    attack_identifier: Mapped[dict[str, str]] = mapped_column(JSON)
     response_error: Mapped[Literal["blocked", "none", "processing", "unknown"]] = mapped_column(String, nullable=True)
 
     original_value_data_type: Mapped[Literal["text", "image_path", "audio_path", "url", "error"]] = mapped_column(
@@ -146,7 +146,7 @@ class PromptMemoryEntry(Base):
         self.prompt_metadata = entry.prompt_metadata
         self.converter_identifiers = entry.converter_identifiers
         self.prompt_target_identifier = entry.prompt_target_identifier
-        self.orchestrator_identifier = entry.orchestrator_identifier
+        self.attack_identifier = entry.attack_identifier
 
         self.original_value = entry.original_value
         self.original_value_data_type = entry.original_value_data_type  # type: ignore
@@ -174,7 +174,7 @@ class PromptMemoryEntry(Base):
             prompt_metadata=self.prompt_metadata,
             converter_identifiers=self.converter_identifiers,
             prompt_target_identifier=self.prompt_target_identifier,
-            orchestrator_identifier=self.orchestrator_identifier,
+            attack_identifier=self.attack_identifier,
             original_value_data_type=self.original_value_data_type,
             converted_value_data_type=self.converted_value_data_type,
             response_error=self.response_error,

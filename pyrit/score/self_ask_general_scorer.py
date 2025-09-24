@@ -101,7 +101,7 @@ class SelfAskGeneralScorer(Scorer):
             scored_prompt_id=request_response.id,
             category=self._score_category,
             task=task,
-            orchestrator_identifier=request_response.orchestrator_identifier,
+            attack_identifier=request_response.attack_identifier,
             score_value_output_key=self._score_value_output_key,
             rationale_output_key=self._rationale_output_key,
             description_output_key=self._description_output_key,
