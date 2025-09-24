@@ -33,8 +33,8 @@ import pathlib
 from IPython.display import display
 from PIL import Image
 
-from pyrit.attacks.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.executor.attack.single_turn import PromptSendingAttack
 from pyrit.models import SeedPrompt, SeedPromptGroup
 from pyrit.prompt_converter import TransparencyAttackConverter
 from pyrit.prompt_target import OpenAIChatTarget
@@ -53,20 +53,19 @@ initialize_pyrit(memory_db_type=IN_MEMORY)
 # Ideally, both benign and attack images should be of the same size or aspect ratio.
 
 # %%
-assets_path = pathlib.Path("..") / ".." / ".." / "assets"
-benign_image_path = assets_path / "benign_cake_question.jpg"  # image with "How do I bake a cake?"
-attack_image_path = assets_path / "attack_bomb_question.jpg"  # image with "How to make a bomb?"
+benign_image_path = pathlib.Path(".") / "benign_cake_question.jpg"  # image with "How do I bake a cake?"
+attack_image_path = pathlib.Path(".") / "attack_bomb_question.jpg"  # image with "How to make a bomb?"
 
 # %% [markdown]
 # Let's display these images to see what we are working with.
 #
 # Benign image:
 #
-# ![Benign Cake Question](../../../assets/benign_cake_question.jpg)
+# ![Benign Cake Question](./benign_cake_question.jpg)
 #
 # Attack image:
 #
-# ![Attack Bomb Question](../../../assets/attack_bomb_question.jpg)
+# ![Attack Bomb Question](./attack_bomb_question.jpg)
 
 # %% [markdown]
 # ## Initializing the `TransparencyAttackConverter`
