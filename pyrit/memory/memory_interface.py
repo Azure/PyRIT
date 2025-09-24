@@ -128,9 +128,9 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _get_prompt_pieces_orchestrator_conditions(self, *, orchestrator_id: str):
+    def _get_prompt_pieces_attack_conditions(self, *, attack_id: str):
         """
-        Returns a condition to retrieve based on orchestrator ID.
+        Returns a condition to retrieve based on attack ID.
         """
 
     @abc.abstractmethod
@@ -258,7 +258,7 @@ class MemoryInterface(abc.ABC):
     def get_prompt_scores(
         self,
         *,
-        orchestrator_id: Optional[str | uuid.UUID] = None,
+        attack_id: Optional[str | uuid.UUID] = None,
         role: Optional[str] = None,
         conversation_id: Optional[str | uuid.UUID] = None,
         prompt_ids: Optional[Sequence[str | uuid.UUID]] = None,
@@ -282,7 +282,7 @@ class MemoryInterface(abc.ABC):
             Sequence[Score]: A list of scores extracted from the prompt request pieces.
         """
         prompt_pieces = self.get_prompt_request_pieces(
-            orchestrator_id=orchestrator_id,
+            attack_id=attack_id,
             role=role,
             conversation_id=conversation_id,
             prompt_ids=prompt_ids,
@@ -329,7 +329,7 @@ class MemoryInterface(abc.ABC):
     def get_prompt_request_pieces(
         self,
         *,
-        orchestrator_id: Optional[str | uuid.UUID] = None,
+        attack_id: Optional[str | uuid.UUID] = None,
         role: Optional[str] = None,
         conversation_id: Optional[str | uuid.UUID] = None,
         prompt_ids: Optional[Sequence[str | uuid.UUID]] = None,
@@ -347,7 +347,7 @@ class MemoryInterface(abc.ABC):
         Retrieves a list of PromptRequestPiece objects based on the specified filters.
 
         Args:
-            orchestrator_id (Optional[str | uuid.UUID], optional): The ID of the orchestrator. Defaults to None.
+            attack_id (Optional[str | uuid.UUID], optional): The ID of the attack. Defaults to None.
             role (Optional[str], optional): The role of the prompt. Defaults to None.
             conversation_id (Optional[str | uuid.UUID], optional): The ID of the conversation. Defaults to None.
             prompt_ids (Optional[Sequence[str] | Sequence[uuid.UUID]], optional): A list of prompt IDs.
@@ -369,8 +369,8 @@ class MemoryInterface(abc.ABC):
         """
 
         conditions = []
-        if orchestrator_id:
-            conditions.append(self._get_prompt_pieces_orchestrator_conditions(orchestrator_id=str(orchestrator_id)))
+        if attack_id:
+            conditions.append(self._get_prompt_pieces_attack_conditions(attack_id=str(attack_id)))
         if role:
             conditions.append(PromptMemoryEntry.role == role)
         if conversation_id:
@@ -407,18 +407,18 @@ class MemoryInterface(abc.ABC):
             logger.exception(f"Failed to retrieve prompts with error {e}")
             return []
 
-    def duplicate_conversation(self, *, conversation_id: str, new_orchestrator_id: Optional[str] = None) -> str:
+    def duplicate_conversation(self, *, conversation_id: str, new_attack_id: Optional[str] = None) -> str:
         """
         Duplicates a conversation for reuse
 
         This can be useful when an attack strategy requires branching out from a particular point in the conversation.
-        One cannot continue both branches with the same orchestrator and conversation IDs since that would corrupt
-        the memory. Instead, one needs to duplicate the conversation and continue with the new orchestrator ID.
+        One cannot continue both branches with the same attack and conversation IDs since that would corrupt
+        the memory. Instead, one needs to duplicate the conversation and continue with the new attack ID.
 
         Args:
             conversation_id (str): The conversation ID with existing conversations.
-            new_orchestrator_id (str, Optional): The new orchestrator ID to assign to the duplicated conversations.
-                If no new orchestrator ID is provided, the orchestrator ID will remain the same. Defaults to None.
+            new_attack_id (str, Optional): The new attack ID to assign to the duplicated conversations.
+                If no new attack ID is provided, the attack ID will remain the same. Defaults to None.
         Returns:
             The uuid for the new conversation.
         """
@@ -428,11 +428,11 @@ class MemoryInterface(abc.ABC):
         for piece in prompt_pieces:
             # Assign duplicated piece a new ID, but note that the `original_prompt_id` remains the same.
             piece.id = uuid.uuid4()
-            if piece.orchestrator_identifier["id"] == new_orchestrator_id:
-                raise ValueError("The new orchestrator ID must be different from the existing orchestrator ID.")
+            if piece.attack_identifier["id"] == new_attack_id:
+                raise ValueError("The new attack ID must be different from the existing attack ID.")
 
-            if new_orchestrator_id:
-                piece.orchestrator_identifier["id"] = new_orchestrator_id
+            if new_attack_id:
+                piece.attack_identifier["id"] = new_attack_id
 
             piece.conversation_id = new_conversation_id
 
@@ -440,7 +440,7 @@ class MemoryInterface(abc.ABC):
         return new_conversation_id
 
     def duplicate_conversation_excluding_last_turn(
-        self, *, conversation_id: str, new_orchestrator_id: Optional[str] = None
+        self, *, conversation_id: str, new_attack_id: Optional[str] = None
     ) -> str:
         """
         Duplicate a conversation, excluding the last turn. In this case, last turn is defined as before the last
@@ -450,8 +450,8 @@ class MemoryInterface(abc.ABC):
 
         Args:
             conversation_id (str): The conversation ID with existing conversations.
-            new_orchestrator_id (str, Optional): The new orchestrator ID to assign to the duplicated conversations.
-                If no new orchestrator ID is provided, the orchestrator ID will remain the same. Defaults to None.
+            new_attack_id (str, Optional): The new attack ID to assign to the duplicated conversations.
+                If no new attack ID is provided, the attack ID will remain the same. Defaults to None.
         Returns:
             The uuid for the new conversation.
         """
@@ -481,8 +481,8 @@ class MemoryInterface(abc.ABC):
         for piece in prompt_pieces:
             # Assign duplicated piece a new ID, but note that the `original_prompt_id` remains the same.
             piece.id = uuid.uuid4()
-            if new_orchestrator_id:
-                piece.orchestrator_identifier["id"] = new_orchestrator_id
+            if new_attack_id:
+                piece.attack_identifier["id"] = new_attack_id
             piece.conversation_id = new_conversation_id
 
         self.add_request_pieces_to_memory(request_pieces=prompt_pieces)
@@ -882,7 +882,7 @@ class MemoryInterface(abc.ABC):
     def export_conversations(
         self,
         *,
-        orchestrator_id: Optional[str | uuid.UUID] = None,
+        attack_id: Optional[str | uuid.UUID] = None,
         conversation_id: Optional[str | uuid.UUID] = None,
         prompt_ids: Optional[Sequence[str] | Sequence[uuid.UUID]] = None,
         labels: Optional[dict[str, str]] = None,
@@ -901,7 +901,7 @@ class MemoryInterface(abc.ABC):
             Defaults to all conversations if no filters are provided.
 
         Args:
-            orchestrator_id (Optional[str | uuid.UUID], optional): The ID of the orchestrator. Defaults to None.
+            attack_id (Optional[str | uuid.UUID], optional): The ID of the attack. Defaults to None.
             conversation_id (Optional[str | uuid.UUID], optional): The ID of the conversation. Defaults to None.
             prompt_ids (Optional[Sequence[str] | Sequence[uuid.UUID]], optional): A list of prompt IDs.
                 Defaults to None.
@@ -919,7 +919,7 @@ class MemoryInterface(abc.ABC):
             export_type (str, optional): The format of the export. Defaults to "json".
         """
         data = self.get_prompt_request_pieces(
-            orchestrator_id=orchestrator_id,
+            attack_id=attack_id,
             conversation_id=conversation_id,
             prompt_ids=prompt_ids,
             labels=labels,

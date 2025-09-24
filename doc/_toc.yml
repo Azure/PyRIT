@@ -57,25 +57,6 @@ chapters:
           sections:
           - file: code/executor/promptgen/1_anecdoctor_generator
           - file: code/executor/promptgen/fuzzer_generator
-    - file: code/orchestrators/0_orchestrator
-      sections:
-      - file: code/orchestrators/1_prompt_sending_orchestrator
-      - file: code/orchestrators/2_multi_turn_orchestrators
-      - file: code/orchestrators/3_xpia_orchestrator
-      - file: code/orchestrators/4_scoring_orchestrator
-      - file: code/orchestrators/5_crescendo_orchestrator
-      - file: code/orchestrators/6_skeleton_key_attack
-      - file: code/orchestrators/context_compliance_orchestrator
-      - file: code/orchestrators/flip_orchestrator
-      - file: code/orchestrators/fuzzing_jailbreak_templates
-      - file: code/orchestrators/HITL_Scoring_Orchestrator
-      - file: code/orchestrators/many_shot_jailbreak
-      - file: code/orchestrators/pair_orchestrator
-      - file: code/orchestrators/qa_benchmark_orchestrator
-      - file: code/orchestrators/role_playing_orchestrator
-      - file: code/orchestrators/tree_of_attacks_with_pruning
-      - file: code/orchestrators/violent_durian
-      - file: code/orchestrators/anecdoctor_orchestrator
     - file: code/targets/0_prompt_targets
       sections:
       - file: code/targets/1_openai_chat_target

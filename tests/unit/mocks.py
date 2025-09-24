@@ -67,7 +67,7 @@ class MockPromptTarget(PromptChatTarget):
         *,
         system_prompt: str,
         conversation_id: str,
-        orchestrator_identifier: Optional[dict[str, str]] = None,
+        attack_identifier: Optional[dict[str, str]] = None,
         labels: Optional[dict[str, str]] = None,
     ) -> None:
         self.system_prompt = system_prompt
@@ -78,7 +78,7 @@ class MockPromptTarget(PromptChatTarget):
                     original_value=system_prompt,
                     converted_value=system_prompt,
                     conversation_id=conversation_id,
-                    orchestrator_identifier=orchestrator_identifier,
+                    attack_identifier=attack_identifier,
                     labels=labels,
                 ).to_prompt_request_response()
             )
@@ -91,7 +91,7 @@ class MockPromptTarget(PromptChatTarget):
             role="assistant",
             original_value="default",
             conversation_id=prompt_request.request_pieces[0].conversation_id,
-            orchestrator_identifier=prompt_request.request_pieces[0].orchestrator_identifier,
+            attack_identifier=prompt_request.request_pieces[0].attack_identifier,
             labels=prompt_request.request_pieces[0].labels,
         ).to_prompt_request_response()
 
@@ -195,7 +195,7 @@ def get_sample_conversations() -> MutableSequence[PromptRequestPiece]:
                 converted_value="Hello, how are you?",
                 conversation_id=conversation_1,
                 sequence=0,
-                orchestrator_identifier=attack_identifier,
+                attack_identifier=attack_identifier,
             ),
             PromptRequestPiece(
                 role="assistant",
@@ -203,14 +203,14 @@ def get_sample_conversations() -> MutableSequence[PromptRequestPiece]:
                 converted_value="I'm fine, thank you!",
                 conversation_id=conversation_1,
                 sequence=0,
-                orchestrator_identifier=attack_identifier,
+                attack_identifier=attack_identifier,
             ),
             PromptRequestPiece(
                 role="assistant",
                 original_value="original prompt text",
                 converted_value="I'm fine, thank you!",
                 conversation_id=str(uuid.uuid4()),
-                orchestrator_identifier=attack_identifier,
+                attack_identifier=attack_identifier,
             ),
         ]
 

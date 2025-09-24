@@ -282,7 +282,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         self._adversarial_chat.set_system_prompt(
             system_prompt=system_prompt,
             conversation_id=context.session.adversarial_chat_conversation_id,
-            orchestrator_identifier=self.get_identifier(),
+            attack_identifier=self.get_identifier(),
             labels=context.memory_labels,
         )
 
@@ -489,7 +489,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             seed_prompt_group=seed_prompt_group,
             conversation_id=context.session.adversarial_chat_conversation_id,
             target=self._adversarial_chat,
-            orchestrator_identifier=self.get_identifier(),
+            attack_identifier=self.get_identifier(),
             labels=context.memory_labels,
         )
 
@@ -567,7 +567,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             conversation_id=context.session.conversation_id,
             request_converter_configurations=self._request_converters,
             response_converter_configurations=self._response_converters,
-            orchestrator_identifier=self.get_identifier(),
+            attack_identifier=self.get_identifier(),
             labels=context.memory_labels,
         )
 
@@ -641,7 +641,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         """
         # Access memory through the conversation manager's memory instance
         new_conversation_id = self._memory.duplicate_conversation_excluding_last_turn(
-            new_orchestrator_id=self.get_identifier()["id"],
+            new_attack_id=self.get_identifier()["id"],
             conversation_id=conversation_id,
         )
         self._logger.debug(f"Backtracked conversation from {conversation_id} to {new_conversation_id}")
