@@ -214,7 +214,7 @@ async def test_send_prompt_async_empty_exception(mock_memory_instance, seed_prom
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_different_sequences():
+async def test_send_prompt_async_different_sequences(mock_memory_instance):
     """Test that sending prompts with different sequences raises ValueError."""
     prompt_target = AsyncMock()
     normalizer = PromptNormalizer()
@@ -230,7 +230,7 @@ async def test_send_prompt_async_different_sequences():
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_mixed_sequence_types():
+async def test_send_prompt_async_mixed_sequence_types(mock_memory_instance):
     """Test that sending prompts with mixed sequence types (None and int) raises ValueError."""
     prompt_target = AsyncMock()
     normalizer = PromptNormalizer()
@@ -377,7 +377,6 @@ async def test_prompt_normalizer_send_prompt_batch_async_throws(
 async def test_build_prompt_request_response(mock_memory_instance, seed_prompt_group):
 
     labels = {"label1": "value1", "label2": "value2"}
-    orchestrator_identifier = {"orchestrator_id": "123"}
 
     conversation_id = uuid.uuid4()
 
@@ -394,7 +393,6 @@ async def test_build_prompt_request_response(mock_memory_instance, seed_prompt_g
         request_converter_configurations=request_converters,
         target=prompt_target,
         labels=labels,
-        orchestrator_identifier=orchestrator_identifier,
     )
 
     # Check all prompt pieces in the response have the same conversation ID

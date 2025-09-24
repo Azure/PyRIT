@@ -46,6 +46,9 @@ class AttackContext(StrategyContext, ABC):
     # Conversations relevant while the attack is running
     related_conversations: set[ConversationReference] = field(default_factory=set)
 
+    # Conversation that is automatically prepended to the target model
+    prepended_conversation: list[PromptRequestResponse] = field(default_factory=list)
+
 
 class _DefaultAttackStrategyEventHandler(StrategyEventHandler[AttackStrategyContextT, AttackStrategyResultT]):
     """

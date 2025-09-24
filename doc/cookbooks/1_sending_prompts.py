@@ -31,7 +31,7 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import SeedPromptDataset
 
-# Configure memory. For this notebook, we're using in-memory. In reality, you will likely want something more permanent (like AzureSQL or DuckDB)
+# Configure memory. For this notebook, we're using in-memory. In reality, you will likely want something more permanent (like AzureSQL or SQLite)
 initialize_pyrit(memory_db_type="InMemory")
 
 memory = CentralMemory.get_memory_instance()
@@ -47,7 +47,7 @@ print(len(groups))
 #
 # Now that you have prompts loaded, you're ready to send them!
 #
-# 1. If your set is gigantic, be sure to check your connection before you start by sending just a couple. Check your target and retry threshold. For starters, you may want to try the first example [here](../code/orchestrators/1_prompt_sending_orchestrator.ipynb)
+# 1. If your set is gigantic, be sure to check your connection before you start by sending just a couple. Check your target and retry threshold. For starters, you may want to try the first example [here](../code/executor/attack/1_prompt_sending_attack.ipynb)
 # 2. Be careful about labeling! With a million prompts it's likely something might go wrong. Maybe your endpoint will be overwhelmed after 2,000, and you likely want a way to keep track so you don't have to start over!
 # 3. PyRIT is meant to be flexible! Change the scorers, change the converters, etc.
 #

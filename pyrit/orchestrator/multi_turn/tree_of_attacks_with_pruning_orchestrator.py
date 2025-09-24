@@ -103,11 +103,11 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         """
 
         adversarial_chat_seed_prompt = adversarial_chat_seed_prompt or SeedPrompt.from_yaml_file(
-            Path(DATASETS_PATH / "orchestrators" / "tree_of_attacks" / "adversarial_seed_prompt.yaml")
+            Path(DATASETS_PATH / "executors" / "tree_of_attacks" / "adversarial_seed_prompt.yaml")
         )
 
         adversarial_chat_system_prompt_path = adversarial_chat_system_prompt_path or Path(
-            DATASETS_PATH / "orchestrators" / "tree_of_attacks" / "adversarial_system_prompt.yaml"
+            DATASETS_PATH / "executors" / "tree_of_attacks" / "adversarial_system_prompt.yaml"
         )
 
         objective_scorer = SelfAskScaleScorer(
@@ -132,7 +132,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
             )
 
         self._adversarial_chat_prompt_template = SeedPrompt.from_yaml_file(
-            Path(DATASETS_PATH / "orchestrators" / "tree_of_attacks" / "adversarial_prompt_template.yaml")
+            Path(DATASETS_PATH / "executors" / "tree_of_attacks" / "adversarial_prompt_template.yaml")
         )
 
         if width < 1:

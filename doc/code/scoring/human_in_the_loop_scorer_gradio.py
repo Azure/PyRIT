@@ -1,5 +1,5 @@
 # %% [markdown]
-# # Human in the Loop Scoring with Gradio
+# # Human in the Loop Scoring with Gradio - optional
 # This example shows how to use the Gradio UI to perform human-in-the-loop scoring.
 
 # %%

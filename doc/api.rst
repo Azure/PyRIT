@@ -132,6 +132,7 @@ API Reference
     fetch_jbb_behaviors_by_jbb_category
     fetch_jbb_behaviors_dataset
     fetch_many_shot_jailbreaking_dataset
+    fetch_medsafetybench_dataset
     fetch_mlcommons_ailuminate_demo_dataset
     fetch_multilingual_vulnerability_dataset
     fetch_pku_safe_rlhf_dataset
@@ -140,6 +141,7 @@ API Reference
     fetch_tdc23_redteaming_dataset
     fetch_wmdp_dataset
     fetch_xstest_dataset
+
 
 
 :py:mod:`pyrit.embedding`
@@ -202,9 +204,11 @@ API Reference
     CrescendoAttack
     FlipAttack
     ManyShotJailbreakAttack
+    MultiPromptSendingAttack
+    MultiPromptSendingAttackContext
     MultiTurnAttackContext
     PromptSendingAttack
-    RTOSystemPromptPaths
+    RTASystemPromptPaths
     RedTeamingAttack
     RolePlayAttack
     SingleTurnAttackContext
@@ -270,13 +274,13 @@ API Reference
     AttackResultEntry
     AzureSQLMemory
     CentralMemory
-    DuckDBMemory
     EmbeddingDataEntry
     MemoryInterface
     MemoryEmbedding
     MemoryExporter
     PromptMemoryEntry
     SeedPromptEntry
+    SQLiteMemory
 
 :py:mod:`pyrit.models`
 ======================
@@ -526,6 +530,7 @@ API Reference
     ObjectiveHumanLabeledEntry
     ObjectiveScorerEvaluator
     ObjectiveScorerMetrics
+    PlagiarismScorer
     PromptShieldScorer
     QuestionAnswerScorer
     Scorer

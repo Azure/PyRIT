@@ -338,7 +338,7 @@ class TestContextComplianceAttackSetup:
                     mock_parent_setup.assert_called_once_with(context=basic_context)
 
     @pytest.mark.asyncio
-    async def test_setup_extends_prepended_conversation(
+    async def test_setup_sets_prepended_conversation(
         self,
         mock_objective_target,
         mock_attack_adversarial_config,
@@ -346,15 +346,6 @@ class TestContextComplianceAttackSetup:
         basic_context,
         mock_prompt_normalizer,
     ):
-        """Test that setup extends existing prepended conversation"""
-        # Add existing conversation to context
-        existing_conversation = [
-            PromptRequestResponse(
-                request_pieces=[PromptRequestPiece(role="system", original_value="Existing conversation")]
-            )
-        ]
-        basic_context.prepended_conversation = existing_conversation.copy()
-
         with patch(
             "pyrit.executor.attack.single_turn.context_compliance.SeedPromptDataset.from_yaml_file",
             return_value=mock_seed_prompt_dataset,
@@ -380,10 +371,9 @@ class TestContextComplianceAttackSetup:
                 with patch.object(attack.__class__.__bases__[0], "_setup_async", new_callable=AsyncMock):
                     await attack._setup_async(context=basic_context)
 
-                    # Verify both existing and new conversations are present
-                    assert len(basic_context.prepended_conversation) == 2
-                    assert basic_context.prepended_conversation[0] == existing_conversation[0]
-                    assert basic_context.prepended_conversation[1] == new_conversation[0]
+                    # Verify only new conversations are present
+                    assert len(basic_context.prepended_conversation) == 1
+                    assert basic_context.prepended_conversation[0] == new_conversation[0]
 
     @pytest.mark.asyncio
     async def test_setup_creates_affirmative_seed_prompt_group(

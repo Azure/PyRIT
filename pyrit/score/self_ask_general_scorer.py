@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import json
 from typing import Literal, Optional
 
 from pyrit.models import PromptRequestPiece
@@ -70,7 +71,11 @@ class SelfAskGeneralScorer(Scorer):
 
         self.scorer_type = scorer_type
 
-        self._score_category = category
+        # Convert category list to string for storage compatibility
+        self._score_category = None
+        if category is not None:
+            self._score_category = json.dumps(category) if isinstance(category, list) else str(category)
+
         self.labels = labels
         self._min_value = min_value
         self._max_value = max_value

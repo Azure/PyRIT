@@ -5,22 +5,22 @@ from typing import Generator
 
 from sqlalchemy import inspect
 
-from pyrit.memory import DuckDBMemory, MemoryInterface
+from pyrit.memory import MemoryInterface, SQLiteMemory
 
 
 def get_memory_interface() -> Generator[MemoryInterface, None, None]:
-    yield from get_duckdb_memory()
+    yield from get_sqlite_memory()
 
 
-def get_duckdb_memory() -> Generator[DuckDBMemory, None, None]:
-    # Create an in-memory DuckDB engine
-    duckdb_memory = DuckDBMemory(db_path=":memory:")
+def get_sqlite_memory() -> Generator[SQLiteMemory, None, None]:
+    # Create an in-memory SQLite engine
+    sqlite_memory = SQLiteMemory(db_path=":memory:")
 
-    duckdb_memory.disable_embedding()
+    sqlite_memory.disable_embedding()
 
     # Reset the database to ensure a clean state
-    duckdb_memory.reset_database()
-    inspector = inspect(duckdb_memory.engine)
+    sqlite_memory.reset_database()
+    inspector = inspect(sqlite_memory.engine)
 
     # Verify that tables are created as expected
     assert "PromptMemoryEntries" in inspector.get_table_names(), "PromptMemoryEntries table not created."
@@ -28,5 +28,5 @@ def get_duckdb_memory() -> Generator[DuckDBMemory, None, None]:
     assert "ScoreEntries" in inspector.get_table_names(), "ScoreEntries table not created."
     assert "SeedPromptEntries" in inspector.get_table_names(), "SeedPromptEntries table not created."
 
-    yield duckdb_memory
-    duckdb_memory.dispose_engine()
+    yield sqlite_memory
+    sqlite_memory.dispose_engine()
