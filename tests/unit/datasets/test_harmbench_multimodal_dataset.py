@@ -157,3 +157,59 @@ class TestHarmBenchMultimodalDataset:
 
         assert len(result.prompts) == 2  # one example (1 text + 1 image)
         assert all(p.metadata["behavior_id"] == "multimodal_id" for p in result.prompts)
+
+    @patch("pyrit.datasets.harmbench_multimodal_dataset.fetch_examples")
+    def test_filtering_by_semantic_categories(self, mock_fetch):
+        mock_examples = [
+            {
+                "Behavior": "Illegal behavior",
+                "BehaviorID": "illegal_behavior",
+                "SemanticCategory": "illegal",
+                "FunctionalCategory": "multimodal",
+                "ImageFileName": "illegal.png",
+            },
+            {
+                "Behavior": "Harmful behavior",
+                "BehaviorID": "harmful_behavior",
+                "SemanticCategory": "harmful",
+                "FunctionalCategory": "multimodal",
+                "ImageFileName": "harmful.png",
+            },
+            {
+                "Behavior": "Cybercrime behavior",
+                "BehaviorID": "cybercrime_behavior",
+                "SemanticCategory": "cybercrime_intrusion",
+                "FunctionalCategory": "multimodal",
+                "ImageFileName": "cybercrime.png",
+            },
+            {
+                "Behavior": "Harassment behavior",
+                "BehaviorID": "harassment_behavior",
+                "SemanticCategory": "harassment_bullying",
+                "FunctionalCategory": "multimodal",
+                "ImageFileName": "harassment.png",
+            },
+        ]
+        mock_fetch.return_value = mock_examples
+
+        # Filter by single category
+        result = fetch_harmbench_multimodal_dataset(categories=["illegal"])
+        assert isinstance(result, SeedPromptDataset)
+        assert len(result.prompts) == 2  # 1 text + 1 image prompt for illegal category
+        assert all(p.metadata["behavior_id"] == "illegal_behavior" for p in result.prompts)
+        assert all(p.harm_categories == ["illegal"] for p in result.prompts)
+
+        # Filter by multiple categories
+        result = fetch_harmbench_multimodal_dataset(categories=["cybercrime_intrusion", "harmful"])
+        assert isinstance(result, SeedPromptDataset)
+        assert len(result.prompts) == 4  # 2 examples × 2 prompts each
+        behavior_ids = {p.metadata["behavior_id"] for p in result.prompts}
+        assert behavior_ids == {"cybercrime_behavior", "harmful_behavior"}
+
+        # Filter with invalid category
+        with pytest.raises(ValueError, match="Invalid semantic categories"):
+            fetch_harmbench_multimodal_dataset(categories=["nonexistent_category", "illegal"])
+
+        # Filter with an empty list
+        with pytest.raises(ValueError, match="SeedPromptDataset cannot be empty"):
+            fetch_harmbench_multimodal_dataset(categories=[])
