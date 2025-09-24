@@ -7,9 +7,6 @@ import abc
 import asyncio
 import json
 import logging
-import os
-import random
-import tempfile
 import uuid
 from abc import abstractmethod
 from pathlib import Path
@@ -67,8 +64,7 @@ class Scorer(abc.ABC):
             raise ValueError(f"Path not found: {str(path_obj)}")
         return path_obj
 
-    async def score_async(
-        self, request_response: PromptRequestPiece, *, task: Optional[str] = None ) -> list[Score]:
+    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Score the request_response, add the results to the database
         and return a list of Score objects.
@@ -166,24 +162,6 @@ class Scorer(abc.ABC):
             prompt_target=prompt_target,
             batch_size=batch_size,
             items_to_batch=[texts, tasks] if tasks else [texts],
-        )
-        return [score for sublist in results for score in sublist]
-
-    async def score_image_batch_async(
-        self, *, image_paths: Sequence[str], tasks: Optional[Sequence[str]] = None, batch_size: int = 10
-    ) -> list[Score]:
-        if tasks:
-            if len(tasks) != len(image_paths):
-                raise ValueError("The number of tasks must match the number of image_paths.")
-        if len(image_paths) == 0:
-            return []
-        prompt_target = getattr(self, "_prompt_target", None)
-        results = await batch_task_async(
-            task_func=self.score_image_async,
-            task_arguments=["image_path", "task"] if tasks else ["image_path"],
-            prompt_target=prompt_target,
-            batch_size=batch_size,
-            items_to_batch=[image_paths, tasks] if tasks else [image_paths],
         )
         return [score for sublist in results for score in sublist]
 
@@ -491,9 +469,7 @@ class Scorer(abc.ABC):
 
         # Create all scoring tasks, note TEMPORARY fix to prevent multi-piece responses from breaking scoring logic
         tasks = [
-            scorer.score_async(request_response=piece, task=task)
-            for piece in filtered_pieces[:1]
-            for scorer in scorers
+            scorer.score_async(request_response=piece, task=task) for piece in filtered_pieces[:1] for scorer in scorers
         ]
 
         if not tasks:

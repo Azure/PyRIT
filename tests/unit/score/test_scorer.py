@@ -7,8 +7,6 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Optional
 from unittest.mock import AsyncMock, MagicMock, patch
-
-import numpy as np
 import pytest
 
 from pyrit.common.path import SCORER_CONFIG_PATH
@@ -17,86 +15,6 @@ from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer
-
-
-def is_opencv_installed():
-    try:
-        import cv2  # noqa: F401
-
-        return True
-    except ModuleNotFoundError:
-        return False
-
-
-@pytest.fixture(autouse=True)
-def video_converter_sample_video():
-    # Create a sample video file
-    video_path = "tests/unit/score/test_video.mp4"
-    width, height = 512, 512
-    if is_opencv_installed():
-        import cv2  # noqa: F401
-
-        # Create a video writer object
-        video_encoding = cv2.VideoWriter_fourcc(*"mp4v")
-        output_video = cv2.VideoWriter(video_path, video_encoding, 20, (width, height))
-        # Create a few frames for video
-        for i in range(10):
-            frame = np.zeros((height, width, 3), dtype=np.uint8)
-            processed_frame = cv2.flip(frame, 0)
-            output_video.write(processed_frame)
-
-        output_video.release()
-    return video_path
-
-
-class TestScorerVideo(Scorer):
-    """Test implementation of Scorer for video tests"""
-
-    def __init__(self, scorer_type="true_false"):
-        self.scorer_type = scorer_type
-        super().__init__()
-
-    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
-        # For testing, always return a Score object with a predefined value
-        if self.scorer_type == "true_false":
-            return [
-                Score(
-                    score_type=self.scorer_type,
-                    score_value="True",
-                    score_rationale="Test true rationale",
-                    score_category="test_category",
-                    score_metadata="tf metadata",
-                    score_value_description="test_tf_description",
-                    prompt_request_response_id="test_id",
-                )
-            ]
-        else:  # float_scale
-            return [
-                Score(
-                    score_type=self.scorer_type,
-                    score_value="0.8",
-                    score_rationale="Test float rationale",
-                    score_category="test_category",
-                    score_metadata="float metadata",
-                    score_value_description="test_float_description",
-                    prompt_request_response_id="test_id",
-                )
-            ]
-
-    async def score_image_async(self, image_path: str, *, task: Optional[str] = None) -> list[Score]:
-        """Mock implementation for image scoring needed by video scoring"""
-        # Create a mock PromptRequestPiece for the image
-        request_piece = PromptRequestPiece(
-            role="user",
-            original_value=image_path,
-            converted_value=image_path,
-            original_value_data_type="image_path",
-            converted_value_data_type="image_path",
-        )
-        return await self._score_async(request_piece, task=task)
-
-    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
-        pass
 
 
 class MockScorer(Scorer):
@@ -601,17 +519,13 @@ async def test_score_response_select_first_success_async_parallel_scoring_per_pi
     # Track call order
     call_order = []
 
-    async def mock_score_async_1(
-        request_response: PromptRequestPiece, *, task: Optional[str] = None
-    ) -> list[Score]:
+    async def mock_score_async_1(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         call_order.append(("scorer1", request_response.original_value))
         score = MagicMock(spec=Score)
         score.get_value.return_value = False
         return [score]
 
-    async def mock_score_async_2(
-        request_response: PromptRequestPiece, *, task: Optional[str] = None
-    ) -> list[Score]:
+    async def mock_score_async_2(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         call_order.append(("scorer2", request_response.original_value))
         score = MagicMock(spec=Score)
         score.get_value.return_value = False
@@ -1026,13 +940,17 @@ async def test_score_response_with_objective_async_role_filter():
     obj_scored_pieces = []
 
     async def track_aux_score(
-        request_response: PromptRequestPiece, *, task: Optional[str] = None,
+        request_response: PromptRequestPiece,
+        *,
+        task: Optional[str] = None,
     ) -> list[Score]:
         aux_scored_pieces.append(request_response)
         return [aux_score]
 
     async def track_obj_score(
-        request_response: PromptRequestPiece, *, task: Optional[str] = None,
+        request_response: PromptRequestPiece,
+        *,
+        task: Optional[str] = None,
     ) -> list[Score]:
         obj_scored_pieces.append(request_response)
         return [obj_score]
@@ -1177,7 +1095,9 @@ async def test_score_response_with_objective_async_concurrent_execution():
     call_order = []
 
     async def mock_aux_score_async(
-        request_response: PromptRequestPiece, *, task: Optional[str] = None,
+        request_response: PromptRequestPiece,
+        *,
+        task: Optional[str] = None,
     ) -> list[Score]:
         call_order.append("aux_start")
         # Simulate some async work
@@ -1186,7 +1106,9 @@ async def test_score_response_with_objective_async_concurrent_execution():
         return [MagicMock(spec=Score)]
 
     async def mock_obj_score_async(
-        request_response: PromptRequestPiece, *, task: Optional[str] = None,
+        request_response: PromptRequestPiece,
+        *,
+        task: Optional[str] = None,
     ) -> list[Score]:
         call_order.append("obj_start")
         # Simulate some async work
@@ -1262,13 +1184,17 @@ async def test_score_response_with_objective_async_mixed_roles():
     obj_scored_pieces = []
 
     async def track_aux_score(
-        request_response: PromptRequestPiece, *, task: Optional[str] = None,
+        request_response: PromptRequestPiece,
+        *,
+        task: Optional[str] = None,
     ) -> list[Score]:
         aux_scored_pieces.append(request_response)
         return [aux_score]
 
     async def track_obj_score(
-        request_response: PromptRequestPiece, *, task: Optional[str] = None,
+        request_response: PromptRequestPiece,
+        *,
+        task: Optional[str] = None,
     ) -> list[Score]:
         obj_scored_pieces.append(request_response)
         return [obj_score]

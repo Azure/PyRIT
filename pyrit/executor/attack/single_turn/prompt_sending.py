@@ -300,7 +300,10 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         )
 
     async def _evaluate_response_async(
-        self, *, response: PromptRequestResponse, objective: str,
+        self,
+        *,
+        response: PromptRequestResponse,
+        objective: str,
     ) -> Optional[Score]:
         """
         Evaluate the response against the objective using the configured scorers.

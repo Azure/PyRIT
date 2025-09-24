@@ -1,9 +1,13 @@
-import os
-import tempfile
-from typing import List, Optional
-import random
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import logging
+import os
+import random
+import tempfile
 import uuid
+from typing import List, Optional
+
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.score import Scorer
 
@@ -13,18 +17,19 @@ logger = logging.getLogger(__name__)
 class VideoScorer(Scorer):
     """
     A scorer that processes videos by extracting frames and scoring them using an image-capable scorer.
-    
+
     The VideoScorer breaks down a video into a specified number of frames and uses the provided
     image scorer to evaluate each frame. The final score is computed based on the composite scoring logic.
     """
-    
+
     def __init__(self, image_capable_scorer: Scorer, num_frames: Optional[int] = None):
         """
         Initialize the VideoScorer.
-        
+
         Args:
-            image_capable_scorer: A scorer capable of processing images that will be used to score individual video frames
-            num_frames: Number of frames to extract from the video for scoring (default: 10)
+            image_capable_scorer: A scorer capable of processing images that will be used to score individual
+                video frames
+            num_frames: Number of frames to extract from the video for scoring (default: 5)
         """
         self.scorer_type = image_capable_scorer.scorer_type
         self.image_scorer = image_capable_scorer
@@ -36,33 +41,33 @@ class VideoScorer(Scorer):
 
         if self.num_frames <= 0:
             raise ValueError("num_frames must be a positive integer")
-    
+
     async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> List[Score]:
         """
         Score a video by extracting frames and scoring each frame.
-        
+
         Args:
             request_response: The prompt request piece containing the video
             task: Optional task description for scoring
-            
+
         Returns:
             List of scores for each extracted frame
         """
         video_path = request_response.converted_value
         if not os.path.exists(video_path):
             raise FileNotFoundError(f"Video file not found: {video_path}")
-        
+
         # Extract frames from video
         frames = self._extract_frames(video_path)
         if not frames:
             raise ValueError("No frames extracted from video for scoring.")
-        
+
         # Score each frame
         tasks = [task] * len(frames)
         frame_scores = await self.image_scorer.score_image_batch_async(
-            image_paths=frames, tasks=tasks, batch_size=self.num_frames
+            image_paths=frames, tasks=tasks, batch_size=len(frames)
         )
-        
+
         if not frame_scores:
             raise ValueError("No scores returned for image frames extracted from video.")
 
@@ -77,7 +82,7 @@ class VideoScorer(Scorer):
         score.prompt_request_response_id = request_response.id
 
         return [score]
-    
+
     def _aggregate_frame_scores(self, frame_scores: list[Score]) -> Score:
         """
         Aggregates a list of frame scores into a single score for the entire video.
@@ -130,7 +135,7 @@ class VideoScorer(Scorer):
         aggregate_score.id = uuid.uuid4()
 
         return aggregate_score
-    
+
     def _extract_frames(self, video_path: str) -> list[str]:
         """
         Extracts a specified number of image frames from a video file and returns them as a list of (temp)
@@ -171,20 +176,22 @@ class VideoScorer(Scorer):
 
         video_capture.release()
         return frame_paths
-    
+
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> None:
         """
         Validate that the request contains a video file.
-        
+
         Args:
             request_response: The prompt request piece to validate
             task: Optional task description
         """
         if request_response.converted_value_data_type != "video_path":
-            raise ValueError(f"VideoScorer requires video_path data type, got {request_response.converted_value_data_type}")
-        
+            raise ValueError(
+                f"VideoScorer requires video_path data type, got {request_response.converted_value_data_type}"
+            )
+
         if not request_response.converted_value:
             raise ValueError("Video path is empty")
-        
+
         if not os.path.exists(request_response.converted_value):
             raise FileNotFoundError(f"Video file not found: {request_response.converted_value}")

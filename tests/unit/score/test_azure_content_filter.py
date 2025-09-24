@@ -36,9 +36,7 @@ def text_request_piece() -> PromptRequestPiece:
 @pytest.mark.asyncio
 async def test_azure_content_filter_scorer_validate_audio(audio_request_piece: PromptRequestPiece):
     scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
-    with pytest.raises(
-        ValueError, match="Azure Content Filter Scorer only supports text, image_path, and video_path data types"
-    ):
+    with pytest.raises(ValueError, match="Azure Content Filter Scorer only supports text and image_path data types"):
         await scorer.validate(audio_request_piece)
 
     os.remove(audio_request_piece.converted_value)
