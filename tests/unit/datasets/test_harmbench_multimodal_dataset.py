@@ -5,7 +5,9 @@ from unittest.mock import patch
 
 import pytest
 
-from pyrit.datasets.harmbench_multimodal_dataset import fetch_harmbench_multimodal_dataset_async
+from pyrit.datasets.harmbench_multimodal_dataset import (
+    fetch_harmbench_multimodal_dataset_async,
+)
 from pyrit.models import SeedPromptDataset
 
 
@@ -88,7 +90,8 @@ class TestHarmBenchMultimodalDataset:
             "behavior_id": "test_behavior_2",
             "image_description": "Another image description",
             "redacted_image_description": "Another redacted description",
-            "original_image_url": "https://raw.githubusercontent.com/centerforaisafety/HarmBench/c0423b9/data/multimodal_behavior_images/another_image.png",
+            "original_image_url": "https://raw.githubusercontent.com/centerforaisafety/HarmBench/c0423b9"
+            + "/data/multimodal_behavior_images/another_image.png",
         }
         assert image_prompts[1].metadata == expected_metadata
 
