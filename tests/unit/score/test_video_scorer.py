@@ -49,7 +49,9 @@ def video_converter_sample_video():
     )
     request_piece.id = None
     yield request_piece
-    os.remove(video_path)
+    # Cleanup the sample video file
+    if os.path.exists(video_path):
+        os.remove(video_path)
 
 
 class MockScorer(Scorer):
@@ -104,11 +106,14 @@ class MockVideoScorer(VideoScorer):
     """Test implementation of VideoScorer for video tests"""
 
     def __init__(
-        self, image_scorer: Optional[MockScorer] = None, scorer_type: str = "true_false", num_frames: Optional[int] = 3
+        self,
+        image_scorer: Optional[MockScorer] = None,
+        scorer_type: str = "true_false",
+        num_sampled_frames: Optional[int] = 3,
     ):
         if not image_scorer:
             image_scorer = MockScorer(scorer_type=scorer_type)
-        super().__init__(image_capable_scorer=image_scorer, num_frames=num_frames)
+        super().__init__(image_capable_scorer=image_scorer, num_sampled_frames=num_sampled_frames)
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
         pass
@@ -124,7 +129,9 @@ async def test_extract_frames(video_converter_sample_video):
     video_path = video_converter_sample_video.converted_value
     frame_paths = scorer._extract_frames(video_path=video_path)
 
-    assert len(frame_paths) == scorer.num_frames, f"Expected {scorer.num_frames} frames, got {len(frame_paths)}"
+    assert (
+        len(frame_paths) == scorer.num_sampled_frames
+    ), f"Expected {scorer.num_sampled_frames} frames, got {len(frame_paths)}"
 
     # Verify frames are valid images and cleanup
     for path in frame_paths:

@@ -125,7 +125,7 @@ objective_scorer = SelfAskTrueFalseScorer(
 
 video_scorer = VideoScorer(
     image_capable_scorer=objective_scorer,
-    num_frames=10,
+    num_sampled_frames=10,
 )
 
 attack = PromptSendingAttack(

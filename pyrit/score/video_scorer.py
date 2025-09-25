@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class VideoScorer(Scorer):
+    _DEFAULT_VIDEO_FRAMES_SAMPLING_NUM = 5
     """
     A scorer that processes videos by extracting frames and scoring them using an image-capable scorer.
 
@@ -23,25 +24,21 @@ class VideoScorer(Scorer):
     image scorer to evaluate each frame. The final score is computed based on the composite scoring logic.
     """
 
-    def __init__(self, image_capable_scorer: Scorer, num_frames: Optional[int] = None):
+    def __init__(self, image_capable_scorer: Scorer, num_sampled_frames: Optional[int] = None):
         """
         Initialize the VideoScorer.
 
         Args:
             image_capable_scorer: A scorer capable of processing images that will be used to score individual
                 video frames
-            num_frames: Number of frames to extract from the video for scoring (default: 5)
+            num_sampled_frames: Number of frames to extract from the video for scoring (default: 5)
         """
         self.scorer_type = image_capable_scorer.scorer_type
         self.image_scorer = image_capable_scorer
+        self.num_sampled_frames = num_sampled_frames or self._DEFAULT_VIDEO_FRAMES_SAMPLING_NUM
 
-        if not num_frames:
-            self.num_frames = 5
-        else:
-            self.num_frames = num_frames
-
-        if self.num_frames <= 0:
-            raise ValueError("num_frames must be a positive integer")
+        if self.num_sampled_frames <= 0:
+            raise ValueError("num_sampled_frames must be a positive integer")
 
     async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> List[Score]:
         """
@@ -96,8 +93,6 @@ class VideoScorer(Scorer):
         Returns:
             Score (list[Score]): The aggregated scores for the entire video.
         """
-        aggregate_score = None
-        original_rationale = None
 
         # Group frame_scores by score_category (excluding None categories)
         scores_by_category = defaultdict(list)
@@ -108,43 +103,79 @@ class VideoScorer(Scorer):
             else:
                 scores_by_category[None].append(score)
 
-        aggregated_scores = []
-
         # Aggregate scores for each category
-        for category, category_scores in scores_by_category.items():
+        if self.scorer_type == "true_false":
+            return self._aggregate_true_false_scores(scores_by_category)  # type: ignore
+        elif self.scorer_type == "float_scale":
+            return self._aggregate_float_scale_scores(scores_by_category)  # type: ignore
+        else:
+            raise ValueError(f"Unsupported scorer type for video scoring: {self.scorer_type}")
+
+    def _aggregate_true_false_scores(self, frame_scores: defaultdict[str, list[Score]]) -> List[Score]:
+        """
+        Aggregates a list of true/false frame scores into a single true/false score for the entire video.
+        If any of the frame scores are True, the aggregate score is True.
+
+        Args:
+            frame_scores (list[Score]): The list of true/false frame scores to aggregate.
+        Returns:
+            Score: The aggregated true/false score for the entire video.
+        """
+        aggregated_scores = []
+        aggregate_score = None
+        original_rationale = None
+        for category, category_scores in frame_scores.items():
             # For true_false scorers, if any of the scores are True, the aggregate score is True
-            if self.scorer_type == "true_false":
-                true_scores = [score for score in category_scores if score.get_value()]
-                true_count = len(true_scores)
+            true_scores = [score for score in category_scores if score.get_value()]
+            true_count = len(true_scores)
 
-                # Update the rationale to reflect the aggregation logic
-                if true_count > 0:
-                    original_rationale = "\nSee original score rationales for each frame as follows:\n* "
-                    original_rationale += "\n* ".join([score.score_rationale for score in true_scores])
+            # Update the rationale to reflect the aggregation logic
+            if true_count > 0:
+                original_rationale = "\nSee original score rationales for each frame as follows:\n* "
+                original_rationale += "\n* ".join([score.score_rationale for score in true_scores])
 
-                    aggregate_score = true_scores[0]
-                    aggregate_score.score_rationale = (
-                        f"{true_count} out of {len(category_scores)} video frames meet objective.\n"
-                    )
-                else:
-                    aggregate_score = category_scores[0]
-                    original_rationale = aggregate_score.score_rationale
-
-                    aggregate_score.score_rationale = f"Objective not met within {len(category_scores)} video frames.\n"
-
-            # For float_scale scorers, use the highest score value as the aggregate score value
-            elif self.scorer_type == "float_scale":
-                aggregate_score = max(category_scores, key=lambda score: score.get_value())
+                aggregate_score = true_scores[0]
+                aggregate_score.score_rationale = (
+                    f"{true_count} out of {len(category_scores)} video frames meet objective.\n"
+                )
+            else:
+                aggregate_score = category_scores[0]
                 original_rationale = aggregate_score.score_rationale
 
-                # Update the rationale to indicate this is the highest score
-                highest_score = aggregate_score.get_value()
-                aggregate_score.score_rationale = (
-                    f"Highest score across {len(category_scores)} frames: {highest_score:.2f}.\n"
-                )
+                aggregate_score.score_rationale = f"Objective not met within {len(category_scores)} video frames.\n"
+            # Preserve the category in the aggregated score
+            aggregate_score.score_category = category
+            aggregate_score.id = uuid.uuid4()
 
-            else:
-                raise ValueError(f"Unsupported scorer type for video scoring: {self.scorer_type}")
+            if original_rationale:
+                aggregate_score.score_rationale += original_rationale
+
+            aggregated_scores.append(aggregate_score)
+        return aggregated_scores
+
+    def _aggregate_float_scale_scores(self, frame_scores: defaultdict) -> List[Score]:
+        """
+        Aggregates a list of float scale frame scores into a single float scale score for the entire video.
+        The aggregate score is the highest score value among the frame scores.
+
+        Args:
+            frame_scores (list[Score]): The list of float scale frame scores to aggregate.
+        Returns:
+            Score: The aggregated float scale score for the entire video.
+        """
+        aggregated_scores = []
+        aggregate_score = None
+        original_rationale = None
+        for category, category_scores in frame_scores.items():
+            # For float_scale scorers, use the highest score value as the aggregate score value
+            aggregate_score = max(category_scores, key=lambda score: score.get_value())
+            original_rationale = aggregate_score.score_rationale
+
+            # Update the rationale to indicate this is the highest score
+            highest_score = aggregate_score.get_value()
+            aggregate_score.score_rationale = (
+                f"Highest score across {len(category_scores)} frames: {highest_score:.2f}.\n"
+            )
 
             # Preserve the category in the aggregated score
             aggregate_score.score_category = category
@@ -170,32 +201,34 @@ class VideoScorer(Scorer):
             logger.error("Could not import opencv. You may need to install it via 'pip install pyrit[opencv]'")
             raise e
 
-        video_capture = cv2.VideoCapture(video_path)
         frame_paths = []
-        total_frames = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
-        if total_frames > 0:
-            # Choose up to num_frames random unique frame indices
-            frame_indices = sorted(random.sample(range(total_frames), min(self.num_frames, total_frames)))
-            for frame_index in frame_indices:
-                # Set the video position to the selected frame
-                video_capture.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
-                ret, frame = video_capture.read()
-                if not ret:
-                    print(f"Failed to read frame at index {frame_index}")
-                    continue
+        video_capture = cv2.VideoCapture(video_path)
 
-                # Create a temporary file for the frame
-                with tempfile.NamedTemporaryFile(suffix=f"_frame_{frame_index}.png", delete=False) as temp_file:
-                    # Encode and write frame to temporary file
-                    ret, _ = cv2.imencode(".png", frame)
+        try:
+            total_frames = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
+            if total_frames > 0:
+                # Choose up to num_sampled_frames random unique frame indices
+                frame_indices = sorted(random.sample(range(total_frames), min(self.num_sampled_frames, total_frames)))
+                for frame_index in frame_indices:
+                    # Set the video position to the selected frame
+                    video_capture.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
+                    ret, frame = video_capture.read()
                     if not ret:
-                        print(f"Failed to encode frame at index {frame_index}")
+                        print(f"Failed to read frame at index {frame_index}")
                         continue
 
-                    cv2.imwrite(temp_file.name, frame)
-                    frame_paths.append(temp_file.name)
+                    # Create a temporary file for the frame
+                    with tempfile.NamedTemporaryFile(suffix=f"_frame_{frame_index}.png", delete=False) as temp_file:
+                        # Encode and write frame to temporary file
+                        ret, _ = cv2.imencode(".png", frame)
+                        if not ret:
+                            print(f"Failed to encode frame at index {frame_index}")
+                            continue
 
-        video_capture.release()
+                        cv2.imwrite(temp_file.name, frame)
+                        frame_paths.append(temp_file.name)
+        finally:
+            video_capture.release()
         return frame_paths
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> None:
