@@ -109,7 +109,7 @@ class SelfAskCategoryScorer(Scorer):
             prompt_request_data_type=request_response.converted_value_data_type,
             scored_prompt_id=request_response.id,
             task=task,
-            orchestrator_identifier=request_response.orchestrator_identifier,
+            attack_identifier=request_response.attack_identifier,
         )
 
         score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value)
