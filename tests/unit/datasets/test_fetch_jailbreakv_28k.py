@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from contextlib import nullcontext
 from unittest.mock import patch
 
 import pytest
@@ -13,7 +14,10 @@ class TestFetchJailbreakv28kDataset:
     """Test suite for the fetch_jailbreakv_28k_dataset function."""
 
     @pytest.mark.parametrize("text_field", [None, "jailbreak_query"])
-    @pytest.mark.parametrize("harm_categories", [None, ["Economic Harm"]])
+    @pytest.mark.parametrize(
+        "harm_categories",
+        [None, ["Economic Harm"], ["Government Decision"]],
+    )
     @patch("pyrit.datasets.fetch_jailbreakv_28k_dataset._resolve_image_path")
     @patch("pyrit.datasets.fetch_jailbreakv_28k_dataset.load_dataset")
     def test_fetch_jailbreakv_28k_dataset_success(
@@ -50,9 +54,17 @@ class TestFetchJailbreakv28kDataset:
         mock_resolve_image_path.side_effect = fake_resolve_image_path
 
         # Call the function
-        result = fetch_jailbreakv_28k_dataset(text_field=text_field, harm_categories=harm_categories)
+        # Select context: expect error only for this filter
+        expect_error = harm_categories == ["Government Decision"]
+        ctx = pytest.raises(ValueError) if expect_error else nullcontext()
 
+        # Single call
+        with ctx:
+            result = fetch_jailbreakv_28k_dataset(text_field=text_field, harm_categories=harm_categories)
+        if expect_error:
+            return
         # Assertions
+
         assert isinstance(result, SeedPromptDataset)
         if harm_categories is None:
             assert len(result.prompts) == 4

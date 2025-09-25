@@ -47,11 +47,10 @@ def fetch_jailbreakv_28k_dataset(
         split (str): The split of the dataset to fetch. Defaults to "mini_JailBreakV_28K".
             Options are "JailBreakV_28K" and "mini_JailBreakV_28K".
         text_field (str): The field to use as the prompt text. Defaults to "redteam_query".
+            Options are "jailbreak_query" and "redteam_query".
         harm_categories: List of harm categories to filter the examples.
             Defaults to None, which means all categories are included.
             Otherwise, only prompts with at least one matching category are included.
-        image_field (str): How the image should be retrieved. Allowed values are "Path" and "PIL".
-            Defaults to encoded "PIL" images, "Path" returns the image file path.
 
     Returns:
         SeedPromptDataset: A SeedPromptDataset containing the filtered examples.
@@ -133,14 +132,18 @@ def fetch_jailbreakv_28k_dataset(
                     seed_prompts.append(image_seed_prompt)
                 else:
                     missing_images += 1
-        if missing_images:
-            logger.warning(f"Failed to resolve {missing_images} image paths in JailBreakV-28K dataset")
-        seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
-        return seed_prompt_dataset
-
     except Exception as e:
         logger.error(f"Failed to load JailBreakV-28K dataset: {str(e)}")
         raise Exception(f"Error loading JailBreakV-28K dataset: {str(e)}")
+    if missing_images:
+        logger.warning(f"Failed to resolve {missing_images} image paths in JailBreakV-28K dataset")
+    if not seed_prompts:
+        raise ValueError(
+            "JailBreakV-28K fetch produced 0 prompts. "
+            "Likely caused by all items returned after filtering having invalid image paths."
+        )
+    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
+    return seed_prompt_dataset
 
 
 def _normalize_policy(policy: str) -> str:
