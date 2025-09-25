@@ -5,14 +5,16 @@ from unittest.mock import patch
 
 import pytest
 
-from pyrit.datasets.harmbench_multimodal_dataset import fetch_harmbench_multimodal_dataset
+from pyrit.datasets.harmbench_multimodal_dataset import fetch_harmbench_multimodal_dataset_async
 from pyrit.models import SeedPromptDataset
 
 
+@pytest.mark.asyncio
 @pytest.mark.usefixtures("patch_central_database")
 class TestHarmBenchMultimodalDataset:
+    @patch("pyrit.datasets.harmbench_multimodal_dataset._fetch_and_save_image_async")
     @patch("pyrit.datasets.harmbench_multimodal_dataset.fetch_examples")
-    def test_fetching_with_valid_inputs(self, mock_fetch):
+    async def test_fetching_with_valid_inputs(self, mock_fetch, mock_fetch_image):
         mock_examples = [
             {
                 "Behavior": "Test harmful behavior with image",
@@ -35,7 +37,12 @@ class TestHarmBenchMultimodalDataset:
         ]
 
         mock_fetch.return_value = mock_examples
-        result = fetch_harmbench_multimodal_dataset()
+        mock_fetch_image.side_effect = [
+            "/dbdata/seed-prompt-entries/images/harmbench_test_behavior_1.png",
+            "/dbdata/seed-prompt-entries/images/harmbench_test_behavior_2.png",
+        ]
+
+        result = await fetch_harmbench_multimodal_dataset_async()
 
         assert isinstance(result, SeedPromptDataset)
         assert len(result.prompts) == 4  # 2 text + 2 image prompts
@@ -67,10 +74,7 @@ class TestHarmBenchMultimodalDataset:
         assert text_prompts[0].metadata == {"behavior_id": "test_behavior_1"}
 
         # Image properties
-        assert (
-            image_prompts[1].value
-            == "https://raw.githubusercontent.com/centerforaisafety/HarmBench/c0423b9/data/multimodal_behavior_images/another_image.png"
-        )  # note the .png extension
+        assert image_prompts[1].value == "/dbdata/seed-prompt-entries/images/harmbench_test_behavior_2.png"
         assert image_prompts[1].data_type == "image_path"
         assert image_prompts[1].name == "HarmBench Multimodal Image - test_behavior_2"
         assert image_prompts[1].dataset_name == "HarmBench Multimodal Examples"
@@ -84,11 +88,13 @@ class TestHarmBenchMultimodalDataset:
             "behavior_id": "test_behavior_2",
             "image_description": "Another image description",
             "redacted_image_description": "Another redacted description",
+            "original_image_url": "https://raw.githubusercontent.com/centerforaisafety/HarmBench/c0423b9/data/multimodal_behavior_images/another_image.png",
         }
         assert image_prompts[1].metadata == expected_metadata
 
+    @patch("pyrit.datasets.harmbench_multimodal_dataset._fetch_and_save_image_async")
     @patch("pyrit.datasets.harmbench_multimodal_dataset.fetch_examples")
-    def test_fetching_with_missing_required_keys(self, mock_fetch):
+    async def test_fetching_with_missing_required_keys(self, mock_fetch, mock_fetch_image):
         mock_examples = [
             {
                 "Behavior": "Test behavior",
@@ -100,10 +106,11 @@ class TestHarmBenchMultimodalDataset:
 
         mock_fetch.return_value = mock_examples
         with pytest.raises(ValueError, match="Missing keys in example"):
-            fetch_harmbench_multimodal_dataset()
+            await fetch_harmbench_multimodal_dataset_async()
 
+    @patch("pyrit.datasets.harmbench_multimodal_dataset._fetch_and_save_image_async")
     @patch("pyrit.datasets.harmbench_multimodal_dataset.fetch_examples")
-    def test_fetching_with_missing_optional_fields(self, mock_fetch):
+    async def test_fetching_with_missing_optional_fields(self, mock_fetch, mock_fetch_image):
         mock_examples = [
             {
                 "Behavior": "Test behavior",
@@ -116,7 +123,9 @@ class TestHarmBenchMultimodalDataset:
         ]
 
         mock_fetch.return_value = mock_examples
-        result = fetch_harmbench_multimodal_dataset()
+        mock_fetch_image.return_value = "/dbdata/seed-prompt-entries/images/harmbench_test_optional.png"
+
+        result = await fetch_harmbench_multimodal_dataset_async()
 
         assert isinstance(result, SeedPromptDataset)
         assert len(result.prompts) == 2
@@ -126,15 +135,17 @@ class TestHarmBenchMultimodalDataset:
         assert image_prompt.metadata["image_description"] == ""
         assert image_prompt.metadata["redacted_image_description"] == ""
 
+    @patch("pyrit.datasets.harmbench_multimodal_dataset._fetch_and_save_image_async")
     @patch("pyrit.datasets.harmbench_multimodal_dataset.fetch_examples")
-    def test_fetching_with_empty_examples(self, mock_fetch):
+    async def test_fetching_with_empty_examples(self, mock_fetch, mock_fetch_image):
         mock_fetch.return_value = []
 
         with pytest.raises(ValueError, match="SeedPromptDataset cannot be empty"):
-            fetch_harmbench_multimodal_dataset()
+            await fetch_harmbench_multimodal_dataset_async()
 
+    @patch("pyrit.datasets.harmbench_multimodal_dataset._fetch_and_save_image_async")
     @patch("pyrit.datasets.harmbench_multimodal_dataset.fetch_examples")
-    def test_filtering_out_non_multimodal_examples(self, mock_fetch):
+    async def test_filtering_out_non_multimodal_examples(self, mock_fetch, mock_fetch_image):
         mock_examples = [
             {
                 "Behavior": "Text only behavior",
@@ -153,13 +164,16 @@ class TestHarmBenchMultimodalDataset:
         ]
 
         mock_fetch.return_value = mock_examples
-        result = fetch_harmbench_multimodal_dataset()
+        mock_fetch_image.return_value = "/dbdata/seed-prompt-entries/images/harmbench_multimodal_id.png"
+
+        result = await fetch_harmbench_multimodal_dataset_async()
 
         assert len(result.prompts) == 2  # one example (1 text + 1 image)
         assert all(p.metadata["behavior_id"] == "multimodal_id" for p in result.prompts)
 
+    @patch("pyrit.datasets.harmbench_multimodal_dataset._fetch_and_save_image_async")
     @patch("pyrit.datasets.harmbench_multimodal_dataset.fetch_examples")
-    def test_filtering_by_semantic_categories(self, mock_fetch):
+    async def test_filtering_by_semantic_categories(self, mock_fetch, mock_fetch_image):
         mock_examples = [
             {
                 "Behavior": "Illegal behavior",
@@ -192,15 +206,21 @@ class TestHarmBenchMultimodalDataset:
         ]
         mock_fetch.return_value = mock_examples
 
+        mock_fetch_image.side_effect = [
+            "/dbdata/seed-prompt-entries/images/harmbench_illegal_behavior.png",
+            "/dbdata/seed-prompt-entries/images/harmbench_cybercrime_behavior.png",
+            "/dbdata/seed-prompt-entries/images/harmbench_harmful_behavior.png",
+        ]
+
         # Filter by single category
-        result = fetch_harmbench_multimodal_dataset(categories=["illegal"])
+        result = await fetch_harmbench_multimodal_dataset_async(categories=["illegal"])
         assert isinstance(result, SeedPromptDataset)
         assert len(result.prompts) == 2  # 1 text + 1 image prompt for illegal category
         assert all(p.metadata["behavior_id"] == "illegal_behavior" for p in result.prompts)
         assert all(p.harm_categories == ["illegal"] for p in result.prompts)
 
         # Filter by multiple categories
-        result = fetch_harmbench_multimodal_dataset(categories=["cybercrime_intrusion", "harmful"])
+        result = await fetch_harmbench_multimodal_dataset_async(categories=["cybercrime_intrusion", "harmful"])
         assert isinstance(result, SeedPromptDataset)
         assert len(result.prompts) == 4  # 2 examples × 2 prompts each
         behavior_ids = {p.metadata["behavior_id"] for p in result.prompts}
@@ -208,8 +228,8 @@ class TestHarmBenchMultimodalDataset:
 
         # Filter with invalid category
         with pytest.raises(ValueError, match="Invalid semantic categories"):
-            fetch_harmbench_multimodal_dataset(categories=["nonexistent_category", "illegal"])
+            await fetch_harmbench_multimodal_dataset_async(categories=["nonexistent_category", "illegal"])
 
         # Filter with an empty list
         with pytest.raises(ValueError, match="SeedPromptDataset cannot be empty"):
-            fetch_harmbench_multimodal_dataset(categories=[])
+            await fetch_harmbench_multimodal_dataset_async(categories=[])
