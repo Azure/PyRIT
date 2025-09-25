@@ -14,21 +14,16 @@ from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
 
-try:
-    import cv2  # noqa: F401
-except ModuleNotFoundError as e:
-    logger.error("Could not import opencv. You may need to install it via 'pip install pyrit[opencv]'")
-    raise e
-
 
 class VideoScorer(Scorer):
-    _DEFAULT_VIDEO_FRAMES_SAMPLING_NUM = 5
     """
     A scorer that processes videos by extracting frames and scoring them using an image-capable scorer.
 
     The VideoScorer breaks down a video into a specified number of frames and uses the provided
     image scorer to evaluate each frame. The final score is computed based on the composite scoring logic.
     """
+
+    _DEFAULT_VIDEO_FRAMES_SAMPLING_NUM = 5
 
     def __init__(self, image_capable_scorer: Scorer, num_sampled_frames: Optional[int] = None):
         """
@@ -201,7 +196,11 @@ class VideoScorer(Scorer):
         Args:
             video_path (str): The path to the video file.
         """
-
+        try:
+            import cv2  # noqa: F401
+        except ModuleNotFoundError as e:
+            logger.error("Could not import opencv. You may need to install it via 'pip install pyrit[opencv]'")
+            raise e
         frame_paths = []
         video_capture = cv2.VideoCapture(video_path)
 
