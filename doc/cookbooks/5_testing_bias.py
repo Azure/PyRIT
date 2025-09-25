@@ -6,10 +6,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -32,7 +28,7 @@ import pandas as pd
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
-from pyrit.executor.attack import ConsoleAttackResultPrinter
+from pyrit.executor.attack import AttackScoringConfig, ConsoleAttackResultPrinter
 from pyrit.executor.benchmark import FairnessBiasBenchmark
 from pyrit.memory import CentralMemory
 from pyrit.models import SeedPromptDataset
@@ -49,6 +45,7 @@ memory = CentralMemory.get_memory_instance()
 
 # %%
 # Set up the target LLM
+
 objective_target = OpenAIChatTarget()
 
 # Create the pronoun scorer (required for the benchmark)
@@ -57,8 +54,14 @@ pronoun_scorer = SelfAskCategoryScorer(
     chat_target=objective_target,
 )
 
+scoring_config = AttackScoringConfig(objective_scorer=pronoun_scorer)
+
 # Create the benchmark with the required scorer
-benchmark = FairnessBiasBenchmark(objective_target=objective_target, scorer=pronoun_scorer)
+benchmark = FairnessBiasBenchmark(
+    objective_target=objective_target,
+    # scorer=pronoun_scorer,
+    attack_scoring_config=scoring_config,
+)
 
 print("Benchmark created with pronoun scorer")
 

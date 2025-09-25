@@ -6,7 +6,7 @@ import re
 import uuid
 from collections import Counter
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple, overload
+from typing import Any, Dict, List, Optional, overload
 
 from pyrit.common.utils import get_kwarg_param
 from pyrit.executor.attack.core import (
@@ -27,7 +27,6 @@ from pyrit.models import (
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
-from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +90,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
         self,
         *,
         objective_target: PromptTarget,
-        scorer: Scorer,
+        # scorer: Scorer,
         attack_converter_config: Optional[AttackConverterConfig] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
@@ -121,7 +120,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
             prompt_normalizer=prompt_normalizer,
             max_attempts_on_failure=max_attempts_on_failure,
         )
-        self._scorer = scorer
+        # self._scorer = scorer
         self.memory = CentralMemory.get_memory_instance()
 
     def _validate_context(self, *, context: FairnessBiasBenchmarkContext) -> None:
@@ -188,6 +187,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
 
         for experiment_num in range(context.num_experiments):
             experiment_data, attack_result = await self._run_experiment(context=context, experiment_num=experiment_num)
+            # attack_result = await self._run_experiment(context=context, experiment_num=experiment_num)
             results_list.append(experiment_data)
             last_attack_result = attack_result
 
@@ -203,9 +203,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
 
         return last_attack_result
 
-    async def _run_experiment(
-        self, context: FairnessBiasBenchmarkContext, experiment_num: int
-    ) -> Tuple[Dict[str, str], AttackResult]:
+    async def _run_experiment(self, context: FairnessBiasBenchmarkContext, experiment_num: int):
         """
         Run a single experiment for the benchmark.
 
@@ -223,52 +221,22 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
             memory_labels=context.memory_labels,
         )
 
-        experimental_result = {}
         conversation_pieces = self.memory.get_conversation(conversation_id=attack_result.conversation_id)
-        if len(conversation_pieces) >= 2:
-            experimental_result = await self._score_piece(
-                response_piece=conversation_pieces[1], experiment_num=experiment_num, context=context
-            )
 
-        return experimental_result, attack_result
-
-    async def _score_piece(
-        self, response_piece: PromptRequestResponse, experiment_num: int, context: FairnessBiasBenchmarkContext
-    ) -> Dict[str, str]:
-        """
-        scores conversation piece
-        Args:
-            response_piece (PromptRequestResponse): The response piece to score
-            experiment_num (int): current value of experiment number
-            context (FairnessBiasBenchmarkContext): The configured benchmark context
-        Returns:
-            Dict[str, str]: dictionary with scored response values
-        """
-        response = response_piece.get_value()
-
+        response = conversation_pieces[1].get_value() if len(conversation_pieces) >= 2 else ""
         subject_name = self._extract_name(response)
-        score_category = "unknown"
-        score_rationale = "Scoring not available"
-
-        # Perform scoring with the required scorer
-        try:
-            score = (await self._scorer.score_text_async(text=response))[0]
-            score_category = score.score_category
-            score_rationale = score.score_rationale
-        except Exception as e:
-            score_category = "error"
-            score_rationale = f"Scoring failed: {str(e)}"
-
         experiment_result = {
             "experiment_number": str(experiment_num + 1),
             "subject": context.subject,
             "story_type": context.story_type,
             "generated_name": subject_name or "Not found",
             "generated_content": response,
-            "score_category": score_category,
-            "score_rationale": score_rationale,
+            "score_category": attack_result.last_score.score_category if attack_result.last_score else "unknown",
+            "score_rationale": (
+                attack_result.last_score.score_rationale if attack_result.last_score else "Scoring not available"
+            ),
         }
-        return experiment_result
+        return experiment_result, attack_result
 
     def _format_story_prompt(self, *, subject: str, story_type: str) -> str:
         """
