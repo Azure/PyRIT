@@ -3,6 +3,7 @@
 
 import logging
 import uuid
+from enum import Enum
 from pathlib import Path
 from typing import List, Literal, Optional
 
@@ -13,14 +14,14 @@ from pyrit.models.seed_prompt import SeedPrompt
 
 logger = logging.getLogger(__name__)
 
-SemanticCategoriesLiteral = Literal[
-    "cybercrime_intrusion",  # n=54
-    "illegal",  # 36
-    "harmful",  # 9
-    "chemical_biological",  # 4
-    "harassment_bullying",  # 4
-    "misinformation_disinformation",  # 3
-]
+
+class SemanticCategory(Enum):
+    CYBERCRIME_INTRUSION = "cybercrime_intrusion"  # n=54
+    ILLEGAL = "illegal"  # 36
+    HARMFUL = "harmful"  # 9
+    CHEMICAL_BIOLOGICAL = "chemical_biological"  # 4
+    HARASSMENT_BULLYING = "harassment_bullying"  # 4
+    MISINFORMATION_DISINFORMATION = "misinformation_disinformation"  # 3
 
 
 async def fetch_harmbench_multimodal_dataset_async(
@@ -32,7 +33,7 @@ async def fetch_harmbench_multimodal_dataset_async(
     source_type: Literal["public_url", "file"] = "public_url",
     cache: bool = True,
     data_home: Optional[Path] = None,
-    categories: Optional[List[SemanticCategoriesLiteral]] = None,
+    categories: Optional[List[SemanticCategory]] = None,
 ) -> SeedPromptDataset:
     """
     Fetch HarmBench multimodal examples and create a SeedPromptDataset.
@@ -50,7 +51,7 @@ async def fetch_harmbench_multimodal_dataset_async(
         source_type (Literal["public_url", "file"]): The type of source. Defaults to 'public_url'.
         cache (bool): Whether to cache the fetched examples. Defaults to True.
         data_home (Optional[Path]): Directory to store cached data. Defaults to None.
-        categories (Optional[List[SemanticCategoriesLiteral]]): List of semantic categories
+        categories (Optional[List[SemanticCategory]]): List of semantic categories
             to filter examples. If None, all categories are included (default).
 
     Returns:
@@ -68,7 +69,10 @@ async def fetch_harmbench_multimodal_dataset_async(
             & Nathaniel Li & Steven Basart & Bo Li & David Forsyth & Dan Hendrycks
     """
     if categories is not None:
-        invalid_categories = set(categories) - set(SemanticCategoriesLiteral.__args__)
+        valid_categories = {category.value for category in SemanticCategory}
+        invalid_categories = (
+            set(cat.value if isinstance(cat, SemanticCategory) else cat for cat in categories) - valid_categories
+        )
         if invalid_categories:
             raise ValueError(f"Invalid semantic categories: {', '.join(invalid_categories)}")
 
@@ -86,8 +90,10 @@ async def fetch_harmbench_multimodal_dataset_async(
 
         semantic_category = example["SemanticCategory"]
 
-        if categories is not None and semantic_category not in categories:
-            continue
+        if categories is not None:
+            category_values = {cat.value for cat in categories}
+            if semantic_category not in category_values:
+                continue
 
         behavior_text = example["Behavior"]
         behavior_id = example["BehaviorID"]
@@ -116,7 +122,10 @@ async def fetch_harmbench_multimodal_dataset_async(
 
         # Note: All images in the HarmBench dataset are stored as .png files, even if the ImageFileName
         # field specifies a different extension (.jpg or .jpeg). Hence we always use .png extension here.
-        image_url = f"https://raw.githubusercontent.com/centerforaisafety/HarmBench/c0423b9/data/multimodal_behavior_images/{image_filename.rsplit('.', 1)[0]}.png"
+        image_url = (
+            "https://raw.githubusercontent.com/centerforaisafety/HarmBench/c0423b9/data/multimodal_behavior_images/"
+            f"{image_filename.rsplit('.', 1)[0]}.png"
+        )
         local_image_path = await _fetch_and_save_image_async(image_url, behavior_id)
 
         image_prompt = SeedPrompt(
