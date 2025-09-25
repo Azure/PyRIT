@@ -57,8 +57,18 @@ jobs:
       cp -r $PyRIT_DIR/tests/integration $NEW_DIR/tests
       cd $NEW_DIR
     displayName: "Create and switch to new integration test directory"
-  - bash: make integration-test
-    name: run_integration_tests
+
+  - task: AzureCLI@2
+    displayName: "Run integration tests with service principal login"
+    inputs:
+      azureSubscription: 'integration-test-service-connection'
+      addSpnToEnvironment: true
+      scriptType: 'bash'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        # Run integration tests
+        make integration-test
+
   - bash: rm -f .env
     name: clean_up_env_file
   - task: PublishTestResults@2
