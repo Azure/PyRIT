@@ -6,6 +6,7 @@ from unittest.mock import patch
 import pytest
 
 from pyrit.datasets.harmbench_multimodal_dataset import (
+    SemanticCategory,
     fetch_harmbench_multimodal_dataset_async,
 )
 from pyrit.models import SeedPromptDataset
@@ -216,22 +217,20 @@ class TestHarmBenchMultimodalDataset:
         ]
 
         # Filter by single category
-        result = await fetch_harmbench_multimodal_dataset_async(categories=["illegal"])
+        result = await fetch_harmbench_multimodal_dataset_async(categories=[SemanticCategory.ILLEGAL])
         assert isinstance(result, SeedPromptDataset)
         assert len(result.prompts) == 2  # 1 text + 1 image prompt for illegal category
         assert all(p.metadata["behavior_id"] == "illegal_behavior" for p in result.prompts)
         assert all(p.harm_categories == ["illegal"] for p in result.prompts)
 
         # Filter by multiple categories
-        result = await fetch_harmbench_multimodal_dataset_async(categories=["cybercrime_intrusion", "harmful"])
+        result = await fetch_harmbench_multimodal_dataset_async(
+            categories=[SemanticCategory.CYBERCRIME_INTRUSION, SemanticCategory.HARMFUL]
+        )
         assert isinstance(result, SeedPromptDataset)
         assert len(result.prompts) == 4  # 2 examples × 2 prompts each
         behavior_ids = {p.metadata["behavior_id"] for p in result.prompts}
         assert behavior_ids == {"cybercrime_behavior", "harmful_behavior"}
-
-        # Filter with invalid category
-        with pytest.raises(ValueError, match="Invalid semantic categories"):
-            await fetch_harmbench_multimodal_dataset_async(categories=["nonexistent_category", "illegal"])
 
         # Filter with an empty list
         with pytest.raises(ValueError, match="SeedPromptDataset cannot be empty"):
