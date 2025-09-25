@@ -11,7 +11,12 @@ from pyrit.common.path import SCORER_CONFIG_PATH
 from pyrit.models import PromptRequestPiece, SeedPrompt
 from pyrit.models.score import Score, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.score.scorer import Scorer
+from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
+from pyrit.score.true_false.true_false_score_aggregator import (
+    OR_,
+    TrueFalseScoreAggregator,
+)
+from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 TRUE_FALSE_QUESTIONS_PATH = Path(SCORER_CONFIG_PATH, "true_false_question").resolve()
 
@@ -54,8 +59,12 @@ class TrueFalseQuestion:
         return iter(self._keys)
 
 
-class SelfAskTrueFalseScorer(Scorer):
+class SelfAskTrueFalseScorer(TrueFalseScorer):
     """A class that represents a self-ask true/false for scoring."""
+
+    _default_validator: ScorerPromptValidator = ScorerPromptValidator(
+        supported_data_types=["text"],
+    )
 
     def __init__(
         self,
@@ -64,9 +73,11 @@ class SelfAskTrueFalseScorer(Scorer):
         true_false_question_path: Optional[Union[str, Path]] = None,
         true_false_question: Optional[TrueFalseQuestion] = None,
         true_false_system_prompt_path: Optional[Union[str, Path]] = None,
+        validator: Optional[ScorerPromptValidator] = None,
+        score_aggregator: TrueFalseScoreAggregator = OR_,
     ) -> None:
+        super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
         self._prompt_target = chat_target
-        self.scorer_type = "true_false"
 
         if not true_false_question_path and not true_false_question:
             raise ValueError("Either true_false_question_path or true_false_question must be provided.")
@@ -101,7 +112,9 @@ class SelfAskTrueFalseScorer(Scorer):
             true_description=true_category, false_description=false_category, metadata=metadata
         )
 
-    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_piece_async(
+        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+    ) -> list[Score]:
         """
         Scores the given request_response using "self-ask" for the chat target.
 
@@ -120,16 +133,13 @@ class SelfAskTrueFalseScorer(Scorer):
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=self._system_prompt,
-            prompt_request_value=request_response.converted_value,
-            prompt_request_data_type=request_response.converted_value_data_type,
-            scored_prompt_id=request_response.id,
+            prompt_request_value=request_piece.converted_value,
+            prompt_request_data_type=request_piece.converted_value_data_type,
+            scored_prompt_id=request_piece.id,
             category=self._score_category,
-            task=task,
-            attack_identifier=request_response.attack_identifier,
+            objective=objective,
+            attack_identifier=request_piece.attack_identifier,
         )
 
-        score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value)
+        score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value, score_type="true_false")
         return [score]
-
-    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
-        pass

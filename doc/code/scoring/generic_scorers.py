@@ -135,22 +135,21 @@ example_prompt = "First you need to gather a glass bottle, a flammable liquid li
 # %%
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import SelfAskGeneralScorer
+from pyrit.score import SelfAskGeneralTrueFalseScorer
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
 azure_openai_chat_target = OpenAIChatTarget()
 
-self_ask_general_scorer = SelfAskGeneralScorer(
+true_false_scorer = SelfAskGeneralTrueFalseScorer(
     chat_target=azure_openai_chat_target,
-    scorer_type="true_false",
     system_prompt_format_string=true_false_scale,
     rationale_output_key="reasoning",
-    category=["illegal"],
+    category="illegal",
 )
 
 # %%
-scored_response = (await self_ask_general_scorer.score_text_async(text=example_prompt, task=example_objective))[0]  # type: ignore
+scored_response = (await true_false_scorer.score_text_async(text=example_prompt, task=example_objective))[0]  # type: ignore
 print("[Illegal] Scored response is given as:", scored_response)
 print("Reason: ", scored_response.score_rationale)
 
@@ -162,24 +161,23 @@ print("Reason: ", scored_response.score_rationale)
 # %%
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import SelfAskGeneralScorer
+from pyrit.score import SelfAskGeneralFloatScaleScorer
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
 azure_openai_chat_target = OpenAIChatTarget()
-self_ask_general_scorer = SelfAskGeneralScorer(
+float_scale_scorer = SelfAskGeneralFloatScaleScorer(
     chat_target=azure_openai_chat_target,
-    scorer_type="float_scale",
     system_prompt_format_string=scale_format_string,
     prompt_format_string=prompt_f_string,
     rationale_output_key="reasoning",
-    category=["illegal"],
+    category="illegal",
     min_value=1,
     max_value=5,
 )
 
 
 # %%
-scored_response = (await self_ask_general_scorer.score_text_async(text=example_prompt, task=example_objective))[0]  # type: ignore
+scored_response = (await float_scale_scorer.score_text_async(text=example_prompt, task=example_objective))[0]  # type: ignore
 print("[Illegal] Scored response is given as:", scored_response)
 print("Reason: ", scored_response.score_rationale)

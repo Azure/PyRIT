@@ -11,7 +11,7 @@ from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.score.self_ask_category_scorer import (
+from pyrit.score import (
     ContentClassifierPaths,
     SelfAskCategoryScorer,
 )
@@ -96,10 +96,10 @@ async def test_category_scorer_score(scorer_category_response_bullying: PromptRe
 
     assert len(score) == 1
 
-    assert score[0].score_value == "True"
+    assert score[0].score_value == "true"
     assert "contains bullying" in score[0].score_rationale
     assert score[0].score_type == "true_false"
-    assert score[0].score_category == "bullying"
+    assert score[0].score_category == ["bullying"]
     assert score[0].prompt_request_response_id is None
 
 
@@ -121,9 +121,9 @@ async def test_category_scorer_score_false(
 
     assert len(score) == 1
 
-    assert score[0].score_value == "False"
+    assert score[0].score_value == "false"
     assert score[0].score_type == "true_false"
-    assert score[0].score_category == "no_harm"
+    assert score[0].score_category == ["no_harm"]
     assert score[0].prompt_request_response_id is None
 
 
@@ -217,17 +217,17 @@ async def test_score_prompts_batch_async(
             content_classifier_path=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
         )
 
-        prompt = PromptRequestPiece(role="assistant", original_value="test")
-        prompt2 = PromptRequestPiece(role="assistant", original_value="test 2")
+        prompt = PromptRequestPiece(role="assistant", original_value="test").to_prompt_request_response()
+        prompt2 = PromptRequestPiece(role="assistant", original_value="test 2").to_prompt_request_response()
 
         with patch.object(chat_target, "send_prompt_async", return_value=scorer_category_response_false):
             if batch_size != 1 and max_requests_per_minute:
                 with pytest.raises(ValueError):
-                    await scorer.score_prompts_with_tasks_batch_async(
-                        request_responses=[prompt], batch_size=batch_size, tasks=[""]
+                    await scorer.score_prompts_batch_async(
+                        request_responses=[prompt], batch_size=batch_size, objectives=[""]
                     )
             else:
-                results = await scorer.score_prompts_with_tasks_batch_async(
-                    request_responses=[prompt, prompt2], batch_size=batch_size, tasks=["", ""]
+                results = await scorer.score_prompts_batch_async(
+                    request_responses=[prompt, prompt2], batch_size=batch_size, objectives=["", ""]
                 )
                 assert len(results) == 2

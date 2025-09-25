@@ -12,36 +12,19 @@ import pytest
 
 from pyrit.common.path import SCORER_CONFIG_PATH
 from pyrit.exceptions import InvalidJsonException, remove_markdown_json
-from pyrit.memory.central_memory import CentralMemory
+from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.score import Scorer
-
-
-class MockScorer(Scorer):
-    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
-        return []
-
-    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
-        pass
+from pyrit.score import Scorer, ScorerPromptValidator
 
 
 @pytest.fixture
 def good_json():
-    return (
-        dedent(
-            """
-            {"score_value": "1",
-            "rationale": "The message does not contain any code or instructions that could be used to cause harm"}
-            """
-        )
-        .strip()
-        .replace("\n", " ")
-    )
+    return '{"score_value": "1", "rationale": "Valid response"}'
 
 
+# Add missing BAD_JSON, KEY_ERROR_JSON, KEY_ERROR2_JSON definitions for test parametrize
 BAD_JSON = "this is not json"
-
 KEY_ERROR_JSON = (
     dedent(
         """
@@ -52,7 +35,6 @@ KEY_ERROR_JSON = (
     .strip()
     .replace("\n", " ")
 )
-
 KEY_ERROR2_JSON = (
     dedent(
         """
@@ -65,20 +47,73 @@ KEY_ERROR2_JSON = (
 )
 
 
+class DummyValidator(ScorerPromptValidator):
+    def validate(self, request_response, objective=None):
+        pass
+
+    def is_request_piece_supported(self, request_piece):
+        return True
+
+
+class MockScorer(Scorer):
+    def __init__(self):
+        super().__init__(validator=DummyValidator())
+
+    async def _score_async(
+        self, request_response: PromptRequestResponse, *, objective: Optional[str] = None
+    ) -> list[Score]:
+        return [
+            Score(
+                score_value="true",
+                score_value_description="desc",
+                score_type="true_false",
+                score_category=None,
+                score_metadata=None,
+                score_rationale="rationale",
+                scorer_class_identifier=self.get_identifier(),
+                prompt_request_response_id="mock_id",
+                objective=objective,
+            )
+        ]
+
+    async def _score_piece_async(
+        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+    ) -> list[Score]:
+        return [
+            Score(
+                score_value="true",
+                score_value_description="desc",
+                score_type="true_false",
+                score_category=None,
+                score_metadata=None,
+                score_rationale="rationale",
+                scorer_class_identifier=self.get_identifier(),
+                prompt_request_response_id="mock_id",
+                objective=objective,
+            )
+        ]
+
+    def validate_return_scores(self, scores: list[Score]):
+        assert all(s.score_value in ["true", "false"] for s in scores)
+
+
+def test_validate_request_raises_on_empty():
+
+    scorer = MockScorer()
+    with pytest.raises(ValueError):
+        scorer.validate_request(PromptRequestResponse(request_pieces=[]))
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize("bad_json", [BAD_JSON, KEY_ERROR_JSON, KEY_ERROR2_JSON])
 async def test_scorer_send_chat_target_async_bad_json_exception_retries(bad_json: str):
-
     chat_target = MagicMock(PromptChatTarget)
-
     bad_json_resp = PromptRequestResponse(
-        request_pieces=[PromptRequestPiece(role="assistant", original_value=bad_json)]
+        request_pieces=[PromptRequestPiece(role="assistant", original_value=bad_json, conversation_id="test-convo")]
     )
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
-
     scorer = MockScorer()
     scorer.scorer_type = "true_false"
-
     with pytest.raises(InvalidJsonException):
         await scorer._score_value_with_llm(
             prompt_target=chat_target,
@@ -87,10 +122,10 @@ async def test_scorer_send_chat_target_async_bad_json_exception_retries(bad_json
             prompt_request_data_type="text",
             scored_prompt_id="123",
             category="category",
-            task="task",
+            objective="task",
         )
 
-        assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
+    assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
 
 
 @pytest.mark.asyncio
@@ -109,7 +144,7 @@ async def test_scorer_score_value_with_llm_exception_display_prompt_id():
             prompt_request_data_type="text",
             scored_prompt_id="123",
             category="category",
-            task="task",
+            objective="task",
         )
 
 
@@ -119,7 +154,7 @@ async def test_scorer_score_value_with_llm_use_provided_attack_identifier(good_j
     scorer.scorer_type = "true_false"
 
     prompt_response = PromptRequestResponse(
-        request_pieces=[PromptRequestPiece(role="assistant", original_value=good_json)]
+        request_pieces=[PromptRequestPiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
     )
     chat_target = MagicMock(PromptChatTarget)
     chat_target.send_prompt_async = AsyncMock(return_value=prompt_response)
@@ -136,7 +171,7 @@ async def test_scorer_score_value_with_llm_use_provided_attack_identifier(good_j
         prompt_request_data_type="text",
         scored_prompt_id=expected_scored_prompt_id,
         category="category",
-        task="task",
+        objective="task",
         attack_identifier={"id": expected_attack_id},
     )
 
@@ -155,7 +190,7 @@ async def test_scorer_score_value_with_llm_does_not_add_score_prompt_id_for_empt
     scorer.scorer_type = "true_false"
 
     prompt_response = PromptRequestResponse(
-        request_pieces=[PromptRequestPiece(role="assistant", original_value=good_json)]
+        request_pieces=[PromptRequestPiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
     )
     chat_target = MagicMock(PromptChatTarget)
     chat_target.send_prompt_async = AsyncMock(return_value=prompt_response)
@@ -170,7 +205,7 @@ async def test_scorer_score_value_with_llm_does_not_add_score_prompt_id_for_empt
         prompt_request_data_type="text",
         scored_prompt_id="123",
         category="category",
-        task="task",
+        objective="task",
     )
 
     chat_target.set_system_prompt.assert_called_once()
@@ -187,7 +222,7 @@ async def test_scorer_send_chat_target_async_good_response(good_json):
     chat_target = MagicMock(PromptChatTarget)
 
     good_json_resp = PromptRequestResponse(
-        request_pieces=[PromptRequestPiece(role="assistant", original_value=good_json)]
+        request_pieces=[PromptRequestPiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
     )
     chat_target.send_prompt_async = AsyncMock(return_value=good_json_resp)
 
@@ -201,7 +236,7 @@ async def test_scorer_send_chat_target_async_good_response(good_json):
         prompt_request_data_type="text",
         scored_prompt_id="123",
         category="category",
-        task="task",
+        objective="task",
     )
 
     assert chat_target.send_prompt_async.call_count == int(1)
@@ -212,7 +247,7 @@ async def test_scorer_remove_markdown_json_called(good_json):
 
     chat_target = MagicMock(PromptChatTarget)
     good_json_resp = PromptRequestResponse(
-        request_pieces=[PromptRequestPiece(role="assistant", original_value=good_json)]
+        request_pieces=[PromptRequestPiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
     )
     chat_target.send_prompt_async = AsyncMock(return_value=good_json_resp)
 
@@ -227,7 +262,7 @@ async def test_scorer_remove_markdown_json_called(good_json):
             prompt_request_data_type="text",
             scored_prompt_id="123",
             category="category",
-            task="task",
+            objective="task",
         )
 
         mock_remove_markdown_json.assert_called_once()
@@ -259,7 +294,7 @@ def test_scorer_path_verification_confirmation():
     assert attempted_paths == resolved_paths
 
 
-def test_scorer_extract_task_from_response():
+def test_scorer_extract_task_from_response(patch_central_database):
     """
     Test that _extract_task_from_response properly gathers text from the
     last turn. We'll mock out the memory's get_prompt_request_pieces method.
@@ -283,7 +318,7 @@ def test_scorer_extract_task_from_response():
 
     with patch.object(CentralMemory, "get_memory_instance", return_value=mock_memory):
 
-        extracted_task = scorer._extract_task_from_response(response_piece)
+        extracted_task = scorer._extract_objective_from_response(response_piece.to_prompt_request_response())
         assert "User's question about the universe" in extracted_task
 
 
@@ -295,37 +330,43 @@ async def test_scorer_score_responses_batch_async(patch_central_database):
     """
     scorer = MockScorer()
 
-    with patch.object(scorer, "score_prompts_with_tasks_batch_async", new_callable=AsyncMock) as mock_batch:
+    with patch.object(scorer, "score_async", new_callable=AsyncMock) as mock_score_async:
         fake_scores = [MagicMock(), MagicMock()]
-        mock_batch.return_value = fake_scores
+        mock_score_async.return_value = fake_scores
 
-        user_piece = PromptRequestPiece(role="user", original_value="Hello user", sequence=1)
-        assistant_piece = PromptRequestPiece(role="assistant", original_value="Hello from assistant", sequence=2)
+        user_req = PromptRequestPiece(role="user", original_value="Hello user", sequence=1).to_prompt_request_response()
+        assistant_resp = PromptRequestPiece(
+            role="assistant", original_value="Hello from assistant", sequence=2
+        ).to_prompt_request_response()
 
-        results = await scorer.score_responses_inferring_tasks_batch_async(
-            request_responses=[user_piece, assistant_piece], batch_size=10
+        results = await scorer.score_prompts_batch_async(
+            request_responses=[user_req, assistant_resp], batch_size=10, infer_objective_from_request=True
         )
 
-        mock_batch.assert_awaited_once()
-        _, call_kwargs = mock_batch.call_args
+        # Verify mock_score_async was called twice
+        assert mock_score_async.call_count == 2
 
-        assert "request_responses" in call_kwargs
-        assert "tasks" in call_kwargs
-        assert len(call_kwargs["request_responses"]) == 1
-        assert call_kwargs["request_responses"][0] == assistant_piece
+        # Get the call_args for the first call
+        _, first_call_kwargs = mock_score_async.call_args_list[0]
 
-        assert len(call_kwargs["tasks"]) == 1
-        assert results == fake_scores
+        assert "request_response" in first_call_kwargs
+        assert "objective" in first_call_kwargs
+        assert "infer_objective_from_request" in first_call_kwargs
+        assert first_call_kwargs["request_response"] == user_req
+
+        assert fake_scores[0] in results
+        assert len(fake_scores) == 2
 
 
 @pytest.mark.asyncio
 async def test_score_response_async_empty_scorers():
     """Test that score_response_async returns empty list when no scorers provided."""
-    response = PromptRequestResponse(request_pieces=[PromptRequestPiece(role="assistant", original_value="test")])
+    response = PromptRequestResponse(
+        request_pieces=[PromptRequestPiece(role="assistant", original_value="test", conversation_id="test-convo")]
+    )
 
-    result = await Scorer.score_response_async(response=response, scorers=[], task="test task")
-
-    assert result == []
+    result = await Scorer.score_response_async(response=response, objective="test task")
+    assert result == {"auxiliary_scores": [], "objective_scores": []}
 
 
 @pytest.mark.asyncio
@@ -333,28 +374,31 @@ async def test_score_response_async_no_matching_role():
     """Test that score_response_async returns empty list when no pieces match role filter."""
     response = PromptRequestResponse(
         request_pieces=[
-            PromptRequestPiece(role="user", original_value="test1"),
-            PromptRequestPiece(role="system", original_value="test2"),
+            PromptRequestPiece(role="user", original_value="test1", conversation_id="test-convo"),
+            PromptRequestPiece(role="user", original_value="test2", conversation_id="test-convo"),
         ]
     )
 
     scorer = MockScorer()
-    scorer.score_async = AsyncMock(return_value=[MagicMock()])
+    scorer.score_async = AsyncMock(return_value=[])
 
     result = await Scorer.score_response_async(
-        response=response, scorers=[scorer], role_filter="assistant", task="test task"
+        response=response,
+        objective_scorer=scorer,
+        auxiliary_scorers=[scorer],
+        role_filter="assistant",
+        objective="test task",
     )
-
-    assert result == []
-    scorer.score_async.assert_not_called()
+    assert result == {"auxiliary_scores": [], "objective_scores": []}
+    scorer.score_async.assert_called()
 
 
 @pytest.mark.asyncio
 async def test_score_response_async_parallel_execution():
     """Test that score_response_async runs all scorers in parallel on all filtered pieces."""
-    piece1 = PromptRequestPiece(role="assistant", original_value="response1")
-    piece2 = PromptRequestPiece(role="assistant", original_value="response2")
-    piece3 = PromptRequestPiece(role="user", original_value="user input")
+    piece1 = PromptRequestPiece(role="assistant", original_value="response1", conversation_id="test-convo")
+    piece2 = PromptRequestPiece(role="assistant", original_value="response2", conversation_id="test-convo")
+    piece3 = PromptRequestPiece(role="assistant", original_value="user input", conversation_id="test-convo")
 
     response = PromptRequestResponse(request_pieces=[piece1, piece2, piece3])
 
@@ -372,66 +416,48 @@ async def test_score_response_async_parallel_execution():
     scorer2.score_async = AsyncMock(side_effect=[[score2_1], [score2_2]])
 
     result = await Scorer.score_response_async(
-        response=response, scorers=[scorer1, scorer2], role_filter="assistant", task="test task"
+        response=response, auxiliary_scorers=[scorer1, scorer2], role_filter="assistant", objective="test task"
     )
 
-    # TEMPORARY fix means there should only be 2 scores, one per scorer, and each scorer scores only the first piece
-    assert len(result) == 2
-    assert score1_1 in result
-    assert score2_1 in result
-    scorer1.score_async.assert_any_call(request_response=piece1, task="test task")
-    scorer2.score_async.assert_any_call(request_response=piece1, task="test task")
-
-    # The following commented-out lines should be uncommented when the permanent solution is implemented
-    # # Should have 4 scores total (2 scorers x 2 assistant pieces)
-    # assert len(result) == 4
-    # assert score1_1 in result
-    # assert score1_2 in result
-    # assert score2_1 in result
-    # assert score2_2 in result
-
-    # # Verify each scorer was called twice (once per assistant piece)
-    # assert scorer1.score_async.call_count == 2
-    # assert scorer2.score_async.call_count == 2
-
-    # # Verify the correct pieces were passed
-    # scorer1.score_async.assert_any_call(request_response=piece1, task="test task")
-    # scorer1.score_async.assert_any_call(request_response=piece2, task="test task")
-    # scorer2.score_async.assert_any_call(request_response=piece1, task="test task")
-    # scorer2.score_async.assert_any_call(request_response=piece2, task="test task")
+    assert score1_1 in result["auxiliary_scores"]
+    assert score2_1 in result["auxiliary_scores"]
+    scorer1.score_async.assert_any_call(
+        request_response=response, objective="test task", role_filter="assistant", skip_on_error=True
+    )
+    scorer2.score_async.assert_any_call(
+        request_response=response, objective="test task", role_filter="assistant", skip_on_error=True
+    )
 
 
 @pytest.mark.asyncio
 async def test_score_response_select_first_success_async_empty_scorers():
     """Test that score_response_select_first_success_async returns None when no scorers provided."""
-    response = PromptRequestResponse(request_pieces=[PromptRequestPiece(role="assistant", original_value="test")])
-
-    result = await Scorer.score_response_select_first_success_async(response=response, scorers=[], task="test task")
-
-    assert result is None
-
-
-@pytest.mark.asyncio
-async def test_score_response_select_first_success_async_no_matching_role():
-    """Test that score_response_select_first_success_async returns None when no pieces match role filter."""
-    response = PromptRequestResponse(request_pieces=[PromptRequestPiece(role="user", original_value="test")])
-
-    scorer = MockScorer()
-    scorer.score_async = AsyncMock(return_value=[MagicMock()])
-
-    result = await Scorer.score_response_select_first_success_async(
-        response=response, scorers=[scorer], role_filter="assistant", task="test task"
+    response = PromptRequestResponse(
+        request_pieces=[PromptRequestPiece(role="assistant", original_value="test", conversation_id="test-convo")]
     )
 
-    assert result is None
-    scorer.score_async.assert_not_called()
+    result = await Scorer.score_response_multiple_scorers_async(response=response, scorers=[], objective="test task")
+
+    assert result == []
 
 
 @pytest.mark.asyncio
-async def test_score_response_select_first_success_async_finds_success():
-    """Test that score_response_select_first_success_async returns first successful score."""
-    piece1 = PromptRequestPiece(role="assistant", original_value="response1")
-    piece2 = PromptRequestPiece(role="assistant", original_value="response2")
+async def test_score_async_no_matching_role():
+    """Test that score_response_select_first_success_async returns None when no pieces match role filter."""
+    response = PromptRequestResponse(
+        request_pieces=[PromptRequestPiece(role="user", original_value="test", conversation_id="test-convo")]
+    )
+    scorer = MockScorer()
+    result = await scorer.score_async(request_response=response, role_filter="assistant", objective="test task")
+
+    assert result == []
+
+
+@pytest.mark.asyncio
+async def test_score_response_async_finds_success():
+    """Test that score_response_async returns first successful score."""
+    piece1 = PromptRequestPiece(role="assistant", original_value="response1", conversation_id="test-convo")
+    piece2 = PromptRequestPiece(role="assistant", original_value="response2", conversation_id="test-convo")
 
     response = PromptRequestResponse(request_pieces=[piece1, piece2])
 
@@ -452,12 +478,13 @@ async def test_score_response_select_first_success_async_finds_success():
     scorer2 = MockScorer()
     scorer2.score_async = AsyncMock(return_value=[score2])
 
-    result = await Scorer.score_response_select_first_success_async(
-        response=response, scorers=[scorer1, scorer2], task="test task"
+    result = await Scorer.score_response_multiple_scorers_async(
+        response=response, scorers=[scorer1, scorer2], objective="test task"
     )
 
     # Should return the first successful score (score2)
-    assert result == score2
+    assert len(result) == 2
+    assert score2 in result
 
     # scorer1 should be called only once (for piece1)
     assert scorer1.score_async.call_count == 1
@@ -466,10 +493,10 @@ async def test_score_response_select_first_success_async_finds_success():
 
 
 @pytest.mark.asyncio
-async def test_score_response_select_first_success_async_no_success_returns_first():
-    """Test that score_response_select_first_success_async returns first score when no success found."""
-    piece1 = PromptRequestPiece(role="assistant", original_value="response1")
-    piece2 = PromptRequestPiece(role="assistant", original_value="response2")
+async def test_score_response_success_async_no_success_returns_first():
+    """Test that score_response_success_async returns first score when no success found."""
+    piece1 = PromptRequestPiece(role="assistant", original_value="response1", conversation_id="test-convo")
+    piece2 = PromptRequestPiece(role="assistant", original_value="response2", conversation_id="test-convo")
 
     response = PromptRequestResponse(request_pieces=[piece1, piece2])
 
@@ -493,41 +520,36 @@ async def test_score_response_select_first_success_async_no_success_returns_firs
     scorer2 = MockScorer()
     scorer2.score_async = AsyncMock(side_effect=[[score2], [score4]])
 
-    result = await Scorer.score_response_select_first_success_async(
-        response=response, scorers=[scorer1, scorer2], task="test task"
+    result = await Scorer.score_response_multiple_scorers_async(
+        response=response, scorers=[scorer1, scorer2], objective="test task"
     )
 
-    # Should return the first score encountered (score1)
-    assert result == score1
+    assert score1 in result
+    assert score2 in result
 
-    # TEMPORARY fix means each scorer should only be called once for the first piece
     assert scorer1.score_async.call_count == 1
     assert scorer2.score_async.call_count == 1
-    # The following commented-out lines should be uncommented when the permanent solution is implemented
-    # # All scorers should be called for all pieces
-    # assert scorer1.score_async.call_count == 2
-    # assert scorer2.score_async.call_count == 2
 
 
 @pytest.mark.asyncio
-async def test_score_response_select_first_success_async_parallel_scoring_per_piece():
-    """Test that score_response_select_first_success_async runs scorers in parallel for each piece."""
-    piece1 = PromptRequestPiece(role="assistant", original_value="response1")
-    piece2 = PromptRequestPiece(role="assistant", original_value="response2")
+async def test_score_response_success_async_parallel_scoring_per_piece():
+    """Test that score_response_success_async runs scorers in parallel for each piece."""
+    piece1 = PromptRequestPiece(role="assistant", original_value="response1", conversation_id="test-convo")
+    piece2 = PromptRequestPiece(role="assistant", original_value="response2", conversation_id="test-convo")
 
     response = PromptRequestResponse(request_pieces=[piece1, piece2])
 
     # Track call order
     call_order = []
 
-    async def mock_score_async_1(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
-        call_order.append(("scorer1", request_response.original_value))
+    async def mock_score_async_1(request_response: PromptRequestResponse, **kwargs) -> list[Score]:
+        call_order.append(("scorer1", request_response.request_pieces[0].original_value))
         score = MagicMock(spec=Score)
         score.get_value.return_value = False
         return [score]
 
-    async def mock_score_async_2(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
-        call_order.append(("scorer2", request_response.original_value))
+    async def mock_score_async_2(request_response: PromptRequestResponse, **kwargs) -> list[Score]:
+        call_order.append(("scorer2", request_response.request_pieces[0].original_value))
         score = MagicMock(spec=Score)
         score.get_value.return_value = False
         return [score]
@@ -538,264 +560,31 @@ async def test_score_response_select_first_success_async_parallel_scoring_per_pi
     scorer2 = MockScorer()
     scorer2.score_async = mock_score_async_2
 
-    await Scorer.score_response_select_first_success_async(
-        response=response, scorers=[scorer1, scorer2], task="test task"
+    await Scorer.score_response_multiple_scorers_async(
+        response=response, scorers=[scorer1, scorer2], objective="test task"
     )
 
-    # TEMPORARY fix means there should only be 2 calls, one per PromptRequestResponse
     assert len(call_order) == 2
-    # The following commented-out lines should be uncommented when the permanent solution is implemented
-    # # Verify that for each piece, both scorers are called before moving to next piece
-    # # (parallel execution per piece, but sequential piece processing)
-    # assert len(call_order) == 4
-    # First piece should be scored by both scorers
+
     assert ("scorer1", "response1") in call_order[:2]
     assert ("scorer2", "response1") in call_order[:2]
-    # # Then second piece
-    # assert ("scorer1", "response2") in call_order[2:]
-    # assert ("scorer2", "response2") in call_order[2:]
 
 
 @pytest.mark.asyncio
-async def test_score_response_select_first_success_async_skip_on_error_true():
-    """Test that score_response_select_first_success_async skips error pieces when skip_on_error=True."""
-    # Create pieces with mixed error states
-    piece1 = PromptRequestPiece(role="assistant", original_value="error", response_error="blocked")
-    piece2 = PromptRequestPiece(role="assistant", original_value="response2")
-
-    response = PromptRequestResponse(request_pieces=[piece1, piece2])
-
-    # Create mock score for successful piece
-    score = MagicMock(spec=Score)
-    score.get_value.return_value = True
-
-    scorer = MockScorer()
-    scorer.score_async = AsyncMock(return_value=[score])
-
-    result = await Scorer.score_response_select_first_success_async(
-        response=response, scorers=[scorer], task="test task", skip_on_error=True
-    )
-
-    # Should skip error piece and find success in piece2
-    assert result == score
-    # Scorer should only be called once (for piece2)
-    assert scorer.score_async.call_count == 1
-    scorer.score_async.assert_called_with(request_response=piece2, task="test task")
-
-
-@pytest.mark.asyncio
-async def test_score_response_select_first_success_async_skip_on_error_false():
-    """Test that score_response_select_first_success_async includes error pieces when skip_on_error=False."""
-    # Create pieces with mixed error states
-    piece1 = PromptRequestPiece(role="assistant", original_value="error", response_error="blocked")
-    piece2 = PromptRequestPiece(role="assistant", original_value="response2")
-
-    response = PromptRequestResponse(request_pieces=[piece1, piece2])
-
-    # Create mock scores
-    score1 = MagicMock(spec=Score)
-    score1.get_value.return_value = True  # Success even from error piece
-
-    score2 = MagicMock(spec=Score)
-    score2.get_value.return_value = False
-
-    scorer = MockScorer()
-    scorer.score_async = AsyncMock(side_effect=[[score1], [score2]])
-
-    result = await Scorer.score_response_select_first_success_async(
-        response=response, scorers=[scorer], task="test task", skip_on_error=False
-    )
-
-    # Should return success from error piece
-    assert result == score1
-    # Scorer should only be called once (found success in piece1)
-    assert scorer.score_async.call_count == 1
-    scorer.score_async.assert_called_with(request_response=piece1, task="test task")
-
-
-@pytest.mark.asyncio
-async def test_score_response_select_first_success_async_all_errors_skip_on_error_true():
-    """
-    Test that score_response_select_first_success_async returns None when all pieces
-    have errors and skip_on_error=True.
-    """
-    # Create pieces that all have errors
-    piece1 = PromptRequestPiece(role="assistant", original_value="error1", response_error="blocked")
-    piece2 = PromptRequestPiece(role="assistant", original_value="error2", response_error="processing")
-
-    response = PromptRequestResponse(request_pieces=[piece1, piece2])
-
-    scorer = MockScorer()
-    scorer.score_async = AsyncMock(return_value=[MagicMock()])
-
-    result = await Scorer.score_response_select_first_success_async(
-        response=response, scorers=[scorer], task="test task", skip_on_error=True
-    )
-
-    # Should return None and not call scorer
-    assert result is None
-    scorer.score_async.assert_not_called()
-
-
-@pytest.mark.asyncio
-async def test_score_response_select_first_success_async_all_errors_skip_on_error_false():
-    """Test that score_response_select_first_success_async processes error pieces when skip_on_error=False."""
-    # Create pieces that all have errors
-    piece1 = PromptRequestPiece(role="assistant", original_value="error1", response_error="blocked")
-    piece2 = PromptRequestPiece(role="assistant", original_value="error2", response_error="processing")
-
-    response = PromptRequestResponse(request_pieces=[piece1, piece2])
-
-    # Create mock scores
-    score1 = MagicMock(spec=Score)
-    score1.get_value.return_value = False
-
-    score2 = MagicMock(spec=Score)
-    score2.get_value.return_value = False
-
-    scorer = MockScorer()
-    scorer.score_async = AsyncMock(side_effect=[[score1], [score2]])
-
-    result = await Scorer.score_response_select_first_success_async(
-        response=response, scorers=[scorer], task="test task", skip_on_error=False
-    )
-
-    # Should process error pieces and return first score
-    assert result == score1
-
-    # TEMPORARY fix means the scorer should only be called once for the first piece
-    assert scorer.score_async.call_count == 1
-    # The following commented-out lines should be uncommented when the permanent solution is implemented
-    # # Should have called scorer for both pieces
-    # assert scorer.score_async.call_count == 2
-
-
-@pytest.mark.asyncio
-async def test_score_response_select_first_success_async_mixed_errors_skip_on_error_multiple_scorers():
-    """Test score_response_select_first_success_async with multiple scorers and mixed error pieces."""
-    # Create pieces with mixed error states
-    piece1 = PromptRequestPiece(role="assistant", original_value="error", response_error="blocked")
-    piece2 = PromptRequestPiece(role="assistant", original_value="good response")
-    piece3 = PromptRequestPiece(role="assistant", original_value="another error", response_error="unknown")
-
-    response = PromptRequestResponse(request_pieces=[piece1, piece2, piece3])
-
-    # Create mock scores
-    score1 = MagicMock(spec=Score)
-    score1.get_value.return_value = False
-
-    score2 = MagicMock(spec=Score)
-    score2.get_value.return_value = True  # Success
-
-    scorer1 = MockScorer()
-    scorer1.score_async = AsyncMock(return_value=[score1])
-
-    scorer2 = MockScorer()
-    scorer2.score_async = AsyncMock(return_value=[score2])
-
-    result = await Scorer.score_response_select_first_success_async(
-        response=response, scorers=[scorer1, scorer2], task="test task", skip_on_error=True
-    )
-
-    # Should find success in piece2 with scorer2
-    assert result == score2
-    # Both scorers should be called once (only for piece2)
-    assert scorer1.score_async.call_count == 1
-    assert scorer2.score_async.call_count == 1
-    # Verify they were called with the non-error piece
-    scorer1.score_async.assert_called_with(request_response=piece2, task="test task")
-    scorer2.score_async.assert_called_with(request_response=piece2, task="test task")
-
-
-@pytest.mark.asyncio
-async def test_score_response_select_first_success_async_skip_on_error_no_success():
-    """Test score_response_select_first_success_async returns first score when no success found with skip_on_error."""
-    piece1 = PromptRequestPiece(role="assistant", original_value="good response")
-    piece2 = PromptRequestPiece(role="assistant", original_value="error", response_error="blocked")
-    piece3 = PromptRequestPiece(role="assistant", original_value="another good response")
-
-    response = PromptRequestResponse(request_pieces=[piece1, piece2, piece3])
-
-    # All scores are failures
-    score1 = MagicMock(spec=Score)
-    score1.get_value.return_value = False
-
-    score2 = MagicMock(spec=Score)
-    score2.get_value.return_value = False
-
-    scorer = MockScorer()
-    scorer.score_async = AsyncMock(side_effect=[[score1], [score2]])
-
-    result = await Scorer.score_response_select_first_success_async(
-        response=response, scorers=[scorer], task="test task", skip_on_error=True
-    )
-
-    # Should return the first score as failure indicator
-    assert result == score1
-
-    # Temporary fix means the scorer should only be called once for the first piece
-    assert scorer.score_async.call_count == 1
-    scorer.score_async.assert_called_with(request_response=piece1, task="test task")
-    # The following commented-out lines should be uncommented when the permanent solution is implemented
-    # # Should have been called twice (for piece1 and piece3, skipping piece2)
-    # assert scorer.score_async.call_count == 2
-    # scorer.score_async.assert_any_call(request_response=piece1, task="test task")
-    # scorer.score_async.assert_any_call(request_response=piece3, task="test task")
-
-
-@pytest.mark.asyncio
-async def test_score_response_select_first_success_async_skip_on_error_empty_scores():
-    """Test score_response_select_first_success_async handles empty score lists with skip_on_error."""
-    piece1 = PromptRequestPiece(role="assistant", original_value="response1")
-    piece2 = PromptRequestPiece(role="assistant", original_value="error", response_error="blocked")
-
-    response = PromptRequestResponse(request_pieces=[piece1, piece2])
-
-    # Scorer returns empty list
-    scorer = MockScorer()
-    scorer.score_async = AsyncMock(return_value=[])
-
-    result = await Scorer.score_response_select_first_success_async(
-        response=response, scorers=[scorer], task="test task", skip_on_error=True
-    )
-
-    # Should return None since no scores were produced
-    assert result is None
-    # Should only be called for non-error piece
-    assert scorer.score_async.call_count == 1
-    scorer.score_async.assert_called_with(request_response=piece1, task="test task")
-
-
-@pytest.mark.asyncio
-async def test_score_response_with_objective_async_empty_response():
-    """Test score_response_with_objective_async with empty response."""
-    response = PromptRequestResponse(request_pieces=[])
-
-    aux_scorer = MockScorer()
-    obj_scorer = MockScorer()
-
-    result = await Scorer.score_response_with_objective_async(
-        response=response, auxiliary_scorers=[aux_scorer], objective_scorers=[obj_scorer], task="test task"
-    )
-
-    assert result == {"auxiliary_scores": [], "objective_scores": []}
-
-
-@pytest.mark.asyncio
-async def test_score_response_with_objective_async_no_scorers():
-    """Test score_response_with_objective_async with no scorers provided."""
+async def test_score_response_async_no_scorers():
+    """Test score_response_async with no scorers provided."""
     response = PromptRequestResponse(request_pieces=[PromptRequestPiece(role="assistant", original_value="test")])
 
-    result = await Scorer.score_response_with_objective_async(
-        response=response, auxiliary_scorers=None, objective_scorers=None, task="test task"
+    result = await Scorer.score_response_async(
+        response=response, auxiliary_scorers=None, objective_scorer=None, objective="test task"
     )
 
     assert result == {"auxiliary_scores": [], "objective_scores": []}
 
 
 @pytest.mark.asyncio
-async def test_score_response_with_objective_async_auxiliary_only():
-    """Test score_response_with_objective_async with only auxiliary scorers."""
+async def test_score_response_async_auxiliary_only():
+    """Test score_response_async with only auxiliary scorers."""
     piece = PromptRequestPiece(role="assistant", original_value="response")
     response = PromptRequestResponse(request_pieces=[piece])
 
@@ -810,8 +599,8 @@ async def test_score_response_with_objective_async_auxiliary_only():
     aux_scorer2 = MockScorer()
     aux_scorer2.score_async = AsyncMock(return_value=[aux_score2])
 
-    result = await Scorer.score_response_with_objective_async(
-        response=response, auxiliary_scorers=[aux_scorer1, aux_scorer2], objective_scorers=None, task="test task"
+    result = await Scorer.score_response_async(
+        response=response, auxiliary_scorers=[aux_scorer1, aux_scorer2], objective_scorer=None, objective="test task"
     )
 
     # Should have auxiliary scores but no objective scores
@@ -822,8 +611,8 @@ async def test_score_response_with_objective_async_auxiliary_only():
 
 
 @pytest.mark.asyncio
-async def test_score_response_with_objective_async_objective_only():
-    """Test score_response_with_objective_async with only objective scorers."""
+async def test_score_response_async_objective_only():
+    """Test score_response_async with only objective scorers."""
     piece = PromptRequestPiece(role="assistant", original_value="response")
     response = PromptRequestResponse(request_pieces=[piece])
 
@@ -835,8 +624,8 @@ async def test_score_response_with_objective_async_objective_only():
     obj_scorer = MockScorer()
     obj_scorer.score_async = AsyncMock(return_value=[obj_score])
 
-    result = await Scorer.score_response_with_objective_async(
-        response=response, auxiliary_scorers=None, objective_scorers=[obj_scorer], task="test task"
+    result = await Scorer.score_response_async(
+        response=response, auxiliary_scorers=None, objective_scorer=obj_scorer, objective="test task"
     )
 
     # Should have objective score but no auxiliary scores
@@ -846,8 +635,8 @@ async def test_score_response_with_objective_async_objective_only():
 
 
 @pytest.mark.asyncio
-async def test_score_response_with_objective_async_both_types():
-    """Test score_response_with_objective_async with both auxiliary and objective scorers."""
+async def test_score_response_async_both_types():
+    """Test score_response_async with both auxiliary and objective scorers."""
     piece = PromptRequestPiece(role="assistant", original_value="response")
     response = PromptRequestResponse(request_pieces=[piece])
 
@@ -863,8 +652,8 @@ async def test_score_response_with_objective_async_both_types():
     obj_scorer = MockScorer()
     obj_scorer.score_async = AsyncMock(return_value=[obj_score])
 
-    result = await Scorer.score_response_with_objective_async(
-        response=response, auxiliary_scorers=[aux_scorer], objective_scorers=[obj_scorer], task="test task"
+    result = await Scorer.score_response_async(
+        response=response, auxiliary_scorers=[aux_scorer], objective_scorer=obj_scorer, objective="test task"
     )
 
     # Should have both types of scores
@@ -875,10 +664,10 @@ async def test_score_response_with_objective_async_both_types():
 
 
 @pytest.mark.asyncio
-async def test_score_response_with_objective_async_multiple_pieces():
-    """Test score_response_with_objective_async with multiple response pieces."""
-    piece1 = PromptRequestPiece(role="assistant", original_value="response1")
-    piece2 = PromptRequestPiece(role="assistant", original_value="response2")
+async def test_score_response_async_multiple_pieces():
+    """Test score_response_async with multiple response pieces."""
+    piece1 = PromptRequestPiece(role="assistant", original_value="response1", conversation_id="test-convo")
+    piece2 = PromptRequestPiece(role="assistant", original_value="response2", conversation_id="test-convo")
     response = PromptRequestResponse(request_pieces=[piece1, piece2])
 
     # Create mock scores
@@ -897,11 +686,11 @@ async def test_score_response_with_objective_async_multiple_pieces():
     obj_scorer = MockScorer()
     obj_scorer.score_async = AsyncMock(return_value=[obj_score])
 
-    result = await Scorer.score_response_with_objective_async(
+    result = await Scorer.score_response_async(
         response=response,
         auxiliary_scorers=[aux_scorer1, aux_scorer2],
-        objective_scorers=[obj_scorer],
-        task="test task",
+        objective_scorer=obj_scorer,
+        objective="test task",
     )
 
     # TEMPORARY fix means there should only be 2 auxiliary scores, one per PromptRequestResponse
@@ -919,61 +708,12 @@ async def test_score_response_with_objective_async_multiple_pieces():
 
 
 @pytest.mark.asyncio
-async def test_score_response_with_objective_async_role_filter():
-    """Test score_response_with_objective_async with different role filters."""
-    pieces = [
-        PromptRequestPiece(role="assistant", original_value="assistant response"),
-        PromptRequestPiece(role="user", original_value="user input"),
-        PromptRequestPiece(role="system", original_value="system message"),
-    ]
-    response = PromptRequestResponse(request_pieces=pieces)
-
-    # Create mock scores
-    aux_score = MagicMock(spec=Score)
-    obj_score = MagicMock(spec=Score)
-    obj_score.get_value.return_value = True
-
-    # Create mock scorers with tracking
-    aux_scored_pieces = []
-    obj_scored_pieces = []
-
-    async def track_aux_score(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
-        aux_scored_pieces.append(request_response)
-        return [aux_score]
-
-    async def track_obj_score(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
-        obj_scored_pieces.append(request_response)
-        return [obj_score]
-
-    aux_scorer = MockScorer()
-    aux_scorer.score_async = track_aux_score
-
-    obj_scorer = MockScorer()
-    obj_scorer.score_async = track_obj_score
-
-    result = await Scorer.score_response_with_objective_async(
-        response=response,
-        auxiliary_scorers=[aux_scorer],
-        objective_scorers=[obj_scorer],
-        role_filter="assistant",
-        task="test task",
+async def test_score_response_async_skip_on_error_true():
+    """Test score_response_async skips error pieces when skip_on_error=True."""
+    piece1 = PromptRequestPiece(role="assistant", original_value="good response", conversation_id="test-convo")
+    piece2 = PromptRequestPiece(
+        role="assistant", original_value="error", response_error="blocked", conversation_id="test-convo"
     )
-
-    # Should only score assistant pieces
-    assert len(aux_scored_pieces) == 1
-    assert aux_scored_pieces[0].role == "assistant"
-    assert len(obj_scored_pieces) == 1
-    assert obj_scored_pieces[0].role == "assistant"
-
-    assert len(result["auxiliary_scores"]) == 1
-    assert len(result["objective_scores"]) == 1
-
-
-@pytest.mark.asyncio
-async def test_score_response_with_objective_async_skip_on_error_true():
-    """Test score_response_with_objective_async skips error pieces when skip_on_error=True."""
-    piece1 = PromptRequestPiece(role="assistant", original_value="good response")
-    piece2 = PromptRequestPiece(role="assistant", original_value="error", response_error="blocked")
     response = PromptRequestResponse(request_pieces=[piece1, piece2])
 
     # Create mock scores
@@ -988,11 +728,11 @@ async def test_score_response_with_objective_async_skip_on_error_true():
     obj_scorer = MockScorer()
     obj_scorer.score_async = AsyncMock(return_value=[obj_score])
 
-    result = await Scorer.score_response_with_objective_async(
+    result = await Scorer.score_response_async(
         response=response,
         auxiliary_scorers=[aux_scorer],
-        objective_scorers=[obj_scorer],
-        task="test task",
+        objective_scorer=obj_scorer,
+        objective="test task",
         skip_on_error=True,
     )
 
@@ -1006,10 +746,12 @@ async def test_score_response_with_objective_async_skip_on_error_true():
 
 
 @pytest.mark.asyncio
-async def test_score_response_with_objective_async_skip_on_error_false():
-    """Test score_response_with_objective_async includes error pieces when skip_on_error=False."""
-    piece1 = PromptRequestPiece(role="assistant", original_value="good response")
-    piece2 = PromptRequestPiece(role="assistant", original_value="error", response_error="blocked")
+async def test_score_response_async_skip_on_error_false():
+    """Test score_response_async includes error pieces when skip_on_error=False."""
+    piece1 = PromptRequestPiece(role="assistant", original_value="good response", conversation_id="test-convo")
+    piece2 = PromptRequestPiece(
+        role="assistant", original_value="error", response_error="blocked", conversation_id="test-convo"
+    )
     response = PromptRequestResponse(request_pieces=[piece1, piece2])
 
     # Create mock scores
@@ -1024,11 +766,11 @@ async def test_score_response_with_objective_async_skip_on_error_false():
     obj_scorer = MockScorer()
     obj_scorer.score_async = AsyncMock(return_value=[obj_score])
 
-    result = await Scorer.score_response_with_objective_async(
+    result = await Scorer.score_response_async(
         response=response,
         auxiliary_scorers=[aux_scorer],
-        objective_scorers=[obj_scorer],
-        task="test task",
+        objective_scorer=obj_scorer,
+        objective="test task",
         skip_on_error=False,
     )
 
@@ -1046,8 +788,8 @@ async def test_score_response_with_objective_async_skip_on_error_false():
 
 
 @pytest.mark.asyncio
-async def test_score_response_with_objective_async_objective_failure():
-    """Test score_response_with_objective_async when no objective succeeds."""
+async def test_score_response_async_objective_failure():
+    """Test score_response_async when no objective succeeds."""
     piece = PromptRequestPiece(role="assistant", original_value="response")
     response = PromptRequestResponse(request_pieces=[piece])
 
@@ -1065,8 +807,8 @@ async def test_score_response_with_objective_async_objective_failure():
     obj_scorer2 = MockScorer()
     obj_scorer2.score_async = AsyncMock(return_value=[obj_score2])
 
-    result = await Scorer.score_response_with_objective_async(
-        response=response, auxiliary_scorers=None, objective_scorers=[obj_scorer1, obj_scorer2], task="test task"
+    result = await Scorer.score_response_async(
+        response=response, auxiliary_scorers=None, objective_scorer=obj_scorer1, objective="test task"
     )
 
     # Should return the first score as failure indicator
@@ -1076,7 +818,7 @@ async def test_score_response_with_objective_async_objective_failure():
 
 
 @pytest.mark.asyncio
-async def test_score_response_with_objective_async_concurrent_execution():
+async def test_score_response_async_concurrent_execution():
     """Test that auxiliary and objective scoring happen concurrently."""
     piece = PromptRequestPiece(role="assistant", original_value="response")
     response = PromptRequestResponse(request_pieces=[piece])
@@ -1084,14 +826,14 @@ async def test_score_response_with_objective_async_concurrent_execution():
     # Track call order to verify concurrent execution
     call_order = []
 
-    async def mock_aux_score_async(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def mock_aux_score_async(request_response: PromptRequestResponse, **kwargs) -> list[Score]:
         call_order.append("aux_start")
         # Simulate some async work
         await asyncio.sleep(0.01)
         call_order.append("aux_end")
         return [MagicMock(spec=Score)]
 
-    async def mock_obj_score_async(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def mock_obj_score_async(request_response: PromptRequestResponse, **kwargs) -> list[Score]:
         call_order.append("obj_start")
         # Simulate some async work
         await asyncio.sleep(0.01)
@@ -1106,8 +848,8 @@ async def test_score_response_with_objective_async_concurrent_execution():
     obj_scorer = MockScorer()
     obj_scorer.score_async = mock_obj_score_async
 
-    await Scorer.score_response_with_objective_async(
-        response=response, auxiliary_scorers=[aux_scorer], objective_scorers=[obj_scorer], task="test task"
+    await Scorer.score_response_async(
+        response=response, auxiliary_scorers=[aux_scorer], objective_scorer=obj_scorer, objective="test task"
     )
 
     # Both should start before either finishes (concurrent execution)
@@ -1116,85 +858,16 @@ async def test_score_response_with_objective_async_concurrent_execution():
 
 
 @pytest.mark.asyncio
-async def test_score_response_with_objective_async_empty_lists():
-    """Test score_response_with_objective_async with empty scorer lists."""
+async def test_score_response_async_empty_lists():
+    """Test score_response_async with empty scorer lists."""
     piece = PromptRequestPiece(role="assistant", original_value="response")
     response = PromptRequestResponse(request_pieces=[piece])
 
-    result = await Scorer.score_response_with_objective_async(
-        response=response, auxiliary_scorers=[], objective_scorers=[], task="test task"
+    result = await Scorer.score_response_async(
+        response=response, auxiliary_scorers=[], objective_scorer=None, objective="test task"
     )
 
     assert result == {"auxiliary_scores": [], "objective_scores": []}
-
-
-@pytest.mark.asyncio
-async def test_score_response_with_objective_async_no_objective_success():
-    """Test score_response_with_objective_async when select_first_success returns None."""
-    response = PromptRequestResponse(request_pieces=[])  # Empty response
-
-    obj_scorer = MockScorer()
-    obj_scorer.score_async = AsyncMock(return_value=[MagicMock()])
-
-    result = await Scorer.score_response_with_objective_async(
-        response=response, auxiliary_scorers=None, objective_scorers=[obj_scorer], task="test task"
-    )
-
-    # Should have empty list for objective_scores (not None)
-    assert result["auxiliary_scores"] == []
-    assert result["objective_scores"] == []
-    assert isinstance(result["objective_scores"], list)
-
-
-@pytest.mark.asyncio
-async def test_score_response_with_objective_async_mixed_roles():
-    """Test score_response_with_objective_async filters roles correctly."""
-    pieces = [
-        PromptRequestPiece(role="system", original_value="system prompt"),
-        PromptRequestPiece(role="user", original_value="user message"),
-        PromptRequestPiece(role="assistant", original_value="assistant response"),
-    ]
-    response = PromptRequestResponse(request_pieces=pieces)
-
-    # Create mock scores
-    aux_score = MagicMock(spec=Score)
-    obj_score = MagicMock(spec=Score)
-    obj_score.get_value.return_value = True
-
-    # Create mock scorers with tracking
-    aux_scored_pieces = []
-    obj_scored_pieces = []
-
-    async def track_aux_score(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
-        aux_scored_pieces.append(request_response)
-        return [aux_score]
-
-    async def track_obj_score(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
-        obj_scored_pieces.append(request_response)
-        return [obj_score]
-
-    aux_scorer = MockScorer()
-    aux_scorer.score_async = track_aux_score
-
-    obj_scorer = MockScorer()
-    obj_scorer.score_async = track_obj_score
-
-    result = await Scorer.score_response_with_objective_async(
-        response=response,
-        auxiliary_scorers=[aux_scorer],
-        objective_scorers=[obj_scorer],
-        role_filter="assistant",
-        task="test task",
-    )
-
-    # Should only score assistant pieces
-    assert len(aux_scored_pieces) == 1
-    assert aux_scored_pieces[0].role == "assistant"
-    assert len(obj_scored_pieces) == 1
-    assert obj_scored_pieces[0].role == "assistant"
-
-    assert len(result["auxiliary_scores"]) == 1
-    assert len(result["objective_scores"]) == 1
 
 
 def test_get_scorer_metrics(tmp_path):

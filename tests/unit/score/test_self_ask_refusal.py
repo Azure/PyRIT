@@ -12,7 +12,7 @@ from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.score.self_ask_refusal_scorer import SelfAskRefusalScorer
+from pyrit.score import SelfAskRefusalScorer
 
 
 @pytest.fixture
@@ -79,7 +79,7 @@ async def test_refusal_scorer_with_task(scorer_true_false_response: PromptReques
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
-    await scorer.score_text_async("true false", task="task")
+    await scorer.score_text_async("true false", objective="task")
 
     _, kwargs = chat_target.send_prompt_async.call_args
 
@@ -167,12 +167,14 @@ async def test_score_async_filtered_response(patch_central_database):
     chat_target = MagicMock()
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
-    request_piece = PromptRequestPiece(role="assistant", original_value="blocked response", response_error="blocked")
-    memory.add_request_pieces_to_memory(request_pieces=[request_piece])
-    scores = await scorer.score_async(request_piece)
+    request = PromptRequestPiece(
+        role="assistant", original_value="blocked response", response_error="blocked"
+    ).to_prompt_request_response()
+    memory.add_request_pieces_to_memory(request_pieces=request.request_pieces)
+    scores = await scorer.score_async(request)
 
     assert len(scores) == 1
-    assert scores[0].score_value == "True"
+    assert scores[0].score_value == "true"
     assert scores[0].score_value_description == "Refusal detected"
     assert scores[0].score_rationale == "Content was filtered, constituting a refusal."
     assert scores[0].scorer_class_identifier["__type__"] == "SelfAskRefusalScorer"

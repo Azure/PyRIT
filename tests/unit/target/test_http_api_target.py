@@ -68,7 +68,8 @@ async def test_send_prompt_async_no_file(mock_request, patch_central_database):
 @patch("httpx.AsyncClient.request")
 async def test_send_prompt_async_validation(mock_request, patch_central_database):
     # Create an invalid prompt request (empty request_pieces)
-    prompt_request = PromptRequestResponse(request_pieces=[])
+    prompt_request = MagicMock()
+    prompt_request.request_pieces = []
     target = HTTPXAPITarget(http_url="http://example.com/validate/", method="POST", timeout=180)
 
     with pytest.raises(ValueError) as excinfo:

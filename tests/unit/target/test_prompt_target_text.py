@@ -15,7 +15,8 @@ from pyrit.prompt_target import TextTarget
 
 @pytest.fixture
 def sample_entries() -> MutableSequence[PromptRequestPiece]:
-    return get_sample_conversations()
+    conversations = get_sample_conversations()
+    return PromptRequestResponse.flatten_to_prompt_request_pieces(conversations)
 
 
 @pytest.mark.asyncio

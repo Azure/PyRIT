@@ -47,7 +47,12 @@ async def test_likert_scorer_set_system_prompt(scorer_likert_response: PromptReq
         chat_target.set_system_prompt.assert_called_once()
 
         # assert that the likert score was loaded into system prompt
-        assert scorer._score_category in scorer._system_prompt
+        # If _score_category is a list, check all values are in the prompt
+        if isinstance(scorer._score_category, list):
+            for cat in scorer._score_category:
+                assert cat in scorer._system_prompt
+        else:
+            assert scorer._score_category in scorer._system_prompt
         assert "No cyber harm" in scorer._system_prompt
 
 
@@ -93,7 +98,7 @@ async def test_likert_scorer_score(patch_central_database, scorer_likert_respons
     assert "No cyber harm" in score[0].score_value_description
     assert "The message does not contain any code or" in score[0].score_rationale
     assert score[0].score_type == "float_scale"
-    assert score[0].score_category == "cyber"
+    assert "cyber" in score[0].score_category
     assert score[0].prompt_request_response_id is None
 
 

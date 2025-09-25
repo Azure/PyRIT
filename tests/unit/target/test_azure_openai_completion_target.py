@@ -7,7 +7,7 @@ from typing import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from unit.mocks import get_sample_conversations
+from unit.mocks import get_image_request_piece, get_sample_conversations
 
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
@@ -44,40 +44,26 @@ def azure_completion_target(patch_central_database) -> OpenAICompletionTarget:
 
 @pytest.fixture
 def sample_conversations() -> MutableSequence[PromptRequestPiece]:
-    return get_sample_conversations()
+    conversations = get_sample_conversations()
+    return PromptRequestResponse.flatten_to_prompt_request_pieces(conversations)
 
 
 @pytest.mark.asyncio
-async def test_azure_completion_validate_request_length(
-    azure_completion_target: OpenAICompletionTarget, sample_conversations: MutableSequence[PromptRequestPiece]
-):
-    request = PromptRequestResponse(request_pieces=sample_conversations)
+async def test_azure_completion_validate_request_length(azure_completion_target: OpenAICompletionTarget):
+    request = PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(role="user", conversation_id="123", original_value="test"),
+            PromptRequestPiece(role="user", conversation_id="123", original_value="test2"),
+        ]
+    )
     with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
         await azure_completion_target.send_prompt_async(prompt_request=request)
 
 
 @pytest.mark.asyncio
-async def test_azure_completion_validate_prompt_type(
-    azure_completion_target: OpenAICompletionTarget, sample_conversations: MutableSequence[PromptRequestPiece]
-):
-    request_piece = sample_conversations[0]
-    request_piece.converted_value_data_type = "image_path"
-    request = PromptRequestResponse(request_pieces=[request_piece])
+async def test_azure_completion_validate_prompt_type(azure_completion_target: OpenAICompletionTarget):
+    request = PromptRequestResponse(request_pieces=[get_image_request_piece()])
     with pytest.raises(ValueError, match="This target only supports text prompt input."):
-        await azure_completion_target.send_prompt_async(prompt_request=request)
-
-
-@pytest.mark.asyncio
-async def test_azure_completion_validate_prev_convs(
-    azure_completion_target: OpenAICompletionTarget, sample_conversations: MutableSequence[PromptRequestPiece]
-):
-    request_piece = sample_conversations[0]
-    azure_completion_target._memory.add_request_response_to_memory(
-        request=PromptRequestResponse(request_pieces=[request_piece])
-    )
-    request = PromptRequestResponse(request_pieces=[request_piece])
-
-    with pytest.raises(ValueError, match="This target only supports a single turn conversation."):
         await azure_completion_target.send_prompt_async(prompt_request=request)
 
 

@@ -83,7 +83,7 @@ class PromptRequestPiece:
         if role not in ChatMessageRole.__args__:  # type: ignore
             raise ValueError(f"Role {role} is not a valid role.")
 
-        self.role = role
+        self.role: ChatMessageRole = role
 
         if converted_value is None:
             converted_value = original_value
@@ -107,7 +107,7 @@ class PromptRequestPiece:
         if original_value_data_type not in get_args(PromptDataType):
             raise ValueError(f"original_value_data_type {original_value_data_type} is not a valid data type.")
 
-        self.original_value_data_type = original_value_data_type
+        self.original_value_data_type: PromptDataType = original_value_data_type
 
         self.original_value_sha256 = original_value_sha256
 
@@ -116,7 +116,7 @@ class PromptRequestPiece:
         if converted_value_data_type not in get_args(PromptDataType):
             raise ValueError(f"converted_value_data_type {converted_value_data_type} is not a valid data type.")
 
-        self.converted_value_data_type = converted_value_data_type
+        self.converted_value_data_type: PromptDataType = converted_value_data_type
 
         self.converted_value_sha256 = converted_value_sha256
 
@@ -174,6 +174,14 @@ class PromptRequestPiece:
         Check if the prompt request piece is blocked.
         """
         return self.response_error == "blocked"
+
+    def set_piece_not_in_database(self):
+        """
+        Set that the prompt is not in the database.
+
+        This is needed when we're scoring prompts or other things that have not been sent by PyRIT
+        """
+        self.id = None
 
     def to_dict(self) -> dict:
         return {

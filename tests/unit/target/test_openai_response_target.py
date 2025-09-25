@@ -33,7 +33,8 @@ def fake_construct_response_from_request(request, response_text_pieces):
 
 @pytest.fixture
 def sample_conversations() -> MutableSequence[PromptRequestPiece]:
-    return get_sample_conversations()
+    conversations = get_sample_conversations()
+    return PromptRequestResponse.flatten_to_prompt_request_pieces(conversations)
 
 
 @pytest.fixture
@@ -92,6 +93,7 @@ def test_init_with_no_additional_request_headers_var_raises():
 async def test_build_input_for_multi_modal(target: OpenAIResponseTarget):
 
     image_request = get_image_request_piece()
+    conversation_id = image_request.conversation_id
     entries = [
         PromptRequestResponse(
             request_pieces=[
@@ -99,6 +101,7 @@ async def test_build_input_for_multi_modal(target: OpenAIResponseTarget):
                     role="user",
                     original_value_data_type="text",
                     original_value="Hello 1",
+                    conversation_id=conversation_id,
                 ),
                 image_request,
             ]
@@ -109,6 +112,7 @@ async def test_build_input_for_multi_modal(target: OpenAIResponseTarget):
                     role="assistant",
                     original_value_data_type="text",
                     original_value="Hello 2",
+                    conversation_id=conversation_id,
                 ),
             ]
         ),
@@ -118,6 +122,7 @@ async def test_build_input_for_multi_modal(target: OpenAIResponseTarget):
                     role="user",
                     original_value_data_type="text",
                     original_value="Hello 3",
+                    conversation_id=conversation_id,
                 ),
                 image_request,
             ]
@@ -213,7 +218,11 @@ async def test_construct_request_body_serializes_text_message(
 async def test_construct_request_body_serializes_complex_message(
     target: OpenAIResponseTarget, dummy_text_request_piece: PromptRequestPiece
 ):
-    request = PromptRequestResponse(request_pieces=[dummy_text_request_piece, get_image_request_piece()])
+
+    image_piece = get_image_request_piece()
+    dummy_text_request_piece.conversation_id = image_piece.conversation_id
+
+    request = PromptRequestResponse(request_pieces=[dummy_text_request_piece, image_piece])
 
     body = await target._construct_request_body(conversation=[request], is_json_response=False)
     messages = body["input"][0]["content"]
@@ -520,7 +529,12 @@ def test_validate_request_unsupported_data_types(target: OpenAIResponseTarget):
     image_piece.converted_value_data_type = "new_unknown_type"  # type: ignore
     prompt_request = PromptRequestResponse(
         request_pieces=[
-            PromptRequestPiece(role="user", original_value="Hello", converted_value_data_type="text"),
+            PromptRequestPiece(
+                role="user",
+                original_value="Hello",
+                converted_value_data_type="text",
+                conversation_id=image_piece.conversation_id,
+            ),
             image_piece,
         ]
     )
@@ -742,8 +756,12 @@ def test_validate_request_allows_text_and_image(target: OpenAIResponseTarget):
     # Should not raise for valid types
     req = PromptRequestResponse(
         request_pieces=[
-            PromptRequestPiece(role="user", original_value_data_type="text", original_value="Hello"),
-            PromptRequestPiece(role="user", original_value_data_type="image_path", original_value="fake.jpg"),
+            PromptRequestPiece(
+                role="user", original_value_data_type="text", original_value="Hello", conversation_id="123"
+            ),
+            PromptRequestPiece(
+                role="user", original_value_data_type="image_path", original_value="fake.jpg", conversation_id="123"
+            ),
         ]
     )
     target._validate_request(prompt_request=req)
@@ -766,16 +784,23 @@ def test_is_json_response_supported_returns_true(target: OpenAIResponseTarget):
 
 @pytest.mark.asyncio
 async def test_build_input_for_multi_modal_async_empty_conversation(target: OpenAIResponseTarget):
-    req = PromptRequestResponse(request_pieces=[])
-    result = await target._build_input_for_multi_modal_async([req])
-    assert result == []  # nothing to serialize from an empty message
+    # Should raise ValueError if no request pieces
+    req = MagicMock()
+    req.request_pieces = []
+    with pytest.raises(ValueError) as excinfo:
+        await target._build_input_for_multi_modal_async([req])
+    assert "Failed to process conversation message at index 0: Message contains no request pieces" in str(excinfo.value)
 
 
 @pytest.mark.asyncio
 async def test_build_input_for_multi_modal_async_image_and_text(target: OpenAIResponseTarget):
     # Should build correct structure for text and image
-    text_piece = PromptRequestPiece(role="user", original_value_data_type="text", original_value="hello")
-    image_piece = PromptRequestPiece(role="user", original_value_data_type="image_path", original_value="fake.jpg")
+    text_piece = PromptRequestPiece(
+        role="user", original_value_data_type="text", original_value="hello", conversation_id="123"
+    )
+    image_piece = PromptRequestPiece(
+        role="user", original_value_data_type="image_path", original_value="fake.jpg", conversation_id="123"
+    )
     req = PromptRequestResponse(request_pieces=[text_piece, image_piece])
     with patch(
         "pyrit.prompt_target.openai.openai_response_target.convert_local_image_to_data_url",
@@ -816,6 +841,7 @@ async def test_build_input_for_multi_modal_async_filters_reasoning(target: OpenA
         converted_value="Hello",
         original_value_data_type="text",
         converted_value_data_type="text",
+        conversation_id="123",
     )
     # IMPORTANT: reasoning original_value must be JSON (Responses API section)
     reasoning_section = {
@@ -829,6 +855,7 @@ async def test_build_input_for_multi_modal_async_filters_reasoning(target: OpenA
         converted_value=json.dumps(reasoning_section),
         original_value_data_type="reasoning",
         converted_value_data_type="reasoning",
+        conversation_id="123",
     )
     response_text_piece = PromptRequestPiece(
         role="assistant",
@@ -836,6 +863,7 @@ async def test_build_input_for_multi_modal_async_filters_reasoning(target: OpenA
         converted_value="hello there",
         original_value_data_type="text",
         converted_value_data_type="text",
+        conversation_id="123",
     )
     user_followup_prompt = PromptRequestPiece(
         role="user",
@@ -843,6 +871,7 @@ async def test_build_input_for_multi_modal_async_filters_reasoning(target: OpenA
         converted_value="Hello indeed",
         original_value_data_type="text",
         converted_value_data_type="text",
+        conversation_id="123",
     )
     conversation = [
         PromptRequestResponse(request_pieces=[user_prompt]),
@@ -901,8 +930,8 @@ async def test_build_input_for_multi_modal_async_system_message_maps_to_develope
 
 @pytest.mark.asyncio
 async def test_build_input_for_multi_modal_async_system_message_multiple_pieces_raises(target: OpenAIResponseTarget):
-    sys1 = PromptRequestPiece(role="system", original_value_data_type="text", original_value="A")
-    sys2 = PromptRequestPiece(role="system", original_value_data_type="text", original_value="B")
+    sys1 = PromptRequestPiece(role="system", original_value_data_type="text", original_value="A", conversation_id="123")
+    sys2 = PromptRequestPiece(role="system", original_value_data_type="text", original_value="B", conversation_id="123")
     with pytest.raises(ValueError, match="System messages must have exactly one piece"):
         await target._build_input_for_multi_modal_async([PromptRequestResponse(request_pieces=[sys1, sys2])])
 
@@ -948,10 +977,18 @@ async def test_build_input_for_multi_modal_async_function_call_output_stringifie
 
 def test_make_tool_message_serializes_output_and_sets_call_id(target: OpenAIResponseTarget):
     out = {"answer": 42}
-    msg = target._make_tool_message(out, call_id="tool-1")
+    reference_piece = PromptRequestPiece(
+        role="user",
+        original_value="test",
+        conversation_id="test-conv-123",
+        labels={"existing": "label"},
+    )
+    msg = target._make_tool_message(out, call_id="tool-1", reference_piece=reference_piece)
     assert len(msg.request_pieces) == 1
     p = msg.request_pieces[0]
     assert p.original_value_data_type == "function_call_output"
+    assert p.conversation_id == "test-conv-123"
+    assert p.labels["call_id"] == "tool-1"
     payload = json.loads(p.original_value)
     assert payload["type"] == "function_call_output"
     assert payload["call_id"] == "tool-1"
@@ -1012,7 +1049,24 @@ async def test_send_prompt_async_agentic_loop_executes_function_and_returns_fina
 
     target._custom_functions["times2"] = times2
 
-    # 2) First "assistant" reply: a function_call section
+    # Create a shared conversation ID and reference piece for consistency
+    shared_conversation_id = "test-conversation-123"
+
+    # 5) Create the user prompt first to get the conversation ID
+    user_req = PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(
+                role="user",
+                original_value="double 7",
+                converted_value="double 7",
+                original_value_data_type="text",
+                converted_value_data_type="text",
+                conversation_id=shared_conversation_id,
+            )
+        ]
+    )
+
+    # 2) First "assistant" reply: a function_call section (with matching conversation ID)
     func_call_section = {
         "type": "function_call",
         "call_id": "call-99",
@@ -1025,6 +1079,7 @@ async def test_send_prompt_async_agentic_loop_executes_function_and_returns_fina
                 role="assistant",
                 original_value=json.dumps(func_call_section, separators=(",", ":")),
                 original_value_data_type="function_call",
+                conversation_id=shared_conversation_id,
             )
         ]
     )
@@ -1034,9 +1089,11 @@ async def test_send_prompt_async_agentic_loop_executes_function_and_returns_fina
         "status": "completed",
         "output": [{"type": "message", "content": [{"type": "output_text", "text": "Done: 14"}]}],
     }
+    # Use a request piece with the same conversation ID for reference
+    reference_piece = PromptRequestPiece(role="user", original_value="hi", conversation_id=shared_conversation_id)
     second_reply = target._construct_prompt_response_from_openai_json(
         open_ai_str_response=json.dumps(final_output),
-        request_piece=PromptRequestPiece(role="user", original_value="hi"),
+        request_piece=reference_piece,
     )
 
     call_counter = {"n": 0}
@@ -1053,18 +1110,6 @@ async def test_send_prompt_async_agentic_loop_executes_function_and_returns_fina
         new_callable=AsyncMock,
         side_effect=fake_send,
     ):
-        # 5) Kick it off with a user prompt
-        user_req = PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(
-                    role="user",
-                    original_value="double 7",
-                    converted_value="double 7",
-                    original_value_data_type="text",
-                    converted_value_data_type="text",
-                )
-            ]
-        )
         final = await target.send_prompt_async(prompt_request=user_req)
 
         # Should get the final (non-tool-call) assistant message

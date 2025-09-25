@@ -10,8 +10,8 @@ from unit.mocks import get_image_request_piece
 
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece
-from pyrit.score.question_answer_scorer import QuestionAnswerScorer
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.score import QuestionAnswerScorer
 
 
 @pytest.fixture
@@ -34,28 +34,28 @@ def text_request_piece(patch_central_database) -> PromptRequestPiece:
 
 @pytest.mark.asyncio
 async def test_question_answer_scorer_validate_image(image_request_piece: PromptRequestPiece):
-    scorer = QuestionAnswerScorer(category="new_category")
-    with pytest.raises(ValueError, match="Question Answer Scorer only supports text data type"):
-        await scorer.score_async(image_request_piece)
+
+    scorer = QuestionAnswerScorer(category=["new_category"])
+    request_response = PromptRequestResponse(request_pieces=[image_request_piece])
+    with pytest.raises(ValueError, match="There are no valid pieces to score."):
+        await scorer.score_async(request_response)
 
     os.remove(image_request_piece.converted_value)
 
 
 @pytest.mark.asyncio
 async def test_question_answer_scorer_validate_missing_metadata():
-    request_piece = PromptRequestPiece(
+    request = PromptRequestPiece(
         id="test_id",
         role="user",
         original_value="test content",
         converted_value="test response",
         converted_value_data_type="text",
         prompt_metadata={},
-    )
-    scorer = QuestionAnswerScorer(category="new_category")
-    with pytest.raises(
-        ValueError, match="Question Answer Scorer requires metadata with either correct_answer_index or correct_answer"
-    ):
-        await scorer.score_async(request_piece)
+    ).to_prompt_request_response()
+    scorer = QuestionAnswerScorer(category=["new_category"])
+    with pytest.raises(ValueError, match="There are no valid pieces to score."):
+        await scorer.score_async(request)
 
 
 @pytest.mark.asyncio
@@ -74,30 +74,33 @@ async def test_question_answer_scorer_score(
     response: str, expected_score: bool, text_request_piece: PromptRequestPiece
 ):
     text_request_piece.converted_value = response
-    scorer = QuestionAnswerScorer(category="new_category")
+    scorer = QuestionAnswerScorer(category=["new_category"])
+    request_response = PromptRequestResponse(request_pieces=[text_request_piece])
 
-    score = await scorer.score_async(text_request_piece)
+    scores = await scorer.score_async(request_response)
 
-    assert len(score) == 1
-    assert score[0].score_value == str(expected_score)
-    assert score[0].score_type == "true_false"
-    assert score[0].score_category == "new_category"
+    assert len(scores) == 1
+    result_score = scores[0]
+    assert result_score.get_value() == expected_score
+    assert result_score.score_type == "true_false"
+    assert result_score.score_category == ["new_category"]
 
 
 @pytest.mark.asyncio
 async def test_question_answer_scorer_adds_to_memory():
     memory = MagicMock(MemoryInterface)
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        scorer = QuestionAnswerScorer(category="new_category")
-        request_piece = PromptRequestPiece(
+        scorer = QuestionAnswerScorer(category=["new_category"])
+        request_response = PromptRequestPiece(
             id="test_id",
             role="user",
             original_value="test content",
             converted_value="0: Paris",
             converted_value_data_type="text",
             prompt_metadata={"correct_answer_index": "0", "correct_answer": "Paris"},
-        )
-        await scorer.score_async(request_piece)
+        ).to_prompt_request_response()
+
+        await scorer.score_async(request_response)
 
         memory.add_scores_to_memory.assert_called_once()
 
@@ -107,14 +110,14 @@ async def test_question_answer_scorer_no_category():
     memory = MagicMock(MemoryInterface)
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = QuestionAnswerScorer()
-        request_piece = PromptRequestPiece(
+        request_response = PromptRequestPiece(
             id="test_id",
             role="user",
             original_value="test content",
             converted_value="0: Paris",
             converted_value_data_type="text",
             prompt_metadata={"correct_answer_index": "0", "correct_answer": "Paris"},
-        )
-        await scorer.score_async(request_piece)
+        ).to_prompt_request_response()
+        await scorer.score_async(request_response)
 
         memory.add_scores_to_memory.assert_called_once()

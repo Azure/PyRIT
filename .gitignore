@@ -194,3 +194,6 @@ doc/_autosummary/
 # Ignore notebooks directory in Docker folder
 /docker/notebooks/
 /docker/notebooks/*
+
+# Custom user instructions
+.github/instructions/user-custom.instructions.md

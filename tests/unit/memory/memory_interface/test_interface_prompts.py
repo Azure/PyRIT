@@ -204,9 +204,9 @@ def test_duplicate_conversation_pieces_not_score(sqlite_instance: MemoryInterfac
             score_value=str(0.8),
             score_value_description="High score",
             score_type="float_scale",
-            score_category="test",
+            score_category=["test"],
             score_rationale="Test score",
-            score_metadata="Test metadata",
+            score_metadata={"test": "metadata"},
             scorer_class_identifier={"__type__": "TestScorer1"},
             prompt_request_response_id=prompt_id_1,
         ),
@@ -214,9 +214,9 @@ def test_duplicate_conversation_pieces_not_score(sqlite_instance: MemoryInterfac
             score_value=str(0.5),
             score_value_description="High score",
             score_type="float_scale",
-            score_category="test",
+            score_category=["test"],
             score_rationale="Test score",
-            score_metadata="Test metadata",
+            score_metadata={"test": "metadata"},
             scorer_class_identifier={"__type__": "TestScorer2"},
             prompt_request_response_id=prompt_id_2,
         ),
@@ -362,9 +362,9 @@ def test_duplicate_conversation_excluding_last_turn_not_score(sqlite_instance: M
             score_value=str(0.8),
             score_value_description="High score",
             score_type="float_scale",
-            score_category="test",
+            score_category=["test"],
             score_rationale="Test score",
-            score_metadata="Test metadata",
+            score_metadata={"test": "metadata"},
             scorer_class_identifier={"__type__": "TestScorer1"},
             prompt_request_response_id=prompt_id_1,
         ),
@@ -372,9 +372,9 @@ def test_duplicate_conversation_excluding_last_turn_not_score(sqlite_instance: M
             score_value=str(0.5),
             score_value_description="High score",
             score_type="float_scale",
-            score_category="test",
+            score_category=["test"],
             score_rationale="Test score",
-            score_metadata="Test metadata",
+            score_metadata={"test": "metadata"},
             scorer_class_identifier={"__type__": "TestScorer2"},
             prompt_request_response_id=prompt_id_2,
         ),
@@ -926,9 +926,9 @@ def test_prompt_piece_scores_duplicate_piece(sqlite_instance: MemoryInterface):
         score_value=str(0.8),
         score_value_description="Sample description",
         score_type="float_scale",
-        score_category="Sample category",
+        score_category=["Sample category"],
         score_rationale="Sample rationale",
-        score_metadata="Sample metadata",
+        score_metadata={"sample": "metadata"},
         prompt_request_response_id=original_id,
     )
     sqlite_instance.add_scores_to_memory(scores=[score])
@@ -985,6 +985,7 @@ async def test_seed_prompt_hash_stored_and_retrieved(sqlite_instance: MemoryInte
     await sqlite_instance.add_seed_prompts_to_memory_async(prompts=[seed_prompt])
 
     # Retrieve and verify hash
+    assert seed_prompt.value_sha256 is not None, "SHA256 should not be None"
     retrieved_prompts = sqlite_instance.get_seed_prompts(value_sha256=[seed_prompt.value_sha256])
     assert len(retrieved_prompts) == 1
     assert retrieved_prompts[0].value_sha256 == seed_prompt.value_sha256

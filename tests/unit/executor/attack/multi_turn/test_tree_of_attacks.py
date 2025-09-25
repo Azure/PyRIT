@@ -33,7 +33,7 @@ from pyrit.models import (
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
-from pyrit.score import Scorer
+from pyrit.score import Scorer, TrueFalseScorer
 
 logger = logging.getLogger(__name__)
 
@@ -181,7 +181,7 @@ class AttackBuilder:
         assert self.adversarial_chat is not None, "Adversarial chat target must be set."
         adversarial_config = AttackAdversarialConfig(target=self.adversarial_chat)
         scoring_config = AttackScoringConfig(
-            objective_scorer=cast(Scorer, self.objective_scorer),
+            objective_scorer=cast(TrueFalseScorer, self.objective_scorer),
             auxiliary_scorers=self.auxiliary_scorers,
             successful_objective_threshold=self.successful_threshold,
         )
@@ -242,10 +242,10 @@ class TestHelpers:
             id=None,
             score_type="float_scale",
             score_value=str(value),
-            score_category="test",
+            score_category=["test"],
             score_value_description="Test score",
             score_rationale="Test rationale",
-            score_metadata="{}",
+            score_metadata={"test": "metadata"},
             prompt_request_response_id=str(uuid.uuid4()),
             scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
         )
@@ -899,12 +899,12 @@ class TestTreeOfAttacksNode:
         obj_score.scorer_class_identifier = {"__type__": "ObjectiveScorer"}
         node._objective_scorer.score_async = AsyncMock(return_value=[obj_score])
 
-        # Mock for Scorer.score_response_with_objective_async
+        # Mock for Scorer.score_response_async
         def mock_score_response(*args, **kwargs):
             return {"objective_scores": [obj_score], "auxiliary_scores": [aux_score1, aux_score2]}
 
         with patch(
-            "pyrit.score.Scorer.score_response_with_objective_async",
+            "pyrit.score.Scorer.score_response_async",
             new_callable=AsyncMock,
             side_effect=mock_score_response,
         ):

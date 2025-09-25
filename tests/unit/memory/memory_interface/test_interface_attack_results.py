@@ -402,17 +402,18 @@ def test_attack_result_with_last_response_and_score(sqlite_instance: MemoryInter
         converted_value="Test prompt",
         conversation_id="conv_1",
     )
+    assert prompt_piece.id is not None, "Prompt piece ID should not be None"
 
     # Create a score
     score = Score(
         score_value="1.0",
         score_type="float_scale",
-        score_category="test_category",
+        score_category=["test_category"],
         scorer_class_identifier={"name": "test_scorer"},
         prompt_request_response_id=prompt_piece.id,
         score_value_description="Test score description",
         score_rationale="Test score rationale",
-        score_metadata="Test metadata",
+        score_metadata={"test": "metadata"},
     )
 
     # Add prompt piece and score to memory

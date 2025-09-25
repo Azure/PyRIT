@@ -16,7 +16,7 @@
 # %% [markdown]
 # # Insecure Code Scorer - optional
 # This script demonstrates how to use InsecureCodeScorer to evaluate a code snippet for potential security vulnerabilities.
-# InsecureCodeScorer uses a language model (LLM) to analyze the code and identify security risks, returning a score based on a predefined threshold.
+# InsecureCodeScorer uses a language model (LLM) to analyze the code and identify security risks, returning a scaled score between 0 and 1.
 
 # %%
 from pyrit.common import IN_MEMORY, initialize_pyrit
@@ -29,8 +29,8 @@ initialize_pyrit(memory_db_type=IN_MEMORY)
 # Initialize the LLM model target
 chat_target = OpenAIChatTarget()
 
-# Instantiate the scorer with a specified threshold
-scorer = InsecureCodeScorer(chat_target=chat_target, threshold=0.5)
+# Instantiate the scorer
+scorer = InsecureCodeScorer(chat_target=chat_target)
 
 # Example prompt representing a possibly insecure code snippet
 example_prompt = """

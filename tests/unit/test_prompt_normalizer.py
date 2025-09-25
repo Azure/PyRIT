@@ -30,15 +30,14 @@ from pyrit.prompt_target import PromptTarget
 
 @pytest.fixture
 def response() -> PromptRequestResponse:
+    conversation_id = "123"
     image_request_piece = get_image_request_piece()
     image_request_piece.role = "assistant"
+    image_request_piece.conversation_id = conversation_id
     return PromptRequestResponse(
         request_pieces=[
-            PromptRequestPiece(
-                role="assistant",
-                original_value="Hello",
-            ),
-            PromptRequestPiece(role="assistant", original_value="part 2"),
+            PromptRequestPiece(role="assistant", original_value="Hello", conversation_id=conversation_id),
+            PromptRequestPiece(role="assistant", original_value="part 2", conversation_id=conversation_id),
             image_request_piece,
         ]
     )

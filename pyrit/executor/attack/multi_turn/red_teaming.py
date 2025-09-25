@@ -530,14 +530,13 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
 
         # Use the built-in scorer method for objective scoring
         # This method already handles error responses internally via skip_on_error=True
-        scoring_results = await Scorer.score_response_with_objective_async(
+        scoring_results = await Scorer.score_response_async(
             response=context.last_response,
+            objective_scorer=self._objective_scorer,
             auxiliary_scorers=None,  # No auxiliary scorers for red teaming by default
-            objective_scorers=[self._objective_scorer],
             role_filter="assistant",
-            task=context.objective,
+            objective=context.objective,
         )
-
         objective_scores = scoring_results["objective_scores"]
         return objective_scores[0] if objective_scores else None
 
