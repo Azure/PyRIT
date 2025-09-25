@@ -15,6 +15,7 @@ from pyrit.models import (
     AttackResult,
     PromptRequestResponse,
     SeedPrompt,
+    SeedPromptGroup,
 )
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
@@ -67,14 +68,18 @@ class ImplicareAttack(PromptSendingAttack):
             raise ValueError("Implicare does not support prepended conversations.")
         super()._validate_context(context=context)
 
-    async def _perform_async(self, *, context: SingleTurnAttackContext) -> AttackResult:
+     async def _perform_async(self, *, context: SingleTurnAttackContext) -> AttackResult:
         """
-        Perform the Attack.
+        Perform the FlipAttack.
+
         Args:
             context (SingleTurnAttackContext): The attack context containing attack parameters.
 
         Returns:
             AttackResult: The result of the attack.
         """
-        self._system_prompt = PromptRequestResponse.from_system_prompt(system_prompt=system_prompt)
+        initial_prompt = "TASK is '⟪" + context.objective.replace("'", "") + "⟫'"
+        seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=initial_prompt, data_type="text")])
+        context.seed_prompt_group = seed_prompt_group
+
         return await super()._perform_async(context=context)
