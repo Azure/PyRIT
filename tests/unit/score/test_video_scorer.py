@@ -24,7 +24,7 @@ def is_opencv_installed():
 @pytest.fixture(autouse=True)
 def video_converter_sample_video():
     # Create a sample video file
-    video_path = "tests/unit/score/test_video.mp4"
+    video_path = "test_video.mp4"
     width, height = 512, 512
     if is_opencv_installed():
         import cv2  # noqa: F401
@@ -48,12 +48,13 @@ def video_converter_sample_video():
         converted_value_data_type="video_path",
     )
     request_piece.id = None
-    return request_piece
+    yield request_piece
+    os.remove(video_path)
 
 
 class MockScorer(Scorer):
     def __init__(self, scorer_type: str = "true_false"):
-        self.scorer_type = scorer_type
+        self.scorer_type = scorer_type  # type: ignore
         super().__init__()
 
     async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
@@ -102,7 +103,9 @@ class MockScorer(Scorer):
 class MockVideoScorer(VideoScorer):
     """Test implementation of VideoScorer for video tests"""
 
-    def __init__(self, image_scorer: Optional[MockScorer] = None, scorer_type: str = "true_false", num_frames: Optional[int] = 3):
+    def __init__(
+        self, image_scorer: Optional[MockScorer] = None, scorer_type: str = "true_false", num_frames: Optional[int] = 3
+    ):
         if not image_scorer:
             image_scorer = MockScorer(scorer_type=scorer_type)
         super().__init__(image_capable_scorer=image_scorer, num_frames=num_frames)
@@ -130,8 +133,6 @@ async def test_extract_frames(video_converter_sample_video):
         assert img is not None, f"Failed to read frame file {path}"
         assert img.shape == (512, 512, 3), f"Unexpected frame dimensions: {img.shape}"
         os.remove(path)  # Cleanup
-
-    os.remove(video_path)
 
 
 @pytest.mark.asyncio
@@ -216,7 +217,7 @@ async def test_score_video_no_scores(video_converter_sample_video):
 def test_aggregate_frame_scores_multiple_categories_true_false():
     """Test aggregating scores with multiple categories for true_false scorer"""
     scorer = MockVideoScorer(scorer_type="true_false")
-    
+
     frame_scores = [
         Score(
             score_type="true_false",
@@ -246,17 +247,17 @@ def test_aggregate_frame_scores_multiple_categories_true_false():
             prompt_request_response_id="id3",
         ),
     ]
-    
+
     aggregated = scorer._aggregate_frame_scores(frame_scores)
-    
+
     assert len(aggregated) == 2, "Expected two aggregated scores (one per category)"
-    
+
     # Check category A aggregation
     cat_a_score = next(s for s in aggregated if s.score_category == "category_A")
     assert cat_a_score.score_value == "True"
     assert "1 out of 2 video frames meet objective" in cat_a_score.score_rationale
     assert "Frame 1 category A" in cat_a_score.score_rationale
-    
+
     # Check category B aggregation
     cat_b_score = next(s for s in aggregated if s.score_category == "category_B")
     assert cat_b_score.score_value == "True"
@@ -267,7 +268,7 @@ def test_aggregate_frame_scores_multiple_categories_true_false():
 def test_aggregate_frame_scores_multiple_categories_float_scale():
     """Test aggregating scores with multiple categories for float_scale scorer"""
     scorer = MockVideoScorer(scorer_type="float_scale")
-    
+
     frame_scores = [
         Score(
             score_type="float_scale",
@@ -306,17 +307,17 @@ def test_aggregate_frame_scores_multiple_categories_float_scale():
             prompt_request_response_id="id4",
         ),
     ]
-    
+
     aggregated = scorer._aggregate_frame_scores(frame_scores)
-    
+
     assert len(aggregated) == 2, "Expected two aggregated scores (one per category)"
-    
+
     # Check category X aggregation (should pick 0.9)
     cat_x_score = next(s for s in aggregated if s.score_category == "category_X")
     assert cat_x_score.score_value == "0.9"
     assert "Highest score across 2 frames: 0.90" in cat_x_score.score_rationale
     assert "Frame 2 category X" in cat_x_score.score_rationale
-    
+
     # Check category Y aggregation (should pick 0.7)
     cat_y_score = next(s for s in aggregated if s.score_category == "category_Y")
     assert cat_y_score.score_value == "0.7"
@@ -327,7 +328,7 @@ def test_aggregate_frame_scores_multiple_categories_float_scale():
 def test_aggregate_frame_scores_no_category():
     """Test aggregating scores when no categories are specified"""
     scorer = MockVideoScorer(scorer_type="true_false")
-    
+
     frame_scores = [
         Score(
             score_type="true_false",
@@ -348,9 +349,9 @@ def test_aggregate_frame_scores_no_category():
             prompt_request_response_id="id2",
         ),
     ]
-    
+
     aggregated = scorer._aggregate_frame_scores(frame_scores)
-    
+
     assert len(aggregated) == 1, "Expected one aggregated score when no categories"
     assert aggregated[0].score_value == "True"
     assert "1 out of 2 video frames meet objective" in aggregated[0].score_rationale
@@ -360,7 +361,7 @@ def test_aggregate_frame_scores_no_category():
 def test_aggregate_frame_scores_mixed_categories():
     """Test aggregating scores with some having categories and some without"""
     scorer = MockVideoScorer(scorer_type="true_false")
-    
+
     frame_scores = [
         Score(
             score_type="true_false",
@@ -390,16 +391,16 @@ def test_aggregate_frame_scores_mixed_categories():
             prompt_request_response_id="id3",
         ),
     ]
-    
+
     aggregated = scorer._aggregate_frame_scores(frame_scores)
 
     # Check category A aggregation
     cat_a_score = next(s for s in aggregated if s.score_category == "category_A")
     assert cat_a_score.score_value == "True"
     assert "2 out of 2 video frames meet objective" in cat_a_score.score_rationale
-    
+
     # Check aggregation for score without a category
-    cat_none_score = next(s for s in aggregated if s.score_category == None)
+    cat_none_score = next(s for s in aggregated if not s.score_category)
     assert cat_none_score.score_value == "False"
     assert "Objective not met within 1 video frames" in cat_none_score.score_rationale
     assert "Frame 2 no category" in cat_none_score.score_rationale
@@ -408,7 +409,7 @@ def test_aggregate_frame_scores_mixed_categories():
 def test_aggregate_frame_scores_all_false():
     """Test aggregating scores when all are False for true_false scorer"""
     scorer = MockVideoScorer(scorer_type="true_false")
-    
+
     frame_scores = [
         Score(
             score_type="true_false",
@@ -429,11 +430,10 @@ def test_aggregate_frame_scores_all_false():
             prompt_request_response_id="id2",
         ),
     ]
-    
+
     aggregated = scorer._aggregate_frame_scores(frame_scores)
-    
+
     assert len(aggregated) == 1
     assert aggregated[0].score_value == "False"
     assert "Objective not met within 2 video frames" in aggregated[0].score_rationale
     assert "Frame 1 false" in aggregated[0].score_rationale  # Original rationale preserved
-
