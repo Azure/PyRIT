@@ -306,7 +306,7 @@ class Scorer(abc.ABC):
         description_output_key: str = "description",
         metadata_output_key: str = "metadata",
         category_output_key: str = "category",
-        orchestrator_identifier: Optional[Dict[str, str]] = None,
+        attack_identifier: Optional[Dict[str, str]] = None,
     ) -> UnvalidatedScore:
         """
         Sends a request to a target, and takes care of retries.
@@ -328,7 +328,7 @@ class Scorer(abc.ABC):
             rationale_output_key (str): The key in the JSON response that contains the rationale.
             description_output_key (str): The key in the JSON response that contains the description.
             category_output_key (str): The key in the JSON response that contains the category.
-            orchestrator_identifier (dict[str, str], Optional): A dictionary containing orchestrator-specific
+            attack_identifier (dict[str, str], Optional): A dictionary containing attack-specific
                 identifiers.
 
         Returns:
@@ -338,13 +338,13 @@ class Scorer(abc.ABC):
 
         conversation_id = str(uuid.uuid4())
 
-        if orchestrator_identifier:
-            orchestrator_identifier["scored_prompt_id"] = str(scored_prompt_id)
+        if attack_identifier:
+            attack_identifier["scored_prompt_id"] = str(scored_prompt_id)
 
         prompt_target.set_system_prompt(
             system_prompt=system_prompt,
             conversation_id=conversation_id,
-            orchestrator_identifier=orchestrator_identifier,
+            attack_identifier=attack_identifier,
         )
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
         scorer_llm_request = PromptRequestResponse(
