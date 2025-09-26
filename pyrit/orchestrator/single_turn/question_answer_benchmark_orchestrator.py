@@ -17,9 +17,10 @@ from pyrit.score import Scorer
 
 
 class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
-    """
-    Question Answering Benchmark Orchestrator class is responsible for sending multiple choice questions
-    as defined in a QuestionAnsweringDataset
+    """Question Answering Benchmark Orchestrator for processing multiple choice questions.
+
+    This orchestrator is responsible for sending multiple choice questions as defined
+    in a QuestionAnsweringDataset and evaluating the responses from target models.
     """
 
     OBJECTIVE_FORMAT_STRING = textwrap.dedent(
@@ -174,6 +175,7 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
         self,
         *,
         question_answering_entries: list[QuestionAnsweringEntry],
+        repetitions: int = 1,
         prepended_conversations: Optional[list[PromptRequestResponse]] = None,
         memory_labels: Optional[dict[str, str]] = None,
     ) -> list[OrchestratorResult]:
@@ -184,15 +186,28 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
             question_answering_entries (list[QuestionAnsweringEntry]): List of question answering entries to process.
             prepended_conversations (list[PromptRequestResponse], Optional): The conversations to prepend to each
                 attack.
+            repetitions (int): allows for repetition of QuestionAnsweringEntry objects
             memory_labels (dict[str, str], Optional): The memory labels to use for the attacks.
         Returns:
             list[OrchestratorResult]: List of results from each attack.
         """
+        if repetitions < 1:
+            raise ValueError("repetitions must be at least 1")
 
-        if not prepended_conversations:
-            prepended_conversations = [None] * len(question_answering_entries)
+        if len(question_answering_entries) == 0:
+            raise ValueError("question_answering_entries must have at least one entry")
+
+        if prepended_conversations is None:
+            prepended_conversations = [None] * len(question_answering_entries)  # type: ignore[arg-type]
         elif len(prepended_conversations) != len(question_answering_entries):
             raise ValueError("Number of prepended conversations must match number of question_answering_entries")
+
+        question_answering_entries = [entry for entry in question_answering_entries for _ in range(repetitions)]
+        prepended_conversations = [
+            prepended_conversation
+            for prepended_conversation in prepended_conversations
+            for _ in range(repetitions)  # type: ignore[arg-type]
+        ]
 
         # Type the batch items as Sequence[Sequence[Any]] to match the expected type
         batch_items: list[Sequence[Any]] = [

@@ -1,18 +1,17 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import abc
 from dataclasses import dataclass
 from typing import Optional
 
-from pyrit.models.seed_prompt import SeedPromptGroup
+from pyrit.models import SeedPromptGroup
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
 )
 
 
 @dataclass
-class NormalizerRequest(abc.ABC):
+class NormalizerRequest:
     """
     Represents a single request sent to normalizer.
     """

@@ -51,7 +51,7 @@ class RealtimeTarget(OpenAITarget):
     def __init__(
         self,
         *,
-        api_version: str = "2024-10-01-preview",
+        api_version: str = "2025-04-01-preview",
         system_prompt: Optional[str] = None,
         voice: Optional[RealTimeVoice] = None,
         existing_convo: Optional[dict] = None,
@@ -59,13 +59,15 @@ class RealtimeTarget(OpenAITarget):
     ) -> None:
         """
         RealtimeTarget class for Azure OpenAI Realtime API.
+
         Read more at https://learn.microsoft.com/en-us/azure/ai-services/openai/realtime-audio-reference
-            and https://platform.openai.com/docs/guides/realtime-websocket
+        and https://platform.openai.com/docs/guides/realtime-websocket
+
         Args:
             model_name (str, Optional): The name of the model.
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-                Defaults to the OPENAI_CHAT_KEY environment variable.
+                Defaults to the `OPENAI_CHAT_KEY` environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
             use_aad_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
@@ -530,11 +532,13 @@ class RealtimeTarget(OpenAITarget):
         """
 
         # Check the number of request pieces
-        if len(prompt_request.request_pieces) != 1:
-            raise ValueError("This target only supports one request piece.")
+        n_pieces = len(prompt_request.request_pieces)
+        if n_pieces != 1:
+            raise ValueError(f"This target only supports one request piece. Received: {n_pieces} pieces.")
 
-        if prompt_request.request_pieces[0].converted_value_data_type not in ["text", "audio_path"]:
-            raise ValueError("This target only supports text and audio_path prompt input.")
+        piece_type = prompt_request.request_pieces[0].converted_value_data_type
+        if piece_type not in ["text", "audio_path"]:
+            raise ValueError(f"This target only supports text and audio_path prompt input. Received: {piece_type}.")
 
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""

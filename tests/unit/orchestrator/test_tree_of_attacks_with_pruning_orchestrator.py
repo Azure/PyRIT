@@ -99,7 +99,7 @@ def test_invalid_depth(patch_central_database):
 
 def test_system_prompt_without_desired_prefix(patch_central_database):
     # This is mostly valid but missing 'desired_prefix'
-    invald_system_prompt = Path(DATASETS_PATH / "orchestrators" / "red_teaming" / "text_generation.yaml")
+    invald_system_prompt = Path(DATASETS_PATH / "executors" / "red_teaming" / "text_generation.yaml")
 
     with pytest.raises(ValueError) as e:
         TreeOfAttacksWithPruningOrchestrator(

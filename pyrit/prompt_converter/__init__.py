@@ -21,11 +21,12 @@ from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_converter.binary_converter import BinaryConverter
 from pyrit.prompt_converter.caesar_converter import CaesarConverter
 from pyrit.prompt_converter.character_space_converter import CharacterSpaceConverter
-from pyrit.prompt_converter.charswap_attack_converter import CharSwapGenerator
+from pyrit.prompt_converter.charswap_attack_converter import CharSwapConverter
 from pyrit.prompt_converter.codechameleon_converter import CodeChameleonConverter
 from pyrit.prompt_converter.colloquial_wordswap_converter import ColloquialWordswapConverter
 from pyrit.prompt_converter.diacritic_converter import DiacriticConverter
 from pyrit.prompt_converter.emoji_converter import EmojiConverter
+from pyrit.prompt_converter.first_letter_converter import FirstLetterConverter
 from pyrit.prompt_converter.flip_converter import FlipConverter
 from pyrit.prompt_converter.fuzzer_converter import (
     FuzzerConverter,
@@ -36,6 +37,7 @@ from pyrit.prompt_converter.fuzzer_converter import (
     FuzzerSimilarConverter,
 )
 from pyrit.prompt_converter.human_in_the_loop_converter import HumanInTheLoopConverter
+from pyrit.prompt_converter.image_compression_converter import ImageCompressionConverter
 from pyrit.prompt_converter.insert_punctuation_converter import InsertPunctuationConverter
 from pyrit.prompt_converter.leetspeak_converter import LeetspeakConverter
 from pyrit.prompt_converter.llm_generic_text_converter import LLMGenericTextConverter
@@ -52,10 +54,12 @@ from pyrit.prompt_converter.rot13_converter import ROT13Converter
 from pyrit.prompt_converter.search_replace_converter import SearchReplaceConverter
 from pyrit.prompt_converter.string_join_converter import StringJoinConverter
 from pyrit.prompt_converter.suffix_append_converter import SuffixAppendConverter
+from pyrit.prompt_converter.superscript_converter import SuperscriptConverter
 from pyrit.prompt_converter.tense_converter import TenseConverter
 from pyrit.prompt_converter.text_to_hex_converter import TextToHexConverter
 from pyrit.prompt_converter.tone_converter import ToneConverter
 from pyrit.prompt_converter.translation_converter import TranslationConverter
+from pyrit.prompt_converter.random_translation_converter import RandomTranslationConverter
 from pyrit.prompt_converter.unicode_confusable_converter import UnicodeConfusableConverter
 from pyrit.prompt_converter.unicode_replacement_converter import UnicodeReplacementConverter
 from pyrit.prompt_converter.unicode_sub_converter import UnicodeSubstitutionConverter
@@ -65,6 +69,8 @@ from pyrit.prompt_converter.zalgo_converter import ZalgoConverter
 from pyrit.prompt_converter.zero_width_converter import ZeroWidthConverter
 from pyrit.prompt_converter.toxic_sentence_generator_converter import ToxicSentenceGeneratorConverter
 from pyrit.prompt_converter.denylist_converter import DenylistConverter
+from pyrit.prompt_converter.text_jailbreak_converter import TextJailbreakConverter
+from pyrit.prompt_converter.template_segment_converter import TemplateSegmentConverter
 
 
 __all__ = [
@@ -82,13 +88,14 @@ __all__ = [
     "BinaryConverter",
     "CaesarConverter",
     "CharacterSpaceConverter",
-    "CharSwapGenerator",
+    "CharSwapConverter",
     "CodeChameleonConverter",
     "ColloquialWordswapConverter",
     "DenylistConverter",
     "DiacriticConverter",
     "ConverterResult",
     "EmojiConverter",
+    "FirstLetterConverter",
     "FlipConverter",
     "FuzzerConverter",
     "FuzzerCrossOverConverter",
@@ -97,7 +104,10 @@ __all__ = [
     "FuzzerShortenConverter",
     "FuzzerSimilarConverter",
     "HumanInTheLoopConverter",
+    "ImageCompressionConverter",
     "InsertPunctuationConverter",
+    "TemplateSegmentConverter",
+    "TextJailbreakConverter",
     "LeetspeakConverter",
     "LLMGenericTextConverter",
     "MaliciousQuestionGeneratorConverter",
@@ -115,16 +125,19 @@ __all__ = [
     "SneakyBitsSmugglerConverter",
     "StringJoinConverter",
     "SuffixAppendConverter",
+    "SuperscriptConverter",
     "TextToHexConverter",
     "TenseConverter",
     "ToneConverter",
     "TranslationConverter",
+    "RandomTranslationConverter",
     "UnicodeConfusableConverter",
     "UnicodeReplacementConverter",
     "UnicodeSubstitutionConverter",
     "UrlConverter",
     "VariationConverter",
     "VariationSelectorSmugglerConverter",
+    "WordLevelConverter",
     "ZalgoConverter",
     "ZeroWidthConverter",
     "ToxicSentenceGeneratorConverter",

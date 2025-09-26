@@ -12,6 +12,7 @@ from unittest.mock import MagicMock
 import pytest
 from unit.mocks import MockPromptTarget, get_sample_conversations
 
+from pyrit.executor.attack import PromptSendingAttack
 from pyrit.models import (
     PromptRequestPiece,
     PromptRequestResponse,
@@ -20,7 +21,6 @@ from pyrit.models import (
     group_conversation_request_pieces_by_sequence,
 )
 from pyrit.models.prompt_request_piece import sort_request_pieces
-from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter
 
 
@@ -79,19 +79,19 @@ def test_prompt_targets_serialize(patch_central_database):
     assert entry.prompt_target_identifier["__module__"] == "unit.mocks"
 
 
-def test_orchestrators_serialize():
-    orchestrator = PromptSendingOrchestrator(objective_target=MagicMock())
+def test_executors_serialize():
+    attack = PromptSendingAttack(objective_target=MagicMock())
 
     entry = PromptRequestPiece(
         role="user",
         original_value="Hello",
         converted_value="Hello",
-        orchestrator_identifier=orchestrator.get_identifier(),
+        orchestrator_identifier=attack.get_identifier(),
     )
 
     assert entry.orchestrator_identifier["id"] is not None
-    assert entry.orchestrator_identifier["__type__"] == "PromptSendingOrchestrator"
-    assert entry.orchestrator_identifier["__module__"] == "pyrit.orchestrator.single_turn.prompt_sending_orchestrator"
+    assert entry.orchestrator_identifier["__type__"] == "PromptSendingAttack"
+    assert entry.orchestrator_identifier["__module__"] == "pyrit.executor.attack.single_turn.prompt_sending"
 
 
 @pytest.mark.asyncio
@@ -174,6 +174,7 @@ def test_prompt_response_validate(sample_conversations: MutableSequence[PromptRe
     for c in sample_conversations:
         c.conversation_id = sample_conversations[0].conversation_id
         c.role = sample_conversations[0].role
+        c.sequence = 0
 
     request_response = PromptRequestResponse(request_pieces=sample_conversations)
     request_response.validate()
@@ -201,6 +202,20 @@ def test_prompt_request_response_inconsistent_roles_throws(sample_conversations:
 
     request_response = PromptRequestResponse(request_pieces=sample_conversations)
     with pytest.raises(ValueError, match="Inconsistent roles within the same prompt request response entry."):
+        request_response.validate()
+
+
+def test_prompt_request_response_inconsistent_sequence_throws(
+    sample_conversations: MutableSequence[PromptRequestPiece],
+):
+    sequence = 0
+    for c in sample_conversations:
+        c.conversation_id = sample_conversations[0].conversation_id
+        c.sequence = sequence
+        sequence += 1
+
+    request_response = PromptRequestResponse(request_pieces=sample_conversations)
+    with pytest.raises(ValueError, match="Inconsistent sequences within the same prompt request response entry."):
         request_response.validate()
 
 
@@ -548,8 +563,8 @@ def test_prompt_request_piece_to_dict():
         prompt_target_identifier={"__type__": "MockPromptTarget", "__module__": "unit.mocks"},
         orchestrator_identifier={
             "id": str(uuid.uuid4()),
-            "__type__": "PromptSendingOrchestrator",
-            "__module__": "pyrit.orchestrator.single_turn.prompt_sending_orchestrator",
+            "__type__": "PromptSendingAttack",
+            "__module__": "pyrit.executor.attack.single_turn.prompt_sending_attack",
         },
         scorer_identifier={"key": "value"},
         original_value_data_type="text",
@@ -670,3 +685,70 @@ def test_construct_response_from_request_no_metadata():
     assert response_piece.original_value_data_type == "text"
     assert response_piece.converted_value_data_type == "text"
     assert response_piece.response_error == "none"
+
+
+@pytest.mark.parametrize(
+    "response_error,expected_has_error",
+    [
+        ("none", False),
+        ("blocked", True),
+        ("processing", True),
+        ("unknown", True),
+        ("empty", True),
+    ],
+)
+def test_prompt_request_piece_has_error(response_error, expected_has_error):
+    entry = PromptRequestPiece(
+        role="assistant",
+        original_value="Test response",
+        response_error=response_error,
+    )
+    assert entry.has_error() == expected_has_error
+
+
+@pytest.mark.parametrize(
+    "response_error,expected_is_blocked",
+    [
+        ("none", False),
+        ("blocked", True),
+        ("processing", False),
+        ("unknown", False),
+        ("empty", False),
+    ],
+)
+def test_prompt_request_piece_is_blocked(response_error, expected_is_blocked):
+    entry = PromptRequestPiece(
+        role="assistant",
+        original_value="Test response",
+        response_error=response_error,
+    )
+    assert entry.is_blocked() == expected_is_blocked
+
+
+def test_prompt_request_piece_has_error_and_is_blocked_consistency():
+    # Test that is_blocked implies has_error
+    blocked_entry = PromptRequestPiece(
+        role="assistant",
+        original_value="Blocked response",
+        response_error="blocked",
+    )
+    assert blocked_entry.is_blocked() is True
+    assert blocked_entry.has_error() is True
+
+    # Test that not all errors are blocks
+    error_entry = PromptRequestPiece(
+        role="assistant",
+        original_value="Error response",
+        response_error="unknown",
+    )
+    assert error_entry.is_blocked() is False
+    assert error_entry.has_error() is True
+
+    # Test that no error means not blocked
+    no_error_entry = PromptRequestPiece(
+        role="assistant",
+        original_value="Success response",
+        response_error="none",
+    )
+    assert no_error_entry.is_blocked() is False
+    assert no_error_entry.has_error() is False

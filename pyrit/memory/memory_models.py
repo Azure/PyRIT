@@ -1,8 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import json
 import uuid
-from typing import List, Literal, Optional, Union
+from datetime import datetime
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import (
@@ -14,8 +16,10 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     String,
+    TypeDecorator,
     Unicode,
 )
+from sqlalchemy.dialects.sqlite import CHAR
 from sqlalchemy.orm import (  # type: ignore
     DeclarativeBase,
     Mapped,
@@ -24,7 +28,36 @@ from sqlalchemy.orm import (  # type: ignore
 )
 from sqlalchemy.types import Uuid  # type: ignore
 
+from pyrit.common.utils import to_sha256
 from pyrit.models import PromptDataType, PromptRequestPiece, Score, SeedPrompt
+from pyrit.models.attack_result import AttackOutcome, AttackResult
+from pyrit.models.conversation_reference import ConversationReference, ConversationType
+from pyrit.models.literals import ChatMessageRole
+
+
+class CustomUUID(TypeDecorator):
+    """
+    A custom UUID type that works consistently across different database backends.
+    For SQLite, stores UUIDs as strings and converts them back to UUID objects.
+    For other databases, uses the native UUID type.
+    """
+
+    impl = CHAR
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == "sqlite":
+            return dialect.type_descriptor(CHAR(36))
+        else:
+            return dialect.type_descriptor(Uuid())
+
+    def process_bind_param(self, value, dialect):
+        return str(value) if value else None
+
+    def process_result_value(self, value, dialect):
+        if dialect.name == "sqlite":
+            return uuid.UUID(value) if value else None
+        return value
 
 
 class Base(DeclarativeBase):
@@ -68,8 +101,8 @@ class PromptMemoryEntry(Base):
 
     __tablename__ = "PromptMemoryEntries"
     __table_args__ = {"extend_existing": True}
-    id = mapped_column(Uuid, nullable=False, primary_key=True)
-    role: Mapped[Literal["system", "user", "assistant"]] = mapped_column(String, nullable=False)
+    id = mapped_column(CustomUUID, nullable=False, primary_key=True)
+    role: Mapped[Literal["system", "user", "assistant", "tool", "developer"]] = mapped_column(String, nullable=False)
     conversation_id = mapped_column(String, nullable=False)
     sequence = mapped_column(INTEGER, nullable=False)
     timestamp = mapped_column(DateTime, nullable=False)
@@ -94,7 +127,7 @@ class PromptMemoryEntry(Base):
 
     idx_conversation_id = Index("idx_conversation_id", "conversation_id")
 
-    original_prompt_id = mapped_column(Uuid, nullable=False)
+    original_prompt_id = mapped_column(CustomUUID, nullable=False)
 
     scores: Mapped[List["ScoreEntry"]] = relationship(
         "ScoreEntry",
@@ -172,7 +205,7 @@ class EmbeddingDataEntry(Base):  # type: ignore
     # Allows table redefinition if already defined.
     __table_args__ = {"extend_existing": True}
     id = mapped_column(Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), primary_key=True)
-    embedding = mapped_column(ARRAY(Float).with_variant(JSON, "mssql"))  # type: ignore
+    embedding = mapped_column(ARRAY(Float).with_variant(JSON, "sqlite"))  # type: ignore
     embedding_type_name = mapped_column(String)
 
     def __str__(self):
@@ -188,15 +221,15 @@ class ScoreEntry(Base):  # type: ignore
     __tablename__ = "ScoreEntries"
     __table_args__ = {"extend_existing": True}
 
-    id = mapped_column(Uuid(as_uuid=True), nullable=False, primary_key=True)
+    id = mapped_column(CustomUUID, nullable=False, primary_key=True)
     score_value = mapped_column(String, nullable=False)
     score_value_description = mapped_column(String, nullable=True)
     score_type: Mapped[Literal["true_false", "float_scale"]] = mapped_column(String, nullable=False)
-    score_category = mapped_column(String, nullable=False)
+    score_category = mapped_column(String, nullable=True)
     score_rationale = mapped_column(String, nullable=True)
     score_metadata = mapped_column(String, nullable=True)
     scorer_class_identifier: Mapped[dict[str, str]] = mapped_column(JSON)
-    prompt_request_response_id = mapped_column(Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
+    prompt_request_response_id = mapped_column(CustomUUID, ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
     timestamp = mapped_column(DateTime, nullable=False)
     task = mapped_column(String, nullable=True)
     prompt_request_piece: Mapped["PromptMemoryEntry"] = relationship("PromptMemoryEntry", back_populates="scores")
@@ -265,7 +298,7 @@ class SeedPromptEntry(Base):
     Represents the raw prompt or prompt template data as found in open datasets.
 
     Note: This is different from the PromptMemoryEntry which is the processed prompt data.
-    SeedPrompt merely reflects basic prompts before plugging into orchestrators,
+    SeedPrompt merely reflects basic prompts before plugging into attacks,
     running through models with corresponding attack strategies, and applying converters.
     PromptMemoryEntry captures the processed prompt data before and after the above steps.
 
@@ -293,6 +326,7 @@ class SeedPromptEntry(Base):
             Groups are used to organize prompts for multi-turn conversations or multi-modal prompts.
         sequence (int): The turn of the seed prompt in a group. When entire multi-turn conversations
             are stored, this is used to order the prompts.
+        role (str): The role of the prompt (e.g., user, system, assistant).
 
     Methods:
         __str__(): Returns a string representation of the memory entry.
@@ -300,7 +334,7 @@ class SeedPromptEntry(Base):
 
     __tablename__ = "SeedPromptEntries"
     __table_args__ = {"extend_existing": True}
-    id = mapped_column(Uuid, nullable=False, primary_key=True)
+    id = mapped_column(CustomUUID, nullable=False, primary_key=True)
     value = mapped_column(Unicode, nullable=False)
     value_sha256 = mapped_column(Unicode, nullable=True)
     data_type: Mapped[PromptDataType] = mapped_column(String, nullable=False)
@@ -315,8 +349,9 @@ class SeedPromptEntry(Base):
     added_by = mapped_column(String, nullable=False)
     prompt_metadata: Mapped[dict[str, Union[str, int]]] = mapped_column(JSON, nullable=True)
     parameters: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
-    prompt_group_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, nullable=True)
+    prompt_group_id: Mapped[Optional[uuid.UUID]] = mapped_column(CustomUUID, nullable=True)
     sequence: Mapped[Optional[int]] = mapped_column(INTEGER, nullable=True)
+    role: Mapped[ChatMessageRole] = mapped_column(String, nullable=True)
 
     def __init__(self, *, entry: SeedPrompt):
         self.id = entry.id
@@ -336,6 +371,7 @@ class SeedPromptEntry(Base):
         self.parameters = entry.parameters  # type: ignore
         self.prompt_group_id = entry.prompt_group_id
         self.sequence = entry.sequence
+        self.role = entry.role
 
     def get_seed_prompt(self) -> SeedPrompt:
         return SeedPrompt(
@@ -356,4 +392,177 @@ class SeedPromptEntry(Base):
             parameters=self.parameters,
             prompt_group_id=self.prompt_group_id,
             sequence=self.sequence,
+            role=self.role,
+        )
+
+
+class AttackResultEntry(Base):
+    """
+    Represents the attack result data in the database.
+
+    Parameters:
+        __tablename__ (str): The name of the database table.
+        __table_args__ (dict): Additional arguments for the database table.
+        id (Uuid): The unique identifier for the attack result entry.
+        conversation_id (str): The unique identifier of the conversation that produced this result.
+        objective (str): Natural-language description of the attacker's objective.
+        attack_identifier (dict[str, str]): Identifier of the attack (e.g., name, module).
+        objective_sha256 (str): The SHA256 hash of the objective.
+        last_response_id (Uuid): Foreign key to the last response PromptRequestPiece.
+        last_score_id (Uuid): Foreign key to the last score ScoreEntry.
+        executed_turns (int): Total number of turns that were executed.
+        execution_time_ms (int): Total execution time of the attack in milliseconds.
+        outcome (AttackOutcome): The outcome of the attack, indicating success, failure, or undetermined.
+        outcome_reason (str): Optional reason for the outcome, providing additional context.
+        attack_metadata (dict[str, Any]): Metadata can be included as key-value pairs to provide extra context.
+        pruned_conversation_ids (List[str]): List of conversation IDs that were pruned from the attack.
+        adversarial_chat_conversation_ids (List[str]): List of conversation IDs used for adversarial chat.
+        timestamp (DateTime): The timestamp of the attack result entry.
+        last_response (PromptMemoryEntry): Relationship to the last response prompt memory entry.
+        last_score (ScoreEntry): Relationship to the last score entry.
+    Methods:
+        __str__(): Returns a string representation of the attack result entry.
+    """
+
+    __tablename__ = "AttackResultEntries"
+    __table_args__ = {"extend_existing": True}
+    id = mapped_column(CustomUUID, nullable=False, primary_key=True)
+    conversation_id = mapped_column(String, nullable=False)
+    objective = mapped_column(Unicode, nullable=False)
+    attack_identifier: Mapped[dict[str, str]] = mapped_column(JSON, nullable=False)
+    objective_sha256 = mapped_column(String, nullable=True)
+    last_response_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        CustomUUID, ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), nullable=True
+    )
+    last_score_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        CustomUUID, ForeignKey(f"{ScoreEntry.__tablename__}.id"), nullable=True
+    )
+    executed_turns = mapped_column(INTEGER, nullable=False, default=0)
+    execution_time_ms = mapped_column(INTEGER, nullable=False, default=0)
+    outcome: Mapped[Literal["success", "failure", "undetermined"]] = mapped_column(
+        String, nullable=False, default="undetermined"
+    )
+    outcome_reason = mapped_column(String, nullable=True)
+    attack_metadata: Mapped[dict[str, Union[str, int, float, bool]]] = mapped_column(JSON, nullable=True)
+    pruned_conversation_ids: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
+    adversarial_chat_conversation_ids: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
+    timestamp = mapped_column(DateTime, nullable=False)
+
+    last_response: Mapped[Optional["PromptMemoryEntry"]] = relationship(
+        "PromptMemoryEntry",
+        foreign_keys=[last_response_id],
+    )
+    last_score: Mapped[Optional["ScoreEntry"]] = relationship(
+        "ScoreEntry",
+        foreign_keys=[last_score_id],
+    )
+
+    def __init__(self, *, entry: AttackResult):
+        self.id = uuid.uuid4()
+        self.conversation_id = entry.conversation_id
+        self.objective = entry.objective
+        self.attack_identifier = entry.attack_identifier
+        self.objective_sha256 = to_sha256(entry.objective)
+
+        # Use helper method for UUID conversions
+        self.last_response_id = self._get_id_as_uuid(entry.last_response)
+        self.last_score_id = self._get_id_as_uuid(entry.last_score)
+
+        self.executed_turns = entry.executed_turns
+        self.execution_time_ms = entry.execution_time_ms
+        self.outcome = entry.outcome.value  # type: ignore
+        self.outcome_reason = entry.outcome_reason
+        self.attack_metadata = self.filter_json_serializable_metadata(entry.metadata)
+
+        # Persist conversation references by type
+        self.pruned_conversation_ids = [
+            ref.conversation_id for ref in entry.get_conversations_by_type(ConversationType.PRUNED)
+        ] or None
+
+        self.adversarial_chat_conversation_ids = [
+            ref.conversation_id for ref in entry.get_conversations_by_type(ConversationType.ADVERSARIAL)
+        ] or None
+
+        self.timestamp = datetime.now()
+
+    @staticmethod
+    def _get_id_as_uuid(obj: Any) -> Optional[uuid.UUID]:
+        """
+        Safely extract and convert an object's id to UUID.
+
+        Args:
+            obj: Object that might have an id attribute
+
+        Returns:
+            UUID if successful, None otherwise
+        """
+        if obj and hasattr(obj, "id") and obj.id:
+            try:
+                return uuid.UUID(str(obj.id))
+            except (ValueError, TypeError):
+                pass
+        return None
+
+    @staticmethod
+    def filter_json_serializable_metadata(metadata: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Filter a dictionary to only include JSON-serializable values.
+
+        This function iterates through the metadata dictionary and keeps only
+        values that can be serialized to JSON, discarding any non-serializable objects.
+
+        Args:
+            metadata: Dictionary with potentially non-serializable values
+
+        Returns:
+            Dictionary with only JSON-serializable values
+        """
+        if not metadata:
+            return {}
+
+        filtered_metadata = {}
+
+        for key, value in metadata.items():
+            try:
+                json.dumps(value)
+                filtered_metadata[key] = value
+            except (TypeError, ValueError):
+                pass
+
+        return filtered_metadata
+
+    def get_attack_result(self) -> AttackResult:
+
+        related_conversations: set[ConversationReference] = set()
+
+        for cid in self.pruned_conversation_ids or []:
+            related_conversations.add(
+                ConversationReference(
+                    conversation_id=cid,
+                    conversation_type=ConversationType.PRUNED,
+                    description="pruned conversation",
+                )
+            )
+
+        for cid in self.adversarial_chat_conversation_ids or []:
+            related_conversations.add(
+                ConversationReference(
+                    conversation_id=cid,
+                    conversation_type=ConversationType.ADVERSARIAL,
+                    description="adversarial chat conversation",
+                )
+            )
+
+        return AttackResult(
+            conversation_id=self.conversation_id,
+            objective=self.objective,
+            attack_identifier=self.attack_identifier,
+            last_response=self.last_response.get_prompt_request_piece() if self.last_response else None,
+            last_score=self.last_score.get_score() if self.last_score else None,
+            executed_turns=self.executed_turns,
+            execution_time_ms=self.execution_time_ms,
+            outcome=AttackOutcome(self.outcome),
+            outcome_reason=self.outcome_reason,
+            related_conversations=related_conversations,
+            metadata=self.attack_metadata or {},
         )

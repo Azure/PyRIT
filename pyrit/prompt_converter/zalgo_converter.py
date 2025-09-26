@@ -3,10 +3,10 @@
 
 import logging
 import random
-from typing import Optional
+import re
+from typing import List, Optional, Union
 
-from pyrit.models import PromptDataType
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 
 # Unicode combining characters for Zalgo effect (U+0300–U+036F)
 ZALGO_MARKS = [chr(code) for code in range(0x0300, 0x036F + 1)]
@@ -15,15 +15,37 @@ MAX_INTENSITY = 100
 logger = logging.getLogger(__name__)
 
 
-class ZalgoConverter(PromptConverter):
-    def __init__(self, *, intensity: int = 10, seed: Optional[int] = None) -> None:
+class ZalgoConverter(WordLevelConverter):
+    """
+    Converts text into cursed Zalgo text using combining Unicode marks.
+    """
+
+    def __init__(
+        self,
+        *,
+        intensity: int = 10,
+        seed: Optional[int] = None,
+        indices: Optional[List[int]] = None,
+        keywords: Optional[List[str]] = None,
+        proportion: Optional[float] = None,
+        regex: Optional[Union[str, re.Pattern]] = None,
+    ):
         """
-        Initializes the Zalgo converter.
+        Initializes the converter with the specified selection parameters.
+
+        This class allows for selection of words to convert based on various criteria.
+        Only one selection parameter may be provided at a time (indices, keywords, proportion, or regex).
+        If no selection parameter is provided, all words will be converted.
 
         Args:
             intensity (int): Number of combining marks per character (higher = more cursed). Default is 10.
             seed (Optional[int]): Optional seed for reproducible output.
+            indices (Optional[List[int]]): Specific indices of words to convert.
+            keywords (Optional[List[str]]): Keywords to select words for conversion.
+            proportion (Optional[float]): Proportion of randomly selected words to convert [0.0-1.0].
+            regex (Optional[Union[str, re.Pattern]]): Regex pattern to match words for conversion.
         """
+        super().__init__(indices=indices, keywords=keywords, proportion=proportion, regex=regex)
         self._intensity = self._normalize_intensity(intensity)
         self._seed = seed
 
@@ -32,6 +54,7 @@ class ZalgoConverter(PromptConverter):
             intensity = int(intensity)
         except (TypeError, ValueError):
             raise ValueError(f"Invalid intensity value: {intensity!r} (must be an integer)")
+
         normalized_intensity = max(0, min(intensity, MAX_INTENSITY))
         if intensity != normalized_intensity:
             logger.warning(
@@ -40,26 +63,16 @@ class ZalgoConverter(PromptConverter):
             )
         return normalized_intensity
 
-    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
-        """
-        Converts text into cursed Zalgo text using combining Unicode marks.
-        """
-        if not self.input_supported(input_type):
-            raise ValueError("Input type not supported")
+    async def convert_word_async(self, word: str) -> str:
+        if self._intensity <= 0:
+            return word
 
         def glitch(char: str) -> str:
             return char + "".join(random.choice(ZALGO_MARKS) for _ in range(random.randint(1, self._intensity)))
 
-        if self._intensity <= 0:
-            output_text = prompt
-        else:
-            if self._seed is not None:
-                random.seed(self._seed)
-            output_text = "".join(glitch(c) if c.isalnum() else c for c in prompt)
-        return ConverterResult(output_text=output_text, output_type="text")
+        return "".join(glitch(c) if c.isalnum() else c for c in word)
 
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"
+    def validate_input(self, prompt: str) -> None:
+        # Initialize the random seed before processing any words
+        if self._seed is not None:
+            random.seed(self._seed)

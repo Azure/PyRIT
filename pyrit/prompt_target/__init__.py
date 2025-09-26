@@ -13,6 +13,7 @@ from pyrit.prompt_target.azure_ml_chat_target import AzureMLChatTarget
 from pyrit.prompt_target.crucible_target import CrucibleTarget
 from pyrit.prompt_target.gandalf_target import GandalfLevel, GandalfTarget
 from pyrit.prompt_target.http_target.http_target import HTTPTarget
+from pyrit.prompt_target.http_target.httpx_api_target import HTTPXAPITarget
 from pyrit.prompt_target.http_target.http_target_callback_functions import (
     get_http_target_json_response_callback_function,
     get_http_target_regex_matching_callback_function,
@@ -23,6 +24,8 @@ from pyrit.prompt_target.mas_target.mas_chat_target import MulitAgentSystemChatT
 from pyrit.prompt_target.openai.openai_completion_target import OpenAICompletionTarget
 from pyrit.prompt_target.openai.openai_dall_e_target import OpenAIDALLETarget
 from pyrit.prompt_target.openai.openai_realtime_target import RealtimeTarget
+from pyrit.prompt_target.openai.openai_response_target import OpenAIResponseTarget
+from pyrit.prompt_target.openai.openai_sora_target import OpenAISoraTarget
 from pyrit.prompt_target.openai.openai_tts_target import OpenAITTSTarget
 from pyrit.prompt_target.playwright_target import PlaywrightTarget
 from pyrit.prompt_target.prompt_shield_target import PromptShieldTarget
@@ -37,6 +40,7 @@ __all__ = [
     "get_http_target_json_response_callback_function",
     "get_http_target_regex_matching_callback_function",
     "HTTPTarget",
+    "HTTPXAPITarget",
     "HuggingFaceChatTarget",
     "HuggingFaceEndpointTarget",
     "limit_requests_per_minute",
@@ -44,6 +48,8 @@ __all__ = [
     "OpenAICompletionTarget",
     "OpenAIDALLETarget",
     "OpenAIChatTarget",
+    "OpenAIResponseTarget",
+    "OpenAISoraTarget",
     "OpenAITTSTarget",
     "OpenAITarget",
     "PlaywrightTarget",

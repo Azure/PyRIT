@@ -6,7 +6,7 @@ from __future__ import annotations
 import pathlib
 from typing import Optional
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import SCORER_CONFIG_PATH
 from pyrit.models import (
     Score,
     UnvalidatedScore,
@@ -38,17 +38,17 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
             true_false_question_path (pathlib.Path): The path to the true/false question file.
         """
 
-        if not true_false_question_path:
-            true_false_question_path = pathlib.Path(
-                DATASETS_PATH, "score", "true_false_question", "question_answering.yaml"
-            )
-
+        true_false_question_path = self._verify_and_resolve_path(
+            true_false_question_path
+            if true_false_question_path
+            else SCORER_CONFIG_PATH / "true_false_question" / "question_answering.yaml"
+        )
         super().__init__(
             chat_target=chat_target,
             true_false_question_path=true_false_question_path,
         )
 
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Score the request_reponse using the QuestionAnsweringEntry
         and return a single score object
@@ -59,8 +59,6 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
         Returns:
             Score: A single Score object representing the result
         """
-
-        self.validate(request_response, task=task)
 
         prompt = (
             f"{task}\n\nThe target response is as follows. "
@@ -80,7 +78,6 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
 
         score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value)
 
-        self._memory.add_scores_to_memory(scores=[score])
         return [score]
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):

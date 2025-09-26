@@ -3,7 +3,7 @@
 
 import enum
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 import yaml
 
@@ -30,26 +30,31 @@ class SelfAskCategoryScorer(Scorer):
     def __init__(
         self,
         chat_target: PromptChatTarget,
-        content_classifier: Path,
+        content_classifier_path: Union[str, Path],
     ) -> None:
         """
         Initializes a new instance of the SelfAskCategoryScorer class.
 
         Args:
             chat_target (PromptChatTarget): The chat target to interact with.
-            content_classifier (Path): The path to the classifier file.
+            content_classifier_path (Path): The path to the classifier file.
         """
+
+        content_classifier_path = self._verify_and_resolve_path(content_classifier_path)
+
         self._prompt_target = chat_target
         self.scorer_type = "true_false"
 
-        category_file_contents = yaml.safe_load(content_classifier.read_text(encoding="utf-8"))
+        category_file_contents = yaml.safe_load(content_classifier_path.read_text(encoding="utf-8"))
 
         self._no_category_found_category = category_file_contents["no_category_found"]
         categories_as_string = self._content_classifier_to_string(category_file_contents["categories"])
 
-        scoring_instructions_template = SeedPrompt.from_yaml_file(
+        content_classifier_system_prompt = self._verify_and_resolve_path(
             CONTENT_CLASSIFIERS_PATH / "content_classifier_system_prompt.yaml"
         )
+
+        scoring_instructions_template = SeedPrompt.from_yaml_file(content_classifier_system_prompt)
 
         self._system_prompt = scoring_instructions_template.render_template_value(
             categories=categories_as_string,
@@ -82,9 +87,9 @@ class SelfAskCategoryScorer(Scorer):
 
         return category_descriptions
 
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
-        Scores the given request_response using the chat target and adds score to memory.
+        Scores the given request_response using the chat target.
 
         Args:
             request_response (PromptRequestPiece): The prompt request piece to score.
@@ -97,8 +102,6 @@ class SelfAskCategoryScorer(Scorer):
                          The score_value is True in all cases unless no category fits. In which case,
                          the score value is false and the _false_category is used.
         """
-        self.validate(request_response, task=task)
-
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=self._system_prompt,
@@ -111,7 +114,6 @@ class SelfAskCategoryScorer(Scorer):
 
         score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value)
 
-        self._memory.add_scores_to_memory(scores=[score])
         return [score]
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):

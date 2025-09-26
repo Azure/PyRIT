@@ -3,17 +3,17 @@
 
 import enum
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import yaml
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import SCORER_CONFIG_PATH
 from pyrit.models import PromptRequestPiece, SeedPrompt
 from pyrit.models.score import Score, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer import Scorer
 
-TRUE_FALSE_QUESTIONS_PATH = Path(DATASETS_PATH, "score", "true_false_question").resolve()
+TRUE_FALSE_QUESTIONS_PATH = Path(SCORER_CONFIG_PATH, "true_false_question").resolve()
 
 
 class TrueFalseQuestionPaths(enum.Enum):
@@ -31,9 +31,7 @@ class TrueFalseQuestion:
     This is sent to an LLM and can be used as an alternative to a yaml file from TrueFalseQuestionPaths.
     """
 
-    def __init__(
-        self, *, true_description: str, false_description: str = "", category: str = "", metadata: Optional[str] = ""
-    ):
+    def __init__(self, *, true_description: str, false_description: str = "", category: str = "", metadata: str = ""):
         self.true_description = true_description
 
         self.false_description = (
@@ -63,9 +61,9 @@ class SelfAskTrueFalseScorer(Scorer):
         self,
         *,
         chat_target: PromptChatTarget,
-        true_false_question_path: Optional[Path] = None,
+        true_false_question_path: Optional[Union[str, Path]] = None,
         true_false_question: Optional[TrueFalseQuestion] = None,
-        true_false_system_prompt_path: Optional[Path] = None,
+        true_false_system_prompt_path: Optional[Union[str, Path]] = None,
     ) -> None:
         self._prompt_target = chat_target
         self.scorer_type = "true_false"
@@ -74,7 +72,17 @@ class SelfAskTrueFalseScorer(Scorer):
             raise ValueError("Either true_false_question_path or true_false_question must be provided.")
         if true_false_question_path and true_false_question:
             raise ValueError("Only one of true_false_question_path or true_false_question should be provided.")
+
+        true_false_system_prompt_path = (
+            true_false_system_prompt_path
+            if true_false_system_prompt_path
+            else TRUE_FALSE_QUESTIONS_PATH / "true_false_system_prompt.yaml"
+        )
+
+        true_false_system_prompt_path = self._verify_and_resolve_path(true_false_system_prompt_path)
+
         if true_false_question_path:
+            true_false_question_path = self._verify_and_resolve_path(true_false_question_path)
             true_false_question = yaml.safe_load(true_false_question_path.read_text(encoding="utf-8"))
 
         for key in ["category", "true_description", "false_description"]:
@@ -87,21 +95,15 @@ class SelfAskTrueFalseScorer(Scorer):
 
         metadata = true_false_question["metadata"] if "metadata" in true_false_question else ""
 
-        true_false_system_prompt_path = (
-            true_false_system_prompt_path
-            if true_false_system_prompt_path
-            else TRUE_FALSE_QUESTIONS_PATH / "true_false_system_prompt.yaml"
-        )
-
         scoring_instructions_template = SeedPrompt.from_yaml_file(true_false_system_prompt_path)
 
         self._system_prompt = scoring_instructions_template.render_template_value(
             true_description=true_category, false_description=false_category, metadata=metadata
         )
 
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
-        Scores the given request_response using "self-ask" for the chat target and adds score to memory.
+        Scores the given request_response using "self-ask" for the chat target.
 
         Args:
             request_response (PromptRequestPiece): The prompt request piece containing the text to be scored.
@@ -115,8 +117,6 @@ class SelfAskTrueFalseScorer(Scorer):
                          metadata can be configured to provide additional information.
         """
 
-        self.validate(request_response, task=task)
-
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=self._system_prompt,
@@ -129,8 +129,6 @@ class SelfAskTrueFalseScorer(Scorer):
         )
 
         score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value)
-
-        self._memory.add_scores_to_memory(scores=[score])
         return [score]
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):

@@ -1,6 +1,8 @@
 datasets:
-  - ./pyrit/tests/integration/cli/illegal_integration_test.prompt
+  - ./tests/integration/cli/illegal_integration_test.prompt
 objective_target:
   type: "OpenAIChatTarget"
 scenarios:
-  - type: "PromptSendingOrchestrator"
+  - type: "PromptSendingAttack"
+database:
+  type: "SQLite"

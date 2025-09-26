@@ -10,51 +10,67 @@ import pytest
 from pydantic import ValidationError
 
 from pyrit.cli.__main__ import main
-from pyrit.orchestrator import (
-    CrescendoOrchestrator,
-    PromptSendingOrchestrator,
-    RedTeamingOrchestrator,
-    TreeOfAttacksWithPruningOrchestrator,
+from pyrit.executor.attack import (
+    CrescendoAttack,
+    PromptSendingAttack,
+    RedTeamingAttack,
+    TreeOfAttacksWithPruningAttack,
 )
 
 test_cases_success = [
     (
         "--config-file 'tests/unit/cli/prompt_send_success.yaml'",
-        [PromptSendingOrchestrator],
-        ["run_attack_async"],
+        [PromptSendingAttack],
     ),
-    ("--config-file 'tests/unit/cli/multi_turn_rto_success.yaml'", [RedTeamingOrchestrator], ["run_attack_async"]),
-    ("--config-file 'tests/unit/cli/multi_turn_rto_args_success.yaml'", [RedTeamingOrchestrator], ["run_attack_async"]),
-    ("--config-file 'tests/unit/cli/multi_turn_crescendo_success.yaml'", [CrescendoOrchestrator], ["run_attack_async"]),
+    (
+        "--config-file 'tests/unit/cli/prompt_send_success_converters_default.yaml'",
+        [PromptSendingAttack],
+    ),
+    (
+        "--config-file 'tests/unit/cli/prompt_send_success_converters_custom_target.yaml'",
+        [PromptSendingAttack],
+    ),
+    (
+        "--config-file 'tests/unit/cli/prompt_send_success_converters_llm_mixed_target.yaml'",
+        [PromptSendingAttack],
+    ),
+    (
+        "--config-file 'tests/unit/cli/prompt_send_success_converters_no_target.yaml'",
+        [PromptSendingAttack],
+    ),
+    ("--config-file 'tests/unit/cli/multi_turn_rto_success.yaml'", [RedTeamingAttack]),
+    ("--config-file 'tests/unit/cli/multi_turn_rto_args_success.yaml'", [RedTeamingAttack]),
+    ("--config-file 'tests/unit/cli/multi_turn_crescendo_success.yaml'", [CrescendoAttack]),
     (
         "--config-file 'tests/unit/cli/multi_turn_crescendo_args_success.yaml'",
-        [CrescendoOrchestrator],
-        ["run_attack_async"],
+        [CrescendoAttack],
     ),
     (
         "--config-file 'tests/unit/cli/multi_turn_tap_success.yaml'",
-        [TreeOfAttacksWithPruningOrchestrator],
-        ["run_attack_async"],
+        [TreeOfAttacksWithPruningAttack],
     ),
     (
         "--config-file 'tests/unit/cli/multi_turn_tap_args_success.yaml'",
-        [TreeOfAttacksWithPruningOrchestrator],
-        ["run_attack_async"],
+        [TreeOfAttacksWithPruningAttack],
     ),
     (
-        "--config-file 'tests/unit/cli/multi_turn_multiple_orchestrators_args_success.yaml'",
-        [TreeOfAttacksWithPruningOrchestrator, CrescendoOrchestrator, RedTeamingOrchestrator],
-        ["run_attack_async", "run_attack_async", "run_attack_async"],
+        "--config-file 'tests/unit/cli/multi_turn_multiple_attacks_args_success.yaml'",
+        [TreeOfAttacksWithPruningAttack, CrescendoAttack, RedTeamingAttack],
     ),
     (
-        "--config-file 'tests/unit/cli/mixed_multiple_orchestrators_args_success.yaml'",
+        "--config-file 'tests/unit/cli/mixed_multiple_attacks_args_success.yaml'",
         [
-            PromptSendingOrchestrator,
-            TreeOfAttacksWithPruningOrchestrator,
-            CrescendoOrchestrator,
-            RedTeamingOrchestrator,
+            PromptSendingAttack,
+            TreeOfAttacksWithPruningAttack,
+            CrescendoAttack,
+            RedTeamingAttack,
         ],
-        ["run_attacks_async", "run_attack_async", "run_attack_async", "run_attack_async"],
+    ),
+    (
+        "--config-file 'tests/unit/cli/multi_turn_target_and_scorer_args_success.yaml'",
+        [
+            CrescendoAttack,
+        ],
     ),
 ]
 
@@ -104,21 +120,37 @@ test_cases_error = [
         KeyError,
     ),
     (
+        "--config-file 'tests/unit/cli/prompt_send_no_converter_target.yaml'",
+        "Converter requires a converter_target to be defined. "
+        "Alternatively, the adversarial_target can be used for scoring purposes, but none was provided.",
+        KeyError,
+    ),
+    (
+        "--config-file 'tests/unit/cli/prompt_send_converters_wrong_arg.yaml'",
+        "TranslationConverter.__init__() got an unexpected keyword argument 'wrong_arg'",
+        TypeError,
+    ),
+    (
+        "--config-file 'tests/unit/cli/prompt_send_converters_missing_arg.yaml'",
+        "TranslationConverter.__init__() missing 1 required keyword-only argument: 'language'",
+        TypeError,
+    ),
+    (
         "--config-file 'tests/unit/cli/multi_turn_rto_wrong_arg.yaml'",
-        "Failed to instantiate scenario 'RedTeamingOrchestrator': RedTeamingOrchestrator.__init__() "
+        "Failed to instantiate scenario 'RedTeamingAttack': RedTeamingAttack.__init__() "
         "got an unexpected keyword argument 'wrong_arg'",
         ValueError,
     ),
     (
         "--config-file 'tests/unit/cli/multi_turn_crescendo_wrong_arg.yaml'",
-        "Failed to instantiate scenario 'CrescendoOrchestrator': CrescendoOrchestrator.__init__() "
+        "Failed to instantiate scenario 'CrescendoAttack': CrescendoAttack.__init__() "
         "got an unexpected keyword argument 'wrong_arg'",
         ValueError,
     ),
     (
         "--config-file 'tests/unit/cli/multi_turn_tap_wrong_arg.yaml'",
-        "Failed to instantiate scenario 'TreeOfAttacksWithPruningOrchestrator': "
-        "TreeOfAttacksWithPruningOrchestrator.__init__() "
+        "Failed to instantiate scenario 'TreeOfAttacksWithPruningAttack': "
+        "TreeOfAttacksWithPruningAttack.__init__() "
         "got an unexpected keyword argument 'wrong_arg'",
         ValueError,
     ),
@@ -129,7 +161,7 @@ test_cases_error = [
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_bad_db_type.yaml'",
-        "database.type\n  Input should be 'InMemory', 'DuckDB' or 'AzureSQL' ",
+        "database.type\n  Input should be 'InMemory', 'SQLite' or 'AzureSQL' ",
         ValidationError,
     ),
     (
@@ -142,17 +174,38 @@ test_cases_error = [
         "database\n  Field required",
         ValidationError,
     ),
+    (
+        "--config-file 'tests/unit/cli/multi_turn_scoring_target_wrong_arg.yaml'",
+        "OpenAITarget.__init__() got an unexpected keyword argument 'nonsense_arg'",
+        TypeError,
+    ),
+    (
+        "--config-file 'tests/unit/cli/multi_turn_objective_scorer_wrong_arg.yaml'",
+        "SelfAskTrueFalseScorer.__init__() got an unexpected keyword argument 'nonsense_arg'",
+        TypeError,
+    ),
+    (
+        "--config-file 'tests/unit/cli/multi_turn_adversarial_target_wrong_arg.yaml'",
+        "OpenAITarget.__init__() got an unexpected keyword argument 'nonsense_arg'",
+        TypeError,
+    ),
+    (
+        "--config-file 'tests/unit/cli/multi_turn_objective_target_wrong_arg.yaml'",
+        "OpenAITarget.__init__() got an unexpected keyword argument 'nonsense_arg'",
+        TypeError,
+    ),
 ]
 
 
-@pytest.mark.parametrize("command, orchestrator_classes, methods", test_cases_success)
+@pytest.mark.parametrize("command, attack_classes", test_cases_success)
 @patch("pyrit.common.default_values.get_required_value", return_value="value")
-def test_cli_success(get_required_value, command, orchestrator_classes, methods):
-    # Patching the request sending functionality since we don't want to test the orchestrator,
+def test_cli_success(get_required_value, command, attack_classes):
+    # Patching the request sending functionality since we don't want to test the attack,
     # but just the CLI part.
+
     with contextlib.ExitStack() as stack:
-        for orchestrator_class, method in zip(orchestrator_classes, methods):
-            stack.enter_context(patch.object(orchestrator_class, method))
+        for attack_class in attack_classes:
+            stack.enter_context(patch.object(attack_class.__base__.__base__, "execute_async"))
         main(shlex.split(command))
 
 

@@ -4,27 +4,37 @@
 from pathlib import Path
 from typing import Optional
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import SCORER_CONFIG_PATH
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer import Scorer
 
 REFUSAL_SCORE_SYSTEM_PROMPT_WITH_OBJECTIVE = Path(
-    DATASETS_PATH, "score", "refusal", "refusal_with_objective.yaml"
+    SCORER_CONFIG_PATH, "refusal", "refusal_with_objective.yaml"
 ).resolve()
 REFUSAL_SCORE_SYSTEM_PROMPT_WITHOUT_OBJECTIVE = Path(
-    DATASETS_PATH, "score", "refusal", "refusal_without_objective.yaml"
+    SCORER_CONFIG_PATH, "refusal", "refusal_without_objective.yaml"
 ).resolve()
 
 
 class SelfAskRefusalScorer(Scorer):
-    """A self-ask scorer detects a refusal."""
+    """A self-ask scorer that detects refusal in AI responses.
+
+    This scorer uses a language model to determine whether a response contains
+    a refusal to answer or comply with the given prompt. It's useful for
+    evaluating whether AI systems are appropriately refusing harmful requests.
+    """
 
     def __init__(
         self,
         *,
         chat_target: PromptChatTarget,
     ) -> None:
+        """Initialize the SelfAskRefusalScorer.
+
+        Args:
+            chat_target: The endpoint that will be used to score the prompt.
+        """
 
         self.scorer_type = "true_false"
 
@@ -38,7 +48,7 @@ class SelfAskRefusalScorer(Scorer):
 
         self._score_category = "refusal"
 
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """Scores the prompt and determines whether the response is a refusal.
 
         Args:
@@ -48,8 +58,6 @@ class SelfAskRefusalScorer(Scorer):
         Returns:
             list[Score]: The request_response scored.
         """
-        self.validate(request_response, task=task)
-
         if request_response.response_error == "blocked":
             return [
                 Score(
@@ -103,7 +111,6 @@ class SelfAskRefusalScorer(Scorer):
 
         score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value)
 
-        self._memory.add_scores_to_memory(scores=[score])
         return [score]
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> None:

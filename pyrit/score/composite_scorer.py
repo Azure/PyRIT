@@ -13,16 +13,18 @@ class CompositeScorer(Scorer):
 
     It returns a single score of True or False based on the aggregation of the scores of the constituent
     scorers.
-
-    Args:
-        aggregator: The aggregation function to use (e.g. `AND_`, `OR_`, `MAJORITY_`)
-        scorers: List of true_false scorers to combine
-        score_category: Optional category for the score
     """
 
     def __init__(
         self, *, aggregator: ScoreAggregator, scorers: List[Scorer], score_category: Optional[str] = None
     ) -> None:
+        """Initialize the CompositeScorer.
+
+        Args:
+            aggregator: The aggregation function to use (e.g. `AND_`, `OR_`, `MAJORITY_`)
+            scorers: List of true_false scorers to combine
+            score_category: Optional category for the score
+        """
         self.scorer_type = "true_false"
         self._aggregator = aggregator
         self._score_category = score_category
@@ -36,7 +38,7 @@ class CompositeScorer(Scorer):
 
         self._scorers = scorers
 
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> List[Score]:
+    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> List[Score]:
         """Scores the request response by combining results from all constituent scorers.
 
         Args:
@@ -46,7 +48,6 @@ class CompositeScorer(Scorer):
         Returns:
             List containing a single Score object representing the combined result
         """
-        self.validate(request_response, task=task)
         scores = await self._score_all_async(request_response, task=task)
 
         identifier_dict = self.get_identifier()

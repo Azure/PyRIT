@@ -147,7 +147,7 @@ def test_input_supported(pdf_converter_no_template):
 
 
 @pytest.mark.asyncio
-async def test_convert_async_end_to_end_no_reader(tmp_path, duckdb_instance):
+async def test_convert_async_end_to_end_no_reader(tmp_path, sqlite_instance):
     prompt = "Test for PDF generation."
     pdf_file_path = tmp_path / "output.pdf"
     converter = PDFConverter(prompt_template=None)
@@ -465,3 +465,68 @@ async def test_injection_on_last_page(mock_pdf_path):
     assert "LastPageText" in page_1_text
 
     modified_pdf_path.unlink()
+
+
+@pytest.mark.asyncio
+async def test_filename_extension_default(sqlite_instance):
+    converter = PDFConverter(
+        prompt_template=None,
+        font_type="Helvetica",
+        font_size=12,
+        page_width=210,
+        page_height=297,
+    )
+
+    result = await converter.convert_async(prompt="test")
+    assert result.output_text.endswith(".pdf"), "The output file should have a .pdf extension"
+
+
+@pytest.mark.asyncio
+async def test_filename_extension_existing_pdf(sqlite_instance):
+    import tempfile
+
+    import requests
+
+    url = (
+        "https://raw.githubusercontent.com/Azure/PyRIT/main/pyrit/datasets/prompt_converters/pdf_converters/fake_CV.pdf"
+    )
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".tmp") as tmp_file:
+        response = requests.get(url)
+        tmp_file.write(response.content)
+
+    cv_pdf_path = Path(tmp_file.name)
+
+    # Define injection items
+    injection_items = [
+        {
+            "page": 0,
+            "x": 50,
+            "y": 700,
+            "text": "Injected Text",
+            "font_size": 12,
+            "font": "Helvetica",
+            "font_color": (255, 0, 0),
+        },  # Red text
+        {
+            "page": 1,
+            "x": 100,
+            "y": 600,
+            "text": "Confidential",
+            "font_size": 10,
+            "font": "Helvetica",
+            "font_color": (0, 0, 255),
+        },  # Blue text
+    ]
+
+    converter = PDFConverter(
+        prompt_template=None,
+        font_type="Helvetica",
+        font_size=12,
+        page_width=210,
+        page_height=297,
+        existing_pdf=cv_pdf_path,
+        injection_items=injection_items,
+    )
+
+    result = await converter.convert_async(prompt="test")
+    assert result.output_text.endswith(".tmp"), "The output file should have a .tmp extension"

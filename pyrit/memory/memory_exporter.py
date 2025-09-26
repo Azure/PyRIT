@@ -4,6 +4,7 @@
 import csv
 import json
 from pathlib import Path
+from typing import Optional
 
 from pyrit.models import PromptRequestPiece
 
@@ -19,11 +20,12 @@ class MemoryExporter:
         self.export_strategies = {
             "json": self.export_to_json,
             "csv": self.export_to_csv,
+            "md": self.export_to_markdown,
             # Future formats can be added here
         }
 
     def export_data(
-        self, data: list[PromptRequestPiece], *, file_path: Path = None, export_type: str = "json"
+        self, data: list[PromptRequestPiece], *, file_path: Optional[Path] = None, export_type: str = "json"
     ):  # type: ignore
         """
         Exports the provided data to a file in the specified format.
@@ -93,3 +95,27 @@ class MemoryExporter:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(export_data)
+
+    def export_to_markdown(self, data: list[PromptRequestPiece], file_path: Path = None) -> None:  # type: ignore
+        """
+        Exports the provided data to a Markdown file at the specified file path.
+        Each item in the data list is converted to a dictionary and formatted as a table.
+
+        Args:
+            data (list[PromptRequestPiece]): The data to be exported, as a list of PromptRequestPiece instances.
+            file_path (Path): The full path, including the file name, where the data will be exported.
+
+        Raises:
+            ValueError: If no file_path is provided or if there is no data to export.
+        """
+        if not file_path:
+            raise ValueError("Please provide a valid file path for exporting data.")
+        if not data:
+            raise ValueError("No data to export.")
+        export_data = [piece.to_dict() for piece in data]
+        fieldnames = list(export_data[0].keys())
+        with open(file_path, "w", newline="") as f:
+            f.write(f"| {' | '.join(fieldnames)} |\n")
+            f.write(f"| {' | '.join(['---'] * len(fieldnames))} |\n")
+            for row in export_data:
+                f.write(f"| {' | '.join(str(row[field]) for field in fieldnames)} |\n")

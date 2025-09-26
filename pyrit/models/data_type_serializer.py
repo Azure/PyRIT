@@ -54,7 +54,7 @@ def data_serializer_factory(
             f"The 'category' argument is mandatory and must be one of the following: {get_args(AllowedCategories)}."
         )
     if value is not None:
-        if data_type == "text":
+        if data_type in ["text", "reasoning"]:
             return TextDataTypeSerializer(prompt_text=value)
         elif data_type == "image_path":
             return ImagePathDataTypeSerializer(category=category, prompt_text=value, extension=extension)
@@ -114,7 +114,7 @@ class DataTypeSerializer(abc.ABC):
         """
         if self._is_azure_storage_url(self.value):
             # Scenarios where a user utilizes an in-memory DuckDB but also needs to interact
-            # with an Azure Storage Account, ex., XPIAOrchestrator.
+            # with an Azure Storage Account, ex., XPIAWorkflow.
             from pyrit.common import AZURE_SQL, initialize_pyrit
 
             initialize_pyrit(memory_db_type=AZURE_SQL)
@@ -154,10 +154,10 @@ class DataTypeSerializer(abc.ABC):
     async def save_formatted_audio(
         self,
         data: bytes,
-        output_filename: str = None,
         num_channels: int = 1,
         sample_width: int = 2,
         sample_rate: int = 16000,
+        output_filename: Optional[str] = None,
     ) -> None:
         """
         Saves the PCM16 of other specially formatted audio data to storage.

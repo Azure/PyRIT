@@ -13,7 +13,7 @@ from pyrit.prompt_converter.audio_frequency_converter import AudioFrequencyConve
 
 
 @pytest.mark.asyncio
-async def test_convert_async_success(duckdb_instance):
+async def test_convert_async_success(sqlite_instance):
 
     # Simulate WAV data
     sample_rate = 44100

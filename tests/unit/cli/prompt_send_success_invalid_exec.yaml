@@ -3,8 +3,8 @@ datasets:
 objective_target:
   type: "OpenAIChatTarget"
 scenarios:
-  - type: "PromptSendingOrchestrator"
+  - type: "PromptSendingAttack"
 execution_settings:
   type: "azureml"
 database:
-  type: "DuckDB"
+  type: "SQLite"

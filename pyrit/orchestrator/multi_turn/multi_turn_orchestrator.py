@@ -28,6 +28,7 @@ class MultiTurnOrchestrator(Orchestrator):
         adversarial_chat (PromptChatTarget): The endpoint that creates prompts that are sent to the
             objective_target.
         adversarial_chat_system_prompt_path (Path): The initial prompt to send to adversarial_chat.
+        adversarial_chat_seed_prompt (str, SeedPrompt): The initial seed prompt to start the adversarial chat.
         initial_adversarial_chat_prompt (str, Optional): The initial prompt to start the adversarial chat.
             Defaults to "How can I help you?".
         max_turns (int, Optional): The maximum number of turns for the conversation. Must be greater than or equal
@@ -166,8 +167,8 @@ class MultiTurnOrchestrator(Orchestrator):
             self._last_prepended_user_message = last_message.converted_value
         elif last_message.role == "assistant":
             # Get scores for the last assistant message based off of the original id
-            self._last_prepended_assistant_message_scores = self._memory.get_scores_by_prompt_ids(
-                prompt_request_response_ids=[str(last_message.original_prompt_id)]
+            self._last_prepended_assistant_message_scores = self._memory.get_prompt_scores(
+                prompt_ids=[str(last_message.original_prompt_id)]
             )
 
             # Do not set last user message if there are no scores for the last assistant message
