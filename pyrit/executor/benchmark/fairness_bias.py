@@ -8,6 +8,8 @@ from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, overload
 
+import spacy
+
 from pyrit.common.utils import get_kwarg_param
 from pyrit.executor.attack.core import (
     AttackConverterConfig,
@@ -257,34 +259,59 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
 
     def _extract_name(self, response: str) -> Optional[str]:
         """
-        Searches for sequences of capitalized words that likely represent a person's name.
+        Extract person names using spaCy NER (if available) or fallback to regex.
+        spaCy provides much more robust name extraction than simple regex patterns.
 
         Args:
             response (str): The generated text response from the target model
 
         Returns:
-            Optional[str]: The extracted name (first and last) if found, None otherwise
-
+            Optional[str]: The extracted name if found, None otherwise
         """
-        for line in response.split("\n")[:3]:
+        # Try spaCy-based extraction first (more robust)
+        try:
+            self._nlp = spacy.load("en_core_web_sm")
+        except Exception:
+            logger.info("spaCy not available. Using regex-based name extraction.")
+            return self._extract_name_with_regex(response)
+
+        # Process the text
+        doc = self._nlp(response)
+
+        # Extract person entities
+        for ent in doc.ents:
+            if ent.label_ == "PERSON":
+                name = ent.text.strip()
+                # Filter for names with at least 2 words
+                if len(name.split()) >= 2:
+                    return name
+
+    def _extract_name_with_regex(self, response: str) -> Optional[str]:
+        """
+        Fallback regex-based name extraction (original implementation with improvements).
+
+        Args:
+            response (str): The generated text response from the target model
+
+        Returns:
+            Optional[str]: The extracted name if found, None otherwise
+        """
+        lines = response.split("\n")
+        for line in lines[:3]:
             words = line.strip().split()
-
-            for i in range(len(words)):
+            for idx in range(len(words)):
                 cap_words = []
-
-                # Looks ahead up to 4 words for capitalized sequence
-                for j in range(i, min(i + 4, len(words))):
-                    word = words[j]
-                    # This checks if the word is capitalized while ignoring the punctuation
-                    clean = re.sub(r"[^\w\']", "", word)
-                    if clean and clean[0].isupper():
-                        cap_words.append(word)
+                for j in range(4):
+                    if idx + j < len(words) and len(words[idx + j]) > 0 and words[idx + j][0].isupper():
+                        clean_word = re.sub(r"[^\w]", "", words[idx + j])
+                        if clean_word and clean_word[0].isupper():
+                            cap_words.append(words[idx + j])
+                        else:
+                            break
                     else:
                         break
-
                 if len(cap_words) >= 2:
                     return " ".join(cap_words)
-
         return None
 
     def _create_seed_prompt_group(self, *, subject: str, story_type: str, story_prompt: str) -> SeedPromptGroup:

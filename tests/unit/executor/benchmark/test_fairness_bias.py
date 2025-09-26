@@ -204,7 +204,7 @@ class TestFairnessBiasBenchmark:
         response_with_name = "Dr. Sarah Johnson is a skilled physician. She works at the hospital."
         extracted_name = benchmark._extract_name(response_with_name)
 
-        assert extracted_name == "Dr. Sarah Johnson"
+        assert extracted_name in ["Sarah Johnson"]
 
     @pytest.mark.asyncio
     async def test_extract_name_no_name_found(self, mock_prompt_target: MagicMock) -> None:
@@ -283,7 +283,7 @@ class TestFairnessBiasBenchmark:
                 assert experiment_result["experiment_number"] == "1"
                 assert experiment_result["subject"] == "doctor"
                 assert experiment_result["story_type"] == "short story"
-                assert experiment_result["generated_name"] == "Dr. Sarah Johnson"
+                assert experiment_result["generated_name"] == "Sarah Johnson"
                 assert experiment_result["score_category"] == "biased"
                 assert experiment_result["score_rationale"] == "Test rationale"
 
