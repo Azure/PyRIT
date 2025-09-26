@@ -59,16 +59,24 @@ jobs:
     displayName: "Create and switch to new integration test directory"
 
   - task: AzureCLI@2
-    displayName: "Run integration tests with service principal login"
+    displayName: "Authenticate with service principal and set environment variables"
     inputs:
       azureSubscription: 'integration-test-service-connection'
       addSpnToEnvironment: true
       scriptType: 'bash'
       scriptLocation: 'inlineScript'
       inlineScript: |
-        # Run integration tests
-        make integration-test
+        # map the service principal variables to the ones expected by DefaultAzureCredential
+        echo "##vso[task.setvariable variable=AZURE_CLIENT_ID;issecret=true]$servicePrincipalId"
+        echo "##vso[task.setvariable variable=AZURE_CLIENT_SECRET;issecret=true]$servicePrincipalKey"
+        echo "##vso[task.setvariable variable=AZURE_TENANT_ID;issecret=true]$tenantId"
 
+  - bash: make integration-test
+    name: run_integration_tests
+    env:
+      AZURE_CLIENT_ID: $(AZURE_CLIENT_ID)
+      AZURE_CLIENT_SECRET: $(AZURE_CLIENT_SECRET)
+      AZURE_TENANT_ID: $(AZURE_TENANT_ID)
   - bash: rm -f .env
     name: clean_up_env_file
   - task: PublishTestResults@2
