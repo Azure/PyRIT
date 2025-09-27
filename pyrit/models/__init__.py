@@ -11,7 +11,7 @@ from pyrit.models.prompt_request_piece import PromptRequestPiece, sort_request_p
 
 from pyrit.models.conversation_reference import ConversationReference, ConversationType
 
-from pyrit.models.attack_result import AttackResult, AttackOutcome, AttackResultT
+from pyrit.models.attack_result import AttackResult, AttackOutcome, AttackResultT, StrategyResultIntermediate
 from pyrit.models.strategy_result import StrategyResult, StrategyResultT
 from pyrit.models.data_type_serializer import (
     AllowedCategories,
@@ -81,6 +81,7 @@ __all__ = [
     "StorageIO",
     "StrategyResult",
     "StrategyResultT",
+    "StrategyResultIntermediate",
     "TextDataTypeSerializer",
     "UnvalidatedScore",
 ]
