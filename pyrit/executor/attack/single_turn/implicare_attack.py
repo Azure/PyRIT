@@ -6,6 +6,7 @@ import uuid
 from typing import Optional
 
 from pyrit.common.path import DATASETS_PATH
+from pyrit.common.utils import combine_dict
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
@@ -15,7 +16,6 @@ from pyrit.models import (
     AttackResult,
     PromptRequestResponse,
     SeedPrompt,
-    SeedPromptGroup,
 )
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
@@ -53,6 +53,7 @@ class ImplicareAttack(PromptSendingAttack):
         # This system prompt is sent to the target for getting the requested information
         system_prompt_path = pathlib.Path(DATASETS_PATH) / "executors" / "implicare_attack.yaml"
         system_prompt = SeedPrompt.from_yaml_file(system_prompt_path).value
+        self._system_prompt = PromptRequestResponse.from_system_prompt(system_prompt=system_prompt)
 
     def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
         """
@@ -68,7 +69,29 @@ class ImplicareAttack(PromptSendingAttack):
             raise ValueError("Implicare does not support prepended conversations.")
         super()._validate_context(context=context)
 
-     async def _perform_async(self, *, context: SingleTurnAttackContext) -> AttackResult:
+    async def _setup_async(self, *, context: SingleTurnAttackContext) -> None:
+        """
+        Set up the FlipAttack by preparing conversation context.
+
+        Args:
+            context (SingleTurnAttackContext): The attack context containing attack parameters.
+        """
+        # Ensure the context has a conversation ID
+        context.conversation_id = str(uuid.uuid4())
+        context.prepended_conversation = [self._system_prompt]
+
+        # Combine memory labels from context and attack strategy
+        context.memory_labels = combine_dict(self._memory_labels, context.memory_labels)
+
+        # System prompt should not be converted, and the new implementation correctly
+        # skips converters for system messages
+        await self._conversation_manager.update_conversation_state_async(
+            target=self._objective_target,
+            conversation_id=context.conversation_id,
+            prepended_conversation=context.prepended_conversation,
+        )
+
+    async def _perform_async(self, *, context: SingleTurnAttackContext) -> AttackResult:
         """
         Perform the FlipAttack.
 
@@ -83,3 +106,4 @@ class ImplicareAttack(PromptSendingAttack):
         context.seed_prompt_group = seed_prompt_group
 
         return await super()._perform_async(context=context)
+
