@@ -73,7 +73,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
     4. Tracking results for bias analysis and reporting
 
     The benchmark requires:
-    - A scorer instance provided in the constructor
+    - A scorer instance provided in the attack config
     - Subject and story type as strings
     - Optionally, a custom objective (if not provided, a default will be generated)
 
@@ -92,7 +92,6 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
         self,
         *,
         objective_target: PromptTarget,
-        # scorer: Scorer,
         attack_converter_config: Optional[AttackConverterConfig] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
@@ -122,7 +121,6 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
             prompt_normalizer=prompt_normalizer,
             max_attempts_on_failure=max_attempts_on_failure,
         )
-        # self._scorer = scorer
         self.memory = CentralMemory.get_memory_instance()
 
     def _validate_context(self, *, context: FairnessBiasBenchmarkContext) -> None:
@@ -188,8 +186,10 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
         last_attack_result = None  # this is the last AttackResult
 
         for experiment_num in range(context.num_experiments):
-            experiment_data, attack_result = await self._run_experiment(context=context, experiment_num=experiment_num)
-            # attack_result = await self._run_experiment(context=context, experiment_num=experiment_num)
+            attack_result = await self._run_experiment(context=context)
+            experiment_data = self._format_experiment_results(
+                context=context, attack_result=attack_result, experiment_num=experiment_num
+            )
             results_list.append(experiment_data)
             last_attack_result = attack_result
 
@@ -205,16 +205,15 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
 
         return last_attack_result
 
-    async def _run_experiment(self, context: FairnessBiasBenchmarkContext, experiment_num: int):
+    async def _run_experiment(self, context: FairnessBiasBenchmarkContext):
         """
         Run a single experiment for the benchmark.
 
         Args:
             context (FairnessBiasBenchmarkContext): The benchmark context
-            experiment_num (int): The current experiment number
 
         Returns:
-            Tuple[Dict[str, str], AttackResult]: (experiment_data_dict, attack_result)
+            AttackResult: attack_result
         """
         attack_result = await self._prompt_sending_attack.execute_async(
             objective=context.generated_objective,
@@ -223,8 +222,23 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
             memory_labels=context.memory_labels,
         )
 
-        conversation_pieces = self.memory.get_conversation(conversation_id=attack_result.conversation_id)
+        return attack_result
 
+    def _format_experiment_results(
+        self, context: FairnessBiasBenchmarkContext, attack_result: AttackResult, experiment_num: int
+    ):
+        """
+        Formats experiment data into a dictionary
+
+        Args:
+            context (FairnessBiasBenchmarkContext): The benchmark context
+            attack_result (AttackResult): The result of benchmark attack
+            experiment_num (int): The current experiment number
+
+        Returns:
+            Dict: dictionary with components from experiment parsed and formatted
+        """
+        conversation_pieces = self.memory.get_conversation(conversation_id=attack_result.conversation_id)
         response = conversation_pieces[1].get_value() if len(conversation_pieces) >= 2 else ""
         subject_name = self._extract_name(response)
         experiment_result = {
@@ -238,7 +252,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
                 attack_result.last_score.score_rationale if attack_result.last_score else "Scoring not available"
             ),
         }
-        return experiment_result, attack_result
+        return experiment_result
 
     def _format_story_prompt(self, *, subject: str, story_type: str) -> str:
         """
@@ -285,6 +299,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
                 # Filter for names with at least 2 words
                 if len(name.split()) >= 2:
                     return name
+        return None
 
     def _extract_name_with_regex(self, response: str) -> Optional[str]:
         """
