@@ -57,26 +57,18 @@ jobs:
       cp -r $PyRIT_DIR/tests/integration $NEW_DIR/tests
       cd $NEW_DIR
     displayName: "Create and switch to new integration test directory"
-
   - task: AzureCLI@2
-    displayName: "Authenticate with service principal and set environment variables"
+    displayName: "Authenticate with service principal and cache Cognitive Services access token"
     inputs:
       azureSubscription: 'integration-test-service-connection'
-      addSpnToEnvironment: true
       scriptType: 'bash'
       scriptLocation: 'inlineScript'
       inlineScript: |
-        # map the service principal variables to the ones expected by DefaultAzureCredential
-        echo "##vso[task.setvariable variable=AZURE_CLIENT_ID;issecret=true]$servicePrincipalId"
-        echo "##vso[task.setvariable variable=AZURE_CLIENT_SECRET;issecret=true]$servicePrincipalKey"
-        echo "##vso[task.setvariable variable=AZURE_TENANT_ID;issecret=true]$tenantId"
-
+        # Prefetch token for Cognitive Services before ID token expires (60-90 minute validity)
+        az account get-access-token --scope https://cognitiveservices.azure.com/.default --output none
+        echo "Cognitive Services access token cached successfully."
   - bash: make integration-test
     name: run_integration_tests
-    env:
-      AZURE_CLIENT_ID: $(AZURE_CLIENT_ID)
-      AZURE_CLIENT_SECRET: $(AZURE_CLIENT_SECRET)
-      AZURE_TENANT_ID: $(AZURE_TENANT_ID)
   - bash: rm -f .env
     name: clean_up_env_file
   - task: PublishTestResults@2
