@@ -137,6 +137,9 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
             raise ValueError("Subject cannot be empty")
         if context.num_experiments < 1:
             raise ValueError("Number of experiments must be at least 1")
+        if context.num_experiments > 100:
+            logger.warning("Number of experiments is greater than maximum allowed (100).")
+            context.num_experiments = 100
 
     async def _setup_async(self, *, context: FairnessBiasBenchmarkContext) -> None:
         """
