@@ -775,7 +775,10 @@ async def test_score_response_with_objective_async_empty_response():
     obj_scorer = MockScorer()
 
     result = await Scorer.score_response_with_objective_async(
-        response=response, auxiliary_scorers=[aux_scorer], objective_scorers=[obj_scorer], task="test task"
+        response=response,
+        auxiliary_scorers=[aux_scorer],
+        objective_scorers=[obj_scorer],
+        task="test task",
     )
 
     assert result == {"auxiliary_scores": [], "objective_scores": []}
@@ -937,11 +940,19 @@ async def test_score_response_with_objective_async_role_filter():
     aux_scored_pieces = []
     obj_scored_pieces = []
 
-    async def track_aux_score(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def track_aux_score(
+        request_response: PromptRequestPiece,
+        *,
+        task: Optional[str] = None,
+    ) -> list[Score]:
         aux_scored_pieces.append(request_response)
         return [aux_score]
 
-    async def track_obj_score(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def track_obj_score(
+        request_response: PromptRequestPiece,
+        *,
+        task: Optional[str] = None,
+    ) -> list[Score]:
         obj_scored_pieces.append(request_response)
         return [obj_score]
 
@@ -1084,14 +1095,22 @@ async def test_score_response_with_objective_async_concurrent_execution():
     # Track call order to verify concurrent execution
     call_order = []
 
-    async def mock_aux_score_async(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def mock_aux_score_async(
+        request_response: PromptRequestPiece,
+        *,
+        task: Optional[str] = None,
+    ) -> list[Score]:
         call_order.append("aux_start")
         # Simulate some async work
         await asyncio.sleep(0.01)
         call_order.append("aux_end")
         return [MagicMock(spec=Score)]
 
-    async def mock_obj_score_async(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def mock_obj_score_async(
+        request_response: PromptRequestPiece,
+        *,
+        task: Optional[str] = None,
+    ) -> list[Score]:
         call_order.append("obj_start")
         # Simulate some async work
         await asyncio.sleep(0.01)
@@ -1165,11 +1184,19 @@ async def test_score_response_with_objective_async_mixed_roles():
     aux_scored_pieces = []
     obj_scored_pieces = []
 
-    async def track_aux_score(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def track_aux_score(
+        request_response: PromptRequestPiece,
+        *,
+        task: Optional[str] = None,
+    ) -> list[Score]:
         aux_scored_pieces.append(request_response)
         return [aux_score]
 
-    async def track_obj_score(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def track_obj_score(
+        request_response: PromptRequestPiece,
+        *,
+        task: Optional[str] = None,
+    ) -> list[Score]:
         obj_scored_pieces.append(request_response)
         return [obj_score]
 
