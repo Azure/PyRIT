@@ -21,6 +21,15 @@ from pyrit.models import (
 from pyrit.prompt_target import PromptTarget
 
 
+def is_spacy_installed():
+    try:
+        import spacy  # noqa: F401
+
+        return True
+    except ModuleNotFoundError:
+        return False
+
+
 # Fixtures at the top of the file
 @pytest.fixture
 def mock_prompt_target() -> MagicMock:
@@ -92,6 +101,7 @@ def mock_conversation_pieces() -> List[PromptRequestResponse]:
 class TestFairnessBiasBenchmark:
     """Test class for FairnessBiasBenchmark core functionality."""
 
+    @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
     @pytest.mark.asyncio
     async def test_init_with_required_parameters(self, mock_prompt_target: MagicMock) -> None:
         """Test initialization with required parameters."""
@@ -100,6 +110,7 @@ class TestFairnessBiasBenchmark:
         assert benchmark._objective_target == mock_prompt_target
         assert benchmark._prompt_sending_attack is not None
 
+    @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
     @pytest.mark.asyncio
     async def test_init_with_optional_parameters(self, mock_prompt_target: MagicMock) -> None:
         """Test initialization with optional parameters."""
@@ -107,6 +118,7 @@ class TestFairnessBiasBenchmark:
 
         assert benchmark._objective_target == mock_prompt_target
 
+    @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
     @pytest.mark.asyncio
     async def test_validate_context_valid_entry(
         self,
@@ -119,6 +131,7 @@ class TestFairnessBiasBenchmark:
         # Should not raise any exception
         benchmark._validate_context(context=sample_benchmark_context)
 
+    @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
     @pytest.mark.asyncio
     async def test_validate_context_empty_subject(self, mock_prompt_target: MagicMock) -> None:
         """Test context validation with empty subject."""
@@ -128,6 +141,7 @@ class TestFairnessBiasBenchmark:
         with pytest.raises(ValueError, match="Subject cannot be empty"):
             benchmark._validate_context(context=context)
 
+    @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
     @pytest.mark.asyncio
     async def test_validate_context_invalid_num_experiments(self, mock_prompt_target: MagicMock) -> None:
         """Test context validation with invalid number of experiments."""
@@ -137,6 +151,7 @@ class TestFairnessBiasBenchmark:
         with pytest.raises(ValueError, match="Number of experiments must be at least 1"):
             benchmark._validate_context(context=context)
 
+    @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
     @pytest.mark.asyncio
     async def test_setup_async_generates_default_objective(
         self,
@@ -170,6 +185,7 @@ class TestFairnessBiasBenchmark:
         assert seed_prompt.metadata["story_type"] == "short story"
         assert seed_prompt.metadata["benchmark"] == "fairness_bias"
 
+    @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
     @pytest.mark.asyncio
     async def test_setup_async_uses_custom_objective(
         self,
@@ -185,6 +201,7 @@ class TestFairnessBiasBenchmark:
         expected_objective = "Write a detailed story about a teacher that includes character names"
         assert sample_benchmark_context_with_custom_objective.generated_objective == expected_objective
 
+    @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
     @pytest.mark.asyncio
     async def test_format_story_prompt(self, mock_prompt_target: MagicMock) -> None:
         """Test story prompt formatting."""
@@ -196,6 +213,7 @@ class TestFairnessBiasBenchmark:
         assert "Give the engineer a first and last name" in formatted_prompt
         assert "use pronouns to refer to the engineer" in formatted_prompt
 
+    @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
     @pytest.mark.asyncio
     async def test_extract_name_successful(self, mock_prompt_target: MagicMock) -> None:
         """Test successful name extraction."""
@@ -206,6 +224,7 @@ class TestFairnessBiasBenchmark:
 
         assert extracted_name in ["Sarah Johnson"]
 
+    @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
     @pytest.mark.asyncio
     async def test_extract_name_no_name_found(self, mock_prompt_target: MagicMock) -> None:
         """Test name extraction when no name is found."""
@@ -216,6 +235,7 @@ class TestFairnessBiasBenchmark:
 
         assert extracted_name is None
 
+    @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
     @pytest.mark.asyncio
     async def test_create_seed_prompt_group(self, mock_prompt_target: MagicMock) -> None:
         """Test seed prompt group creation."""
@@ -238,6 +258,7 @@ class TestFairnessBiasBenchmark:
         assert seed_prompt.metadata["story_type"] == "tale"
         assert seed_prompt.metadata["benchmark"] == "fairness_bias"
 
+    @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
     @pytest.mark.asyncio
     async def test_perform_async_calls_prompt_sending_attack(
         self,
@@ -287,6 +308,7 @@ class TestFairnessBiasBenchmark:
                 assert experiment_result["score_category"] == "biased"
                 assert experiment_result["score_rationale"] == "Test rationale"
 
+    @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
     @pytest.mark.asyncio
     async def test_get_experiment_summary_with_results(self, mock_prompt_target: MagicMock) -> None:
         """Test experiment summary generation with results."""
@@ -322,6 +344,7 @@ class TestFairnessBiasBenchmark:
         assert summary["score_proportions"]["unbiased"] == "50.00%"
         assert summary["names_extracted"] == ["Maria Garcia"]
 
+    @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
     @pytest.mark.asyncio
     async def test_get_experiment_summary_no_results(self, mock_prompt_target: MagicMock) -> None:
         """Test experiment summary generation with no results."""
@@ -334,6 +357,7 @@ class TestFairnessBiasBenchmark:
 
         assert summary["error"] == "No experiment results available"
 
+    @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
     @pytest.mark.asyncio
     async def test_get_last_context(
         self,
@@ -351,6 +375,7 @@ class TestFairnessBiasBenchmark:
         last_context = benchmark.get_last_context()
         assert last_context == sample_benchmark_context
 
+    @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
     @pytest.mark.asyncio
     async def test_teardown_async_stores_context(
         self,
@@ -369,6 +394,7 @@ class TestFairnessBiasBenchmark:
 class TestFairnessBiasBenchmarkExecuteAsync:
     """Test class for execute_async method in FairnessBiasBenchmark."""
 
+    @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
     @pytest.mark.asyncio
     async def test_execute_async_with_required_parameters(
         self,
@@ -394,6 +420,7 @@ class TestFairnessBiasBenchmarkExecuteAsync:
                 assert result == sample_attack_result
                 mock_attack_instance.execute_async.assert_called_once()
 
+    @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
     @pytest.mark.asyncio
     async def test_execute_async_with_optional_parameters(
         self,
@@ -436,6 +463,7 @@ class TestFairnessBiasBenchmarkExecuteAsync:
                 assert call_kwargs["memory_labels"] == memory_labels
                 assert call_kwargs["objective"] == custom_objective
 
+    @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
     @pytest.mark.asyncio
     async def test_execute_async_multiple_experiments(
         self,
@@ -472,6 +500,7 @@ class TestFairnessBiasBenchmarkExecuteAsync:
 class TestFairnessBiasBenchmarkIntegration:
     """Test class for integration scenarios."""
 
+    @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
     @pytest.mark.asyncio
     async def test_full_benchmark_workflow(
         self,
@@ -512,6 +541,7 @@ class TestFairnessBiasBenchmarkIntegration:
                 assert summary["story_type"] == "biography"
                 assert summary["total_experiments"] == 2
 
+    @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
     @pytest.mark.asyncio
     async def test_benchmark_with_memory_labels(
         self,
