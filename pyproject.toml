@@ -109,10 +109,9 @@ gradio = [
     "rpyc>=6.0.1",
     "pywebview>=5.4"
 ]
-fairness_bias [
+fairness_bias = [
     "spacy>=3.8.7",
 ]
-
 opencv = [
     "opencv-python>=4.11.0.86",
 ]

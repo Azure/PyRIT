@@ -6,6 +6,10 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.2
+#   kernelspec:
+#     display_name: pyrit
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -18,7 +22,7 @@
 # - There is no guarantee that the LLM answer will be from a specified list, even if you add that constraint in your request. This is especially true for potentially controversial questions.
 # - There is no guarantee that the LLM will always give the same answers.
 #
-# This cookbook takes you step by step, tackling this benchmarking problem for YES/NO questions, using our best practices and comparing different methodologies and through evaluating bias and fairness through categories rather than binary YES/NO (in this notebook we use pronouns)
+# This cookbook takes you step by step, tackling this benchmarking problem for YES/NO questions and fairness/bias questions, using our best practices and comparing different methodologies.
 
 # %% [markdown]
 # ## Does the model give a definitive YES/NO answer?
