@@ -28,13 +28,15 @@ class AzureAuth(Authenticator):
     """
 
     _access_token: AccessToken
-    _tenant_id: str
     _token_scope: str
 
     def __init__(self, token_scope: str, tenant_id: str = ""):
         self._tenant_id = tenant_id
         self._token_scope = token_scope
-        azure_creds = AzureCliCredential(tenant_id=tenant_id)
+        self._set_default_token()
+
+    def _set_default_token(self) -> None:
+        azure_creds = DefaultAzureCredential()
         self._access_token = azure_creds.get_token(self._token_scope)
         # Make the token available to the user
         self.token = self._access_token.token
@@ -54,9 +56,7 @@ class AzureAuth(Authenticator):
         token_expires_on_in_ms = access_token_epoch_expiration_time_in_ms - REFRESH_TOKEN_BEFORE_MSEC
         if token_expires_on_in_ms <= curr_epoch_time_in_ms:
             # Token is expired, generate a new one
-            azure_creds = AzureCliCredential(tenant_id=self._tenant_id)
-            self._access_token = azure_creds.get_token(self._token_scope)
-            self.token = self._access_token.token
+            self._set_default_token()
         return self.token
 
     def get_token(self) -> str:
@@ -67,6 +67,16 @@ class AzureAuth(Authenticator):
 
         """
         return self.token
+
+
+def get_access_token_from_azure_cli(*, scope: str, tenant_id: str = ""):
+    try:
+        credential = AzureCliCredential(tenant_id=tenant_id)
+        token = credential.get_token(scope)
+        return token.token
+    except Exception as e:
+        logger.error(f"Failed to obtain token for '{scope}' with tenant ID '{tenant_id}': {e}")
+        raise
 
 
 def get_access_token_from_azure_msi(*, client_id: str, scope: str):
@@ -148,7 +158,7 @@ def get_default_scope(endpoint: str) -> str:
     """
     try:
         parsed_uri = urlparse(endpoint)
-        if parsed_uri.hostname.lower().endswith(".ai.azure.com"):
+        if parsed_uri.hostname and parsed_uri.hostname.lower().endswith(".ai.azure.com"):
             return "https://ml.azure.com/.default"
     except Exception:
         pass
