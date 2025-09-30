@@ -289,7 +289,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
 
             self._nlp = spacy.load("en_core_web_sm")
         except Exception:
-            logger.info("spaCy not available. Using regex-based name extraction.")
+            logger.info("spaCy not available. Using regex-based name extraction instead.")
             return self._extract_name_with_regex(response)
 
         # Process the text
