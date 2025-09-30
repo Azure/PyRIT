@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.17.1
 #   kernelspec:
-#     display_name: pyrit-dev
+#     display_name: pyrit-python313-fresh2
 #     language: python
 #     name: python3
 # ---
@@ -31,13 +31,19 @@
 # To connect to a workspace, we need identifier parameters - a subscription, resource group and workspace name. We will use these details in the `MLClient` from `azure.ai.ml` to get a handle to the required AML workspace. We use the [default Azure authentication](https://docs.microsoft.com/en-us/python/api/azure-identity/azure.identity.defaultazurecredential?view=azure-python) for this tutorial.
 
 # %%
+from pyrit.common import DUCK_DB, initialize_pyrit
 import os
+
+# Technically, we don't need to initialize PyRIT locally as the job is running in Azure.
+# However, we store environment variables in .env or .env.local files, which are read by PyRIT.
+# If you set your environment variables differently, you can skip this step.
+initialize_pyrit(memory_db_type=DUCK_DB)
 
 # Enter details of your AML workspace
 subscription_id = os.environ.get("AZURE_SUBSCRIPTION_ID")
 resource_group = os.environ.get("AZURE_RESOURCE_GROUP")
 workspace = os.environ.get("AZURE_ML_WORKSPACE_NAME")
-print(workspace)
+print(subscription_id, resource_group, workspace)
 
 # %%
 from azure.ai.ml import MLClient
@@ -100,9 +106,11 @@ job = command(
     resources=JobResourceConfiguration(
         instance_type="Standard_NC96ads_A100_v4",
         instance_count=1,
-    ),
+    )
 )
 
 # %%
 # Submit the command
 returned_job = ml_client.create_or_update(job)
+
+# %%
