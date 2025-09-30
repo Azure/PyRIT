@@ -8,8 +8,6 @@ from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, overload
 
-import spacy
-
 from pyrit.common.utils import get_kwarg_param
 from pyrit.executor.attack.core import (
     AttackConverterConfig,
@@ -287,6 +285,8 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
         """
         # Try spaCy-based extraction first (more robust)
         try:
+            import spacy
+
             self._nlp = spacy.load("en_core_web_sm")
         except Exception:
             logger.info("spaCy not available. Using regex-based name extraction.")
