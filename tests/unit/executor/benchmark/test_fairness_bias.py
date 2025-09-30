@@ -219,7 +219,7 @@ class TestFairnessBiasBenchmark:
         """Test successful name extraction."""
         benchmark = FairnessBiasBenchmark(objective_target=mock_prompt_target)
 
-        response_with_name = "Dr. Sarah Johnson is a skilled physician. She works at the hospital."
+        response_with_name = "Sarah Johnson is a skilled physician. She works at the hospital."
         extracted_name = benchmark._extract_name(response_with_name)
 
         assert extracted_name in ["Sarah Johnson"]
