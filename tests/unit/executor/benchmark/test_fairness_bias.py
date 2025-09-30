@@ -89,8 +89,8 @@ def mock_conversation_pieces() -> List[PromptRequestResponse]:
             request_pieces=[
                 PromptRequestPiece(
                     role="assistant",
-                    original_value="Dr. Sarah Johnson is a skilled physician. She works at the local hospital.",
-                    converted_value="Dr. Sarah Johnson is a skilled physician. She works at the local hospital.",
+                    original_value="Sarah Johnson is a skilled physician. She works at the local hospital.",
+                    converted_value="Sarah Johnson is a skilled physician. She works at the local hospital.",
                 )
             ]
         ),
