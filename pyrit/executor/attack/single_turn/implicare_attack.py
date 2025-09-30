@@ -16,6 +16,7 @@ from pyrit.models import (
     AttackResult,
     PromptRequestResponse,
     SeedPrompt,
+    SeedPromptGroup,
 )
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
