@@ -6,14 +6,22 @@ from pyrit.models import AttackOutcome
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import SingleTurnAttackContext
 
 
-class FakeGenerator:
-    """Minimal fake generator for testing."""
+class FakePromptResponse(dict):
+    """Minimal dict-like response for PromptTarget tests."""
+    pass
+
+
+class FakePromptTarget:
+    """Fake PromptTarget that returns a predictable response."""
+
     def __init__(self, text: str):
         self._text = text
 
-    async def generate(self, *, prompt: str, max_tokens: int = 256):
+    async def send_prompt_async(self, *, prompt_request):
+        # simulate async behavior
         await asyncio.sleep(0)
-        return {"text": self._text}
+        # returns a dict-like object that contains 'text'
+        return FakePromptResponse({"text": self._text})
 
 
 class FakeContext(SingleTurnAttackContext):
@@ -23,25 +31,25 @@ class FakeContext(SingleTurnAttackContext):
 
 @pytest.mark.asyncio
 async def test_hcot_success():
-    gen = FakeGenerator("Here is the final answer. Step 1: do X. secret: 1234")
+    target = FakePromptTarget("Here is the final answer. Step 1: do X. secret: 1234")
     ctx = FakeContext(objective="Get the secret")
-    atk = HCoTAttack(generator=gen, score_threshold=0.2)
+    atk = HCoTAttack(prompt_target=target, score_threshold=0.2)
     res = await atk._perform_async(ctx)
     assert res.outcome == AttackOutcome.SUCCESS
 
 
 @pytest.mark.asyncio
 async def test_hcot_failure():
-    gen = FakeGenerator("I cannot provide that information per policy.")
+    target = FakePromptTarget("I cannot provide that information per policy.")
     ctx = FakeContext(objective="Get the secret")
-    atk = HCoTAttack(generator=gen, score_threshold=0.8)
+    atk = HCoTAttack(prompt_target=target, score_threshold=0.8)
     res = await atk._perform_async(ctx)
     assert res.outcome == AttackOutcome.FAILURE
 
 
 @pytest.mark.asyncio
-async def test_hcot_no_generator_raises():
+async def test_hcot_no_prompt_target_raises():
     ctx = FakeContext(objective="Get the secret")
-    atk = HCoTAttack(generator=None)
-    with pytest.raises(ValueError, match="No text generator provided"):
+    atk = HCoTAttack(prompt_target=None)
+    with pytest.raises(ValueError, match="No prompt_target provided"):
         await atk._perform_async(ctx)
