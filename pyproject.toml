@@ -148,6 +148,11 @@ pythonpath = ["."]
 asyncio_default_fixture_loop_scope = "function"
 asyncio_mode = "auto"
 
+markers = [
+   "run_only_if_all_tests: mark tests that should only run when running the full test suite"
+
+]
+
 [tool.mypy]
 plugins = []
 ignore_missing_imports = true
