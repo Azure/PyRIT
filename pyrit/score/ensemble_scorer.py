@@ -15,16 +15,34 @@ LossMetric = Literal["MSE", "MAE"]
 
 class EnsembleScorer(Scorer):
 
+    """A scorer that computes a weighted average of any combination of base scorers.
+    These weights can be learned with data using a ground truth scorer and gradient descent.
+    For a certain number of steps and for a given learning rate, the weights are updated based on 
+        the gradient of the loss between the ground truth and computer ensemble score.
+
+    It returns a single score of type float that constitutes of a weighted avergae of base scores.
+    """
+
     def __init__(self, 
                  *,
                  weak_scorer_dict: Dict[str, WeakScorerSpec],
-                 ground_truth_scorer: Scorer,
                  fit_weights: bool = False,
+                 ground_truth_scorer: Scorer = None,
                  num_steps: int = 100,
                  lr: float = 1e-2,
-                 category: str = "jailbreak"):
+                 score_category: str = None):
+        """Initialize the EnsembleScorer.
+
+        Args:
+            weak_scorer_dict: Dictionary containing information on which scorers to include in the ensemble and what their weights are
+            fit_weights: Determines whether the weights should update and learn from experience
+            ground_truth_scorer: Scorer used to provide the ground truth score to direct the fitting process of the weights
+            num_steps: Determines the maximum number of learning steps to take for the weights
+            lr: Determines the learning rate to use for gradient updates to the weights
+            score_category: Optional category for the score
+        """
         self.scorer_type = "float_scale"
-        self._score_category = category
+        self._score_category = score_category
 
         if not isinstance(weak_scorer_dict, dict) or (len(weak_scorer_dict) == 0):
             raise ValueError("Please pass a nonempty dictionary of weights")
@@ -39,16 +57,18 @@ class EnsembleScorer(Scorer):
             elif not isinstance(weak_scorer_spec.weight, float):
                 raise ValueError("Weight for this scorer must be a float")
             
+        if fit_weights and (ground_truth_scorer is None or not isinstance(ground_truth_scorer, Scorer)):
+            raise ValueError("Please pass a valid Scorer object for the ground truth scorer")
+            
         if not isinstance(lr, float) or lr <= 0:
             raise ValueError("Learning rate must be a floating point number greater than 0")
 
         self._weak_scorer_dict = weak_scorer_dict
 
         self._fit_weights = fit_weights
+        self._ground_truth_scorer = ground_truth_scorer
         self._num_steps_remaining = num_steps
         self._lr = lr
-
-        self._ground_truth_scorer = ground_truth_scorer
 
     async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         self.validate(request_response, task=task)
