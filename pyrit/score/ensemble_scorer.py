@@ -92,7 +92,7 @@ class EnsembleScorer(Scorer):
             score_value=str(ensemble_score_value),
             score_value_description=None,
             score_category=self._score_category,
-            score_metadata=metadata,
+            score_metadata=str(metadata),
             score_rationale=ensemble_score_rationale,
             scorer_class_identifier=self.get_identifier(),
             prompt_request_response_id=request_response.id,
