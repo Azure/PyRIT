@@ -50,7 +50,7 @@ def test_set_system_prompt(azure_openai_target: OpenAIChatTarget, mock_attack_st
     azure_openai_target.set_system_prompt(
         system_prompt="system prompt",
         conversation_id="1",
-        orchestrator_identifier=mock_attack_strategy.get_identifier(),
+        attack_identifier=mock_attack_strategy.get_identifier(),
         labels={},
     )
 
@@ -68,7 +68,7 @@ async def test_set_system_prompt_adds_memory(
     azure_openai_target.set_system_prompt(
         system_prompt="system prompt",
         conversation_id="1",
-        orchestrator_identifier=mock_attack_strategy.get_identifier(),
+        attack_identifier=mock_attack_strategy.get_identifier(),
         labels={},
     )
 
@@ -95,7 +95,7 @@ async def test_send_prompt_with_system_calls_chat_complete(
         azure_openai_target.set_system_prompt(
             system_prompt="system prompt",
             conversation_id="1",
-            orchestrator_identifier=mock_attack_strategy.get_identifier(),
+            attack_identifier=mock_attack_strategy.get_identifier(),
             labels={},
         )
 

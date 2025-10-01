@@ -446,7 +446,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             conversation_id=request_piece.conversation_id,
             labels=request_piece.labels,
             prompt_target_identifier=request_piece.prompt_target_identifier,
-            orchestrator_identifier=request_piece.orchestrator_identifier,
+            attack_identifier=request_piece.attack_identifier,
             original_value_data_type=piece_type,
             response_error=error or "none",
         )
