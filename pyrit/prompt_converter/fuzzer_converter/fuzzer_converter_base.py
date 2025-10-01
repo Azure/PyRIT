@@ -71,7 +71,7 @@ class FuzzerConverter(PromptConverter):
         self.converter_target.set_system_prompt(
             system_prompt=self.system_prompt,
             conversation_id=conversation_id,
-            orchestrator_identifier=None,
+            attack_identifier=None,
         )
 
         formatted_prompt = f"===={self.template_label} BEGINS====\n{prompt}\n===={self.template_label} ENDS===="
