@@ -972,7 +972,7 @@ class MemoryInterface(abc.ABC):
                 Defaults to None.
             harm_category (Optional[Sequence[str]], optional): A list of harm categories to filter by.
                 Defaults to None.
-            harm_category_match_all (bool, optional): 
+            harm_category_match_all (bool, optional):
                 boolean value indicating if you want all or any harm categories to match.
                 If True, requires ALL harm categories to be present, meaning will query using AND logic
                 If False, requires ANY harm category to be present, meaning will query using OR logic
@@ -1018,7 +1018,7 @@ class MemoryInterface(abc.ABC):
                 )
                 conditions.append(harm_category_subquery)
             else:
-                # OR logic: ANY category can be present (current behavior)
+                # OR logic: ANY category can be present
                 harm_category_subquery = exists().where(
                     and_(
                         PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
