@@ -4,16 +4,16 @@
 from pathlib import Path
 from typing import Optional
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import SCORER_CONFIG_PATH
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer import Scorer
 
 REFUSAL_SCORE_SYSTEM_PROMPT_WITH_OBJECTIVE = Path(
-    DATASETS_PATH, "score", "refusal", "refusal_with_objective.yaml"
+    SCORER_CONFIG_PATH, "refusal", "refusal_with_objective.yaml"
 ).resolve()
 REFUSAL_SCORE_SYSTEM_PROMPT_WITHOUT_OBJECTIVE = Path(
-    DATASETS_PATH, "score", "refusal", "refusal_without_objective.yaml"
+    SCORER_CONFIG_PATH, "refusal", "refusal_without_objective.yaml"
 ).resolve()
 
 
@@ -106,7 +106,7 @@ class SelfAskRefusalScorer(Scorer):
             scored_prompt_id=request_response.id,
             category=self._score_category,
             task=task,
-            orchestrator_identifier=request_response.orchestrator_identifier,
+            attack_identifier=request_response.attack_identifier,
         )
 
         score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value)

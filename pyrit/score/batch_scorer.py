@@ -80,7 +80,7 @@ class BatchScorer:
         self,
         *,
         scorer: Scorer,
-        orchestrator_id: Optional[str | uuid.UUID] = None,
+        attack_id: Optional[str | uuid.UUID] = None,
         conversation_id: Optional[str | uuid.UUID] = None,
         prompt_ids: Optional[list[str] | list[uuid.UUID]] = None,
         labels: Optional[dict[str, str]] = None,
@@ -97,7 +97,7 @@ class BatchScorer:
 
         Args:
             scorer (Scorer): The Scorer object to use for scoring.
-            orchestrator_id (Optional[str | uuid.UUID]): The ID of the orchestrator. Defaults to None.
+            attack_id (Optional[str | uuid.UUID]): The ID of the attack. Defaults to None.
             conversation_id (Optional[str | uuid.UUID]): The ID of the conversation. Defaults to None.
             prompt_ids (Optional[list[str] | list[uuid.UUID]]): A list of prompt IDs. Defaults to None.
             labels (Optional[dict[str, str]]): A dictionary of labels. Defaults to None.
@@ -118,7 +118,7 @@ class BatchScorer:
         """
         request_pieces: Sequence[PromptRequestPiece] = []
         request_pieces = self._memory.get_prompt_request_pieces(
-            orchestrator_id=orchestrator_id,
+            attack_id=attack_id,
             conversation_id=conversation_id,
             prompt_ids=prompt_ids,
             labels=labels,

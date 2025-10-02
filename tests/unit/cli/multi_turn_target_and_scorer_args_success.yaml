@@ -14,6 +14,6 @@ scoring:
     max_tokens: 789
   objective_scorer:
     type: "SelfAskTrueFalseScorer"
-    true_false_question_path: "./pyrit/datasets/score/true_false_question/prompt_injection.yaml"
+    true_false_question_path: "./pyrit/score/config/true_false_question/prompt_injection.yaml"
 database:
   type: "SQLite"

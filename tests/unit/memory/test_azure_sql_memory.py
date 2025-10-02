@@ -220,7 +220,7 @@ def test_get_memories_with_json_properties(memory_interface: AzureSQLMemory):
         assert labels["normalizer_id"] == "id1"
 
 
-def test_get_memories_with_orchestrator_id(memory_interface: AzureSQLMemory):
+def test_get_memories_with_attack_id(memory_interface: AzureSQLMemory):
     # Define a specific normalizer_id
     attack1 = PromptSendingAttack(objective_target=mock.MagicMock())
     attack2 = PromptSendingAttack(objective_target=mock.MagicMock())
@@ -233,7 +233,7 @@ def test_get_memories_with_orchestrator_id(memory_interface: AzureSQLMemory):
                 role="user",
                 original_value="Hello 1",
                 converted_value="Hello 1",
-                orchestrator_identifier=attack1.get_identifier(),
+                attack_identifier=attack1.get_identifier(),
             )
         ),
         PromptMemoryEntry(
@@ -242,7 +242,7 @@ def test_get_memories_with_orchestrator_id(memory_interface: AzureSQLMemory):
                 role="user",
                 original_value="Hello 2",
                 converted_value="Hello 2",
-                orchestrator_identifier=attack2.get_identifier(),
+                attack_identifier=attack2.get_identifier(),
             )
         ),
         PromptMemoryEntry(
@@ -251,7 +251,7 @@ def test_get_memories_with_orchestrator_id(memory_interface: AzureSQLMemory):
                 role="user",
                 original_value="Hello 3",
                 converted_value="Hello 1",
-                orchestrator_identifier=attack1.get_identifier(),
+                attack_identifier=attack1.get_identifier(),
             )
         ),
     ]
@@ -261,20 +261,20 @@ def test_get_memories_with_orchestrator_id(memory_interface: AzureSQLMemory):
     with mock.patch.object(
         memory_interface,
         "_query_entries",
-        return_value=[entry for entry in entries if entry.orchestrator_identifier["id"] == attack1_id],
+        return_value=[entry for entry in entries if entry.attack_identifier["id"] == attack1_id],
     ):
         # Call the method under test
         memory_interface._insert_entries(entries=entries)
-        retrieved_entries = memory_interface.get_prompt_request_pieces(orchestrator_id=attack1_id)
+        retrieved_entries = memory_interface.get_prompt_request_pieces(attack_id=attack1_id)
 
         # Verify the returned entries
         assert len(retrieved_entries) == 2
-        assert all(piece.orchestrator_identifier["id"] == attack1_id for piece in retrieved_entries)
+        assert all(piece.attack_identifier["id"] == attack1_id for piece in retrieved_entries)
 
         # Extract the actual SQL condition passed to query_entries
         actual_sql_condition = memory_interface._query_entries.call_args.kwargs["conditions"]  # type: ignore
         expected_sql_condition = text(
-            "ISJSON(orchestrator_identifier) = 1 AND JSON_VALUE(orchestrator_identifier, '$.id') = :json_id"
+            "ISJSON(attack_identifier) = 1 AND JSON_VALUE(attack_identifier, '$.id') = :json_id"
         ).bindparams(json_id=attack1_id)
 
         # Compare the SQL text and the bound parameters

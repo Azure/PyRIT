@@ -302,7 +302,7 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
             response_converter_configurations=self._response_converters,
             target=self._attack_setup_target,
             labels=context.memory_labels,
-            orchestrator_identifier=self.get_identifier(),
+            attack_identifier=self.get_identifier(),
             conversation_id=context.attack_setup_target_conversation_id,
         )
 
@@ -333,7 +333,7 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
                         original_value=processing_response,
                         original_value_data_type="text",
                         role="assistant",
-                        orchestrator_identifier=self.get_identifier(),
+                        attack_identifier=self.get_identifier(),
                     )
                 ],
             )
@@ -536,7 +536,7 @@ class XPIATestWorkflow(XPIAWorkflow):
                 request_converter_configurations=self._request_converters,
                 response_converter_configurations=self._response_converters,
                 labels=context.memory_labels,
-                orchestrator_identifier=self.get_identifier(),
+                attack_identifier=self.get_identifier(),
                 conversation_id=context.processing_conversation_id,
             )
 

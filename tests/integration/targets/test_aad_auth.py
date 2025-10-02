@@ -10,7 +10,6 @@ from pyrit.prompt_target import OpenAIChatTarget, RealtimeTarget
 
 
 @pytest.mark.asyncio
-@pytest.mark.run_only_if_all_tests
 @pytest.mark.parametrize(
     ("endpoint", "model_name"),
     [

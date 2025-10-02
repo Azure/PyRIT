@@ -3,12 +3,14 @@
 
 import asyncio
 import os
+from pathlib import Path
 from textwrap import dedent
 from typing import Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from pyrit.common.path import SCORER_CONFIG_PATH
 from pyrit.exceptions import InvalidJsonException, remove_markdown_json
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
@@ -112,7 +114,7 @@ async def test_scorer_score_value_with_llm_exception_display_prompt_id():
 
 
 @pytest.mark.asyncio
-async def test_scorer_score_value_with_llm_use_provided_orchestrator_identifier(good_json):
+async def test_scorer_score_value_with_llm_use_provided_attack_identifier(good_json):
     scorer = MockScorer()
     scorer.scorer_type = "true_false"
 
@@ -124,7 +126,7 @@ async def test_scorer_score_value_with_llm_use_provided_orchestrator_identifier(
     chat_target.set_system_prompt = MagicMock()
 
     expected_system_prompt = "system_prompt"
-    expected_orchestrator_id = "orchestrator_id"
+    expected_attack_id = "attack_id"
     expected_scored_prompt_id = "123"
 
     await scorer._score_value_with_llm(
@@ -135,7 +137,7 @@ async def test_scorer_score_value_with_llm_use_provided_orchestrator_identifier(
         scored_prompt_id=expected_scored_prompt_id,
         category="category",
         task="task",
-        orchestrator_identifier={"id": expected_orchestrator_id},
+        attack_identifier={"id": expected_attack_id},
     )
 
     chat_target.set_system_prompt.assert_called_once()
@@ -143,12 +145,12 @@ async def test_scorer_score_value_with_llm_use_provided_orchestrator_identifier(
     _, set_sys_prompt_args = chat_target.set_system_prompt.call_args
     assert set_sys_prompt_args["system_prompt"] == expected_system_prompt
     assert isinstance(set_sys_prompt_args["conversation_id"], str)
-    assert set_sys_prompt_args["orchestrator_identifier"]["id"] == expected_orchestrator_id
-    assert set_sys_prompt_args["orchestrator_identifier"]["scored_prompt_id"] == expected_scored_prompt_id
+    assert set_sys_prompt_args["attack_identifier"]["id"] == expected_attack_id
+    assert set_sys_prompt_args["attack_identifier"]["scored_prompt_id"] == expected_scored_prompt_id
 
 
 @pytest.mark.asyncio
-async def test_scorer_score_value_with_llm_does_not_add_score_prompt_id_for_empty_orchestrator_identifier(good_json):
+async def test_scorer_score_value_with_llm_does_not_add_score_prompt_id_for_empty_attack_identifier(good_json):
     scorer = MockScorer()
     scorer.scorer_type = "true_false"
 
@@ -176,7 +178,7 @@ async def test_scorer_score_value_with_llm_does_not_add_score_prompt_id_for_empt
     _, set_sys_prompt_args = chat_target.set_system_prompt.call_args
     assert set_sys_prompt_args["system_prompt"] == expected_system_prompt
     assert isinstance(set_sys_prompt_args["conversation_id"], str)
-    assert not set_sys_prompt_args["orchestrator_identifier"]
+    assert not set_sys_prompt_args["attack_identifier"]
 
 
 @pytest.mark.asyncio
@@ -229,6 +231,32 @@ async def test_scorer_remove_markdown_json_called(good_json):
         )
 
         mock_remove_markdown_json.assert_called_once()
+
+
+def test_scorer_path_verification_rejection():
+    """
+    Test that the scorer correctly refuses to verify a non-existent path.
+    """
+    scorer = MockScorer()
+    mock_path: str = "this/does/not/exist.yaml"
+    with pytest.raises(ValueError, match="Path not found"):
+        scorer._verify_and_resolve_path(mock_path)
+
+
+def test_scorer_path_verification_confirmation():
+    """
+    Test that the scorer verifies the paths that currently exist
+    under the scorer configs.
+    """
+    scorer = MockScorer()
+    all_yamls_as_str: list[str] = []
+    full_paths: list[str] = []
+    for root, dirs, files in os.walk(SCORER_CONFIG_PATH):
+        full_paths.extend([os.path.join(root, f) for f in files if f.endswith(".yaml")])
+        all_yamls_as_str.extend([f for f in files if f.endswith(".yaml")])
+    resolved_paths = [Path(p).resolve() for p in full_paths]
+    attempted_paths = [scorer._verify_and_resolve_path(p) for p in full_paths]
+    assert attempted_paths == resolved_paths
 
 
 def test_scorer_extract_task_from_response():
@@ -747,7 +775,10 @@ async def test_score_response_with_objective_async_empty_response():
     obj_scorer = MockScorer()
 
     result = await Scorer.score_response_with_objective_async(
-        response=response, auxiliary_scorers=[aux_scorer], objective_scorers=[obj_scorer], task="test task"
+        response=response,
+        auxiliary_scorers=[aux_scorer],
+        objective_scorers=[obj_scorer],
+        task="test task",
     )
 
     assert result == {"auxiliary_scores": [], "objective_scores": []}
@@ -909,11 +940,19 @@ async def test_score_response_with_objective_async_role_filter():
     aux_scored_pieces = []
     obj_scored_pieces = []
 
-    async def track_aux_score(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def track_aux_score(
+        request_response: PromptRequestPiece,
+        *,
+        task: Optional[str] = None,
+    ) -> list[Score]:
         aux_scored_pieces.append(request_response)
         return [aux_score]
 
-    async def track_obj_score(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def track_obj_score(
+        request_response: PromptRequestPiece,
+        *,
+        task: Optional[str] = None,
+    ) -> list[Score]:
         obj_scored_pieces.append(request_response)
         return [obj_score]
 
@@ -1056,14 +1095,22 @@ async def test_score_response_with_objective_async_concurrent_execution():
     # Track call order to verify concurrent execution
     call_order = []
 
-    async def mock_aux_score_async(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def mock_aux_score_async(
+        request_response: PromptRequestPiece,
+        *,
+        task: Optional[str] = None,
+    ) -> list[Score]:
         call_order.append("aux_start")
         # Simulate some async work
         await asyncio.sleep(0.01)
         call_order.append("aux_end")
         return [MagicMock(spec=Score)]
 
-    async def mock_obj_score_async(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def mock_obj_score_async(
+        request_response: PromptRequestPiece,
+        *,
+        task: Optional[str] = None,
+    ) -> list[Score]:
         call_order.append("obj_start")
         # Simulate some async work
         await asyncio.sleep(0.01)
@@ -1137,11 +1184,19 @@ async def test_score_response_with_objective_async_mixed_roles():
     aux_scored_pieces = []
     obj_scored_pieces = []
 
-    async def track_aux_score(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def track_aux_score(
+        request_response: PromptRequestPiece,
+        *,
+        task: Optional[str] = None,
+    ) -> list[Score]:
         aux_scored_pieces.append(request_response)
         return [aux_score]
 
-    async def track_obj_score(request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def track_obj_score(
+        request_response: PromptRequestPiece,
+        *,
+        task: Optional[str] = None,
+    ) -> list[Score]:
         obj_scored_pieces.append(request_response)
         return [obj_score]
 

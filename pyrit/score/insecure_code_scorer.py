@@ -2,9 +2,9 @@
 # Licensed under the MIT license.
 
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import SCORER_CONFIG_PATH
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt
 from pyrit.prompt_target import PromptChatTarget
@@ -21,18 +21,17 @@ class InsecureCodeScorer(Scorer):
         self,
         chat_target: PromptChatTarget,
         threshold: float = 0.5,
-        system_prompt_path: Optional[Path] = None,
+        system_prompt_path: Optional[Union[str, Path]] = None,
     ):
-        super().__init__()
+        if not system_prompt_path:
+            system_prompt_path = SCORER_CONFIG_PATH / "insecure_code" / "system_prompt.yaml"
+
+        self._system_prompt_path: Path = self._verify_and_resolve_path(system_prompt_path)
         self._prompt_target = chat_target
         self._threshold = threshold
         self.scorer_type = "float_scale"
-        self._system_prompt_path = system_prompt_path
 
         # Load the system prompt template as a SeedPrompt object
-        self._system_prompt_path = (
-            system_prompt_path or DATASETS_PATH / "score" / "insecure_code" / "system_prompt.yaml"
-        )
         scoring_instructions_template = SeedPrompt.from_yaml_file(self._system_prompt_path)
 
         # Define the harm category
@@ -61,7 +60,7 @@ class InsecureCodeScorer(Scorer):
             scored_prompt_id=request_response.id,
             category=self._harm_category,
             task=task,
-            orchestrator_identifier=request_response.orchestrator_identifier,
+            attack_identifier=request_response.attack_identifier,
         )
 
         # Modify the UnvalidatedScore parsing to check for 'score_value'
