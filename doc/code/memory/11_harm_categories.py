@@ -109,19 +109,9 @@ print()
 # ### Query by multiple harm categories
 
 # %%
-# Example 2: Query for multiple harm categories with OR logic
-print("2. Query for multiple harm categories 'illegal' or 'violence':")
-multiple_groups_or = memory.get_attack_results(harm_category=["illegal", "violence"], harm_category_match_all=False)
-print(f"   Found {len(multiple_groups_or)} attack results with 'illegal' or 'violence' category")
-
-for i, attack in enumerate(multiple_groups_or):
-    print(f"   Attack {i+1}: {attack.objective}...")
-    print(f"   Conversation ID: {attack.conversation_id}")
-print()
-
-# Example 3: Query for multiple harm categories with AND logic
+# Example 2: Query for multiple harm categories
 print("3. Query for multiple harm categories 'illegal' and 'violence':")
-multiple_groups_and = memory.get_attack_results(harm_category=["illegal", "violence"], harm_category_match_all=True)
+multiple_groups_and = memory.get_attack_results(harm_category=["illegal", "violence"])
 
 for i, attack in enumerate(multiple_groups_and):
     print(f"   Attack {i+1}: {attack.objective}...")

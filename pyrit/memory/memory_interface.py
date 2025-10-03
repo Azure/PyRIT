@@ -11,7 +11,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
 
-from sqlalchemy import MetaData, and_, exists, func, or_
+from sqlalchemy import MetaData, and_, exists, func
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql.elements import ColumnElement
@@ -957,7 +957,6 @@ class MemoryInterface(abc.ABC):
         objective_sha256: Optional[Sequence[str]] = None,
         outcome: Optional[str] = None,
         harm_category: Optional[Sequence[str]] = None,
-        harm_category_match_all: bool = True,
     ) -> Sequence[AttackResult]:
         """
         Retrieves a list of AttackResult objects based on the specified filters.
@@ -970,14 +969,11 @@ class MemoryInterface(abc.ABC):
                 Defaults to None.
             outcome (Optional[str], optional): The outcome to filter by (success, failure, undetermined).
                 Defaults to None.
-            harm_category (Optional[Sequence[str]], optional): A list of harm categories to filter by.
+            harm_category (Optional[Sequence[str]], optional): A list of harm categories to filter results by.
+                These harm categories are associated with the prompts themselves,
+                meaning they are harm(s) we're trying to elicit with the prompt,
+                not necessarily one(s) that were found in the response.
                 Defaults to None.
-            harm_category_match_all (bool, optional):
-                boolean value indicating if you want all or any harm categories to match.
-                If True, requires ALL harm categories to be present, meaning will query using AND logic
-                If False, requires ANY harm category to be present, meaning will query using OR logic
-                Defaults to True.
-
         Returns:
             Sequence[AttackResult]: A list of AttackResult objects that match the specified filters.
         """
@@ -999,40 +995,20 @@ class MemoryInterface(abc.ABC):
             conditions.append(AttackResultEntry.outcome == outcome)
 
         if harm_category:
-            if harm_category_match_all:  # AND logic
-                # ALL categories must be present in the SAME conversation
-                # We need to check that there exists at least one prompt in the conversation
-                # that contains ALL the specified harm categories
-                harm_category_subquery = exists().where(
+            # ALL categories must be present in the SAME conversation
+            harm_category_subquery = exists().where(
+                and_(
+                    PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
+                    PromptMemoryEntry.harm_categories.isnot(None),
                     and_(
-                        PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
-                        PromptMemoryEntry.harm_categories.isnot(None),
-                        # Check that ALL categories are present in the JSON array
-                        and_(
-                            *[
-                                func.json_extract(PromptMemoryEntry.harm_categories, "$").like(f'%"{category}"%')
-                                for category in harm_category
-                            ]
-                        ),
-                    )
+                        *[
+                            func.json_extract(PromptMemoryEntry.harm_categories, "$").like(f'%"{category}"%')
+                            for category in harm_category
+                        ]
+                    ),
                 )
-                conditions.append(harm_category_subquery)
-            else:
-                # OR logic: ANY category can be present
-                harm_category_subquery = exists().where(
-                    and_(
-                        PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
-                        PromptMemoryEntry.harm_categories.isnot(None),
-                        # For each harm category we're looking for, check if it exists in the JSON array
-                        or_(
-                            *[
-                                func.json_extract(PromptMemoryEntry.harm_categories, "$").like(f'%"{category}"%')
-                                for category in harm_category
-                            ]
-                        ),
-                    )
-                )
-                conditions.append(harm_category_subquery)
+            )
+            conditions.append(harm_category_subquery)
 
         try:
             entries: Sequence[AttackResultEntry] = self._query_entries(
