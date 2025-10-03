@@ -71,7 +71,7 @@ print(f"Found {len(prompt_groups)} prompt groups for dataset")
 for i, group in enumerate(prompt_groups):
     prompt = group.prompts[0].value
 
-    results = await attack.execute_async(objective=prompt, seed_prompt_group=group)
+    results = await attack.execute_async(objective=prompt, seed_prompt_group=group)  # type: ignore
 
     print(f"Attack completed - Conversation ID: {results.conversation_id}")
     await ConsoleAttackResultPrinter().print_conversation_async(result=results)  # type: ignore
@@ -101,7 +101,7 @@ illegal_attacks = memory.get_attack_results(harm_category=["illegal"])
 print(f"   Found {len(illegal_attacks)} attack results with 'illegal' category")
 
 for i, attack in enumerate(illegal_attacks):  # Show first 2
-    print(f"   Attack {i+1}: {attack.objective}...")
+    print(f"   Attack {i+1}: {attack.objective}")
     print(f"   Conversation ID: {attack.conversation_id}")
 print()
 
