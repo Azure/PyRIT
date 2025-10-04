@@ -235,3 +235,37 @@ class TestHarmBenchMultimodalDataset:
         # Filter with an empty list
         with pytest.raises(ValueError, match="SeedPromptDataset cannot be empty"):
             await fetch_harmbench_multimodal_dataset_async(categories=[])
+
+    @patch("pyrit.datasets.harmbench_multimodal_dataset._fetch_and_save_image_async")
+    @patch("pyrit.datasets.harmbench_multimodal_dataset.fetch_examples")
+    async def test_skips_example_when_image_fetch_fails(self, mock_fetch, mock_fetch_image):
+        mock_examples = [
+            {
+                "Behavior": "Successful behavior",
+                "BehaviorID": "success_behavior",
+                "SemanticCategory": "harmful",
+                "FunctionalCategory": "multimodal",
+                "ImageFileName": "success.png",
+            },
+            {
+                "Behavior": "Failed behavior",
+                "BehaviorID": "failed_behavior",
+                "SemanticCategory": "harmful",
+                "FunctionalCategory": "multimodal",
+                "ImageFileName": "failed.png",
+            },
+        ]
+
+        mock_fetch.return_value = mock_examples
+        mock_fetch_image.side_effect = [  # first call succeeds, second call fails
+            "/dbdata/seed-prompt-entries/images/harmbench_success_behavior.png",
+            Exception("Network error - image not found"),
+        ]
+
+        result = await fetch_harmbench_multimodal_dataset_async()
+
+        # Only the successful example should be included (1 text + 1 image = 2 prompts)
+        assert isinstance(result, SeedPromptDataset)
+        assert len(result.prompts) == 2
+        behavior_ids = {p.metadata["behavior_id"] for p in result.prompts}
+        assert behavior_ids == {"success_behavior"}
