@@ -6,10 +6,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -69,9 +65,9 @@ prompt_groups = memory.get_seed_prompt_groups(dataset_name="2025_06_pyrit_illega
 print(f"Found {len(prompt_groups)} prompt groups for dataset")
 
 for i, group in enumerate(prompt_groups):
-    prompt = group.prompts[0].value
+    prompt_text = group.prompts[0].value
 
-    results = await attack.execute_async(objective=prompt, seed_prompt_group=group)  # type: ignore
+    results = await attack.execute_async(objective=prompt_text, seed_prompt_group=group)  # type: ignore
 
     print(f"Attack completed - Conversation ID: {results.conversation_id}")
     await ConsoleAttackResultPrinter().print_conversation_async(result=results)  # type: ignore
@@ -86,13 +82,24 @@ for i, group in enumerate(prompt_groups):
 # Query by a single harm category, as example here we query for `illegal`
 
 # %%
+from pyrit.analytics.analyze_results import analyze_results
+
+all_attack_results = memory.get_attack_results()
+
 # Demonstrating how to query attack results by harm category
 print("=== Querying Attack Results by Harm Category ===")
 print()
 
 # First, let's see all attack results to understand what we have
-all_attack_results = memory.get_attack_results()
+print(f"Overall attack analytics:")
 print(f"Total attack results in memory: {len(all_attack_results)}")
+
+overall_analytics = analyze_results(list(all_attack_results))
+
+print(f"  Success rate: {overall_analytics['Attack success rate']}")
+print(f"  Successes: {overall_analytics['Successes']}")
+print(f"  Failures: {overall_analytics['Failures']}")
+print(f"  Undetermined: {overall_analytics['Undetermined']}")
 print()
 
 # Example 1: Query for a single harm category
@@ -100,10 +107,12 @@ print("1. Query for single harm category 'illegal':")
 illegal_attacks = memory.get_attack_results(harm_category=["illegal"])
 print(f"   Found {len(illegal_attacks)} attack results with 'illegal' category")
 
-for i, attack in enumerate(illegal_attacks):  # Show first 2
-    print(f"   Attack {i+1}: {attack.objective}")
-    print(f"   Conversation ID: {attack.conversation_id}")
-print()
+if illegal_attacks:
+    for i, attack_result in enumerate(illegal_attacks):  # Show first 2
+        print(f"   Attack {i+1}: {attack_result.objective}")
+        print(f"   Conversation ID: {attack_result.conversation_id}")
+        print(f"   Outcome: {attack_result.outcome}")
+    print()
 
 # %% [markdown]
 # ### Query by multiple harm categories
@@ -111,9 +120,9 @@ print()
 # %%
 # Example 2: Query for multiple harm categories
 print("3. Query for multiple harm categories 'illegal' and 'violence':")
-multiple_groups_and = memory.get_attack_results(harm_category=["illegal", "violence"])
+multiple_groups = memory.get_attack_results(harm_category=["illegal", "violence"])
 
-for i, attack in enumerate(multiple_groups_and):
-    print(f"   Attack {i+1}: {attack.objective}...")
-    print(f"   Conversation ID: {attack.conversation_id}")
+for i, attack_result in enumerate(multiple_groups):
+    print(f"   Attack {i+1}: {attack_result.objective}...")
+    print(f"   Conversation ID: {attack_result.conversation_id}")
 print()

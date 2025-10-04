@@ -957,6 +957,7 @@ class MemoryInterface(abc.ABC):
         objective_sha256: Optional[Sequence[str]] = None,
         outcome: Optional[str] = None,
         harm_category: Optional[Sequence[str]] = None,
+        labels: Optional[dict[str, str]] = None,
     ) -> Sequence[AttackResult]:
         """
         Retrieves a list of AttackResult objects based on the specified filters.
@@ -973,6 +974,9 @@ class MemoryInterface(abc.ABC):
                 These harm categories are associated with the prompts themselves,
                 meaning they are harm(s) we're trying to elicit with the prompt,
                 not necessarily one(s) that were found in the response.
+                Defaults to None.
+            labels (Optional[dict[str, str]], optional): A dictionary of memory labels to filter results by.
+                These labels are associated with the prompts themselves, used for custom tagging and tracking.
                 Defaults to None.
         Returns:
             Sequence[AttackResult]: A list of AttackResult objects that match the specified filters.
@@ -1009,7 +1013,21 @@ class MemoryInterface(abc.ABC):
                 )
             )
             conditions.append(harm_category_subquery)
-
+        if labels:
+            # ALL labels must be present in the SAME conversation
+            labels_subquery = exists().where(
+                and_(
+                    PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
+                    PromptMemoryEntry.labels.isnot(None),
+                    and_(
+                        *[
+                            func.json_extract(PromptMemoryEntry.labels, f"$.{key}") == value
+                            for key, value in labels.items()
+                        ]
+                    ),
+                )
+            )
+            conditions.append(labels_subquery)
         try:
             entries: Sequence[AttackResultEntry] = self._query_entries(
                 AttackResultEntry, conditions=and_(*conditions) if conditions else None
