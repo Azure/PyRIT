@@ -19,6 +19,11 @@ from pyrit.score.true_false.markdown_injection import MarkdownInjectionScorer
 from pyrit.score.float_scale.plagiarism_scorer import PlagiarismScorer, PlagiarismMetric
 from pyrit.score.true_false.prompt_shield_scorer import PromptShieldScorer
 from pyrit.score.true_false.true_false_score_aggregator import AND_, MAJORITY_, OR_, TrueFalseScoreAggregator
+from pyrit.score.float_scale.float_scale_score_aggregator import (
+    FloatScaleScoreAggregator,
+    FloatScaleScorerByCategory,
+    FloatScaleScorerAllCategories,
+)
 from pyrit.score.scorer_evaluation.metrics_type import MetricsType
 from pyrit.score.scorer_evaluation.human_labeled_dataset import (
     HarmHumanLabeledEntry,
@@ -47,6 +52,8 @@ from pyrit.score.true_false.substring_scorer import SubStringScorer
 from pyrit.score.true_false.true_false_inverter_scorer import TrueFalseInverterScorer
 from pyrit.score.true_false.self_ask_question_answer_scorer import SelfAskQuestionAnswerScorer
 from pyrit.score.float_scale.look_back_scorer import LookBackScorer
+from pyrit.score.float_scale.video_float_scale_scorer import VideoFloatScaleScorer
+from pyrit.score.true_false.video_true_false_scorer import VideoTrueFalseScorer
 from pyrit.score.true_false.question_answer_scorer import QuestionAnswerScorer
 
 __all__ = [
@@ -54,18 +61,18 @@ __all__ = [
     "AzureContentFilterScorer",
     "BatchScorer",
     "ContentClassifierPaths",
-    "TrueFalseCompositeScorer",
+    "FloatScaleScoreAggregator",
+    "FloatScaleScorerAllCategories",
+    "FloatScaleScorerByCategory",
     "FloatScaleScorer",
     "FloatScaleThresholdScorer",
     "GandalfScorer",
-    "HumanLabeledDataset",
-    "SelfAskGeneralTrueFalseScorer",
-    "SelfAskGeneralFloatScaleScorer",
     "HarmHumanLabeledEntry",
     "HarmScorerEvaluator",
     "HarmScorerMetrics",
-    "HumanLabeledEntry",
     "HumanInTheLoopScorerGradio",
+    "HumanLabeledDataset",
+    "HumanLabeledEntry",
     "InsecureCodeScorer",
     "LikertScalePaths",
     "LookBackScorer",
@@ -81,19 +88,24 @@ __all__ = [
     "PromptShieldScorer",
     "QuestionAnswerScorer",
     "Scorer",
-    "TrueFalseScoreAggregator",
     "ScorerEvaluator",
     "ScorerMetrics",
     "ScorerPromptValidator",
     "SelfAskCategoryScorer",
+    "SelfAskGeneralFloatScaleScorer",
+    "SelfAskGeneralTrueFalseScorer",
     "SelfAskLikertScorer",
+    "SelfAskQuestionAnswerScorer",
     "SelfAskRefusalScorer",
     "SelfAskScaleScorer",
     "SelfAskTrueFalseScorer",
     "SubStringScorer",
-    "TrueFalseScorer",
+    "TrueFalseCompositeScorer",
     "TrueFalseInverterScorer",
     "TrueFalseQuestion",
     "TrueFalseQuestionPaths",
-    "SelfAskQuestionAnswerScorer",
+    "TrueFalseScoreAggregator",
+    "TrueFalseScorer",
+    "VideoFloatScaleScorer",
+    "VideoTrueFalseScorer",
 ]

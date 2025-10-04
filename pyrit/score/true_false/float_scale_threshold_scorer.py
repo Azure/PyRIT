@@ -8,7 +8,7 @@ from pyrit.models import PromptRequestPiece, Score
 from pyrit.models.literals import ChatMessageRole
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.score.float_scale.float_scale_score_aggregator import (
-    MAX_,
+    FloatScaleAggregatorFunc,
     FloatScaleScoreAggregator,
 )
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
@@ -24,7 +24,7 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
         *,
         scorer: FloatScaleScorer,
         threshold: float,
-        float_scale_aggregator: FloatScaleScoreAggregator = MAX_,
+        float_scale_aggregator: FloatScaleAggregatorFunc = FloatScaleScoreAggregator.MAX,
     ) -> None:
         self._scorer = scorer
         self._threshold = threshold
@@ -59,7 +59,10 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
             role_filter=role_filter,
         )
 
-        aggregate_score = self._float_scale_aggregator(scores)
+        # Aggregator now returns a list of results
+        aggregate_results = self._float_scale_aggregator(scores)
+        # For threshold scoring, we expect a single aggregated result
+        aggregate_score = aggregate_results[0]
 
         score = scores[0]
         score.score_type = "true_false"

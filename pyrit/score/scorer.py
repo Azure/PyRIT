@@ -290,6 +290,27 @@ class Scorer(abc.ABC):
         # results is a list[list[Score]] and needs to be flattened
         return [score for sublist in results for score in sublist]
 
+    async def score_image_batch_async(
+        self, *, image_paths: Sequence[str], objectives: Optional[Sequence[str]] = None, batch_size: int = 10
+    ) -> list[Score]:
+        if objectives:
+            if len(objectives) != len(image_paths):
+                raise ValueError("The number of objectives must match the number of image_paths.")
+
+        if len(image_paths) == 0:
+            return []
+
+        prompt_target = getattr(self, "_prompt_target", None)
+        results = await batch_task_async(
+            task_func=self.score_image_async,
+            task_arguments=["image_path", "objective"] if objectives else ["image_path"],
+            prompt_target=prompt_target,
+            batch_size=batch_size,
+            items_to_batch=[image_paths, objectives] if objectives else [image_paths],
+        )
+
+        return [score for sublist in results for score in sublist]
+
     def scale_value_float(self, value: float, min_value: float, max_value: float) -> float:
         """
         Scales a value from 0 to 1 based on the given min and max values. E.g. 3 stars out of 5 stars would be .5.

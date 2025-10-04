@@ -6,7 +6,7 @@ chapters:
     - file: cookbooks/1_sending_prompts
     - file: cookbooks/2_precomputing_turns
     - file: cookbooks/3_copyright_violations
-    - file: cookbooks/4_benchmarking_models
+    - file: cookbooks/4_testing_bias
   - file: setup/install_pyrit
     sections:
     - file: setup/jupyter_setup
@@ -85,6 +85,7 @@ chapters:
         - file: code/converters/char_swap_attack_converter
         - file: code/converters/pdf_converter
         - file: code/converters/math_prompt_converter
+        - file: code/converters/transparency_attack_converter
     - file: code/scoring/0_scoring
       sections:
       - file: code/scoring/1_azure_content_safety_scorers

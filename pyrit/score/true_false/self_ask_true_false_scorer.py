@@ -63,7 +63,7 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
     """A class that represents a self-ask true/false for scoring."""
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(
-        supported_data_types=["text"],
+        supported_data_types=["text", "image_path"],
     )
 
     def __init__(

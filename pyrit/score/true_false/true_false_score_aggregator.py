@@ -45,10 +45,13 @@ def _lift(
 
         # Combine all score metadata dictionaries safely
         metadata: Dict[str, Union[str, int]] = {}
-        category: List[str] = []
+        category_set: set[str] = set()
         for s in scores_list:
             metadata = combine_dict(metadata, getattr(s, "score_metadata", None))
-            category.extend(getattr(s, "score_category", []))
+            category_set.update(getattr(s, "score_category", []))
+
+        # Convert set to sorted list for consistent output, filter empty strings
+        category = sorted([c for c in category_set if c])
 
         return ScoreAggregatorResult(
             value=result,

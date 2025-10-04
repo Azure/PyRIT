@@ -4,7 +4,7 @@
 import contextlib
 import re
 import shlex
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from pydantic import ValidationError
@@ -16,6 +16,7 @@ from pyrit.executor.attack import (
     RedTeamingAttack,
     TreeOfAttacksWithPruningAttack,
 )
+from pyrit.models.attack_result import AttackOutcome, AttackResult
 
 test_cases_success = [
     (
@@ -203,9 +204,25 @@ def test_cli_success(get_required_value, command, attack_classes):
     # Patching the request sending functionality since we don't want to test the attack,
     # but just the CLI part.
 
+    # Create a mock AttackResult with required fields set
+    mock_attack_result = AttackResult(
+        conversation_id="test_conversation",
+        objective="test objective",
+        attack_identifier={"name": "test_attack"},
+        execution_time_ms=1000,
+        outcome=AttackOutcome.SUCCESS,
+    )
+
     with contextlib.ExitStack() as stack:
         for attack_class in attack_classes:
-            stack.enter_context(patch.object(attack_class.__base__.__base__, "execute_async"))
+            stack.enter_context(
+                patch.object(
+                    attack_class.__base__.__base__,
+                    "execute_async",
+                    new_callable=AsyncMock,
+                    return_value=mock_attack_result,
+                )
+            )
         main(shlex.split(command))
 
 
