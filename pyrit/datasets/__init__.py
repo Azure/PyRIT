@@ -10,6 +10,7 @@ from pyrit.datasets.decoding_trust_stereotypes_dataset import fetch_decoding_tru
 from pyrit.datasets.dataset_helper import fetch_examples
 from pyrit.datasets.forbidden_questions_dataset import fetch_forbidden_questions_dataset
 from pyrit.datasets.harmbench_dataset import fetch_harmbench_dataset
+from pyrit.datasets.harmbench_multimodal_dataset import fetch_harmbench_multimodal_dataset_async
 from pyrit.datasets.librAI_do_not_answer_dataset import fetch_librAI_do_not_answer_dataset
 from pyrit.datasets.llm_latent_adversarial_training_harmful_dataset import (
     fetch_llm_latent_adversarial_training_harmful_dataset,
@@ -47,6 +48,7 @@ __all__ = [
     "fetch_examples",
     "fetch_forbidden_questions_dataset",
     "fetch_harmbench_dataset",
+    "fetch_harmbench_multimodal_dataset_async",
     "fetch_librAI_do_not_answer_dataset",
     "fetch_llm_latent_adversarial_training_harmful_dataset",
     "fetch_many_shot_jailbreaking_dataset",
