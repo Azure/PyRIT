@@ -117,6 +117,27 @@ async def fetch_harmbench_multimodal_dataset_async(
             metadata={
                 "behavior_id": behavior_id,
             },
+            authors=[
+                "Mantas Mazeika",
+                "Long Phan",
+                "Xuwang Yin",
+                "Andy Zou",
+                "Zifan Wang",
+                "Norman Mu",
+                "Elham Sakhaee",
+                "Nathaniel Li",
+                "Steven Basart",
+                "Bo Li",
+                "David Forsyth",
+                "Dan Hendrycks",
+            ],
+            groups=[
+                "University of Illinois Urbana-Champaign",
+                "Center for AI Safety",
+                "Carnegie Mellon University",
+                "UC Berkeley",
+                "Microsoft",
+            ],
         )
         prompts.append(text_prompt)
 
