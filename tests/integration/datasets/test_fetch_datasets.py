@@ -47,7 +47,6 @@ from pyrit.models.seed_prompt_dataset import SeedPromptDataset
         (fetch_equitymedqa_dataset_unique_values, True),
         (fetch_forbidden_questions_dataset, True),
         (fetch_harmbench_dataset, True),
-        (fetch_harmbench_multimodal_dataset_async, True),
         (fetch_jbb_behaviors_dataset, True),
         (fetch_librAI_do_not_answer_dataset, True),
         (fetch_llm_latent_adversarial_training_harmful_dataset, True),
@@ -72,6 +71,21 @@ def test_fetch_datasets(fetch_function, is_seed_prompt_dataset):
     if is_seed_prompt_dataset:
         assert isinstance(data, SeedPromptDataset)
         assert len(data.prompts) > 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "fetch_function, number_of_prompts",
+    [
+        (fetch_harmbench_multimodal_dataset_async, 110 * 2),
+    ],
+)
+async def test_fetch_multimodal_datasets(fetch_function, number_of_prompts):
+    data = await fetch_function()
+
+    assert data is not None
+    assert isinstance(data, SeedPromptDataset)
+    assert len(data.prompts) == number_of_prompts
 
 
 @pytest.mark.integration
