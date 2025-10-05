@@ -219,6 +219,7 @@ API Reference
     TreeOfAttacksWithPruningAttack
     SkeletonKeyAttack
     ConsoleAttackResultPrinter
+    
 
 :py:mod:`pyrit.executor.promptgen`
 ==================================
@@ -333,38 +334,6 @@ API Reference
     TextDataTypeSerializer
     UnvalidatedScore
 
-:py:mod:`pyrit.orchestrator`
-============================
-
-.. automodule:: pyrit.orchestrator
-    :no-members:
-    :no-inherited-members:
-
-.. autosummary::
-    :nosignatures:
-    :toctree: _autosummary/
-
-    AnecdoctorOrchestrator
-    ContextComplianceOrchestrator
-    CrescendoOrchestrator
-    FlipAttackOrchestrator
-    ImplicareAttackOrchestrator
-    FuzzerOrchestrator
-    ManyShotJailbreakOrchestrator
-    MultiTurnOrchestrator
-    Orchestrator
-    OrchestratorResult
-    PAIROrchestrator
-    PromptSendingOrchestrator
-    QuestionAnsweringBenchmarkOrchestrator
-    RedTeamingOrchestrator
-    RolePlayOrchestrator
-    ScoringOrchestrator
-    SkeletonKeyOrchestrator
-    TreeOfAttacksWithPruningOrchestrator
-    XPIAManualProcessingOrchestrator
-    XPIAOrchestrator
-    XPIATestOrchestrator
 
 :py:mod:`pyrit.prompt_converter`
 ================================
@@ -407,6 +376,7 @@ API Reference
     FuzzerSimilarConverter
     HumanInTheLoopConverter
     ImageCompressionConverter
+    ImplicareConverter
     InsertPunctuationConverter
     LeetspeakConverter
     LLMGenericTextConverter
@@ -433,6 +403,7 @@ API Reference
     ToneConverter
     ToxicSentenceGeneratorConverter
     TranslationConverter
+    TransparencyAttackConverter
     UnicodeConfusableConverter
     UnicodeReplacementConverter
     UnicodeSubstitutionConverter
