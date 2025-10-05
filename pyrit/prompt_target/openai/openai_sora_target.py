@@ -118,7 +118,7 @@ class OpenAISoraTarget(OpenAITarget):
             n_variants (int, Optional): The number of generated videos. Defaults to 1. Sora API will support up
                 to 2 variants for resolutions of 720p, but only 1 for resolutions of 1080p.
             output_filename (str, Optional): The name of the output file for the generated video.
-                Note: DO NOT SET if using target with PromptSendingOrchestrator. The default filename
+                Note: DO NOT SET if using target with PromptSendingAttack. The default filename
                 is {job_id}_{generation_id}.mp4 as returned by the model.
 
         Raises:
@@ -461,15 +461,6 @@ class OpenAISoraTarget(OpenAITarget):
         piece_type = request_piece.converted_value_data_type
         if piece_type != "text":
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
-
-        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request_piece.conversation_id)
-        n_messages = len(messages)
-
-        if n_messages > 0:
-            raise ValueError(
-                "This target only supports a single turn conversation. "
-                f"Received: {n_messages} messages which indicates a prior turn."
-            )
 
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""

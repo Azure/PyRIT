@@ -448,7 +448,7 @@ async def test_should_skip_based_on_skip_criteria_no_matches(mock_memory_instanc
     normalizer = PromptNormalizer()
 
     skip_criteria = PromptFilterCriteria(
-        orchestrator_id="test_orchestrator",
+        attack_id="test_attack",
         conversation_id="test_conversation",
     )
 
@@ -483,7 +483,7 @@ async def test_should_skip_based_on_skip_criteria_match_found(mock_memory_instan
     normalizer = PromptNormalizer()
 
     skip_criteria = PromptFilterCriteria(
-        orchestrator_id="test_orchestrator",
+        attack_id="test_attack",
         conversation_id="test_conversation",
     )
 
@@ -529,7 +529,7 @@ async def test_should_skip_based_on_skip_criteria_original_value_match(mock_memo
     normalizer = PromptNormalizer()
 
     skip_criteria = PromptFilterCriteria(
-        orchestrator_id="test_orchestrator",
+        attack_id="test_attack",
         conversation_id="test_conversation",
     )
 

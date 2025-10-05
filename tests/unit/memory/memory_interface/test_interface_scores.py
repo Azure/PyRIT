@@ -18,7 +18,7 @@ from pyrit.models import (
 )
 
 
-def test_get_scores_by_orchestrator_id_and_label(
+def test_get_scores_by_attack_id_and_label(
     sqlite_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
 ):
     # create list of scores that are associated with sample conversation entries
@@ -42,7 +42,7 @@ def test_get_scores_by_orchestrator_id_and_label(
     sqlite_instance.add_scores_to_memory(scores=[score])
 
     # Fetch the score we just added
-    db_score = sqlite_instance.get_prompt_scores(orchestrator_id=sample_conversations[0].orchestrator_identifier["id"])
+    db_score = sqlite_instance.get_prompt_scores(attack_id=sample_conversations[0].attack_identifier["id"])
 
     assert len(db_score) == 1
     assert db_score[0].score_value == score.score_value
@@ -63,13 +63,13 @@ def test_get_scores_by_orchestrator_id_and_label(
     assert db_score[0].score_value == score.score_value
 
     db_score = sqlite_instance.get_prompt_scores(
-        orchestrator_id=sample_conversations[0].orchestrator_identifier["id"],
+        attack_id=sample_conversations[0].attack_identifier["id"],
         labels={"x": "y"},
     )
     assert len(db_score) == 0
 
     db_score = sqlite_instance.get_prompt_scores(
-        orchestrator_id=str(uuid.uuid4()),
+        attack_id=str(uuid.uuid4()),
     )
     assert len(db_score) == 0
 
@@ -129,13 +129,13 @@ def test_add_score_duplicate_prompt(sqlite_instance: MemoryInterface):
             converted_value="Hello, how are you?",
             conversation_id=conversation_id,
             sequence=0,
-            orchestrator_identifier=attack.get_identifier(),
+            attack_identifier=attack.get_identifier(),
         )
     ]
-    new_orchestrator_id = str(uuid4())
+    new_attack_id = str(uuid4())
     sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
-    sqlite_instance.duplicate_conversation(new_orchestrator_id=new_orchestrator_id, conversation_id=conversation_id)
-    dupe_piece = sqlite_instance.get_prompt_request_pieces(orchestrator_id=new_orchestrator_id)[0]
+    sqlite_instance.duplicate_conversation(new_attack_id=new_attack_id, conversation_id=conversation_id)
+    dupe_piece = sqlite_instance.get_prompt_request_pieces(attack_id=new_attack_id)[0]
     dupe_id = dupe_piece.id
 
     score_id = uuid4()

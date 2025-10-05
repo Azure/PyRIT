@@ -121,7 +121,7 @@ class ConversationManager:
         target.set_system_prompt(
             system_prompt=system_prompt,
             conversation_id=conversation_id,
-            orchestrator_identifier=self._attack_identifier,
+            attack_identifier=self._attack_identifier,
             labels=labels,
         )
 
@@ -306,7 +306,7 @@ class ConversationManager:
         save_to_memory = True
         for piece in request.request_pieces:
             piece.conversation_id = conversation_id
-            piece.orchestrator_identifier = self._attack_identifier
+            piece.attack_identifier = self._attack_identifier
             piece.id = uuid.uuid4()
 
             # Process the piece based on its role
