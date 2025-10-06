@@ -34,7 +34,7 @@ from pyrit.models import (
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.score import FloatScaleThresholdScorer, SelfAskRefusalScorer
+from pyrit.score import FloatScaleThresholdScorer, SelfAskRefusalScorer, TrueFalseScorer
 
 
 def create_mock_chat_target(*, name: str = "MockChatTarget") -> MagicMock:
@@ -50,14 +50,13 @@ def create_mock_chat_target(*, name: str = "MockChatTarget") -> MagicMock:
     return target
 
 
-def create_mock_scorer(*, scorer_type: str, class_name: str) -> MagicMock:
+def create_mock_scorer(*, class_name: str) -> MagicMock:
     """Create a mock scorer with common setup.
 
     Scorers are used to evaluate responses. This helper ensures all mock scorers
     have consistent behavior and required attributes.
     """
-    scorer = MagicMock()
-    scorer.scorer_type = scorer_type
+    scorer = MagicMock(spec=TrueFalseScorer)
     scorer.score_async = AsyncMock()
     scorer.get_identifier.return_value = {"__type__": class_name, "__module__": "test_module"}
     return scorer
@@ -136,12 +135,12 @@ def mock_adversarial_chat() -> MagicMock:
 
 @pytest.fixture
 def mock_objective_scorer() -> MagicMock:
-    return create_mock_scorer(scorer_type="float_scale", class_name="FloatScaleThresholdScorer")
+    return create_mock_scorer(class_name="FloatScaleThresholdScorer")
 
 
 @pytest.fixture
 def mock_refusal_scorer() -> MagicMock:
-    return create_mock_scorer(scorer_type="true_false", class_name="SelfAskRefusalScorer")
+    return create_mock_scorer(class_name="SelfAskRefusalScorer")
 
 
 @pytest.fixture

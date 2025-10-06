@@ -39,7 +39,6 @@ def sample_objective_csv_path():
 @pytest.fixture
 def mock_harm_scorer():
     scorer = MagicMock(spec=FloatScaleScorer)
-    scorer.scorer_type = "float_scale"
     scorer._memory = MagicMock()
     return scorer
 

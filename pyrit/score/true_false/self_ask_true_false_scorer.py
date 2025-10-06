@@ -116,18 +116,18 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
         self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """
-        Scores the given request_response using "self-ask" for the chat target.
+        Scores the given request piece using "self-ask" for the chat target.
 
         Args:
-            request_response (PromptRequestPiece): The prompt request piece containing the text to be scored.
-            task (str): The task based on which the text should be scored (the original attacker model's objective).
-                Currently not supported for this scorer.
+            request_piece (PromptRequestPiece): The prompt request piece containing the text to be scored.
+            objective (Optional[str]): The objective to evaluate against (the original attacker model's objective).
+                Defaults to None.
 
         Returns:
-            list[Score]: The request_response scored.
-                         The category is configured from the TrueFalseQuestionPath.
-                         The score_value is True or False based on which fits best.
-                         metadata can be configured to provide additional information.
+            list[Score]: A list containing a single Score object.
+                The category is configured from the TrueFalseQuestionPath.
+                The score_value is True or False based on which description fits best.
+                Metadata can be configured to provide additional information.
         """
 
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(

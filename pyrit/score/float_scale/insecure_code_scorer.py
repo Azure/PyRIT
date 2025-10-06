@@ -48,14 +48,14 @@ class InsecureCodeScorer(FloatScaleScorer):
         self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """
-        Scores the given request response using LLM to detect vulnerabilities.
+        Scores the given request piece using LLM to detect security vulnerabilities.
 
         Args:
-            request_response (PromptRequestPiece): The code snippet to be scored.
-            task (Optional[str]): Optional task descriptor.
+            request_piece (PromptRequestPiece): The code snippet to be scored.
+            objective (Optional[str]): Optional objective description for scoring. Defaults to None.
 
         Returns:
-            list[Score]: A list of Score objects.
+            list[Score]: A list containing a single Score object.
         """
         # Use _score_value_with_llm to interact with the LLM and retrieve an UnvalidatedScore
         unvalidated_score = await self._score_value_with_llm(

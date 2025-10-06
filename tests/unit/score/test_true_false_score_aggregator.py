@@ -193,7 +193,7 @@ def test_category_none_and_empty_list():
             score_value="true",
             score_value_description="true",
             score_type="true_false",
-            score_category=None,
+            score_category=[],
             score_rationale="test1",
             score_metadata=None,
             prompt_request_response_id="1",

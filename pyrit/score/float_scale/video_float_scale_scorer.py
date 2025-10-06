@@ -20,12 +20,12 @@ class VideoFloatScaleScorer(FloatScaleScorer, _BaseVideoScorer):
 
     The VideoFloatScaleScorer breaks down a video into frames and uses a float scale scoring mechanism.
     Frame scores are aggregated using a FloatScaleAggregatorFunc.
-    
-    By default, uses FloatScaleScorerByCategory.MAX which groups scores by category (useful for scorers like 
+
+    By default, uses FloatScaleScorerByCategory.MAX which groups scores by category (useful for scorers like
     AzureContentFilterScorer that return multiple scores per frame). This returns one aggregated score
     per category (e.g., one for "Hate", one for "Violence", etc.).
-    
-    For scorers that return a single score per frame, or to combine all categories together, 
+
+    For scorers that return a single score per frame, or to combine all categories together,
     use FloatScaleScoreAggregator.MAX, FloatScaleScorerAllCategories.MAX, etc.
     """
 
@@ -55,7 +55,9 @@ class VideoFloatScaleScorer(FloatScaleScorer, _BaseVideoScorer):
                 (returns single score with all categories preserved).
         """
         FloatScaleScorer.__init__(self, validator=validator or self._default_validator)
-        _BaseVideoScorer.__init__(self, image_capable_scorer=image_capable_scorer, num_sampled_frames=num_sampled_frames)
+        _BaseVideoScorer.__init__(
+            self, image_capable_scorer=image_capable_scorer, num_sampled_frames=num_sampled_frames
+        )
         self._score_aggregator = score_aggregator
 
     async def _score_piece_async(

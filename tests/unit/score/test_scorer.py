@@ -15,7 +15,7 @@ from pyrit.exceptions import InvalidJsonException, remove_markdown_json
 from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.score import Scorer, ScorerPromptValidator
+from pyrit.score import Scorer, ScorerPromptValidator, TrueFalseScorer
 
 
 @pytest.fixture
@@ -55,7 +55,7 @@ class DummyValidator(ScorerPromptValidator):
         return True
 
 
-class MockScorer(Scorer):
+class MockScorer(TrueFalseScorer):
     def __init__(self):
         super().__init__(validator=DummyValidator())
 
@@ -113,7 +113,6 @@ async def test_scorer_send_chat_target_async_bad_json_exception_retries(bad_json
     )
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
     scorer = MockScorer()
-    scorer.scorer_type = "true_false"
     with pytest.raises(InvalidJsonException):
         await scorer._score_value_with_llm(
             prompt_target=chat_target,
@@ -134,7 +133,6 @@ async def test_scorer_score_value_with_llm_exception_display_prompt_id():
     chat_target.send_prompt_async = AsyncMock(side_effect=Exception("Test exception"))
 
     scorer = MockScorer()
-    scorer.scorer_type = "true_false"
 
     with pytest.raises(Exception, match="Error scoring prompt with original prompt ID: 123"):
         await scorer._score_value_with_llm(
@@ -151,7 +149,6 @@ async def test_scorer_score_value_with_llm_exception_display_prompt_id():
 @pytest.mark.asyncio
 async def test_scorer_score_value_with_llm_use_provided_attack_identifier(good_json):
     scorer = MockScorer()
-    scorer.scorer_type = "true_false"
 
     prompt_response = PromptRequestResponse(
         request_pieces=[PromptRequestPiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
@@ -187,7 +184,6 @@ async def test_scorer_score_value_with_llm_use_provided_attack_identifier(good_j
 @pytest.mark.asyncio
 async def test_scorer_score_value_with_llm_does_not_add_score_prompt_id_for_empty_attack_identifier(good_json):
     scorer = MockScorer()
-    scorer.scorer_type = "true_false"
 
     prompt_response = PromptRequestResponse(
         request_pieces=[PromptRequestPiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
@@ -227,7 +223,6 @@ async def test_scorer_send_chat_target_async_good_response(good_json):
     chat_target.send_prompt_async = AsyncMock(return_value=good_json_resp)
 
     scorer = MockScorer()
-    scorer.scorer_type = "true_false"
 
     await scorer._score_value_with_llm(
         prompt_target=chat_target,
@@ -252,7 +247,6 @@ async def test_scorer_remove_markdown_json_called(good_json):
     chat_target.send_prompt_async = AsyncMock(return_value=good_json_resp)
 
     scorer = MockScorer()
-    scorer.scorer_type = "true_false"
 
     with patch("pyrit.score.scorer.remove_markdown_json", wraps=remove_markdown_json) as mock_remove_markdown_json:
         await scorer._score_value_with_llm(
@@ -422,10 +416,10 @@ async def test_score_response_async_parallel_execution():
     assert score1_1 in result["auxiliary_scores"]
     assert score2_1 in result["auxiliary_scores"]
     scorer1.score_async.assert_any_call(
-        request_response=response, objective="test task", role_filter="assistant", skip_on_error=True
+        request_response=response, objective="test task", role_filter="assistant", skip_on_error_result=True
     )
     scorer2.score_async.assert_any_call(
-        request_response=response, objective="test task", role_filter="assistant", skip_on_error=True
+        request_response=response, objective="test task", role_filter="assistant", skip_on_error_result=True
     )
 
 
@@ -709,7 +703,7 @@ async def test_score_response_async_multiple_pieces():
 
 @pytest.mark.asyncio
 async def test_score_response_async_skip_on_error_true():
-    """Test score_response_async skips error pieces when skip_on_error=True."""
+    """Test score_response_async skips error pieces when skip_on_error_result=True."""
     piece1 = PromptRequestPiece(role="assistant", original_value="good response", conversation_id="test-convo")
     piece2 = PromptRequestPiece(
         role="assistant", original_value="error", response_error="blocked", conversation_id="test-convo"
@@ -733,7 +727,7 @@ async def test_score_response_async_skip_on_error_true():
         auxiliary_scorers=[aux_scorer],
         objective_scorer=obj_scorer,
         objective="test task",
-        skip_on_error=True,
+        skip_on_error_result=True,
     )
 
     # Should only score the non-error piece
@@ -747,7 +741,7 @@ async def test_score_response_async_skip_on_error_true():
 
 @pytest.mark.asyncio
 async def test_score_response_async_skip_on_error_false():
-    """Test score_response_async includes error pieces when skip_on_error=False."""
+    """Test score_response_async includes error pieces when skip_on_error_result=False."""
     piece1 = PromptRequestPiece(role="assistant", original_value="good response", conversation_id="test-convo")
     piece2 = PromptRequestPiece(
         role="assistant", original_value="error", response_error="blocked", conversation_id="test-convo"
@@ -771,7 +765,7 @@ async def test_score_response_async_skip_on_error_false():
         auxiliary_scorers=[aux_scorer],
         objective_scorer=obj_scorer,
         objective="test task",
-        skip_on_error=False,
+        skip_on_error_result=False,
     )
 
     # Temporary fix means there should only be 1 auxiliary score (first piece)

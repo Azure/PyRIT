@@ -6,14 +6,12 @@ from typing import Optional
 from pyrit.models.score import Score
 from pyrit.score.float_scale.float_scale_score_aggregator import (
     FloatScaleScoreAggregator,
-    FloatScaleScorerByCategory,
     FloatScaleScorerAllCategories,
+    FloatScaleScorerByCategory,
 )
 
 
-def _mk_score(
-    val: float, *, category: Optional[list[str]] = None, prr_id: str = "1", rationale: str = ""
-) -> Score:
+def _mk_score(val: float, *, category: Optional[list[str]] = None, prr_id: str = "1", rationale: str = "") -> Score:
     """Helper to create a float scale score."""
     return Score(
         score_value=str(val),
@@ -114,11 +112,11 @@ def test_by_category_groups_correctly():
     ]
     results = FloatScaleScorerByCategory.MAX(scores)
     assert len(results) == 2
-    
+
     # Results should be sorted by category name
     hate_result = next(r for r in results if r.category == ["Hate"])
     violence_result = next(r for r in results if r.category == ["Violence"])
-    
+
     assert hate_result.value == 0.7
     assert violence_result.value == 0.8
 
@@ -133,10 +131,10 @@ def test_by_category_average():
     ]
     results = FloatScaleScorerByCategory.AVERAGE(scores)
     assert len(results) == 2
-    
+
     hate_result = next(r for r in results if r.category == ["Hate"])
     violence_result = next(r for r in results if r.category == ["Violence"])
-    
+
     assert hate_result.value == 0.3
     assert violence_result.value == 0.7
 
@@ -151,10 +149,10 @@ def test_by_category_min():
     ]
     results = FloatScaleScorerByCategory.MIN(scores)
     assert len(results) == 2
-    
+
     hate_result = next(r for r in results if r.category == ["Hate"])
     violence_result = next(r for r in results if r.category == ["Violence"])
-    
+
     assert hate_result.value == 0.3
     assert violence_result.value == 0.2
 
@@ -167,14 +165,14 @@ def test_by_category_empty_strings_treated_as_uncategorized():
         _mk_score(0.5, category=["Hate"]),
     ]
     results = FloatScaleScorerByCategory.MAX(scores)
-    
+
     # Should have 2 groups: uncategorized (empty) and "Hate"
     assert len(results) == 2
-    
+
     # Find the uncategorized group (should have empty category list)
     uncategorized_result = next(r for r in results if r.category == [])
     hate_result = next(r for r in results if r.category == ["Hate"])
-    
+
     assert uncategorized_result.value == 0.7  # Max of 0.3 and 0.7
     assert hate_result.value == 0.5
 
@@ -187,12 +185,12 @@ def test_by_category_none_categories_grouped_as_uncategorized():
         _mk_score(0.8, category=["Hate"]),
     ]
     results = FloatScaleScorerByCategory.AVERAGE(scores)
-    
+
     assert len(results) == 2
-    
+
     uncategorized_result = next(r for r in results if r.category == [])
     hate_result = next(r for r in results if r.category == ["Hate"])
-    
+
     assert uncategorized_result.value == 0.5  # Average of 0.4 and 0.6
     assert hate_result.value == 0.8
 
@@ -205,14 +203,14 @@ def test_by_category_multiple_categories_uses_first():
         _mk_score(0.3, category=["Violence"]),
     ]
     results = FloatScaleScorerByCategory.MAX(scores)
-    
+
     # The first score should be grouped under "Hate" (first category)
     # But its category list should include both after deduplication
     assert len(results) == 2
-    
+
     hate_result = next(r for r in results if "Hate" in r.category)
     violence_result = next(r for r in results if r.category == ["Violence"])
-    
+
     assert hate_result.value == 0.7  # Max of 0.5 and 0.7
     assert violence_result.value == 0.3
 
@@ -224,7 +222,7 @@ def test_by_category_description_includes_category_name():
         _mk_score(0.7, category=["Hate"]),
     ]
     results = FloatScaleScorerByCategory.MAX(scores)
-    
+
     assert len(results) == 1
     assert "Hate" in results[0].description
 
@@ -238,7 +236,7 @@ def test_all_categories_combines_everything():
         _mk_score(0.5, category=["Sexual"]),
     ]
     results = FloatScaleScorerAllCategories.MAX(scores)
-    
+
     assert len(results) == 1
     assert results[0].value == 0.7  # Max across all categories
 
@@ -251,7 +249,7 @@ def test_all_categories_preserves_all_unique_categories():
         _mk_score(0.5, category=["Sexual"]),
     ]
     results = FloatScaleScorerAllCategories.AVERAGE(scores)
-    
+
     assert len(results) == 1
     assert results[0].value == 0.5  # Average of all scores
     assert results[0].category == ["Hate", "Sexual", "Violence"]  # All categories, sorted
@@ -265,7 +263,7 @@ def test_all_categories_deduplicates_categories():
         _mk_score(0.5, category=["Violence"]),
     ]
     results = FloatScaleScorerAllCategories.MIN(scores)
-    
+
     assert len(results) == 1
     assert results[0].value == 0.3
     assert results[0].category == ["Hate", "Violence"]  # Deduplicated and sorted
@@ -279,7 +277,7 @@ def test_all_categories_filters_empty_strings():
         _mk_score(0.5, category=[""]),
     ]
     results = FloatScaleScorerAllCategories.MAX(scores)
-    
+
     assert len(results) == 1
     assert results[0].value == 0.7
     assert results[0].category == ["Hate"]  # Only valid category
@@ -298,7 +296,7 @@ def test_single_score():
     """Test that single score aggregation works correctly."""
     scores = [_mk_score(0.5, category=["Hate"])]
     results = FloatScaleScoreAggregator.AVERAGE(scores)
-    
+
     assert len(results) == 1
     assert results[0].value == 0.5
     assert results[0].category == ["Hate"]
@@ -310,6 +308,6 @@ def test_values_clamped_to_range():
     # But the aggregator should handle it defensively
     scores = [_mk_score(0.0, category=["test"]), _mk_score(1.0, category=["test"])]
     results = FloatScaleScoreAggregator.MAX(scores)
-    
+
     assert results[0].value >= 0.0
     assert results[0].value <= 1.0

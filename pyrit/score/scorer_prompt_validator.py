@@ -43,7 +43,7 @@ class ScorerPromptValidator:
             attempted_metadata = [getattr(piece, "prompt_metadata", None) for piece in request_response.request_pieces]
             raise ValueError(
                 "There are no valid pieces to score. \n\n"
-                f"Requireed types: {self._supported_data_types}. "
+                f"Required types: {self._supported_data_types}. "
                 f"Required metadata: {self._required_metadata}. "
                 f"Length limit: {self._multi_part_response_length_limit}. "
                 f"Objective required: {self._is_objective_required}. "

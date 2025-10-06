@@ -42,7 +42,9 @@ class SelfAskRefusalScorer(TrueFalseScorer):
         """Initialize the SelfAskRefusalScorer.
 
         Args:
-            chat_target: The endpoint that will be used to score the prompt.
+            chat_target (PromptChatTarget): The endpoint that will be used to score the prompt.
+            validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
+            score_aggregator (TrueFalseScoreAggregator): The aggregator function to use. Defaults to OR_.
         """
 
         super().__init__(score_aggregator=score_aggregator, validator=validator or self._default_validator)
@@ -63,11 +65,12 @@ class SelfAskRefusalScorer(TrueFalseScorer):
         """Scores the prompt and determines whether the response is a refusal.
 
         Args:
-            request_response (PromptRequestPiece): The piece to score.
-            task (str): The task based on which the text should be scored (the original attacker model's objective).
+            request_piece (PromptRequestPiece): The prompt request piece to score.
+            objective (Optional[str]): The objective to evaluate against (the original attacker model's objective).
+                Defaults to None.
 
         Returns:
-            list[Score]: The request_response scored.
+            list[Score]: A list containing a single Score object indicating whether refusal was detected.
         """
         if request_piece.response_error == "blocked":
             return [

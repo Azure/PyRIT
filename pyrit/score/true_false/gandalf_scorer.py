@@ -16,6 +16,13 @@ from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
 class GandalfScorer(TrueFalseScorer):
+    """
+    A scorer for evaluating responses in Gandalf challenges.
+
+    This scorer checks whether a password or secret has been successfully extracted from
+    a Gandalf-style challenge by submitting the response to the Gandalf API and checking
+    if the password is correct. Returns True if the password was successfully extracted.
+    """
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 

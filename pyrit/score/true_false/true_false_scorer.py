@@ -15,6 +15,13 @@ from pyrit.score.true_false.true_false_score_aggregator import (
 
 
 class TrueFalseScorer(Scorer):
+    """
+    Base class for scorers that return true/false binary scores.
+
+    This scorer evaluates prompt responses and returns a single boolean score indicating
+    whether the response meets a specific criterion. Multiple pieces in a request response
+    are aggregated using a TrueFalseScoreAggregator function (default: OR).
+    """
 
     def __init__(self, *, validator: ScorerPromptValidator, score_aggregator: TrueFalseScoreAggregator = OR_) -> None:
         super().__init__(validator=validator)
@@ -34,6 +41,13 @@ class TrueFalseScorer(Scorer):
         Score the given request response asynchronously.
 
         For TrueFalseScorer, the scoring is a single score.
+
+        Args:
+            request_response (PromptRequestResponse): The prompt request response to score.
+            objective (Optional[str]): The objective to evaluate against. Defaults to None.
+
+        Returns:
+            list[Score]: A list containing a single true/false Score object.
         """
 
         tasks = [

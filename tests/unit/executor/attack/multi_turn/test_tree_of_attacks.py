@@ -151,7 +151,7 @@ class AttackBuilder:
         """Set up default mocks for all required components."""
         self.objective_target = self._create_mock_target()
         self.adversarial_chat = self._create_mock_chat()
-        self.objective_scorer = cast(Scorer, self._create_mock_scorer("MockScorer"))
+        self.objective_scorer = self._create_mock_scorer("MockScorer")
         return self
 
     def with_tree_params(self, **kwargs):
@@ -166,7 +166,7 @@ class AttackBuilder:
 
     def with_auxiliary_scorers(self, count: int = 1):
         """Add auxiliary scorers."""
-        self.auxiliary_scorers = [cast(Scorer, self._create_mock_scorer(f"MockAuxScorer{i}")) for i in range(count)]
+        self.auxiliary_scorers = [self._create_mock_aux_scorer(f"MockAuxScorer{i}") for i in range(count)]
         return self
 
     def with_prompt_normalizer(self):
@@ -214,7 +214,16 @@ class AttackBuilder:
         return cast(PromptChatTarget, chat)
 
     @staticmethod
-    def _create_mock_scorer(name: str) -> Scorer:
+    def _create_mock_scorer(name: str) -> TrueFalseScorer:
+        scorer = MagicMock(spec=TrueFalseScorer)
+        scorer.scorer_type = "true_false"
+        scorer.score_async = AsyncMock(return_value=[])
+        scorer.get_identifier.return_value = {"__type__": name, "__module__": "test_module"}
+        return cast(TrueFalseScorer, scorer)
+
+    @staticmethod
+    def _create_mock_aux_scorer(name: str) -> Scorer:
+        """Create a mock auxiliary scorer (can be any Scorer type)."""
         scorer = MagicMock(spec=Scorer)
         scorer.scorer_type = "float_scale"
         scorer.score_async = AsyncMock(return_value=[])

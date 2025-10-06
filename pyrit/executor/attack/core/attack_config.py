@@ -57,13 +57,21 @@ class AttackScoringConfig:
     # Only applies to float_scale scorers
     successful_objective_threshold: float = 0.8
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate configuration values."""
         if not 0.0 <= self.successful_objective_threshold <= 1.0:
             raise ValueError(
                 f"successful_objective_threshold must be between 0.0 and 1.0, "
                 f"got {self.successful_objective_threshold}"
             )
+
+        # Enforce objective scorer type: must be a TrueFalseScorer if provided
+        if self.objective_scorer and not isinstance(self.objective_scorer, TrueFalseScorer):
+            raise ValueError("Objective scorer must be a TrueFalseScorer")
+
+        # Enforce refusal scorer type: must be a TrueFalseScorer if provided
+        if self.refusal_scorer and not isinstance(self.refusal_scorer, TrueFalseScorer):
+            raise ValueError("Refusal scorer must be a TrueFalseScorer")
 
 
 @dataclass

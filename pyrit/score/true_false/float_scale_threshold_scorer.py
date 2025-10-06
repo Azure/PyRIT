@@ -26,6 +26,14 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
         threshold: float,
         float_scale_aggregator: FloatScaleAggregatorFunc = FloatScaleScoreAggregator.MAX,
     ) -> None:
+        """Initialize the FloatScaleThresholdScorer.
+
+        Args:
+            scorer (FloatScaleScorer): The underlying float scale scorer to use.
+            threshold (float): The threshold value between 0 and 1. Scores >= threshold are True, otherwise False.
+            float_scale_aggregator (FloatScaleAggregatorFunc): The aggregator function to use for combining
+                multiple float scale scores. Defaults to FloatScaleScoreAggregator.MAX.
+        """
         self._scorer = scorer
         self._threshold = threshold
         self._float_scale_aggregator = float_scale_aggregator
@@ -46,12 +54,13 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
         """Scores the piece using the underlying float-scale scorer and thresholds the resulting score.
 
         Args:
-            request_response (PromptRequestResponse): The piece to score.
-            objective (str): The task based on which the text should be scored (the original
-                attacker model's objective).
+            request_response (PromptRequestResponse): The prompt request response to score.
+            objective (Optional[str]): The objective to evaluate against (the original attacker model's objective).
+                Defaults to None.
+            role_filter (Optional[ChatMessageRole]): Optional filter for message roles. Defaults to None.
 
         Returns:
-            list[Score]: The score.
+            list[Score]: A list containing a single true/false Score object based on the threshold comparison.
         """
         scores = await self._scorer.score_async(
             request_response,

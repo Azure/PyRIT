@@ -31,7 +31,7 @@ from pyrit.models import (
 from pyrit.models.score import ScoreType
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
-from pyrit.score import Scorer
+from pyrit.score import Scorer, TrueFalseScorer
 
 
 @pytest.fixture
@@ -53,8 +53,7 @@ def mock_adversarial_chat() -> MagicMock:
 
 @pytest.fixture
 def mock_objective_scorer() -> MagicMock:
-    scorer = MagicMock(spec=Scorer)
-    scorer.scorer_type = "true_false"
+    scorer = MagicMock(spec=TrueFalseScorer)
     scorer.score_async = AsyncMock()
     scorer.get_identifier.return_value = {"__type__": "MockScorer", "__module__": "test_module"}
     return scorer
@@ -1124,7 +1123,6 @@ class TestAttackExecution:
         expected_achieved: bool,
     ):
         """Test attack execution with different scoring thresholds."""
-        mock_objective_scorer.scorer_type = scorer_type
 
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
         scoring_config = AttackScoringConfig(

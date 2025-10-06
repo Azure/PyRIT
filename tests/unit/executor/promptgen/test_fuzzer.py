@@ -24,7 +24,12 @@ from pyrit.prompt_converter import (
     FuzzerExpandConverter,
     FuzzerShortenConverter,
 )
-from pyrit.score import FloatScaleThresholdScorer, Scorer
+from pyrit.score import (
+    FloatScaleScorer,
+    FloatScaleThresholdScorer,
+    Scorer,
+    TrueFalseScorer,
+)
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -66,8 +71,7 @@ class TestFuzzerGenerator:
     @pytest.fixture
     def mock_scorer(self) -> MagicMock:
         """Mock scorer for testing."""
-        scorer = MagicMock(Scorer)
-        scorer.scorer_type = "true_false"
+        scorer = MagicMock(TrueFalseScorer)
         return scorer
 
     @pytest.fixture
@@ -285,8 +289,7 @@ class TestFuzzerGenerator:
         self, scoring_target: MockPromptTarget, template_converters: list[FuzzerConverter]
     ) -> None:
         """Test _is_jailbreak method with float scale scorer."""
-        mock_scorer = MagicMock()
-        mock_scorer.scorer_type = "float_scale"
+        mock_scorer = MagicMock(FloatScaleScorer)
 
         generator = FuzzerGenerator(
             objective_target=scoring_target,

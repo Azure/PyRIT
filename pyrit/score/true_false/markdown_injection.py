@@ -14,6 +14,13 @@ from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
 class MarkdownInjectionScorer(TrueFalseScorer):
+    """
+    A scorer that detects markdown injection attempts in text responses.
+
+    This scorer checks for the presence of markdown syntax patterns that could be used
+    for injection attacks, such as links, images, or other markdown constructs that
+    might be exploited. Returns True if markdown injection is detected.
+    """
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 
@@ -30,14 +37,14 @@ class MarkdownInjectionScorer(TrueFalseScorer):
         Check for markdown injection in the text. It returns True if markdown injection is detected, else False.
 
         Args:
-            request_response (PromptRequestPiece): The PromptRequestPiece object containing the text to check for
+            request_piece (PromptRequestPiece): The PromptRequestPiece object containing the text to check for
                 markdown injection.
-            task (str): The task based on which the text should be scored (the original attacker model's objective).
-                Currently not supported for this scorer.
+            objective (Optional[str]): The objective to evaluate against. Defaults to None.
+                Currently not used for this scorer.
 
         Returns:
-            list[Score]: A list of Score objects with the score value as True if markdown injection is detected,
-            else False.
+            list[Score]: A list containing a single Score object with value True if markdown injection is detected,
+                else False.
         """
         text = request_piece.converted_value
 

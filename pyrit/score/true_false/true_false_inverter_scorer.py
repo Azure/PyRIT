@@ -15,6 +15,13 @@ class TrueFalseInverterScorer(TrueFalseScorer):
     """A scorer that inverts a true false score."""
 
     def __init__(self, *, scorer: TrueFalseScorer, validator: Optional[ScorerPromptValidator] = None) -> None:
+        """Initialize the TrueFalseInverterScorer.
+
+        Args:
+            scorer (TrueFalseScorer): The underlying true/false scorer whose results will be inverted.
+            validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
+                Note: This parameter is present for signature compatibility but is not used.
+        """
 
         super().__init__(validator=ScorerPromptValidator())
 
@@ -29,14 +36,16 @@ class TrueFalseInverterScorer(TrueFalseScorer):
         objective: Optional[str] = None,
         role_filter: Optional[ChatMessageRole] = None,
     ) -> list[Score]:
-        """Scores the piece using the underlying true-false scorer and returns the opposite score.
+        """Scores the piece using the underlying true-false scorer and returns the inverted score.
 
         Args:
-            request_response (PromptRequestPiece): The piece to score.
-            task (str): The task based on which the text should be scored (the original attacker model's objective).
+            request_response (PromptRequestResponse): The prompt request response to score.
+            objective (Optional[str]): The objective to evaluate against (the original attacker model's objective).
+                Defaults to None.
+            role_filter (Optional[ChatMessageRole]): Optional filter for message roles. Defaults to None.
 
         Returns:
-            list[Score]: The scores.
+            list[Score]: A list containing a single Score object with the inverted true/false value.
         """
         scores = await self._scorer.score_async(
             request_response,

@@ -47,7 +47,10 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
 
         Args:
             chat_target (PromptChatTarget): The chat target to use for the scorer.
-            true_false_question_path (pathlib.Path): The path to the true/false question file.
+            true_false_question_path (Optional[pathlib.Path]): The path to the true/false question file.
+                Defaults to None, which uses the default question_answering.yaml file.
+            validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
+            score_aggregator (TrueFalseScoreAggregator): The aggregator function to use. Defaults to OR_.
         """
 
         true_false_question_path = self._verify_and_resolve_path(
@@ -66,14 +69,15 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
         self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """
-        Score the request_reponse using the QuestionAnsweringEntry
-        and return a single score object
+        Score the request piece using question answering evaluation.
 
         Args:
-            request_response (PromptRequestPiece): The answer given by the target
-            task (QuestionAnsweringEntry): The objective, which usually contains the question and the correct answer
+            request_piece (PromptRequestPiece): The answer given by the target to be scored.
+            objective (Optional[str]): The objective, which usually contains the question and the correct answer.
+                Defaults to None.
+
         Returns:
-            Score: A single Score object representing the result
+            list[Score]: A list containing a single Score object representing whether the answer was correct.
         """
 
         prompt = (

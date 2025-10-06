@@ -14,11 +14,11 @@ FloatScaleAggregatorFunc = Callable[[Iterable[Score]], List[ScoreAggregatorResul
 
 def _build_rationale(scores: List[Score], *, aggregate_description: str) -> tuple[str, str]:
     """Build description and rationale for aggregated scores.
-    
+
     Args:
         scores: List of Score objects to aggregate.
         aggregate_description: Base description for the aggregated result.
-        
+
     Returns:
         Tuple of (description, rationale) strings.
     """
@@ -29,31 +29,29 @@ def _build_rationale(scores: List[Score], *, aggregate_description: str) -> tupl
         description = aggregate_description
         # Only include scores with non-empty rationales
         sep = "-"
-        rationale_parts = [
-            f"   {sep} {s.score_rationale}" for s in scores if s.score_rationale
-        ]
+        rationale_parts = [f"   {sep} {s.score_rationale}" for s in scores if s.score_rationale]
         rationale = "\n".join(rationale_parts) if rationale_parts else ""
-    
+
     return description, rationale
 
 
 def _combine_metadata_and_categories(scores: List[Score]) -> tuple[Dict[str, Union[str, int]], List[str]]:
     """Combine metadata and categories from multiple scores with deduplication.
-    
+
     Args:
         scores: List of Score objects.
-        
+
     Returns:
         Tuple of (metadata dict, sorted category list with empty strings filtered).
     """
     metadata: Dict[str, Union[str, int]] = {}
     category_set: set[str] = set()
-    
+
     for s in scores:
         metadata = combine_dict(metadata, getattr(s, "score_metadata", None))
         score_categories = getattr(s, "score_category", None) or []
         category_set.update([c for c in score_categories if c])
-    
+
     category = sorted(category_set)
     return metadata, category
 
@@ -75,8 +73,6 @@ def _lift(
         FloatScaleAggregatorFunc: Aggregator function that reduces a sequence of float-scale Scores
             into a list containing a single ScoreAggregatorResult with a float value in [0, 1].
     """
-
-    sep = "-"
 
     def aggregator(scores: Iterable[Score]) -> List[ScoreAggregatorResult]:
         # Validate types and normalize input
@@ -130,7 +126,7 @@ class FloatScaleScoreAggregator:
 
     AVERAGE: FloatScaleAggregatorFunc = _lift(
         "AVERAGE",
-        result_func=lambda xs: sum(xs) / len(xs) if xs else 0.0,
+        result_func=lambda xs: round(sum(xs) / len(xs), 10) if xs else 0.0,
         aggregate_description="Average of constituent scorers in an AVERAGE composite scorer.",
     )
 
@@ -174,8 +170,6 @@ def _lift_by_category(
         FloatScaleMultiScoreAggregator: Aggregator function that reduces a sequence of float-scale Scores
             into one or more ScoreAggregatorResult objects.
     """
-
-    sep = "-"
 
     def aggregator(scores: Iterable[Score]) -> List[ScoreAggregatorResult]:
         # Validate types and normalize input
@@ -223,7 +217,7 @@ def _lift_by_category(
             categories = getattr(score, "score_category", None) or []
             # Filter out empty strings from categories
             categories = [c for c in categories if c]
-            
+
             if not categories:
                 # If no category (or only empty strings), use empty string as key
                 category_groups[""].append(score)
@@ -281,7 +275,7 @@ class FloatScaleScorerByCategory:
 
     AVERAGE: FloatScaleAggregatorFunc = _lift_by_category(
         "AVERAGE",
-        result_func=lambda xs: sum(xs) / len(xs) if xs else 0.0,
+        result_func=lambda xs: round(sum(xs) / len(xs), 10) if xs else 0.0,
         aggregate_description="Average of constituent scorers",
         group_by_category=True,
     )
@@ -318,7 +312,7 @@ class FloatScaleScorerAllCategories:
 
     AVERAGE: FloatScaleAggregatorFunc = _lift_by_category(
         "AVERAGE",
-        result_func=lambda xs: sum(xs) / len(xs) if xs else 0.0,
+        result_func=lambda xs: round(sum(xs) / len(xs), 10) if xs else 0.0,
         aggregate_description="Average of all constituent scorers across categories",
         group_by_category=False,
     )

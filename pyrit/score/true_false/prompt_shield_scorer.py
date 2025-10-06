@@ -36,6 +36,13 @@ class PromptShieldScorer(TrueFalseScorer):
         validator: Optional[ScorerPromptValidator] = None,
         score_aggregator: TrueFalseScoreAggregator = OR_,
     ) -> None:
+        """Initialize the PromptShieldScorer.
+
+        Args:
+            prompt_shield_target (PromptShieldTarget): The Prompt Shield target to use for scoring.
+            validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
+            score_aggregator (TrueFalseScoreAggregator): The aggregator function to use. Defaults to OR_.
+        """
         super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
         self._prompt_target = prompt_shield_target
 

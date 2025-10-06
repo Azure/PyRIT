@@ -35,12 +35,15 @@ class QuestionAnswerScorer(TrueFalseScorer):
         score_aggregator: TrueFalseScoreAggregator = OR_,
     ) -> None:
         """
-        Scores PromptRequestResponse objects that contain correct_answer_index and/or correct_answer metadata
+        Initialize the QuestionAnswerScorer.
 
         Args:
             correct_answer_matching_patterns (list[str]): A list of patterns to check for in the response. If any
                 pattern is found in the response, the score will be True. These patterns should be format strings
-                that will be formatted with the correct answer metadata.
+                that will be formatted with the correct answer metadata. Defaults to CORRECT_ANSWER_MATCHING_PATTERNS.
+            category (Optional[list[str]]): Optional list of categories for the score. Defaults to None.
+            validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
+            score_aggregator (TrueFalseScoreAggregator): The aggregator function to use. Defaults to OR_.
         """
         super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
         self._correct_answer_matching_patterns = correct_answer_matching_patterns
@@ -50,14 +53,16 @@ class QuestionAnswerScorer(TrueFalseScorer):
         self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """
-        Score the request_reponse using the QuestionAnsweringEntry
-        and return a single score object
+        Score the request piece using question answering evaluation.
 
         Args:
-            request_response (PromptRequestPiece): The answer given by the target
-            task (QuestionAnsweringEntry): The entry containing the original question and the correct answer
+            request_piece (PromptRequestPiece): The answer given by the target, which must contain
+                'correct_answer_index' and 'correct_answer' in prompt_metadata.
+            objective (Optional[str]): The objective to evaluate against. Defaults to None.
+                Currently not used for this scorer.
+
         Returns:
-            Score: A single Score object representing the result
+            list[Score]: A list containing a single Score object indicating whether the correct answer was found.
         """
 
         result = False

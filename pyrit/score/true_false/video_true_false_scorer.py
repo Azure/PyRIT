@@ -12,6 +12,7 @@ from pyrit.score.true_false.true_false_score_aggregator import (
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 from pyrit.score.video_scorer import _BaseVideoScorer
 
+
 class VideoTrueFalseScorer(TrueFalseScorer, _BaseVideoScorer):
     """
     A scorer that processes videos by extracting frames and scoring them using a true/false image scorer.
@@ -40,8 +41,12 @@ class VideoTrueFalseScorer(TrueFalseScorer, _BaseVideoScorer):
             validator: Validator for the scorer. Defaults to video_path data type validator.
             score_aggregator: Aggregator for combining frame scores. Defaults to OR.
         """
-        TrueFalseScorer.__init__(self, validator=validator or self._default_validator, score_aggregator=score_aggregator)
-        _BaseVideoScorer.__init__(self, image_capable_scorer=image_capable_scorer, num_sampled_frames=num_sampled_frames)
+        TrueFalseScorer.__init__(
+            self, validator=validator or self._default_validator, score_aggregator=score_aggregator
+        )
+        _BaseVideoScorer.__init__(
+            self, image_capable_scorer=image_capable_scorer, num_sampled_frames=num_sampled_frames
+        )
 
     async def _score_piece_async(
         self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
@@ -56,7 +61,7 @@ class VideoTrueFalseScorer(TrueFalseScorer, _BaseVideoScorer):
         Returns:
             List containing a single aggregated score for the video.
         """
-        
+
         # Get scores for all frames
         frame_scores = await self._score_frames_async(request_piece=request_piece, objective=objective)
 

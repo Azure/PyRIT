@@ -25,6 +25,13 @@ from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
 
 class AzureContentFilterScorer(FloatScaleScorer):
+    """
+    A scorer that uses Azure Content Safety API to evaluate text and images for harmful content.
+
+    This scorer analyzes content across multiple harm categories (hate, self-harm, sexual, violence)
+    and returns a score for each category in the range [0, 1], where higher scores indicate
+    more severe content. Supports both text and image inputs.
+    """
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text", "image_path"],

@@ -23,7 +23,7 @@ from pyrit.models import (
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
-from pyrit.score import Scorer, TrueFalseScorer
+from pyrit.score import TrueFalseScorer
 
 
 @pytest.fixture
@@ -467,16 +467,6 @@ class TestSkeletonKeyAttackParameterValidation:
         # Test that it validates max_attempts_on_failure like parent
         with pytest.raises(ValueError):
             SkeletonKeyAttack(objective_target=mock_target, max_attempts_on_failure=-1)
-
-    def test_skeleton_key_with_invalid_scorer_type(self, mock_target):
-        """Test that invalid scorer types are rejected."""
-        mock_scorer = MagicMock(spec=Scorer)
-        mock_scorer.scorer_type = "float_scale"  # Should be true_false
-
-        attack_scoring_config = AttackScoringConfig(objective_scorer=mock_scorer)
-
-        with pytest.raises(ValueError, match="Objective scorer must be a true/false scorer"):
-            SkeletonKeyAttack(objective_target=mock_target, attack_scoring_config=attack_scoring_config)
 
 
 @pytest.mark.usefixtures("patch_central_database")

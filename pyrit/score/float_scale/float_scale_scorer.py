@@ -15,6 +15,13 @@ from pyrit.score.scorer import Scorer
 
 
 class FloatScaleScorer(Scorer):
+    """
+    Base class for scorers that return floating-point scores in the range [0, 1].
+
+    This scorer evaluates prompt responses and returns numeric scores indicating the degree
+    to which a response exhibits certain characteristics. Each piece in a request response
+    is scored independently, returning one score per piece.
+    """
 
     def __init__(self, *, validator) -> None:
         super().__init__(validator=validator)
@@ -32,6 +39,13 @@ class FloatScaleScorer(Scorer):
 
         For FloatScaleScorer, the scoring is based on a float scale from 0 to 1. It scores every piece
         of the request_response.
+
+        Args:
+            request_response (PromptRequestResponse): The prompt request response to score.
+            objective (Optional[str]): The objective to evaluate against. Defaults to None.
+
+        Returns:
+            list[Score]: A list of Score objects, one for each supported piece in the request response.
         """
         if not request_response.request_pieces:
             return []

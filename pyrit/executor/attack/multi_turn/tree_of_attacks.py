@@ -461,7 +461,7 @@ class _TreeOfAttacksNode:
             auxiliary_scorers=self._auxiliary_scorers,
             role_filter="assistant",
             objective=objective,
-            skip_on_error=True,
+            skip_on_error_result=True,
         )
 
         # Extract objective score

@@ -13,10 +13,12 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
     """
     Create scores from manual human input using Gradio and adds them to the database.
 
-    In the future this will not be a TrueFalseScorer. However, it is all that is supported currently
+    In the future this will not be a TrueFalseScorer. However, it is all that is supported currently.
 
-    Parameters:
-        open_browser(bool): The scorer will open the Gradio interface in a browser instead of opening it in PyWebview
+    Args:
+        open_browser (bool): If True, the scorer will open the Gradio interface in a browser
+            instead of opening it in PyWebview. Defaults to False.
+        validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
     """
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
@@ -32,6 +34,15 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
     async def _score_piece_async(
         self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
     ) -> list[Score]:
+        """Score a prompt request piece using human input through Gradio interface.
+
+        Args:
+            request_piece (PromptRequestPiece): The prompt request piece to be scored by a human.
+            objective (Optional[str]): The objective to evaluate against. Defaults to None.
+
+        Returns:
+            list[Score]: A list containing a single Score object based on human evaluation.
+        """
 
         try:
             score = await asyncio.to_thread(self.retrieve_score, request_piece, objective=objective)
@@ -41,6 +52,15 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
             raise
 
     def retrieve_score(self, request_prompt: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
+        """Retrieve a score from the human evaluator through the RPC server.
+
+        Args:
+            request_prompt (PromptRequestPiece): The prompt request piece to be scored.
+            objective (Optional[str]): The objective to evaluate against. Defaults to None.
+
+        Returns:
+            list[Score]: A list containing a single Score object from the human evaluator.
+        """
         self._rpc_server.wait_for_client()
         self._rpc_server.send_score_prompt(request_prompt)
         score = self._rpc_server.wait_for_score()

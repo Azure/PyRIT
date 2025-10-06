@@ -33,8 +33,10 @@ class SubStringScorer(TrueFalseScorer):
         """Initialize the SubStringScorer.
 
         Args:
-            substring: The substring to search for in the text.
-            category: Optional category for the score. Defaults to empty string.
+            substring (str): The substring to search for in the text.
+            categories (Optional[list[str]]): Optional list of categories for the score. Defaults to None.
+            aggregator (TrueFalseScoreAggregator): The aggregator function to use. Defaults to OR_.
+            validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
         """
         super().__init__(score_aggregator=aggregator, validator=validator or self._default_validator)
         self._substring = substring
@@ -43,15 +45,16 @@ class SubStringScorer(TrueFalseScorer):
     async def _score_piece_async(
         self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
     ) -> list[Score]:
-        """Score the given request_response based on presence of the substring.
+        """Score the given request piece based on presence of the substring.
 
         Args:
-            request_response: The piece to score.
-            task: The task based on which the text should be scored (unused).
+            request_piece (PromptRequestPiece): The prompt request piece to score.
+            objective (Optional[str]): The objective to evaluate against. Defaults to None.
+                Currently not used for this scorer.
 
         Returns:
-            A list containing a single Score object with a boolean value indicating
-            whether the substring is present in the text.
+            list[Score]: A list containing a single Score object with a boolean value indicating
+                whether the substring is present in the text.
         """
         expected_output_substring_present = self._substring in request_piece.converted_value
 

@@ -47,7 +47,9 @@ class SelfAskCategoryScorer(TrueFalseScorer):
 
         Args:
             chat_target (PromptChatTarget): The chat target to interact with.
-            content_classifier_path (Path): The path to the classifier file.
+            content_classifier_path (Union[str, Path]): The path to the classifier YAML file.
+            score_aggregator (TrueFalseScoreAggregator): The aggregator function to use. Defaults to OR_.
+            validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
         """
 
         super().__init__(score_aggregator=score_aggregator, validator=validator or self._default_validator)

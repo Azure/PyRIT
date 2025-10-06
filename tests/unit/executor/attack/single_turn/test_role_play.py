@@ -45,7 +45,6 @@ def mock_adversarial_chat_target():
 def mock_scorer():
     """Create a mock true/false scorer for testing"""
     scorer = MagicMock(spec=TrueFalseScorer)
-    scorer.scorer_type = "true_false"
     scorer.score_text_async = AsyncMock()
     return scorer
 
@@ -137,8 +136,7 @@ class TestRolePlayAttackInitialization:
     ):
         """Test RolePlayAttack initialization with an invalid scorer type"""
         scorer = MagicMock(spec=Scorer)
-        scorer.scorer_type = "float_scale"
-        with pytest.raises(ValueError, match="Objective scorer must be a true/false scorer"):
+        with pytest.raises(ValueError, match="Objective scorer must be a TrueFalseScorer"):
             RolePlayAttack(
                 objective_target=mock_objective_target,
                 adversarial_chat=mock_adversarial_chat_target,

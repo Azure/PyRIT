@@ -59,12 +59,13 @@ class LookBackScorer(FloatScaleScorer):
 
         Args:
             request_piece (PromptRequestPiece): A piece of the conversation to be scored.
-                The converation ID is used to retrieve the full conversation from memory.
-            task (str): The task based on which the text should be scored (the original attacker model's objective).
-                Currently not supported for this scorer.
+                The conversation ID is used to retrieve the full conversation from memory.
+            objective (Optional[str]): The objective to evaluate against. Defaults to None.
+                Currently not used for this scorer.
 
         Returns:
-            The score is the detected amount of behavior change throughout the conversation.
+            list[Score]: A list containing a single Score object representing the detected
+                amount of behavior change throughout the conversation.
         """
 
         # Retrieve conversation from provided PromptRequestPiece
