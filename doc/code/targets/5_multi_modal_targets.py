@@ -5,9 +5,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.17.3
 #   kernelspec:
-#     display_name: pyrit-dev
+#     display_name: pyrit-312
 #     language: python
 #     name: python3
 # ---
@@ -107,6 +107,7 @@ from pyrit.score import (
     AzureContentFilterScorer,
     SelfAskTrueFalseScorer,
     TrueFalseQuestion,
+    VideoFloatScaleScorer,
     VideoTrueFalseScorer,
 )
 
@@ -132,7 +133,7 @@ attack = PromptSendingAttack(
     objective_target=sora_target,
     attack_scoring_config=AttackScoringConfig(
         objective_scorer=video_scorer,
-        auxiliary_scorers=[VideoScorer(AzureContentFilterScorer())],
+        auxiliary_scorers=[VideoFloatScaleScorer(image_capable_scorer=AzureContentFilterScorer())],
     ),
 )
 
