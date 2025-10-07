@@ -12,8 +12,8 @@ from pyrit.score import (
     FloatScaleScorer,
     TrueFalseCompositeScorer,
     TrueFalseScorer,
+    TrueFalseScoreAggregator
 )
-from pyrit.score.true_false.true_false_score_aggregator import TrueFalseScoreAggregator
 
 
 class MockScorer(TrueFalseScorer):

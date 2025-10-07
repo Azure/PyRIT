@@ -12,6 +12,10 @@ from pyrit.exceptions import PyritException, pyrit_target_retry
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
 from pyrit.prompt_target import GandalfLevel, PromptChatTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
+from pyrit.score.true_false.true_false_score_aggregator import (
+    TrueFalseAggregatorFunc,
+    TrueFalseScoreAggregator,
+)
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
@@ -22,15 +26,26 @@ class GandalfScorer(TrueFalseScorer):
     This scorer checks whether a password or secret has been successfully extracted from
     a Gandalf-style challenge by submitting the response to the Gandalf API and checking
     if the password is correct. Returns True if the password was successfully extracted.
+
+    Args:
+        level (GandalfLevel): The Gandalf challenge level to score against.
+        chat_target (PromptChatTarget): The chat target used for password extraction.
+        validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to text data type validator.
+        score_aggregator (TrueFalseAggregatorFunc): Aggregator for combining scores. Defaults to TrueFalseScoreAggregator.OR.
     """
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 
     def __init__(
-        self, *, level: GandalfLevel, chat_target: PromptChatTarget, validator: Optional[ScorerPromptValidator] = None
+        self,
+        *,
+        level: GandalfLevel,
+        chat_target: PromptChatTarget,
+        validator: Optional[ScorerPromptValidator] = None,
+        score_aggregator: TrueFalseAggregatorFunc = TrueFalseScoreAggregator.OR,
     ) -> None:
 
-        super().__init__(validator=validator or self._default_validator)
+        super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
         self._prompt_target = chat_target
         self._defender = level.value
         self._endpoint = "https://gandalf-api.lakera.ai/api/guess-password"

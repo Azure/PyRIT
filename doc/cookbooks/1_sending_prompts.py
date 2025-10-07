@@ -74,8 +74,8 @@ from pyrit.score import (
     SelfAskRefusalScorer,
     TrueFalseCompositeScorer,
     TrueFalseInverterScorer,
+    TrueFalseScoreAggregator
 )
-from pyrit.score.true_false.true_false_score_aggregator import TrueFalseScoreAggregator
 
 # Configure this to load the prompts loaded in the previous step.
 # In the last section, they were in the illegal.prompt file (which has a configured name of "2025_06_pyrit_illegal_example")

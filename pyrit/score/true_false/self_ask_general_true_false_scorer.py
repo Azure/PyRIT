@@ -9,6 +9,10 @@ from pyrit.models import PromptRequestPiece
 from pyrit.models.score import Score, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
+from pyrit.score.true_false.true_false_score_aggregator import (
+    TrueFalseAggregatorFunc,
+    TrueFalseScoreAggregator,
+)
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
@@ -32,6 +36,7 @@ class SelfAskGeneralTrueFalseScorer(TrueFalseScorer):
         category (Optional[str]): Category for the score.
         validator (Optional[ScorerPromptValidator]): Custom validator. If omitted, a default
             validator will be used requiring text input and an objective.
+        score_aggregator (TrueFalseAggregatorFunc): Aggregator for combining scores. Defaults to TrueFalseScoreAggregator.OR.
         score_value_output_key (str): JSON key for the score value. Defaults to "score_value".
         rationale_output_key (str): JSON key for the rationale. Defaults to "rationale".
         description_output_key (str): JSON key for the description. Defaults to "description".
@@ -52,13 +57,14 @@ class SelfAskGeneralTrueFalseScorer(TrueFalseScorer):
         prompt_format_string: Optional[str] = None,
         category: Optional[str] = None,
         validator: Optional[ScorerPromptValidator] = None,
+        score_aggregator: TrueFalseAggregatorFunc = TrueFalseScoreAggregator.OR,
         score_value_output_key: str = "score_value",
         rationale_output_key: str = "rationale",
         description_output_key: str = "description",
         metadata_output_key: str = "metadata",
         category_output_key: str = "category",
     ) -> None:
-        super().__init__(validator=validator or self._default_validator)
+        super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
         self._prompt_target = chat_target
         if not system_prompt_format_string:
             raise ValueError("system_prompt_format_string must be provided and non-empty.")
