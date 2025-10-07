@@ -216,3 +216,105 @@ class TestBatchScorerErrorHandling:
                 not_data_type=None,
                 converted_value_sha256=None,
             )
+
+    @pytest.mark.asyncio
+    async def test_score_responses_by_filters_handles_multiple_conversations(self) -> None:
+        """Test that scoring handles pieces from multiple conversations correctly."""
+        memory = MagicMock()
+
+        # Create pieces from different conversations
+        pieces = [
+            PromptRequestPiece(
+                role="user",
+                conversation_id="conv1",
+                sequence=0,
+                original_value="Conv1 message",
+            ),
+            PromptRequestPiece(
+                role="assistant",
+                conversation_id="conv1",
+                sequence=1,
+                original_value="Conv1 response",
+            ),
+            PromptRequestPiece(
+                role="user",
+                conversation_id="conv2",
+                sequence=0,
+                original_value="Conv2 message",
+            ),
+            PromptRequestPiece(
+                role="assistant",
+                conversation_id="conv2",
+                sequence=1,
+                original_value="Conv2 response",
+            ),
+        ]
+
+        memory.get_prompt_request_pieces.return_value = pieces
+
+        with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+            scorer = MagicMock()
+            test_scores = [MagicMock(), MagicMock(), MagicMock(), MagicMock()]
+            scorer.score_prompts_batch_async = AsyncMock(return_value=test_scores)
+
+            batch_scorer = BatchScorer()
+
+            scores = await batch_scorer.score_responses_by_filters_async(
+                scorer=scorer,
+                attack_id=str(uuid.uuid4()),
+            )
+
+            # Should successfully group by conversation and sequence
+            scorer.score_prompts_batch_async.assert_called_once()
+            call_args = scorer.score_prompts_batch_async.call_args
+            request_responses = call_args.kwargs["request_responses"]
+
+            # Should have 4 groups: 2 sequences from conv1, 2 sequences from conv2
+            assert len(request_responses) == 4
+            assert len(scores) == 4
+
+    @pytest.mark.asyncio
+    async def test_score_responses_by_filters_groups_by_sequence_within_conversation(self) -> None:
+        """Test that pieces are properly grouped by sequence within each conversation."""
+        memory = MagicMock()
+
+        # Create multiple pieces in the same sequence
+        pieces = [
+            PromptRequestPiece(
+                role="user",
+                conversation_id="conv1",
+                sequence=0,
+                original_value="User message 1",
+            ),
+            PromptRequestPiece(
+                role="system",
+                conversation_id="conv1",
+                sequence=0,
+                original_value="System prompt",
+            ),
+            PromptRequestPiece(
+                role="assistant",
+                conversation_id="conv1",
+                sequence=1,
+                original_value="Assistant response",
+            ),
+        ]
+
+        memory.get_prompt_request_pieces.return_value = pieces
+
+        with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+            scorer = MagicMock()
+            scorer.score_prompts_batch_async = AsyncMock(return_value=[MagicMock(), MagicMock()])
+
+            batch_scorer = BatchScorer()
+
+            await batch_scorer.score_responses_by_filters_async(scorer=scorer, conversation_id="conv1")
+
+            # Verify grouping
+            call_args = scorer.score_prompts_batch_async.call_args
+            request_responses = call_args.kwargs["request_responses"]
+
+            # Should have 2 groups: sequence 0 (with 2 pieces) and sequence 1 (with 1 piece)
+            assert len(request_responses) == 2
+            assert len(request_responses[0].request_pieces) == 2
+            assert len(request_responses[1].request_pieces) == 1

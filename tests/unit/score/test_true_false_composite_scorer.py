@@ -11,8 +11,8 @@ from pyrit.models import PromptRequestPiece, Score
 from pyrit.score import (
     FloatScaleScorer,
     TrueFalseCompositeScorer,
+    TrueFalseScoreAggregator,
     TrueFalseScorer,
-    TrueFalseScoreAggregator
 )
 
 
@@ -111,7 +111,9 @@ async def test_composite_scorer_or_one_true(mock_request, true_scorer, false_sco
 
 @pytest.mark.asyncio
 async def test_composite_scorer_majority_true(mock_request, true_scorer, false_scorer):
-    scorer = TrueFalseCompositeScorer(aggregator=TrueFalseScoreAggregator.MAJORITY, scorers=[true_scorer, true_scorer, false_scorer])
+    scorer = TrueFalseCompositeScorer(
+        aggregator=TrueFalseScoreAggregator.MAJORITY, scorers=[true_scorer, true_scorer, false_scorer]
+    )
 
     scores = await scorer.score_async(mock_request)
     assert len(scores) == 1
@@ -125,7 +127,9 @@ async def test_composite_scorer_majority_true(mock_request, true_scorer, false_s
 
 @pytest.mark.asyncio
 async def test_composite_scorer_majority_false(mock_request, true_scorer, false_scorer):
-    scorer = TrueFalseCompositeScorer(aggregator=TrueFalseScoreAggregator.MAJORITY, scorers=[true_scorer, false_scorer, false_scorer])
+    scorer = TrueFalseCompositeScorer(
+        aggregator=TrueFalseScoreAggregator.MAJORITY, scorers=[true_scorer, false_scorer, false_scorer]
+    )
 
     scores = await scorer.score_async(mock_request)
     assert len(scores) == 1

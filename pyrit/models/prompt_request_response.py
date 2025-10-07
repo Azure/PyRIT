@@ -182,7 +182,11 @@ def group_conversation_request_pieces_by_sequence(
 
     for request_piece in request_pieces:
         if request_piece.conversation_id != conversation_id:
-            raise ValueError("Conversation ID must match.")
+            raise ValueError(
+                f"All request pieces must be from the same conversation. "
+                f"Expected conversation_id='{conversation_id}', but found '{request_piece.conversation_id}'. "
+                f"If grouping pieces from multiple conversations, group by conversation_id first."
+            )
 
         if request_piece.sequence not in conversation_by_sequence:
             conversation_by_sequence[request_piece.sequence] = []
@@ -190,6 +194,58 @@ def group_conversation_request_pieces_by_sequence(
 
     sorted_sequences = sorted(conversation_by_sequence.keys())
     return [PromptRequestResponse(conversation_by_sequence[seq]) for seq in sorted_sequences]
+
+
+def group_request_pieces_into_conversations(
+    request_pieces: Sequence[PromptRequestPiece],
+) -> list[list[PromptRequestResponse]]:
+    """
+    Groups prompt request pieces from multiple conversations into separate conversation groups.
+
+    This function first groups pieces by conversation ID, then groups each conversation's
+    pieces by sequence number. Each conversation is returned as a separate list of
+    PromptRequestResponse objects.
+
+    Args:
+        request_pieces (Sequence[PromptRequestPiece]): A list of PromptRequestPiece objects from
+            potentially different conversations.
+
+    Returns:
+        list[list[PromptRequestResponse]]: A list of conversations, where each conversation is a list
+            of PromptRequestResponse objects grouped by sequence.
+
+    Example:
+    >>> request_pieces = [
+    >>>     PromptRequestPiece(conversation_id="conv1", sequence=1, text="Hello"),
+    >>>     PromptRequestPiece(conversation_id="conv2", sequence=1, text="Hi there"),
+    >>>     PromptRequestPiece(conversation_id="conv1", sequence=2, text="How are you?"),
+    >>>     PromptRequestPiece(conversation_id="conv2", sequence=2, text="I'm good"),
+    >>> ]
+    >>> conversations = group_request_pieces_into_conversations(request_pieces)
+    >>> # Returns a list of 2 conversations:
+    >>> # [
+    >>> #   [PromptRequestResponse(seq=1), PromptRequestResponse(seq=2)],  # conv1
+    >>> #   [PromptRequestResponse(seq=1), PromptRequestResponse(seq=2)]   # conv2
+    >>> # ]
+    """
+    if not request_pieces:
+        return []
+
+    # Group pieces by conversation ID
+    conversations: dict[str, list[PromptRequestPiece]] = {}
+    for piece in request_pieces:
+        conv_id = piece.conversation_id
+        if conv_id not in conversations:
+            conversations[conv_id] = []
+        conversations[conv_id].append(piece)
+
+    # For each conversation, group by sequence
+    result: list[list[PromptRequestResponse]] = []
+    for conv_pieces in conversations.values():
+        responses = group_conversation_request_pieces_by_sequence(conv_pieces)
+        result.append(list(responses))
+
+    return result
 
 
 def construct_response_from_request(

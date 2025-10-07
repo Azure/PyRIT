@@ -9,8 +9,9 @@ from typing import Optional, Sequence
 from pyrit.memory import CentralMemory
 from pyrit.models import (
     PromptRequestPiece,
+    PromptRequestResponse,
     Score,
-    group_conversation_request_pieces_by_sequence,
+    group_request_pieces_into_conversations,
 )
 from pyrit.score.scorer import Scorer
 
@@ -103,7 +104,13 @@ class BatchScorer:
         if not request_pieces:
             raise ValueError("No entries match the provided filters. Please check your filters.")
 
-        responses = group_conversation_request_pieces_by_sequence(request_pieces)
+        # Group pieces by conversation 
+        conversations = group_request_pieces_into_conversations(request_pieces)
+        
+        # Flatten all conversations into a single list of responses
+        responses: list[PromptRequestResponse] = []
+        for conversation in conversations:
+            responses.extend(conversation)
 
         return await scorer.score_prompts_batch_async(
             request_responses=responses, objectives=[objective] * len(responses), batch_size=self._batch_size

@@ -23,7 +23,8 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
         open_browser (bool): If True, the scorer will open the Gradio interface in a browser
             instead of opening it in PyWebview. Defaults to False.
         validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
-        score_aggregator (TrueFalseAggregatorFunc): Aggregator for combining scores. Defaults to TrueFalseScoreAggregator.OR.
+        score_aggregator (TrueFalseAggregatorFunc): Aggregator for combining scores. Defaults to
+            TrueFalseScoreAggregator.OR.
     """
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])

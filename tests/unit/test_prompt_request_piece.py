@@ -231,8 +231,97 @@ def test_group_conversation_request_pieces_throws():
         PromptRequestPiece(role="user", conversation_id="conv1", original_value="test1"),
         PromptRequestPiece(role="user", conversation_id="conv2", original_value="test2"),
     ]
-    with pytest.raises(ValueError, match="Conversation ID must match."):
+    with pytest.raises(
+        ValueError,
+        match="All request pieces must be from the same conversation",
+    ):
         group_conversation_request_pieces_by_sequence(pieces)
+
+
+def test_group_request_pieces_into_conversations_multiple_conversations():
+    """Test grouping pieces from multiple conversations."""
+    from pyrit.models import group_request_pieces_into_conversations
+
+    pieces = [
+        # Conversation 1 - each sequence/role combination is separate
+        PromptRequestPiece(role="user", conversation_id="conv1", sequence=0, original_value="Conv1 User Seq0"),
+        PromptRequestPiece(role="assistant", conversation_id="conv1", sequence=1, original_value="Conv1 Asst Seq1"),
+        PromptRequestPiece(role="user", conversation_id="conv1", sequence=2, original_value="Conv1 User Seq2"),
+        # Conversation 2
+        PromptRequestPiece(role="user", conversation_id="conv2", sequence=0, original_value="Conv2 User Seq0"),
+        PromptRequestPiece(role="assistant", conversation_id="conv2", sequence=1, original_value="Conv2 Asst Seq1"),
+        # Conversation 3
+        PromptRequestPiece(role="user", conversation_id="conv3", sequence=0, original_value="Conv3 User Seq0"),
+    ]
+
+    conversations = group_request_pieces_into_conversations(pieces)
+
+    # Should get 3 conversations
+    assert len(conversations) == 3
+
+    # Find each conversation
+    conv1 = next((c for c in conversations if c[0].request_pieces[0].conversation_id == "conv1"), None)
+    conv2 = next((c for c in conversations if c[0].request_pieces[0].conversation_id == "conv2"), None)
+    conv3 = next((c for c in conversations if c[0].request_pieces[0].conversation_id == "conv3"), None)
+
+    assert conv1 is not None
+    assert conv2 is not None
+    assert conv3 is not None
+
+    # Conv1 should have 3 sequences (0, 1, 2)
+    assert len(conv1) == 3
+    # Conv2 should have 2 sequences (0, 1)
+    assert len(conv2) == 2
+    # Conv3 should have 1 sequence (0)
+    assert len(conv3) == 1
+
+
+def test_group_request_pieces_into_conversations_empty_list():
+    """Test grouping with empty list returns empty list."""
+    from pyrit.models import group_request_pieces_into_conversations
+
+    result = group_request_pieces_into_conversations([])
+    assert result == []
+
+
+def test_group_request_pieces_into_conversations_single_conversation():
+    """Test that function works correctly when all pieces are from same conversation."""
+    from pyrit.models import group_request_pieces_into_conversations
+
+    pieces = [
+        PromptRequestPiece(role="user", conversation_id="conv1", sequence=0, original_value="User Seq0"),
+        PromptRequestPiece(role="assistant", conversation_id="conv1", sequence=1, original_value="Asst Seq1"),
+        PromptRequestPiece(role="user", conversation_id="conv1", sequence=2, original_value="User Seq2"),
+    ]
+
+    conversations = group_request_pieces_into_conversations(pieces)
+
+    assert len(conversations) == 1  # 1 conversation
+    assert len(conversations[0]) == 3  # 3 sequences in that conversation
+    # Each sequence should have 1 piece (since each has a different role)
+    assert len(conversations[0][0].request_pieces) == 1
+    assert len(conversations[0][1].request_pieces) == 1
+    assert len(conversations[0][2].request_pieces) == 1
+
+
+def test_group_request_pieces_into_conversations_multiple_pieces_same_sequence_role():
+    """Test grouping when multiple pieces have the same sequence and role."""
+    from pyrit.models import group_request_pieces_into_conversations
+
+    pieces = [
+        # Two user pieces in sequence 0 (e.g., multimodal with text and image)
+        PromptRequestPiece(role="user", conversation_id="conv1", sequence=0, original_value="Text piece"),
+        PromptRequestPiece(role="user", conversation_id="conv1", sequence=0, original_value="Image piece"),
+        # One assistant piece in sequence 1
+        PromptRequestPiece(role="assistant", conversation_id="conv1", sequence=1, original_value="Response"),
+    ]
+
+    conversations = group_request_pieces_into_conversations(pieces)
+
+    assert len(conversations) == 1  # 1 conversation
+    assert len(conversations[0]) == 2  # 2 sequences
+    assert len(conversations[0][0].request_pieces) == 2  # Sequence 0 has 2 pieces (both user role)
+    assert len(conversations[0][1].request_pieces) == 1  # Sequence 1 has 1 piece
 
 
 def test_group_conversation_request_pieces(sample_conversations: MutableSequence[PromptRequestResponse]):

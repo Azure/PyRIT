@@ -36,7 +36,8 @@ class SelfAskGeneralTrueFalseScorer(TrueFalseScorer):
         category (Optional[str]): Category for the score.
         validator (Optional[ScorerPromptValidator]): Custom validator. If omitted, a default
             validator will be used requiring text input and an objective.
-        score_aggregator (TrueFalseAggregatorFunc): Aggregator for combining scores. Defaults to TrueFalseScoreAggregator.OR.
+        score_aggregator (TrueFalseAggregatorFunc): Aggregator for combining scores. Defaults to
+            TrueFalseScoreAggregator.OR.
         score_value_output_key (str): JSON key for the score value. Defaults to "score_value".
         rationale_output_key (str): JSON key for the rationale. Defaults to "rationale".
         description_output_key (str): JSON key for the description. Defaults to "description".

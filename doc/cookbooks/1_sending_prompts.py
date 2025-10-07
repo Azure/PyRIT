@@ -74,7 +74,7 @@ from pyrit.score import (
     SelfAskRefusalScorer,
     TrueFalseCompositeScorer,
     TrueFalseInverterScorer,
-    TrueFalseScoreAggregator
+    TrueFalseScoreAggregator,
 )
 
 # Configure this to load the prompts loaded in the previous step.

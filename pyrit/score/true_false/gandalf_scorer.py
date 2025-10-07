@@ -31,7 +31,8 @@ class GandalfScorer(TrueFalseScorer):
         level (GandalfLevel): The Gandalf challenge level to score against.
         chat_target (PromptChatTarget): The chat target used for password extraction.
         validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to text data type validator.
-        score_aggregator (TrueFalseAggregatorFunc): Aggregator for combining scores. Defaults to TrueFalseScoreAggregator.OR.
+        score_aggregator (TrueFalseAggregatorFunc): Aggregator for combining scores. Defaults to
+            TrueFalseScoreAggregator.OR.
     """
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
