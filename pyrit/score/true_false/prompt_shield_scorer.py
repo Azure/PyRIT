@@ -10,7 +10,7 @@ from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score, Score
 from pyrit.prompt_target import PromptShieldTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
-    OR_,
+    TrueFalseAggregatorFunc,
     TrueFalseScoreAggregator,
 )
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
@@ -34,14 +34,15 @@ class PromptShieldScorer(TrueFalseScorer):
         *,
         prompt_shield_target: PromptShieldTarget,
         validator: Optional[ScorerPromptValidator] = None,
-        score_aggregator: TrueFalseScoreAggregator = OR_,
+        score_aggregator: TrueFalseAggregatorFunc = TrueFalseScoreAggregator.OR,
     ) -> None:
         """Initialize the PromptShieldScorer.
 
         Args:
             prompt_shield_target (PromptShieldTarget): The Prompt Shield target to use for scoring.
             validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
-            score_aggregator (TrueFalseScoreAggregator): The aggregator function to use. Defaults to OR_.
+            score_aggregator (TrueFalseAggregatorFunc): The aggregator function to use.
+                Defaults to TrueFalseScoreAggregator.OR.
         """
         super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
         self._prompt_target = prompt_shield_target

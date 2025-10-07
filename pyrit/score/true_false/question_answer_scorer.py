@@ -9,7 +9,7 @@ from pyrit.models import Score
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
-    OR_,
+    TrueFalseAggregatorFunc,
     TrueFalseScoreAggregator,
 )
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
@@ -32,7 +32,7 @@ class QuestionAnswerScorer(TrueFalseScorer):
         correct_answer_matching_patterns: list[str] = CORRECT_ANSWER_MATCHING_PATTERNS,
         category: Optional[list[str]] = None,
         validator: Optional[ScorerPromptValidator] = None,
-        score_aggregator: TrueFalseScoreAggregator = OR_,
+        score_aggregator: TrueFalseAggregatorFunc = TrueFalseScoreAggregator.OR,
     ) -> None:
         """
         Initialize the QuestionAnswerScorer.
@@ -43,7 +43,8 @@ class QuestionAnswerScorer(TrueFalseScorer):
                 that will be formatted with the correct answer metadata. Defaults to CORRECT_ANSWER_MATCHING_PATTERNS.
             category (Optional[list[str]]): Optional list of categories for the score. Defaults to None.
             validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
-            score_aggregator (TrueFalseScoreAggregator): The aggregator function to use. Defaults to OR_.
+            score_aggregator (TrueFalseAggregatorFunc): The aggregator function to use.
+                Defaults to TrueFalseScoreAggregator.OR.
         """
         super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
         self._correct_answer_matching_patterns = correct_answer_matching_patterns

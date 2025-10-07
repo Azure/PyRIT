@@ -33,8 +33,7 @@ from pyrit.models import (
 from pyrit.prompt_converter import FuzzerConverter
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
-from pyrit.score import FloatScaleThresholdScorer, SelfAskScaleScorer
-from pyrit.score.scorer import Scorer
+from pyrit.score import FloatScaleThresholdScorer, Scorer, SelfAskScaleScorer
 
 logger = logging.getLogger(__name__)
 

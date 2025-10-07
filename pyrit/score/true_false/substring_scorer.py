@@ -6,7 +6,7 @@ from typing import Optional
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
-    OR_,
+    TrueFalseAggregatorFunc,
     TrueFalseScoreAggregator,
 )
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
@@ -27,7 +27,7 @@ class SubStringScorer(TrueFalseScorer):
         *,
         substring: str,
         categories: Optional[list[str]] = None,
-        aggregator: TrueFalseScoreAggregator = OR_,
+        aggregator: TrueFalseAggregatorFunc = TrueFalseScoreAggregator.OR,
         validator: Optional[ScorerPromptValidator] = None,
     ) -> None:
         """Initialize the SubStringScorer.
@@ -35,7 +35,8 @@ class SubStringScorer(TrueFalseScorer):
         Args:
             substring (str): The substring to search for in the text.
             categories (Optional[list[str]]): Optional list of categories for the score. Defaults to None.
-            aggregator (TrueFalseScoreAggregator): The aggregator function to use. Defaults to OR_.
+            aggregator (TrueFalseAggregatorFunc): The aggregator function to use.
+                Defaults to TrueFalseScoreAggregator.OR.
             validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
         """
         super().__init__(score_aggregator=aggregator, validator=validator or self._default_validator)

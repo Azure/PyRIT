@@ -8,7 +8,7 @@ from pyrit.models import PromptRequestPiece, Score
 from pyrit.models.literals import ChatMessageRole
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
-from pyrit.score.true_false.true_false_score_aggregator import TrueFalseScoreAggregator
+from pyrit.score.true_false.true_false_score_aggregator import TrueFalseAggregatorFunc
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
@@ -17,20 +17,22 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
 
     This scorer invokes a collection of constituent ``TrueFalseScorer`` instances and
     reduces their single-score outputs into one final true/false score using the supplied
-    aggregation function (e.g., ``AND_``, ``OR_``, ``MAJORITY_``).
+    aggregation function (e.g., ``TrueFalseScoreAggregator.AND``, ``TrueFalseScoreAggregator.OR``,
+    ``TrueFalseScoreAggregator.MAJORITY``).
     """
 
     def __init__(
         self,
         *,
-        aggregator: TrueFalseScoreAggregator,
+        aggregator: TrueFalseAggregatorFunc,
         scorers: List[TrueFalseScorer],
     ) -> None:
         """Initialize the composite scorer.
 
         Args:
-            aggregator (TrueFalseScoreAggregator): Aggregation function to combine child scores
-                (e.g., ``AND_``, ``OR_``, ``MAJORITY_``).
+            aggregator (TrueFalseAggregatorFunc): Aggregation function to combine child scores
+                (e.g., ``TrueFalseScoreAggregator.AND``, ``TrueFalseScoreAggregator.OR``,
+                ``TrueFalseScoreAggregator.MAJORITY``).
             scorers (List[TrueFalseScorer]): The constituent true/false scorers to invoke.
         """
         # Initialize base with the selected aggregator used by TrueFalseScorer logic

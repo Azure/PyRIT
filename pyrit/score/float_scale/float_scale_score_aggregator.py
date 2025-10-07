@@ -56,7 +56,7 @@ def _combine_metadata_and_categories(scores: List[Score]) -> tuple[Dict[str, Uni
     return metadata, category
 
 
-def _lift(
+def _create_aggregator(
     name: str,
     *,
     result_func: FloatScaleOp,
@@ -124,26 +124,26 @@ class FloatScaleScoreAggregator:
     all input scores together, preserving all categories.
     """
 
-    AVERAGE: FloatScaleAggregatorFunc = _lift(
+    AVERAGE: FloatScaleAggregatorFunc = _create_aggregator(
         "AVERAGE",
         result_func=lambda xs: round(sum(xs) / len(xs), 10) if xs else 0.0,
         aggregate_description="Average of constituent scorers in an AVERAGE composite scorer.",
     )
 
-    MAX: FloatScaleAggregatorFunc = _lift(
+    MAX: FloatScaleAggregatorFunc = _create_aggregator(
         "MAX",
         result_func=max,
         aggregate_description="Maximum value among constituent scorers in a MAX composite scorer.",
     )
 
-    MIN: FloatScaleAggregatorFunc = _lift(
+    MIN: FloatScaleAggregatorFunc = _create_aggregator(
         "MIN",
         result_func=min,
         aggregate_description="Minimum value among constituent scorers in a MIN composite scorer.",
     )
 
 
-def _lift_by_category(
+def _create_aggregator_by_category(
     name: str,
     *,
     result_func: FloatScaleOp,
@@ -273,21 +273,21 @@ class FloatScaleScorerByCategory:
     Useful for scorers like AzureContentFilterScorer that return multiple scores per item.
     """
 
-    AVERAGE: FloatScaleAggregatorFunc = _lift_by_category(
+    AVERAGE: FloatScaleAggregatorFunc = _create_aggregator_by_category(
         "AVERAGE",
         result_func=lambda xs: round(sum(xs) / len(xs), 10) if xs else 0.0,
         aggregate_description="Average of constituent scorers",
         group_by_category=True,
     )
 
-    MAX: FloatScaleAggregatorFunc = _lift_by_category(
+    MAX: FloatScaleAggregatorFunc = _create_aggregator_by_category(
         "MAX",
         result_func=max,
         aggregate_description="Maximum value among constituent scorers",
         group_by_category=True,
     )
 
-    MIN: FloatScaleAggregatorFunc = _lift_by_category(
+    MIN: FloatScaleAggregatorFunc = _create_aggregator_by_category(
         "MIN",
         result_func=min,
         aggregate_description="Minimum value among constituent scorers",
@@ -303,21 +303,21 @@ class FloatScaleScorerAllCategories:
     returning a single ScoreAggregatorResult with all categories combined.
     """
 
-    MAX: FloatScaleAggregatorFunc = _lift_by_category(
+    MAX: FloatScaleAggregatorFunc = _create_aggregator_by_category(
         "MAX",
         result_func=max,
         aggregate_description="Maximum value among all constituent scorers across categories",
         group_by_category=False,
     )
 
-    AVERAGE: FloatScaleAggregatorFunc = _lift_by_category(
+    AVERAGE: FloatScaleAggregatorFunc = _create_aggregator_by_category(
         "AVERAGE",
         result_func=lambda xs: round(sum(xs) / len(xs), 10) if xs else 0.0,
         aggregate_description="Average of all constituent scorers across categories",
         group_by_category=False,
     )
 
-    MIN: FloatScaleAggregatorFunc = _lift_by_category(
+    MIN: FloatScaleAggregatorFunc = _create_aggregator_by_category(
         "MIN",
         result_func=min,
         aggregate_description="Minimum value among all constituent scorers across categories",

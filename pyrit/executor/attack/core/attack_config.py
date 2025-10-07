@@ -8,8 +8,7 @@ from typing import List, Optional, Union
 from pyrit.executor.core import StrategyConverterConfig
 from pyrit.models.seed_prompt import SeedPrompt
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
-from pyrit.score import Scorer
-from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
+from pyrit.score import Scorer, TrueFalseScorer
 
 
 @dataclass

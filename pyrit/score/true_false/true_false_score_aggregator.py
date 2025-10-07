@@ -3,25 +3,80 @@
 
 import functools
 import operator
-from typing import Callable, Dict, Iterable, List, TypeAlias, Union
+from typing import Callable, Dict, Iterable, List, Union
 
 from pyrit.common.utils import combine_dict
 from pyrit.models import Score
 from pyrit.score.score_aggregator_result import ScoreAggregatorResult
 
-BinaryBoolOp: TypeAlias = Callable[[bool, bool], bool]
-TrueFalseScoreAggregator: TypeAlias = Callable[[Iterable[Score]], ScoreAggregatorResult]
+BinaryBoolOp = Callable[[bool, bool], bool]
+TrueFalseAggregatorFunc = Callable[[Iterable[Score]], ScoreAggregatorResult]
 
 
-def _lift(
+def _build_rationale(scores: List[Score], *, result: bool, true_msg: str, false_msg: str) -> tuple[str, str]:
+    """Build description and rationale for aggregated true/false scores.
+
+    Args:
+        scores: List of Score objects to aggregate.
+        result: The boolean result of the aggregation.
+        true_msg: Description to use when result is True.
+        false_msg: Description to use when result is False.
+
+    Returns:
+        Tuple of (description, rationale) strings.
+    """
+    if len(scores) == 1:
+        description = scores[0].score_value_description or ""
+        rationale = scores[0].score_rationale or ""
+    else:
+        description = true_msg if result else false_msg
+        sep = "-"
+        rationale = "\n".join(f"   {sep} {s.score_value}: {s.score_rationale or ''}" for s in scores)
+
+    return description, rationale
+
+
+def _combine_metadata_and_categories(scores: List[Score]) -> tuple[Dict[str, Union[str, int]], List[str]]:
+    """Combine metadata and categories from multiple scores with deduplication.
+
+    Args:
+        scores: List of Score objects.
+
+    Returns:
+        Tuple of (metadata dict, sorted category list with empty strings filtered).
+    """
+    metadata: Dict[str, Union[str, int]] = {}
+    category_set: set[str] = set()
+
+    for s in scores:
+        metadata = combine_dict(metadata, getattr(s, "score_metadata", None))
+        score_categories = getattr(s, "score_category", None) or []
+        category_set.update([c for c in score_categories if c])
+
+    category = sorted(category_set)
+    return metadata, category
+
+
+def _create_aggregator(
     name: str,
     *,
     result_func: Callable[[List[bool]], bool],
     true_msg: str,
     false_msg: str,
-) -> TrueFalseScoreAggregator:
-    """Create a True/False aggregator using a result function over boolean values."""
-    sep = "-"
+) -> TrueFalseAggregatorFunc:
+    """Create a True/False aggregator using a result function over boolean values.
+
+    Args:
+        name (str): Name of the aggregator variant.
+        result_func (Callable[[List[bool]], bool]): Function applied to the list of boolean values
+            to compute the aggregation result.
+        true_msg (str): Description to use when the result is True.
+        false_msg (str): Description to use when the result is False.
+
+    Returns:
+        TrueFalseAggregatorFunc: Aggregator function that reduces a sequence of true/false Scores
+            into a single ScoreAggregatorResult with a boolean value.
+    """
 
     def aggregator(scores: Iterable[Score]) -> ScoreAggregatorResult:
         # Validate types and normalize input
@@ -30,28 +85,21 @@ def _lift(
                 raise ValueError("All scores must be of type 'true_false'.")
 
         scores_list = list(scores)
+        if not scores_list:
+            # No scores; return a neutral result
+            return ScoreAggregatorResult(
+                value=False,
+                description=f"No scores provided to {name} composite scorer.",
+                rationale="",
+                metadata={},
+                category=[],
+            )
+
         bool_values = [bool(s.get_value()) for s in scores_list]
         result = result_func(bool_values)
 
-        # If there is only one score we're aggregating, use that. Else combine them
-        # This makes scores more intuitive in many cases, where there is a single
-        # text response, for example.
-        if len(scores_list) == 1:
-            description = scores_list[0].score_value_description or ""
-            rationale = scores_list[0].score_rationale or ""
-        else:
-            description = true_msg if result else false_msg
-            rationale = "\n".join(f"   {sep} {s.score_value}: {s.score_rationale or ''}" for s in scores_list)
-
-        # Combine all score metadata dictionaries safely
-        metadata: Dict[str, Union[str, int]] = {}
-        category_set: set[str] = set()
-        for s in scores_list:
-            metadata = combine_dict(metadata, getattr(s, "score_metadata", None))
-            category_set.update(getattr(s, "score_category", []))
-
-        # Convert set to sorted list for consistent output, filter empty strings
-        category = sorted([c for c in category_set if c])
+        description, rationale = _build_rationale(scores_list, result=result, true_msg=true_msg, false_msg=false_msg)
+        metadata, category = _combine_metadata_and_categories(scores_list)
 
         return ScoreAggregatorResult(
             value=result,
@@ -65,16 +113,24 @@ def _lift(
     return aggregator
 
 
-def _lift_binary(
+def _create_binary_aggregator(
     name: str,
     op: BinaryBoolOp,
     true_msg: str,
     false_msg: str,
-) -> TrueFalseScoreAggregator:
+) -> TrueFalseAggregatorFunc:
+    """Turn a binary Boolean operator (e.g. operator.and_) into an aggregation function.
+
+    Args:
+        name (str): Name of the aggregator variant.
+        op (BinaryBoolOp): Binary boolean operator to apply.
+        true_msg (str): Description to use when the result is True.
+        false_msg (str): Description to use when the result is False.
+
+    Returns:
+        TrueFalseAggregatorFunc: Aggregator function that reduces scores using the binary operator.
     """
-    Turn a binary Boolean operator (e.g. operator.and_) into an aggregation function.
-    """
-    return _lift(
+    return _create_aggregator(
         name,
         result_func=lambda bs, _op=op: functools.reduce(_op, bs),  # type: ignore[misc]
         true_msg=true_msg,
@@ -82,23 +138,31 @@ def _lift_binary(
     )
 
 
-AND_ = _lift_binary(
-    "AND",
-    operator.and_,
-    "All constituent scorers returned True in an AND composite scorer.",
-    "At least one constituent scorer returned False in an AND composite scorer.",
-)
+# True/False aggregators (return list with single score)
+class TrueFalseScoreAggregator:
+    """Namespace for true/false score aggregators that return a single aggregated score.
 
-OR_ = _lift_binary(
-    "OR",
-    operator.or_,
-    "At least one constituent scorer returned True in an OR composite scorer.",
-    "All constituent scorers returned False in an OR composite scorer.",
-)
+    All aggregators return a list containing one ScoreAggregatorResult that combines
+    all input scores together, preserving all categories.
+    """
 
-MAJORITY_ = _lift(
-    "MAJORITY",
-    result_func=lambda bs: sum(bs) > len(bs) / 2,
-    true_msg="A strict majority of constituent scorers returned True in a MAJORITY composite scorer.",
-    false_msg="A strict majority of constituent scorers did not return True in a MAJORITY composite scorer.",
-)
+    AND: TrueFalseAggregatorFunc = _create_binary_aggregator(
+        "AND",
+        operator.and_,
+        "All constituent scorers returned True in an AND composite scorer.",
+        "At least one constituent scorer returned False in an AND composite scorer.",
+    )
+
+    OR: TrueFalseAggregatorFunc = _create_binary_aggregator(
+        "OR",
+        operator.or_,
+        "At least one constituent scorer returned True in an OR composite scorer.",
+        "All constituent scorers returned False in an OR composite scorer.",
+    )
+
+    MAJORITY: TrueFalseAggregatorFunc = _create_aggregator(
+        "MAJORITY",
+        result_func=lambda bs: sum(bs) > len(bs) / 2,
+        true_msg="A strict majority of constituent scorers returned True in a MAJORITY composite scorer.",
+        false_msg="A strict majority of constituent scorers did not return True in a MAJORITY composite scorer.",
+    )

@@ -13,7 +13,7 @@ class ScorerPromptValidator:
         *,
         supported_data_types: Optional[Sequence[PromptDataType]] = None,
         required_metadata: Optional[Sequence[str]] = None,
-        multi_part_response_length_limit: Optional[int] = None,
+        max_pieces_in_response: Optional[int] = None,
         enforce_all_pieces_valid: Optional[bool] = False,
         is_objective_required=False,
     ):
@@ -24,7 +24,7 @@ class ScorerPromptValidator:
 
         self._required_metadata = required_metadata or []
 
-        self._multi_part_response_length_limit = multi_part_response_length_limit
+        self._max_pieces_in_response = max_pieces_in_response
         self._enforce_all_pieces_valid = enforce_all_pieces_valid
 
         self._is_objective_required = is_objective_required
@@ -45,18 +45,18 @@ class ScorerPromptValidator:
                 "There are no valid pieces to score. \n\n"
                 f"Required types: {self._supported_data_types}. "
                 f"Required metadata: {self._required_metadata}. "
-                f"Length limit: {self._multi_part_response_length_limit}. "
+                f"Length limit: {self._max_pieces_in_response}. "
                 f"Objective required: {self._is_objective_required}. "
                 f"Prompt pieces: {request_response.request_pieces}. "
                 f"Prompt metadata: {attempted_metadata}. "
                 f"Objective included: {objective}. "
             )
 
-        if self._multi_part_response_length_limit is not None:
-            if len(request_response.request_pieces) > self._multi_part_response_length_limit:
+        if self._max_pieces_in_response is not None:
+            if len(request_response.request_pieces) > self._max_pieces_in_response:
                 raise ValueError(
                     f"Request response has {len(request_response.request_pieces)} pieces, "
-                    f"exceeding the limit of {self._multi_part_response_length_limit}."
+                    f"exceeding the limit of {self._max_pieces_in_response}."
                 )
 
         if self._is_objective_required and not objective:

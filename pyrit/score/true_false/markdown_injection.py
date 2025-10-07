@@ -7,7 +7,7 @@ from typing import Optional
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
-    OR_,
+    TrueFalseAggregatorFunc,
     TrueFalseScoreAggregator,
 )
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
@@ -25,7 +25,10 @@ class MarkdownInjectionScorer(TrueFalseScorer):
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 
     def __init__(
-        self, *, validator: Optional[ScorerPromptValidator] = None, score_aggregator: TrueFalseScoreAggregator = OR_
+        self,
+        *,
+        validator: Optional[ScorerPromptValidator] = None,
+        score_aggregator: TrueFalseAggregatorFunc = TrueFalseScoreAggregator.OR,
     ) -> None:
         super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
         self._category = "security"

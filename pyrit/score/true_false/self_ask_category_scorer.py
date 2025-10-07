@@ -12,7 +12,7 @@ from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
-    OR_,
+    TrueFalseAggregatorFunc,
     TrueFalseScoreAggregator,
 )
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
@@ -39,7 +39,7 @@ class SelfAskCategoryScorer(TrueFalseScorer):
         *,
         chat_target: PromptChatTarget,
         content_classifier_path: Union[str, Path],
-        score_aggregator: TrueFalseScoreAggregator = OR_,
+        score_aggregator: TrueFalseAggregatorFunc = TrueFalseScoreAggregator.OR,
         validator: Optional[ScorerPromptValidator] = None,
     ) -> None:
         """
@@ -48,7 +48,8 @@ class SelfAskCategoryScorer(TrueFalseScorer):
         Args:
             chat_target (PromptChatTarget): The chat target to interact with.
             content_classifier_path (Union[str, Path]): The path to the classifier YAML file.
-            score_aggregator (TrueFalseScoreAggregator): The aggregator function to use. Defaults to OR_.
+            score_aggregator (TrueFalseAggregatorFunc): The aggregator function to use.
+                Defaults to TrueFalseScoreAggregator.OR.
             validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
         """
 

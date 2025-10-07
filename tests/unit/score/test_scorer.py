@@ -97,13 +97,6 @@ class MockScorer(TrueFalseScorer):
         assert all(s.score_value in ["true", "false"] for s in scores)
 
 
-def test_validate_request_raises_on_empty():
-
-    scorer = MockScorer()
-    with pytest.raises(ValueError):
-        scorer.validate_request(PromptRequestResponse(request_pieces=[]))
-
-
 @pytest.mark.asyncio
 @pytest.mark.parametrize("bad_json", [BAD_JSON, KEY_ERROR_JSON, KEY_ERROR2_JSON])
 async def test_scorer_send_chat_target_async_bad_json_exception_retries(bad_json: str):

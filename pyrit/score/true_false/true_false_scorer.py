@@ -9,7 +9,7 @@ from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.score.scorer import Scorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
-    OR_,
+    TrueFalseAggregatorFunc,
     TrueFalseScoreAggregator,
 )
 
@@ -20,10 +20,15 @@ class TrueFalseScorer(Scorer):
 
     This scorer evaluates prompt responses and returns a single boolean score indicating
     whether the response meets a specific criterion. Multiple pieces in a request response
-    are aggregated using a TrueFalseScoreAggregator function (default: OR).
+    are aggregated using a TrueFalseAggregatorFunc function (default: TrueFalseScoreAggregator.OR).
     """
 
-    def __init__(self, *, validator: ScorerPromptValidator, score_aggregator: TrueFalseScoreAggregator = OR_) -> None:
+    def __init__(
+        self,
+        *,
+        validator: ScorerPromptValidator,
+        score_aggregator: TrueFalseAggregatorFunc = TrueFalseScoreAggregator.OR,
+    ) -> None:
         super().__init__(validator=validator)
         self._score_aggregator = score_aggregator
 

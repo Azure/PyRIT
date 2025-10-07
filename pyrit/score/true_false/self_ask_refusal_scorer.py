@@ -9,7 +9,7 @@ from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
-    OR_,
+    TrueFalseAggregatorFunc,
     TrueFalseScoreAggregator,
 )
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
@@ -37,14 +37,15 @@ class SelfAskRefusalScorer(TrueFalseScorer):
         *,
         chat_target: PromptChatTarget,
         validator: Optional[ScorerPromptValidator] = None,
-        score_aggregator: TrueFalseScoreAggregator = OR_,
+        score_aggregator: TrueFalseAggregatorFunc = TrueFalseScoreAggregator.OR,
     ) -> None:
         """Initialize the SelfAskRefusalScorer.
 
         Args:
             chat_target (PromptChatTarget): The endpoint that will be used to score the prompt.
             validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
-            score_aggregator (TrueFalseScoreAggregator): The aggregator function to use. Defaults to OR_.
+            score_aggregator (TrueFalseAggregatorFunc): The aggregator function to use.
+                Defaults to TrueFalseScoreAggregator.OR.
         """
 
         super().__init__(score_aggregator=score_aggregator, validator=validator or self._default_validator)

@@ -9,21 +9,19 @@ import pytest
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.score import (
-    AND_,
-    MAJORITY_,
-    OR_,
     FloatScaleScorer,
     TrueFalseCompositeScorer,
     TrueFalseScorer,
 )
+from pyrit.score.true_false.true_false_score_aggregator import TrueFalseScoreAggregator
 
 
 class MockScorer(TrueFalseScorer):
     """A mock scorer for testing purposes."""
 
     def _score_aggregator(self, score_list):
-        # Use the AND_ aggregator from the true_false_score_aggregator module (already imported)
-        return AND_(score_list)
+        # Use the AND aggregator from the TrueFalseScoreAggregator class
+        return TrueFalseScoreAggregator.AND(score_list)
 
     def __init__(self, score_value: bool, score_rationale: str, aggregator=None):
         self.scorer_type = "true_false"
@@ -70,7 +68,7 @@ def false_scorer(patch_central_database):
 
 @pytest.mark.asyncio
 async def test_composite_scorer_and_all_true(mock_request, true_scorer):
-    scorer = TrueFalseCompositeScorer(aggregator=AND_, scorers=[true_scorer, true_scorer])
+    scorer = TrueFalseCompositeScorer(aggregator=TrueFalseScoreAggregator.AND, scorers=[true_scorer, true_scorer])
 
     scores = await scorer.score_async(mock_request)
     assert len(scores) == 1
@@ -81,7 +79,7 @@ async def test_composite_scorer_and_all_true(mock_request, true_scorer):
 
 @pytest.mark.asyncio
 async def test_composite_scorer_and_one_false(mock_request, true_scorer, false_scorer):
-    scorer = TrueFalseCompositeScorer(aggregator=AND_, scorers=[true_scorer, false_scorer])
+    scorer = TrueFalseCompositeScorer(aggregator=TrueFalseScoreAggregator.AND, scorers=[true_scorer, false_scorer])
 
     scores = await scorer.score_async(mock_request)
     assert len(scores) == 1
@@ -92,7 +90,7 @@ async def test_composite_scorer_and_one_false(mock_request, true_scorer, false_s
 
 @pytest.mark.asyncio
 async def test_composite_scorer_or_all_false(mock_request, false_scorer):
-    scorer = TrueFalseCompositeScorer(aggregator=OR_, scorers=[false_scorer, false_scorer])
+    scorer = TrueFalseCompositeScorer(aggregator=TrueFalseScoreAggregator.OR, scorers=[false_scorer, false_scorer])
 
     scores = await scorer.score_async(mock_request)
     assert len(scores) == 1
@@ -103,7 +101,7 @@ async def test_composite_scorer_or_all_false(mock_request, false_scorer):
 
 @pytest.mark.asyncio
 async def test_composite_scorer_or_one_true(mock_request, true_scorer, false_scorer):
-    scorer = TrueFalseCompositeScorer(aggregator=OR_, scorers=[true_scorer, false_scorer])
+    scorer = TrueFalseCompositeScorer(aggregator=TrueFalseScoreAggregator.OR, scorers=[true_scorer, false_scorer])
 
     scores = await scorer.score_async(mock_request)
     assert len(scores) == 1
@@ -113,7 +111,7 @@ async def test_composite_scorer_or_one_true(mock_request, true_scorer, false_sco
 
 @pytest.mark.asyncio
 async def test_composite_scorer_majority_true(mock_request, true_scorer, false_scorer):
-    scorer = TrueFalseCompositeScorer(aggregator=MAJORITY_, scorers=[true_scorer, true_scorer, false_scorer])
+    scorer = TrueFalseCompositeScorer(aggregator=TrueFalseScoreAggregator.MAJORITY, scorers=[true_scorer, true_scorer, false_scorer])
 
     scores = await scorer.score_async(mock_request)
     assert len(scores) == 1
@@ -127,7 +125,7 @@ async def test_composite_scorer_majority_true(mock_request, true_scorer, false_s
 
 @pytest.mark.asyncio
 async def test_composite_scorer_majority_false(mock_request, true_scorer, false_scorer):
-    scorer = TrueFalseCompositeScorer(aggregator=MAJORITY_, scorers=[true_scorer, false_scorer, false_scorer])
+    scorer = TrueFalseCompositeScorer(aggregator=TrueFalseScoreAggregator.MAJORITY, scorers=[true_scorer, false_scorer, false_scorer])
 
     scores = await scorer.score_async(mock_request)
     assert len(scores) == 1
@@ -148,12 +146,12 @@ def test_composite_scorer_invalid_scorer_type():
             return []
 
     with pytest.raises(ValueError, match="All scorers must be true_false scorers"):
-        TrueFalseCompositeScorer(aggregator=AND_, scorers=[InvalidScorer()])  # type: ignore
+        TrueFalseCompositeScorer(aggregator=TrueFalseScoreAggregator.AND, scorers=[InvalidScorer()])  # type: ignore
 
 
 @pytest.mark.asyncio
 async def test_composite_scorer_with_task(mock_request, true_scorer):
-    scorer = TrueFalseCompositeScorer(aggregator=AND_, scorers=[true_scorer])
+    scorer = TrueFalseCompositeScorer(aggregator=TrueFalseScoreAggregator.AND, scorers=[true_scorer])
 
     task = "test task"
     scores = await scorer.score_async(mock_request, objective=task)
@@ -164,4 +162,4 @@ async def test_composite_scorer_with_task(mock_request, true_scorer):
 def test_composite_scorer_empty_scorers_list():
     """Test that CompositeScorer raises an exception when given an empty list of scorers."""
     with pytest.raises(ValueError, match="At least one scorer must be provided"):
-        TrueFalseCompositeScorer(aggregator=AND_, scorers=[])
+        TrueFalseCompositeScorer(aggregator=TrueFalseScoreAggregator.AND, scorers=[])

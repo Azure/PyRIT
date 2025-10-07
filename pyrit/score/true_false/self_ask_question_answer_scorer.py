@@ -16,7 +16,7 @@ from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import SelfAskTrueFalseScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
-    OR_,
+    TrueFalseAggregatorFunc,
     TrueFalseScoreAggregator,
 )
 
@@ -40,7 +40,7 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
         chat_target: PromptChatTarget,
         true_false_question_path: Optional[pathlib.Path] = None,
         validator: Optional[ScorerPromptValidator] = None,
-        score_aggregator: TrueFalseScoreAggregator = OR_,
+        score_aggregator: TrueFalseAggregatorFunc = TrueFalseScoreAggregator.OR,
     ) -> None:
         """
         Initializes the SelfAskQuestionAnswerScorer object.
@@ -50,7 +50,8 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
             true_false_question_path (Optional[pathlib.Path]): The path to the true/false question file.
                 Defaults to None, which uses the default question_answering.yaml file.
             validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
-            score_aggregator (TrueFalseScoreAggregator): The aggregator function to use. Defaults to OR_.
+            score_aggregator (TrueFalseAggregatorFunc): The aggregator function to use.
+                Defaults to TrueFalseScoreAggregator.OR.
         """
 
         true_false_question_path = self._verify_and_resolve_path(

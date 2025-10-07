@@ -6,6 +6,13 @@ from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
+from pyrit.score.true_false.true_false_score_aggregator import TrueFalseScoreAggregator, TrueFalseAggregatorFunc
+from pyrit.score.float_scale.float_scale_score_aggregator import (
+    FloatScaleScoreAggregator,
+    FloatScaleScorerByCategory,
+    FloatScaleScorerAllCategories,
+)
+
 from pyrit.score.float_scale.azure_content_filter_scorer import AzureContentFilterScorer
 from pyrit.score.batch_scorer import BatchScorer
 from pyrit.score.true_false.true_false_composite_scorer import TrueFalseCompositeScorer
@@ -18,12 +25,7 @@ from pyrit.score.float_scale.insecure_code_scorer import InsecureCodeScorer
 from pyrit.score.true_false.markdown_injection import MarkdownInjectionScorer
 from pyrit.score.float_scale.plagiarism_scorer import PlagiarismScorer, PlagiarismMetric
 from pyrit.score.true_false.prompt_shield_scorer import PromptShieldScorer
-from pyrit.score.true_false.true_false_score_aggregator import AND_, MAJORITY_, OR_, TrueFalseScoreAggregator
-from pyrit.score.float_scale.float_scale_score_aggregator import (
-    FloatScaleScoreAggregator,
-    FloatScaleScorerByCategory,
-    FloatScaleScorerAllCategories,
-)
+
 from pyrit.score.scorer_evaluation.metrics_type import MetricsType
 from pyrit.score.scorer_evaluation.human_labeled_dataset import (
     HarmHumanLabeledEntry,
@@ -57,7 +59,6 @@ from pyrit.score.true_false.video_true_false_scorer import VideoTrueFalseScorer
 from pyrit.score.true_false.question_answer_scorer import QuestionAnswerScorer
 
 __all__ = [
-    "AND_",
     "AzureContentFilterScorer",
     "BatchScorer",
     "ContentClassifierPaths",
@@ -76,13 +77,11 @@ __all__ = [
     "InsecureCodeScorer",
     "LikertScalePaths",
     "LookBackScorer",
-    "MAJORITY_",
     "MarkdownInjectionScorer",
     "MetricsType",
     "ObjectiveHumanLabeledEntry",
     "ObjectiveScorerEvaluator",
     "ObjectiveScorerMetrics",
-    "OR_",
     "PlagiarismMetric",
     "PlagiarismScorer",
     "PromptShieldScorer",
@@ -105,6 +104,7 @@ __all__ = [
     "TrueFalseQuestion",
     "TrueFalseQuestionPaths",
     "TrueFalseScoreAggregator",
+    "TrueFalseAggregatorFunc",
     "TrueFalseScorer",
     "VideoFloatScaleScorer",
     "VideoTrueFalseScorer",

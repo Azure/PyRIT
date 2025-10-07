@@ -1,8 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.models.score import Score
-from pyrit.score.true_false.true_false_score_aggregator import AND_, MAJORITY_, OR_
+from pyrit.models import Score
+from pyrit.score import TrueFalseScoreAggregator
 
 
 def _mk_score(val: bool, *, prr_id: str, rationale: str = "") -> Score:
@@ -21,7 +21,7 @@ def _mk_score(val: bool, *, prr_id: str, rationale: str = "") -> Score:
 
 def test_and_aggregator_all_true():
     scores = [_mk_score(True, prr_id="1"), _mk_score(True, prr_id="1")]
-    res = AND_(scores)
+    res = TrueFalseScoreAggregator.AND(scores)
     assert res.value is True
     assert isinstance(res.description, str) and res.description
     assert isinstance(res.rationale, str)
@@ -29,19 +29,19 @@ def test_and_aggregator_all_true():
 
 def test_and_aggregator_any_false():
     scores = [_mk_score(True, prr_id="1"), _mk_score(False, prr_id="1")]
-    res = AND_(scores)
+    res = TrueFalseScoreAggregator.AND(scores)
     assert res.value is False
 
 
 def test_or_aggregator_any_true():
     scores = [_mk_score(False, prr_id="1"), _mk_score(True, prr_id="1")]
-    res = OR_(scores)
+    res = TrueFalseScoreAggregator.OR(scores)
     assert res.value is True
 
 
 def test_or_aggregator_all_false():
     scores = [_mk_score(False, prr_id="1"), _mk_score(False, prr_id="1")]
-    res = OR_(scores)
+    res = TrueFalseScoreAggregator.OR(scores)
     assert res.value is False
 
 
@@ -51,7 +51,7 @@ def test_majority_strict_majority_true():
         _mk_score(True, prr_id="1", rationale="B"),
         _mk_score(False, prr_id="1", rationale="C"),
     ]
-    res = MAJORITY_(scores)
+    res = TrueFalseScoreAggregator.MAJORITY(scores)
     assert res.value is True
     assert "MAJORITY" in res.description
     assert "-" in res.rationale or ":" in res.rationale
@@ -59,7 +59,7 @@ def test_majority_strict_majority_true():
 
 def test_majority_tie_is_false():
     scores = [_mk_score(True, prr_id="1"), _mk_score(False, prr_id="1")]
-    res = MAJORITY_(scores)
+    res = TrueFalseScoreAggregator.MAJORITY(scores)
     assert res.value is False
 
 
@@ -89,7 +89,7 @@ def test_category_deduplication():
             objective=None,
         ),
     ]
-    res = AND_(scores)
+    res = TrueFalseScoreAggregator.AND(scores)
     assert res.value is True
     assert res.category == ["Hate"]  # Should be deduplicated to single entry
 
@@ -120,7 +120,7 @@ def test_category_multiple_unique():
             objective=None,
         ),
     ]
-    res = OR_(scores)
+    res = TrueFalseScoreAggregator.OR(scores)
     assert res.value is True
     assert res.category == ["Hate", "Violence"]  # Should be sorted alphabetically
 
@@ -151,7 +151,7 @@ def test_category_empty_strings_filtered():
             objective=None,
         ),
     ]
-    res = MAJORITY_(scores)
+    res = TrueFalseScoreAggregator.MAJORITY(scores)
     assert res.category == []  # Empty strings should be filtered out
 
 
@@ -181,7 +181,7 @@ def test_category_mixed_empty_and_valid():
             objective=None,
         ),
     ]
-    res = AND_(scores)
+    res = TrueFalseScoreAggregator.AND(scores)
     assert res.value is True
     assert res.category == ["Violence"]  # Only valid category preserved
 
@@ -212,6 +212,21 @@ def test_category_none_and_empty_list():
             objective=None,
         ),
     ]
-    res = OR_(scores)
+    res = TrueFalseScoreAggregator.OR(scores)
     assert res.value is True
     assert res.category == []  # Should be empty list
+
+
+def test_aggregator_empty_scores():
+    """Test that empty score list returns a neutral false result."""
+    res = TrueFalseScoreAggregator.AND([])
+    assert res.value is False
+    assert "No scores provided" in res.description
+
+
+def test_aggregator_single_score():
+    """Test that single score preserves its description and rationale."""
+    scores = [_mk_score(True, prr_id="1", rationale="Single score rationale")]
+    res = TrueFalseScoreAggregator.OR(scores)
+    assert res.value is True
+    assert res.rationale == "Single score rationale"
