@@ -93,6 +93,5 @@ The scanner follows this execution flow:
 
 ## Next Steps
 
-- Learn about [configuration options](1_configuration.md) to understand all available settings
-- Explore [practical examples](2_examples.md) to see the scanner in action
+- Learn about [configuration options](1_configuration.md) to understand all available settings, including example configurations and usage guidance
 - Review sample configurations in the `scanner_configurations/` directory

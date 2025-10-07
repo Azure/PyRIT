@@ -121,7 +121,6 @@ chapters:
     - file: code/scanner/0_scanner
       sections:
       - file: code/scanner/1_configuration
-      - file: code/scanner/2_examples
   - file: deployment/README
     sections:
     - file: deployment/deploy_hf_model_aml
