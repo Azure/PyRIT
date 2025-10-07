@@ -104,7 +104,7 @@ print()
 
 # Example 1: Query for a single harm category
 print("1. Query for single harm category 'illegal':")
-illegal_attacks = memory.get_attack_results(harm_category=["illegal"])
+illegal_attacks = memory.get_attack_results(harm_categories=["illegal"])
 print(f"   Found {len(illegal_attacks)} attack results with 'illegal' category")
 
 if illegal_attacks:
@@ -120,7 +120,7 @@ if illegal_attacks:
 # %%
 # Example 2: Query for multiple harm categories
 print("3. Query for multiple harm categories 'illegal' and 'violence':")
-multiple_groups = memory.get_attack_results(harm_category=["illegal", "violence"])
+multiple_groups = memory.get_attack_results(harm_categories=["illegal", "violence"])
 
 for i, attack_result in enumerate(multiple_groups):
     print(f"   Attack {i+1}: {attack_result.objective}...")

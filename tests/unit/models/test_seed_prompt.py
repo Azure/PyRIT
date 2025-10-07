@@ -5,7 +5,6 @@ import os
 import pathlib
 import tempfile
 import uuid
-from typing import Sequence
 from unittest.mock import MagicMock, patch
 
 import numpy as np

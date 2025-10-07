@@ -956,7 +956,7 @@ class MemoryInterface(abc.ABC):
         objective: Optional[str] = None,
         objective_sha256: Optional[Sequence[str]] = None,
         outcome: Optional[str] = None,
-        harm_category: Optional[Sequence[str]] = None,
+        harm_categories: Optional[Sequence[str]] = None,
         labels: Optional[dict[str, str]] = None,
     ) -> Sequence[AttackResult]:
         """
@@ -970,7 +970,7 @@ class MemoryInterface(abc.ABC):
                 Defaults to None.
             outcome (Optional[str], optional): The outcome to filter by (success, failure, undetermined).
                 Defaults to None.
-            harm_category (Optional[Sequence[str]], optional): A list of harm categories to filter results by.
+            harm_categories (Optional[Sequence[str]], optional): A list of harm categories to filter results by.
                 These harm categories are associated with the prompts themselves,
                 meaning they are harm(s) we're trying to elicit with the prompt,
                 not necessarily one(s) that were found in the response.
@@ -998,21 +998,21 @@ class MemoryInterface(abc.ABC):
         if outcome:
             conditions.append(AttackResultEntry.outcome == outcome)
 
-        if harm_category:
+        if harm_categories:
             # ALL categories must be present in the SAME conversation
-            harm_category_subquery = exists().where(
+            harm_categories_subquery = exists().where(
                 and_(
                     PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
                     PromptMemoryEntry.harm_categories.isnot(None),
                     and_(
                         *[
                             func.json_extract(PromptMemoryEntry.harm_categories, "$").like(f'%"{category}"%')
-                            for category in harm_category
+                            for category in harm_categories
                         ]
                     ),
                 )
             )
-            conditions.append(harm_category_subquery)
+            conditions.append(harm_categories_subquery)
         if labels:
             # ALL labels must be present in the SAME conversation
             labels_subquery = exists().where(
