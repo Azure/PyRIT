@@ -97,7 +97,6 @@ class SelfAskGeneralTrueFalseScorer(TrueFalseScorer):
         # Render system prompt and user prompt
         system_prompt = self._system_prompt_format_string.format(
             objective=objective,
-            task=objective,
             prompt=original_prompt,
             request_piece=request_piece,
         )
@@ -106,7 +105,6 @@ class SelfAskGeneralTrueFalseScorer(TrueFalseScorer):
         if self._prompt_format_string:
             user_prompt = self._prompt_format_string.format(
                 objective=objective,
-                task=objective,
                 prompt=original_prompt,
                 request_piece=request_piece,
             )

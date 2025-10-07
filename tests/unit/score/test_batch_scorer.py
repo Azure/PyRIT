@@ -281,21 +281,27 @@ class TestBatchScorerErrorHandling:
         # Create multiple pieces in the same sequence
         pieces = [
             PromptRequestPiece(
-                role="user",
-                conversation_id="conv1",
-                sequence=0,
-                original_value="User message 1",
-            ),
-            PromptRequestPiece(
                 role="system",
                 conversation_id="conv1",
                 sequence=0,
                 original_value="System prompt",
             ),
             PromptRequestPiece(
-                role="assistant",
+                role="user",
                 conversation_id="conv1",
                 sequence=1,
+                original_value="User message 1",
+            ),
+            PromptRequestPiece(
+                role="user",
+                conversation_id="conv1",
+                sequence=1,
+                original_value="User message 2",
+            ),
+            PromptRequestPiece(
+                role="assistant",
+                conversation_id="conv1",
+                sequence=2,
                 original_value="Assistant response",
             ),
         ]
@@ -314,7 +320,8 @@ class TestBatchScorerErrorHandling:
             call_args = scorer.score_prompts_batch_async.call_args
             request_responses = call_args.kwargs["request_responses"]
 
-            # Should have 2 groups: sequence 0 (with 2 pieces) and sequence 1 (with 1 piece)
-            assert len(request_responses) == 2
-            assert len(request_responses[0].request_pieces) == 2
-            assert len(request_responses[1].request_pieces) == 1
+            # Should have 3 groups: sequence 0 (with 1 pieces) and sequence 1 (with 2 pieces)
+            assert len(request_responses) == 3
+            assert len(request_responses[0].request_pieces) == 1
+            assert len(request_responses[1].request_pieces) == 2
+            assert len(request_responses[2].request_pieces) == 1

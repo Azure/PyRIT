@@ -27,7 +27,7 @@ class SelfAskGeneralFloatScaleScorer(FloatScaleScorer):
     Args:
         chat_target (PromptChatTarget): The chat target used to score.
         system_prompt_format_string (str): System prompt template with placeholders for
-            objective, task (alias of objective), prompt, and request_piece.
+            objective, prompt, and request_piece.
         prompt_format_string (Optional[str]): User prompt template with the same placeholders.
         category (Optional[str]): Category for the score.
         min_value (int): Minimum of the model's native scale. Defaults to 0.
@@ -99,7 +99,6 @@ class SelfAskGeneralFloatScaleScorer(FloatScaleScorer):
         # Render system prompt and user prompt
         system_prompt = self._system_prompt_format_string.format(
             objective=objective,
-            task=objective,
             prompt=original_prompt,
             request_piece=request_piece,
         )
@@ -108,7 +107,6 @@ class SelfAskGeneralFloatScaleScorer(FloatScaleScorer):
         if self._prompt_format_string:
             user_prompt = self._prompt_format_string.format(
                 objective=objective,
-                task=objective,
                 prompt=original_prompt,
                 request_piece=request_piece,
             )

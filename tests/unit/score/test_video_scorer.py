@@ -19,6 +19,7 @@ from pyrit.score.true_false.video_true_false_scorer import VideoTrueFalseScorer
 
 def is_opencv_installed():
     try:
+        import cv2  # noqa: F401
         return True
     except ModuleNotFoundError:
         return False
