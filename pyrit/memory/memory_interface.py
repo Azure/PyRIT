@@ -14,7 +14,7 @@ from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
 from sqlalchemy import MetaData, and_
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-from sqlalchemy.sql.elements import ColumnElement, TextClause
+from sqlalchemy.sql.elements import ColumnElement
 
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.memory.memory_embedding import (
@@ -128,13 +128,13 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _get_prompt_pieces_attack_conditions(self, *, attack_id: str) -> TextClause:
+    def _get_prompt_pieces_attack_conditions(self, *, attack_id: str) -> Any:
         """
         Returns a condition to retrieve based on attack ID.
         """
 
     @abc.abstractmethod
-    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> TextClause:
+    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> Any:
         """
         Returns a condition for filtering seed prompt entries based on prompt metadata.
 
@@ -143,7 +143,7 @@ class MemoryInterface(abc.ABC):
                 This includes information that is useful for the specific target you're probing, such as encoding data.
 
         Returns:
-            TextClause: A condition for filtering memory entries based on prompt metadata.
+            Any: A SQLAlchemy condition for filtering memory entries based on prompt metadata.
         """
 
     @abc.abstractmethod
