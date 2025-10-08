@@ -292,7 +292,7 @@ precise_results = memory.get_attack_results(labels=memory_labels)
 print(f"Found {len(precise_results)} attack results matching all labels")
 
 # Combine harm categories with labels for very specific filtering
-violence_from_operation = memory.get_attack_results(harm_category=["violence"], labels={"op_name": "new_op"})
+violence_from_operation = memory.get_attack_results(targeted_harm_categories=["violence"], labels={"op_name": "new_op"})
 
 print(f"\n*****Found {len(violence_from_operation)} violence-related results from our operation")
 
