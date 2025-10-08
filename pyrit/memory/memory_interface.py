@@ -14,7 +14,7 @@ from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
 from sqlalchemy import MetaData, and_
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-from sqlalchemy.sql.elements import ColumnElement
+from sqlalchemy.sql.elements import ColumnElement, TextClause
 
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.memory.memory_embedding import (
@@ -128,22 +128,22 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _get_prompt_pieces_attack_conditions(self, *, attack_id: str):
+    def _get_prompt_pieces_attack_conditions(self, *, attack_id: str) -> TextClause:
         """
         Returns a condition to retrieve based on attack ID.
         """
 
     @abc.abstractmethod
-    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]):
+    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> TextClause:
         """
-        Returns a list of conditions for filtering seed prompt entries based on prompt metadata.
+        Returns a condition for filtering seed prompt entries based on prompt metadata.
 
         Args:
-            prompt_metadata (dict[str, str | int]): A free-form dictionary for tagging prompts with custom metadata.
+            metadata (dict[str, str | int]): A free-form dictionary for tagging prompts with custom metadata.
                 This includes information that is useful for the specific target you're probing, such as encoding data.
 
         Returns:
-            list: A list of conditions for filtering memory entries based on prompt metadata.
+            TextClause: A condition for filtering memory entries based on prompt metadata.
         """
 
     @abc.abstractmethod

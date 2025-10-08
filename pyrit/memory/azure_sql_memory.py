@@ -14,6 +14,7 @@ from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload, sessionmaker
 from sqlalchemy.orm.session import Session
+from sqlalchemy.sql.elements import TextClause
 
 from pyrit.common import default_values
 from pyrit.common.singleton import Singleton
@@ -213,7 +214,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         condition = text(conditions).bindparams(**{key: str(value) for key, value in memory_labels.items()})
         return [condition]
 
-    def _get_prompt_pieces_attack_conditions(self, *, attack_id: str):
+    def _get_prompt_pieces_attack_conditions(self, *, attack_id: str) -> TextClause:
         return text("ISJSON(attack_identifier) = 1 AND JSON_VALUE(attack_identifier, '$.id') = :json_id").bindparams(
             json_id=str(attack_id)
         )
@@ -232,7 +233,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
     def _get_prompt_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list:
         return self._get_metadata_conditions(prompt_metadata=prompt_metadata)
 
-    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]):
+    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> TextClause:
         return self._get_metadata_conditions(prompt_metadata=metadata)[0]
 
     def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
