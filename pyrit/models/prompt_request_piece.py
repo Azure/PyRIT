@@ -41,7 +41,7 @@ class PromptRequestPiece:
         attack_identifier: Optional[Dict[str, str]] = None,
         scorer_identifier: Optional[Dict[str, str]] = None,
         original_value_data_type: PromptDataType = "text",
-        converted_value_data_type: PromptDataType = "text",
+        converted_value_data_type: Optional[PromptDataType] = None,
         response_error: PromptResponseError = "none",
         originator: Originator = "undefined",
         original_prompt_id: Optional[uuid.UUID] = None,
@@ -87,7 +87,12 @@ class PromptRequestPiece:
 
         if converted_value is None:
             converted_value = original_value
-            converted_value_data_type = original_value_data_type
+            if converted_value_data_type is None:
+                converted_value_data_type = original_value_data_type
+        else:
+            # If converted_value is provided but converted_value_data_type is not, default to original_value_data_type
+            if converted_value_data_type is None:
+                converted_value_data_type = original_value_data_type
 
         self.conversation_id = conversation_id if conversation_id else str(uuid4())
         self.sequence = sequence

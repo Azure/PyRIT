@@ -31,39 +31,6 @@ class FloatScaleScorer(Scorer):
             if not (0 <= score.get_value() <= 1):
                 raise ValueError("FloatScaleScorer score value must be between 0 and 1.")
 
-    async def _score_async(
-        self, request_response: PromptRequestResponse, *, objective: Optional[str] = None
-    ) -> list[Score]:
-        """
-        Score the given request response asynchronously.
-
-        For FloatScaleScorer, the scoring is based on a float scale from 0 to 1. It scores every piece
-        of the request_response.
-
-        Args:
-            request_response (PromptRequestResponse): The prompt request response to score.
-            objective (Optional[str]): The objective to evaluate against. Defaults to None.
-
-        Returns:
-            list[Score]: A list of Score objects, one for each supported piece in the request response.
-        """
-        if not request_response.request_pieces:
-            return []
-
-        # score the supported pieces
-        supported_pieces = self._get_supported_pieces(request_response)
-
-        tasks = [self._score_piece_async(request_piece=piece, objective=objective) for piece in supported_pieces]
-
-        if not tasks:
-            return []
-
-        # Run all piece-level scorings concurrently
-        piece_score_lists = await asyncio.gather(*tasks)
-
-        # Flatten list[list[Score]] -> list[Score]
-        return [score for sublist in piece_score_lists for score in sublist]
-
     async def _score_value_with_llm(
         self,
         *,

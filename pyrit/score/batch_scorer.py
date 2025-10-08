@@ -104,9 +104,9 @@ class BatchScorer:
         if not request_pieces:
             raise ValueError("No entries match the provided filters. Please check your filters.")
 
-        # Group pieces by conversation 
+        # Group pieces by conversation
         conversations = group_request_pieces_into_conversations(request_pieces)
-        
+
         # Flatten all conversations into a single list of responses
         responses: list[PromptRequestResponse] = []
         for conversation in conversations:

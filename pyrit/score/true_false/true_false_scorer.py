@@ -45,7 +45,7 @@ class TrueFalseScorer(Scorer):
         """
         Score the given request response asynchronously.
 
-        For TrueFalseScorer, the scoring is a single score.
+        For TrueFalseScorer, multiple piece scores are aggregated into a single true/false score.
 
         Args:
             request_response (PromptRequestResponse): The prompt request response to score.
@@ -54,14 +54,17 @@ class TrueFalseScorer(Scorer):
         Returns:
             list[Score]: A list containing a single true/false Score object.
         """
+        # Get individual scores for all supported pieces using base implementation logic
+        score_list = await super()._score_async(request_response, objective=objective)
 
-        tasks = [
-            self._score_piece_async(request_piece=piece, objective=objective)
-            for piece in request_response.request_pieces
-        ]
-
-        if not tasks:
+        if not score_list:
             # If no pieces matched (e.g., due to role filter), return False
+            # Use the first request piece's ID (or original_prompt_id as fallback)
+            first_piece = request_response.request_pieces[0]
+            piece_id = first_piece.id or first_piece.original_prompt_id
+            if piece_id is None:
+                raise ValueError("Cannot create score: request piece has no id or original_prompt_id")
+            
             return_score = Score(
                 score_value=str(False).lower(),
                 score_value_description="No pieces to score after filtering; returning false.",
@@ -70,22 +73,15 @@ class TrueFalseScorer(Scorer):
                 score_metadata=None,
                 score_rationale="No supported pieces (possibly filtered by role).",
                 scorer_class_identifier=self.get_identifier(),
-                prompt_request_response_id=request_response.request_pieces[0].original_prompt_id,
+                prompt_request_response_id=piece_id,
                 objective=objective,
             )
             return [return_score]
 
-        # Run all piece-level scorings concurrently
-        piece_score_lists = await asyncio.gather(*tasks)
-
-        # Use score aggregator to return a single score
-        score_list = [score for sublist in piece_score_lists for score in sublist]
-
-        if len(score_list) == 0:
-            raise ValueError("No scores were generated from the request response pieces.")
-
+        # Use score aggregator to combine multiple piece scores into a single score
         result = self._score_aggregator(score_list)
 
+        # Use the prompt_request_response_id from the first score
         return_score = Score(
             score_value=str(result.value).lower(),
             score_value_description=result.description,
@@ -94,7 +90,7 @@ class TrueFalseScorer(Scorer):
             score_metadata=result.metadata,
             score_rationale=result.rationale,
             scorer_class_identifier=self.get_identifier(),
-            prompt_request_response_id=request_response.request_pieces[0].id,
+            prompt_request_response_id=score_list[0].prompt_request_response_id,
             objective=objective,
         )
 

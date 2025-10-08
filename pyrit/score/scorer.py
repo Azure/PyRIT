@@ -111,11 +111,39 @@ class Scorer(abc.ABC):
 
         return scores
 
-    @abstractmethod
     async def _score_async(
         self, request_response: PromptRequestResponse, *, objective: Optional[str] = None
     ) -> list[Score]:
-        raise NotImplementedError()
+        """
+        Score the given request response asynchronously.
+
+        This default implementation scores all supported pieces in the request_response
+        and returns a flattened list of scores. Subclasses can override this method
+        to implement custom scoring logic (e.g., aggregating scores).
+
+        Args:
+            request_response (PromptRequestResponse): The prompt request response to score.
+            objective (Optional[str]): The objective to evaluate against. Defaults to None.
+
+        Returns:
+            list[Score]: A list of Score objects.
+        """
+        if not request_response.request_pieces:
+            return []
+
+        # Score only the supported pieces
+        supported_pieces = self._get_supported_pieces(request_response)
+
+        tasks = [self._score_piece_async(request_piece=piece, objective=objective) for piece in supported_pieces]
+
+        if not tasks:
+            return []
+
+        # Run all piece-level scorings concurrently
+        piece_score_lists = await asyncio.gather(*tasks)
+
+        # Flatten list[list[Score]] -> list[Score]
+        return [score for sublist in piece_score_lists for score in sublist]
 
     @abstractmethod
     async def _score_piece_async(

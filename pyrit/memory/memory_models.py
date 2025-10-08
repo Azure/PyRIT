@@ -231,6 +231,7 @@ class ScoreEntry(Base):  # type: ignore
     scorer_class_identifier: Mapped[dict[str, str]] = mapped_column(JSON)
     prompt_request_response_id = mapped_column(CustomUUID, ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
     timestamp = mapped_column(DateTime, nullable=False)
+    task = mapped_column(String, nullable=True)  # Deprecated: Use objective instead
     objective = mapped_column(String, nullable=True)
     prompt_request_piece: Mapped["PromptMemoryEntry"] = relationship("PromptMemoryEntry", back_populates="scores")
 
@@ -245,6 +246,9 @@ class ScoreEntry(Base):  # type: ignore
         self.scorer_class_identifier = entry.scorer_class_identifier
         self.prompt_request_response_id = entry.prompt_request_response_id if entry.prompt_request_response_id else None
         self.timestamp = entry.timestamp
+        # Store in both columns for backward compatibility
+        # New code should only read from objective
+        self.task = entry.objective  
         self.objective = entry.objective
 
     def get_score(self) -> Score:

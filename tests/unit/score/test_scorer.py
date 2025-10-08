@@ -97,6 +97,48 @@ class MockScorer(TrueFalseScorer):
         assert all(s.score_value in ["true", "false"] for s in scores)
 
 
+class SelectiveValidator(ScorerPromptValidator):
+    """Validator that only supports text pieces, not images."""
+
+    def __init__(self, *, enforce_all_pieces_valid: bool = False):
+        super().__init__(
+            supported_data_types=["text"],
+            enforce_all_pieces_valid=enforce_all_pieces_valid,
+        )
+
+
+class MockFloatScorer(Scorer):
+    """Mock scorer that tracks which pieces were scored."""
+
+    def __init__(self, *, validator: ScorerPromptValidator):
+        super().__init__(validator=validator)
+        self.scored_piece_ids = []
+
+    async def _score_piece_async(
+        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+    ) -> list[Score]:
+        # Track which pieces get scored
+        self.scored_piece_ids.append(request_piece.id)
+
+        return [
+            Score(
+                score_value="0.5",
+                score_value_description="Test score",
+                score_type="float_scale",
+                score_category=None,
+                score_metadata=None,
+                score_rationale="Test rationale",
+                scorer_class_identifier=self.get_identifier(),
+                prompt_request_response_id=request_piece.id or "test-id",
+                objective=objective,
+            )
+        ]
+
+    def validate_return_scores(self, scores: list[Score]):
+        for score in scores:
+            assert 0 <= float(score.score_value) <= 1
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize("bad_json", [BAD_JSON, KEY_ERROR_JSON, KEY_ERROR2_JSON])
 async def test_scorer_send_chat_target_async_bad_json_exception_retries(bad_json: str):
@@ -883,3 +925,209 @@ def test_get_scorer_metrics(tmp_path):
     with patch.object(evaluator, "_get_metrics_path", return_value=metrics_path):
         loaded = evaluator.get_scorer_metrics("any_dataset")
         assert loaded == metrics
+
+@pytest.mark.asyncio
+async def test_get_supported_pieces_filters_unsupported_data_types(patch_central_database):
+    """Test that _get_supported_pieces only returns pieces with supported data types."""
+    validator = SelectiveValidator(enforce_all_pieces_valid=False)
+    scorer = MockFloatScorer(validator=validator)
+    
+    # Verify validator is configured correctly
+    assert "text" in validator._supported_data_types
+    assert "image_path" not in validator._supported_data_types or len([dt for dt in validator._supported_data_types if dt != "text"]) == 0
+
+    # Create a response with mixed data types
+    text_piece = PromptRequestPiece(
+        role="assistant",
+        original_value="text response",
+        converted_value_data_type="text",
+        id="text-1",
+        conversation_id="test-convo",
+    )
+    image_piece = PromptRequestPiece(
+        role="assistant",
+        original_value="image.png",
+        converted_value_data_type="image_path",
+        id="image-1",
+        conversation_id="test-convo",
+    )
+    audio_piece = PromptRequestPiece(
+        role="assistant",
+        original_value="audio.wav",
+        converted_value_data_type="audio_path",
+        id="audio-1",
+        conversation_id="test-convo",
+    )
+    
+    # Verify validator filtering works
+    assert validator.is_request_piece_supported(text_piece) is True
+    assert validator.is_request_piece_supported(image_piece) is False
+    assert validator.is_request_piece_supported(audio_piece) is False
+
+    response = PromptRequestResponse(request_pieces=[text_piece, image_piece, audio_piece])
+
+    # Score the response
+    scores = await scorer.score_async(response)
+
+    # Should only score the text piece
+    assert len(scorer.scored_piece_ids) == 1
+    assert scorer.scored_piece_ids[0] == "text-1"
+    assert len(scores) == 1
+    assert scores[0].prompt_request_response_id == "text-1"
+
+
+@pytest.mark.asyncio
+async def test_unsupported_pieces_ignored_when_enforce_all_pieces_valid_false(patch_central_database):
+    """Test that unsupported pieces don't cause errors when enforce_all_pieces_valid=False."""
+    validator = SelectiveValidator(enforce_all_pieces_valid=False)
+    scorer = MockFloatScorer(validator=validator)
+
+    # Create a response with only unsupported types and one supported
+    text_piece = PromptRequestPiece(
+        role="assistant",
+        original_value="text response",
+        converted_value_data_type="text",
+        id="text-1",
+        conversation_id="test-convo",
+    )
+    image_piece = PromptRequestPiece(
+        role="assistant",
+        original_value="image.png",
+        converted_value_data_type="image_path",
+        id="image-1",
+        conversation_id="test-convo",
+    )
+
+    response = PromptRequestResponse(request_pieces=[image_piece, text_piece])
+
+    # Should not raise an error, just skip the image piece
+    scores = await scorer.score_async(response)
+
+    assert len(scores) == 1
+    assert len(scorer.scored_piece_ids) == 1
+    assert scorer.scored_piece_ids[0] == "text-1"
+
+
+@pytest.mark.asyncio
+async def test_all_unsupported_pieces_raises_error(patch_central_database):
+    """Test that having no supported pieces raises a clear error."""
+    validator = SelectiveValidator(enforce_all_pieces_valid=False)
+    scorer = MockFloatScorer(validator=validator)
+
+    # Create a response with only unsupported types
+    image_piece = PromptRequestPiece(
+        role="assistant",
+        original_value="image.png",
+        converted_value_data_type="image_path",
+        id="image-1",
+        conversation_id="test-convo",
+    )
+    audio_piece = PromptRequestPiece(
+        role="assistant",
+        original_value="audio.wav",
+        converted_value_data_type="audio_path",
+        id="audio-1",
+        conversation_id="test-convo",
+    )
+
+    response = PromptRequestResponse(request_pieces=[image_piece, audio_piece])
+
+    # Should raise error from validator because no valid pieces to score
+    with pytest.raises(ValueError, match="There are no valid pieces to score"):
+        await scorer.score_async(response)
+
+    # No pieces should have been scored
+    assert len(scorer.scored_piece_ids) == 0
+
+
+@pytest.mark.asyncio
+async def test_true_false_scorer_uses_supported_pieces_only(patch_central_database):
+    """Test that TrueFalseScorer also uses _get_supported_pieces via base implementation."""
+    validator = SelectiveValidator(enforce_all_pieces_valid=False)
+
+    class TestTrueFalseScorer(TrueFalseScorer):
+        def __init__(self):
+            super().__init__(validator=validator)
+            self.scored_piece_ids = []
+
+        async def _score_piece_async(
+            self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+        ) -> list[Score]:
+            self.scored_piece_ids.append(request_piece.id)
+            return [
+                Score(
+                    score_value="true",
+                    score_value_description="Test",
+                    score_type="true_false",
+                    score_category=None,
+                    score_metadata=None,
+                    score_rationale="Test",
+                    scorer_class_identifier=self.get_identifier(),
+                    prompt_request_response_id=request_piece.id or "test-id",
+                    objective=objective,
+                )
+            ]
+
+    scorer = TestTrueFalseScorer()
+
+    # Create mixed response
+    text_piece = PromptRequestPiece(
+        role="assistant",
+        original_value="text",
+        converted_value_data_type="text",
+        id="text-1",
+        conversation_id="test-convo",
+    )
+    image_piece = PromptRequestPiece(
+        role="assistant",
+        original_value="image.png",
+        converted_value_data_type="image_path",
+        id="image-1",
+        conversation_id="test-convo",
+    )
+
+    response = PromptRequestResponse(request_pieces=[text_piece, image_piece])
+
+    # Score the response
+    scores = await scorer.score_async(response)
+
+    # Should only score the text piece
+    assert len(scorer.scored_piece_ids) == 1
+    assert scorer.scored_piece_ids[0] == "text-1"
+    # TrueFalseScorer aggregates to single score
+    assert len(scores) == 1
+    assert scores[0].score_value == "true"
+
+
+@pytest.mark.asyncio
+async def test_base_scorer_score_async_implementation(patch_central_database):
+    """Test that the base Scorer._score_async implementation works correctly."""
+    validator = SelectiveValidator(enforce_all_pieces_valid=False)
+    scorer = MockFloatScorer(validator=validator)
+
+    # Create response with multiple supported pieces
+    text_piece1 = PromptRequestPiece(
+        role="assistant",
+        original_value="text 1",
+        converted_value_data_type="text",
+        id="text-1",
+        conversation_id="test-convo",
+    )
+    text_piece2 = PromptRequestPiece(
+        role="assistant",
+        original_value="text 2",
+        converted_value_data_type="text",
+        id="text-2",
+        conversation_id="test-convo",
+    )
+
+    response = PromptRequestResponse(request_pieces=[text_piece1, text_piece2])
+
+    # Score the response
+    scores = await scorer.score_async(response)
+
+    # Should score both pieces
+    assert len(scorer.scored_piece_ids) == 2
+    assert "text-1" in scorer.scored_piece_ids
+    assert "text-2" in scorer.scored_piece_ids
+    assert len(scores) == 2
