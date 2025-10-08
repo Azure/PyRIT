@@ -5,11 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -80,6 +76,3 @@ scores = await batch_scorer.score_responses_by_filters_async(  # type: ignore
 for score in scores:
     prompt_text = memory.get_prompt_request_pieces(prompt_ids=[str(score.prompt_request_response_id)])[0].original_value
     print(f"{score} : {prompt_text}")  # We can see that the attack was detected
-
-# %%
-memory.dispose_engine()

@@ -5,11 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.7
-#   kernelspec:
-#     display_name: pyrit-internal
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -107,6 +103,7 @@ await ConsoleAttackResultPrinter().print_result_async(result=result)  # type: ig
 
 # Retrieve the completed conversation and hand to LookBackScorer
 memory = CentralMemory.get_memory_instance()
+conversation_history = memory.get_conversation(conversation_id=result.conversation_id)
 
 # Exclude the instruction prompts from the scoring process by setting exclude_instruction_prompts to True
 score_conversation = LookBackScorer(chat_target=adversarial_chat, exclude_instruction_prompts=True)
@@ -116,4 +113,6 @@ request_response = memory.get_prompt_request_pieces(conversation_id=result.conve
 request_piece = request_response[0]
 
 # Returns a score using entire conversation as context
-score = (await score_conversation.score_async(request_piece))[0]  # type: ignore
+score = (await score_conversation.score_async(request))[0]  # type: ignore
+
+print(f"{score} {score.score_rationale}")

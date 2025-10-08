@@ -112,13 +112,13 @@ class MockFloatScorer(Scorer):
 
     def __init__(self, *, validator: ScorerPromptValidator):
         super().__init__(validator=validator)
-        self.scored_piece_ids = []
+        self.scored_piece_ids: list[str] = []
 
     async def _score_piece_async(
         self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         # Track which pieces get scored
-        self.scored_piece_ids.append(request_piece.id)
+        self.scored_piece_ids.append(str(request_piece.id))
 
         return [
             Score(

@@ -5,11 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -158,6 +154,7 @@ import textwrap
 from pyrit.executor.attack import RedTeamingAttack, RTASystemPromptPaths
 from pyrit.prompt_converter.string_join_converter import StringJoinConverter
 from pyrit.prompt_target import CrucibleTarget, OpenAIChatTarget
+from pyrit.score import SubStringScorer
 
 conversation_objective = textwrap.dedent(
     """\

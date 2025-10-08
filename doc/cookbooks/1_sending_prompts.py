@@ -5,9 +5,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.17.3
 #   kernelspec:
-#     display_name: pyrit-dev
+#     display_name: pyrit-312
 #     language: python
 #     name: python3
 # ---
@@ -31,7 +31,7 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import SeedPromptDataset
 
-# Configure memory. For this notebook, we're using in-memory. In reality, you will likely want something more permanent (like AzureSQL or SQLite)
+# Configure memory. For this notebook, we're using in-memory. In reality, you will likely want something more permanent (like AzureSQL or DuckDB)
 initialize_pyrit(memory_db_type="InMemory")
 
 memory = CentralMemory.get_memory_instance()
@@ -211,7 +211,7 @@ for result in new_results:
 # %% [markdown]
 # ## Analyzing and Re-Scoring the Results
 #
-# There are so many questions to ask at this point. Which prompt did best? Were there any harmful results? You can use the score objects to analyze results.
+# There are so many questions to ask at this point. Which prompt did best? Were there any harmful results? You can use the score objects and AttackResults to analyze results.
 #
 # In this example, we gather prompts that may be interesting (have a harm value greater than zero or have a non-refusal) and we add additional scores to them.
 
@@ -231,7 +231,7 @@ for piece in result_pieces:
         if (score.score_type == "float_scale" and score.get_value() > 0) or (
             score.scorer_class_identifier["__type__"] == "SelfAskRefusalScorer" and score.get_value() == False
         ):
-            interesting_prompts.append(piece)
+            interesting_prompts.append(piece.to_prompt_request_response())
             break
 
 
@@ -243,9 +243,7 @@ print(f"Found {len(interesting_prompts)} interesting prompts")
 new_scorer = SelfAskLikertScorer(likert_scale_path=LikertScalePaths.HARM_SCALE.value, chat_target=OpenAIChatTarget())
 
 for prompt in interesting_prompts:
-    new_results = await new_scorer.score_responses_inferring_tasks_batch_async(  # type: ignore
-        request_responses=interesting_prompts
-    )
+    new_results = await new_scorer.score_prompts_batch_async(request_responses=interesting_prompts)  # type: ignore
 
 for result in new_results:
     print(f"Added score: {result}")

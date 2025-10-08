@@ -6,11 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -74,12 +70,13 @@ from pyrit.score import (
     AzureContentFilterScorer,
     BatchScorer,
     ContentClassifierPaths,
+    HumanInTheLoopScorerGradio,
     SelfAskCategoryScorer,
 )
 
 # The scorer is interchangeable with other scorers
 # scorer = AzureContentFilterScorer()
-# scorer = HumanInTheLoopScorer()
+# scorer = HumanInTheLoopScorerGradio()
 scorer = SelfAskCategoryScorer(
     chat_target=OpenAIChatTarget(), content_classifier_path=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value
 )
@@ -102,7 +99,7 @@ for score in scores:
 # Remember that `GLOBAL_MEMORY_LABELS`, which will be assigned to every prompt sent through an attack, can be set as an environment variable (.env or env.local), and any additional custom memory labels can be passed in the `PromptSendingAttack` `execute_async` function. (Custom memory labels passed in will have precedence over `GLOBAL_MEMORY_LABELS` in case of collisions.) For more information on memory labels, see the [Memory Labels Guide](../memory/5_memory_labels.ipynb).
 #
 # All filters include:
-# - attack ID
+# - Attack ID
 # - Conversation ID
 # - Prompt IDs
 # - Memory Labels
@@ -122,6 +119,7 @@ from pyrit.memory import CentralMemory
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import (
     AzureContentFilterScorer,
+    BatchScorer,
     ContentClassifierPaths,
     HumanInTheLoopScorerGradio,
     SelfAskCategoryScorer,

@@ -46,7 +46,11 @@ async def test_float_scale_threshold_scorer_adds_to_memory(threshold, score_valu
 
 @pytest.mark.asyncio
 async def test_float_scale_threshold_scorer_returns_single_score_with_multi_category_scorer():
-    """Test that FloatScaleThresholdScorer returns exactly one score even when the underlying scorer returns multiple."""
+    """
+    Test that FloatScaleThresholdScorer returns exactly one score even when the underlying scorer
+    returns multiple.
+    """
+
     memory = MagicMock(MemoryInterface)
 
     # Mock a scorer that returns multiple scores (like AzureContentFilterScorer)
@@ -86,20 +90,20 @@ async def test_float_scale_threshold_scorer_returns_single_score_with_multi_cate
             ),
         ]
     )
-    
+
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         float_scale_threshold_scorer = FloatScaleThresholdScorer(scorer=scorer, threshold=0.5)
 
         result_scores = await float_scale_threshold_scorer.score_text_async(text="mock example")
-        
+
         # Should return exactly one score
         assert len(result_scores) == 1
-        
+
         binary_score = result_scores[0]
         # With MAX aggregator (default), should take max value (0.8) which is >= 0.5
-        assert binary_score.get_value() == True
+        assert binary_score.get_value() is True
         assert binary_score.score_type == "true_false"
-        
+
         # Verify memory was called once with a single score
         memory.add_scores_to_memory.assert_called_once()
         added_scores = memory.add_scores_to_memory.call_args[1]["scores"]
