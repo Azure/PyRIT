@@ -6,14 +6,13 @@ import uuid
 from contextlib import closing
 from datetime import datetime
 from pathlib import Path
-from typing import MutableSequence, Optional, Sequence, TypeVar, Union
+from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload, sessionmaker
 from sqlalchemy.orm.session import Session
-from sqlalchemy.sql.elements import TextClause
 
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.common.singleton import Singleton
@@ -128,13 +127,13 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         condition = text(json_conditions).bindparams(**{key: str(value) for key, value in prompt_metadata.items()})
         return [condition]
 
-    def _get_prompt_pieces_attack_conditions(self, *, attack_id: str) -> TextClause:
+    def _get_prompt_pieces_attack_conditions(self, *, attack_id: str) -> Any:
         """
         Generates SQLAlchemy filter conditions for filtering by attack ID.
         """
         return text("JSON_EXTRACT(attack_identifier, '$.id') = :attack_id").bindparams(attack_id=str(attack_id))
 
-    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> TextClause:
+    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> Any:
         """
         Generates SQLAlchemy filter conditions for filtering seed prompts by metadata.
         """
