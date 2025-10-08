@@ -36,7 +36,6 @@ For comprehensive documentation about the scanner feature, including:
 
 - **Architecture and concepts**: See [doc/code/scanner/0_scanner.md](../doc/code/scanner/0_scanner.md)
 - **Configuration reference**: See [doc/code/scanner/1_configuration.md](../doc/code/scanner/1_configuration.md)
-- **Usage examples**: See [doc/code/scanner/2_examples.md](../doc/code/scanner/2_examples.md)
 
 Or visit the [PyRIT documentation website](https://azure.github.io/PyRIT/).
 
