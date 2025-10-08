@@ -105,9 +105,9 @@ class Scorer(abc.ABC):
             request_response,
             objective=objective,
         )
-        self._memory.add_scores_to_memory(scores=scores)
-
+        
         self.validate_return_scores(scores=scores)
+        self._memory.add_scores_to_memory(scores=scores)
 
         return scores
 

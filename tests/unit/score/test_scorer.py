@@ -926,15 +926,19 @@ def test_get_scorer_metrics(tmp_path):
         loaded = evaluator.get_scorer_metrics("any_dataset")
         assert loaded == metrics
 
+
 @pytest.mark.asyncio
 async def test_get_supported_pieces_filters_unsupported_data_types(patch_central_database):
     """Test that _get_supported_pieces only returns pieces with supported data types."""
     validator = SelectiveValidator(enforce_all_pieces_valid=False)
     scorer = MockFloatScorer(validator=validator)
-    
+
     # Verify validator is configured correctly
     assert "text" in validator._supported_data_types
-    assert "image_path" not in validator._supported_data_types or len([dt for dt in validator._supported_data_types if dt != "text"]) == 0
+    assert (
+        "image_path" not in validator._supported_data_types
+        or len([dt for dt in validator._supported_data_types if dt != "text"]) == 0
+    )
 
     # Create a response with mixed data types
     text_piece = PromptRequestPiece(
@@ -958,7 +962,7 @@ async def test_get_supported_pieces_filters_unsupported_data_types(patch_central
         id="audio-1",
         conversation_id="test-convo",
     )
-    
+
     # Verify validator filtering works
     assert validator.is_request_piece_supported(text_piece) is True
     assert validator.is_request_piece_supported(image_piece) is False

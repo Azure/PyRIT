@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
 from typing import Optional
 
 from pyrit.models import Score
@@ -64,7 +63,7 @@ class TrueFalseScorer(Scorer):
             piece_id = first_piece.id or first_piece.original_prompt_id
             if piece_id is None:
                 raise ValueError("Cannot create score: request piece has no id or original_prompt_id")
-            
+
             return_score = Score(
                 score_value=str(False).lower(),
                 score_value_description="No pieces to score after filtering; returning false.",

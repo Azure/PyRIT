@@ -248,7 +248,7 @@ class ScoreEntry(Base):  # type: ignore
         self.timestamp = entry.timestamp
         # Store in both columns for backward compatibility
         # New code should only read from objective
-        self.task = entry.objective  
+        self.task = entry.objective
         self.objective = entry.objective
 
     def get_score(self) -> Score:

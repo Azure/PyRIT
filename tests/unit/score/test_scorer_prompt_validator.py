@@ -14,9 +14,7 @@ class TestScorerPromptValidatorDataTypes:
         """Test that validator with no supported_data_types supports all types."""
         validator = ScorerPromptValidator()
 
-        text_piece = PromptRequestPiece(
-            role="assistant", original_value="text", converted_value_data_type="text"
-        )
+        text_piece = PromptRequestPiece(role="assistant", original_value="text", converted_value_data_type="text")
         image_piece = PromptRequestPiece(
             role="assistant", original_value="image.png", converted_value_data_type="image_path"
         )
@@ -32,9 +30,7 @@ class TestScorerPromptValidatorDataTypes:
         """Test that validator correctly filters to only text pieces."""
         validator = ScorerPromptValidator(supported_data_types=["text"])
 
-        text_piece = PromptRequestPiece(
-            role="assistant", original_value="text", converted_value_data_type="text"
-        )
+        text_piece = PromptRequestPiece(role="assistant", original_value="text", converted_value_data_type="text")
         image_piece = PromptRequestPiece(
             role="assistant", original_value="image.png", converted_value_data_type="image_path"
         )
@@ -50,9 +46,7 @@ class TestScorerPromptValidatorDataTypes:
         """Test that validator correctly filters to multiple specified types."""
         validator = ScorerPromptValidator(supported_data_types=["text", "image_path"])
 
-        text_piece = PromptRequestPiece(
-            role="assistant", original_value="text", converted_value_data_type="text"
-        )
+        text_piece = PromptRequestPiece(role="assistant", original_value="text", converted_value_data_type="text")
         image_piece = PromptRequestPiece(
             role="assistant", original_value="image.png", converted_value_data_type="image_path"
         )
@@ -68,9 +62,7 @@ class TestScorerPromptValidatorDataTypes:
         """Test that validator correctly filters to only image pieces."""
         validator = ScorerPromptValidator(supported_data_types=["image_path"])
 
-        text_piece = PromptRequestPiece(
-            role="assistant", original_value="text", converted_value_data_type="text"
-        )
+        text_piece = PromptRequestPiece(role="assistant", original_value="text", converted_value_data_type="text")
         image_piece = PromptRequestPiece(
             role="assistant", original_value="image.png", converted_value_data_type="image_path"
         )

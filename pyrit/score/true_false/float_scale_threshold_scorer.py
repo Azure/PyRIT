@@ -95,7 +95,7 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
         score.id = uuid.uuid4()
         score.scorer_class_identifier = self.get_identifier()
         score.scorer_class_identifier["sub_identifier"] = str(self._scorer.get_identifier())
-        return scores
+        return [score]
 
     async def _score_piece_async(
         self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
