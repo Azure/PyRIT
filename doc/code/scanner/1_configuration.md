@@ -488,42 +488,6 @@ The scanner validates configurations using Pydantic models:
 
 Invalid configurations will produce clear error messages indicating what needs to be fixed.
 
-## Example Configuration Files
-
-The `scanner_configurations/` directory contains working example configuration files that demonstrate different scanner capabilities. You can use these as templates for your own testing scenarios.
-
-### `prompt_send.yaml`
-
-Simple prompt sending configuration that sends prompts directly to a target without multi-turn conversation. Good for quick testing and basic scenarios.
-
-**Usage**:
-
-```bash
-python -m pyrit --config-file scanner_configurations/prompt_send.yaml
-```
-
-**What it does**:
-- Loads prompts from a dataset file
-- Sends each prompt directly to the OpenAI target
-- Stores all interactions in the SQLite database
-- Prints results to console
-
-### `basic_multi_turn_attack.yaml`
-
-Multi-turn red teaming attack with automated scoring. Demonstrates adversarial chat configuration and response evaluation.
-
-**Usage**:
-
-```bash
-python -m pyrit --config-file scanner_configurations/basic_multi_turn_attack.yaml
-```
-
-**What it does**:
-- Uses an adversarial target to craft sophisticated attack prompts
-- Sends attacks to the objective target through multi-turn conversation
-- Scores responses using a True/False scorer to determine if objectives were achieved
-- Allows for adaptive attack strategies based on target responses
-
 ## Running the Scanner
 
 ### Prerequisites
@@ -539,14 +503,44 @@ Before running the scanner, ensure:
 To run the scanner with a configuration file:
 
 ```bash
-python -m pyrit --config-file path/to/config.yaml
-```
-
-Or if PyRIT is installed as a package:
-
-```bash
 pyrit_scan --config-file path/to/config.yaml
 ```
+
+## Example Configuration Files
+
+The `scanner_configurations/` directory contains working example configuration files that demonstrate different scanner capabilities. You can use these as templates for your own testing scenarios.
+
+### `prompt_send.yaml`
+
+Simple prompt sending configuration that sends prompts directly to a target without multi-turn conversation. Good for quick testing and basic scenarios.
+
+**Usage**:
+
+```bash
+pyrit_scan --config-file scanner_configurations/prompt_send.yaml
+```
+
+**What it does**:
+- Loads prompts from a dataset file
+- Sends each prompt directly to the OpenAI target
+- Stores all interactions in the SQLite database
+- Prints results to console
+
+### `basic_multi_turn_attack.yaml`
+
+Multi-turn red teaming attack with automated scoring. Demonstrates adversarial chat configuration and response evaluation.
+
+**Usage**:
+
+```bash
+pyrit_scan --config-file scanner_configurations/basic_multi_turn_attack.yaml
+```
+
+**What it does**:
+- Uses an adversarial target to craft sophisticated attack prompts
+- Sends attacks to the objective target through multi-turn conversation
+- Scores responses using a True/False scorer to determine if objectives were achieved
+- Allows for adaptive attack strategies based on target responses
 
 ## Creating Custom Configurations
 
