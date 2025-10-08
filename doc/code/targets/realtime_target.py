@@ -5,11 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -89,7 +85,7 @@ results = await AttackExecutor().execute_multi_objective_attack_async(  # type: 
 
 for result in results:
     await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
-await target.cleanup_target()  # type: ignore
+
 
 # %% [markdown]
 # ## MULTITURN:
@@ -141,4 +137,3 @@ red_teaming_attack = RedTeamingAttack(
 # passed-in memory labels are combined with global memory labels
 result = await red_teaming_attack.execute_async(objective=objective, memory_labels={"harm_category": "illegal"})  # type: ignore
 await ConsoleAttackResultPrinter().print_result_async(result=result)  # type: ignore
-await target.cleanup_target()  # type: ignore

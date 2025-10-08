@@ -26,7 +26,7 @@ from pyrit.models import (
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptTarget
-from pyrit.score import Scorer
+from pyrit.score import Scorer, TrueFalseScorer
 
 
 @pytest.fixture
@@ -41,8 +41,7 @@ def mock_target():
 @pytest.fixture
 def mock_true_false_scorer():
     """Create a mock true/false scorer for testing"""
-    scorer = MagicMock(spec=Scorer)
-    scorer.scorer_type = "true_false"
+    scorer = MagicMock(spec=TrueFalseScorer)
     scorer.score_async = AsyncMock()
     return scorer
 
@@ -51,7 +50,6 @@ def mock_true_false_scorer():
 def mock_non_true_false_scorer():
     """Create a mock scorer that is not a true/false type"""
     scorer = MagicMock(spec=Scorer)
-    scorer.scorer_type = "float_scale"
     return scorer
 
 
@@ -95,10 +93,10 @@ def success_score():
     return Score(
         score_type="true_false",
         score_value="true",
-        score_category="test",
+        score_category=["test"],
         score_value_description="Test success score",
         score_rationale="Test rationale for success",
-        score_metadata="{}",
+        score_metadata={},
         prompt_request_response_id=str(uuid.uuid4()),
         scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
     )
@@ -110,10 +108,10 @@ def failure_score():
     return Score(
         score_type="true_false",
         score_value="false",
-        score_category="test",
+        score_category=["test"],
         score_value_description="Test failure score",
         score_rationale="Test rationale for failure",
-        score_metadata="{}",
+        score_metadata={},
         prompt_request_response_id=str(uuid.uuid4()),
         scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
     )
@@ -135,11 +133,6 @@ class TestMultiPromptSendingAttackInitialization:
         attack = MultiPromptSendingAttack(objective_target=mock_target, attack_scoring_config=attack_scoring_config)
 
         assert attack._objective_scorer == mock_true_false_scorer
-
-    def test_init_raises_error_for_non_true_false_scorer(self, mock_target, mock_non_true_false_scorer):
-        attack_scoring_config = AttackScoringConfig(objective_scorer=mock_non_true_false_scorer)
-        with pytest.raises(ValueError, match="Objective scorer must be a true/false scorer"):
-            MultiPromptSendingAttack(objective_target=mock_target, attack_scoring_config=attack_scoring_config)
 
     def test_init_with_all_custom_configurations(self, mock_target, mock_true_false_scorer, mock_prompt_normalizer):
         converter_cfg = AttackConverterConfig(
@@ -299,7 +292,7 @@ class TestResponseEvaluation:
         attack_scoring_config = AttackScoringConfig(objective_scorer=mock_true_false_scorer)
         attack = MultiPromptSendingAttack(objective_target=mock_target, attack_scoring_config=attack_scoring_config)
 
-        with patch("pyrit.score.Scorer.score_response_with_objective_async") as mock_score:
+        with patch("pyrit.score.Scorer.score_response_async") as mock_score:
             mock_score.return_value = {"objective_scores": [success_score]}
 
             result = await attack._evaluate_response_async(response=sample_response, objective="test objective")
@@ -320,14 +313,13 @@ class TestResponseEvaluation:
         self, mock_target, mock_true_false_scorer, sample_response, success_score
     ):
         auxiliary_scorer = MagicMock(spec=Scorer)
-        auxiliary_scorer.scorer_type = "float_scale"
 
         attack_scoring_config = AttackScoringConfig(
             objective_scorer=mock_true_false_scorer, auxiliary_scorers=[auxiliary_scorer]
         )
         attack = MultiPromptSendingAttack(objective_target=mock_target, attack_scoring_config=attack_scoring_config)
 
-        with patch("pyrit.score.Scorer.score_response_with_objective_async") as mock_score:
+        with patch("pyrit.score.Scorer.score_response_async") as mock_score:
             mock_score.return_value = {"objective_scores": [success_score]}
 
             result = await attack._evaluate_response_async(response=sample_response, objective="test objective")

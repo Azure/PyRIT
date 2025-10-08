@@ -5,7 +5,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.17.3
+#   kernelspec:
+#     display_name: pyrit-312
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -16,12 +20,12 @@
 # %%
 from uuid import uuid4
 
-from pyrit.common import SQLITE, initialize_pyrit
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 
-initialize_pyrit(memory_db_type=SQLITE)
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 conversation_id = str(uuid4())
 
@@ -63,8 +67,6 @@ print(f"Exported conversation with scores to JSON: {json_file_path}")
 # conversation_with_scores = sqlite_memory.export_conversations(file_path=csv_file_path, export_type="csv")
 # print(f"Exported conversation with scores to CSV: {csv_file_path}")
 
-# Cleanup memory resources
-sqlite_memory.dispose_engine()
 
 # %% [markdown]
 # You can also use the exported JSON or CSV files to import the data as a NumPy DataFrame. This can be useful for various data manipulation and analysis tasks.

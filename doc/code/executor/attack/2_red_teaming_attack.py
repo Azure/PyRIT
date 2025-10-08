@@ -5,11 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -33,7 +29,7 @@
 #     decision -- Yes --> done("DONE")
 #     decision -- No --> feedback["Use score to generate<br>feedback"]
 #     feedback -- Feedback --> getPrompt
-
+#
 #      start:::Ash
 #      getPrompt:::Aqua
 #      getPrompt:::Node
@@ -318,3 +314,6 @@ await MarkdownAttackResultPrinter().print_result_async(result=result, include_au
 # ## Other Multi-Turn Attacks
 #
 # The above examples should work using other multi-turn attacks with minimal modification. Check out attacks under `pyrit.executor.attack.multi_turn` for other examples, like Crescendo and Tree of Attacks. These algorithms are always more effective than `RedTeamingAttack`, which is a simple algorithm. However, `RedTeamingAttack` by its nature supports more targets - because it doesn't modify conversation history it can support any `PromptTarget` and not only `PromptChatTargets`.
+
+# %% [markdown]
+#
