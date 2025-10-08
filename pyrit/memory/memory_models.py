@@ -108,7 +108,7 @@ class PromptMemoryEntry(Base):
     timestamp = mapped_column(DateTime, nullable=False)
     labels: Mapped[dict[str, str]] = mapped_column(JSON)
     prompt_metadata: Mapped[dict[str, Union[str, int]]] = mapped_column(JSON)
-    harm_categories: Mapped[Optional[List[str]]] = mapped_column(JSON)
+    targeted_harm_categories: Mapped[Optional[List[str]]] = mapped_column(JSON)
     converter_identifiers: Mapped[Optional[List[dict[str, str]]]] = mapped_column(JSON)
     prompt_target_identifier: Mapped[dict[str, str]] = mapped_column(JSON)
     attack_identifier: Mapped[dict[str, str]] = mapped_column(JSON)
@@ -145,7 +145,7 @@ class PromptMemoryEntry(Base):
         self.timestamp = entry.timestamp
         self.labels = entry.labels
         self.prompt_metadata = entry.prompt_metadata
-        self.harm_categories = entry.harm_categories
+        self.targeted_harm_categories = entry.targeted_harm_categories
         self.converter_identifiers = entry.converter_identifiers
         self.prompt_target_identifier = entry.prompt_target_identifier
         self.attack_identifier = entry.attack_identifier
@@ -174,7 +174,7 @@ class PromptMemoryEntry(Base):
             sequence=self.sequence,
             labels=self.labels,
             prompt_metadata=self.prompt_metadata,
-            harm_categories=self.harm_categories,
+            targeted_harm_categories=self.targeted_harm_categories,
             converter_identifiers=self.converter_identifiers,
             prompt_target_identifier=self.prompt_target_identifier,
             attack_identifier=self.attack_identifier,

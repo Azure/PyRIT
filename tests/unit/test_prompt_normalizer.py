@@ -612,13 +612,13 @@ async def test_build_prompt_request_response_harm_categories(mock_memory_instanc
 
     # First prompt should have harm categories
     first_piece = response.request_pieces[0]
-    assert first_piece.harm_categories == harm_categories
+    assert first_piece.targeted_harm_categories == harm_categories
     assert first_piece.original_value == "Test harmful prompt"
     assert first_piece.role == "user"
 
     # Second prompt should have empty harm categories (default)
     second_piece = response.request_pieces[1]
-    assert second_piece.harm_categories == []
+    assert second_piece.targeted_harm_categories == []
     assert second_piece.original_value == "Another prompt"
     assert second_piece.role == "assistant"
 

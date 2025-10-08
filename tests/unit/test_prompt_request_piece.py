@@ -556,7 +556,7 @@ def test_prompt_request_piece_to_dict():
         conversation_id="test_conversation",
         sequence=1,
         labels={"label1": "value1"},
-        harm_categories=["violence", "illegal"],
+        targeted_harm_categories=["violence", "illegal"],
         prompt_metadata="metadata",
         converter_identifiers=[
             {"__type__": "Base64Converter", "__module__": "pyrit.prompt_converter.base64_converter"}
@@ -600,7 +600,7 @@ def test_prompt_request_piece_to_dict():
         "sequence",
         "timestamp",
         "labels",
-        "harm_categories",
+        "targeted_harm_categories",
         "prompt_metadata",
         "converter_identifiers",
         "prompt_target_identifier",
@@ -627,7 +627,7 @@ def test_prompt_request_piece_to_dict():
     assert result["sequence"] == entry.sequence
     assert result["timestamp"] == entry.timestamp.isoformat()
     assert result["labels"] == entry.labels
-    assert result["harm_categories"] == entry.harm_categories
+    assert result["targeted_harm_categories"] == entry.targeted_harm_categories
     assert result["prompt_metadata"] == entry.prompt_metadata
     assert result["converter_identifiers"] == entry.converter_identifiers
     assert result["prompt_target_identifier"] == entry.prompt_target_identifier
@@ -764,36 +764,36 @@ def test_prompt_request_piece_harm_categories_none():
         original_value="Hello",
         converted_value="Hello",
     )
-    assert entry.harm_categories == []
+    assert entry.targeted_harm_categories == []
 
 
 def test_prompt_request_piece_harm_categories_single():
     """Test that harm_categories can be set to a single category."""
     entry = PromptRequestPiece(
-        role="user", original_value="Hello", converted_value="Hello", harm_categories=["violence"]
+        role="user", original_value="Hello", converted_value="Hello", targeted_harm_categories=["violence"]
     )
-    assert entry.harm_categories == ["violence"]
+    assert entry.targeted_harm_categories == ["violence"]
 
 
 def test_prompt_request_piece_harm_categories_multiple():
     """Test that harm_categories can be set to multiple categories."""
     harm_categories = ["violence", "illegal", "hate_speech"]
     entry = PromptRequestPiece(
-        role="user", original_value="Hello", converted_value="Hello", harm_categories=harm_categories
+        role="user", original_value="Hello", converted_value="Hello", targeted_harm_categories=harm_categories
     )
-    assert entry.harm_categories == harm_categories
+    assert entry.targeted_harm_categories == harm_categories
 
 
 def test_prompt_request_piece_harm_categories_serialization():
     """Test that harm_categories is properly serialized in to_dict()."""
     harm_categories = ["violence", "illegal"]
     entry = PromptRequestPiece(
-        role="user", original_value="Hello", converted_value="Hello", harm_categories=harm_categories
+        role="user", original_value="Hello", converted_value="Hello", targeted_harm_categories=harm_categories
     )
 
     result = entry.to_dict()
-    assert "harm_categories" in result
-    assert result["harm_categories"] == harm_categories
+    assert "targeted_harm_categories" in result
+    assert result["targeted_harm_categories"] == harm_categories
 
 
 def test_prompt_request_piece_harm_categories_with_labels():
@@ -802,12 +802,16 @@ def test_prompt_request_piece_harm_categories_with_labels():
     labels = {"operation": "test_op", "researcher": "alice"}
 
     entry = PromptRequestPiece(
-        role="user", original_value="Hello", converted_value="Hello", harm_categories=harm_categories, labels=labels
+        role="user",
+        original_value="Hello",
+        converted_value="Hello",
+        targeted_harm_categories=harm_categories,
+        labels=labels,
     )
 
-    assert entry.harm_categories == harm_categories
+    assert entry.targeted_harm_categories == harm_categories
     assert entry.labels == labels
 
     result = entry.to_dict()
-    assert result["harm_categories"] == harm_categories
+    assert result["targeted_harm_categories"] == harm_categories
     assert result["labels"] == labels

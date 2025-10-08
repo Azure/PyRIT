@@ -47,7 +47,7 @@ class PromptRequestPiece:
         original_prompt_id: Optional[uuid.UUID] = None,
         timestamp: Optional[datetime] = None,
         scores: Optional[List[Score]] = None,
-        harm_categories: Optional[List[str]] = None,
+        targeted_harm_categories: Optional[List[str]] = None,
     ):
         """Initialize a PromptRequestPiece.
 
@@ -77,7 +77,7 @@ class PromptRequestPiece:
             original_prompt_id: The original prompt id. It is equal to id unless it is a duplicate. Defaults to None.
             timestamp: The timestamp of the memory entry. Defaults to None (auto-generated).
             scores: The scores associated with the prompt. Defaults to None.
-            harm_categories: The harm categories associated with the prompt. Defaults to None.
+            targeted_harm_categories: The harm categories associated with the prompt. Defaults to None.
         """
 
         self.id = id if id else uuid4()
@@ -132,7 +132,7 @@ class PromptRequestPiece:
         self.original_prompt_id = original_prompt_id or self.id
 
         self.scores = scores if scores else []
-        self.harm_categories = harm_categories if harm_categories else []
+        self.targeted_harm_categories = targeted_harm_categories if targeted_harm_categories else []
 
     async def set_sha256_values_async(self):
         """
@@ -186,7 +186,7 @@ class PromptRequestPiece:
             "sequence": self.sequence,
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,
             "labels": self.labels,
-            "harm_categories": self.harm_categories,
+            "targeted_harm_categories": self.targeted_harm_categories,
             "prompt_metadata": self.prompt_metadata,
             "converter_identifiers": self.converter_identifiers,
             "prompt_target_identifier": self.prompt_target_identifier,

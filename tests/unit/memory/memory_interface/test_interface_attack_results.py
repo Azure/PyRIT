@@ -13,14 +13,23 @@ from pyrit.models.attack_result import AttackOutcome, AttackResult
 from pyrit.models.conversation_reference import ConversationReference, ConversationType
 
 
-def create_prompt_piece(conversation_id: str, prompt_num: int, harm_categories=None, labels=None):
+def create_prompt_piece(conversation_id: str, prompt_num: int, targeted_harm_categories=None, labels=None):
+    """Helper function to create PromptRequestPiece with optional targeted harm categories and labels."""
+    return PromptRequestPiece(
+        role="user",
+        original_value=f"Test prompt {prompt_num}",
+        converted_value=f"Test prompt {prompt_num}",
+        conversation_id=conversation_id,
+        targeted_harm_categories=targeted_harm_categories,
+        labels=labels,
+    )
     """Helper function to create PromptRequestPiece with optional harm categories and labels."""
     return PromptRequestPiece(
         role="user",
         original_value=f"Test prompt {prompt_num}",
         converted_value=f"Test prompt {prompt_num}",
         conversation_id=conversation_id,
-        harm_categories=harm_categories,
+        targeted_harm_categories=targeted_harm_categories,
         labels=labels,
     )
 
@@ -614,9 +623,9 @@ def test_get_attack_results_by_harm_category_single(sqlite_instance: MemoryInter
     """Test filtering attack results by a single harm category."""
 
     # Create prompt request pieces with harm categories using helper function
-    prompt_piece1 = create_prompt_piece("conv_1", 1, harm_categories=["violence", "illegal"])
-    prompt_piece2 = create_prompt_piece("conv_2", 2, harm_categories=["illegal"])
-    prompt_piece3 = create_prompt_piece("conv_3", 3, harm_categories=["violence"])
+    prompt_piece1 = create_prompt_piece("conv_1", 1, targeted_harm_categories=["violence", "illegal"])
+    prompt_piece2 = create_prompt_piece("conv_2", 2, targeted_harm_categories=["illegal"])
+    prompt_piece3 = create_prompt_piece("conv_3", 3, targeted_harm_categories=["violence"])
 
     # Add prompt pieces to memory
     sqlite_instance.add_request_pieces_to_memory(request_pieces=[prompt_piece1, prompt_piece2, prompt_piece3])
@@ -628,12 +637,12 @@ def test_get_attack_results_by_harm_category_single(sqlite_instance: MemoryInter
 
     sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2, attack_result3])
 
-    violence_results = sqlite_instance.get_attack_results(harm_categories=["violence"])
+    violence_results = sqlite_instance.get_attack_results(targeted_harm_categories=["violence"])
     assert len(violence_results) == 2
     conversation_ids = {result.conversation_id for result in violence_results}
     assert conversation_ids == {"conv_1", "conv_3"}
 
-    illegal_results = sqlite_instance.get_attack_results(harm_categories=["illegal"])
+    illegal_results = sqlite_instance.get_attack_results(targeted_harm_categories=["illegal"])
     assert len(illegal_results) == 2
     conversation_ids = {result.conversation_id for result in illegal_results}
     assert conversation_ids == {"conv_1", "conv_2"}
@@ -643,9 +652,9 @@ def test_get_attack_results_by_harm_category_multiple(sqlite_instance: MemoryInt
     """Test filtering attack results by multiple harm categories (AND logic)."""
 
     # Create prompt request pieces with different harm category combinations
-    prompt_piece1 = create_prompt_piece("conv_1", 1, harm_categories=["violence", "illegal", "hate"])
-    prompt_piece2 = create_prompt_piece("conv_2", 2, harm_categories=["violence", "illegal"])
-    prompt_piece3 = create_prompt_piece("conv_3", 3, harm_categories=["violence"])
+    prompt_piece1 = create_prompt_piece("conv_1", 1, targeted_harm_categories=["violence", "illegal", "hate"])
+    prompt_piece2 = create_prompt_piece("conv_2", 2, targeted_harm_categories=["violence", "illegal"])
+    prompt_piece3 = create_prompt_piece("conv_3", 3, targeted_harm_categories=["violence"])
 
     sqlite_instance.add_request_pieces_to_memory(request_pieces=[prompt_piece1, prompt_piece2, prompt_piece3])
 
@@ -657,11 +666,11 @@ def test_get_attack_results_by_harm_category_multiple(sqlite_instance: MemoryInt
     sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2, attack_result3])
 
     # Test filtering by multiple harm categories
-    violence_and_illegal_results = sqlite_instance.get_attack_results(harm_categories=["violence", "illegal"])
+    violence_and_illegal_results = sqlite_instance.get_attack_results(targeted_harm_categories=["violence", "illegal"])
     assert len(violence_and_illegal_results) == 2
     conversation_ids = {result.conversation_id for result in violence_and_illegal_results}
     assert conversation_ids == {"conv_1", "conv_2"}
-    all_three_results = sqlite_instance.get_attack_results(harm_categories=["violence", "illegal", "hate"])
+    all_three_results = sqlite_instance.get_attack_results(targeted_harm_categories=["violence", "illegal", "hate"])
     assert len(all_three_results) == 1
     assert all_three_results[0].conversation_id == "conv_1"
 
@@ -733,13 +742,19 @@ def test_get_attack_results_by_harm_category_and_labels(sqlite_instance: MemoryI
 
     # Create prompt request pieces with both harm categories and labels using helper function
     prompt_piece1 = create_prompt_piece(
-        "conv_1", 1, harm_categories=["violence", "illegal"], labels={"operation": "test_op", "operator": "roakey"}
+        "conv_1",
+        1,
+        targeted_harm_categories=["violence", "illegal"],
+        labels={"operation": "test_op", "operator": "roakey"},
     )
     prompt_piece2 = create_prompt_piece(
-        "conv_2", 2, harm_categories=["violence"], labels={"operation": "test_op", "operator": "roakey"}
+        "conv_2", 2, targeted_harm_categories=["violence"], labels={"operation": "test_op", "operator": "roakey"}
     )
     prompt_piece3 = create_prompt_piece(
-        "conv_3", 3, harm_categories=["violence", "illegal"], labels={"operation": "other_op", "operator": "bob"}
+        "conv_3",
+        3,
+        targeted_harm_categories=["violence", "illegal"],
+        labels={"operation": "other_op", "operator": "bob"},
     )
 
     sqlite_instance.add_request_pieces_to_memory(request_pieces=[prompt_piece1, prompt_piece2, prompt_piece3])
@@ -755,14 +770,14 @@ def test_get_attack_results_by_harm_category_and_labels(sqlite_instance: MemoryI
 
     # Test filtering by both harm categories and labels
     violence_illegal_roakey_results = sqlite_instance.get_attack_results(
-        harm_categories=["violence", "illegal"], labels={"operator": "roakey"}
+        targeted_harm_categories=["violence", "illegal"], labels={"operator": "roakey"}
     )
     assert len(violence_illegal_roakey_results) == 1
     assert violence_illegal_roakey_results[0].conversation_id == "conv_1"
 
     # Test filtering by harm category and operation
     violence_test_op_results = sqlite_instance.get_attack_results(
-        harm_categories=["violence"], labels={"operation": "test_op"}
+        targeted_harm_categories=["violence"], labels={"operation": "test_op"}
     )
     assert len(violence_test_op_results) == 2
     conversation_ids = {result.conversation_id for result in violence_test_op_results}
@@ -773,14 +788,14 @@ def test_get_attack_results_harm_category_no_matches(sqlite_instance: MemoryInte
     """Test filtering by harm category that doesn't exist."""
 
     # Create attack result without the harm category we'll search for
-    prompt_piece = create_prompt_piece("conv_1", 1, harm_categories=["violence"])
+    prompt_piece = create_prompt_piece("conv_1", 1, targeted_harm_categories=["violence"])
     sqlite_instance.add_request_pieces_to_memory(request_pieces=[prompt_piece])
 
     attack_result = create_attack_result("conv_1", 1, AttackOutcome.SUCCESS)
     sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result])
 
     # Search for non-existent harm category
-    results = sqlite_instance.get_attack_results(harm_categories=["nonexistent"])
+    results = sqlite_instance.get_attack_results(targeted_harm_categories=["nonexistent"])
     assert len(results) == 0
 
 
