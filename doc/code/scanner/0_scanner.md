@@ -71,7 +71,7 @@ The scanner is ideal for:
 
 ## When to Use Python Scripts Instead
 
-For more complex scenarios, consider using PyRIT's Python API directly:
+Consider using PyRIT's Python API directly for more complex scenarios such as:
 
 - **Human in the loop**: Red teamers can interact with PyRIT directly in a more hands-on way
 - **Custom attack logic**: Implementing new attack strategies
