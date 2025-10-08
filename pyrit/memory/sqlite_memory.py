@@ -13,7 +13,6 @@ from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload, sessionmaker
 from sqlalchemy.orm.session import Session
-from sqlalchemy.sql.elements import TextClause
 
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.common.singleton import Singleton
