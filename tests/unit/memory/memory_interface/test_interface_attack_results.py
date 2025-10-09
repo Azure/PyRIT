@@ -23,16 +23,6 @@ def create_prompt_piece(conversation_id: str, prompt_num: int, targeted_harm_cat
         targeted_harm_categories=targeted_harm_categories,
         labels=labels,
     )
-    """Helper function to create PromptRequestPiece with optional harm categories and labels."""
-    return PromptRequestPiece(
-        role="user",
-        original_value=f"Test prompt {prompt_num}",
-        converted_value=f"Test prompt {prompt_num}",
-        conversation_id=conversation_id,
-        targeted_harm_categories=targeted_harm_categories,
-        labels=labels,
-    )
-
 
 def create_attack_result(conversation_id: str, objective_num: int, outcome: AttackOutcome = AttackOutcome.SUCCESS):
     """Helper function to create AttackResult."""

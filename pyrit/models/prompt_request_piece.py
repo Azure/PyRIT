@@ -186,7 +186,7 @@ class PromptRequestPiece:
             "sequence": self.sequence,
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,
             "labels": self.labels,
-            "targeted_harm_categories": self.targeted_harm_categories,
+            "targeted_harm_categories": self.targeted_harm_categories if self.targeted_harm_categories else None,
             "prompt_metadata": self.prompt_metadata,
             "converter_identifiers": self.converter_identifiers,
             "prompt_target_identifier": self.prompt_target_identifier,

@@ -1005,11 +1005,14 @@ class MemoryInterface(abc.ABC):
             conditions.append(AttackResultEntry.outcome == outcome)
 
         if targeted_harm_categories:
-            # ALL categories must be present in the SAME conversation
+            # construct query to ensure ALL categories must be present in the SAME conversation
             targeted_harm_categories_subquery = exists().where(
                 and_(
                     PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
+                    # Exclude empty strings, None, and empty lists
                     PromptMemoryEntry.targeted_harm_categories.isnot(None),
+                    PromptMemoryEntry.targeted_harm_categories != "",
+                    PromptMemoryEntry.targeted_harm_categories != "[]",
                     and_(
                         *[
                             func.json_extract(PromptMemoryEntry.targeted_harm_categories, "$").like(f'%"{category}"%')

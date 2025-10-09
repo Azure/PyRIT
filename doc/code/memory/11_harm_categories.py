@@ -6,6 +6,10 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.2
+#   kernelspec:
+#     display_name: pyrit
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -105,13 +109,13 @@ print()
 # Example 1: Query for a single harm category
 print("1. Query for single harm category 'illegal':")
 illegal_attacks = memory.get_attack_results(targeted_harm_categories=["illegal"])
-print(f"   Found {len(illegal_attacks)} attack results with 'illegal' category")
+print(f"\tFound {len(illegal_attacks)} attack results with 'illegal' category")
 
 if illegal_attacks:
-    for i, attack_result in enumerate(illegal_attacks):  # Show first 2
-        print(f"   Attack {i+1}: {attack_result.objective}")
-        print(f"   Conversation ID: {attack_result.conversation_id}")
-        print(f"   Outcome: {attack_result.outcome}")
+    for i, attack_result in enumerate(illegal_attacks):
+        print(f"Attack {i+1}: {attack_result.objective}")
+        print(f"Conversation ID: {attack_result.conversation_id}")
+        print(f"Outcome: {attack_result.outcome}")
     print()
 
 # %% [markdown]
@@ -123,6 +127,6 @@ print("3. Query for multiple harm categories 'illegal' and 'violence':")
 multiple_groups = memory.get_attack_results(targeted_harm_categories=["illegal", "violence"])
 
 for i, attack_result in enumerate(multiple_groups):
-    print(f"   Attack {i+1}: {attack_result.objective}...")
-    print(f"   Conversation ID: {attack_result.conversation_id}")
+    print(f"Attack {i+1}: {attack_result.objective}...")
+    print(f"Conversation ID: {attack_result.conversation_id}")
 print()
