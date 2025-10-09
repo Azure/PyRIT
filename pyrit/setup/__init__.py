@@ -9,6 +9,11 @@ from pyrit.setup.initialization import (
     SQLITE,
     IN_MEMORY,
 )
+from pyrit.setup.pyrit_default_value import (
+    apply_defaults,
+    set_default_value,
+    get_global_default_values,
+)
 
 
 __all__ = [
@@ -16,4 +21,7 @@ __all__ = [
     "SQLITE",
     "IN_MEMORY",
     "initialize_pyrit",
+    "apply_defaults",
+    "set_default_value",
+    "get_global_default_values",
 ]
