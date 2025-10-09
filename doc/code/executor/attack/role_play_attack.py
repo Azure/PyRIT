@@ -5,11 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -37,7 +33,7 @@ from pyrit.executor.attack import (
 from pyrit.prompt_converter import CharSwapConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score.azure_content_filter_scorer import AzureContentFilterScorer
+from pyrit.score import AzureContentFilterScorer
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

@@ -27,7 +27,7 @@ def score() -> Score:
     return Score(
         score_value="true",
         score_type="true_false",
-        score_category="safety",
+        score_category=["safety"],
         score_value_description="Safe",
         score_rationale="The prompt was marked safe",
         score_metadata=None,
@@ -109,9 +109,9 @@ class TestHiTLGradioIntegration:
             scorer = HumanInTheLoopScorerGradio()
 
             rpc_client.start()
-            score_result = await scorer.score_async(promptOriginal)
+            score_result = await scorer.score_async(request_response=promptOriginal.to_prompt_request_response())
 
-            assert score_result[0].score_value == "True"
+            assert score_result[0].score_value == "true"
             rpc_client.stop()
             scorer.__del__()
 
@@ -152,15 +152,15 @@ class TestHiTLGradioIntegration:
 
             rpc_client.start()
 
-            score_result = await scorer.score_async(promptOriginal)
-            assert score_result[0].score_value == "True"
+            score_result = await scorer.score_async(request_response=promptOriginal.to_prompt_request_response())
+            assert score_result[0].score_value == "true"
 
             # Next prompt
-            score_result = await scorer.score_async(promptOriginal)
-            assert score_result[0].score_value == "False"
+            score_result = await scorer.score_async(request_response=promptOriginal.to_prompt_request_response())
+            assert score_result[0].score_value == "false"
 
-            score_result = await scorer.score_async(promptOriginal)
-            assert score_result[0].score_value == "True"
+            score_result = await scorer.score_async(request_response=promptOriginal.to_prompt_request_response())
+            assert score_result[0].score_value == "true"
 
             rpc_client.stop()
             scorer.__del__()

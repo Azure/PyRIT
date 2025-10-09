@@ -203,7 +203,9 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         for msg_idx, message in enumerate(conversation):
             pieces = message.request_pieces
             if not pieces:
-                continue
+                raise ValueError(
+                    f"Failed to process conversation message at index {msg_idx}: Message contains no request pieces"
+                )
 
             # System message -> single role message (remapped to developer later)
             if pieces[0].role == "system":
@@ -378,14 +380,20 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
 
             # Add the tool result as a tool message to the conversation
             # NOTE: Responses API expects a top-level {type:function_call_output, call_id, output}
-            tool_message = self._make_tool_message(tool_output, tool_call_section["call_id"])
+            # Use the first piece from the original prompt_request as reference for conversation context
+            reference_piece = prompt_request.request_pieces[0]
+            tool_message = self._make_tool_message(
+                tool_output, tool_call_section["call_id"], reference_piece=reference_piece
+            )
             conversation.append(tool_message)
 
             # Re-ask with combined history (user + function_call + function_call_output)
             merged: List[PromptRequestPiece] = []
             for msg in conversation:
                 merged.extend(msg.request_pieces)
-            prompt_request = PromptRequestResponse(request_pieces=merged)
+
+            # TODO: There is likely a bug here; there are different roles in a single response??
+            prompt_request = PromptRequestResponse(request_pieces=merged, skip_validation=True)
 
             # Send again and check for another tool call
             tool_call_section = await _send_prompt_and_find_tool_call_async(prompt_request=prompt_request)
@@ -496,6 +504,14 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             {"error": "function_not_found", "missing_function": "<name>", "available_functions": [...]}
         """
         name = tool_call_section.get("name")
+        if not name:
+            if self._fail_on_missing_function:
+                raise ValueError("Function call section missing 'name' field")
+            return {
+                "error": "missing_function_name",
+                "tool_call_section": tool_call_section,
+            }
+
         args_json = tool_call_section.get("arguments", "{}")
         try:
             args = json.loads(args_json)
@@ -525,11 +541,19 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
 
         return await fn(args)
 
-    def _make_tool_message(self, output: dict[str, Any], call_id: str) -> PromptRequestResponse:
+    def _make_tool_message(
+        self, output: dict[str, Any], call_id: str, *, reference_piece: PromptRequestPiece
+    ) -> PromptRequestResponse:
         """
         Wrap tool output as a top-level function_call_output artifact.
 
-        The Responses API requires a string in the "output" field; we serialize objects.
+        Args:
+            output: The tool output to wrap.
+            call_id: The call ID for the function call.
+            reference_piece: A reference piece to copy conversation context from.
+
+        Returns:
+            A PromptRequestResponse containing the function call output.
         """
         output_str = output if isinstance(output, str) else json.dumps(output, separators=(",", ":"))
         piece = PromptRequestPiece(
@@ -539,6 +563,10 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
                 separators=(",", ":"),
             ),
             original_value_data_type="function_call_output",
+            conversation_id=reference_piece.conversation_id,
             labels={"call_id": call_id},
+            prompt_target_identifier=reference_piece.prompt_target_identifier,
+            attack_identifier=reference_piece.attack_identifier,
         )
+
         return PromptRequestResponse(request_pieces=[piece])

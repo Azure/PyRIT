@@ -18,8 +18,12 @@ class PromptRequestResponse:
         request_pieces (Sequence[PromptRequestPiece]): The list of prompt request pieces.
     """
 
-    def __init__(self, request_pieces: Sequence[PromptRequestPiece]):
+    def __init__(self, request_pieces: Sequence[PromptRequestPiece], *, skip_validation: Optional[bool] = False):
+        if not request_pieces:
+            raise ValueError("PromptRequestResponse must have at least one request piece.")
         self.request_pieces = request_pieces
+        if not skip_validation:
+            self.validate()
 
     def get_value(self, n: int = 0) -> str:
         """Return the converted value of the nth request piece."""
@@ -41,6 +45,31 @@ class PromptRequestResponse:
 
         return self.request_pieces[n]
 
+    def get_role(self) -> ChatMessageRole:
+        """Return the role of the first request."""
+        if len(self.request_pieces) == 0:
+            raise ValueError("Empty request pieces.")
+
+        return self.request_pieces[0].role
+
+    def is_error(self) -> bool:
+        """
+        Returns True if any of the request pieces has an error response.
+        """
+        for piece in self.request_pieces:
+            if piece.response_error != "none" or piece.converted_value_data_type == "error":
+                return True
+        return False
+
+    def set_response_not_in_database(self):
+        """
+        Set that the prompt is not in the database.
+
+        This is needed when we're scoring prompts or other things that have not been sent by PyRIT
+        """
+        for piece in self.request_pieces:
+            piece.set_piece_not_in_database()
+
     def validate(self):
         """
         Validates the request response.
@@ -59,7 +88,7 @@ class PromptRequestResponse:
             if request_piece.sequence != sequence:
                 raise ValueError("Inconsistent sequences within the same prompt request response entry.")
 
-            if not request_piece.converted_value:
+            if request_piece.converted_value is None:
                 raise ValueError("Converted prompt text is None.")
 
             if request_piece.role != role:
@@ -71,17 +100,13 @@ class PromptRequestResponse:
             ret += str(request_piece) + "\n"
         return "\n".join([str(request_piece) for request_piece in self.request_pieces])
 
-    def filter_by_role(self, *, role: ChatMessageRole) -> Sequence[PromptRequestPiece]:
-        """
-        Filters the request pieces by role.
-
-        Args:
-            role (ChatMessageRole): The role to filter by.
-
-        Returns:
-            Sequence[PromptRequestPiece]: A sequence of request pieces that match the specified role.
-        """
-        return [piece for piece in self.request_pieces if piece.role == role]
+    @staticmethod
+    def get_all_values(request_responses: Sequence["PromptRequestResponse"]) -> list[str]:
+        """Return all converted values across the provided request responses."""
+        values: list[str] = []
+        for request_response in request_responses:
+            values.extend(request_response.get_values())
+        return values
 
     @staticmethod
     def flatten_to_prompt_request_pieces(
@@ -157,7 +182,11 @@ def group_conversation_request_pieces_by_sequence(
 
     for request_piece in request_pieces:
         if request_piece.conversation_id != conversation_id:
-            raise ValueError("Conversation ID must match.")
+            raise ValueError(
+                f"All request pieces must be from the same conversation. "
+                f"Expected conversation_id='{conversation_id}', but found '{request_piece.conversation_id}'. "
+                f"If grouping pieces from multiple conversations, group by conversation_id first."
+            )
 
         if request_piece.sequence not in conversation_by_sequence:
             conversation_by_sequence[request_piece.sequence] = []
@@ -165,6 +194,58 @@ def group_conversation_request_pieces_by_sequence(
 
     sorted_sequences = sorted(conversation_by_sequence.keys())
     return [PromptRequestResponse(conversation_by_sequence[seq]) for seq in sorted_sequences]
+
+
+def group_request_pieces_into_conversations(
+    request_pieces: Sequence[PromptRequestPiece],
+) -> list[list[PromptRequestResponse]]:
+    """
+    Groups prompt request pieces from multiple conversations into separate conversation groups.
+
+    This function first groups pieces by conversation ID, then groups each conversation's
+    pieces by sequence number. Each conversation is returned as a separate list of
+    PromptRequestResponse objects.
+
+    Args:
+        request_pieces (Sequence[PromptRequestPiece]): A list of PromptRequestPiece objects from
+            potentially different conversations.
+
+    Returns:
+        list[list[PromptRequestResponse]]: A list of conversations, where each conversation is a list
+            of PromptRequestResponse objects grouped by sequence.
+
+    Example:
+    >>> request_pieces = [
+    >>>     PromptRequestPiece(conversation_id="conv1", sequence=1, text="Hello"),
+    >>>     PromptRequestPiece(conversation_id="conv2", sequence=1, text="Hi there"),
+    >>>     PromptRequestPiece(conversation_id="conv1", sequence=2, text="How are you?"),
+    >>>     PromptRequestPiece(conversation_id="conv2", sequence=2, text="I'm good"),
+    >>> ]
+    >>> conversations = group_request_pieces_into_conversations(request_pieces)
+    >>> # Returns a list of 2 conversations:
+    >>> # [
+    >>> #   [PromptRequestResponse(seq=1), PromptRequestResponse(seq=2)],  # conv1
+    >>> #   [PromptRequestResponse(seq=1), PromptRequestResponse(seq=2)]   # conv2
+    >>> # ]
+    """
+    if not request_pieces:
+        return []
+
+    # Group pieces by conversation ID
+    conversations: dict[str, list[PromptRequestPiece]] = {}
+    for piece in request_pieces:
+        conv_id = piece.conversation_id
+        if conv_id not in conversations:
+            conversations[conv_id] = []
+        conversations[conv_id].append(piece)
+
+    # For each conversation, group by sequence
+    result: list[list[PromptRequestResponse]] = []
+    for conv_pieces in conversations.values():
+        responses = group_conversation_request_pieces_by_sequence(conv_pieces)
+        result.append(list(responses))
+
+    return result
 
 
 def construct_response_from_request(

@@ -25,10 +25,10 @@ def true_false_score_true() -> Score:
     return Score(
         score_type="true_false",
         score_value="true",
-        score_category="test",
+        score_category=["test"],
         score_value_description="Test true score",
         score_rationale="This is a true score rationale",
-        score_metadata="{}",
+        score_metadata={},
         prompt_request_response_id=str(uuid.uuid4()),
         scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
     )
@@ -40,10 +40,10 @@ def true_false_score_false() -> Score:
     return Score(
         score_type="true_false",
         score_value="false",
-        score_category="test",
+        score_category=["test"],
         score_value_description="Test false score",
         score_rationale="This is a false score rationale",
-        score_metadata="{}",
+        score_metadata={},
         prompt_request_response_id=str(uuid.uuid4()),
         scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
     )
@@ -55,10 +55,10 @@ def float_scale_score_high() -> Score:
     return Score(
         score_type="float_scale",
         score_value="0.9",
-        score_category="test",
+        score_category=["test"],
         score_value_description="High float score",
         score_rationale="This is a high score rationale",
-        score_metadata="{}",
+        score_metadata={},
         prompt_request_response_id=str(uuid.uuid4()),
         scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
     )
@@ -70,10 +70,10 @@ def float_scale_score_low() -> Score:
     return Score(
         score_type="float_scale",
         score_value="0.3",
-        score_category="test",
+        score_category=["test"],
         score_value_description="Low float score",
         score_rationale="This is a low score rationale",
-        score_metadata="{}",
+        score_metadata={},
         prompt_request_response_id=str(uuid.uuid4()),
         scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
     )
@@ -155,10 +155,10 @@ class TestIsObjectiveAchieved:
         score = Score(
             score_type="true_false",
             score_value=score_value,
-            score_category="test",
+            score_category=["test"],
             score_value_description="Test score",
             score_rationale="Test rationale",
-            score_metadata="{}",
+            score_metadata={},
             prompt_request_response_id=str(uuid.uuid4()),
             scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
         )
@@ -186,10 +186,10 @@ class TestIsObjectiveAchieved:
         score = Score(
             score_type="float_scale",
             score_value=score_value,
-            score_category="test",
+            score_category=["test"],
             score_value_description="Test score",
             score_rationale="Test rationale",
-            score_metadata="{}",
+            score_metadata={},
             prompt_request_response_id=str(uuid.uuid4()),
             scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
         )
@@ -242,10 +242,10 @@ class TestGetFeedback:
         score = Score(
             score_type="true_false",
             score_value="true",
-            score_category="test",
+            score_category=["test"],
             score_value_description="Test score",
             score_rationale="",  # Empty rationale
-            score_metadata="{}",
+            score_metadata={},
             prompt_request_response_id=str(uuid.uuid4()),
             scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
         )
@@ -284,10 +284,10 @@ class TestEdgeCases:
         score_above = Score(
             score_type="float_scale",
             score_value="0.751",
-            score_category="test",
+            score_category=["test"],
             score_value_description="Just above threshold",
             score_rationale="Score is slightly above the threshold",
-            score_metadata="{}",
+            score_metadata={},
             prompt_request_response_id=str(uuid.uuid4()),
             scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
         )
@@ -299,10 +299,10 @@ class TestEdgeCases:
         score_below = Score(
             score_type="float_scale",
             score_value="0.749",
-            score_category="test",
+            score_category=["test"],
             score_value_description="Just below threshold",
             score_rationale="Score is slightly below the threshold",
-            score_metadata="{}",
+            score_metadata={},
             prompt_request_response_id=str(uuid.uuid4()),
             scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
         )
@@ -328,10 +328,10 @@ class TestEdgeCases:
             score = Score(
                 score_type="float_scale",
                 score_value=score_value,
-                score_category="test",
+                score_category=["test"],
                 score_value_description=f"Score: {score_value}",
                 score_rationale=f"Rationale for score {score_value}",
-                score_metadata="{}",
+                score_metadata={},
                 prompt_request_response_id=str(uuid.uuid4()),
                 scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
             )

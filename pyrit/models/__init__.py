@@ -29,6 +29,7 @@ from pyrit.models.prompt_request_response import (
     PromptRequestResponse,
     construct_response_from_request,
     group_conversation_request_pieces_by_sequence,
+    group_request_pieces_into_conversations,
 )
 from pyrit.models.prompt_response import PromptResponse
 from pyrit.models.question_answering import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
@@ -61,6 +62,7 @@ __all__ = [
     "EmbeddingUsageInformation",
     "ErrorDataTypeSerializer",
     "group_conversation_request_pieces_by_sequence",
+    "group_request_pieces_into_conversations",
     "Identifier",
     "ImagePathDataTypeSerializer",
     "sort_request_pieces",

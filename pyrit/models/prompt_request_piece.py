@@ -41,7 +41,7 @@ class PromptRequestPiece:
         attack_identifier: Optional[Dict[str, str]] = None,
         scorer_identifier: Optional[Dict[str, str]] = None,
         original_value_data_type: PromptDataType = "text",
-        converted_value_data_type: PromptDataType = "text",
+        converted_value_data_type: Optional[PromptDataType] = None,
         response_error: PromptResponseError = "none",
         originator: Originator = "undefined",
         original_prompt_id: Optional[uuid.UUID] = None,
@@ -85,11 +85,16 @@ class PromptRequestPiece:
         if role not in ChatMessageRole.__args__:  # type: ignore
             raise ValueError(f"Role {role} is not a valid role.")
 
-        self.role = role
+        self.role: ChatMessageRole = role
 
         if converted_value is None:
             converted_value = original_value
-            converted_value_data_type = original_value_data_type
+            if converted_value_data_type is None:
+                converted_value_data_type = original_value_data_type
+        else:
+            # If converted_value is provided but converted_value_data_type is not, default to original_value_data_type
+            if converted_value_data_type is None:
+                converted_value_data_type = original_value_data_type
 
         self.conversation_id = conversation_id if conversation_id else str(uuid4())
         self.sequence = sequence
@@ -109,7 +114,7 @@ class PromptRequestPiece:
         if original_value_data_type not in get_args(PromptDataType):
             raise ValueError(f"original_value_data_type {original_value_data_type} is not a valid data type.")
 
-        self.original_value_data_type = original_value_data_type
+        self.original_value_data_type: PromptDataType = original_value_data_type
 
         self.original_value_sha256 = original_value_sha256
 
@@ -118,7 +123,7 @@ class PromptRequestPiece:
         if converted_value_data_type not in get_args(PromptDataType):
             raise ValueError(f"converted_value_data_type {converted_value_data_type} is not a valid data type.")
 
-        self.converted_value_data_type = converted_value_data_type
+        self.converted_value_data_type: PromptDataType = converted_value_data_type
 
         self.converted_value_sha256 = converted_value_sha256
 
@@ -177,6 +182,14 @@ class PromptRequestPiece:
         Check if the prompt request piece is blocked.
         """
         return self.response_error == "blocked"
+
+    def set_piece_not_in_database(self):
+        """
+        Set that the prompt is not in the database.
+
+        This is needed when we're scoring prompts or other things that have not been sent by PyRIT
+        """
+        self.id = None
 
     def to_dict(self) -> dict:
         return {
