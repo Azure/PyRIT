@@ -25,7 +25,7 @@
 # - **Attack scenarios:** These involve crafting malicious or deceptive escape sequences.
 
 # %%
-from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     AttackConverterConfig,
     AttackExecutor,

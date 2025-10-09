@@ -24,7 +24,7 @@
 # This technique can help identify whether a model has memorized specific copyrighted content.
 
 # %%
-from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     ConsoleAttackResultPrinter,
     PromptSendingAttack,

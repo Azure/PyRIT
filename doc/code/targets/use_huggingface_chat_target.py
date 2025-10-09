@@ -42,7 +42,7 @@
 # %%
 import time
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     AttackExecutor,
     ConsoleAttackResultPrinter,

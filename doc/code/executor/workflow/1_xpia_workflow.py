@@ -47,7 +47,7 @@ attack_content = SeedPromptGroup(prompts=[SeedPrompt(value=jailbreak_prompt)])
 # %%
 from xpia_helpers import AzureStoragePlugin, SemanticKernelPluginAzureOpenAIPromptTarget
 
-from pyrit.common import AZURE_SQL, initialize_pyrit
+from pyrit.setup import AZURE_SQL, initialize_pyrit
 
 initialize_pyrit(memory_db_type=AZURE_SQL)
 
@@ -145,7 +145,7 @@ memory.dispose_engine()
 # %%
 import pathlib
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.core import StrategyConverterConfig
 from pyrit.executor.workflow import XPIATestWorkflow

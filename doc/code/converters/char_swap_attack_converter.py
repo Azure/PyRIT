@@ -19,7 +19,7 @@
 # Reference: [Charswap Attack](https://github.com/aiverify-foundation/moonshot-data/blob/main/attack-modules/charswap_attack.py)
 
 # %%
-from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     AttackConverterConfig,
     ConsoleAttackResultPrinter,

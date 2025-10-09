@@ -24,7 +24,7 @@
 # %%
 from pathlib import Path
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import RED_TEAM_EXECUTOR_PATH
 from pyrit.executor.attack import (
     AttackAdversarialConfig,

@@ -29,7 +29,7 @@ import pathlib
 from IPython.display import display
 from PIL import Image
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack.single_turn import PromptSendingAttack
 from pyrit.models import SeedPrompt, SeedPromptGroup
 from pyrit.prompt_converter import TransparencyAttackConverter

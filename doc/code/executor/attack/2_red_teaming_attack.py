@@ -62,7 +62,7 @@
 # %%
 import logging
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackScoringConfig,
@@ -255,7 +255,7 @@ results = AttackExecutor().execute_multi_turn_attacks_async(
 # %%
 import logging
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackScoringConfig,

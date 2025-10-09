@@ -38,7 +38,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack import AttackScoringConfig, PromptSendingAttack
 from pyrit.memory import CentralMemory

@@ -115,7 +115,7 @@ class DataTypeSerializer(abc.ABC):
         if self._is_azure_storage_url(self.value):
             # Scenarios where a user utilizes an in-memory DuckDB but also needs to interact
             # with an Azure Storage Account, ex., XPIAWorkflow.
-            from pyrit.common import AZURE_SQL, initialize_pyrit
+            from pyrit.setup import AZURE_SQL, initialize_pyrit
 
             initialize_pyrit(memory_db_type=AZURE_SQL)
             return self._memory.results_storage_io

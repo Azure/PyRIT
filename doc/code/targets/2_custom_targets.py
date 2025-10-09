@@ -45,7 +45,7 @@
 # %%
 import textwrap
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackScoringConfig,
@@ -105,7 +105,7 @@ await ConsoleAttackResultPrinter().print_result_async(result=result)  # type: ig
 # %%
 from typing import List
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     AttackConverterConfig,
     AttackScoringConfig,

@@ -27,8 +27,8 @@
 # %%
 import uuid
 
-from pyrit.common import initialize_pyrit
-from pyrit.common.initialization import IN_MEMORY
+from pyrit.setup import initialize_pyrit
+from pyrit.setup.initialization import IN_MEMORY
 from pyrit.executor.attack import (
     AttackExecutor,
     ConsoleAttackResultPrinter,

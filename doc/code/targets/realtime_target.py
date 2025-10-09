@@ -19,7 +19,7 @@
 # ## Target Initialization
 
 # %%
-from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_target import RealtimeTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
@@ -93,7 +93,7 @@ for result in results:
 # %%
 import logging
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackScoringConfig,

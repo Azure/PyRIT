@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List
 
-from pyrit.common import initialize_pyrit
+from pyrit.setup import initialize_pyrit
 from pyrit.executor.attack import ConsoleAttackResultPrinter
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackStrategy,

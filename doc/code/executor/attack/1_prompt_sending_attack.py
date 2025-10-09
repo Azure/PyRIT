@@ -28,7 +28,7 @@
 #
 
 # %%
-from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
 from pyrit.prompt_target import OpenAIChatTarget
 
@@ -242,7 +242,7 @@ for result in results:
 # %%
 import uuid
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import PromptSendingAttack
 from pyrit.models import SeedPrompt, SeedPromptGroup
 from pyrit.prompt_target import OpenAIChatTarget

@@ -15,7 +15,7 @@
 # InsecureCodeScorer uses a language model (LLM) to analyze the code and identify security risks, returning a score based on a predefined threshold.
 
 # %%
-from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import InsecureCodeScorer

@@ -10,7 +10,7 @@ import time
 import pytest
 import requests
 
-from pyrit.common import SQLITE, initialize_pyrit
+from pyrit.setup import SQLITE, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH, HOME_PATH
 from pyrit.exceptions import PyritException
 from pyrit.executor.core import StrategyConverterConfig

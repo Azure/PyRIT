@@ -21,7 +21,7 @@ import os
 import random
 from pathlib import Path
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack import (
     AttackAdversarialConfig,

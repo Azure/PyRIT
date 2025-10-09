@@ -25,7 +25,7 @@
 import time
 import uuid
 
-from pyrit.common import AZURE_SQL, initialize_pyrit
+from pyrit.setup import AZURE_SQL, initialize_pyrit
 from pyrit.executor.attack import (
     AttackExecutor,
     ConsoleAttackResultPrinter,
@@ -165,7 +165,7 @@ await ConsoleAttackResultPrinter().print_result_async(result=result)  # type: ig
 # %%
 import pathlib
 
-from pyrit.common import AZURE_SQL, initialize_pyrit
+from pyrit.setup import AZURE_SQL, initialize_pyrit
 from pyrit.executor.attack import (
     ConsoleAttackResultPrinter,
     PromptSendingAttack,

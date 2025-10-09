@@ -9,8 +9,8 @@ from unittest import mock
 import pytest
 from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 
-from pyrit.common import AZURE_SQL, IN_MEMORY, SQLITE, initialize_pyrit
-from pyrit.common.initialization import MemoryDatabaseType, _load_environment_files
+from pyrit.setup import AZURE_SQL, IN_MEMORY, SQLITE, initialize_pyrit
+from pyrit.setup.initialization import MemoryDatabaseType, _load_environment_files
 
 
 @mock.patch("dotenv.load_dotenv")
@@ -101,7 +101,7 @@ def test_load_environment_files_override(mock_exists, mock_load_dotenv):
     ],
 )
 @mock.patch("pyrit.memory.central_memory.CentralMemory.set_memory_instance")
-@mock.patch("pyrit.common.initialization._load_environment_files")
+@mock.patch("pyrit.setup.initialization._load_environment_files")
 def test_initialize_pyrit(mock_load_env_files, mock_set_memory, memory_db_type, memory_instance_kwargs):
     with (
         mock.patch("pyrit.memory.AzureSQLMemory.get_session") as get_session_mock,

@@ -33,7 +33,7 @@
 # %%
 import os
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.score.float_scale.azure_content_filter_scorer import AzureContentFilterScorer

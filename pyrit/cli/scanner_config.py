@@ -11,7 +11,7 @@ from typing import Any, List, Literal, Optional, Type, get_args
 import yaml
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from pyrit.common.initialization import MemoryDatabaseType
+from pyrit.setup.initialization import MemoryDatabaseType
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackConverterConfig,
