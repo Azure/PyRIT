@@ -53,12 +53,11 @@ class AzureContentFilterScorer(FloatScaleScorer):
         Class that initializes an Azure Content Filter Scorer
 
         Args:
-            api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-                Defaults to the `API_KEY_ENVIRONMENT_VARIABLE` environment variable.
+            api_key (str, Optional): The API key for accessing the Azure OpenAI service (only if not
+                using Entra authentication). Defaults to the `API_KEY_ENVIRONMENT_VARIABLE` environment variable.
             endpoint (str, Optional): The endpoint URL for the Azure OpenAI service.
                 Defaults to the `ENDPOINT_URI_ENVIRONMENT_VARIABLE` environment variable.
-            use_entra_auth (bool, Optional): Attempt to use DefaultAzureCredential
-                If set to true, attempt to use DefaultAzureCredential for auth
+            use_entra_auth (bool, Optional): Whether to use Entra authentication. Defaults to False.
             harm_categories: The harm categories you want to query for as per defined in
                 azure.ai.contentsafety.models.TextCategory.
         """

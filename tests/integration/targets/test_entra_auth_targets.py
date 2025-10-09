@@ -136,8 +136,10 @@ async def test_openai_realtime_target_entra_auth(sqlite_instance, endpoint, mode
     assert result.last_response is not None
 
 
+@pytest.mark.run_only_if_all_tests
 @pytest.mark.asyncio
 async def test_sora_target_entra_auth(sqlite_instance):
+    # Takes a long time and sometimes encounters retry errors.
     target = OpenAISoraTarget(endpoint=os.getenv("SORA_ENDPOINT"), use_entra_auth=True)
     attack = PromptSendingAttack(objective_target=target)
     result = await attack.execute_async(objective="test")

@@ -49,12 +49,12 @@ class OpenAITarget(PromptChatTarget):
         Args:
             model_name (str, Optional): The name of the model.
             endpoint (str, Optional): The target URL for the OpenAI service.
-            api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-                Defaults to the `OPENAI_CHAT_KEY` environment variable.
+            api_key (str, Optional): The API key for accessing the Azure OpenAI service (only if not using
+                Entra authentication). Defaults to the `OPENAI_CHAT_KEY` environment variable.
             headers (str, Optional): Extra headers of the endpoint (JSON).
             use_entra_auth (bool): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
-                https://cognitiveservices.azure.com/.default . Please run `az login` locally
+                https://cognitiveservices.azure.com/.default. Please run `az login` locally
                 to leverage user AuthN.
             api_version (str, Optional): The version of the Azure OpenAI API. Defaults to
                 "2024-06-01". If set to None, this will not be added as a query parameter to requests.
