@@ -22,7 +22,7 @@ def target(sqlite_instance):
 
 
 @pytest.fixture
-def target_with_aad(sqlite_instance):
+def target_with_entra(sqlite_instance):
     target = RealtimeTarget(endpoint="wss://test_url", api_key="test_api_key")
     target._azure_auth = MagicMock()
     target._azure_auth.refresh_token = MagicMock(return_value="test_access_token")
@@ -264,23 +264,23 @@ async def test_realtime_target_default_api_version(target):
         assert query_params["api-version"][0] == "2024-06-01"
 
 
-def test_add_auth_param_to_query_params_with_api_key(target_with_aad):
+def test_add_auth_param_to_query_params_with_api_key(target_with_entra):
     query_params = {}
-    target_with_aad._add_auth_param_to_query_params(query_params)
+    target_with_entra._add_auth_param_to_query_params(query_params)
     assert query_params["api-key"] == "test_api_key"
 
 
-def test_add_auth_param_to_query_params_with_azure_auth(target_with_aad):
+def test_add_auth_param_to_query_params_with_azure_auth(target_with_entra):
     query_params = {}
-    target_with_aad._add_auth_param_to_query_params(query_params)
-    assert query_params["access_token"] == "test_access_token"
+    target_with_entra._add_auth_param_to_query_params(query_params)
+    assert "test_access_token" in query_params["Authorization"]
 
 
-def test_add_auth_param_to_query_params_with_both_auth_methods(target_with_aad):
+def test_add_auth_param_to_query_params_with_both_auth_methods(target_with_entra):
     query_params = {}
-    target_with_aad._add_auth_param_to_query_params(query_params)
+    target_with_entra._add_auth_param_to_query_params(query_params)
     assert query_params["api-key"] == "test_api_key"
-    assert query_params["access_token"] == "test_access_token"
+    assert "test_access_token" in query_params["Authorization"]
 
 
 @pytest.mark.asyncio

@@ -34,7 +34,7 @@ class OpenAITarget(PromptChatTarget):
         endpoint: Optional[str] = None,
         api_key: Optional[str] = None,
         headers: Optional[str] = None,
-        use_aad_auth: bool = False,
+        use_entra_auth: bool = False,
         api_version: Optional[str] = "2024-10-21",
         max_requests_per_minute: Optional[int] = None,
         httpx_client_kwargs: Optional[dict] = None,
@@ -52,7 +52,7 @@ class OpenAITarget(PromptChatTarget):
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
                 Defaults to the `OPENAI_CHAT_KEY` environment variable.
             headers (str, Optional): Extra headers of the endpoint (JSON).
-            use_aad_auth (bool): When set to True, user authentication is used
+            use_entra_auth (bool): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default . Please run `az login` locally
                 to leverage user AuthN.
@@ -89,28 +89,29 @@ class OpenAITarget(PromptChatTarget):
 
         self._api_key = api_key
 
-        self._set_auth_headers(use_aad_auth=use_aad_auth, passed_api_key=api_key)
+        self._set_auth_headers(use_entra_auth=use_entra_auth, passed_api_key=api_key)
 
-    def _set_auth_headers(self, use_aad_auth, passed_api_key) -> None:
-        self._api_key = default_values.get_non_required_value(
-            env_var_name=self.api_key_environment_variable, passed_value=passed_api_key
-        )
-
-        if self._api_key:
+    def _set_auth_headers(self, use_entra_auth, passed_api_key) -> None:
+        if use_entra_auth:
+            if passed_api_key:
+                raise ValueError("If using Entra ID auth, please do not specify api_key.")
+            logger.info("Authenticating with AzureAuth")
+            scope = get_default_scope(self._endpoint)
+            self._azure_auth = AzureAuth(token_scope=scope)
+            self._headers["Authorization"] = f"Bearer {self._azure_auth.get_token()}"
+            self._api_key = None
+        else:
+            self._api_key = default_values.get_non_required_value(
+                env_var_name=self.api_key_environment_variable, passed_value=passed_api_key
+            )
             # This header is set as api-key in azure and bearer in openai
             # But azure still functions if it's in both places and in fact,
             # in Azure foundry it needs to be set as a bearer
             self._headers["Api-Key"] = self._api_key
             self._headers["Authorization"] = f"Bearer {self._api_key}"
 
-        if use_aad_auth:
-            logger.info("Authenticating with AzureAuth")
-            scope = get_default_scope(self._endpoint)
-            self._azure_auth = AzureAuth(token_scope=scope)
-            self._headers["Authorization"] = f"Bearer {self._azure_auth.get_token()}"
-
     def refresh_auth_headers(self) -> None:
-        """Refresh the authentication headers. This is particularly useful for AAD authentication
+        """Refresh the authentication headers. This is particularly useful for Entra authentication
         where tokens need to be refreshed periodically."""
         if self._azure_auth:
             self._headers["Authorization"] = f"Bearer {self._azure_auth.refresh_token()}"

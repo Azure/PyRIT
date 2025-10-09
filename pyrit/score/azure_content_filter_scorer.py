@@ -11,8 +11,8 @@ from azure.ai.contentsafety.models import (
     TextCategory,
 )
 from azure.core.credentials import AzureKeyCredential
-from azure.identity import DefaultAzureCredential
 
+from pyrit.auth.azure_auth import AzureAuth, get_default_scope
 from pyrit.common import default_values
 from pyrit.models import (
     DataTypeSerializer,
@@ -46,7 +46,7 @@ class AzureContentFilterScorer(Scorer):
         *,
         endpoint: Optional[str] = None,
         api_key: Optional[str] = None,
-        use_aad_auth: bool = False,
+        use_entra_auth: bool = False,
         harm_categories: Optional[list[TextCategory]] = None,
     ) -> None:
         """
@@ -57,7 +57,7 @@ class AzureContentFilterScorer(Scorer):
                 Defaults to the `API_KEY_ENVIRONMENT_VARIABLE` environment variable.
             endpoint (str, Optional): The endpoint URL for the Azure OpenAI service.
                 Defaults to the `ENDPOINT_URI_ENVIRONMENT_VARIABLE` environment variable.
-            use_aad_auth (bool, Optional): Attempt to use DefaultAzureCredential
+            use_entra_auth (bool, Optional): Attempt to use DefaultAzureCredential
                 If set to true, attempt to use DefaultAzureCredential for auth
             harm_categories: The harm categories you want to query for as per defined in
                 azure.ai.contentsafety.models.TextCategory.
@@ -73,7 +73,7 @@ class AzureContentFilterScorer(Scorer):
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint
         )
 
-        if not use_aad_auth:
+        if not use_entra_auth:
             self._api_key = default_values.get_required_value(
                 env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
             )
@@ -85,8 +85,9 @@ class AzureContentFilterScorer(Scorer):
 
         if self._api_key is not None and self._endpoint is not None:
             self._azure_cf_client = ContentSafetyClient(self._endpoint, AzureKeyCredential(self._api_key))
-        elif use_aad_auth and self._endpoint is not None:
-            self._azure_cf_client = ContentSafetyClient(self._endpoint, credential=DefaultAzureCredential())
+        elif use_entra_auth and self._endpoint is not None:
+            azure_auth = AzureAuth(token_scope=get_default_scope(self._endpoint))
+            self._azure_cf_client = ContentSafetyClient(self._endpoint, credential=azure_auth.azure_creds)
         else:
             raise ValueError("Please provide the Azure Content Safety endpoint")
 

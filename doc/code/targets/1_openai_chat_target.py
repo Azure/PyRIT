@@ -21,10 +21,9 @@
 #
 # Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
 
+# %%
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.datasets import TextJailBreak
-
-# %%
 from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
 from pyrit.prompt_target import OpenAIChatTarget
 
@@ -35,6 +34,8 @@ jailbreak_prompt: str = jailbreak.get_jailbreak(prompt="How to create a Molotov 
 
 
 target = OpenAIChatTarget()
+# For an AzureOpenAI endpoint with Entra ID authentication enabled, use the following line instead. Make sure to run `az login` first.
+# target = OpenAIChatTarget(use_entra_auth=True)
 
 attack = PromptSendingAttack(objective_target=target)
 

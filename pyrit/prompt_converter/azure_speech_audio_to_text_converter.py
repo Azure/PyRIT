@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Optional
 if TYPE_CHECKING:
     import azure.cognitiveservices.speech as speechsdk  # noqa: F401
 
+from pyrit.auth.azure_auth import get_speech_config_from_default_azure_credential
 from pyrit.common import default_values
 from pyrit.models import PromptDataType
 from pyrit.models.data_type_serializer import data_serializer_factory
@@ -27,11 +28,15 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
     AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_REGION"
     #: The API key for accessing the service.
     AZURE_SPEECH_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_KEY"
+    #: The resource ID for accessing the service when using Entra ID auth.
+    AZURE_SPEECH_RESOURCE_ID_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_RESOURCE_ID"
 
     def __init__(
         self,
         azure_speech_region: Optional[str] = None,
         azure_speech_key: Optional[str] = None,
+        azure_speech_resource_id: Optional[str] = None,
+        use_entra_auth: bool = False,
         recognition_language: str = "en-US",
     ) -> None:
         """
@@ -39,19 +44,39 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
 
         Args:
             azure_speech_region (str, Optional): The name of the Azure region.
-            azure_speech_key (str, Optional): The API key for accessing the service.
+            azure_speech_key (str, Optional): The API key for accessing the service (if not using Entra ID auth).
+            azure_speech_resource_id (str, Optional): The resource ID for accessing the service when using
+                Entra ID auth. This can be found by selecting 'Properties' in the 'Resource Management'
+                section of your Azure Speech resource in the Azure portal.
+            use_entra_auth (bool): Whether to use Entra ID authentication. If True, azure_speech_resource_id
+                must be provided. If False, azure_speech_key must be provided. Defaults to False.
             recognition_language (str): Recognition voice language. Defaults to "en-US".
                 For more on supported languages, see the following link:
                 https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support
+
+        Raises:
+            ModuleNotFoundError: If the ``azure.cognitiveservices.speech`` module is not installed.
         """
-
         self._azure_speech_region: str = default_values.get_required_value(
-            env_var_name=self.AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE, passed_value=azure_speech_region
+            env_var_name=self.AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE,
+            passed_value=azure_speech_region,
         )
-
-        self._azure_speech_key: str = default_values.get_required_value(
-            env_var_name=self.AZURE_SPEECH_KEY_ENVIRONMENT_VARIABLE, passed_value=azure_speech_key
-        )
+        if use_entra_auth:
+            if azure_speech_key:
+                raise ValueError("If using Entra ID auth, please do not specify azure_speech_key.")
+            self._azure_speech_resource_id = default_values.get_required_value(
+                env_var_name=self.AZURE_SPEECH_RESOURCE_ID_ENVIRONMENT_VARIABLE,
+                passed_value=azure_speech_resource_id,
+            )
+            self._azure_speech_key = None
+        else:
+            if azure_speech_resource_id:
+                raise ValueError("If using key auth, please do not specify azure_speech_resource_id.")
+            self._azure_speech_key = default_values.get_required_value(
+                env_var_name=self.AZURE_SPEECH_KEY_ENVIRONMENT_VARIABLE,
+                passed_value=azure_speech_key,
+            )
+            self._azure_speech_resource_id = None
 
         self._recognition_language = recognition_language
         # Create a flag to indicate when recognition is finished
@@ -114,10 +139,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
             )
             raise e
 
-        speech_config = speechsdk.SpeechConfig(
-            subscription=self._azure_speech_key,
-            region=self._azure_speech_region,
-        )
+        speech_config = self._get_speech_config()
         speech_config.speech_recognition_language = self._recognition_language
 
         # Create a PullAudioInputStream from the byte stream
@@ -191,3 +213,32 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
                 logger.error("Error details: {}".format(cancellation_details.error_details))
             elif cancellation_details.reason == speechsdk.CancellationReason.EndOfStream:
                 logger.info("End of audio stream detected.")
+
+    def _get_speech_config(self):
+        """
+        Get the speech config based on authentication method.
+
+        Returns:
+            speechsdk.SpeechConfig: The speech config object.
+        """
+        try:
+            import azure.cognitiveservices.speech as speechsdk  # noqa: F811
+        except ModuleNotFoundError as e:
+            logger.error(
+                "Could not import azure.cognitiveservices.speech. "
+                + "You may need to install it via 'pip install pyrit[speech]'"
+            )
+            raise e
+
+        if self._azure_speech_key and self._azure_speech_region:
+            return speechsdk.SpeechConfig(
+                subscription=self._azure_speech_key,
+                region=self._azure_speech_region,
+            )
+        elif self._azure_speech_resource_id and self._azure_speech_region:
+            return get_speech_config_from_default_azure_credential(
+                resource_id=self._azure_speech_resource_id,
+                region=self._azure_speech_region,
+            )
+        else:
+            raise ValueError("Insufficient information provided for Azure Speech service.")

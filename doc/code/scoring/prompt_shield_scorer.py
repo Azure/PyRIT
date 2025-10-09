@@ -6,10 +6,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -52,6 +48,8 @@ from pyrit.score import BatchScorer, PromptShieldScorer
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
 pst = PromptShieldTarget()
+# For an Azure Content Safety endpoint with Entra ID authentication enabled, use the following line instead. Make sure to run `az login` first.
+# target = PromptShieldTarget(use_entra_auth=True)
 
 scorer = PromptShieldScorer(prompt_shield_target=pst)
 

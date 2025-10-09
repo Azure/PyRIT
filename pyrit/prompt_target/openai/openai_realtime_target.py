@@ -69,7 +69,7 @@ class RealtimeTarget(OpenAITarget):
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
                 Defaults to the `OPENAI_CHAT_KEY` environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
-            use_aad_auth (bool, Optional): When set to True, user authentication is used
+            use_entra_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default . Please run `az login` locally
                 to leverage user AuthN.
@@ -118,7 +118,6 @@ class RealtimeTarget(OpenAITarget):
             query_params["api-version"] = self._api_version
 
         url = f"{self._endpoint}?{urlencode(query_params)}"
-
         websocket = await websockets.connect(url)
         logger.info("Successfully connected to AzureOpenAI Realtime API")
         return websocket
@@ -135,7 +134,7 @@ class RealtimeTarget(OpenAITarget):
             query_params["api-key"] = self._api_key
 
         if self._azure_auth:
-            query_params["access_token"] = self._azure_auth.refresh_token()
+            query_params["Authorization"] = f"Bearer {self._azure_auth.refresh_token()}"
 
     def _set_system_prompt_and_config_vars(self):
 

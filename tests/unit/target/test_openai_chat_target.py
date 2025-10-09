@@ -85,6 +85,17 @@ def test_init_with_no_additional_request_headers_var_raises():
             OpenAIChatTarget(model_name="gpt-4", endpoint="", api_key="xxxxx", api_version="some_version", headers="")
 
 
+def test_init_with_passed_api_key_and_use_entra_auth_raises(patch_central_database):
+    with pytest.raises(ValueError, match="If using Entra ID auth, please do not specify api_key"):
+        OpenAIChatTarget(
+            model_name="gpt-4",
+            endpoint="https://mock.azure.com/",
+            api_key="xxxxx",
+            api_version="some_version",
+            use_entra_auth=True,
+        )
+
+
 @pytest.mark.asyncio()
 async def test_build_chat_messages_for_multi_modal(target: OpenAIChatTarget):
 
@@ -746,3 +757,49 @@ async def test_send_prompt_async_other_http_error(monkeypatch):
 
     with pytest.raises(httpx.HTTPStatusError):
         await target.send_prompt_async(prompt_request=prompt_request)
+
+
+def test_set_auth_headers_with_entra_auth(patch_central_database):
+    """Test that _set_auth_headers properly configures Entra authentication."""
+    with (
+        patch("pyrit.prompt_target.openai.openai_target.get_default_scope") as mock_scope,
+        patch("pyrit.prompt_target.openai.openai_target.AzureAuth") as mock_auth_class,
+    ):
+
+        mock_scope.return_value = "https://cognitiveservices.azure.com/.default"
+        mock_auth_instance = MagicMock()
+        mock_auth_instance.get_token.return_value = "test_token_123"
+        mock_auth_class.return_value = mock_auth_instance
+
+        target = OpenAIChatTarget(
+            model_name="gpt-4",
+            endpoint="https://test.openai.azure.com",
+            use_entra_auth=True,
+        )
+
+        # Verify Entra auth was configured correctly
+        mock_scope.assert_called_once_with("https://test.openai.azure.com")
+        mock_auth_class.assert_called_once_with(token_scope="https://cognitiveservices.azure.com/.default")
+        mock_auth_instance.get_token.assert_called_once()
+
+        # Verify headers are set correctly
+        assert target._azure_auth == mock_auth_instance
+        assert target._headers["Authorization"] == "Bearer test_token_123"
+        assert "Api-Key" not in target._headers
+        assert target._api_key is None
+
+
+def test_set_auth_headers_with_api_key(patch_central_database):
+    """Test that _set_auth_headers properly configures API key authentication."""
+    target = OpenAIChatTarget(
+        model_name="gpt-4",
+        endpoint="https://test.openai.azure.com",
+        api_key="test_api_key_456",
+        use_entra_auth=False,
+    )
+
+    # Verify API key auth was configured correctly
+    assert target._azure_auth is None
+    assert target._api_key == "test_api_key_456"
+    assert target._headers["Api-Key"] == "test_api_key_456"
+    assert target._headers["Authorization"] == "Bearer test_api_key_456"

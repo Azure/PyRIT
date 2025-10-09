@@ -6,6 +6,10 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.2
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -32,6 +36,8 @@ from pyrit.prompt_target import OpenAIResponseTarget
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
 target = OpenAIResponseTarget()
+# For an AzureOpenAI endpoint with Entra ID authentication enabled, use the following line instead. Make sure to run `az login` first.
+# target = OpenAIResponseTarget(use_entra_auth=True)
 
 attack = PromptSendingAttack(objective_target=target)
 

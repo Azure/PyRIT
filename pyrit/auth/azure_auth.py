@@ -27,7 +27,7 @@ class AzureAuth(Authenticator):
     Azure CLI Authentication.
     """
 
-    _access_token: AccessToken
+    access_token: AccessToken
     _token_scope: str
 
     def __init__(self, token_scope: str, tenant_id: str = ""):
@@ -36,10 +36,9 @@ class AzureAuth(Authenticator):
         self._set_default_token()
 
     def _set_default_token(self) -> None:
-        azure_creds = DefaultAzureCredential()
-        self._access_token = azure_creds.get_token(self._token_scope)
-        # Make the token available to the user
-        self.token = self._access_token.token
+        self.azure_creds = DefaultAzureCredential()
+        self.access_token = self.azure_creds.get_token(self._token_scope)
+        self.token = self.access_token.token
 
     def refresh_token(self) -> str:
         """Refresh the access token if it is expired.
@@ -49,7 +48,7 @@ class AzureAuth(Authenticator):
 
         """
         curr_epoch_time_in_ms = int(time.time()) * 1_000
-        access_token_epoch_expiration_time_in_ms = int(self._access_token.expires_on) * 1_000
+        access_token_epoch_expiration_time_in_ms = int(self.access_token.expires_on) * 1_000
         # Adjust the expiration time to be before the actual expiration time so that user can use the token
         # for a while before it expires. This improves user experience. The token is refreshed REFRESH_TOKEN_BEFORE_MSEC
         # before it expires.
@@ -164,3 +163,36 @@ def get_default_scope(endpoint: str) -> str:
         pass
 
     return "https://cognitiveservices.azure.com/.default"
+
+
+def get_speech_config_from_default_azure_credential(resource_id: str, region: str):
+    """Get the speech config for the given resource ID and region.
+
+    Args:
+        resource_id: The resource ID to get the token for.
+        region: The region to get the token for.
+
+    Returns:
+        The speech config for the given resource ID and region.
+    """
+    try:
+        import azure.cognitiveservices.speech as speechsdk  # noqa: F811
+    except ModuleNotFoundError as e:
+        logger.error(
+            "Could not import azure.cognitiveservices.speech. "
+            + "You may need to install it via 'pip install pyrit[speech]'"
+        )
+        raise e
+
+    try:
+        azure_auth = AzureAuth(token_scope=get_default_scope(""))
+        token = azure_auth.get_token()
+        authorization_token = "aad#" + resource_id + "#" + token
+        speech_config = speechsdk.SpeechConfig(
+            auth_token=authorization_token,
+            region=region,
+        )
+        return speech_config
+    except Exception as e:
+        logger.error(f"Failed to get speech config for resource ID '{resource_id}' and region '{region}': {e}")
+        raise
