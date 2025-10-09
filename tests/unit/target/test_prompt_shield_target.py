@@ -29,14 +29,6 @@ def promptshield_target(sqlite_instance) -> PromptShieldTarget:
 
 
 @pytest.fixture
-def promptshield_target_with_entra(sqlite_instance):
-    target = PromptShieldTarget(endpoint="https://test.endpoint.com", use_entra_auth=True)
-    target._azure_auth = MagicMock()
-    target._azure_auth.refresh_token = MagicMock(return_value="test_access_token")
-    return target
-
-
-@pytest.fixture
 def sample_delineated_prompt_as_str() -> str:
     sample: str = """
     Mock userPrompt
@@ -109,12 +101,27 @@ def test_use_entra_auth_true_with_api_key_raises_error(sqlite_instance):
             )
 
 
-def test_use_entra_auth_true_uses_credential(promptshield_target_with_entra: PromptShieldTarget):
+def test_use_entra_auth_true_uses_credential(sqlite_instance):
     """Test that use_entra_auth=True uses Azure authentication."""
-    # Verify the target was created with Entra auth
-    assert promptshield_target_with_entra is not None
-    assert promptshield_target_with_entra._azure_auth is not None
-    assert promptshield_target_with_entra._azure_auth.refresh_token() == "test_access_token"
+    with (
+        patch("pyrit.prompt_target.prompt_shield_target.get_default_scope") as mock_scope,
+        patch("pyrit.prompt_target.prompt_shield_target.AzureAuth") as mock_auth_class,
+    ):
+
+        mock_scope.return_value = "https://cognitiveservices.azure.com/.default"
+        mock_auth_instance = MagicMock()
+        mock_auth_class.return_value = mock_auth_instance
+
+        target = PromptShieldTarget(endpoint="https://test.endpoint.com", use_entra_auth=True)
+
+        # Verify Azure Auth was used correctly
+        mock_scope.assert_called_once_with("https://test.endpoint.com")
+        mock_auth_class.assert_called_once_with(token_scope="https://cognitiveservices.azure.com/.default")
+
+        # Verify target was created successfully with Entra auth
+        assert target is not None
+        assert target._azure_auth == mock_auth_instance
+        assert target._api_key is None
 
 
 def test_use_entra_auth_false_uses_api_key():
