@@ -12,6 +12,7 @@ from pyrit.common.path import SCORER_EVALS_HARM_PATH, SCORER_EVALS_OBJECTIVE_PAT
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.score import (
+    FloatScaleScorer,
     HarmHumanLabeledEntry,
     HarmScorerEvaluator,
     HarmScorerMetrics,
@@ -20,8 +21,8 @@ from pyrit.score import (
     ObjectiveHumanLabeledEntry,
     ObjectiveScorerEvaluator,
     ObjectiveScorerMetrics,
-    Scorer,
     ScorerEvaluator,
+    TrueFalseScorer,
 )
 
 
@@ -37,16 +38,14 @@ def sample_objective_csv_path():
 
 @pytest.fixture
 def mock_harm_scorer():
-    scorer = MagicMock(spec=Scorer)
-    scorer.scorer_type = "float_scale"
+    scorer = MagicMock(spec=FloatScaleScorer)
     scorer._memory = MagicMock()
     return scorer
 
 
 @pytest.fixture
 def mock_objective_scorer():
-    scorer = MagicMock(spec=Scorer)
-    scorer.scorer_type = "true_false"
+    scorer = MagicMock(spec=TrueFalseScorer)
     scorer._memory = MagicMock()
     return scorer
 
@@ -268,7 +267,7 @@ async def test_run_evaluation_async_harm(mock_harm_scorer):
     mock_dataset = HumanLabeledDataset(name="test_dataset", metrics_type=MetricsType.HARM, entries=[entry1, entry2])
     # Patch scorer to return fixed scores
     entry_values = [MagicMock(get_value=lambda: 0.2), MagicMock(get_value=lambda: 0.4)]
-    mock_harm_scorer.score_responses_inferring_tasks_batch_async = AsyncMock(return_value=entry_values)
+    mock_harm_scorer.score_prompts_batch_async = AsyncMock(return_value=entry_values)
     evaluator = HarmScorerEvaluator(mock_harm_scorer)
     metrics = await evaluator.run_evaluation_async(
         labeled_dataset=mock_dataset, num_scorer_trials=2, save_results=False

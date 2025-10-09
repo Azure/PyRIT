@@ -41,9 +41,9 @@ from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormaliz
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import (
     Scorer,
-    SelfAskScaleScorer,
     SelfAskTrueFalseScorer,
     TrueFalseQuestion,
+    TrueFalseQuestionPaths,
 )
 
 logger = logging.getLogger(__name__)
@@ -455,13 +455,13 @@ class _TreeOfAttacksNode:
             the TAP algorithm explores in subsequent iterations.
         """
         # Use the Scorer utility method to handle all scoring
-        scoring_results = await Scorer.score_response_with_objective_async(
+        scoring_results = await Scorer.score_response_async(
             response=response,
+            objective_scorer=self._objective_scorer,
             auxiliary_scorers=self._auxiliary_scorers,
-            objective_scorers=[self._objective_scorer],
             role_filter="assistant",
-            task=objective,
-            skip_on_error=True,
+            objective=objective,
+            skip_on_error_result=True,
         )
 
         # Extract objective score
@@ -1020,10 +1020,9 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         # If no objective scorer provided, create the default TAP scorer
         if objective_scorer is None:
             # Use the adversarial chat target for scoring (as in old attack)
-            objective_scorer = SelfAskScaleScorer(
+            objective_scorer = SelfAskTrueFalseScorer(
                 chat_target=self._adversarial_chat,
-                scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
-                system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
+                true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value,
             )
             self._logger.warning("No objective scorer provided, using default scorer")
 

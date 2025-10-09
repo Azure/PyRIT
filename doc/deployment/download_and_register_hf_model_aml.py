@@ -1,3 +1,13 @@
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.17.3
+# ---
+
 # %% [markdown]
 # # Importing and Registering Hugging Face Models into Azure ML
 #
@@ -320,6 +330,8 @@ except Exception as e:
 
 # %%
 # Define a Azure ML pipeline for importing models into Azure ML
+
+
 @pipeline
 def model_import_pipeline(model_id, compute, task_name, instance_type):
     """

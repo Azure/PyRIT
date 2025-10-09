@@ -87,7 +87,7 @@ results = await AttackExecutor().execute_multi_objective_attack_async(  # type: 
 
 for result in results:
     await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
-await target.cleanup_target()  # type: ignore
+
 
 # %% [markdown]
 # ## MULTITURN:
@@ -139,4 +139,3 @@ red_teaming_attack = RedTeamingAttack(
 # passed-in memory labels are combined with global memory labels
 result = await red_teaming_attack.execute_async(objective=objective, memory_labels={"harm_category": "illegal"})  # type: ignore
 await ConsoleAttackResultPrinter().print_result_async(result=result)  # type: ignore
-await target.cleanup_target()  # type: ignore

@@ -133,6 +133,8 @@ for idx, piece in enumerate(response.request_pieces):
 # NOTE that web search is NOT supported through an Azure OpenAI endpoint, only through the OpenAI platform endpoint (i.e. api.openai.com)
 
 # %%
+import os
+
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.tool_configs import web_search_tool
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
@@ -141,6 +143,10 @@ from pyrit.prompt_target.openai.openai_response_target import OpenAIResponseTarg
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
 target = OpenAIResponseTarget(
+    endpoint=os.getenv("PLATFORM_OPENAI_RESPONSES_ENDPOINT"),
+    api_key=os.getenv("PLATFORM_OPENAI_RESPONSES_KEY"),
+    model_name=os.getenv("PLATFORM_OPENAI_RESPONSES_MODEL", "gpt-4o-mini"),
+    api_version=None,
     extra_body_parameters={
         "tools": [web_search_tool()],
         "tool_choice": "auto",

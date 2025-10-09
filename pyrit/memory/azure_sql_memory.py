@@ -201,7 +201,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         self._insert_entries(entries=embedding_data)
 
-    def _get_prompt_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]):
+    def _get_prompt_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> list:
         json_validation = "ISJSON(labels) = 1"
         json_conditions = " AND ".join([f"JSON_VALUE(labels, '$.{key}') = :{key}" for key in memory_labels])
         # Combine both conditions
@@ -209,9 +209,10 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         # Create SQL condition using SQLAlchemy's text() with bindparams
         # for safe parameter passing, preventing SQL injection
-        return text(conditions).bindparams(**{key: str(value) for key, value in memory_labels.items()})
+        condition = text(conditions).bindparams(**{key: str(value) for key, value in memory_labels.items()})
+        return [condition]
 
-    def _get_prompt_pieces_attack_conditions(self, *, attack_id: str):
+    def _get_prompt_pieces_attack_conditions(self, *, attack_id: str) -> Any:
         return text("ISJSON(attack_identifier) = 1 AND JSON_VALUE(attack_identifier, '$.id') = :json_id").bindparams(
             json_id=str(attack_id)
         )
@@ -224,13 +225,14 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         # Create SQL condition using SQLAlchemy's text() with bindparams
         # for safe parameter passing, preventing SQL injection
-        return text(conditions).bindparams(**{key: str(value) for key, value in prompt_metadata.items()})
+        condition = text(conditions).bindparams(**{key: str(value) for key, value in prompt_metadata.items()})
+        return [condition]
 
-    def _get_prompt_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]):
+    def _get_prompt_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list:
         return self._get_metadata_conditions(prompt_metadata=prompt_metadata)
 
-    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]):
-        return self._get_metadata_conditions(prompt_metadata=metadata)
+    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> Any:
+        return self._get_metadata_conditions(prompt_metadata=metadata)[0]
 
     def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
         """

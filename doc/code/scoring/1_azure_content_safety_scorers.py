@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.17.3
 #   kernelspec:
-#     display_name: pyrit-dev
+#     display_name: pyrit-312
 #     language: python
 #     name: python3
 # ---
@@ -36,7 +36,7 @@ import os
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.score import AzureContentFilterScorer
+from pyrit.score.float_scale.azure_content_filter_scorer import AzureContentFilterScorer
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -49,14 +49,18 @@ azure_content_filter = AzureContentFilterScorer(
     endpoint=os.environ.get("AZURE_CONTENT_SAFETY_API_ENDPOINT"),
 )
 
-response = PromptRequestPiece(
-    role="assistant",
-    original_value_data_type="text",
-    original_value="I hate you.",
+response = PromptRequestResponse(
+    request_pieces=[
+        PromptRequestPiece(
+            role="assistant",
+            original_value_data_type="text",
+            original_value="I hate you.",
+        )
+    ]
 )
 memory = CentralMemory.get_memory_instance()
 # need to write it manually to memory as score table has a foreign key constraint
-memory.add_request_response_to_memory(request=PromptRequestResponse([response]))
+memory.add_request_response_to_memory(request=response)
 
 # Run the request
 scores = await azure_content_filter.score_async(response)  # type: ignore
@@ -65,6 +69,3 @@ assert scores[0].get_value() > 0  # azure_severity should be value 2 based on th
 for score in scores:
     # score_metadata contains azure_severity original value
     print(f"{score} {score.score_metadata}")
-
-# %%
-memory.dispose_engine()

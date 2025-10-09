@@ -33,8 +33,7 @@ from pyrit.models import (
 from pyrit.prompt_converter import FuzzerConverter
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
-from pyrit.score import FloatScaleThresholdScorer, SelfAskScaleScorer
-from pyrit.score.scorer import Scorer
+from pyrit.score import FloatScaleThresholdScorer, Scorer, SelfAskScaleScorer
 
 logger = logging.getLogger(__name__)
 
@@ -1005,7 +1004,9 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
         response_pieces = [response.request_pieces[0] for response in responses]
 
         # Score with objective scorer
-        scores = await self._scorer.score_prompts_with_tasks_batch_async(request_responses=response_pieces, tasks=tasks)
+        scores = await self._scorer.score_prompts_batch_async(
+            request_responses=[piece.to_prompt_request_response() for piece in response_pieces], objectives=tasks
+        )
 
         return scores
 

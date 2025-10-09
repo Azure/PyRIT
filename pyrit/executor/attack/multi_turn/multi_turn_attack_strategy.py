@@ -56,11 +56,6 @@ class MultiTurnAttackContext(AttackContext):
 
 
 class MultiTurnAttackStrategy(AttackStrategy[MultiTurnAttackStrategyContextT, AttackStrategyResultT], ABC):
-    """
-    Strategy for executing single-turn attacks.
-    This strategy is designed to handle attacks that consist of a single turn
-    of interaction with the target model.
-    """
 
     def __init__(self, *, context_type: type[MultiTurnAttackStrategyContextT], logger: logging.Logger = logger):
         """
