@@ -623,7 +623,8 @@ class XPIAManualProcessingWorkflow(XPIAWorkflow):
 
         # Create the manual input callback
         async def manual_input_async() -> str:
-            return await questionary.text("Please trigger the processing target's execution and paste the output here:").ask_async()  # type: ignore
+            prompt = "Please trigger the processing target's execution and paste the output here:"
+            return await questionary.text(prompt).ask_async()  # type: ignore
 
         # Set the processing callback on the context
         context.processing_callback = manual_input_async
