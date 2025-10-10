@@ -13,6 +13,7 @@ from pyrit.prompt_target import (
     OpenAIDALLETarget,
     OpenAIResponseTarget,
     OpenAISoraTarget,
+    OpenAISora2Target,
     OpenAITTSTarget,
     RealtimeTarget,
 )
@@ -205,6 +206,20 @@ async def test_connect_sora(sqlite_instance):
         endpoint=os.getenv("OPENAI_SORA_ENDPOINT"),
         api_key=os.getenv("OPENAI_SORA_KEY"),
         model_name=os.getenv("OPENAI_SORA_MODEL"),
+    )
+
+    await _assert_can_send_prompt(target, check_if_llm_interpreted_request=False)
+
+
+@pytest.mark.asyncio
+async def test_connect_sora2(sqlite_instance):
+    """Test OpenAISora2Target with both OpenAI and Azure OpenAI configurations."""
+    target = OpenAISora2Target(
+        endpoint=os.getenv("OPENAI_SORA2_ENDPOINT"),
+        api_key=os.getenv("OPENAI_SORA2_KEY"),
+        model_name=os.getenv("OPENAI_SORA2_MODEL"),
+        resolution_dimensions="1280x720",
+        n_seconds=4,
     )
 
     await _assert_can_send_prompt(target, check_if_llm_interpreted_request=False)
