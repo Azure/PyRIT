@@ -970,11 +970,6 @@ class MemoryInterface(abc.ABC):
                 Defaults to None.
             outcome (Optional[str], optional): The outcome to filter by (success, failure, undetermined).
                 Defaults to None.
-            harm_categories (Optional[Sequence[str]], optional): A list of harm categories to filter results by.
-                These harm categories are associated with the prompts themselves,
-                meaning they are harm(s) we're trying to elicit with the prompt,
-                not necessarily one(s) that were found in the response.
-                Defaults to None.
             targeted_harm_categories (Optional[Sequence[str]], optional):
                 A list of targeted harm categories to filter results by.
                 These targeted harm categories are associated with the prompts themselves,

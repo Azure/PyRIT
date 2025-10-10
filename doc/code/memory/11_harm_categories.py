@@ -115,7 +115,7 @@ if illegal_attacks:
 
 # %%
 # Example 2: Query for multiple harm categories
-print("3. Query for multiple harm categories 'illegal' and 'violence':")
+print("2. Query for multiple harm categories 'illegal' and 'violence':")
 multiple_groups = memory.get_attack_results(targeted_harm_categories=["illegal", "violence"])
 
 for i, attack_result in enumerate(multiple_groups):
