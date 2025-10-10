@@ -980,6 +980,7 @@ class MemoryInterface(abc.ABC):
                 These targeted harm categories are associated with the prompts themselves,
                 meaning they are harm(s) we're trying to elicit with the prompt,
                 not necessarily one(s) that were found in the response.
+                By providing a list, this means ALL categories in the list must be present.
                 Defaults to None.
             labels (Optional[dict[str, str]], optional): A dictionary of memory labels to filter results by.
                 These labels are associated with the prompts themselves, used for custom tagging and tracking.

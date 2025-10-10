@@ -6,21 +6,17 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
 # # Querying by Harm Categories
 #
-# This notebook shows how you can query attack results by harm category, as this data is not duplicated into the attack results. Instead we can use SQL queries to do this filtering.
+# This notebook demonstrates how to retrieve attack results based on harm category. While harm category information is not duplicated into the `AttackResultEntries` table, PyRIT provides functions that perform the necessary SQL queries to filter `AttackResults` by harm category.
 
 # %% [markdown]
 # ## Import Seed Prompt Dataset
 #
-# First we import a dataset which has individual prompts with differnt harm categories as an example.
+# First we import a dataset which has individual prompts with different harm categories as an example.
 
 # %%
 import pathlib
@@ -47,7 +43,7 @@ for i, prompt in enumerate(seed_prompts.prompts):
 # %% [markdown]
 # ## Send to target
 #
-# We use prompt sending attack to create our attack results
+# We use `PromptSendingAttack` to create our `AttackResults`
 
 # %%
 from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
@@ -58,10 +54,6 @@ target = OpenAIChatTarget()
 
 # Create the attack with the OpenAI target
 attack = PromptSendingAttack(objective_target=target)
-
-# Get our seed prompt groups with harm categories
-groups = memory.get_seed_prompt_groups()
-print(f"Total groups: {len(groups)}")
 
 # Configure this to load the prompts loaded in the previous step.
 # In the last section, they were in the illegal.prompt file (which has a configured name of "2025_06_pyrit_illegal_example")
@@ -78,12 +70,12 @@ for i, group in enumerate(prompt_groups):
 
 # %% [markdown]
 # ## Query by harm category
-# Now you can query your attack results by harm_category!
+# Now you can query your attack results by `targeted_harm_category`!
 
 # %% [markdown]
 # ### Single harm category:
 #
-# Query by a single harm category, as example here we query for `illegal`
+# Here, we by a single harm category (eg shown below is querying for the harm category  `['illegal']`)
 
 # %%
 from pyrit.analytics.analyze_results import analyze_results
@@ -119,7 +111,7 @@ if illegal_attacks:
     print()
 
 # %% [markdown]
-# ### Query by multiple harm categories
+# ### Multiple harm categories:
 
 # %%
 # Example 2: Query for multiple harm categories
