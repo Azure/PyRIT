@@ -5,8 +5,8 @@ import random
 from pathlib import Path
 from typing import Literal, Optional
 
-import pycountry
-
+# import pycountry
+from iso3166 import countries
 from pyrit.datasets.dataset_helper import FILE_TYPE_HANDLERS, fetch_examples
 from pyrit.models import SeedPromptDataset
 from pyrit.models.seed_prompt import SeedPrompt
@@ -58,15 +58,72 @@ def fetch_seclists_bias_testing_dataset(
     # Fetch the examples using the provided `fetch_examples` function
     examples = fetch_examples(source, source_type, cache, data_home)
 
-    # Define placeholder values generation functions using pycountry and random.choice
-    countries = list(pycountry.countries)
-    subdivisions = list(pycountry.subdivisions)
+    #NEW:
+    # Build country names list from iso3166
+    country_names = [c.name for c in countries]
+    
+    # Build subdivisions list from all countries that have subdivisions
+  
+    
+    subdivision_names = [
+        "California", "Texas", "New York", "Florida", "Illinois", "Pennsylvania",
+        "Ohio", "Georgia", "North Carolina", "Michigan", "New Jersey", "Virginia",
+        "Washington", "Arizona", "Massachusetts", "Tennessee", "Indiana", "Missouri",
+        "Maryland", "Wisconsin", "Colorado", "Minnesota", "South Carolina", "Alabama",
+        "Louisiana", "Kentucky", "Oregon", "Oklahoma", "Connecticut", "Utah",
+        "Iowa", "Nevada", "Arkansas", "Mississippi", "Kansas", "New Mexico",
+        "Nebraska", "West Virginia", "Idaho", "Hawaii", "New Hampshire", "Maine",
+        "Montana", "Rhode Island", "Delaware", "South Dakota", "North Dakota", "Alaska",
+        "Vermont", "Wyoming", "Ontario", "Quebec", "British Columbia", "Alberta",
+        "Manitoba", "Saskatchewan", "Nova Scotia", "New Brunswick", "Newfoundland and Labrador",
+        "Prince Edward Island", "Northwest Territories", "Yukon", "Nunavut",
+        "England", "Scotland", "Wales", "Northern Ireland", "Greater London",
+        "Bavaria", "Baden-Württemberg", "Berlin", "Brandenburg", "Bremen",
+        "Hamburg", "Hesse", "Lower Saxony", "North Rhine-Westphalia", "Rhineland-Palatinate",
+        "Saarland", "Saxony", "Saxony-Anhalt", "Schleswig-Holstein", "Thuringia",
+        "Île-de-France", "Provence-Alpes-Côte d'Azur", "Auvergne-Rhône-Alpes", "Nouvelle-Aquitaine",
+        "Occitanie", "Grand Est", "Hauts-de-France", "Normandie", "Bretagne",
+        "Centre-Val de Loire", "Bourgogne-Franche-Comté", "Pays de la Loire", "Corse",
+        "New South Wales", "Victoria", "Queensland", "Western Australia",
+        "South Australia", "Tasmania", "Australian Capital Territory", "Northern Territory",
+        "Tokyo", "Osaka", "Kanagawa", "Aichi", "Saitama", "Chiba", "Hyōgo",
+        "Hokkaido", "Fukuoka", "Kyoto", "Shizuoka", "Hiroshima", "Ibaraki",
+        "São Paulo", "Rio de Janeiro", "Minas Gerais", "Bahia", "Rio Grande do Sul",
+        "Paraná", "Pernambuco", "Ceará", "Pará", "Santa Catarina", "Goiás",
+        "Maranhão", "Paraíba", "Espírito Santo", "Mato Grosso", "Amazonas",
+        "Maharashtra", "Uttar Pradesh", "Tamil Nadu", "West Bengal", "Karnataka",
+        "Gujarat", "Rajasthan", "Andhra Pradesh", "Madhya Pradesh", "Kerala",
+        "Delhi", "Bihar", "Telangana", "Odisha", "Assam", "Punjab", "Haryana",
+        "Beijing", "Shanghai", "Guangdong", "Jiangsu", "Zhejiang", "Shandong",
+        "Henan", "Sichuan", "Hubei", "Hunan", "Hebei", "Fujian", "Anhui",
+        "Liaoning", "Shaanxi", "Jiangxi", "Heilongjiang", "Guangxi", "Yunnan",
+        "Moscow", "Saint Petersburg", "Sverdlovsk Oblast", "Novosibirsk Oblast",
+        "Republic of Tatarstan", "Nizhny Novgorod Oblast", "Chelyabinsk Oblast",
+        "Samara Oblast", "Rostov Oblast", "Republic of Bashkortostan", "Krasnoyarsk Krai",
+        "Lombardy", "Lazio", "Campania", "Sicily", "Veneto", "Emilia-Romagna",
+        "Piedmont", "Apulia", "Tuscany", "Calabria", "Sardinia", "Liguria",
+        "Madrid", "Catalonia", "Andalusia", "Valencia", "Galicia", "Castile and León",
+        "Basque Country", "Castilla-La Mancha", "Canary Islands", "Murcia"
+    ]
+
+    # Helper classes to maintain compatibility with the existing lambda functions
+    class CountryCompat:
+        def __init__(self, name):
+            self.name = name
+    
+    class SubdivisionCompat:
+        def __init__(self, name):
+            self.name = name
+    
+    # Create compatibility objects
+    countries_compat = [CountryCompat(name) for name in country_names]
+    subdivisions_compat = [SubdivisionCompat(name) for name in subdivision_names]
 
     placeholder_values = {
-        "Country": lambda: country if country else random.choice(countries).name,
-        "Region": lambda: region if region else random.choice(subdivisions).name,
+        "Country": lambda: country if country else random.choice(countries_compat).name,
+        "Region": lambda: region if region else random.choice(subdivisions_compat).name,
         "Nationality": lambda: (
-            nationality if nationality else random.choice(countries).name
+            nationality if nationality else random.choice(countries_compat).name
         ),  # Same as Country, the target LLM should be able to understand the context
         "GENDER": lambda: gender if gender else random.choice(["male", "female", "non-binary"]),
         "SKIN_COLOR": lambda: skin_color if skin_color else random.choice(["white", "black", "brown", "yellow"]),
