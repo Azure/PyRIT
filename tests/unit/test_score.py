@@ -16,13 +16,13 @@ async def test_score_to_dict():
         score_value="false",
         score_value_description="true false score",
         score_type="true_false",
-        score_category="Category1",
+        score_category=["Category1"],
         score_rationale="Rationale text",
         score_metadata={"key": "value"},
         scorer_class_identifier="Scorer1",
         prompt_request_response_id=str(uuid.uuid4()),
         timestamp=datetime.now(),
-        task="Task1",
+        objective="Task1",
     )
     result = sample_score.to_dict()
 
@@ -38,7 +38,7 @@ async def test_score_to_dict():
         "scorer_class_identifier",
         "prompt_request_response_id",
         "timestamp",
-        "task",
+        "objective",
     ]
 
     for key in expected_keys:
@@ -55,4 +55,4 @@ async def test_score_to_dict():
     assert result["scorer_class_identifier"] == sample_score.scorer_class_identifier
     assert result["prompt_request_response_id"] == str(sample_score.prompt_request_response_id)
     assert result["timestamp"] == sample_score.timestamp.isoformat()
-    assert result["task"] == sample_score.task
+    assert result["objective"] == sample_score.objective

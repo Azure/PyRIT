@@ -481,13 +481,12 @@ API Reference
     AzureContentFilterScorer
     BatchScorer
     ContentClassifierPaths
-    CompositeScorer
+    FloatScaleScorer
     FloatScaleThresholdScorer
     GandalfScorer
     HarmHumanLabeledEntry
     HarmScorerEvaluator
     HarmScorerMetrics
-    HumanInTheLoopScorer
     HumanInTheLoopScorerGradio
     HumanLabeledDataset
     HumanLabeledEntry
@@ -499,21 +498,26 @@ API Reference
     ObjectiveHumanLabeledEntry
     ObjectiveScorerEvaluator
     ObjectiveScorerMetrics
+    PlagiarismMetric
     PlagiarismScorer
     PromptShieldScorer
     QuestionAnswerScorer
     Scorer
     ScorerEvaluator
     ScorerMetrics
-    ScoreAggregator
+    ScorerPromptValidator
     SelfAskCategoryScorer
-    SelfAskGeneralScorer
+    SelfAskGeneralFloatScaleScorer
+    SelfAskGeneralTrueFalseScorer
     SelfAskLikertScorer
+    SelfAskQuestionAnswerScorer
     SelfAskRefusalScorer
     SelfAskScaleScorer
     SelfAskTrueFalseScorer
-    SelfAskQuestionAnswerScorer
     SubStringScorer
+    TrueFalseCompositeScorer
     TrueFalseInverterScorer
     TrueFalseQuestion
     TrueFalseQuestionPaths
+    TrueFalseScoreAggregator
+    TrueFalseScorer

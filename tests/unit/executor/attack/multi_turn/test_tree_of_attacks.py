@@ -33,7 +33,7 @@ from pyrit.models import (
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
-from pyrit.score import Scorer
+from pyrit.score import Scorer, TrueFalseScorer
 
 logger = logging.getLogger(__name__)
 
@@ -151,7 +151,7 @@ class AttackBuilder:
         """Set up default mocks for all required components."""
         self.objective_target = self._create_mock_target()
         self.adversarial_chat = self._create_mock_chat()
-        self.objective_scorer = cast(Scorer, self._create_mock_scorer("MockScorer"))
+        self.objective_scorer = self._create_mock_scorer("MockScorer")
         return self
 
     def with_tree_params(self, **kwargs):
@@ -166,7 +166,7 @@ class AttackBuilder:
 
     def with_auxiliary_scorers(self, count: int = 1):
         """Add auxiliary scorers."""
-        self.auxiliary_scorers = [cast(Scorer, self._create_mock_scorer(f"MockAuxScorer{i}")) for i in range(count)]
+        self.auxiliary_scorers = [self._create_mock_aux_scorer(f"MockAuxScorer{i}") for i in range(count)]
         return self
 
     def with_prompt_normalizer(self):
@@ -181,7 +181,7 @@ class AttackBuilder:
         assert self.adversarial_chat is not None, "Adversarial chat target must be set."
         adversarial_config = AttackAdversarialConfig(target=self.adversarial_chat)
         scoring_config = AttackScoringConfig(
-            objective_scorer=cast(Scorer, self.objective_scorer),
+            objective_scorer=cast(TrueFalseScorer, self.objective_scorer),
             auxiliary_scorers=self.auxiliary_scorers,
             successful_objective_threshold=self.successful_threshold,
         )
@@ -214,7 +214,16 @@ class AttackBuilder:
         return cast(PromptChatTarget, chat)
 
     @staticmethod
-    def _create_mock_scorer(name: str) -> Scorer:
+    def _create_mock_scorer(name: str) -> TrueFalseScorer:
+        scorer = MagicMock(spec=TrueFalseScorer)
+        scorer.scorer_type = "true_false"
+        scorer.score_async = AsyncMock(return_value=[])
+        scorer.get_identifier.return_value = {"__type__": name, "__module__": "test_module"}
+        return cast(TrueFalseScorer, scorer)
+
+    @staticmethod
+    def _create_mock_aux_scorer(name: str) -> Scorer:
+        """Create a mock auxiliary scorer (can be any Scorer type)."""
         scorer = MagicMock(spec=Scorer)
         scorer.scorer_type = "float_scale"
         scorer.score_async = AsyncMock(return_value=[])
@@ -242,10 +251,10 @@ class TestHelpers:
             id=None,
             score_type="float_scale",
             score_value=str(value),
-            score_category="test",
+            score_category=["test"],
             score_value_description="Test score",
             score_rationale="Test rationale",
-            score_metadata="{}",
+            score_metadata={"test": "metadata"},
             prompt_request_response_id=str(uuid.uuid4()),
             scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
         )
@@ -899,12 +908,12 @@ class TestTreeOfAttacksNode:
         obj_score.scorer_class_identifier = {"__type__": "ObjectiveScorer"}
         node._objective_scorer.score_async = AsyncMock(return_value=[obj_score])
 
-        # Mock for Scorer.score_response_with_objective_async
+        # Mock for Scorer.score_response_async
         def mock_score_response(*args, **kwargs):
             return {"objective_scores": [obj_score], "auxiliary_scores": [aux_score1, aux_score2]}
 
         with patch(
-            "pyrit.score.Scorer.score_response_with_objective_async",
+            "pyrit.score.Scorer.score_response_async",
             new_callable=AsyncMock,
             side_effect=mock_score_response,
         ):

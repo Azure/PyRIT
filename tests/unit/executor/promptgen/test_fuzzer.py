@@ -24,7 +24,12 @@ from pyrit.prompt_converter import (
     FuzzerExpandConverter,
     FuzzerShortenConverter,
 )
-from pyrit.score import FloatScaleThresholdScorer, Scorer
+from pyrit.score import (
+    FloatScaleScorer,
+    FloatScaleThresholdScorer,
+    Scorer,
+    TrueFalseScorer,
+)
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -66,8 +71,7 @@ class TestFuzzerGenerator:
     @pytest.fixture
     def mock_scorer(self) -> MagicMock:
         """Mock scorer for testing."""
-        scorer = MagicMock(Scorer)
-        scorer.scorer_type = "true_false"
+        scorer = MagicMock(TrueFalseScorer)
         return scorer
 
     @pytest.fixture
@@ -262,9 +266,9 @@ class TestFuzzerGenerator:
             score_value="True",
             score_value_description="",
             score_type="true_false",
-            score_category="",
+            score_category=[],
             score_rationale="",
-            score_metadata="",
+            score_metadata={},
             prompt_request_response_id="",
         )
         assert generator._is_jailbreak(true_score) is True
@@ -274,9 +278,9 @@ class TestFuzzerGenerator:
             score_value="False",
             score_value_description="",
             score_type="true_false",
-            score_category="",
+            score_category=[],
             score_rationale="",
-            score_metadata="",
+            score_metadata={},
             prompt_request_response_id="",
         )
         assert generator._is_jailbreak(false_score) is False
@@ -285,8 +289,7 @@ class TestFuzzerGenerator:
         self, scoring_target: MockPromptTarget, template_converters: list[FuzzerConverter]
     ) -> None:
         """Test _is_jailbreak method with float scale scorer."""
-        mock_scorer = MagicMock()
-        mock_scorer.scorer_type = "float_scale"
+        mock_scorer = MagicMock(FloatScaleScorer)
 
         generator = FuzzerGenerator(
             objective_target=scoring_target,
@@ -300,9 +303,9 @@ class TestFuzzerGenerator:
             score_value="0.9",
             score_value_description="",
             score_type="float_scale",
-            score_category="",
+            score_category=[],
             score_rationale="",
-            score_metadata="",
+            score_metadata={},
             prompt_request_response_id="",
         )
         assert generator._is_jailbreak(high_score) is True
@@ -312,9 +315,9 @@ class TestFuzzerGenerator:
             score_value="0.7",
             score_value_description="",
             score_type="float_scale",
-            score_category="",
+            score_category=[],
             score_rationale="",
-            score_metadata="",
+            score_metadata={},
             prompt_request_response_id="",
         )
         assert generator._is_jailbreak(low_score) is False

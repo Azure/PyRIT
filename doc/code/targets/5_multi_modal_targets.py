@@ -5,11 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -107,7 +103,8 @@ from pyrit.score import (
     AzureContentFilterScorer,
     SelfAskTrueFalseScorer,
     TrueFalseQuestion,
-    VideoScorer,
+    VideoFloatScaleScorer,
+    VideoTrueFalseScorer,
 )
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
@@ -123,7 +120,7 @@ objective_scorer = SelfAskTrueFalseScorer(
     true_false_question=TrueFalseQuestion(true_description="A raccoon dressed as a pirate is actively eating a pastry"),
 )
 
-video_scorer = VideoScorer(
+video_scorer = VideoTrueFalseScorer(
     image_capable_scorer=objective_scorer,
     num_sampled_frames=10,
 )
@@ -132,7 +129,7 @@ attack = PromptSendingAttack(
     objective_target=sora_target,
     attack_scoring_config=AttackScoringConfig(
         objective_scorer=video_scorer,
-        auxiliary_scorers=[VideoScorer(AzureContentFilterScorer())],
+        auxiliary_scorers=[VideoFloatScaleScorer(image_capable_scorer=AzureContentFilterScorer())],
     ),
 )
 
