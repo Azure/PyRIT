@@ -24,6 +24,7 @@ def create_prompt_piece(conversation_id: str, prompt_num: int, targeted_harm_cat
         labels=labels,
     )
 
+
 def create_attack_result(conversation_id: str, objective_num: int, outcome: AttackOutcome = AttackOutcome.SUCCESS):
     """Helper function to create AttackResult."""
     return AttackResult(

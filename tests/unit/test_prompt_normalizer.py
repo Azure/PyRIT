@@ -585,8 +585,8 @@ async def test_build_prompt_request_response_harm_categories(mock_memory_instanc
             SeedPrompt(
                 value="Another prompt",
                 data_type="text",
-                role="assistant",
-                sequence=2,
+                role="user",
+                sequence=1,
                 # Not setting harm_categories, so it will default to []
             ),
         ]
@@ -619,7 +619,7 @@ async def test_build_prompt_request_response_harm_categories(mock_memory_instanc
     second_piece = response.request_pieces[1]
     assert second_piece.targeted_harm_categories == []
     assert second_piece.original_value == "Another prompt"
-    assert second_piece.role == "assistant"
+    assert second_piece.role == "user"
 
     # Verify other fields are set correctly
     assert first_piece.conversation_id == conversation_id
