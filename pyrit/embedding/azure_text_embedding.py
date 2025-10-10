@@ -27,7 +27,8 @@ class AzureTextEmbedding(_TextEmbedding):
         """Generate embedding using the Azure API. Authenticate with either an API key or Entra authentication.
 
         Args:
-            api_key: The API key to use (only if not using Entra authentication). Defaults to environment variable.
+            api_key: The API key to use (only if you're not using Entra authentication). Defaults to
+                environment variable.
             endpoint: The API base to use, sometimes referred to as the api_base. Defaults to environment variable.
             deployment: The engine to use, in AOAI referred to as deployment, in some APIs referred to as model.
                         Defaults to environment variable.

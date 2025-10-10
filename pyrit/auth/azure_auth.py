@@ -84,7 +84,8 @@ def get_access_token_from_azure_msi(*, client_id: str, scope: str):
     https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/overview.
 
     Args:
-        client id of the service
+        client_id (str): The client ID of the service
+        scope (str): The scope to request
 
     Returns:
         Authentication token
@@ -103,7 +104,8 @@ def get_access_token_from_msa_public_client(*, client_id: str, scope: str):
     will open and ask for login credentials.
 
     Args:
-        client id
+        client_id (str): The client ID of the service
+        scope (str): The scope to request
 
     Returns:
         Authentication token
@@ -117,7 +119,7 @@ def get_access_token_from_msa_public_client(*, client_id: str, scope: str):
         raise
 
 
-def get_access_token_from_interactive_login(scope) -> str:
+def get_access_token_from_interactive_login(scope: str) -> str:
     """Connects to an OpenAI endpoint with an interactive login from Azure. A browser window will
     open and ask for login credentials.  The token will be scoped for Azure Cognitive services.
 
@@ -150,7 +152,7 @@ def get_default_scope(endpoint: str) -> str:
     """Get the default scope for the given endpoint.
 
     Args:
-        endpoint: The endpoint to get the scope for.
+        endpoint (str): The endpoint to get the scope for.
 
     Returns:
         The default scope for the given endpoint.
@@ -169,8 +171,8 @@ def get_speech_config_from_default_azure_credential(resource_id: str, region: st
     """Get the speech config for the given resource ID and region.
 
     Args:
-        resource_id: The resource ID to get the token for.
-        region: The region to get the token for.
+        resource_id (str): The resource ID to get the token for.
+        region (str): The region to get the token for.
 
     Returns:
         The speech config for the given resource ID and region.

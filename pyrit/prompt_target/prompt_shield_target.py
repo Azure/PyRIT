@@ -67,7 +67,8 @@ class PromptShieldTarget(PromptTarget):
             endpoint (str, Optional): The endpoint URL for the Azure Content Safety service.
                 Defaults to the `ENDPOINT_URI_ENVIRONMENT_VARIABLE` environment variable.
             api_key (str, Optional): The API key for accessing the Azure Content Safety service
-                (only if not using Entra auth). Defaults to the `API_KEY_ENVIRONMENT_VARIABLE` environment variable.
+                (only if you're not using Entra auth). Defaults to the `API_KEY_ENVIRONMENT_VARIABLE`
+                environment variable.
             api_version (str, Optional): The version of the Azure Content Safety API. Defaults to "2024-09-01".
             use_entra_auth (bool, Optional): Whether to use Entra ID authentication. Defaults to False.
             field (PromptShieldEntryField, Optional): If "userPrompt", all input is sent to the userPrompt field.

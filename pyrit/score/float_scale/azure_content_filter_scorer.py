@@ -53,7 +53,7 @@ class AzureContentFilterScorer(FloatScaleScorer):
         Class that initializes an Azure Content Filter Scorer
 
         Args:
-            api_key (str, Optional): The API key for accessing the Azure OpenAI service (only if not
+            api_key (str, Optional): The API key for accessing the Azure OpenAI service (only if you're not
                 using Entra authentication). Defaults to the `API_KEY_ENVIRONMENT_VARIABLE` environment variable.
             endpoint (str, Optional): The endpoint URL for the Azure OpenAI service.
                 Defaults to the `ENDPOINT_URI_ENVIRONMENT_VARIABLE` environment variable.

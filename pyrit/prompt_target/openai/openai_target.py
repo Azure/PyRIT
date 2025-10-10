@@ -49,7 +49,7 @@ class OpenAITarget(PromptChatTarget):
         Args:
             model_name (str, Optional): The name of the model.
             endpoint (str, Optional): The target URL for the OpenAI service.
-            api_key (str, Optional): The API key for accessing the Azure OpenAI service (only if not using
+            api_key (str, Optional): The API key for accessing the Azure OpenAI service (only if you're not using
                 Entra authentication). Defaults to the `OPENAI_CHAT_KEY` environment variable.
             headers (str, Optional): Extra headers of the endpoint (JSON).
             use_entra_auth (bool): When set to True, user authentication is used

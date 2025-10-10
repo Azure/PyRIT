@@ -47,7 +47,7 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
 
         Args:
             azure_speech_region (str, Optional): The name of the Azure region.
-            azure_speech_key (str, Optional): The API key for accessing the service (only if not using Entra
+            azure_speech_key (str, Optional): The API key for accessing the service (only if you're not using Entra
                 authentication).
             azure_speech_resource_id (str, Optional): The resource ID for accessing the service when using
                 Entra ID auth. This can be found by selecting 'Properties' in the 'Resource Management'
