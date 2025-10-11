@@ -33,6 +33,7 @@ from pyrit.datasets.fetch_jbb_behaviors import (
     fetch_jbb_behaviors_by_harm_category,
     fetch_jbb_behaviors_by_jbb_category,
 )
+from pyrit.datasets.fetch_jailbreakv_28k_dataset import fetch_jailbreakv_28k_dataset
 
 
 __all__ = [
@@ -64,4 +65,5 @@ __all__ = [
     "fetch_jbb_behaviors_dataset",
     "fetch_jbb_behaviors_by_harm_category",
     "fetch_jbb_behaviors_by_jbb_category",
+    "fetch_jailbreakv_28k_dataset",
 ]
