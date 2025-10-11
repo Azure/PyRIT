@@ -2,31 +2,24 @@
 # Licensed under the MIT license.
 
 """
-This configures an AsciiArt.
+This configures an AsciiArt attack.
 
-It can be modified to set up convenient variables, default values, or helper functions.
+This configuration file defines the parameters for a PromptSendingAttack
+that uses ASCII art conversion. It can be modified to adjust the converter
+settings or add additional configurations.
 """
 
-from pyrit.executor.attack import PromptSendingAttack, AttackConverterConfig, AttackFactory
+from pyrit.executor.attack import AttackConverterConfig
 from pyrit.prompt_converter import AsciiArtConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
-from pyrit.setup import set_default_value
 
+# Create the converter configuration
 _converters = PromptConverterConfiguration.from_converters(converters=[AsciiArtConverter()])
 _attack_converter_config = AttackConverterConfig(request_converters=_converters)
 
-
-# Configure default values for PromptSendingAttack (and subclasses)
-set_default_value(
-    class_type=PromptSendingAttack,
-    include_subclasses=False,
-    parameter_name="attack_converter_config",
-    value=_attack_converter_config,
-)
-
-set_default_value(
-    class_type=AttackFactory,
-    include_subclasses=False,
-    parameter_name="attack_type",
-    value="PromptSendingAttack",
-)
+# Define the attack configuration
+# This dictionary is used by AttackFactory to create the attack instance
+attack_config = {
+    "attack_type": "PromptSendingAttack",
+    "attack_converter_config": _attack_converter_config,
+}

@@ -3,6 +3,7 @@
 
 """This module contains initialization PyRIT."""
 
+from pyrit.setup.attack_factory import AttackFactory, create_attack_from_config
 from pyrit.setup.configuration_paths import ConfigurationPaths
 from pyrit.setup.initialization import (
     initialize_pyrit,
@@ -20,6 +21,8 @@ from pyrit.setup.pyrit_default_value import (
 
 
 __all__ = [
+    "AttackFactory",
+    "create_attack_from_config",
     "AZURE_SQL",
     "SQLITE",
     "IN_MEMORY",

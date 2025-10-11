@@ -16,8 +16,6 @@ from pyrit.executor.attack.core.attack_config import (
 
 from pyrit.executor.attack.core.attack_executor import AttackExecutor
 
-from pyrit.executor.attack.core.attack_factory import attack_factory, AttackFactory, AttackType
-
 __all__ = [
     "AttackStrategy",
     "AttackContext",
@@ -27,7 +25,4 @@ __all__ = [
     "AttackStrategyContextT",
     "AttackStrategyResultT",
     "AttackExecutor",
-    "attack_factory",
-    "AttackFactory",
-    "AttackType",
 ]

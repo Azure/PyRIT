@@ -2,21 +2,28 @@
 # Licensed under the MIT license.
 
 """
-This configures an AsciiArt.
+This configures a Tense attack.
 
-It can be modified to set up convenient variables, default values, or helper functions.
+This configuration file defines the parameters for a PromptSendingAttack
+that uses tense conversion (randomly selected between past and future).
+It can be modified to adjust the tense or converter settings.
+
+Note: This configuration requires converter_target defaults to be set via
+initialize_pyrit() before use.
 """
 import random
 from typing import cast, List
 
-from pyrit.executor.attack import PromptSendingAttack, AttackConverterConfig, AttackFactory
+from pyrit.executor.attack import AttackConverterConfig
 from pyrit.prompt_converter import PromptConverter, TenseConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
-from pyrit.setup import set_default_value
 
 
+# Randomly select tense
 _tense = random.choice(["past", "future"])
 
+# Create the converter configuration
+# Note: TenseConverter requires converter_target, which should be set via defaults
 _converter_configurations = PromptConverterConfiguration.from_converters(
     converters=cast(List[PromptConverter], [
         TenseConverter(
@@ -30,17 +37,9 @@ _attack_converter_config = AttackConverterConfig(
     request_converters=_converter_configurations
 )
 
-# Configure default values for PromptSendingAttack (and subclasses)
-set_default_value(
-    class_type=PromptSendingAttack,
-    include_subclasses=False,
-    parameter_name="attack_converter_config",
-    value=_attack_converter_config,
-)
-
-set_default_value(
-    class_type=AttackFactory,
-    include_subclasses=False,
-    parameter_name="attack_type",
-    value="PromptSendingAttack",
-)
+# Define the attack configuration
+# This dictionary is used by AttackFactory to create the attack instance
+attack_config = {
+    "attack_type": "PromptSendingAttack",
+    "attack_converter_config": _attack_converter_config,
+}
