@@ -16,6 +16,9 @@ class DefaultValueScope:
     # The most specific class name for the default value to apply
     class_type: type
 
+    # Whether this default should apply to subclasses
+    include_subclasses: bool = True
+
 
 class PyRITDefaultValues:
 
@@ -24,6 +27,16 @@ class PyRITDefaultValues:
 
     def set_default_value(self, *, scope: DefaultValueScope, value: object) -> None:
         self._default_values[scope] = value
+
+    def reset_default_values(self) -> None:
+        """
+        Clears all configured default values.
+        
+        This method removes all default values that have been set, returning the
+        PyRITDefaultValues instance to its initial empty state. This is useful for
+        test isolation or when re-initializing PyRIT with a fresh configuration.
+        """
+        self._default_values.clear()
 
     def get_default_value(
             self,
@@ -62,9 +75,22 @@ class PyRITDefaultValues:
         if provided_value is not None:
             return provided_value
         
-        # Walk up the inheritance hierarchy to find the most specific default
+        # First, check for an exact match with include_subclasses=False
+        exact_scope = DefaultValueScope(
+            parameter_name=parameter_name, 
+            class_type=class_type, 
+            include_subclasses=False
+        )
+        if exact_scope in self._default_values:
+            return self._default_values[exact_scope]
+        
+        # Walk up the inheritance hierarchy to find defaults with include_subclasses=True
         for cls in inspect.getmro(class_type):
-            scope = DefaultValueScope(parameter_name=parameter_name, class_type=cls)
+            scope = DefaultValueScope(
+                parameter_name=parameter_name, 
+                class_type=cls, 
+                include_subclasses=True
+            )
             if scope in self._default_values:
                 return self._default_values[scope]
         
@@ -136,7 +162,13 @@ def apply_defaults(init_func: F) -> F:
     return wrapper  # type: ignore
 
 
-def set_default_value(*, class_type: type, parameter_name: str, value: Any) -> None:
+def set_default_value(
+    *, 
+    class_type: type, 
+    parameter_name: str, 
+    value: Any,
+    include_subclasses: bool = True
+) -> None:
     """
     Convenience function to set a default value for a specific class and parameter.
     
@@ -144,8 +176,14 @@ def set_default_value(*, class_type: type, parameter_name: str, value: Any) -> N
         class_type (type): The class type to set the default for.
         parameter_name (str): The name of the parameter.
         value (Any): The default value to set.
+        include_subclasses (bool): If True, the default applies to subclasses. 
+            If False, only applies to the exact class. Defaults to True.
     """
-    scope = DefaultValueScope(parameter_name=parameter_name, class_type=class_type)
+    scope = DefaultValueScope(
+        parameter_name=parameter_name, 
+        class_type=class_type,
+        include_subclasses=include_subclasses
+    )
     _global_default_values.set_default_value(scope=scope, value=value)
 
 
@@ -157,4 +195,23 @@ def get_global_default_values() -> PyRITDefaultValues:
         PyRITDefaultValues: The global instance managing default values.
     """
     return _global_default_values
+
+
+def reset_default_values() -> None:
+    """
+    Clears all configured default values from the global registry.
+    
+    This function removes all default values that have been set using set_default_value(),
+    returning the system to its initial state with no configured defaults. This is useful
+    for test isolation or when re-initializing PyRIT with a fresh configuration.
+    
+    Example:
+        # Set some defaults
+        set_default_value(class_type=OpenAIChatTarget, parameter_name="temperature", value=0.7)
+        set_default_value(class_type=OpenAIChatTarget, parameter_name="top_p", value=0.9)
+        
+        # Clear all defaults
+        reset_default_values()
+    """
+    _global_default_values.reset_default_values()
 

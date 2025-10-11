@@ -5,7 +5,7 @@ from typing import Optional
 
 import pytest
 
-from pyrit.setup import apply_defaults, get_global_default_values, set_default_value
+from pyrit.setup import apply_defaults, get_global_default_values, reset_default_values, set_default_value
 from pyrit.setup.pyrit_default_value import DefaultValueScope
 
 
@@ -452,3 +452,154 @@ class TestComplexScenarios:
 
         assert obj_a.param == "value_a"
         assert obj_b.param == "value_b"
+
+
+class TestResetDefaultValues:
+    """Tests for the reset_default_values() function."""
+
+    def setup_method(self) -> None:
+        """Clear any existing default values before each test."""
+        get_global_default_values()._default_values.clear()
+
+    def test_reset_clears_all_defaults(self) -> None:
+        """Test that reset_default_values() clears all configured defaults."""
+
+        class TestClass:
+            @apply_defaults
+            def __init__(self, *, param1: Optional[str] = None, param2: Optional[int] = None) -> None:
+                self.param1 = param1
+                self.param2 = param2
+
+        # Set some defaults
+        set_default_value(class_type=TestClass, parameter_name="param1", value="default")
+        set_default_value(class_type=TestClass, parameter_name="param2", value=42)
+
+        # Verify defaults are applied
+        obj1 = TestClass()
+        assert obj1.param1 == "default"
+        assert obj1.param2 == 42
+
+        # Reset all defaults
+        reset_default_values()
+
+        # Verify defaults are no longer applied
+        obj2 = TestClass()
+        assert obj2.param1 is None
+        assert obj2.param2 is None
+
+    def test_reset_affects_multiple_classes(self) -> None:
+        """Test that reset_default_values() clears defaults for all classes."""
+
+        class ClassA:
+            @apply_defaults
+            def __init__(self, *, param: Optional[str] = None) -> None:
+                self.param = param
+
+        class ClassB:
+            @apply_defaults
+            def __init__(self, *, param: Optional[int] = None) -> None:
+                self.param = param
+
+        # Set defaults for multiple classes
+        set_default_value(class_type=ClassA, parameter_name="param", value="class_a_default")
+        set_default_value(class_type=ClassB, parameter_name="param", value=100)
+
+        # Reset all defaults
+        reset_default_values()
+
+        # Verify both classes have no defaults
+        obj_a = ClassA()
+        obj_b = ClassB()
+        assert obj_a.param is None
+        assert obj_b.param is None
+
+    def test_reset_allows_setting_new_defaults(self) -> None:
+        """Test that after reset, new defaults can be set and applied correctly."""
+
+        class TestClass:
+            @apply_defaults
+            def __init__(self, *, param: Optional[str] = None) -> None:
+                self.param = param
+
+        # Set initial default
+        set_default_value(class_type=TestClass, parameter_name="param", value="first_default")
+        obj1 = TestClass()
+        assert obj1.param == "first_default"
+
+        # Reset and set new default
+        reset_default_values()
+        set_default_value(class_type=TestClass, parameter_name="param", value="second_default")
+
+        # Verify new default is applied
+        obj2 = TestClass()
+        assert obj2.param == "second_default"
+
+    def test_reset_with_no_defaults_does_nothing(self) -> None:
+        """Test that reset_default_values() can be called safely when no defaults exist."""
+
+        class TestClass:
+            @apply_defaults
+            def __init__(self, *, param: Optional[str] = None) -> None:
+                self.param = param
+
+        # Reset when no defaults are set
+        reset_default_values()
+
+        # Verify class still works normally
+        obj = TestClass()
+        assert obj.param is None
+
+        obj2 = TestClass(param="explicit")
+        assert obj2.param == "explicit"
+
+    def test_reset_clears_inheritance_based_defaults(self) -> None:
+        """Test that reset clears defaults for both parent and child classes."""
+
+        class ParentClass:
+            @apply_defaults
+            def __init__(self, *, param: Optional[str] = None) -> None:
+                self.param = param
+
+        class ChildClass(ParentClass):
+            @apply_defaults
+            def __init__(self, *, param: Optional[str] = None) -> None:
+                super().__init__(param=param)
+
+        # Set defaults for both parent and child
+        set_default_value(class_type=ParentClass, parameter_name="param", value="parent_default")
+        set_default_value(class_type=ChildClass, parameter_name="param", value="child_default")
+
+        # Reset all defaults
+        reset_default_values()
+
+        # Verify both parent and child have no defaults
+        parent_obj = ParentClass()
+        child_obj = ChildClass()
+        assert parent_obj.param is None
+        assert child_obj.param is None
+
+    def test_reset_clears_include_subclasses_flag_variations(self) -> None:
+        """Test that reset clears defaults regardless of include_subclasses flag."""
+
+        class TestClass:
+            @apply_defaults
+            def __init__(self, *, param1: Optional[str] = None, param2: Optional[str] = None) -> None:
+                self.param1 = param1
+                self.param2 = param2
+
+        # Set defaults with different include_subclasses values
+        set_default_value(class_type=TestClass, parameter_name="param1", value="default1", include_subclasses=True)
+        set_default_value(class_type=TestClass, parameter_name="param2", value="default2", include_subclasses=False)
+
+        # Reset all defaults
+        reset_default_values()
+
+        # Verify both are cleared
+        obj = TestClass()
+        assert obj.param1 is None
+        assert obj.param2 is None
+
+    def test_reset_returns_none(self) -> None:
+        """Test that reset_default_values() returns None."""
+        result = reset_default_values()
+        assert result is None
