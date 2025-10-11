@@ -24,7 +24,6 @@
 # %%
 from pathlib import Path
 
-from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import RED_TEAM_EXECUTOR_PATH
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
@@ -36,6 +35,7 @@ from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, SeedPrompt
 from pyrit.prompt_target import AzureMLChatTarget, OpenAIChatTarget
 from pyrit.score import LookBackScorer, SubStringScorer
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

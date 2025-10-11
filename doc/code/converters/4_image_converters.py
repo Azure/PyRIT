@@ -19,9 +19,9 @@ import pathlib
 from IPython.display import display
 from PIL import Image
 
-from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.datasets import TextJailBreak
 from pyrit.prompt_converter import AddTextImageConverter
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

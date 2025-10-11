@@ -16,8 +16,6 @@
 # Three example datasets are shown in this notebook and can be used with attacks such as the `PromptSendingAttack`.
 # The example below demonstrates loading a HuggingFace dataset as a `SeedPromptDataset`.
 
-# %%
-from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.datasets import fetch_llm_latent_adversarial_training_harmful_dataset
 from pyrit.executor.attack import (
     AttackExecutor,
@@ -25,6 +23,9 @@ from pyrit.executor.attack import (
     PromptSendingAttack,
 )
 from pyrit.prompt_target import TextTarget
+
+# %%
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

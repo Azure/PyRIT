@@ -1,8 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-import sys
 import logging
 import pathlib
+import sys
 from typing import Any, List, Literal, Optional, Union, get_args
 
 import dotenv
@@ -48,19 +48,17 @@ def _load_environment_files() -> None:
 
 
 def _execute_initialization_scripts(
-    *,
-    script_paths: List[Union[str, pathlib.Path]],
-    expose_private_vars: bool = False
+    *, script_paths: List[Union[str, pathlib.Path]], expose_private_vars: bool = False
 ) -> None:
     """
     Executes Python initialization scripts in order.
 
     These scripts are executed in the __main__ module's global namespace. Variables and
     functions defined in the scripts are made accessible to the caller based on naming:
-    
+
     - Variables starting with '_' are considered private/helper variables
     - Other variables are considered global/public variables
-    
+
     By default, only public variables (not starting with '_') are exposed to the caller's
     namespace. This follows Python's convention for indicating private/internal variables.
 
@@ -78,10 +76,10 @@ def _execute_initialization_scripts(
             # Helper variables (not exposed to caller by default)
             _temp_config = {"key": "value"}
             _helper_function = lambda x: x * 2
-            
+
             # Global variables (exposed to caller)
             myVar = "test_value"
-            
+
             # Configure default values
             from pyrit.setup import set_default_value
             from pyrit.prompt_target import OpenAIChatTarget
@@ -114,49 +112,49 @@ def _execute_initialization_scripts(
         try:
             with open(script, "r", encoding="utf-8") as f:
                 script_content = f.read()
-            
+
             # Create a temporary namespace that includes main_globals for imports and references
             # but allows us to track what variables were newly defined by this script
             script_globals = main_globals.copy()
-            
+
             # Track variables that existed before script execution
             pre_execution_vars = set(script_globals.keys())
-            
+
             # Execute the script in the temporary global namespace
             exec(script_content, script_globals)
-            
+
             # Identify new variables added by the script
             post_execution_vars = set(script_globals.keys())
             new_vars = post_execution_vars - pre_execution_vars
-            
+
             # Filter and inject new variables into __main__ based on naming convention
             for name in new_vars:
                 value = script_globals[name]
-                
+
                 # Skip built-in variables like __builtins__, __name__, etc.
                 if name.startswith("__") and name.endswith("__"):
                     continue
-                
+
                 # Filter private variables unless expose_private_vars is True
                 if not expose_private_vars and name.startswith("_"):
                     logger.debug(f"Skipping private variable '{name}' from {script.name}")
                     continue
-                
+
                 # Inject public variables into __main__
                 main_globals[name] = value
                 logger.debug(f"Exposed variable '{name}' from {script.name}")
-                
+
         except Exception as e:
             logger.error(f"Error executing initialization script {script}: {e}")
             raise
 
 
 def initialize_pyrit(
-        memory_db_type: Union[MemoryDatabaseType, str],
-        *,
-        initialization_scripts: Optional[List[Union[str, pathlib.Path]]] = None,
-        **memory_instance_kwargs: Optional[Any]
-    ) -> None:
+    memory_db_type: Union[MemoryDatabaseType, str],
+    *,
+    initialization_scripts: Optional[List[Union[str, pathlib.Path]]] = None,
+    **memory_instance_kwargs: Optional[Any],
+) -> None:
     """
     Initializes PyRIT with the provided memory instance and loads environment files.
 

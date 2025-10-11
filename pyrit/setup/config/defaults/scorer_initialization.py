@@ -6,19 +6,17 @@ This is a good default scorer configuration for PyRIT. It sets up ScoringConfigs
 and Executors that use them.
 """
 
+from pyrit.executor.attack import AttackScoringConfig, PromptSendingAttack
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import (
-    TrueFalseCompositeScorer,
-    TrueFalseScoreAggregator,
-    FloatScaleThresholdScorer,
     AzureContentFilterScorer,
-    TrueFalseInverterScorer,
+    FloatScaleThresholdScorer,
     SelfAskRefusalScorer,
+    TrueFalseCompositeScorer,
+    TrueFalseInverterScorer,
+    TrueFalseScoreAggregator,
 )
-from pyrit.executor.attack import PromptSendingAttack, AttackScoringConfig
-
 from pyrit.setup import set_default_value
-
 
 # Set up default scorer values
 # TODO TODO
@@ -38,4 +36,6 @@ default_harm_objective_scorer = TrueFalseCompositeScorer(
 _default_harm_scorer_config = AttackScoringConfig(objective_scorer=default_harm_objective_scorer)
 
 # Configure default values for PromptSendingAttack (and subclasses)
-set_default_value(class_type=PromptSendingAttack, parameter_name="attack_scoring_config", value=_default_harm_scorer_config)
+set_default_value(
+    class_type=PromptSendingAttack, parameter_name="attack_scoring_config", value=_default_harm_scorer_config
+)

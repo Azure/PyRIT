@@ -8,7 +8,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from pyrit.setup import IN_MEMORY, initialize_pyrit, set_default_value, get_global_default_values
+from pyrit.setup import (
+    IN_MEMORY,
+    get_global_default_values,
+    initialize_pyrit,
+    set_default_value,
+)
 from pyrit.setup.initialization import _execute_initialization_scripts
 
 
@@ -180,10 +185,7 @@ class TestExecuteInitializationScripts:
         import sys
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-            f.write(
-                "_private_var = 'now_exposed'\n"
-                "public_var = 'also_exposed'\n"
-            )
+            f.write("_private_var = 'now_exposed'\n" "public_var = 'also_exposed'\n")
             script_path = f.name
 
         try:
@@ -207,10 +209,7 @@ class TestExecuteInitializationScripts:
         import sys
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-            f.write(
-                "__custom_dunder__ = 'should_not_be_exposed'\n"
-                "normal_var = 'should_be_exposed'\n"
-            )
+            f.write("__custom_dunder__ = 'should_not_be_exposed'\n" "normal_var = 'should_be_exposed'\n")
             script_path = f.name
 
         try:
@@ -261,9 +260,9 @@ class TestExecuteInitializationScripts:
             # Public variables should be accessible and correctly computed
             assert hasattr(sys.modules["__main__"], "api_config")
             assert sys.modules["__main__"].api_config == {  # type: ignore[attr-defined]
-                'base_url': 'https://api.example.com',
-                'version': 'v2',
-                'endpoints': {'users': '/users', 'posts': '/posts'}
+                "base_url": "https://api.example.com",
+                "version": "v2",
+                "endpoints": {"users": "/users", "posts": "/posts"},
             }
 
             assert hasattr(sys.modules["__main__"], "max_timeout")
@@ -289,18 +288,12 @@ class TestExecuteInitializationScripts:
         try:
             # First script with private helper
             with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-                f.write(
-                    "_helper1 = 'first'\n"
-                    "result1 = _helper1.upper()\n"
-                )
+                f.write("_helper1 = 'first'\n" "result1 = _helper1.upper()\n")
                 script_paths.append(f.name)
 
             # Second script with private helper
             with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-                f.write(
-                    "_helper2 = 'second'\n"
-                    "result2 = _helper2.upper()\n"
-                )
+                f.write("_helper2 = 'second'\n" "result2 = _helper2.upper()\n")
                 script_paths.append(f.name)
 
             _execute_initialization_scripts(script_paths=script_paths)
@@ -407,11 +400,11 @@ class TestInitializePyritWithScripts:
         """
         Test the exact user case: initialize_pyrit with a script in a separate file,
         then access variables from that script.
-        
+
         User case:
             # In myscript.py:
             myVar = "t"
-            
+
             # In main file:
             initialize_pyrit(memory_db_type="InMemory", initialization_scripts=['myscript.py'])
             assert myVar == "t"
@@ -449,7 +442,7 @@ class TestInitializePyritWithScripts:
         self, mock_central_memory: MagicMock, mock_sqlite_memory: MagicMock
     ) -> None:
         """Test that memory setup occurs before initialization scripts are executed.
-        
+
         This is critical because initialization scripts may instantiate objects
         (like prompt targets) that require central memory to be initialized.
         """
@@ -507,10 +500,7 @@ class TestInitializePyritWithScripts:
         import sys
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-            f.write(
-                "_private_helper = 'internal'\n"
-                "public_config = 'external'\n"
-            )
+            f.write("_private_helper = 'internal'\n" "public_config = 'external'\n")
             script_path = f.name
 
         try:
@@ -564,9 +554,9 @@ class TestInitializePyritWithScripts:
             # Public config should be accessible
             assert hasattr(sys.modules["__main__"], "model_config")
             assert sys.modules["__main__"].model_config == {  # type: ignore[attr-defined]
-                'temperature': 0.7,
-                'max_tokens': 1000,
-                'model': 'gpt-4'
+                "temperature": 0.7,
+                "max_tokens": 1000,
+                "model": "gpt-4",
             }
 
             # Helper variables should NOT be accessible
@@ -576,8 +566,9 @@ class TestInitializePyritWithScripts:
 
             # Default values should still be set correctly
             from pyrit.setup import get_global_default_values
+
             defaults = get_global_default_values()._default_values
-            
+
             # Verify the default was set (using the class name defined in the script)
             assert any(
                 "TestTargetClass" in str(scope.class_type) and scope.parameter_name == "temperature"
@@ -587,6 +578,7 @@ class TestInitializePyritWithScripts:
             if hasattr(sys.modules["__main__"], "model_config"):
                 delattr(sys.modules["__main__"], "model_config")
             from pyrit.setup import get_global_default_values
+
             get_global_default_values()._default_values.clear()
             pathlib.Path(script_path).unlink()
 
@@ -625,8 +617,7 @@ class TestResetDefaultValuesInInitialization:
             defaults = get_global_default_values()._default_values
             # Old default should be gone
             old_scope_exists = any(
-                scope.class_type == TestClass and scope.parameter_name == "param"
-                for scope in defaults.keys()
+                scope.class_type == TestClass and scope.parameter_name == "param" for scope in defaults.keys()
             )
             assert not old_scope_exists, "Old defaults should be cleared before script execution"
 
@@ -680,10 +671,7 @@ class TestResetDefaultValuesInInitialization:
 
             # Check that first script's defaults are not present
             defaults = get_global_default_values()._default_values
-            first_class_exists = any(
-                "FirstClass" in str(scope.class_type)
-                for scope in defaults.keys()
-            )
+            first_class_exists = any("FirstClass" in str(scope.class_type) for scope in defaults.keys())
             assert not first_class_exists, "First script's defaults should be cleared on second initialization"
 
             pathlib.Path(first_script).unlink()
@@ -744,14 +732,10 @@ class TestResetDefaultValuesInInitialization:
             # And now we should only have the script's defaults
             defaults = get_global_default_values()._default_values
             assert len(defaults) == 1
-            assert any(
-                "ScriptClass" in str(scope.class_type)
-                for scope in defaults.keys()
-            )
+            assert any("ScriptClass" in str(scope.class_type) for scope in defaults.keys())
 
             pathlib.Path(script_path).unlink()
             if hasattr(sys.modules["__main__"], "defaults_count_at_script_time"):
                 delattr(sys.modules["__main__"], "defaults_count_at_script_time")
         finally:
             get_global_default_values()._default_values.clear()
-

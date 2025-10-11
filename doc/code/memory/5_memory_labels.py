@@ -27,14 +27,14 @@
 # %%
 import uuid
 
-from pyrit.setup import initialize_pyrit
-from pyrit.setup.initialization import IN_MEMORY
 from pyrit.executor.attack import (
     AttackExecutor,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
 from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.setup import initialize_pyrit
+from pyrit.setup.initialization import IN_MEMORY
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

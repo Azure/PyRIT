@@ -5,7 +5,12 @@ from typing import Optional
 
 import pytest
 
-from pyrit.setup import apply_defaults, get_global_default_values, reset_default_values, set_default_value
+from pyrit.setup import (
+    apply_defaults,
+    get_global_default_values,
+    reset_default_values,
+    set_default_value,
+)
 from pyrit.setup.pyrit_default_value import DefaultValueScope
 
 

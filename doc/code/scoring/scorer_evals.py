@@ -23,7 +23,6 @@
 # %%
 from dataclasses import asdict
 
-from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import SCORER_EVALS_HARM_PATH
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import (
@@ -32,6 +31,7 @@ from pyrit.score import (
     ScorerEvaluator,
     SelfAskLikertScorer,
 )
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

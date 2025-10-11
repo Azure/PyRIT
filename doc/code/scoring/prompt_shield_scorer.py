@@ -8,6 +8,15 @@
 #       jupytext_version: 1.17.3
 # ---
 
+from pyrit.executor.attack import (
+    AttackScoringConfig,
+    ConsoleAttackResultPrinter,
+    PromptSendingAttack,
+)
+from pyrit.memory import CentralMemory
+from pyrit.prompt_target import OpenAIChatTarget, PromptShieldTarget
+from pyrit.score import BatchScorer, PromptShieldScorer
+
 # %% [markdown]
 # # Prompt Shield Scorer - optional
 # ## 0 TL;DR
@@ -36,14 +45,6 @@
 # Also, for scoring purposes, remember that **True** means an attack *was* detected, and **False** means an attack *was NOT* detected. Use a custom scoring template to define the behavior you want (e.g. true is a failure because the prompt was flagged as a jailbreak when it wasn't), because this can get confusing quickly. This helps a lot in the scenario that you're using PromptShieldTarget in conjunction with a SelfAskScorer instead, because you can instruct the SelfAskScorer much more granularly, e.g. "true: if document 2 and the userPrompt have both been flagged."
 # %%
 from pyrit.setup import IN_MEMORY, initialize_pyrit
-from pyrit.executor.attack import (
-    AttackScoringConfig,
-    ConsoleAttackResultPrinter,
-    PromptSendingAttack,
-)
-from pyrit.memory import CentralMemory
-from pyrit.prompt_target import OpenAIChatTarget, PromptShieldTarget
-from pyrit.score import BatchScorer, PromptShieldScorer
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

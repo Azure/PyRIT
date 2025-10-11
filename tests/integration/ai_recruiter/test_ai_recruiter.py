@@ -10,7 +10,6 @@ import time
 import pytest
 import requests
 
-from pyrit.setup import SQLITE, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH, HOME_PATH
 from pyrit.exceptions import PyritException
 from pyrit.executor.core import StrategyConverterConfig
@@ -19,6 +18,7 @@ from pyrit.prompt_converter import PDFConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import HTTPXAPITarget, OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
+from pyrit.setup import SQLITE, initialize_pyrit
 
 AI_RECRUITER_REPO = "https://github.com/KutalVolkan/ai_recruiter.git"
 AI_RECRUITER_COMMIT = "2e4a5b6"

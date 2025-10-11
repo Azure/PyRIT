@@ -46,14 +46,14 @@ class TestBuiltInInitPath:
     def test_list_all_paths_returns_all_paths(self) -> None:
         """Test that list_all_paths() returns all available paths."""
         all_paths = BuiltInInitPath.list_all_paths()
-        
+
         assert isinstance(all_paths, list)
         assert len(all_paths) == 4, f"Expected 4 paths, got {len(all_paths)}"
-        
+
         # Verify all paths are Path objects
         for path in all_paths:
             assert isinstance(path, pathlib.Path)
-        
+
         # Verify specific paths are included
         path_names = [p.name for p in all_paths]
         assert "ansi_attack.py" in path_names
@@ -64,40 +64,40 @@ class TestBuiltInInitPath:
     def test_list_all_paths_with_defaults_subdirectory(self) -> None:
         """Test that list_all_paths('defaults') returns only defaults paths."""
         defaults_paths = BuiltInInitPath.list_all_paths("defaults")
-        
+
         assert isinstance(defaults_paths, list)
         assert len(defaults_paths) == 3, f"Expected 3 defaults paths, got {len(defaults_paths)}"
-        
+
         # Verify all paths are in the defaults directory
         for path in defaults_paths:
             assert isinstance(path, pathlib.Path)
             assert "defaults" in str(path)
-        
+
         # Verify specific defaults paths are included
         path_names = [p.name for p in defaults_paths]
         assert "converter_initialization.py" in path_names
         assert "scorer_initialization.py" in path_names
         assert "target_initialization.py" in path_names
-        
+
         # Verify foundry paths are NOT included
         assert "ansi_attack.py" not in path_names
 
     def test_list_all_paths_with_foundry_subdirectory(self) -> None:
         """Test that list_all_paths('foundry') returns only foundry paths."""
         foundry_paths = BuiltInInitPath.list_all_paths("foundry")
-        
+
         assert isinstance(foundry_paths, list)
         assert len(foundry_paths) == 1, f"Expected 1 foundry path, got {len(foundry_paths)}"
-        
+
         # Verify all paths are in the foundry directory
         for path in foundry_paths:
             assert isinstance(path, pathlib.Path)
             assert "foundry" in str(path)
-        
+
         # Verify specific foundry paths are included
         path_names = [p.name for p in foundry_paths]
         assert "ansi_attack.py" in path_names
-        
+
         # Verify defaults paths are NOT included
         assert "converter_initialization.py" not in path_names
         assert "scorer_initialization.py" not in path_names
@@ -107,20 +107,20 @@ class TestBuiltInInitPath:
         """Test that list_all_paths(None) returns all paths (same as no argument)."""
         all_paths_no_arg = BuiltInInitPath.list_all_paths()
         all_paths_none_arg = BuiltInInitPath.list_all_paths(None)
-        
+
         assert len(all_paths_no_arg) == len(all_paths_none_arg)
-        
+
         # Convert to sets of path names for comparison
         paths_no_arg_names = {p.name for p in all_paths_no_arg}
         paths_none_arg_names = {p.name for p in all_paths_none_arg}
-        
+
         assert paths_no_arg_names == paths_none_arg_names
 
     def test_paths_point_to_config_directory(self) -> None:
         """Test that all paths point to the config directory."""
         # Get the expected config directory
         module_dir = pathlib.Path(__file__).parent.parent.parent.parent / "pyrit" / "setup" / "config"
-        
+
         all_paths = BuiltInInitPath.list_all_paths()
         for path in all_paths:
             assert module_dir in path.parents, f"Path {path} should be under config directory {module_dir}"
@@ -130,20 +130,20 @@ class TestBuiltInInitPath:
         # Access paths multiple times
         path1 = BuiltInInitPath.foundry.ansi_attack
         path2 = BuiltInInitPath.foundry.ansi_attack
-        
+
         # Verify they are the same
         assert path1 == path2
-        
+
         # Verify defaults paths are also consistent
         defaults_path1 = BuiltInInitPath.defaults.scorer_initialization
         defaults_path2 = BuiltInInitPath.defaults.scorer_initialization
-        
+
         assert defaults_path1 == defaults_path2
 
     def test_all_returned_paths_exist(self) -> None:
         """Test that all paths returned by list_all_paths() exist in the filesystem."""
         all_paths = BuiltInInitPath.list_all_paths()
-        
+
         for path in all_paths:
             assert path.exists(), f"Path does not exist: {path}"
             assert path.is_file(), f"Path is not a file: {path}"
@@ -156,7 +156,7 @@ class TestFoundryPaths:
     def test_foundry_paths_has_expected_attributes(self) -> None:
         """Test that FoundryPaths has all expected attributes."""
         foundry = BuiltInInitPath.foundry
-        
+
         assert hasattr(foundry, "ansi_attack")
         assert hasattr(foundry, "_base_path")
 
@@ -167,7 +167,7 @@ class TestDefaultsPaths:
     def test_defaults_paths_has_expected_attributes(self) -> None:
         """Test that DefaultsPaths has all expected attributes."""
         defaults = BuiltInInitPath.defaults
-        
+
         assert hasattr(defaults, "converter_initialization")
         assert hasattr(defaults, "scorer_initialization")
         assert hasattr(defaults, "target_initialization")
@@ -177,7 +177,7 @@ class TestDefaultsPaths:
         """Test that the defaults base path points to the correct directory."""
         defaults = BuiltInInitPath.defaults
         base_path = defaults._base_path
-        
+
         assert isinstance(base_path, pathlib.Path)
         assert base_path.name == "defaults"
         assert base_path.exists()

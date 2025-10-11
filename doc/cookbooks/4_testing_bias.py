@@ -38,13 +38,13 @@ from pathlib import Path
 
 import pandas as pd
 
-from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack import AttackScoringConfig, PromptSendingAttack
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, PromptRequestResponse, SeedPromptDataset
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 memory = CentralMemory.get_memory_instance()

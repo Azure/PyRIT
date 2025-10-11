@@ -22,10 +22,10 @@
 # %%
 import pathlib
 
-from pyrit.setup.initialization import initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import SeedPromptDataset
+from pyrit.setup.initialization import initialize_pyrit
 
 # Configure memory. For this notebook, we're using in-memory. In reality, you will likely want something more permanent (like AzureSQL or DuckDB)
 initialize_pyrit(memory_db_type="InMemory")

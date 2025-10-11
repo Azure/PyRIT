@@ -7,13 +7,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import List
 
-from pyrit.setup import initialize_pyrit
 from pyrit.executor.attack import ConsoleAttackResultPrinter
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackStrategy,
 )
 from pyrit.models.seed_prompt_dataset import SeedPromptDataset
 from pyrit.models.seed_prompt_group import SeedPromptGroup
+from pyrit.setup import initialize_pyrit
 
 from .scanner_config import ScannerConfig
 

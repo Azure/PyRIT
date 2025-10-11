@@ -19,11 +19,12 @@
 #
 # This simple demo showcases how to use the attack to send prompts, and how it is scored with a refusal scorer.
 
-# %%
-from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import ConsoleAttackResultPrinter
 from pyrit.memory import CentralMemory
 from pyrit.prompt_target import OpenAIChatTarget
+
+# %%
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 memory = CentralMemory.get_memory_instance()

@@ -16,9 +16,9 @@
 # %%
 import pathlib
 
-from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPromptDataset
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

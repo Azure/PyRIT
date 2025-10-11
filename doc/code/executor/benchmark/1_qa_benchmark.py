@@ -17,8 +17,6 @@
 #
 # The `QuestionAnsweringBenchmark` can process Q&A datasets and evaluate how good a target is at answering the questions.
 
-# %%
-from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.datasets import fetch_wmdp_dataset
 from pyrit.executor.attack import AttackScoringConfig, ConsoleAttackResultPrinter
 from pyrit.executor.benchmark import QuestionAnsweringBenchmark
@@ -28,6 +26,9 @@ from pyrit.models import (
 )
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskQuestionAnswerScorer
+
+# %%
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 # Initialize PyRIT (load environment files and set central memory instance)
 initialize_pyrit(memory_db_type=IN_MEMORY)

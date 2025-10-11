@@ -32,7 +32,6 @@
 # %%
 import pathlib
 
-from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack import (
     AttackConverterConfig,
@@ -43,6 +42,7 @@ from pyrit.models import SeedPrompt
 from pyrit.prompt_converter import PDFConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import TextTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -140,9 +140,9 @@ from pathlib import Path
 
 import requests
 
-from pyrit.setup import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_converter import PDFConverter
 from pyrit.prompt_target import TextTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
