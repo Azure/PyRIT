@@ -8,7 +8,7 @@ This configures harm bench.
 
 from pyrit.datasets import fetch_harmbench_dataset
 
-_objectives = fetch_harmbench_dataset().get_values(first=8)
+_objectives = fetch_harmbench_dataset().get_values(first=3)
 
 
 # Define the dataset configuration

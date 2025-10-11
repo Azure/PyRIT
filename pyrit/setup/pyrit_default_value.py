@@ -132,8 +132,9 @@ def apply_defaults(init_func: F) -> F:
                 class_type=class_type, parameter_name=param_name, provided_value=current_value
             )
 
-            # Update kwargs with the resolved value
-            if param_name in bound_args.arguments:
+            # Update kwargs with the resolved value if a default was found
+            # This applies even if the parameter wasn't originally provided
+            if default_value is not None:
                 kwargs[param_name] = default_value
 
         # Call the original __init__ with updated kwargs
