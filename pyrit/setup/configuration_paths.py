@@ -56,6 +56,18 @@ class _AttackPaths:
         self.foundry = _FoundryPaths(self._base_path / "foundry")
 
 
+class _DatasetPaths:
+    """Paths to dataset configuration scripts."""
+
+    def __init__(self, base_path: pathlib.Path) -> None:
+        self._base_path = base_path
+
+    @property
+    def harm_bench(self) -> pathlib.Path:
+        """Path to the HarmBench dataset configuration script."""
+        return self._base_path / "harm_bench.py"
+
+
 class _DefaultsPaths:
     """Paths to initialization default scripts."""
 
@@ -95,11 +107,15 @@ class _ConfigurationPaths:
 
     Attributes:
         attack: Access to attack-related configuration scripts.
+        dataset: Access to dataset configuration scripts.
         initialization: Access to initialization configuration scripts.
 
     Example:
         # Access an attack foundry script
         path = ConfigurationPaths.attack.foundry.ansi_attack
+
+        # Access a dataset configuration script
+        path = ConfigurationPaths.dataset.harm_bench
 
         # Access an initialization defaults script
         path = ConfigurationPaths.initialization.defaults.scorer_initialization
@@ -120,18 +136,19 @@ class _ConfigurationPaths:
     def __init__(self) -> None:
         self._CONFIG_PATH = pathlib.Path(__file__).parent / "config"
         self.attack = _AttackPaths(self._CONFIG_PATH / "attack")
+        self.dataset = _DatasetPaths(self._CONFIG_PATH / "datasets")
         self.initialization = _InitializationPaths(self._CONFIG_PATH / "initialization")
 
     @classmethod
     def list_all_paths(
-        cls, subdirectory: Literal["attack.foundry", "initialization.defaults"] | None = None
+        cls, subdirectory: Literal["attack.foundry", "dataset", "initialization.defaults"] | None = None
     ) -> List[pathlib.Path]:
         """
         Get a list of all available configuration script paths.
 
         Args:
-            subdirectory: Optional subdirectory to filter paths. Can be "attack.foundry" or "initialization.defaults".
-                         If None, returns all paths.
+            subdirectory: Optional subdirectory to filter paths. Can be "attack.foundry", "dataset", or
+                         "initialization.defaults". If None, returns all paths.
 
         Returns:
             List[pathlib.Path]: List of configuration script paths.
@@ -145,6 +162,9 @@ class _ConfigurationPaths:
 
             # Get only attack.foundry paths
             foundry_paths = ConfigurationPaths.list_all_paths("attack.foundry")
+
+            # Get only dataset paths
+            dataset_paths = ConfigurationPaths.list_all_paths("dataset")
         """
         instance = cls()
         paths: List[pathlib.Path] = []
@@ -155,6 +175,10 @@ class _ConfigurationPaths:
             paths.append(instance.attack.foundry.ascii_art)
             paths.append(instance.attack.foundry.crescendo)
             paths.append(instance.attack.foundry.tense)
+
+        if subdirectory is None or subdirectory == "dataset":
+            # Add dataset paths
+            paths.append(instance.dataset.harm_bench)
 
         if subdirectory is None or subdirectory == "initialization.defaults":
             # Add initialization defaults paths
