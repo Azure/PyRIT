@@ -10,8 +10,7 @@ import random
 from typing import cast, List
 
 from pyrit.executor.attack import PromptSendingAttack, AttackConverterConfig, AttackFactory
-from pyrit.prompt_converter import AsciiArtConverter, PromptConverter
-from pyrit.prompt_converter.tense_converter import TenseConverter
+from pyrit.prompt_converter import PromptConverter, TenseConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.setup import set_default_value
 
