@@ -13,6 +13,7 @@ from pyrit.models import (
 )
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_target import PromptChatTarget
+from pyrit.setup.pyrit_default_value import apply_defaults
 
 logger = logging.getLogger(__name__)
 
@@ -22,10 +23,11 @@ class LLMGenericTextConverter(PromptConverter):
     Represents a generic LLM converter that expects text to be transformed (e.g. no JSON parsing or format).
     """
 
+    @apply_defaults
     def __init__(
         self,
         *,
-        converter_target: PromptChatTarget,
+        converter_target: Optional[PromptChatTarget] = None,
         system_prompt_template: Optional[SeedPrompt] = None,
         user_prompt_template_with_objective: Optional[SeedPrompt] = None,
         **kwargs,
@@ -40,11 +42,17 @@ class LLMGenericTextConverter(PromptConverter):
                 expects
             kwargs: Additional parameters for the prompt template.
         """
+        if converter_target is None:
+            raise ValueError("converter_target is required but was not provided")
+
         self._converter_target = converter_target
         self._system_prompt_template = system_prompt_template
         self._prompt_kwargs = kwargs
 
-        if user_prompt_template_with_objective and "objective" not in user_prompt_template_with_objective.parameters:
+        if user_prompt_template_with_objective and (
+            user_prompt_template_with_objective.parameters is None
+            or "objective" not in user_prompt_template_with_objective.parameters
+        ):
             raise ValueError("user_prompt_template_with_objective must contain the 'objective' parameter")
 
         self._user_prompt_template_with_objective = user_prompt_template_with_objective

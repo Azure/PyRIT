@@ -32,6 +32,21 @@ class _FoundryPaths:
         """Path to the ANSI attack initialization script."""
         return self._base_path / "ansi_attack.py"
 
+    @property
+    def ascii_art(self) -> pathlib.Path:
+        """Path to the ASCII art initialization script."""
+        return self._base_path / "ascii_art.py"
+
+    @property
+    def crescendo(self) -> pathlib.Path:
+        """Path to the Crescendo initialization script."""
+        return self._base_path / "crescendo.py"
+    
+    @property
+    def tense(self) -> pathlib.Path:
+        """Path to the Tense initialization script."""
+        return self._base_path / "tense.py"
+
 
 class _DefaultsPaths:
     """Paths to default initialization scripts."""
@@ -123,6 +138,8 @@ class _BuiltInInitPath:
         if subdirectory is None or subdirectory == "foundry":
             # Add foundry paths
             paths.append(instance.foundry.ansi_attack)
+            paths.append(instance.foundry.ascii_art)
+            paths.append(instance.foundry.crescendo)
 
         if subdirectory is None or subdirectory == "defaults":
             # Add defaults paths

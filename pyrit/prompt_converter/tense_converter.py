@@ -3,11 +3,13 @@
 
 import logging
 import pathlib
+from typing import Optional
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt
 from pyrit.prompt_converter import LLMGenericTextConverter
 from pyrit.prompt_target import PromptChatTarget
+from pyrit.setup import apply_defaults
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +21,10 @@ class TenseConverter(LLMGenericTextConverter):
     An existing ``PromptChatTarget`` is used to perform the conversion (like Azure OpenAI).
     """
 
-    def __init__(self, *, converter_target: PromptChatTarget, tense: str, prompt_template: SeedPrompt = None):
+    @apply_defaults
+    def __init__(
+        self, *, converter_target: Optional[PromptChatTarget] = None, tense: str, prompt_template: Optional[SeedPrompt] = None
+    ):
         """
         Initializes the converter with the target chat support, tense, and optional prompt template.
 
