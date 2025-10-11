@@ -2,17 +2,17 @@
 # Licensed under the MIT license.
 
 """
-This configures an AnsiAttack.
+This configures an AsciiArt.
 
 It can be modified to set up convenient variables, default values, or helper functions.
 """
 
 from pyrit.executor.attack import PromptSendingAttack, AttackConverterConfig, AttackFactory
-from pyrit.prompt_converter import AnsiAttackConverter
+from pyrit.prompt_converter import AsciiArtConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.setup import set_default_value
 
-_converters = PromptConverterConfiguration.from_converters(converters=[AnsiAttackConverter()])
+_converters = PromptConverterConfiguration.from_converters(converters=[AsciiArtConverter()])
 _attack_converter_config = AttackConverterConfig(request_converters=_converters)
 
 

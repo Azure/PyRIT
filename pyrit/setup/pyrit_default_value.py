@@ -142,6 +142,77 @@ def apply_defaults(init_func: F) -> F:
     return wrapper  # type: ignore
 
 
+M = TypeVar("M", bound=Callable[..., Any])
+
+
+def apply_defaults_to_method(method_func: M) -> M:
+    """
+    Decorator that automatically applies default values to method parameters.
+
+    This decorator is similar to apply_defaults but works with static methods, class methods,
+    or any callable where the first parameter is not 'self'. It inspects the method's
+    parameters and applies any configured default values from the global PyRITDefaultValues instance.
+
+    Usage:
+        class MyFactory:
+            @staticmethod
+            @apply_defaults_to_method
+            def create_instance(*, param1: Optional[str] = None, param2: Optional[int] = None):
+                # By the time we get here, defaults have been applied if they were None
+                return MyClass(param1=param1, param2=param2)
+
+    Note:
+        - Only applies defaults when the provided value is None
+        - Respects explicitly provided values (including False, 0, "", etc.)
+        - For static methods, uses the class type from the method's __qualname__
+        - For regular functions, uses the function itself as the class type
+    """
+
+    @functools.wraps(method_func)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        # Get the signature of the method
+        sig = inspect.signature(method_func)
+
+        # Determine the class type for default value lookup
+        # For static methods, parse the class from __qualname__
+        # For regular functions, use the function itself
+        if hasattr(method_func, "__qualname__") and "." in method_func.__qualname__:
+            # This is a method (static or class method)
+            # Parse class name from qualname like "ClassName.method_name"
+            class_name = method_func.__qualname__.rsplit(".", 1)[0]
+            # Try to get the class from the function's globals
+            class_type = method_func.__globals__.get(class_name)
+            if class_type is None:
+                # If we can't find it, we can't apply defaults for this context
+                return method_func(*args, **kwargs)
+        else:
+            # Regular function - use the function itself as the "class type"
+            class_type = method_func
+
+        # Bind the provided arguments to get actual parameter values
+        bound_args = sig.bind_partial(*args, **kwargs)
+        bound_args.apply_defaults()
+
+        # For each parameter, check if we should apply a default
+        for param_name, param in sig.parameters.items():
+            # Get the current value (might be None from defaults or user-provided)
+            current_value = bound_args.arguments.get(param_name, None)
+
+            # Try to get a default value from the global registry
+            default_value = _global_default_values.get_default_value_for_parameter(
+                class_type=class_type, parameter_name=param_name, provided_value=current_value
+            )
+
+            # Update kwargs with the resolved value
+            if param_name in bound_args.arguments:
+                kwargs[param_name] = default_value
+
+        # Call the original method with updated kwargs
+        return method_func(*args, **kwargs)
+
+    return wrapper  # type: ignore
+
+
 def set_default_value(*, class_type: type, parameter_name: str, value: Any, include_subclasses: bool = True) -> None:
     """
     Convenience function to set a default value for a specific class and parameter.
