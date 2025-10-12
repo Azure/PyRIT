@@ -238,7 +238,7 @@ class TestHarmBenchMultimodalDataset:
 
     @patch("pyrit.datasets.harmbench_multimodal_dataset._fetch_and_save_image_async")
     @patch("pyrit.datasets.harmbench_multimodal_dataset.fetch_examples")
-    async def test_skips_example_when_image_fetch_fails(self, mock_fetch, mock_fetch_image):
+    async def test_skips_example_when_image_fetch_fails(self, mock_fetch, mock_fetch_image, caplog):
         mock_examples = [
             {
                 "Behavior": "Successful behavior",
@@ -269,3 +269,8 @@ class TestHarmBenchMultimodalDataset:
         assert len(result.prompts) == 2
         behavior_ids = {p.metadata["behavior_id"] for p in result.prompts}
         assert behavior_ids == {"success_behavior"}
+
+        warning_messages = [record.message for record in caplog.records if record.levelname == "WARNING"]
+        assert len(warning_messages) == 2
+        assert any("Failed to fetch image for behavior failed_behavior" in msg for msg in warning_messages)
+        assert any("Total skipped examples: 1 (image fetch failures)" in msg for msg in warning_messages)

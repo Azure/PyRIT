@@ -79,6 +79,7 @@ async def fetch_harmbench_multimodal_dataset_async(
     required_keys = {"Behavior", "BehaviorID", "FunctionalCategory", "SemanticCategory", "ImageFileName"}
     examples = fetch_examples(source, source_type, cache, data_home)
     prompts = []
+    failed_image_count = 0
 
     for example in examples:
         missing_keys = required_keys - example.keys()
@@ -134,6 +135,7 @@ async def fetch_harmbench_multimodal_dataset_async(
             )
             prompts.append(image_prompt)
         except Exception as e:
+            failed_image_count += 1
             logger.warning(f"Failed to fetch image for behavior {behavior_id}: {e}. Skipping this example.")
         else:
             text_prompt = SeedPrompt(
@@ -172,6 +174,9 @@ async def fetch_harmbench_multimodal_dataset_async(
                 ],
             )
             prompts.append(text_prompt)
+
+    if failed_image_count > 0:
+        logger.warning(f"Total skipped examples: {failed_image_count} (image fetch failures)")
 
     seed_prompt_dataset = SeedPromptDataset(prompts=prompts)
     return seed_prompt_dataset
