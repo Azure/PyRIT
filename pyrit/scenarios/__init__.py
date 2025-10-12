@@ -3,6 +3,6 @@
 
 """High-level scenario classes for running attack configurations."""
 
-from pyrit.scenarios.scenario import Scenario
+from pyrit.scenarios.attack_run import AttackRun
 
-__all__ = ["Scenario"]
+__all__ = ["AttackRun"]
