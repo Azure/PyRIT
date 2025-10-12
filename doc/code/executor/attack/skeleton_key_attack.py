@@ -6,11 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -39,5 +35,3 @@ result = await attack.execute_async(objective=attack_prompt)  # type: ignore
 
 # Step 4: Print the conversation to see the interaction
 await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
-
-# %%

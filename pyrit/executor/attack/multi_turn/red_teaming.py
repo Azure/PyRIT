@@ -236,7 +236,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         self._adversarial_chat.set_system_prompt(
             system_prompt=system_prompt,
             conversation_id=context.session.adversarial_chat_conversation_id,
-            orchestrator_identifier=self.get_identifier(),
+            attack_identifier=self.get_identifier(),
             labels=context.memory_labels,
         )
 
@@ -341,7 +341,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
             seed_prompt_group=prompt_grp,
             conversation_id=context.session.adversarial_chat_conversation_id,
             target=self._adversarial_chat,
-            orchestrator_identifier=self.get_identifier(),
+            attack_identifier=self.get_identifier(),
             labels=context.memory_labels,
         )
 
@@ -489,7 +489,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
             response_converter_configurations=self._response_converters,
             target=self._objective_target,
             labels=context.memory_labels,
-            orchestrator_identifier=self.get_identifier(),
+            attack_identifier=self.get_identifier(),
         )
 
         if response is None:
@@ -530,14 +530,13 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
 
         # Use the built-in scorer method for objective scoring
         # This method already handles error responses internally via skip_on_error=True
-        scoring_results = await Scorer.score_response_with_objective_async(
+        scoring_results = await Scorer.score_response_async(
             response=context.last_response,
+            objective_scorer=self._objective_scorer,
             auxiliary_scorers=None,  # No auxiliary scorers for red teaming by default
-            objective_scorers=[self._objective_scorer],
             role_filter="assistant",
-            task=context.objective,
+            objective=context.objective,
         )
-
         objective_scores = scoring_results["objective_scores"]
         return objective_scores[0] if objective_scores else None
 

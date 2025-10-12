@@ -8,7 +8,7 @@ from typing import List, Optional, Union
 from pyrit.executor.core import StrategyConverterConfig
 from pyrit.models.seed_prompt import SeedPrompt
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
-from pyrit.score import Scorer
+from pyrit.score import Scorer, TrueFalseScorer
 
 
 @dataclass
@@ -40,10 +40,10 @@ class AttackScoringConfig:
     """
 
     # Primary scorer for evaluating attack effectiveness
-    objective_scorer: Optional[Scorer] = None
+    objective_scorer: Optional[TrueFalseScorer] = None
 
     # Refusal scorer for detecting refusals or non-compliance
-    refusal_scorer: Optional[Scorer] = None
+    refusal_scorer: Optional[TrueFalseScorer] = None
 
     # Additional scorers for auxiliary metrics or custom evaluations
     auxiliary_scorers: List[Scorer] = field(default_factory=list)
@@ -56,13 +56,21 @@ class AttackScoringConfig:
     # Only applies to float_scale scorers
     successful_objective_threshold: float = 0.8
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate configuration values."""
         if not 0.0 <= self.successful_objective_threshold <= 1.0:
             raise ValueError(
                 f"successful_objective_threshold must be between 0.0 and 1.0, "
                 f"got {self.successful_objective_threshold}"
             )
+
+        # Enforce objective scorer type: must be a TrueFalseScorer if provided
+        if self.objective_scorer and not isinstance(self.objective_scorer, TrueFalseScorer):
+            raise ValueError("Objective scorer must be a TrueFalseScorer")
+
+        # Enforce refusal scorer type: must be a TrueFalseScorer if provided
+        if self.refusal_scorer and not isinstance(self.refusal_scorer, TrueFalseScorer):
+            raise ValueError("Refusal scorer must be a TrueFalseScorer")
 
 
 @dataclass

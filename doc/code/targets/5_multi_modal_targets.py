@@ -5,11 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -24,9 +20,8 @@
 #
 # This example demonstrates how to use the image target to create an image from a text-based prompt.
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
-
 # %%
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     AttackScoringConfig,
     ConsoleAttackResultPrinter,
@@ -56,7 +51,7 @@ attack = PromptSendingAttack(
 )
 
 result = await attack.execute_async(objective=objective)  # type: ignore
-await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
+await ConsoleAttackResultPrinter().print_result_async(result=result)  # type: ignore
 
 
 # %% [markdown]
@@ -95,29 +90,56 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 #
 # This example demonstrates how to use the Sora target to create a video from a text-based prompt.
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
-
 # %%
-from pyrit.executor.attack import AttackExecutor
-from pyrit.prompt_target import OpenAISoraTarget
+from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.executor.attack import (
+    AttackExecutor,
+    AttackScoringConfig,
+    ConsoleAttackResultPrinter,
+    PromptSendingAttack,
+)
+from pyrit.prompt_target import OpenAIChatTarget, OpenAISoraTarget
+from pyrit.score import (
+    AzureContentFilterScorer,
+    SelfAskTrueFalseScorer,
+    TrueFalseQuestion,
+    VideoFloatScaleScorer,
+    VideoTrueFalseScorer,
+)
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
-
-sora_target = OpenAISoraTarget()
-
-attack = PromptSendingAttack(objective_target=sora_target)
 
 objectives = [
     "Video of a raccoon pirate eating flan at a cafe in Spain",
     "Video of a raccoon pirate eating a croissant at a cafe in France",
 ]
+
+sora_target = OpenAISoraTarget()
+objective_scorer = SelfAskTrueFalseScorer(
+    chat_target=OpenAIChatTarget(),
+    true_false_question=TrueFalseQuestion(true_description="A raccoon dressed as a pirate is actively eating a pastry"),
+)
+
+video_scorer = VideoTrueFalseScorer(
+    image_capable_scorer=objective_scorer,
+    num_sampled_frames=10,
+)
+
+attack = PromptSendingAttack(
+    objective_target=sora_target,
+    attack_scoring_config=AttackScoringConfig(
+        objective_scorer=video_scorer,
+        auxiliary_scorers=[VideoFloatScaleScorer(image_capable_scorer=AzureContentFilterScorer())],
+    ),
+)
+
 results = await AttackExecutor().execute_multi_objective_attack_async(  # type: ignore
     attack=attack,
     objectives=objectives,
 )
 
 for result in results:
-    await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
+    await ConsoleAttackResultPrinter().print_result_async(result=result, include_auxiliary_scores=True)  # type: ignore
 
 
 # %% [markdown]

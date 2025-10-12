@@ -92,12 +92,15 @@ def test_conversation_data_column_types(sqlite_instance):
         "prompt_metadata": (String, JSON),
         "converter_identifiers": (String, JSON),
         "prompt_target_identifier": (String, JSON),
+        "attack_identifier": (String, JSON),
+        "response_error": String,
         "original_value_data_type": String,
         "original_value": String,
         "original_value_sha256": String,
         "converted_value_data_type": String,
         "converted_value": String,
         "converted_value_sha256": String,
+        "original_prompt_id": (UUID, CHAR),
     }
 
     for column, expected_type in expected_column_types.items():

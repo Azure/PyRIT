@@ -6,11 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -85,7 +81,7 @@ from pyrit.score import SubStringScorer
 
 abs_target = AzureBlobStorageTarget(container_url=os.environ.get("AZURE_STORAGE_ACCOUNT_CONTAINER_URL"))
 
-scorer = SubStringScorer(substring="space pirate", category="jailbreak")
+scorer = SubStringScorer(substring="space pirate", categories=["jailbreak"])
 
 workflow = XPIATestWorkflow(
     attack_setup_target=abs_target,

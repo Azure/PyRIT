@@ -23,7 +23,7 @@ from pyrit.models import (
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.score import Scorer
+from pyrit.score import TrueFalseScorer
 
 
 @pytest.fixture
@@ -55,8 +55,7 @@ def mock_attack_adversarial_config(mock_adversarial_chat):
 @pytest.fixture
 def mock_scorer():
     """Create a mock true/false scorer"""
-    scorer = MagicMock(spec=Scorer)
-    scorer.scorer_type = "true_false"
+    scorer = MagicMock(spec=TrueFalseScorer)
     scorer.score_text_async = AsyncMock()
     return scorer
 
@@ -552,7 +551,7 @@ class TestContextComplianceAttackExecution:
             call_args = mock_prompt_normalizer.send_prompt_async.call_args
 
             assert call_args.kwargs["target"] == attack._adversarial_chat
-            assert call_args.kwargs["orchestrator_identifier"] == attack.get_identifier()
+            assert call_args.kwargs["attack_identifier"] == attack.get_identifier()
             assert call_args.kwargs["labels"] == basic_context.memory_labels
 
             # Verify seed prompt group was created correctly
@@ -603,7 +602,7 @@ class TestContextComplianceAttackExecution:
             call_args = mock_prompt_normalizer.send_prompt_async.call_args
 
             assert call_args.kwargs["target"] == attack._adversarial_chat
-            assert call_args.kwargs["orchestrator_identifier"] == attack.get_identifier()
+            assert call_args.kwargs["attack_identifier"] == attack.get_identifier()
             assert call_args.kwargs["labels"] == basic_context.memory_labels
 
             # Verify template was rendered with benign request
@@ -647,7 +646,7 @@ class TestContextComplianceAttackExecution:
             call_args = mock_prompt_normalizer.send_prompt_async.call_args
 
             assert call_args.kwargs["target"] == attack._adversarial_chat
-            assert call_args.kwargs["orchestrator_identifier"] == attack.get_identifier()
+            assert call_args.kwargs["attack_identifier"] == attack.get_identifier()
             assert call_args.kwargs["labels"] == basic_context.memory_labels
 
             # Verify template was rendered

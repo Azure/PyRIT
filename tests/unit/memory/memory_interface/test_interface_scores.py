@@ -18,13 +18,14 @@ from pyrit.models import (
 )
 
 
-def test_get_scores_by_orchestrator_id_and_label(
+def test_get_scores_by_attack_id_and_label(
     sqlite_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
 ):
     # create list of scores that are associated with sample conversation entries
     # assert that that list of scores is the same as expected :-)
 
     prompt_id = sample_conversations[0].id
+    assert prompt_id is not None, "Prompt ID should not be None"
 
     sqlite_instance.add_request_pieces_to_memory(request_pieces=sample_conversations)
 
@@ -32,9 +33,9 @@ def test_get_scores_by_orchestrator_id_and_label(
         score_value=str(0.8),
         score_value_description="High score",
         score_type="float_scale",
-        score_category="test",
+        score_category=["test"],
         score_rationale="Test score",
-        score_metadata="Test metadata",
+        score_metadata={"test": "metadata"},
         scorer_class_identifier={"__type__": "TestScorer"},
         prompt_request_response_id=prompt_id,
     )
@@ -42,7 +43,7 @@ def test_get_scores_by_orchestrator_id_and_label(
     sqlite_instance.add_scores_to_memory(scores=[score])
 
     # Fetch the score we just added
-    db_score = sqlite_instance.get_prompt_scores(orchestrator_id=sample_conversations[0].orchestrator_identifier["id"])
+    db_score = sqlite_instance.get_prompt_scores(attack_id=sample_conversations[0].attack_identifier["id"])
 
     assert len(db_score) == 1
     assert db_score[0].score_value == score.score_value
@@ -63,13 +64,13 @@ def test_get_scores_by_orchestrator_id_and_label(
     assert db_score[0].score_value == score.score_value
 
     db_score = sqlite_instance.get_prompt_scores(
-        orchestrator_id=sample_conversations[0].orchestrator_identifier["id"],
+        attack_id=sample_conversations[0].attack_identifier["id"],
         labels={"x": "y"},
     )
     assert len(db_score) == 0
 
     db_score = sqlite_instance.get_prompt_scores(
-        orchestrator_id=str(uuid.uuid4()),
+        attack_id=str(uuid.uuid4()),
     )
     assert len(db_score) == 0
 
@@ -84,6 +85,7 @@ def test_add_score_get_score(
     score_type: Literal["float_scale"] | Literal["true_false"],
 ):
     prompt_id = sample_conversation_entries[0].id
+    assert prompt_id is not None, "Prompt ID should not be None"
 
     sqlite_instance._insert_entries(entries=sample_conversation_entries)
 
@@ -93,9 +95,9 @@ def test_add_score_get_score(
         score_value=score_value,
         score_value_description="High score",
         score_type=score_type,
-        score_category="test",
+        score_category=["test"],
         score_rationale="Test score",
-        score_metadata="Test metadata",
+        score_metadata={"test": "metadata"},
         scorer_class_identifier={"__type__": "TestScorer"},
         prompt_request_response_id=prompt_id,
     )
@@ -109,9 +111,9 @@ def test_add_score_get_score(
     assert db_score[0].score_value == score_value
     assert db_score[0].score_value_description == "High score"
     assert db_score[0].score_type == score_type
-    assert db_score[0].score_category == "test"
+    assert db_score[0].score_category == ["test"]
     assert db_score[0].score_rationale == "Test score"
-    assert db_score[0].score_metadata == "Test metadata"
+    assert db_score[0].score_metadata == {"test": "metadata"}
     assert db_score[0].scorer_class_identifier == {"__type__": "TestScorer"}
     assert db_score[0].prompt_request_response_id == prompt_id
 
@@ -129,14 +131,15 @@ def test_add_score_duplicate_prompt(sqlite_instance: MemoryInterface):
             converted_value="Hello, how are you?",
             conversation_id=conversation_id,
             sequence=0,
-            orchestrator_identifier=attack.get_identifier(),
+            attack_identifier=attack.get_identifier(),
         )
     ]
-    new_orchestrator_id = str(uuid4())
+    new_attack_id = str(uuid4())
     sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
-    sqlite_instance.duplicate_conversation(new_orchestrator_id=new_orchestrator_id, conversation_id=conversation_id)
-    dupe_piece = sqlite_instance.get_prompt_request_pieces(orchestrator_id=new_orchestrator_id)[0]
+    sqlite_instance.duplicate_conversation(new_attack_id=new_attack_id, conversation_id=conversation_id)
+    dupe_piece = sqlite_instance.get_prompt_request_pieces(attack_id=new_attack_id)[0]
     dupe_id = dupe_piece.id
+    assert dupe_id is not None, "Dupe ID should not be None"
 
     score_id = uuid4()
     # score with prompt_request_response_id as dupe_id
@@ -145,9 +148,9 @@ def test_add_score_duplicate_prompt(sqlite_instance: MemoryInterface):
         score_value=str(0.8),
         score_value_description="High score",
         score_type="float_scale",
-        score_category="test",
+        score_category=["test"],
         score_rationale="Test score",
-        score_metadata="Test metadata",
+        score_metadata={"test": "metadata"},
         scorer_class_identifier={"__type__": "TestScorer"},
         prompt_request_response_id=dupe_id,
     )
@@ -176,9 +179,9 @@ def test_get_scores_by_memory_labels(sqlite_instance: MemoryInterface):
         score_value=str(0.8),
         score_value_description="High score",
         score_type="float_scale",
-        score_category="test",
+        score_category=["test"],
         score_rationale="Test score",
-        score_metadata="Test metadata",
+        score_metadata={"test": "metadata"},
         scorer_class_identifier={"__type__": "TestScorer"},
         prompt_request_response_id=prompt_id,
     )

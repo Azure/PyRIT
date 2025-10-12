@@ -23,7 +23,7 @@ from pyrit.models import (
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
-from pyrit.score import Scorer
+from pyrit.score import TrueFalseScorer
 
 
 @pytest.fixture
@@ -38,8 +38,7 @@ def mock_target():
 @pytest.fixture
 def mock_true_false_scorer():
     """Create a mock true/false scorer for testing"""
-    scorer = MagicMock(spec=Scorer)
-    scorer.scorer_type = "true_false"
+    scorer = MagicMock(spec=TrueFalseScorer)
     scorer.score_text_async = AsyncMock()
     return scorer
 
@@ -88,10 +87,10 @@ def success_score():
     return Score(
         score_type="true_false",
         score_value="true",
-        score_category="test",
+        score_category=["test"],
         score_value_description="Test success score",
         score_rationale="Test rationale for success",
-        score_metadata="{}",
+        score_metadata={},
         prompt_request_response_id=str(uuid.uuid4()),
     )
 
@@ -102,10 +101,10 @@ def failure_score():
     return Score(
         score_type="true_false",
         score_value="false",
-        score_category="test",
+        score_category=["test"],
         score_value_description="Test failure score",
         score_rationale="Test rationale for failure",
-        score_metadata="{}",
+        score_metadata={},
         prompt_request_response_id=str(uuid.uuid4()),
     )
 
@@ -294,7 +293,7 @@ class TestSkeletonKeyPromptSending:
         assert call_args.kwargs["request_converter_configurations"] == request_converters
         assert call_args.kwargs["response_converter_configurations"] == response_converters
         assert call_args.kwargs["labels"] == {"test": "label"}
-        assert "orchestrator_identifier" in call_args.kwargs
+        assert "attack_identifier" in call_args.kwargs
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -468,16 +467,6 @@ class TestSkeletonKeyAttackParameterValidation:
         # Test that it validates max_attempts_on_failure like parent
         with pytest.raises(ValueError):
             SkeletonKeyAttack(objective_target=mock_target, max_attempts_on_failure=-1)
-
-    def test_skeleton_key_with_invalid_scorer_type(self, mock_target):
-        """Test that invalid scorer types are rejected."""
-        mock_scorer = MagicMock(spec=Scorer)
-        mock_scorer.scorer_type = "float_scale"  # Should be true_false
-
-        attack_scoring_config = AttackScoringConfig(objective_scorer=mock_scorer)
-
-        with pytest.raises(ValueError, match="Objective scorer must be a true/false scorer"):
-            SkeletonKeyAttack(objective_target=mock_target, attack_scoring_config=attack_scoring_config)
 
 
 @pytest.mark.usefixtures("patch_central_database")

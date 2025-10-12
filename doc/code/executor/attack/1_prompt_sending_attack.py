@@ -6,11 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -48,16 +44,15 @@ await printer.print_conversation_async(result=result)  # type: ignore
 
 # %% [markdown]
 # ## Using Markdown Printer for Better Formatting
-
+#
 # Sometimes when working with LLM outputs that contain code blocks, tables, or other special markdown formatting, you may get better visual results by using a Markdown printer. This is particularly useful when:
-
+#
 # - The output contains code snippets with syntax highlighting
 # - You expect formatted lists, tables, or headers
 # - The response includes inline code with backticks
 # - You want to preserve the markdown structure for better readability
 
 # %%
-
 from pyrit.executor.attack import MarkdownAttackResultPrinter, PromptSendingAttack
 from pyrit.prompt_target import OpenAIChatTarget
 
@@ -284,5 +279,3 @@ attack_context = SingleTurnAttackContext(
 
 result = await attack.execute_with_context_async(context=attack_context)  # type: ignore
 await printer.print_conversation_async(result=result)  # type: ignore
-
-# %%

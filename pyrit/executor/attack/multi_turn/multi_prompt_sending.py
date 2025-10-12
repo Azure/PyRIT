@@ -97,8 +97,6 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
 
         self._auxiliary_scorers = attack_scoring_config.auxiliary_scorers
         self._objective_scorer = attack_scoring_config.objective_scorer
-        if self._objective_scorer and self._objective_scorer.scorer_type != "true_false":
-            raise ValueError("Objective scorer must be a true/false scorer")
 
         # Initialize prompt normalizer and conversation manager
         self._prompt_normalizer = prompt_normalizer or PromptNormalizer()
@@ -278,7 +276,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
             request_converter_configurations=self._request_converters,
             response_converter_configurations=self._response_converters,
             labels=context.memory_labels,  # combined with strategy labels at _setup()
-            orchestrator_identifier=self.get_identifier(),
+            attack_identifier=self.get_identifier(),
         )
 
     async def _evaluate_response_async(self, *, response: PromptRequestResponse, objective: str) -> Optional[Score]:
@@ -297,12 +295,12 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
                 no objective scorer is set. Note that auxiliary scorer results are not returned
                 but are still executed and stored.
         """
-        scoring_results = await Scorer.score_response_with_objective_async(
+        scoring_results = await Scorer.score_response_async(
             response=response,
             auxiliary_scorers=self._auxiliary_scorers,
-            objective_scorers=[self._objective_scorer] if self._objective_scorer else None,
+            objective_scorer=self._objective_scorer if self._objective_scorer else None,
             role_filter="assistant",
-            task=objective,
+            objective=objective,
         )
 
         objective_scores = scoring_results["objective_scores"]

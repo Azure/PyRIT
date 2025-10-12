@@ -1,8 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from azure.ai.contentsafety.models import TextCategory
@@ -15,7 +16,8 @@ from unit.mocks import (
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece
-from pyrit.score.azure_content_filter_scorer import AzureContentFilterScorer
+from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.score.float_scale.azure_content_filter_scorer import AzureContentFilterScorer
 
 
 @pytest.fixture
@@ -34,30 +36,64 @@ def text_request_piece() -> PromptRequestPiece:
 
 
 @pytest.mark.asyncio
-async def test_azure_content_filter_scorer_validate_audio(audio_request_piece: PromptRequestPiece):
+async def test_score_piece_async_invalid_type(patch_central_database, audio_request_piece: PromptRequestPiece):
     scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
-    with pytest.raises(ValueError, match="Azure Content Filter Scorer only supports text and image_path data type"):
-        await scorer.validate(audio_request_piece)
+    request = PromptRequestResponse(
+        request_pieces=[audio_request_piece],
+    )
 
+    # Should raise ValueError for unsupported data type
+    with pytest.raises(ValueError, match="There are no valid pieces to score"):
+        await scorer.score_async(request_response=request)
     os.remove(audio_request_piece.converted_value)
 
 
 @pytest.mark.asyncio
-async def test_azure_content_filter_scorer_validate_image(image_request_piece: PromptRequestPiece):
+async def test_score_piece_async_text(patch_central_database, text_request_piece: PromptRequestPiece):
     scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
-
-    # should not raise an error
-    scorer.validate(image_request_piece)
-
-    os.remove(image_request_piece.converted_value)
+    mock_client = MagicMock()
+    mock_client.analyze_text.return_value = {"categoriesAnalysis": [{"severity": "2", "category": "Hate"}]}
+    scorer._azure_cf_client = mock_client
+    scores = await scorer._score_piece_async(text_request_piece)
+    assert len(scores) == 1
+    score = scores[0]
+    assert score.score_type == "float_scale"
+    assert score.score_value == str(2.0 / 7)
+    assert score.score_category == ["Hate"]
+    assert isinstance(score.score_metadata, dict)
+    assert score.score_metadata["azure_severity"] == 2
+    assert "AzureContentFilterScorer" in str(score.scorer_class_identifier)
 
 
 @pytest.mark.asyncio
-async def test_azure_content_filter_scorer_validate_text(text_request_piece: PromptRequestPiece):
+async def test_score_piece_async_image(patch_central_database, image_request_piece: PromptRequestPiece):
     scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
+    mock_client = MagicMock()
+    mock_client.analyze_image.return_value = {"categoriesAnalysis": [{"severity": "3", "category": "Hate"}]}
+    scorer._azure_cf_client = mock_client
+    # Patch _get_base64_image_data to avoid actual file IO
+    with patch.object(scorer, "_get_base64_image_data", AsyncMock(return_value="base64data")):
+        scores = await scorer._score_piece_async(image_request_piece)
+    assert len(scores) == 1
+    score = scores[0]
+    assert score.score_type == "float_scale"
+    assert score.score_value == str(3.0 / 7)
+    assert score.score_category == ["Hate"]
+    assert isinstance(score.score_metadata, dict)
+    assert score.score_metadata["azure_severity"] == 3
+    assert "AzureContentFilterScorer" in str(score.scorer_class_identifier)
+    assert "AzureContentFilterScorer" in str(score.scorer_class_identifier)
+    os.remove(image_request_piece.converted_value)
 
-    # should not raise an error
-    scorer.validate(text_request_piece)
+
+def test_default_category():
+    scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar")
+    assert len(scorer._score_categories) == 4
+
+
+def test_explicit_category():
+    scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
+    assert len(scorer._score_categories) == 1
 
 
 @pytest.mark.asyncio
@@ -89,14 +125,13 @@ async def test_azure_content_filter_scorer_score(patch_central_database):
     score = await scorer.score_text_async(text="I hate you!")
 
     assert len(score) == 1
-
     # The azure score is on a ratio of 0-7, so 2/7 is the normalized value
     assert score[0].score_value == str(2.0 / 7)
-    assert score[0].score_value_description is None
+    assert score[0].score_value_description == ""
     assert score[0].score_type == "float_scale"
-    assert score[0].score_category == str(TextCategory.HATE.value)
-    assert score[0].score_metadata == str({"azure_severity": "2"})
-    assert score[0].score_rationale is None
+    assert score[0].score_category == ["Hate"]
+    assert score[0].score_metadata == {"azure_severity": 2}
+    assert not score[0].score_rationale
     assert "AzureContentFilterScorer" in str(score[0].scorer_class_identifier)
 
 

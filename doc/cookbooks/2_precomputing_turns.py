@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.6
+#       jupytext_version: 1.17.3
 #   kernelspec:
 #     display_name: pyrit-312
 #     language: python
@@ -173,7 +173,7 @@ conversation_starters = {}
 for result in results:
     new_conversation = memory.duplicate_conversation_excluding_last_turn(
         conversation_id=result.conversation_id,
-        new_orchestrator_id=new_attack.get_identifier()["id"],
+        new_attack_id=new_attack.get_identifier()["id"],
     )
 
     conversation_starters[result.objective] = list(memory.get_conversation(conversation_id=new_conversation))

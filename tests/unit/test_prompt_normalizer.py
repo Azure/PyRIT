@@ -30,15 +30,14 @@ from pyrit.prompt_target import PromptTarget
 
 @pytest.fixture
 def response() -> PromptRequestResponse:
+    conversation_id = "123"
     image_request_piece = get_image_request_piece()
     image_request_piece.role = "assistant"
+    image_request_piece.conversation_id = conversation_id
     return PromptRequestResponse(
         request_pieces=[
-            PromptRequestPiece(
-                role="assistant",
-                original_value="Hello",
-            ),
-            PromptRequestPiece(role="assistant", original_value="part 2"),
+            PromptRequestPiece(role="assistant", original_value="Hello", conversation_id=conversation_id),
+            PromptRequestPiece(role="assistant", original_value="part 2", conversation_id=conversation_id),
             image_request_piece,
         ]
     )
@@ -448,7 +447,7 @@ async def test_should_skip_based_on_skip_criteria_no_matches(mock_memory_instanc
     normalizer = PromptNormalizer()
 
     skip_criteria = PromptFilterCriteria(
-        orchestrator_id="test_orchestrator",
+        attack_id="test_attack",
         conversation_id="test_conversation",
     )
 
@@ -483,7 +482,7 @@ async def test_should_skip_based_on_skip_criteria_match_found(mock_memory_instan
     normalizer = PromptNormalizer()
 
     skip_criteria = PromptFilterCriteria(
-        orchestrator_id="test_orchestrator",
+        attack_id="test_attack",
         conversation_id="test_conversation",
     )
 
@@ -529,7 +528,7 @@ async def test_should_skip_based_on_skip_criteria_original_value_match(mock_memo
     normalizer = PromptNormalizer()
 
     skip_criteria = PromptFilterCriteria(
-        orchestrator_id="test_orchestrator",
+        attack_id="test_attack",
         conversation_id="test_conversation",
     )
 
@@ -565,3 +564,65 @@ async def test_send_prompt_async_exception_conv_id(mock_memory_instance, seed_pr
         .request_pieces[0]
         .original_value
     )
+
+
+@pytest.mark.asyncio
+async def test_build_prompt_request_response_harm_categories(mock_memory_instance):
+    """Test that harm_categories from seed prompts are propagated to request pieces."""
+
+    harm_categories = ["violence", "illegal"]
+
+    # Create a seed prompt group with harm categories
+    seed_prompt_group = SeedPromptGroup(
+        prompts=[
+            SeedPrompt(
+                value="Test harmful prompt",
+                data_type="text",
+                role="user",
+                sequence=1,
+                harm_categories=harm_categories,
+            ),
+            SeedPrompt(
+                value="Another prompt",
+                data_type="text",
+                role="user",
+                sequence=1,
+                # Not setting harm_categories, so it will default to []
+            ),
+        ]
+    )
+
+    labels = {"operation": "test_op"}
+    conversation_id = str(uuid.uuid4())
+    prompt_target = MockPromptTarget()
+    request_converters = []
+
+    normalizer = PromptNormalizer()
+
+    response = await normalizer._build_prompt_request_response(
+        seed_prompt_group=seed_prompt_group,
+        conversation_id=conversation_id,
+        request_converter_configurations=request_converters,
+        target=prompt_target,
+        labels=labels,
+    )
+
+    assert len(response.request_pieces) == 2
+
+    # First prompt should have harm categories
+    first_piece = response.request_pieces[0]
+    assert first_piece.targeted_harm_categories == harm_categories
+    assert first_piece.original_value == "Test harmful prompt"
+    assert first_piece.role == "user"
+
+    # Second prompt should have empty harm categories (default)
+    second_piece = response.request_pieces[1]
+    assert second_piece.targeted_harm_categories == []
+    assert second_piece.original_value == "Another prompt"
+    assert second_piece.role == "user"
+
+    # Verify other fields are set correctly
+    assert first_piece.conversation_id == conversation_id
+    assert second_piece.conversation_id == conversation_id
+    assert first_piece.labels == labels
+    assert second_piece.labels == labels
