@@ -28,7 +28,7 @@ _converter_configurations = PromptConverterConfiguration.from_converters(
     converters=cast(List[PromptConverter], [
         TenseConverter(
             tense=_tense,
-            converter_target=None  # Uses default from converter_initialization.py
+            converter_target=None  # Uses default
         )
     ])
 )
