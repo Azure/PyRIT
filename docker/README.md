@@ -2,7 +2,7 @@
 
 This Docker container provides a pre-configured environment for running PyRIT (Python Risk Identification Tool for generative AI) with JupyterLab integration. It comes with pre-installed PyRIT, all necessary dependencies, and supports both CPU and optional GPU modes.
 
-📚 **For complete installation instructions and troubleshooting, see the [Docker Installation Guide](https://azure.github.io/PyRIT/setup/install_docker.html) on our documentation site.**
+📚 **For complete installation instructions and troubleshooting, see the [Docker Installation Guide](./../doc/setup/1b_install_docker.md) on our documentation site.**
 
 This README contains technical details for working with the Docker setup locally.
 
@@ -47,7 +47,7 @@ docker-compose down
 
 **Access JupyterLab**: Navigate to `http://localhost:8888` in your browser.
 
-> 💡 **New to Docker setup?** Check out the [step-by-step installation guide](https://azure.github.io/PyRIT/setup/install_docker.html) with detailed explanations and troubleshooting tips.
+> 💡 **New to Docker setup?** Check out the [step-by-step installation guide](./../doc/setup/1b_install_docker.md) with detailed explanations and troubleshooting tips.
 
 ## Configuration
 
@@ -152,7 +152,7 @@ To enable GPU support:
 
 ## Troubleshooting
 
-For detailed troubleshooting steps, see the [Docker Installation Guide - Troubleshooting Section](https://azure.github.io/PyRIT/setup/install_docker.html#troubleshooting).
+For detailed troubleshooting steps, see the [Docker Installation Guide - Troubleshooting Section](./../doc/setup/1b_install_docker.md#troubleshooting).
 
 **Quick fixes:**
 
@@ -181,8 +181,7 @@ The JupyterLab instance is configured to run without authentication by default f
 
 ## Documentation & Support
 
-- 📖 **[Docker Installation Guide](https://azure.github.io/PyRIT/setup/install_docker.html)** - Complete user-friendly installation instructions
+- 📖 **[Docker Installation Guide](./../doc/setup/1b_install_docker.md)** - Complete user-friendly installation instructions
 - 🚀 **[PyRIT Documentation](https://azure.github.io/PyRIT/)** - Full documentation site
-- 📚 **[Cookbooks](https://azure.github.io/PyRIT/cookbooks/README.html)** - Example workflows and tutorials
 - 🔧 **[Contributing Guide](https://azure.github.io/PyRIT/contributing/README.html)** - For developers and contributors
 - 🐛 **[Issues](https://github.com/Azure/PyRIT/issues)** - Report bugs or request features

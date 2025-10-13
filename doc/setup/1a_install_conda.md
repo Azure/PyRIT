@@ -55,7 +55,7 @@ Notebooks and your PyRIT installation must be on the same version. This pip inst
    ```bash
    pip freeze | grep pyrit
    ```
-   
+
    Or in Python:
    ```python
    import pyrit

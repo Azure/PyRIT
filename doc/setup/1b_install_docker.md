@@ -94,7 +94,7 @@ import pyrit
 print(pyrit.__version__)
 ```
 
-3. **Match notebooks to your version**: 
+3. **Match notebooks to your version**:
    - If using a **release version** (e.g., `0.9.0`), download notebooks from the corresponding release branch: `https://github.com/Azure/PyRIT/tree/releases/v0.9.0/doc`
    - The automatically cloned notebooks from the main branch may not match your installed version
    - This website documentation shows the latest development version (main branch)
@@ -220,7 +220,7 @@ To use NVIDIA GPUs with PyRIT:
    ```bash
    # On Linux/macOS
    lsof -i :8888
-   
+
    # On Windows (PowerShell)
    netstat -ano | findstr :8888
    ```

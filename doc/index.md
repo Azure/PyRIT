@@ -36,7 +36,7 @@ PyRIT offers flexible installation options to suit different needs. Choose the p
 Get started immediately with a pre-configured environment:
 
 - ✅ All dependencies included
-- ✅ No Python setup needed  
+- ✅ No Python setup needed
 - ✅ JupyterLab built-in
 - ✅ Works on all platforms
 

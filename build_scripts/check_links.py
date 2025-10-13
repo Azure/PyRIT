@@ -19,6 +19,7 @@ skipped_urls = [
     "https://www.anthropic.com/research/many-shot-jailbreaking",  # blocks python requests
     "https://code.visualstudio.com/docs/devcontainers/containers",
     "https://stackoverflow.com/questions/77134272/pip-install-dev-with-pyproject-toml-not-working",
+    "https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers",
 ]
 
 custom_myst_references = ["notebook_tests"]
