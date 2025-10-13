@@ -19,6 +19,15 @@ curr_epoch_time = int(time.time())
 mock_token = "fake token"
 
 
+def is_speechsdk_installed():
+    try:
+        import azure.cognitiveservices.speech  # noqa: F401
+
+        return True
+    except ModuleNotFoundError:
+        return False
+
+
 def test_get_token_on_init():
     with patch("azure.identity.AzureCliCredential.get_token") as mock_get_token:
         mock_get_token.return_value = MagicMock(token=mock_token)
@@ -74,6 +83,7 @@ def test_get_token_provider_from_default_azure_credential_get_token_info():
         assert token_provider() == mock_token
 
 
+@pytest.mark.skipif(not is_speechsdk_installed(), reason="Azure Speech SDK is not installed.")
 @patch("azure.cognitiveservices.speech.SpeechConfig")
 @patch("pyrit.auth.azure_auth.AzureAuth")
 def test_get_speech_config_from_default_azure_credential(mock_azure_auth_class: Any, mock_speech_config: Any) -> None:
@@ -103,6 +113,7 @@ def test_get_speech_config_from_default_azure_credential(mock_azure_auth_class: 
     assert result == mock_config
 
 
+@pytest.mark.skipif(not is_speechsdk_installed(), reason="Azure Speech SDK is not installed.")
 @patch("azure.cognitiveservices.speech.SpeechConfig")
 def test_get_speech_config_with_key_and_region(mock_speech_config: Any) -> None:
     """Test get_speech_config with key and region uses SpeechConfig directly."""
@@ -115,6 +126,7 @@ def test_get_speech_config_with_key_and_region(mock_speech_config: Any) -> None:
     assert result == mock_config
 
 
+@pytest.mark.skipif(not is_speechsdk_installed(), reason="Azure Speech SDK is not installed.")
 @patch("pyrit.auth.azure_auth.get_speech_config_from_default_azure_credential")
 def test_get_speech_config_with_resource_id_and_region(mock_get_speech_config_from_cred: Any) -> None:
     """Test get_speech_config with resource_id and region uses credential auth."""
@@ -127,6 +139,7 @@ def test_get_speech_config_with_resource_id_and_region(mock_get_speech_config_fr
     assert result == mock_config
 
 
+@pytest.mark.skipif(not is_speechsdk_installed(), reason="Azure Speech SDK is not installed.")
 def test_get_speech_config_insufficient_info_raises_error() -> None:
     """Test get_speech_config raises ValueError with insufficient information."""
     with pytest.raises(ValueError, match="Insufficient information provided for Azure Speech service"):
