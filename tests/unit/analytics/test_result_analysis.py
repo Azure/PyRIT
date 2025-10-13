@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import pytest
+
 from pyrit.analytics.result_analysis import AttackStats, analyze_results
 from pyrit.models import AttackOutcome, AttackResult
 
