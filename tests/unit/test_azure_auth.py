@@ -2,11 +2,16 @@
 # Licensed under the MIT license.
 
 import time
+from typing import Any
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from pyrit.auth.auth_config import REFRESH_TOKEN_BEFORE_MSEC
 from pyrit.auth.azure_auth import (
     AzureAuth,
+    get_speech_config,
+    get_speech_config_from_default_azure_credential,
     get_token_provider_from_default_azure_credential,
 )
 
@@ -67,3 +72,62 @@ def test_get_token_provider_from_default_azure_credential_get_token_info():
         mock_default_cred.return_value = MagicMock(token=mock_token, expires_on=curr_epoch_time)
         token_provider = get_token_provider_from_default_azure_credential(scope="https://mocked_endpoint.azure.com")
         assert token_provider() == mock_token
+
+
+@patch("azure.cognitiveservices.speech.SpeechConfig")
+@patch("pyrit.auth.azure_auth.AzureAuth")
+def test_get_speech_config_from_default_azure_credential(mock_azure_auth_class: Any, mock_speech_config: Any) -> None:
+    """Test get_speech_config_from_default_azure_credential creates proper SpeechConfig."""
+    # Mock AzureAuth instance
+    mock_azure_auth_instance = MagicMock()
+    mock_azure_auth_instance.get_token.return_value = "test_token"
+    mock_azure_auth_class.return_value = mock_azure_auth_instance
+
+    # Mock SpeechConfig
+    mock_config = MagicMock()
+    mock_speech_config.return_value = mock_config
+
+    # Call the function
+    result = get_speech_config_from_default_azure_credential(resource_id="test_resource_id", region="test_region")
+
+    # Verify AzureAuth was created with correct scope
+    mock_azure_auth_class.assert_called_once_with(token_scope="https://cognitiveservices.azure.com/.default")
+
+    # Verify get_token was called
+    mock_azure_auth_instance.get_token.assert_called_once()
+
+    # Verify SpeechConfig was created with auth_token and region
+    expected_auth_token = "aad#test_resource_id#test_token"
+    mock_speech_config.assert_called_once_with(auth_token=expected_auth_token, region="test_region")
+
+    assert result == mock_config
+
+
+@patch("azure.cognitiveservices.speech.SpeechConfig")
+def test_get_speech_config_with_key_and_region(mock_speech_config: Any) -> None:
+    """Test get_speech_config with key and region uses SpeechConfig directly."""
+    mock_config = MagicMock()
+    mock_speech_config.return_value = mock_config
+
+    result = get_speech_config(resource_id=None, key="test_key", region="test_region")
+
+    mock_speech_config.assert_called_once_with(subscription="test_key", region="test_region")
+    assert result == mock_config
+
+
+@patch("pyrit.auth.azure_auth.get_speech_config_from_default_azure_credential")
+def test_get_speech_config_with_resource_id_and_region(mock_get_speech_config_from_cred: Any) -> None:
+    """Test get_speech_config with resource_id and region uses credential auth."""
+    mock_config = MagicMock()
+    mock_get_speech_config_from_cred.return_value = mock_config
+
+    result = get_speech_config(resource_id="test_resource_id", key=None, region="test_region")
+
+    mock_get_speech_config_from_cred.assert_called_once_with(resource_id="test_resource_id", region="test_region")
+    assert result == mock_config
+
+
+def test_get_speech_config_insufficient_info_raises_error() -> None:
+    """Test get_speech_config raises ValueError with insufficient information."""
+    with pytest.raises(ValueError, match="Insufficient information provided for Azure Speech service"):
+        get_speech_config(resource_id=None, key=None, region="test_region")

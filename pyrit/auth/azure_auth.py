@@ -3,7 +3,7 @@
 
 import logging
 import time
-from typing import Callable
+from typing import Callable, Union
 from urllib.parse import urlparse
 
 import msal
@@ -165,6 +165,45 @@ def get_default_scope(endpoint: str) -> str:
         pass
 
     return "https://cognitiveservices.azure.com/.default"
+
+
+def get_speech_config(resource_id: Union[str, None], key: Union[str, None], region: str):
+    """
+    Get the speech config using key/region pair (for key auth scenarios) or resource_id/region pair
+    (for Entra auth scenarios)
+
+    Args:
+        resource_id (Union[str, None]): The resource ID to get the token for.
+        key (Union[str, None]): The Azure Speech key
+        region (str): The region to get the token for.
+    Returns:
+        The speech config based on passed in args
+
+    Raises:
+        ModuleNotFoundError: If azure.cognitiveservices.speech is not installed.
+        ValueError: If neither key/region nor resource_id/region is provided.
+    """
+    try:
+        import azure.cognitiveservices.speech as speechsdk  # noqa: F811
+    except ModuleNotFoundError as e:
+        logger.error(
+            "Could not import azure.cognitiveservices.speech. "
+            + "You may need to install it via 'pip install pyrit[speech]'"
+        )
+        raise e
+
+    if key and region:
+        return speechsdk.SpeechConfig(
+            subscription=key,
+            region=region,
+        )
+    elif resource_id and region:
+        return get_speech_config_from_default_azure_credential(
+            resource_id=resource_id,
+            region=region,
+        )
+    else:
+        raise ValueError("Insufficient information provided for Azure Speech service.")
 
 
 def get_speech_config_from_default_azure_credential(resource_id: str, region: str):

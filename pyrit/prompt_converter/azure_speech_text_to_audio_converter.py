@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Literal, Optional
 if TYPE_CHECKING:
     import azure.cognitiveservices.speech as speechsdk  # noqa: F401
 
-from pyrit.auth.azure_auth import get_speech_config_from_default_azure_credential
+from pyrit.auth.azure_auth import get_speech_config
 from pyrit.common import default_values
 from pyrit.models import PromptDataType, data_serializer_factory
 from pyrit.prompt_converter import ConverterResult, PromptConverter
@@ -62,7 +62,9 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
             output_format (str): Either wav or mp3. Must match the file prefix.
 
         Raises:
-            ModuleNotFoundError: If the ``azure.cognitiveservices.speech`` module is not installed.
+            ValueError: If the required environment variables are not set, if azure_speech_key is passed in
+                when use_entra_auth is True, or if azure_speech_resource_id is passed in when use_entra_auth
+                is False.
         """
         self._azure_speech_region: str = default_values.get_required_value(
             env_var_name=self.AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE,
@@ -132,7 +134,9 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
 
         audio_serializer_file = None
         try:
-            speech_config = self._get_speech_config()
+            speech_config = get_speech_config(
+                resource_id=self._azure_speech_resource_id, key=self._azure_speech_key, region=self._azure_speech_region
+            )
             pull_stream = speechsdk.audio.PullAudioOutputStream()
             audio_cfg = speechsdk.audio.AudioOutputConfig(stream=pull_stream)
             speech_config.speech_synthesis_language = self._synthesis_language
@@ -168,32 +172,3 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
             logger.error("Failed to convert prompt to audio: %s", str(e))
             raise
         return ConverterResult(output_text=audio_serializer_file, output_type="audio_path")
-
-    def _get_speech_config(self):
-        """
-        Get the speech config based on authentication method.
-
-        Returns:
-            speechsdk.SpeechConfig: The speech config object.
-        """
-        try:
-            import azure.cognitiveservices.speech as speechsdk  # noqa: F811
-        except ModuleNotFoundError as e:
-            logger.error(
-                "Could not import azure.cognitiveservices.speech. "
-                + "You may need to install it via 'pip install pyrit[speech]'"
-            )
-            raise e
-
-        if self._azure_speech_key and self._azure_speech_region:
-            return speechsdk.SpeechConfig(
-                subscription=self._azure_speech_key,
-                region=self._azure_speech_region,
-            )
-        elif self._azure_speech_resource_id and self._azure_speech_region:
-            return get_speech_config_from_default_azure_credential(
-                resource_id=self._azure_speech_resource_id,
-                region=self._azure_speech_region,
-            )
-        else:
-            raise ValueError("Insufficient information provided for Azure Speech service.")
