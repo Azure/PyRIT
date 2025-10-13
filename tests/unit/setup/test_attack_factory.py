@@ -29,8 +29,9 @@ class TestAttackFactory:
             config_path=ConfigurationPaths.attack.foundry.ascii_art,
             objective_target=mock_target,
         )
-        
+
         from pyrit.executor.attack.single_turn import PromptSendingAttack
+
         assert isinstance(attack, PromptSendingAttack)
         assert attack._objective_target == mock_target
         assert attack._request_converters is not None
@@ -41,8 +42,9 @@ class TestAttackFactory:
             config_path=ConfigurationPaths.attack.foundry.ansi_attack,
             objective_target=mock_target,
         )
-        
+
         from pyrit.executor.attack.single_turn import PromptSendingAttack
+
         assert isinstance(attack, PromptSendingAttack)
         assert attack._objective_target == mock_target
         assert attack._request_converters is not None
@@ -52,17 +54,18 @@ class TestAttackFactory:
         # Crescendo requires adversarial_config, so we need to provide it
         from pyrit.executor.attack import AttackAdversarialConfig
         from pyrit.prompt_target import OpenAIChatTarget
-        
+
         adversarial_chat = MagicMock(spec=OpenAIChatTarget)
         adversarial_config = AttackAdversarialConfig(target=adversarial_chat)
-        
+
         attack = AttackFactory.create_attack(
             config_path=ConfigurationPaths.attack.foundry.crescendo,
             objective_target=mock_target,
             attack_adversarial_config=adversarial_config,
         )
-        
+
         from pyrit.executor.attack.multi_turn import CrescendoAttack
+
         assert isinstance(attack, CrescendoAttack)
         assert attack._objective_target == mock_target
         assert attack._max_turns == 3
@@ -82,18 +85,19 @@ class TestAttackFactory:
         """Test that override parameters work correctly."""
         from pyrit.executor.attack import AttackConverterConfig
         from pyrit.prompt_normalizer import PromptConverterConfiguration
-        
+
         custom_config = AttackConverterConfig(
             request_converters=PromptConverterConfiguration.from_converters(converters=[])
         )
-        
+
         attack = AttackFactory.create_attack(
             config_path=ConfigurationPaths.attack.foundry.ascii_art,
             objective_target=mock_target,
             attack_converter_config=custom_config,
         )
-        
+
         from pyrit.executor.attack.single_turn import PromptSendingAttack
+
         assert isinstance(attack, PromptSendingAttack)
         assert attack._request_converters == custom_config.request_converters
 
@@ -107,11 +111,11 @@ class TestAttackFactory:
 
     def test_create_attack_invalid_config_no_attack_config(self, mock_target: PromptTarget):
         """Test that AttributeError is raised when config file doesn't define attack_config."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write("# Empty config file\n")
             f.write("some_variable = 42\n")
             temp_path = f.name
-        
+
         try:
             with pytest.raises(AttributeError, match="must define an 'attack_config' dictionary"):
                 AttackFactory.create_attack(
@@ -123,10 +127,10 @@ class TestAttackFactory:
 
     def test_create_attack_invalid_config_not_dict(self, mock_target: PromptTarget):
         """Test that ValueError is raised when attack_config is not a dictionary."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write("attack_config = 'not a dict'\n")
             temp_path = f.name
-        
+
         try:
             with pytest.raises(ValueError, match="must be a dictionary"):
                 AttackFactory.create_attack(
@@ -138,10 +142,10 @@ class TestAttackFactory:
 
     def test_create_attack_invalid_config_no_attack_type(self, mock_target: PromptTarget):
         """Test that ValueError is raised when attack_config doesn't specify attack_type."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write("attack_config = {'some_param': 'value'}\n")
             temp_path = f.name
-        
+
         try:
             with pytest.raises(ValueError, match="must define 'attack_type'"):
                 AttackFactory.create_attack(
@@ -153,10 +157,10 @@ class TestAttackFactory:
 
     def test_create_attack_unsupported_attack_type(self, mock_target: PromptTarget):
         """Test that ValueError is raised for unsupported attack types."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write("attack_config = {'attack_type': 'InvalidAttackType'}\n")
             temp_path = f.name
-        
+
         try:
             with pytest.raises(ValueError, match="Unsupported attack type"):
                 AttackFactory.create_attack(
@@ -178,12 +182,13 @@ class TestAttackFactory:
     def test_create_attack_from_config_function(self, mock_target: PromptTarget):
         """Test the convenience function create_attack_from_config."""
         from pyrit.setup import create_attack_from_config
-        
+
         attack = create_attack_from_config(
             config_path=ConfigurationPaths.attack.foundry.ascii_art,
             objective_target=mock_target,
         )
-        
+
         from pyrit.executor.attack.single_turn import PromptSendingAttack
+
         assert isinstance(attack, PromptSendingAttack)
         assert attack._objective_target == mock_target

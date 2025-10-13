@@ -12,7 +12,7 @@ dataset configuration management.
 import importlib.util
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Union
 
 from pyrit.models import PromptRequestResponse
 
@@ -127,15 +127,11 @@ class DatasetFactory:
         try:
             spec.loader.exec_module(module)
         except Exception as e:
-            raise ValueError(
-                f"Error executing configuration file {config_path}: {e}"
-            ) from e
+            raise ValueError(f"Error executing configuration file {config_path}: {e}") from e
 
         # Extract dataset_config
         if not hasattr(module, "dataset_config"):
-            raise AttributeError(
-                f"Configuration file {config_path} must define 'dataset_config' dictionary"
-            )
+            raise AttributeError(f"Configuration file {config_path} must define 'dataset_config' dictionary")
 
         config_dict = module.dataset_config
 
@@ -161,24 +157,19 @@ class DatasetFactory:
         """
         # Check for required 'objectives' field
         if "objectives" not in config_dict:
-            raise ValueError(
-                f"Configuration file {config_path} must define 'objectives' in dataset_config dictionary"
-            )
+            raise ValueError(f"Configuration file {config_path} must define 'objectives' in dataset_config dictionary")
 
         objectives = config_dict["objectives"]
 
         # Validate objectives is a list
         if not isinstance(objectives, list):
             raise ValueError(
-                f"Configuration file {config_path}: 'objectives' must be a list, "
-                f"got {type(objectives).__name__}"
+                f"Configuration file {config_path}: 'objectives' must be a list, " f"got {type(objectives).__name__}"
             )
 
         # Validate objectives is not empty
         if len(objectives) == 0:
-            raise ValueError(
-                f"Configuration file {config_path}: 'objectives' list cannot be empty"
-            )
+            raise ValueError(f"Configuration file {config_path}: 'objectives' list cannot be empty")
 
         # Validate all objectives are strings
         for i, obj in enumerate(objectives):

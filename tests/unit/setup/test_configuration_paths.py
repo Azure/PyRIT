@@ -3,8 +3,6 @@
 
 import pathlib
 
-import pytest
-
 from pyrit.setup import ConfigurationPaths
 
 
@@ -52,7 +50,7 @@ class TestConfigurationPaths:
         all_paths = ConfigurationPaths.list_all_paths()
 
         assert isinstance(all_paths, list)
-        assert len(all_paths) == 7, f"Expected 7 paths, got {len(all_paths)}"
+        assert len(all_paths) == 9, f"Expected 9 paths, got {len(all_paths)}"
 
         # Verify all paths are Path objects
         for path in all_paths:
@@ -64,6 +62,8 @@ class TestConfigurationPaths:
         assert "ascii_art.py" in path_names
         assert "crescendo.py" in path_names
         assert "tense.py" in path_names
+        assert "harm_bench.py" in path_names
+        assert "foundry.py" in path_names
         assert "converter_initialization.py" in path_names
         assert "scorer_initialization.py" in path_names
         assert "target_initialization.py" in path_names

@@ -3,8 +3,6 @@
 
 """Tests for the scenarios.Scenario class."""
 
-import tempfile
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest

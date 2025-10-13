@@ -12,12 +12,11 @@ Note: This configuration requires converter_target defaults to be set via
 initialize_pyrit() before use.
 """
 import random
-from typing import cast, List
+from typing import List, cast
 
 from pyrit.executor.attack import AttackConverterConfig
 from pyrit.prompt_converter import PromptConverter, TenseConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
-
 
 # Randomly select tense
 _tense = random.choice(["past", "future"])
@@ -25,17 +24,10 @@ _tense = random.choice(["past", "future"])
 # Create the converter configuration
 # Note: TenseConverter requires converter_target, which should be set via defaults
 _converter_configurations = PromptConverterConfiguration.from_converters(
-    converters=cast(List[PromptConverter], [
-        TenseConverter(
-            tense=_tense,
-            converter_target=None  # Uses default
-        )
-    ])
+    converters=cast(List[PromptConverter], [TenseConverter(tense=_tense, converter_target=None)])  # Uses default
 )
 
-_attack_converter_config = AttackConverterConfig(
-    request_converters=_converter_configurations
-)
+_attack_converter_config = AttackConverterConfig(request_converters=_converter_configurations)
 
 # Define the attack configuration
 # This dictionary is used by AttackFactory to create the attack instance

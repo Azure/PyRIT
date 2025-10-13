@@ -10,8 +10,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from pyrit.prompt_target import PromptTarget
-from pyrit.scenarios import AttackRun, Scenario
-from pyrit.setup import ConfigurationPaths, ScenarioFactory
+from pyrit.scenarios import Scenario
+from pyrit.setup import ScenarioFactory
 
 
 @pytest.fixture
@@ -182,9 +182,11 @@ class TestScenarioFactoryCreation:
     @patch("pyrit.scenarios.attack_run.AttackRun.__init__", return_value=None)
     def test_create_scenario_with_valid_config(self, mock_attack_run_init, mock_target, valid_scenario_config):
         """Test successful scenario creation with valid configuration."""
-        with patch("pyrit.scenarios.attack_run.AttackRun._validate_config_paths"), patch(
-            "pyrit.scenarios.attack_run.AttackRun._create_attack"
-        ), patch("pyrit.scenarios.attack_run.AttackRun._load_dataset"):
+        with (
+            patch("pyrit.scenarios.attack_run.AttackRun._validate_config_paths"),
+            patch("pyrit.scenarios.attack_run.AttackRun._create_attack"),
+            patch("pyrit.scenarios.attack_run.AttackRun._load_dataset"),
+        ):
             scenario = ScenarioFactory.create_scenario(
                 config_path=valid_scenario_config,
                 objective_target=mock_target,
@@ -200,9 +202,11 @@ class TestScenarioFactoryCreation:
         """Test that memory labels are passed to attack runs."""
         memory_labels = {"test": "factory", "category": "scenario"}
 
-        with patch("pyrit.scenarios.attack_run.AttackRun._validate_config_paths"), patch(
-            "pyrit.scenarios.attack_run.AttackRun._create_attack"
-        ), patch("pyrit.scenarios.attack_run.AttackRun._load_dataset"):
+        with (
+            patch("pyrit.scenarios.attack_run.AttackRun._validate_config_paths"),
+            patch("pyrit.scenarios.attack_run.AttackRun._create_attack"),
+            patch("pyrit.scenarios.attack_run.AttackRun._load_dataset"),
+        ):
             scenario = ScenarioFactory.create_scenario(
                 config_path=valid_scenario_config,
                 objective_target=mock_target,
@@ -216,9 +220,11 @@ class TestScenarioFactoryCreation:
     @patch("pyrit.scenarios.attack_run.AttackRun.__init__", return_value=None)
     def test_create_scenario_passes_attack_run_params(self, mock_attack_run_init, mock_target, valid_scenario_config):
         """Test that additional attack run parameters are passed."""
-        with patch("pyrit.scenarios.attack_run.AttackRun._validate_config_paths"), patch(
-            "pyrit.scenarios.attack_run.AttackRun._create_attack"
-        ), patch("pyrit.scenarios.attack_run.AttackRun._load_dataset"):
+        with (
+            patch("pyrit.scenarios.attack_run.AttackRun._validate_config_paths"),
+            patch("pyrit.scenarios.attack_run.AttackRun._create_attack"),
+            patch("pyrit.scenarios.attack_run.AttackRun._load_dataset"),
+        ):
             scenario = ScenarioFactory.create_scenario(
                 config_path=valid_scenario_config,
                 objective_target=mock_target,
@@ -259,9 +265,11 @@ scenario_config = {
             temp_path = f.name
 
         try:
-            with patch("pyrit.scenarios.attack_run.AttackRun._validate_config_paths"), patch(
-                "pyrit.scenarios.attack_run.AttackRun._create_attack"
-            ), patch("pyrit.scenarios.attack_run.AttackRun._load_dataset"):
+            with (
+                patch("pyrit.scenarios.attack_run.AttackRun._validate_config_paths"),
+                patch("pyrit.scenarios.attack_run.AttackRun._create_attack"),
+                patch("pyrit.scenarios.attack_run.AttackRun._load_dataset"),
+            ):
                 scenario = ScenarioFactory.create_scenario(
                     config_path=temp_path,
                     objective_target=mock_target,

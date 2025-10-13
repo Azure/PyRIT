@@ -12,7 +12,7 @@ than relying on global default value propagation.
 import importlib.util
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Union
 
 from pyrit.prompt_target import PromptTarget
 
@@ -97,9 +97,7 @@ class AttackFactory:
         # Extract attack type and parameters
         attack_type = config_dict.get("attack_type")
         if not attack_type:
-            raise ValueError(
-                f"Configuration file {config_path} must define 'attack_type' in attack_config dictionary"
-            )
+            raise ValueError(f"Configuration file {config_path} must define 'attack_type' in attack_config dictionary")
 
         # Merge config parameters with overrides
         attack_params = {k: v for k, v in config_dict.items() if k != "attack_type"}
@@ -107,9 +105,7 @@ class AttackFactory:
         attack_params["objective_target"] = objective_target
 
         # Import and instantiate the attack
-        return AttackFactory._create_attack_instance(
-            attack_type=attack_type, attack_params=attack_params
-        )
+        return AttackFactory._create_attack_instance(attack_type=attack_type, attack_params=attack_params)
 
     @staticmethod
     def _load_config_file(config_path: Path) -> Dict[str, Any]:
@@ -136,7 +132,7 @@ class AttackFactory:
 
         module = importlib.util.module_from_spec(spec)
         sys.modules[module_name] = module
-        
+
         try:
             spec.loader.exec_module(module)
         except ValueError as e:
@@ -151,15 +147,11 @@ class AttackFactory:
 
         # Extract the attack_config dictionary
         if not hasattr(module, "attack_config"):
-            raise AttributeError(
-                f"Configuration file {config_path} must define an 'attack_config' dictionary"
-            )
+            raise AttributeError(f"Configuration file {config_path} must define an 'attack_config' dictionary")
 
         config = getattr(module, "attack_config")
         if not isinstance(config, dict):
-            raise ValueError(
-                f"'attack_config' in {config_path} must be a dictionary, got {type(config)}"
-            )
+            raise ValueError(f"'attack_config' in {config_path} must be a dictionary, got {type(config)}")
 
         return config
 
@@ -179,6 +171,13 @@ class AttackFactory:
             ValueError: If the attack type is not supported.
         """
         # Import attack classes (lazy imports to avoid circular dependencies)
+        from pyrit.executor.attack.multi_turn import (
+            CrescendoAttack,
+            MultiPromptSendingAttack,
+            RedTeamingAttack,
+            TAPAttack,
+            TreeOfAttacksWithPruningAttack,
+        )
         from pyrit.executor.attack.single_turn import (
             ContextComplianceAttack,
             FlipAttack,
@@ -186,13 +185,6 @@ class AttackFactory:
             PromptSendingAttack,
             RolePlayAttack,
             SkeletonKeyAttack,
-        )
-        from pyrit.executor.attack.multi_turn import (
-            CrescendoAttack,
-            MultiPromptSendingAttack,
-            RedTeamingAttack,
-            TAPAttack,
-            TreeOfAttacksWithPruningAttack,
         )
 
         # Map attack types to classes
@@ -213,10 +205,7 @@ class AttackFactory:
         attack_class = attack_classes.get(attack_type)
         if not attack_class:
             supported_types = ", ".join(attack_classes.keys())
-            raise ValueError(
-                f"Unsupported attack type '{attack_type}'. "
-                f"Supported types are: {supported_types}"
-            )
+            raise ValueError(f"Unsupported attack type '{attack_type}'. " f"Supported types are: {supported_types}")
 
         return attack_class(**attack_params)
 
@@ -235,6 +224,4 @@ def create_attack_from_config(
 
     See AttackFactory.create_attack() for full documentation.
     """
-    return AttackFactory.create_attack(
-        config_path=config_path, objective_target=objective_target, **override_params
-    )
+    return AttackFactory.create_attack(config_path=config_path, objective_target=objective_target, **override_params)

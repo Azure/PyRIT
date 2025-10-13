@@ -8,7 +8,6 @@ This scenario configuration bundles all Foundry attack methods with the HarmBenc
 creating a comprehensive test scenario for evaluating AI safety across multiple attack vectors.
 """
 
-from pathlib import Path
 from typing import Any, Dict
 
 from pyrit.setup.configuration_paths import ConfigurationPaths

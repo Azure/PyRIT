@@ -18,7 +18,7 @@ Example:
 """
 
 import pathlib
-from typing import List, Literal, Sequence, Union
+from typing import List, Literal
 
 
 class _FoundryPaths:
@@ -41,7 +41,7 @@ class _FoundryPaths:
     def crescendo(self) -> pathlib.Path:
         """Path to the Crescendo initialization script."""
         return self._base_path / "crescendo.py"
-    
+
     @property
     def tense(self) -> pathlib.Path:
         """Path to the Tense initialization script."""
@@ -159,7 +159,7 @@ class _ConfigurationPaths:
     @classmethod
     def list_all_paths(
         cls, subdirectory: Literal["attack.foundry", "dataset", "initialization.defaults"] | None = None
-    ) -> List[Union[str, pathlib.Path]]:
+    ) -> List[pathlib.Path]:
         """
         Get a list of all available configuration script paths.
 
@@ -196,6 +196,10 @@ class _ConfigurationPaths:
         if subdirectory is None or subdirectory == "dataset":
             # Add dataset paths
             paths.append(instance.dataset.harm_bench)
+
+        if subdirectory is None:
+            # Add scenario paths
+            paths.append(instance.scenario.foundry)
 
         if subdirectory is None or subdirectory == "initialization.defaults":
             # Add initialization defaults paths

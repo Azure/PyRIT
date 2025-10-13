@@ -17,6 +17,4 @@ default_converter_target = OpenAIChatTarget(
 )
 
 
-set_default_value(
-    class_type=PromptConverter, parameter_name="converter_target", value=default_converter_target
-)
+set_default_value(class_type=PromptConverter, parameter_name="converter_target", value=default_converter_target)

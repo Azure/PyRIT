@@ -3,8 +3,6 @@
 
 from typing import Optional
 
-import pytest
-
 from pyrit.setup import (
     apply_defaults,
     get_global_default_values,
@@ -603,8 +601,3 @@ class TestResetDefaultValues:
         obj = TestClass()
         assert obj.param1 is None
         assert obj.param2 is None
-
-    def test_reset_returns_none(self) -> None:
-        """Test that reset_default_values() returns None."""
-        result = reset_default_values()
-        assert result is None

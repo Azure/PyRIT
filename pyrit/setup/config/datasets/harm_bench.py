@@ -2,13 +2,13 @@
 # Licensed under the MIT license.
 
 """
-This configures harm bench for testing (only the first two)
+This configures harm bench for testing (only the first eight)
 
 """
 
 from pyrit.datasets import fetch_harmbench_dataset
 
-_objectives = fetch_harmbench_dataset().get_values(first=2)
+_objectives = fetch_harmbench_dataset().get_values(first=8)
 
 
 # Define the dataset configuration

@@ -23,7 +23,11 @@ class TenseConverter(LLMGenericTextConverter):
 
     @apply_defaults
     def __init__(
-        self, *, converter_target: Optional[PromptChatTarget] = None, tense: str, prompt_template: Optional[SeedPrompt] = None
+        self,
+        *,
+        converter_target: Optional[PromptChatTarget] = None,
+        tense: str,
+        prompt_template: Optional[SeedPrompt] = None,
     ):
         """
         Initializes the converter with the target chat support, tense, and optional prompt template.

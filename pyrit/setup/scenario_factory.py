@@ -104,40 +104,32 @@ class ScenarioFactory:
 
         attack_run_configs = config_dict.get("attack_runs", [])
         if not attack_run_configs:
-            raise ValueError(
-                f"Scenario configuration must include 'attack_runs' list: {config_path}"
-            )
+            raise ValueError(f"Scenario configuration must include 'attack_runs' list: {config_path}")
 
         # Validate that each attack_run config has required fields
         for i, run_config in enumerate(attack_run_configs):
             if not isinstance(run_config, dict):
-                raise ValueError(
-                    f"Attack run {i} must be a dictionary in {config_path}"
-                )
+                raise ValueError(f"Attack run {i} must be a dictionary in {config_path}")
             if "attack_config" not in run_config:
-                raise ValueError(
-                    f"Attack run {i} must include 'attack_config' in {config_path}"
-                )
+                raise ValueError(f"Attack run {i} must include 'attack_config' in {config_path}")
             if "dataset_config" not in run_config:
-                raise ValueError(
-                    f"Attack run {i} must include 'dataset_config' in {config_path}"
-                )
+                raise ValueError(f"Attack run {i} must include 'dataset_config' in {config_path}")
 
         # Create AttackRun instances for each attack run configuration
         attack_runs: List[AttackRun] = []
         for run_config in attack_run_configs:
             # Merge run-specific params with global attack_run_params
             run_specific_params = {**attack_run_params}
-            
+
             # Extract attack and dataset configs
             attack_config = run_config["attack_config"]
             dataset_config = run_config["dataset_config"]
-            
+
             # Allow run-specific parameters to be specified in the config
             for key, value in run_config.items():
                 if key not in ["attack_config", "dataset_config"]:
                     run_specific_params[key] = value
-            
+
             attack_run = AttackRun(
                 attack_config=attack_config,
                 dataset_config=dataset_config,
@@ -181,14 +173,10 @@ class ScenarioFactory:
 
         # Extract scenario_config
         if not hasattr(config_module, "scenario_config"):
-            raise AttributeError(
-                f"Configuration file must define 'scenario_config' dictionary: {config_path}"
-            )
+            raise AttributeError(f"Configuration file must define 'scenario_config' dictionary: {config_path}")
 
         scenario_config = getattr(config_module, "scenario_config")
         if not isinstance(scenario_config, dict):
-            raise ValueError(
-                f"'scenario_config' must be a dictionary in {config_path}, got {type(scenario_config)}"
-            )
+            raise ValueError(f"'scenario_config' must be a dictionary in {config_path}, got {type(scenario_config)}")
 
         return scenario_config

@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.setup import DatasetFactory, ConfigurationPaths
+from pyrit.models import PromptRequestResponse
+from pyrit.setup import ConfigurationPaths, DatasetFactory
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -18,9 +18,7 @@ class TestDatasetFactory:
 
     def test_create_dataset_with_harm_bench_config(self):
         """Test loading dataset from the harm_bench config file."""
-        dataset_params = DatasetFactory.create_dataset(
-            config_path=ConfigurationPaths.dataset.harm_bench
-        )
+        dataset_params = DatasetFactory.create_dataset(config_path=ConfigurationPaths.dataset.harm_bench)
 
         assert "objectives" in dataset_params
         assert isinstance(dataset_params["objectives"], list)
@@ -190,9 +188,7 @@ class TestDatasetFactory:
             temp_path = f.name
 
         try:
-            with pytest.raises(
-                ValueError, match="'prepended_conversation\\[0\\]' must be a PromptRequestResponse"
-            ):
+            with pytest.raises(ValueError, match="'prepended_conversation\\[0\\]' must be a PromptRequestResponse"):
                 DatasetFactory.create_dataset(config_path=temp_path)
         finally:
             Path(temp_path).unlink()
@@ -227,19 +223,16 @@ class TestDatasetFactory:
 
     def test_create_dataset_can_be_unpacked_in_execute_multi_objective(self):
         """Test that the returned dict can be unpacked into execute_multi_objective_attack_async."""
-        dataset_params = DatasetFactory.create_dataset(
-            config_path=ConfigurationPaths.dataset.harm_bench
-        )
+        dataset_params = DatasetFactory.create_dataset(config_path=ConfigurationPaths.dataset.harm_bench)
 
         # Verify the structure matches what execute_multi_objective_attack_async expects
         assert "objectives" in dataset_params
         assert isinstance(dataset_params["objectives"], list)
-        
+
         # These are the expected parameters for execute_multi_objective_attack_async
         # The dataset_params should work with: **dataset_params
-        expected_param_names = {"objectives", "prepended_conversation", "memory_labels"}
         dataset_param_names = set(dataset_params.keys())
-        
+
         # All dataset params should be valid for the function
         # (objectives is required, others are optional or extra attack params)
         assert "objectives" in dataset_param_names

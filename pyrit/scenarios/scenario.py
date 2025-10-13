@@ -116,18 +116,10 @@ class Scenario:
             try:
                 results = await attack_run.run_async(max_concurrency=max_concurrency)
                 all_results.extend(results)
-                logger.info(
-                    f"Attack run {i}/{len(self._attack_runs)} completed with {len(results)} results"
-                )
+                logger.info(f"Attack run {i}/{len(self._attack_runs)} completed with {len(results)} results")
             except Exception as e:
-                logger.error(
-                    f"Attack run {i}/{len(self._attack_runs)} failed in scenario '{self._name}': {str(e)}"
-                )
-                raise ValueError(
-                    f"Failed to execute attack run {i} in scenario '{self._name}': {str(e)}"
-                ) from e
+                logger.error(f"Attack run {i}/{len(self._attack_runs)} failed in scenario '{self._name}': {str(e)}")
+                raise ValueError(f"Failed to execute attack run {i} in scenario '{self._name}': {str(e)}") from e
 
-        logger.info(
-            f"Scenario '{self._name}' completed successfully with {len(all_results)} total results"
-        )
+        logger.info(f"Scenario '{self._name}' completed successfully with {len(all_results)} total results")
         return all_results
