@@ -98,6 +98,18 @@ class _InitializationPaths:
         self.defaults = _DefaultsPaths(self._base_path / "defaults")
 
 
+class _ScenarioPaths:
+    """Paths to scenario configuration scripts."""
+
+    def __init__(self, base_path: pathlib.Path) -> None:
+        self._base_path = base_path
+
+    @property
+    def foundry(self) -> pathlib.Path:
+        """Path to the Foundry comprehensive test scenario."""
+        return self._base_path / "foundry.py"
+
+
 class _ConfigurationPaths:
     """
     Provides hierarchical access to configuration script paths.
@@ -109,6 +121,7 @@ class _ConfigurationPaths:
         attack: Access to attack-related configuration scripts.
         dataset: Access to dataset configuration scripts.
         initialization: Access to initialization configuration scripts.
+        scenario: Access to scenario configuration scripts.
 
     Example:
         # Access an attack foundry script
@@ -119,6 +132,9 @@ class _ConfigurationPaths:
 
         # Access an initialization defaults script
         path = ConfigurationPaths.initialization.defaults.scorer_initialization
+
+        # Access a scenario configuration script
+        path = ConfigurationPaths.scenario.foundry
 
         # Use with initialize_pyrit
         initialize_pyrit(
@@ -138,11 +154,12 @@ class _ConfigurationPaths:
         self.attack = _AttackPaths(self._CONFIG_PATH / "attack")
         self.dataset = _DatasetPaths(self._CONFIG_PATH / "datasets")
         self.initialization = _InitializationPaths(self._CONFIG_PATH / "initialization")
+        self.scenario = _ScenarioPaths(self._CONFIG_PATH / "scenarios")
 
     @classmethod
     def list_all_paths(
         cls, subdirectory: Literal["attack.foundry", "dataset", "initialization.defaults"] | None = None
-    ) -> List[Union[str, pathlib.Path]]:
+    ) -> List[pathlib.Path]:
         """
         Get a list of all available configuration script paths.
 

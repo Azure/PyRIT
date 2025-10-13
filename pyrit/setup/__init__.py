@@ -5,6 +5,7 @@
 
 from pyrit.setup.attack_factory import AttackFactory, create_attack_from_config
 from pyrit.setup.dataset_factory import DatasetFactory, create_dataset_from_config
+from pyrit.setup.scenario_factory import ScenarioFactory
 from pyrit.setup.configuration_paths import ConfigurationPaths
 from pyrit.setup.initialization import (
     initialize_pyrit,
@@ -26,6 +27,7 @@ __all__ = [
     "create_attack_from_config",
     "DatasetFactory",
     "create_dataset_from_config",
+    "ScenarioFactory",
     "AZURE_SQL",
     "SQLITE",
     "IN_MEMORY",
