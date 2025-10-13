@@ -45,7 +45,7 @@ class AttackRun:
         ...     objective_target=target,
         ...     memory_labels={"test": "run1"}
         ... )
-        >>> results = await attack_run.run_async()
+        >>> results = await attack_run.run_async(max_concurrency=5)
     """
 
     def __init__(
@@ -69,7 +69,7 @@ class AttackRun:
             memory_labels (Optional[Dict[str, str]]): Additional labels to apply to prompts.
                 These labels help track and categorize the attack run in memory.
             **attack_execute_params (Any): Additional parameters to pass to the attack
-                execution method (e.g., max_concurrency, custom_prompts).
+                execution method (e.g., custom_prompts).
 
         Raises:
             ValueError: If configurations are invalid or cannot be loaded.
@@ -177,7 +177,7 @@ class AttackRun:
             ValueError: If the attack execution fails.
 
         Example:
-            >>> results = await attack_run.run_async(max_concurrency=3)
+            >>> results = await attack_run.run_async()
             >>> for result in results:
             ...     print(f"Objective: {result.objective}")
             ...     print(f"Outcome: {result.outcome}")

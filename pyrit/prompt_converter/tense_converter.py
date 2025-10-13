@@ -9,7 +9,7 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt
 from pyrit.prompt_converter import LLMGenericTextConverter
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.setup import apply_defaults
+from pyrit.setup.pyrit_default_value import apply_defaults
 
 logger = logging.getLogger(__name__)
 

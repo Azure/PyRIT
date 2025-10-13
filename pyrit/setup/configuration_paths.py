@@ -159,7 +159,7 @@ class _ConfigurationPaths:
     @classmethod
     def list_all_paths(
         cls, subdirectory: Literal["attack.foundry", "dataset", "initialization.defaults"] | None = None
-    ) -> List[pathlib.Path]:
+    ) -> List[Union[str, pathlib.Path]]:
         """
         Get a list of all available configuration script paths.
 
