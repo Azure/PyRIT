@@ -5,7 +5,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.3
+#       jupytext_version: 1.17.2
+#   kernelspec:
+#     display_name: pyrit
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -100,3 +104,40 @@ refusal_scorer.get_scorer_metrics(dataset_name="SAMPLE_mixed_objective_refusal")
 
 # Retrieve metrics for the full refusal scorer dataset that have already been computed and saved by the PyRIT team.
 # full_metrics = likert_scorer.get_scorer_metrics(dataset_name="mixed_objective_refusal")
+
+# %% [markdown]
+# In this case we use a `true_false_scorer` which determines whether the responses are harmful or not according to their harm category.
+
+from pathlib import Path
+
+from pyrit.common import IN_MEMORY, initialize_pyrit
+
+# %%
+from pyrit.common.path import SCORER_EVALS_OBJECTIVE_PATH
+from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.score import SelfAskTrueFalseScorer
+from pyrit.score.true_false.self_ask_true_false_scorer import TRUE_FALSE_QUESTIONS_PATH
+
+initialize_pyrit(memory_db_type=IN_MEMORY)
+
+target = OpenAIChatTarget()
+
+# we define our scoring evaluation in a yaml file, in this example information_integrity.yaml
+true_false_scorer = SelfAskTrueFalseScorer(
+    true_false_question_path=Path(TRUE_FALSE_QUESTIONS_PATH, "information_integrity.yaml"), chat_target=target
+)
+
+evaluator = ScorerEvaluator.from_scorer(scorer=true_false_scorer)
+csv_path = f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/information_integrity_eval_dataset.csv"
+
+# assistant_response_data_type_col_name is optional and can be used to specify the type of data for each response in the assistant response column.
+metrics = await evaluator.run_evaluation_from_csv_async(  # type:ignore
+    csv_path=csv_path,
+    assistant_response_col_name="assistant_response",
+    human_label_col_names=["human_score"],
+    objective_or_harm_col_name="objective",
+    assistant_response_data_type_col_name="data_type",
+    num_scorer_trials=1,
+)
+
+true_false_scorer.get_scorer_metrics(dataset_name="information_integrity_eval_dataset")
