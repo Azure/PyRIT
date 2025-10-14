@@ -126,6 +126,7 @@ API Reference
     fetch_examples
     fetch_forbidden_questions_dataset
     fetch_harmbench_dataset
+    fetch_harmbench_multimodal_dataset_async
     fetch_librAI_do_not_answer_dataset
     fetch_llm_latent_adversarial_training_harmful_dataset
     fetch_jbb_behaviors_by_harm_category
@@ -481,13 +482,12 @@ API Reference
     AzureContentFilterScorer
     BatchScorer
     ContentClassifierPaths
-    CompositeScorer
+    FloatScaleScorer
     FloatScaleThresholdScorer
     GandalfScorer
     HarmHumanLabeledEntry
     HarmScorerEvaluator
     HarmScorerMetrics
-    HumanInTheLoopScorer
     HumanInTheLoopScorerGradio
     HumanLabeledDataset
     HumanLabeledEntry
@@ -499,21 +499,26 @@ API Reference
     ObjectiveHumanLabeledEntry
     ObjectiveScorerEvaluator
     ObjectiveScorerMetrics
+    PlagiarismMetric
     PlagiarismScorer
     PromptShieldScorer
     QuestionAnswerScorer
     Scorer
     ScorerEvaluator
     ScorerMetrics
-    ScoreAggregator
+    ScorerPromptValidator
     SelfAskCategoryScorer
-    SelfAskGeneralScorer
+    SelfAskGeneralFloatScaleScorer
+    SelfAskGeneralTrueFalseScorer
     SelfAskLikertScorer
+    SelfAskQuestionAnswerScorer
     SelfAskRefusalScorer
     SelfAskScaleScorer
     SelfAskTrueFalseScorer
-    SelfAskQuestionAnswerScorer
     SubStringScorer
+    TrueFalseCompositeScorer
     TrueFalseInverterScorer
     TrueFalseQuestion
     TrueFalseQuestionPaths
+    TrueFalseScoreAggregator
+    TrueFalseScorer

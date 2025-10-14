@@ -6,7 +6,7 @@ chapters:
     - file: cookbooks/1_sending_prompts
     - file: cookbooks/2_precomputing_turns
     - file: cookbooks/3_copyright_violations
-    - file: cookbooks/4_benchmarking_models
+    - file: cookbooks/4_testing_bias
   - file: setup/install_pyrit
     sections:
     - file: setup/jupyter_setup
@@ -98,7 +98,6 @@ chapters:
       - file: code/scoring/insecure_code_scorer
       - file: code/scoring/look_back_scorer
       - file: code/scoring/prompt_shield_scorer
-      - file: code/scoring/human_in_the_loop_scorer_gradio
       - file: code/scoring/generic_scorers
       - file: code/scoring/scorer_evals
     - file: code/memory/0_memory
@@ -113,11 +112,15 @@ chapters:
       - file: code/memory/8_seed_prompt_database
       - file: code/memory/9_exporting_data
       - file: code/memory/10_schema_diagram.md
+      - file: code/memory/11_harm_categories
       - file: code/memory/azure_embeddings
       - file: code/memory/chat_message
     - file: code/auxiliary_attacks/0_auxiliary_attacks
       sections:
       - file: code/auxiliary_attacks/1_gcg_azure_ml
+    - file: code/scanner/0_scanner
+      sections:
+      - file: code/scanner/1_configuration
   - file: deployment/README
     sections:
     - file: deployment/deploy_hf_model_aml

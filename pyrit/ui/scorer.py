@@ -10,10 +10,12 @@ GRADIO_POLLING_RATE = 0.5  # Polling Rate by the Gradio UI
 
 
 class GradioApp:
+
+    connect_status: ConnectionStatusHandler
+
     def __init__(self):
         self.i = 0
         self.rpc_client = RPCClient(self._disconnected_rpc_callback)
-        self.connect_status = None
         self.url = ""
 
     def start_gradio(self, open_browser=False):
@@ -26,8 +28,8 @@ class GradioApp:
                 prompt = gr.Markdown("Prompt: ")
                 prompt.height = "200px"
                 with gr.Row():
-                    safe = gr.Button("Safe")
-                    unsafe = gr.Button("Unsafe")
+                    safe = gr.Button("True")
+                    unsafe = gr.Button("False")
 
                     safe.click(
                         fn=lambda: [gr.update(interactive=False)] * 2 + [""], outputs=[safe, unsafe, next_prompt_state]

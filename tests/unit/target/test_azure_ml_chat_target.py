@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from httpx import HTTPStatusError
 from openai import RateLimitError
-from unit.mocks import get_sample_conversations
+from unit.mocks import get_image_request_piece, get_sample_conversations
 
 from pyrit.chat_message_normalizer import (
     ChatMessageNop,
@@ -22,7 +22,8 @@ from pyrit.prompt_target import AzureMLChatTarget
 
 @pytest.fixture
 def sample_conversations() -> MutableSequence[PromptRequestPiece]:
-    return get_sample_conversations()
+    conversations = get_sample_conversations()
+    return PromptRequestResponse.flatten_to_prompt_request_pieces(conversations)
 
 
 @pytest.fixture
@@ -195,21 +196,21 @@ async def test_complete_chat_async_bad_json_response(aml_online_chat: AzureMLCha
 
 
 @pytest.mark.asyncio
-async def test_azure_ml_validate_request_length(
-    aml_online_chat: AzureMLChatTarget, sample_conversations: MutableSequence[PromptRequestPiece]
-):
-    request = PromptRequestResponse(request_pieces=sample_conversations)
+async def test_azure_ml_validate_request_length(aml_online_chat: AzureMLChatTarget):
+    request = PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(role="user", conversation_id="123", original_value="test"),
+            PromptRequestPiece(role="user", conversation_id="123", original_value="test2"),
+        ]
+    )
+
     with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
         await aml_online_chat.send_prompt_async(prompt_request=request)
 
 
 @pytest.mark.asyncio
-async def test_azure_ml_validate_prompt_type(
-    aml_online_chat: AzureMLChatTarget, sample_conversations: MutableSequence[PromptRequestPiece]
-):
-    request_piece = sample_conversations[0]
-    request_piece.converted_value_data_type = "image_path"
-    request = PromptRequestResponse(request_pieces=[request_piece])
+async def test_azure_ml_validate_prompt_type(aml_online_chat: AzureMLChatTarget):
+    request = PromptRequestResponse(request_pieces=[get_image_request_piece()])
     with pytest.raises(ValueError, match="This target only supports text prompt input."):
         await aml_online_chat.send_prompt_async(prompt_request=request)
 

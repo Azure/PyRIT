@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from azure.storage.blob.aio import BlobClient as AsyncBlobClient
 from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
-from unit.mocks import get_sample_conversations
+from unit.mocks import get_image_request_piece, get_sample_conversations
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import AzureBlobStorageTarget
@@ -16,7 +16,8 @@ from pyrit.prompt_target import AzureBlobStorageTarget
 
 @pytest.fixture
 def sample_entries() -> MutableSequence[PromptRequestPiece]:
-    return get_sample_conversations()
+    conversations = get_sample_conversations()
+    return PromptRequestResponse.flatten_to_prompt_request_pieces(conversations)
 
 
 @pytest.fixture
@@ -60,10 +61,14 @@ def test_initialization_with_no_container_url_raises():
 async def test_azure_blob_storage_validate_request_length(
     mock_upload_async,
     azure_blob_storage_target: AzureBlobStorageTarget,
-    sample_entries: MutableSequence[PromptRequestPiece],
 ):
     mock_upload_async.return_value = None
-    request = PromptRequestResponse(request_pieces=sample_entries)
+    request = PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(role="user", conversation_id="123", original_value="test1"),
+            PromptRequestPiece(role="user", conversation_id="123", original_value="test2"),
+        ]
+    )
     with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
         await azure_blob_storage_target.send_prompt_async(prompt_request=request)
 
@@ -73,12 +78,9 @@ async def test_azure_blob_storage_validate_request_length(
 async def test_azure_blob_storage_validate_prompt_type(
     mock_upload_async,
     azure_blob_storage_target: AzureBlobStorageTarget,
-    sample_entries: MutableSequence[PromptRequestPiece],
 ):
     mock_upload_async.return_value = None
-    request_piece = sample_entries[0]
-    request_piece.converted_value_data_type = "image_path"
-    request = PromptRequestResponse(request_pieces=[request_piece])
+    request = PromptRequestResponse(request_pieces=[get_image_request_piece()])
     with pytest.raises(ValueError, match="This target only supports text and url prompt input."):
         await azure_blob_storage_target.send_prompt_async(prompt_request=request)
 

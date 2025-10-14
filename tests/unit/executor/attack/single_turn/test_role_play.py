@@ -20,7 +20,7 @@ from pyrit.models.attack_result import AttackResult
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.score import Scorer
+from pyrit.score import Scorer, TrueFalseScorer
 
 
 @pytest.fixture
@@ -44,8 +44,7 @@ def mock_adversarial_chat_target():
 @pytest.fixture
 def mock_scorer():
     """Create a mock true/false scorer for testing"""
-    scorer = MagicMock(spec=Scorer)
-    scorer.scorer_type = "true_false"
+    scorer = MagicMock(spec=TrueFalseScorer)
     scorer.score_text_async = AsyncMock()
     return scorer
 
@@ -137,8 +136,7 @@ class TestRolePlayAttackInitialization:
     ):
         """Test RolePlayAttack initialization with an invalid scorer type"""
         scorer = MagicMock(spec=Scorer)
-        scorer.scorer_type = "float_scale"
-        with pytest.raises(ValueError, match="Objective scorer must be a true/false scorer"):
+        with pytest.raises(ValueError, match="Objective scorer must be a TrueFalseScorer"):
             RolePlayAttack(
                 objective_target=mock_objective_target,
                 adversarial_chat=mock_adversarial_chat_target,
@@ -261,10 +259,10 @@ class TestRolePlayAttack:
         success_score = Score(
             score_type="true_false",
             score_value="true",
-            score_category="test",
+            score_category=["test"],
             score_value_description="Test success score",
             score_rationale="Test rationale for success",
-            score_metadata="{}",
+            score_metadata={},
             prompt_request_response_id=str(uuid.uuid4()),
         )
 
@@ -280,7 +278,7 @@ class TestRolePlayAttack:
 
         # Mock the scoring method to return the success score
         with patch(
-            "pyrit.executor.attack.single_turn.prompt_sending.Scorer.score_response_with_objective_async",
+            "pyrit.executor.attack.single_turn.prompt_sending.Scorer.score_response_async",
             new_callable=AsyncMock,
             return_value={"auxiliary_scores": [], "objective_scores": [success_score]},
         ):

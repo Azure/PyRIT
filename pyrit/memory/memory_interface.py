@@ -11,7 +11,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
 
-from sqlalchemy import MetaData, and_
+from sqlalchemy import MetaData, and_, exists, func
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql.elements import ColumnElement
@@ -128,22 +128,22 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _get_prompt_pieces_attack_conditions(self, *, attack_id: str):
+    def _get_prompt_pieces_attack_conditions(self, *, attack_id: str) -> Any:
         """
         Returns a condition to retrieve based on attack ID.
         """
 
     @abc.abstractmethod
-    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]):
+    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> Any:
         """
-        Returns a list of conditions for filtering seed prompt entries based on prompt metadata.
+        Returns a condition for filtering seed prompt entries based on prompt metadata.
 
         Args:
-            prompt_metadata (dict[str, str | int]): A free-form dictionary for tagging prompts with custom metadata.
+            metadata (dict[str, str | int]): A free-form dictionary for tagging prompts with custom metadata.
                 This includes information that is useful for the specific target you're probing, such as encoding data.
 
         Returns:
-            list: A list of conditions for filtering memory entries based on prompt metadata.
+            Any: A SQLAlchemy condition for filtering memory entries based on prompt metadata.
         """
 
     @abc.abstractmethod
@@ -956,6 +956,8 @@ class MemoryInterface(abc.ABC):
         objective: Optional[str] = None,
         objective_sha256: Optional[Sequence[str]] = None,
         outcome: Optional[str] = None,
+        targeted_harm_categories: Optional[Sequence[str]] = None,
+        labels: Optional[dict[str, str]] = None,
     ) -> Sequence[AttackResult]:
         """
         Retrieves a list of AttackResult objects based on the specified filters.
@@ -968,7 +970,16 @@ class MemoryInterface(abc.ABC):
                 Defaults to None.
             outcome (Optional[str], optional): The outcome to filter by (success, failure, undetermined).
                 Defaults to None.
-
+            targeted_harm_categories (Optional[Sequence[str]], optional):
+                A list of targeted harm categories to filter results by.
+                These targeted harm categories are associated with the prompts themselves,
+                meaning they are harm(s) we're trying to elicit with the prompt,
+                not necessarily one(s) that were found in the response.
+                By providing a list, this means ALL categories in the list must be present.
+                Defaults to None.
+            labels (Optional[dict[str, str]], optional): A dictionary of memory labels to filter results by.
+                These labels are associated with the prompts themselves, used for custom tagging and tracking.
+                Defaults to None.
         Returns:
             Sequence[AttackResult]: A list of AttackResult objects that match the specified filters.
         """
@@ -989,6 +1000,39 @@ class MemoryInterface(abc.ABC):
         if outcome:
             conditions.append(AttackResultEntry.outcome == outcome)
 
+        if targeted_harm_categories:
+            # construct query to ensure ALL categories must be present in the SAME conversation
+            targeted_harm_categories_subquery = exists().where(
+                and_(
+                    PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
+                    # Exclude empty strings, None, and empty lists
+                    PromptMemoryEntry.targeted_harm_categories.isnot(None),
+                    PromptMemoryEntry.targeted_harm_categories != "",
+                    PromptMemoryEntry.targeted_harm_categories != "[]",
+                    and_(
+                        *[
+                            func.json_extract(PromptMemoryEntry.targeted_harm_categories, "$").like(f'%"{category}"%')
+                            for category in targeted_harm_categories
+                        ]
+                    ),
+                )
+            )
+            conditions.append(targeted_harm_categories_subquery)
+        if labels:
+            # ALL labels must be present in the SAME conversation
+            labels_subquery = exists().where(
+                and_(
+                    PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
+                    PromptMemoryEntry.labels.isnot(None),
+                    and_(
+                        *[
+                            func.json_extract(PromptMemoryEntry.labels, f"$.{key}") == value
+                            for key, value in labels.items()
+                        ]
+                    ),
+                )
+            )
+            conditions.append(labels_subquery)
         try:
             entries: Sequence[AttackResultEntry] = self._query_entries(
                 AttackResultEntry, conditions=and_(*conditions) if conditions else None
