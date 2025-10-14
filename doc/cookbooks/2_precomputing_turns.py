@@ -6,10 +6,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.3
-#   kernelspec:
-#     display_name: pyrit-312
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -128,7 +124,10 @@ for objective in conversation_objectives:
 # Notice in this run, when we print the conversation, the first N-1 turns are the same, but the last turn is different!
 
 # %%
+from typing import List
+
 from pyrit.memory import CentralMemory
+from pyrit.models.attack_result import AttackResult
 
 memory = CentralMemory.get_memory_instance()
 
@@ -168,17 +167,19 @@ memory = CentralMemory.get_memory_instance()
 pieces = memory.get_prompt_request_pieces(labels=memory_labels)
 conversation_ids = set(piece.conversation_id for piece in pieces)
 
-attack_results = [result for cid in conversation_ids for result in memory.get_attack_results(conversation_id=cid)]
+attack_results: List[AttackResult] = [
+    result for cid in conversation_ids for result in memory.get_attack_results(conversation_id=cid)
+]
 
 conversation_starters = {}
 
-for result in attack_results:
+for attack_result in attack_results:
     new_conversation = memory.duplicate_conversation_excluding_last_turn(
-        conversation_id=result.conversation_id,
+        conversation_id=attack_result.conversation_id,
         new_attack_id=new_attack.get_identifier()["id"],
     )
 
-    conversation_starters[result.objective] = list(memory.get_conversation(conversation_id=new_conversation))
+    conversation_starters[attack_result.objective] = list(memory.get_conversation(conversation_id=new_conversation))
 
 
 for objective, conversation in conversation_starters.items():
