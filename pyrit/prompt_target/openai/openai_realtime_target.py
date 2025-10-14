@@ -59,8 +59,10 @@ class RealtimeTarget(OpenAITarget):
     ) -> None:
         """
         RealtimeTarget class for Azure OpenAI Realtime API.
+
         Read more at https://learn.microsoft.com/en-us/azure/ai-services/openai/realtime-audio-reference
-            and https://platform.openai.com/docs/guides/realtime-websocket
+        and https://platform.openai.com/docs/guides/realtime-websocket
+
         Args:
             model_name (str, Optional): The name of the model.
             endpoint (str, Optional): The target URL for the OpenAI service.
@@ -188,7 +190,7 @@ class RealtimeTarget(OpenAITarget):
             self.set_system_prompt(
                 system_prompt=self.system_prompt,
                 conversation_id=convo_id,
-                orchestrator_identifier=self.get_identifier(),
+                attack_identifier=self.get_identifier(),
             )
 
         websocket = self._existing_conversation[convo_id]

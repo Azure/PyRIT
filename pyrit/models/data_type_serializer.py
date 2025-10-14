@@ -114,7 +114,7 @@ class DataTypeSerializer(abc.ABC):
         """
         if self._is_azure_storage_url(self.value):
             # Scenarios where a user utilizes an in-memory DuckDB but also needs to interact
-            # with an Azure Storage Account, ex., XPIAOrchestrator.
+            # with an Azure Storage Account, ex., XPIAWorkflow.
             return self._memory.results_storage_io
         return DiskStorageIO()
 

@@ -1,4 +1,4 @@
-# Memory Schema Diagram
+# 10. Memory Schema Diagram
 
 Our memory contains multiple components. This diagram  shows a mapping of our database schema and how our components map together! The arrows indicate the values that map one database to another.
 
@@ -41,7 +41,7 @@ flowchart LR
         P_prompt_metadata["prompt_metadata (VARCHAR)"]
         P_converter_identifiers["converter_identifiers (VARCHAR)"]
         P_prompt_target_identifier["prompt_target_identifier (VARCHAR)"]
-        P_orchestrator_identifier["orchestrator_identifier (VARCHAR)"]
+        P_attack_identifier["attack_identifier (VARCHAR)"]
         P_response_error["response_error (VARCHAR)"]
         P_converted_value_data_type["converted_value_data_type (VARCHAR)"]
         P_converted_value["converted_value (VARCHAR)"]
@@ -64,10 +64,10 @@ flowchart LR
     S_value_sha256 -- N:N relationship to query --> P_original_value_sha256
     P_id -- 1:N relationship to query --> Sc_prompt_request_response_id
 
-    style S_value_sha256 fill:#E1BEE7
-    style P_id fill:#C8E6C9
-    style P_original_value_sha256 fill:#E1BEE7
-    style Sc_prompt_request_response_id fill:#C8E6C9
-    linkStyle 0 stroke:#E1BEE7,fill:none
-    linkStyle 1 stroke:#C8E6C9
+    style S_value_sha256 fill:#ff8800ff
+    style P_id fill:#14a519ff
+    style P_original_value_sha256 fill:#ff8800ff
+    style Sc_prompt_request_response_id fill:#14a519ff
+    linkStyle 0 stroke:#ff8800ff,fill:none
+    linkStyle 1 stroke:#14a519ff
 ```

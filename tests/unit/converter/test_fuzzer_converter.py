@@ -28,7 +28,7 @@ from pyrit.prompt_converter import (
         FuzzerSimilarConverter,
     ],
 )
-def test_converter_init_templates_not_null(converter_class, duckdb_instance) -> None:
+def test_converter_init_templates_not_null(converter_class, sqlite_instance) -> None:
     prompt_target = MockPromptTarget()
     converter = converter_class(converter_target=prompt_target)
     assert converter.system_prompt
@@ -57,7 +57,7 @@ def test_converter_init_templates_not_null(converter_class, duckdb_instance) -> 
     [True, False],
 )
 async def test_converter_send_prompt_async_bad_json_exception_retries(
-    converted_value, converter_class, update, duckdb_instance
+    converted_value, converter_class, update, sqlite_instance
 ):
     prompt_target = MockPromptTarget()
 
@@ -78,7 +78,7 @@ async def test_converter_send_prompt_async_bad_json_exception_retries(
                     original_value_data_type="text",
                     converted_value_data_type="text",
                     prompt_target_identifier={"target": "target-identifier"},
-                    orchestrator_identifier={"test": "test"},
+                    attack_identifier={"test": "test"},
                     labels={"test": "test"},
                 )
             ]
@@ -110,7 +110,7 @@ async def test_converter_send_prompt_async_bad_json_exception_retries(
         FuzzerSimilarConverter,
     ],
 )
-def test_fuzzer_converter_input_supported(converter_class, duckdb_instance) -> None:
+def test_fuzzer_converter_input_supported(converter_class, sqlite_instance) -> None:
     prompt_target = MockPromptTarget()
     converter = converter_class(converter_target=prompt_target)
     assert converter.input_supported("text") is True

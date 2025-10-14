@@ -9,7 +9,7 @@ from unittest import mock
 import pytest
 from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 
-from pyrit.common import AZURE_SQL, DUCK_DB, IN_MEMORY, initialize_pyrit
+from pyrit.common import AZURE_SQL, IN_MEMORY, SQLITE, initialize_pyrit
 from pyrit.common.initialization import MemoryDatabaseType, _load_environment_files
 
 
@@ -89,7 +89,7 @@ def test_load_environment_files_override(mock_exists, mock_load_dotenv):
     "memory_db_type,memory_instance_kwargs",
     [
         (IN_MEMORY, {"verbose": True}),
-        (DUCK_DB, {"verbose": True}),
+        (SQLITE, {"verbose": True}),
         (
             AZURE_SQL,
             {
@@ -132,6 +132,6 @@ def test_validate_memory_database_type():
     literal_args = get_args(MemoryDatabaseType)
     assert len(literal_args) == 3
 
-    approved_values = ["InMemory", "DuckDB", "AzureSQL"]
+    approved_values = ["InMemory", "SQLite", "AzureSQL"]
     for value in approved_values:
         assert value in literal_args

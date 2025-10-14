@@ -9,7 +9,7 @@ from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
 
 from azure.core.credentials import AccessToken
 from azure.identity import DefaultAzureCredential
-from sqlalchemy import MetaData, create_engine, event, text
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload, sessionmaker
@@ -202,7 +202,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         self._insert_entries(entries=embedding_data)
 
-    def _get_prompt_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]):
+    def _get_prompt_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> list:
         json_validation = "ISJSON(labels) = 1"
         json_conditions = " AND ".join([f"JSON_VALUE(labels, '$.{key}') = :{key}" for key in memory_labels])
         # Combine both conditions
@@ -210,12 +210,13 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         # Create SQL condition using SQLAlchemy's text() with bindparams
         # for safe parameter passing, preventing SQL injection
-        return text(conditions).bindparams(**{key: str(value) for key, value in memory_labels.items()})
+        condition = text(conditions).bindparams(**{key: str(value) for key, value in memory_labels.items()})
+        return [condition]
 
-    def _get_prompt_pieces_orchestrator_conditions(self, *, orchestrator_id: str):
-        return text(
-            "ISJSON(orchestrator_identifier) = 1 AND JSON_VALUE(orchestrator_identifier, '$.id') = :json_id"
-        ).bindparams(json_id=str(orchestrator_id))
+    def _get_prompt_pieces_attack_conditions(self, *, attack_id: str) -> Any:
+        return text("ISJSON(attack_identifier) = 1 AND JSON_VALUE(attack_identifier, '$.id') = :json_id").bindparams(
+            json_id=str(attack_id)
+        )
 
     def _get_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]):
         json_validation = "ISJSON(prompt_metadata) = 1"
@@ -225,13 +226,14 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         # Create SQL condition using SQLAlchemy's text() with bindparams
         # for safe parameter passing, preventing SQL injection
-        return text(conditions).bindparams(**{key: str(value) for key, value in prompt_metadata.items()})
+        condition = text(conditions).bindparams(**{key: str(value) for key, value in prompt_metadata.items()})
+        return [condition]
 
-    def _get_prompt_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]):
+    def _get_prompt_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list:
         return self._get_metadata_conditions(prompt_metadata=prompt_metadata)
 
-    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]):
-        return self._get_metadata_conditions(prompt_metadata=metadata)
+    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> Any:
+        return self._get_metadata_conditions(prompt_metadata=metadata)[0]
 
     def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
         """
@@ -372,14 +374,3 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Base.metadata.drop_all(self.engine)
         # Recreate the tables
         Base.metadata.create_all(self.engine, checkfirst=True)
-
-    def print_schema(self):
-        """Prints the schema of all tables in the Azure SQL database."""
-        metadata = MetaData()
-        metadata.reflect(bind=self.engine)
-
-        for table_name in metadata.tables:
-            table = metadata.tables[table_name]
-            print(f"Schema for {table_name}:")
-            for column in table.columns:
-                print(f"  Column {column.name} ({column.type})")

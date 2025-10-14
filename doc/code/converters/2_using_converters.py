@@ -5,21 +5,17 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
 # # 2. Using Prompt Converters
 #
-# Although converters can be used on their own, they should be thought of as a piece in the pipeine. Typically any orchestrator will have arguments so that prompts can be converted before being sent to the target. They can be stacked, use LLMs, and are a powerful tool.
+# Although converters can be used on their own, they should be thought of as a piece in the pipeine. Typically any attack will have arguments so that prompts can be converted before being sent to the target. They can be stacked, use LLMs, and are a powerful tool.
 #
 # Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
 #
-# ## Stacking Converters with PromptSendingOrchestrator
+# ## Stacking Converters with PromptSendingAttack
 #
 # In the following example, a TextTarget is used so these prompts are simply printed and added to memory. This can be useful if you are red teaming something and need to manually enter prompts. However, the target can be replaced with any other [target](../targets/0_prompt_targets.md). E.g., if you have API access you can add a target there.
 #
@@ -28,7 +24,11 @@
 
 # %%
 from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.executor.attack import (
+    AttackConverterConfig,
+    ConsoleAttackResultPrinter,
+    PromptSendingAttack,
+)
 from pyrit.prompt_converter import StringJoinConverter, VariationConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import OpenAIChatTarget, TextTarget
@@ -45,8 +45,15 @@ converters = PromptConverterConfiguration.from_converters(
     converters=[prompt_variation_converter, StringJoinConverter()]
 )
 
+converter_config = AttackConverterConfig(request_converters=converters)
 
 target = TextTarget()
-orchestrator = PromptSendingOrchestrator(objective_target=target, request_converter_configurations=converters)
+attack = PromptSendingAttack(
+    objective_target=target,
+    attack_converter_config=converter_config,
+)
 
-await orchestrator.run_attack_async(objective=objective)  # type: ignore
+result = await attack.execute_async(objective=objective)  # type: ignore
+
+printer = ConsoleAttackResultPrinter()
+await printer.print_conversation_async(result=result)  # type: ignore

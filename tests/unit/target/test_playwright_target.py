@@ -52,9 +52,14 @@ def test_playwright_initializes(mock_interaction_func, mock_page):
 
 
 @pytest.mark.asyncio
-async def test_playwright_validate_request_length(sample_conversations, mock_interaction_func, mock_page):
+async def test_playwright_validate_request_length(mock_interaction_func, mock_page):
     target = PlaywrightTarget(interaction_func=mock_interaction_func, page=mock_page)
-    request = PromptRequestResponse(request_pieces=sample_conversations)
+    request = PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(role="user", conversation_id="123", original_value="test1"),
+            PromptRequestPiece(role="user", conversation_id="123", original_value="test2"),
+        ]
+    )
     with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
         await target.send_prompt_async(prompt_request=request)
 

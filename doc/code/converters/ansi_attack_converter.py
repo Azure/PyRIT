@@ -1,8 +1,21 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.17.3
+# ---
+
 # %% [markdown]
-# # Generating Perturbed Prompts Using the AnsiAttackConverter
+# # AnsiAttackConverter - optional
+#
+# ## Generating Perturbed Prompts Using the AnsiAttackConverter
 #
 # This script demonstrates how to use the `AnsiAttackConverter` to generate and process prompts that involve ANSI escape sequences.
-# The converter interacts with the Azure OpenAI API via the `PromptSendingOrchestrator`, sending prompts asynchronously.
+# The converter interacts with the Azure OpenAI API via the `PromptSendingAttack`, sending prompts asynchronously.
 #
 # This approach can handle both practical uses of ANSI escape codes and attack-oriented scenarios for testing purposes.
 #
@@ -13,7 +26,12 @@
 
 # %%
 from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.executor.attack import (
+    AttackConverterConfig,
+    AttackExecutor,
+    ConsoleAttackResultPrinter,
+    PromptSendingAttack,
+)
 from pyrit.prompt_converter import AnsiAttackConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import OpenAIChatTarget
@@ -51,14 +69,22 @@ ansi_converter = PromptConverterConfiguration.from_converters(
     ]
 )
 
+converter_config = AttackConverterConfig(
+    request_converters=ansi_converter,
+)
+
 # Final target that receives the processed prompt
 prompt_target = OpenAIChatTarget()
 
-orchestrator = PromptSendingOrchestrator(
-    objective_target=prompt_target, request_converter_configurations=ansi_converter
+attack = PromptSendingAttack(
+    objective_target=prompt_target,
+    attack_converter_config=converter_config,
 )
 
-results = await orchestrator.run_attacks_async(objectives=objectives)  # type: ignore
+results = await AttackExecutor().execute_multi_objective_attack_async(  # type: ignore
+    attack=attack,
+    objectives=objectives,
+)
 
 for result in results:
-    await result.print_conversation_async()  # type: ignore
+    await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore

@@ -12,7 +12,6 @@ from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 
 from pyrit.memory import AzureSQLMemory, CentralMemory, PromptMemoryEntry
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
 
 
@@ -68,7 +67,7 @@ class MockPromptTarget(PromptChatTarget):
         *,
         system_prompt: str,
         conversation_id: str,
-        orchestrator_identifier: Optional[dict[str, str]] = None,
+        attack_identifier: Optional[dict[str, str]] = None,
         labels: Optional[dict[str, str]] = None,
     ) -> None:
         self.system_prompt = system_prompt
@@ -79,7 +78,7 @@ class MockPromptTarget(PromptChatTarget):
                     original_value=system_prompt,
                     converted_value=system_prompt,
                     conversation_id=conversation_id,
-                    orchestrator_identifier=orchestrator_identifier,
+                    attack_identifier=attack_identifier,
                     labels=labels,
                 ).to_prompt_request_response()
             )
@@ -92,7 +91,7 @@ class MockPromptTarget(PromptChatTarget):
             role="assistant",
             original_value="default",
             conversation_id=prompt_request.request_pieces[0].conversation_id,
-            orchestrator_identifier=prompt_request.request_pieces[0].orchestrator_identifier,
+            attack_identifier=prompt_request.request_pieces[0].attack_identifier,
             labels=prompt_request.request_pieces[0].labels,
         ).to_prompt_request_response()
 
@@ -179,12 +178,15 @@ def get_test_request_piece() -> PromptRequestPiece:
     )
 
 
-def get_sample_conversations() -> MutableSequence[PromptRequestPiece]:
+def get_sample_conversations() -> MutableSequence[PromptRequestResponse]:
     with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
-        orchestrator1 = Orchestrator()
-        orchestrator2 = Orchestrator()
 
         conversation_1 = str(uuid.uuid4())
+        attack_identifier = {
+            "__type__": "MockPromptTarget",
+            "__module__": "unit.mocks",
+            "id": str(uuid.uuid4()),
+        }
 
         return [
             PromptRequestPiece(
@@ -193,29 +195,30 @@ def get_sample_conversations() -> MutableSequence[PromptRequestPiece]:
                 converted_value="Hello, how are you?",
                 conversation_id=conversation_1,
                 sequence=0,
-                orchestrator_identifier=orchestrator1.get_identifier(),
-            ),
+                attack_identifier=attack_identifier,
+            ).to_prompt_request_response(),
             PromptRequestPiece(
                 role="assistant",
                 original_value="original prompt text",
                 converted_value="I'm fine, thank you!",
                 conversation_id=conversation_1,
-                sequence=0,
-                orchestrator_identifier=orchestrator1.get_identifier(),
-            ),
+                sequence=1,
+                attack_identifier=attack_identifier,
+            ).to_prompt_request_response(),
             PromptRequestPiece(
                 role="assistant",
                 original_value="original prompt text",
                 converted_value="I'm fine, thank you!",
                 conversation_id=str(uuid.uuid4()),
-                orchestrator_identifier=orchestrator2.get_identifier(),
-            ),
+                attack_identifier=attack_identifier,
+            ).to_prompt_request_response(),
         ]
 
 
 def get_sample_conversation_entries() -> Sequence[PromptMemoryEntry]:
     conversations = get_sample_conversations()
-    return [PromptMemoryEntry(entry=conversation) for conversation in conversations]
+    pieces = PromptRequestResponse.flatten_to_prompt_request_pieces(conversations)
+    return [PromptMemoryEntry(entry=piece) for piece in pieces]
 
 
 def openai_chat_response_json_dict() -> dict:

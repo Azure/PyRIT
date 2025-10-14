@@ -9,7 +9,7 @@ from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestPiece
 from pyrit.models.chat_message import ChatMessage
 from pyrit.models.score import UnvalidatedScore
-from pyrit.score.look_back_scorer import LookBackScorer
+from pyrit.score import LookBackScorer
 
 
 @pytest.mark.asyncio
@@ -17,40 +17,43 @@ async def test_score_async_success(patch_central_database):
     # Arrange
     memory = CentralMemory.get_memory_instance()
     conversation_id = str(uuid.uuid4())
+
     piece_id = uuid.uuid4()
     request_piece = PromptRequestPiece(
         original_value="User message",
         role="user",
         conversation_id=conversation_id,
-        orchestrator_identifier={"test": "test"},
+        attack_identifier={"test": "test"},
         id=piece_id,
     )
     memory.add_request_pieces_to_memory(request_pieces=[request_piece])
+    request_response = MagicMock()
+    request_response.request_pieces = [request_piece]
 
     mock_prompt_target = MagicMock()
     unvalidated_score = UnvalidatedScore(
         raw_score_value="0.8",
         score_value_description="High",
         score_rationale="Valid rationale",
-        score_metadata='{"metadata": "test"}',
-        score_category="test_category",
-        score_type="float_scale",
+        score_metadata={"metadata": "test"},
+        score_category=["test_category"],
         scorer_class_identifier={"test": "test"},
         prompt_request_response_id=piece_id,
-        task="test_task",
+        objective="test_task",
     )
 
     scorer = LookBackScorer(chat_target=mock_prompt_target, exclude_instruction_prompts=True)
     scorer._score_value_with_llm = AsyncMock(return_value=unvalidated_score)
 
     # Act
-    scores = await scorer.score_async(request_piece)
+    scores = await scorer.score_async(request_response)
 
     # Assert
     assert len(scores) == 1
-    assert scores[0].score_value == "0.8"
-    assert scores[0].score_value_description == "High"
-    assert scores[0].score_rationale == "Valid rationale"
+    result_score = scores[0]
+    assert result_score.score_value == "0.8"
+    assert result_score.score_value_description == "High"
+    assert result_score.score_rationale == "Valid rationale"
     scorer._score_value_with_llm.assert_awaited_once()
 
 
@@ -66,12 +69,14 @@ async def test_score_async_conversation_not_found(patch_central_database):
         original_value="User message",
         role="user",
         conversation_id=nonexistent_conversation_id,
-        orchestrator_identifier={"test": "test"},
+        attack_identifier={"test": "test"},
     )
+    request_response = MagicMock()
+    request_response.request_pieces = [request_piece]
 
     # Act & Assert
     with pytest.raises(ValueError, match=f"Conversation with ID {nonexistent_conversation_id} not found in memory."):
-        await scorer.score_async(request_piece)
+        await scorer.score_async(request_response)
 
 
 @pytest.mark.asyncio
@@ -97,7 +102,7 @@ async def test_score_async_handles_persuasion_conversation(patch_central_databas
             original_value=message.content,
             role=message.role,
             conversation_id=conversation_id,
-            orchestrator_identifier={"test": "test"},
+            attack_identifier={"test": "test"},
             id=uuid.uuid4(),
             sequence=i + 1,
         )
@@ -109,30 +114,36 @@ async def test_score_async_handles_persuasion_conversation(patch_central_databas
     assert len(memory.get_conversation(conversation_id=conversation_id)) == len(turns)
 
     mock_prompt_target = MagicMock()
+
+    for rp in request_pieces:
+        if not getattr(rp, "id", None):
+            rp.id = uuid.uuid4()
     request_piece = request_pieces[-1]
     unvalidated_score = UnvalidatedScore(
         raw_score_value="0.7",
         score_value_description="Moderate",
         score_rationale="Valid rationale",
-        score_metadata='{"metadata": "test"}',
-        score_category="test_category",
-        score_type="float_scale",
+        score_metadata={"metadata": "test"},
+        score_category=["test_category"],
         scorer_class_identifier={"test": "test"},
         prompt_request_response_id=request_piece.id,
-        task="test_task",
+        objective="test_task",
     )
 
     scorer = LookBackScorer(chat_target=mock_prompt_target, exclude_instruction_prompts=True)
     scorer._score_value_with_llm = AsyncMock(return_value=unvalidated_score)
 
     # Act
-    scores = await scorer.score_async(request_piece)
+    request_response = MagicMock()
+    request_response.request_pieces = [request_piece]
+    scores = await scorer.score_async(request_response)
 
     # Assert
     assert len(scores) == 1
-    assert scores[0].score_value == "0.7"
-    assert scores[0].score_value_description == "Moderate"
-    assert scores[0].score_rationale == "Valid rationale"
+    result_score = scores[0]
+    assert result_score.score_value == "0.7"
+    assert result_score.score_value_description == "Moderate"
+    assert result_score.score_rationale == "Valid rationale"
     scorer._score_value_with_llm.assert_awaited_once()
 
     expected_formatted_prompt = "".join(f"{message.role}: {message.content}\n" for message in turns)

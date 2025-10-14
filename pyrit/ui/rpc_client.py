@@ -59,7 +59,7 @@ class RPCClient:
         score = Score(
             score_value=str(response),
             score_type="true_false",
-            score_category="safety",
+            score_category=["safety"],
             score_value_description="Safe" if response else "Unsafe",
             score_rationale="The prompt was marked safe" if response else "The prompt was marked unsafe",
             score_metadata=None,

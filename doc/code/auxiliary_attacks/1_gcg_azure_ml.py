@@ -6,11 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -33,10 +29,6 @@
 # %%
 import os
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
-
-initialize_pyrit(memory_db_type=IN_MEMORY)
-
 # Enter details of your AML workspace
 subscription_id = os.environ.get("AZURE_SUBSCRIPTION_ID")
 resource_group = os.environ.get("AZURE_RESOURCE_GROUP")
@@ -45,10 +37,11 @@ print(workspace)
 
 # %%
 from azure.ai.ml import MLClient
-from azure.identity import DefaultAzureCredential
+from azure.identity import AzureCliCredential
 
 # Get a handle to the workspace
-ml_client = MLClient(DefaultAzureCredential(), subscription_id, resource_group, workspace)
+# For some people DefaultAzureCredential may work better than AzureCliCredential.
+ml_client = MLClient(AzureCliCredential(), subscription_id, resource_group, workspace)
 
 # %% [markdown]
 # ## Create AML Environment
@@ -77,7 +70,7 @@ ml_client.environments.create_or_update(env_docker_context)
 # ## Submit Training Job to AML
 
 # %% [markdown]
-# Finally, we configure the command to run the GCG algorithm. The entry file for the algorithm is [`run.py`](../../../pyrit/auxiliary_attacks/gcg/experiments/run.py), which takes several command line arguments, as shown below. We also have to specify the compute `instance_type` to run the algorithm on. In our experience, a GPU instance with at least 32GB of vRAM is required. In the example below, we use Standard_ND40rs_v2.
+# Finally, we configure the command to run the GCG algorithm. The entry file for the algorithm is [`run.py`](../../../pyrit/auxiliary_attacks/gcg/experiments/run.py), which takes several command line arguments, as shown below. We also have to specify the compute `instance_type` to run the algorithm on. In our experience, a GPU instance with at least 32GB of vRAM is required. In the example below, we use Standard_NC96ads_A100_v4.
 #
 # Depending on the compute instance you use, you may encounter "out of memory" errors. In this case, we recommend training on a smaller model or lowering `n_train_data` or `batch_size`.
 
@@ -109,10 +102,3 @@ job = command(
 # %%
 # Submit the command
 returned_job = ml_client.create_or_update(job)
-
-# %%
-# Close connection
-from pyrit.memory import CentralMemory
-
-memory = CentralMemory.get_memory_instance()
-memory.dispose_engine()

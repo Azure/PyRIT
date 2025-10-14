@@ -19,7 +19,7 @@ def is_opencv_installed():
 
 
 @pytest.fixture(autouse=True)
-def video_converter_sample_video():
+def video_converter_sample_video(patch_central_database):
     # Create a sample video file
     video_path = "test_video.mp4"
     width, height = 640, 480

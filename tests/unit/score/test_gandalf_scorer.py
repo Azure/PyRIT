@@ -51,14 +51,14 @@ def generate_request(conversation_id: Optional[str] = None) -> PromptRequestResp
 @pytest.mark.parametrize("level", [GandalfLevel.LEVEL_1, GandalfLevel.LEVEL_2, GandalfLevel.LEVEL_3])
 @pytest.mark.asyncio
 async def test_gandalf_scorer_score(
-    mocked_post, duckdb_instance: MemoryInterface, level: GandalfLevel, password_correct: bool
+    mocked_post, sqlite_instance: MemoryInterface, level: GandalfLevel, password_correct: bool
 ):
     chat_target = MagicMock()
 
     conversation_id = str(uuid.uuid4())
-    duckdb_instance.add_request_response_to_memory(request=generate_request(conversation_id=conversation_id))
+    sqlite_instance.add_request_response_to_memory(request=generate_request(conversation_id=conversation_id))
     response = generate_password_extraction_response("SUNSHINE", conversation_id=conversation_id)
-    duckdb_instance.add_request_response_to_memory(request=response)
+    sqlite_instance.add_request_response_to_memory(request=response)
 
     chat_target.send_prompt_async = AsyncMock(return_value=response)
 
@@ -68,7 +68,7 @@ async def test_gandalf_scorer_score(
         status_code=200, json=lambda: {"success": password_correct, "message": "Message"}
     )
 
-    scores = await scorer.score_async(response.request_pieces[0])
+    scores = await scorer.score_async(response)
 
     assert len(scores) == 1
     assert scores[0].get_value() == password_correct
@@ -88,13 +88,13 @@ async def test_gandalf_scorer_score(
 @pytest.mark.asyncio
 async def test_gandalf_scorer_set_system_prompt(
     mocked_post,
-    duckdb_instance: MemoryInterface,
+    sqlite_instance: MemoryInterface,
     level: GandalfLevel,
 ):
     conversation_id = str(uuid.uuid4())
-    duckdb_instance.add_request_response_to_memory(request=generate_request(conversation_id=conversation_id))
+    sqlite_instance.add_request_response_to_memory(request=generate_request(conversation_id=conversation_id))
     response = generate_password_extraction_response("SUNSHINE", conversation_id=conversation_id)
-    duckdb_instance.add_request_response_to_memory(request=response)
+    sqlite_instance.add_request_response_to_memory(request=response)
 
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=response)
@@ -103,7 +103,7 @@ async def test_gandalf_scorer_set_system_prompt(
 
     mocked_post.return_value = MagicMock(status_code=200, json=lambda: {"success": True, "message": "Message"})
 
-    await scorer.score_async(response.request_pieces[0])
+    await scorer.score_async(response)
 
     chat_target.set_system_prompt.assert_called_once()
 
@@ -113,12 +113,12 @@ async def test_gandalf_scorer_set_system_prompt(
 @patch("requests.post")
 @pytest.mark.parametrize("level", [GandalfLevel.LEVEL_1, GandalfLevel.LEVEL_2, GandalfLevel.LEVEL_3])
 @pytest.mark.asyncio
-async def test_gandalf_scorer_adds_to_memory(mocked_post, level: GandalfLevel, duckdb_instance: MemoryInterface):
+async def test_gandalf_scorer_adds_to_memory(mocked_post, level: GandalfLevel, sqlite_instance: MemoryInterface):
     conversation_id = str(uuid.uuid4())
     generated_request = generate_request(conversation_id=conversation_id)
-    duckdb_instance.add_request_response_to_memory(request=generated_request)
+    sqlite_instance.add_request_response_to_memory(request=generated_request)
     response = generate_password_extraction_response("SUNSHINE", conversation_id=conversation_id)
-    duckdb_instance.add_request_response_to_memory(request=response)
+    sqlite_instance.add_request_response_to_memory(request=response)
 
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=response)
@@ -126,26 +126,26 @@ async def test_gandalf_scorer_adds_to_memory(mocked_post, level: GandalfLevel, d
     # Mock the requests.post call to return a successful response
     mocked_post.return_value = MagicMock(status_code=200, json=lambda: {"success": True, "message": "Message"})
 
-    with patch.object(duckdb_instance, "get_prompt_request_pieces", return_value=[generated_request.request_pieces[0]]):
+    with patch.object(sqlite_instance, "get_prompt_request_pieces", return_value=[generated_request.request_pieces[0]]):
         scorer = GandalfScorer(level=level, chat_target=chat_target)
 
-        await scorer.score_async(response.request_pieces[0])
+        await scorer.score_async(response)
 
 
 @pytest.mark.parametrize("level", [GandalfLevel.LEVEL_1, GandalfLevel.LEVEL_2, GandalfLevel.LEVEL_3])
 @pytest.mark.asyncio
-async def test_gandalf_scorer_runtime_error_retries(level: GandalfLevel, duckdb_instance: MemoryInterface):
+async def test_gandalf_scorer_runtime_error_retries(level: GandalfLevel, sqlite_instance: MemoryInterface):
 
     conversation_id = str(uuid.uuid4())
-    duckdb_instance.add_request_response_to_memory(request=generate_request(conversation_id=conversation_id))
+    sqlite_instance.add_request_response_to_memory(request=generate_request(conversation_id=conversation_id))
     response = generate_password_extraction_response("SUNSHINE", conversation_id=conversation_id)
-    duckdb_instance.add_request_response_to_memory(request=response)
+    sqlite_instance.add_request_response_to_memory(request=response)
 
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(side_effect=[RuntimeError("Error"), response])
     scorer = GandalfScorer(level=level, chat_target=chat_target)
 
     with pytest.raises(PyritException):
-        await scorer.score_async(response.request_pieces[0])
+        await scorer.score_async(response)
 
     assert chat_target.send_prompt_async.call_count == 1

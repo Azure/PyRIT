@@ -12,7 +12,7 @@ from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_converter import PersuasionConverter
 
 
-def test_prompt_persuasion_init_authority_endorsement_template_not_null(duckdb_instance):
+def test_prompt_persuasion_init_authority_endorsement_template_not_null(sqlite_instance):
     prompt_target = MockPromptTarget()
     prompt_persuasion = PersuasionConverter(
         converter_target=prompt_target, persuasion_technique="authority_endorsement"
@@ -20,25 +20,25 @@ def test_prompt_persuasion_init_authority_endorsement_template_not_null(duckdb_i
     assert prompt_persuasion.system_prompt
 
 
-def test_prompt_persuasion_init_evidence_based_template_not_null(duckdb_instance):
+def test_prompt_persuasion_init_evidence_based_template_not_null(sqlite_instance):
     prompt_target = MockPromptTarget()
     prompt_persuasion = PersuasionConverter(converter_target=prompt_target, persuasion_technique="evidence_based")
     assert prompt_persuasion.system_prompt
 
 
-def test_prompt_persuasion_init_expert_endorsement_template_not_null(duckdb_instance):
+def test_prompt_persuasion_init_expert_endorsement_template_not_null(sqlite_instance):
     prompt_target = MockPromptTarget()
     prompt_persuasion = PersuasionConverter(converter_target=prompt_target, persuasion_technique="expert_endorsement")
     assert prompt_persuasion.system_prompt
 
 
-def test_prompt_persuasion_init_logical_appeal_template_not_null(duckdb_instance):
+def test_prompt_persuasion_init_logical_appeal_template_not_null(sqlite_instance):
     prompt_target = MockPromptTarget()
     prompt_persuasion = PersuasionConverter(converter_target=prompt_target, persuasion_technique="logical_appeal")
     assert prompt_persuasion.system_prompt
 
 
-def test_prompt_persuasion_init_misrepresentation_template_not_null(duckdb_instance):
+def test_prompt_persuasion_init_misrepresentation_template_not_null(sqlite_instance):
     prompt_target = MockPromptTarget()
     prompt_persuasion = PersuasionConverter(converter_target=prompt_target, persuasion_technique="misrepresentation")
     assert prompt_persuasion.system_prompt
@@ -52,7 +52,7 @@ def test_prompt_persuasion_init_misrepresentation_template_not_null(duckdb_insta
         "{'str' : 'json not formatted correctly'}",
     ],
 )
-async def test_persuasion_converter_send_prompt_async_bad_json_exception_retries(converted_value, duckdb_instance):
+async def test_persuasion_converter_send_prompt_async_bad_json_exception_retries(converted_value, sqlite_instance):
 
     prompt_target = MockPromptTarget()
 
@@ -72,7 +72,7 @@ async def test_persuasion_converter_send_prompt_async_bad_json_exception_retries
                     original_value_data_type="text",
                     converted_value_data_type="text",
                     prompt_target_identifier={"target": "target-identifier"},
-                    orchestrator_identifier={"test": "test"},
+                    attack_identifier={"test": "test"},
                     labels={"test": "test"},
                 )
             ]

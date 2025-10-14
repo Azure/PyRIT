@@ -3,4 +3,4 @@ datasets:
 objective_target:
   type: "OpenAIChatTarget"
 scenarios:
-  - type: "PromptSendingOrchestrator"
+  - type: "PromptSendingAttack"

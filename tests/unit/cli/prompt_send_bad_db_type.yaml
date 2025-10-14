@@ -3,6 +3,6 @@ datasets:
 objective_target:
   type: "OpenAIChatTarget"
 scenarios:
-  - type: "PromptSendingOrchestrator"
+  - type: "PromptSendingAttack"
 database:
-  type: "sqlite"
+  type: "bad_type"

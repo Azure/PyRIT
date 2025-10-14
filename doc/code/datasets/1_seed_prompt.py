@@ -5,15 +5,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
-# # Seed Prompts
+# # 1. Seed Prompts
 #
 # Most of the datasets we load into PyRIT are stored as a `SeedPromptDataset`. It is useful to store these results with the attributes and metadata associated with these prompts. In order to better understand the organization of the data, we will first start by defining what a `SeedPrompt` is. A `SeedPrompt` can either be a prompt template with parameters such as `{{gender}}` or just a prompt. By loading a YAML file as a `SeedPromptDataset`, we can use the prompts in other components within PyRIT.
 
@@ -65,7 +61,7 @@ print(jailbreak_prompt)
 # %% [markdown]
 # # Multimodal use case with Seed Prompt Groups
 #
-# For multimodal cases where we want to send a piece of text and image together, the `SeedPromptGroup` abstraction can be used for groups of seed prompts. When a group of prompts need to be sent together, this class can support sending this datatype to a target where all the prompts share the same `prompt_group_id`. This is also useful for multi-turn conversations such as in Skeleton Key attack where the sequences are both fixed prompts.
+# For multimodal cases where we want to send a piece of text and image together, the `SeedPromptGroup` abstraction can be used for groups of seed prompts. When a group of prompts need to be sent together, this class can support sending this datatype to a target where all the prompts share the same `prompt_group_id`. SeedPrompts represent a turn and multiple SeedPrompts can be sent together if they share the same sequence and are a part of the same SeedPromptGroup. Sequence is also useful for multi-turn conversations such as in Skeleton Key attack where the turns are both fixed prompts.
 
 # %%
 from pyrit.models import SeedPromptGroup

@@ -13,7 +13,8 @@ from pyrit.exceptions import EmptyResponseException
 from pyrit.memory import CentralMemory
 from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse
 from pyrit.models.filter_criteria import PromptFilterCriteria
-from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
+from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models.seed_prompt_group import SeedPromptGroup
 from pyrit.prompt_converter import (
     Base64Converter,
     ConverterResult,
@@ -29,15 +30,14 @@ from pyrit.prompt_target import PromptTarget
 
 @pytest.fixture
 def response() -> PromptRequestResponse:
+    conversation_id = "123"
     image_request_piece = get_image_request_piece()
     image_request_piece.role = "assistant"
+    image_request_piece.conversation_id = conversation_id
     return PromptRequestResponse(
         request_pieces=[
-            PromptRequestPiece(
-                role="assistant",
-                original_value="Hello",
-            ),
-            PromptRequestPiece(role="assistant", original_value="part 2"),
+            PromptRequestPiece(role="assistant", original_value="Hello", conversation_id=conversation_id),
+            PromptRequestPiece(role="assistant", original_value="part 2", conversation_id=conversation_id),
             image_request_piece,
         ]
     )
@@ -50,6 +50,8 @@ def seed_prompt_group() -> SeedPromptGroup:
             SeedPrompt(
                 value="Hello",
                 data_type="text",
+                role="system",
+                sequence=1,
             )
         ]
     )
@@ -211,6 +213,38 @@ async def test_send_prompt_async_empty_exception(mock_memory_instance, seed_prom
 
 
 @pytest.mark.asyncio
+async def test_send_prompt_async_different_sequences(mock_memory_instance):
+    """Test that sending prompts with different sequences raises ValueError."""
+    prompt_target = AsyncMock()
+    normalizer = PromptNormalizer()
+
+    prompts = [
+        SeedPrompt(value="test1", sequence=1, role="user"),
+        SeedPrompt(value="test2", sequence=2, role="user"),
+    ]  # Different sequence
+    group = SeedPromptGroup(prompts=prompts)
+
+    with pytest.raises(ValueError, match="All SeedPrompts in the SeedPromptGroup must have the same sequence"):
+        await normalizer.send_prompt_async(seed_prompt_group=group, target=prompt_target)
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_mixed_sequence_types(mock_memory_instance):
+    """Test that sending prompts with mixed sequence types (None and int) raises ValueError."""
+    prompt_target = AsyncMock()
+    normalizer = PromptNormalizer()
+
+    prompts = [
+        SeedPrompt(value="test1", sequence=1, role="user"),
+        SeedPrompt(value="test2", role="user"),
+    ]  # No sequence (will default to None)
+    group = SeedPromptGroup(prompts=prompts)
+
+    with pytest.raises(ValueError, match="All SeedPrompts in the SeedPromptGroup must have the same sequence"):
+        await normalizer.send_prompt_async(seed_prompt_group=group, target=prompt_target)
+
+
+@pytest.mark.asyncio
 async def test_send_prompt_async_adds_memory_twice(
     mock_memory_instance, seed_prompt_group, response: PromptRequestResponse
 ):
@@ -342,7 +376,6 @@ async def test_prompt_normalizer_send_prompt_batch_async_throws(
 async def test_build_prompt_request_response(mock_memory_instance, seed_prompt_group):
 
     labels = {"label1": "value1", "label2": "value2"}
-    orchestrator_identifier = {"orchestrator_id": "123"}
 
     conversation_id = uuid.uuid4()
 
@@ -358,13 +391,17 @@ async def test_build_prompt_request_response(mock_memory_instance, seed_prompt_g
         conversation_id=conversation_id,
         request_converter_configurations=request_converters,
         target=prompt_target,
-        sequence=2,
         labels=labels,
-        orchestrator_identifier=orchestrator_identifier,
     )
 
     # Check all prompt pieces in the response have the same conversation ID
     assert len(set(prompt_piece.conversation_id for prompt_piece in response.request_pieces)) == 1
+
+    assert response.request_pieces[0].sequence == 1
+    assert len(set(prompt_piece.sequence for prompt_piece in response.request_pieces)) == 1
+
+    assert response.request_pieces[0].role == "system"
+    assert len(set(prompt_piece.role for prompt_piece in response.request_pieces)) == 1
 
     # Check sequence is set correctly
     assert len(set(prompt_piece.sequence for prompt_piece in response.request_pieces)) == 1
@@ -410,7 +447,7 @@ async def test_should_skip_based_on_skip_criteria_no_matches(mock_memory_instanc
     normalizer = PromptNormalizer()
 
     skip_criteria = PromptFilterCriteria(
-        orchestrator_id="test_orchestrator",
+        attack_id="test_attack",
         conversation_id="test_conversation",
     )
 
@@ -445,7 +482,7 @@ async def test_should_skip_based_on_skip_criteria_match_found(mock_memory_instan
     normalizer = PromptNormalizer()
 
     skip_criteria = PromptFilterCriteria(
-        orchestrator_id="test_orchestrator",
+        attack_id="test_attack",
         conversation_id="test_conversation",
     )
 
@@ -491,7 +528,7 @@ async def test_should_skip_based_on_skip_criteria_original_value_match(mock_memo
     normalizer = PromptNormalizer()
 
     skip_criteria = PromptFilterCriteria(
-        orchestrator_id="test_orchestrator",
+        attack_id="test_attack",
         conversation_id="test_conversation",
     )
 
@@ -527,3 +564,65 @@ async def test_send_prompt_async_exception_conv_id(mock_memory_instance, seed_pr
         .request_pieces[0]
         .original_value
     )
+
+
+@pytest.mark.asyncio
+async def test_build_prompt_request_response_harm_categories(mock_memory_instance):
+    """Test that harm_categories from seed prompts are propagated to request pieces."""
+
+    harm_categories = ["violence", "illegal"]
+
+    # Create a seed prompt group with harm categories
+    seed_prompt_group = SeedPromptGroup(
+        prompts=[
+            SeedPrompt(
+                value="Test harmful prompt",
+                data_type="text",
+                role="user",
+                sequence=1,
+                harm_categories=harm_categories,
+            ),
+            SeedPrompt(
+                value="Another prompt",
+                data_type="text",
+                role="user",
+                sequence=1,
+                # Not setting harm_categories, so it will default to []
+            ),
+        ]
+    )
+
+    labels = {"operation": "test_op"}
+    conversation_id = str(uuid.uuid4())
+    prompt_target = MockPromptTarget()
+    request_converters = []
+
+    normalizer = PromptNormalizer()
+
+    response = await normalizer._build_prompt_request_response(
+        seed_prompt_group=seed_prompt_group,
+        conversation_id=conversation_id,
+        request_converter_configurations=request_converters,
+        target=prompt_target,
+        labels=labels,
+    )
+
+    assert len(response.request_pieces) == 2
+
+    # First prompt should have harm categories
+    first_piece = response.request_pieces[0]
+    assert first_piece.targeted_harm_categories == harm_categories
+    assert first_piece.original_value == "Test harmful prompt"
+    assert first_piece.role == "user"
+
+    # Second prompt should have empty harm categories (default)
+    second_piece = response.request_pieces[1]
+    assert second_piece.targeted_harm_categories == []
+    assert second_piece.original_value == "Another prompt"
+    assert second_piece.role == "user"
+
+    # Verify other fields are set correctly
+    assert first_piece.conversation_id == conversation_id
+    assert second_piece.conversation_id == conversation_id
+    assert first_piece.labels == labels
+    assert second_piece.labels == labels

@@ -6,7 +6,11 @@ import logging
 import os
 from typing import TYPE_CHECKING, Optional
 
-from transformers import AutoModelForCausalLM, AutoTokenizer, PretrainedConfig
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    PretrainedConfig,
+)
 
 from pyrit.common import default_values
 from pyrit.common.download_hf_model import download_specific_files
@@ -84,8 +88,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
         try:
             import torch
         except ModuleNotFoundError as e:
-            logger.error("Could not import torch. You may need to install it via 'pip install pyrit[all]'")
-            raise e
+            raise RuntimeError("Could not import torch. You may need to install it via 'pip install pyrit[all]'") from e
 
         # Determine the device
         self.device = "cuda" if self.use_cuda and torch.cuda.is_available() else "cpu"
@@ -238,7 +241,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
         try:
             # Ensure model is on the correct device (should already be the case from `load_model_and_tokenizer`)
-            self.model.to(self.device)
+            self.model.to(self.device)  # type: ignore[arg-type]
 
             # Record the length of the input tokens to later extract only the generated tokens
             input_length = input_ids.shape[-1]

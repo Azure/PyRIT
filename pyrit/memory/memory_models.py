@@ -16,8 +16,10 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     String,
+    TypeDecorator,
     Unicode,
 )
+from sqlalchemy.dialects.sqlite import CHAR
 from sqlalchemy.orm import (  # type: ignore
     DeclarativeBase,
     Mapped,
@@ -29,6 +31,33 @@ from sqlalchemy.types import Uuid  # type: ignore
 from pyrit.common.utils import to_sha256
 from pyrit.models import PromptDataType, PromptRequestPiece, Score, SeedPrompt
 from pyrit.models.attack_result import AttackOutcome, AttackResult
+from pyrit.models.conversation_reference import ConversationReference, ConversationType
+from pyrit.models.literals import ChatMessageRole
+
+
+class CustomUUID(TypeDecorator):
+    """
+    A custom UUID type that works consistently across different database backends.
+    For SQLite, stores UUIDs as strings and converts them back to UUID objects.
+    For other databases, uses the native UUID type.
+    """
+
+    impl = CHAR
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == "sqlite":
+            return dialect.type_descriptor(CHAR(36))
+        else:
+            return dialect.type_descriptor(Uuid())
+
+    def process_bind_param(self, value, dialect):
+        return str(value) if value else None
+
+    def process_result_value(self, value, dialect):
+        if dialect.name == "sqlite":
+            return uuid.UUID(value) if value else None
+        return value
 
 
 class Base(DeclarativeBase):
@@ -51,12 +80,13 @@ class PromptMemoryEntry(Base):
             Can be the same number for multi-part requests or multi-part responses.
         timestamp (DateTime): The timestamp of the memory entry.
         labels (Dict[str, str]): The labels associated with the memory entry. Several can be standardized.
+        targeted_harm_categories (List[str]): The targeted harm categories for the memory entry.
         prompt_metadata (JSON): The metadata associated with the prompt. This can be specific to any scenarios.
             Because memory is how components talk with each other, this can be component specific.
             e.g. the URI from a file uploaded to a blob store, or a document type you want to upload.
         converters (list[PromptConverter]): The converters for the prompt.
         prompt_target (PromptTarget): The target for the prompt.
-        orchestrator_identifier (Dict[str, str]): The orchestrator identifier for the prompt.
+        attack_identifier (Dict[str, str]): The attack identifier for the prompt.
         original_value_data_type (PromptDataType): The data type of the original prompt (text, image)
         original_value (str): The text of the original prompt. If prompt is an image, it's a link.
         original_value_sha256 (str): The SHA256 hash of the original prompt data.
@@ -72,16 +102,17 @@ class PromptMemoryEntry(Base):
 
     __tablename__ = "PromptMemoryEntries"
     __table_args__ = {"extend_existing": True}
-    id = mapped_column(Uuid, nullable=False, primary_key=True)
-    role: Mapped[Literal["system", "user", "assistant"]] = mapped_column(String, nullable=False)
+    id = mapped_column(CustomUUID, nullable=False, primary_key=True)
+    role: Mapped[Literal["system", "user", "assistant", "tool", "developer"]] = mapped_column(String, nullable=False)
     conversation_id = mapped_column(String, nullable=False)
     sequence = mapped_column(INTEGER, nullable=False)
     timestamp = mapped_column(DateTime, nullable=False)
     labels: Mapped[dict[str, str]] = mapped_column(JSON)
     prompt_metadata: Mapped[dict[str, Union[str, int]]] = mapped_column(JSON)
+    targeted_harm_categories: Mapped[Optional[List[str]]] = mapped_column(JSON)
     converter_identifiers: Mapped[Optional[List[dict[str, str]]]] = mapped_column(JSON)
     prompt_target_identifier: Mapped[dict[str, str]] = mapped_column(JSON)
-    orchestrator_identifier: Mapped[dict[str, str]] = mapped_column(JSON)
+    attack_identifier: Mapped[dict[str, str]] = mapped_column(JSON)
     response_error: Mapped[Literal["blocked", "none", "processing", "unknown"]] = mapped_column(String, nullable=True)
 
     original_value_data_type: Mapped[Literal["text", "image_path", "audio_path", "url", "error"]] = mapped_column(
@@ -98,7 +129,7 @@ class PromptMemoryEntry(Base):
 
     idx_conversation_id = Index("idx_conversation_id", "conversation_id")
 
-    original_prompt_id = mapped_column(Uuid, nullable=False)
+    original_prompt_id = mapped_column(CustomUUID, nullable=False)
 
     scores: Mapped[List["ScoreEntry"]] = relationship(
         "ScoreEntry",
@@ -115,9 +146,10 @@ class PromptMemoryEntry(Base):
         self.timestamp = entry.timestamp
         self.labels = entry.labels
         self.prompt_metadata = entry.prompt_metadata
+        self.targeted_harm_categories = entry.targeted_harm_categories
         self.converter_identifiers = entry.converter_identifiers
         self.prompt_target_identifier = entry.prompt_target_identifier
-        self.orchestrator_identifier = entry.orchestrator_identifier
+        self.attack_identifier = entry.attack_identifier
 
         self.original_value = entry.original_value
         self.original_value_data_type = entry.original_value_data_type  # type: ignore
@@ -143,9 +175,10 @@ class PromptMemoryEntry(Base):
             sequence=self.sequence,
             labels=self.labels,
             prompt_metadata=self.prompt_metadata,
+            targeted_harm_categories=self.targeted_harm_categories,
             converter_identifiers=self.converter_identifiers,
             prompt_target_identifier=self.prompt_target_identifier,
-            orchestrator_identifier=self.orchestrator_identifier,
+            attack_identifier=self.attack_identifier,
             original_value_data_type=self.original_value_data_type,
             converted_value_data_type=self.converted_value_data_type,
             response_error=self.response_error,
@@ -176,7 +209,7 @@ class EmbeddingDataEntry(Base):  # type: ignore
     # Allows table redefinition if already defined.
     __table_args__ = {"extend_existing": True}
     id = mapped_column(Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), primary_key=True)
-    embedding = mapped_column(ARRAY(Float).with_variant(JSON, "mssql"))  # type: ignore
+    embedding = mapped_column(ARRAY(Float).with_variant(JSON, "sqlite"))  # type: ignore
     embedding_type_name = mapped_column(String)
 
     def __str__(self):
@@ -192,17 +225,18 @@ class ScoreEntry(Base):  # type: ignore
     __tablename__ = "ScoreEntries"
     __table_args__ = {"extend_existing": True}
 
-    id = mapped_column(Uuid(as_uuid=True), nullable=False, primary_key=True)
+    id = mapped_column(CustomUUID, nullable=False, primary_key=True)
     score_value = mapped_column(String, nullable=False)
     score_value_description = mapped_column(String, nullable=True)
     score_type: Mapped[Literal["true_false", "float_scale"]] = mapped_column(String, nullable=False)
-    score_category = mapped_column(String, nullable=False)
+    score_category: Mapped[Optional[list[str]]] = mapped_column(JSON, nullable=True)
     score_rationale = mapped_column(String, nullable=True)
-    score_metadata = mapped_column(String, nullable=True)
+    score_metadata: Mapped[dict[str, Union[str, int]]] = mapped_column(JSON)
     scorer_class_identifier: Mapped[dict[str, str]] = mapped_column(JSON)
-    prompt_request_response_id = mapped_column(Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
+    prompt_request_response_id = mapped_column(CustomUUID, ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
     timestamp = mapped_column(DateTime, nullable=False)
-    task = mapped_column(String, nullable=True)
+    task = mapped_column(String, nullable=True)  # Deprecated: Use objective instead
+    objective = mapped_column(String, nullable=True)
     prompt_request_piece: Mapped["PromptMemoryEntry"] = relationship("PromptMemoryEntry", back_populates="scores")
 
     def __init__(self, *, entry: Score):
@@ -216,7 +250,10 @@ class ScoreEntry(Base):  # type: ignore
         self.scorer_class_identifier = entry.scorer_class_identifier
         self.prompt_request_response_id = entry.prompt_request_response_id if entry.prompt_request_response_id else None
         self.timestamp = entry.timestamp
-        self.task = entry.task
+        # Store in both columns for backward compatibility
+        # New code should only read from objective
+        self.task = entry.objective
+        self.objective = entry.objective
 
     def get_score(self) -> Score:
         return Score(
@@ -230,7 +267,7 @@ class ScoreEntry(Base):  # type: ignore
             scorer_class_identifier=self.scorer_class_identifier,
             prompt_request_response_id=self.prompt_request_response_id,
             timestamp=self.timestamp,
-            task=self.task,
+            objective=self.objective,
         )
 
     def to_dict(self) -> dict:
@@ -245,7 +282,7 @@ class ScoreEntry(Base):  # type: ignore
             "scorer_class_identifier": self.scorer_class_identifier,
             "prompt_request_response_id": str(self.prompt_request_response_id),
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,
-            "task": self.task,
+            "objective": self.objective,
         }
 
 
@@ -269,7 +306,7 @@ class SeedPromptEntry(Base):
     Represents the raw prompt or prompt template data as found in open datasets.
 
     Note: This is different from the PromptMemoryEntry which is the processed prompt data.
-    SeedPrompt merely reflects basic prompts before plugging into orchestrators,
+    SeedPrompt merely reflects basic prompts before plugging into attacks,
     running through models with corresponding attack strategies, and applying converters.
     PromptMemoryEntry captures the processed prompt data before and after the above steps.
 
@@ -297,6 +334,7 @@ class SeedPromptEntry(Base):
             Groups are used to organize prompts for multi-turn conversations or multi-modal prompts.
         sequence (int): The turn of the seed prompt in a group. When entire multi-turn conversations
             are stored, this is used to order the prompts.
+        role (str): The role of the prompt (e.g., user, system, assistant).
 
     Methods:
         __str__(): Returns a string representation of the memory entry.
@@ -304,7 +342,7 @@ class SeedPromptEntry(Base):
 
     __tablename__ = "SeedPromptEntries"
     __table_args__ = {"extend_existing": True}
-    id = mapped_column(Uuid, nullable=False, primary_key=True)
+    id = mapped_column(CustomUUID, nullable=False, primary_key=True)
     value = mapped_column(Unicode, nullable=False)
     value_sha256 = mapped_column(Unicode, nullable=True)
     data_type: Mapped[PromptDataType] = mapped_column(String, nullable=False)
@@ -319,8 +357,9 @@ class SeedPromptEntry(Base):
     added_by = mapped_column(String, nullable=False)
     prompt_metadata: Mapped[dict[str, Union[str, int]]] = mapped_column(JSON, nullable=True)
     parameters: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
-    prompt_group_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, nullable=True)
+    prompt_group_id: Mapped[Optional[uuid.UUID]] = mapped_column(CustomUUID, nullable=True)
     sequence: Mapped[Optional[int]] = mapped_column(INTEGER, nullable=True)
+    role: Mapped[ChatMessageRole] = mapped_column(String, nullable=True)
 
     def __init__(self, *, entry: SeedPrompt):
         self.id = entry.id
@@ -340,6 +379,7 @@ class SeedPromptEntry(Base):
         self.parameters = entry.parameters  # type: ignore
         self.prompt_group_id = entry.prompt_group_id
         self.sequence = entry.sequence
+        self.role = entry.role
 
     def get_seed_prompt(self) -> SeedPrompt:
         return SeedPrompt(
@@ -360,6 +400,7 @@ class SeedPromptEntry(Base):
             parameters=self.parameters,
             prompt_group_id=self.prompt_group_id,
             sequence=self.sequence,
+            role=self.role,
         )
 
 
@@ -382,6 +423,8 @@ class AttackResultEntry(Base):
         outcome (AttackOutcome): The outcome of the attack, indicating success, failure, or undetermined.
         outcome_reason (str): Optional reason for the outcome, providing additional context.
         attack_metadata (dict[str, Any]): Metadata can be included as key-value pairs to provide extra context.
+        pruned_conversation_ids (List[str]): List of conversation IDs that were pruned from the attack.
+        adversarial_chat_conversation_ids (List[str]): List of conversation IDs used for adversarial chat.
         timestamp (DateTime): The timestamp of the attack result entry.
         last_response (PromptMemoryEntry): Relationship to the last response prompt memory entry.
         last_score (ScoreEntry): Relationship to the last score entry.
@@ -391,16 +434,16 @@ class AttackResultEntry(Base):
 
     __tablename__ = "AttackResultEntries"
     __table_args__ = {"extend_existing": True}
-    id = mapped_column(Uuid, nullable=False, primary_key=True)
+    id = mapped_column(CustomUUID, nullable=False, primary_key=True)
     conversation_id = mapped_column(String, nullable=False)
     objective = mapped_column(Unicode, nullable=False)
     attack_identifier: Mapped[dict[str, str]] = mapped_column(JSON, nullable=False)
     objective_sha256 = mapped_column(String, nullable=True)
     last_response_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        Uuid, ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), nullable=True
+        CustomUUID, ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), nullable=True
     )
     last_score_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        Uuid, ForeignKey(f"{ScoreEntry.__tablename__}.id"), nullable=True
+        CustomUUID, ForeignKey(f"{ScoreEntry.__tablename__}.id"), nullable=True
     )
     executed_turns = mapped_column(INTEGER, nullable=False, default=0)
     execution_time_ms = mapped_column(INTEGER, nullable=False, default=0)
@@ -409,6 +452,8 @@ class AttackResultEntry(Base):
     )
     outcome_reason = mapped_column(String, nullable=True)
     attack_metadata: Mapped[dict[str, Union[str, int, float, bool]]] = mapped_column(JSON, nullable=True)
+    pruned_conversation_ids: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
+    adversarial_chat_conversation_ids: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
     timestamp = mapped_column(DateTime, nullable=False)
 
     last_response: Mapped[Optional["PromptMemoryEntry"]] = relationship(
@@ -436,6 +481,16 @@ class AttackResultEntry(Base):
         self.outcome = entry.outcome.value  # type: ignore
         self.outcome_reason = entry.outcome_reason
         self.attack_metadata = self.filter_json_serializable_metadata(entry.metadata)
+
+        # Persist conversation references by type
+        self.pruned_conversation_ids = [
+            ref.conversation_id for ref in entry.get_conversations_by_type(ConversationType.PRUNED)
+        ] or None
+
+        self.adversarial_chat_conversation_ids = [
+            ref.conversation_id for ref in entry.get_conversations_by_type(ConversationType.ADVERSARIAL)
+        ] or None
+
         self.timestamp = datetime.now()
 
     @staticmethod
@@ -485,6 +540,27 @@ class AttackResultEntry(Base):
         return filtered_metadata
 
     def get_attack_result(self) -> AttackResult:
+
+        related_conversations: set[ConversationReference] = set()
+
+        for cid in self.pruned_conversation_ids or []:
+            related_conversations.add(
+                ConversationReference(
+                    conversation_id=cid,
+                    conversation_type=ConversationType.PRUNED,
+                    description="pruned conversation",
+                )
+            )
+
+        for cid in self.adversarial_chat_conversation_ids or []:
+            related_conversations.add(
+                ConversationReference(
+                    conversation_id=cid,
+                    conversation_type=ConversationType.ADVERSARIAL,
+                    description="adversarial chat conversation",
+                )
+            )
+
         return AttackResult(
             conversation_id=self.conversation_id,
             objective=self.objective,
@@ -495,5 +571,6 @@ class AttackResultEntry(Base):
             execution_time_ms=self.execution_time_ms,
             outcome=AttackOutcome(self.outcome),
             outcome_reason=self.outcome_reason,
+            related_conversations=related_conversations,
             metadata=self.attack_metadata or {},
         )

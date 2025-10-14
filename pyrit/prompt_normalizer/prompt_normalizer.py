@@ -16,7 +16,7 @@ from pyrit.models import (
     construct_response_from_request,
 )
 from pyrit.models.filter_criteria import PromptConverterState, PromptFilterCriteria
-from pyrit.models.seed_prompt import SeedPromptGroup
+from pyrit.models.seed_prompt_group import SeedPromptGroup
 from pyrit.prompt_normalizer import NormalizerRequest, PromptConverterConfiguration
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
@@ -47,9 +47,8 @@ class PromptNormalizer:
         conversation_id: Optional[str] = None,
         request_converter_configurations: list[PromptConverterConfiguration] = [],
         response_converter_configurations: list[PromptConverterConfiguration] = [],
-        sequence: int = -1,
         labels: Optional[dict[str, str]] = None,
-        orchestrator_identifier: Optional[dict[str, str]] = None,
+        attack_identifier: Optional[dict[str, str]] = None,
     ) -> PromptRequestResponse:
         """
         Sends a single request to a target.
@@ -62,26 +61,28 @@ class PromptNormalizer:
                 converting the request. Defaults to an empty list.
             response_converter_configurations (list[PromptConverterConfiguration], optional): Configurations for
                 converting the response. Defaults to an empty list.
-            sequence (int, optional): The sequence number of the request. Defaults to -1.
             labels (Optional[dict[str, str]], optional): Labels associated with the request. Defaults to None.
-            orchestrator_identifier (Optional[dict[str, str]], optional): Identifier for the orchestrator. Defaults to
+            attack_identifier (Optional[dict[str, str]], optional): Identifier for the attack. Defaults to
                 None.
 
             Raises:
             Exception: If an error occurs during the request processing.
+            ValueError: If the prompts in the SeedPromptGroup are not part of the same sequence.
 
         Returns:
             PromptRequestResponse: The response received from the target.
         """
+        # Validates that the SeedPrompts in the SeedPromptGroup are part of the same sequence
+        if len(set(prompt.sequence for prompt in seed_prompt_group.prompts)) > 1:
+            raise ValueError("All SeedPrompts in the SeedPromptGroup must have the same sequence.")
 
         request = await self._build_prompt_request_response(
             seed_prompt_group=seed_prompt_group,
             conversation_id=conversation_id,
             request_converter_configurations=request_converter_configurations,
             target=target,
-            sequence=sequence,
             labels=labels,
-            orchestrator_identifier=orchestrator_identifier,
+            attack_identifier=attack_identifier,
         )
 
         await self._calc_hash(request=request)
@@ -136,7 +137,7 @@ class PromptNormalizer:
         requests: list[NormalizerRequest],
         target: PromptTarget,
         labels: Optional[dict[str, str]] = None,
-        orchestrator_identifier: Optional[dict[str, str]] = None,
+        attack_identifier: Optional[dict[str, str]] = None,
         batch_size: int = 10,
     ) -> list[PromptRequestResponse]:
         """
@@ -147,7 +148,7 @@ class PromptNormalizer:
             target (PromptTarget): The target to which the prompts are sent.
             labels (Optional[dict[str, str]], optional): A dictionary of labels to be included with the request.
                 Defaults to None.
-            orchestrator_identifier (Optional[dict[str, str]], optional): A dictionary identifying the orchestrator.
+            attack_identifier (Optional[dict[str, str]], optional): A dictionary identifying the attack.
                 Defaults to None.
             batch_size (int, optional): The number of prompts to include in each batch. Defaults to 10.
 
@@ -178,7 +179,7 @@ class PromptNormalizer:
             task_arguments=batch_item_keys,
             target=target,
             labels=labels,
-            orchestrator_identifier=orchestrator_identifier,
+            attack_identifier=attack_identifier,
         )
 
         # send_prompt_async can return None if the prompt is skipped
@@ -224,7 +225,7 @@ class PromptNormalizer:
         self, skip_criteria: PromptFilterCriteria, skip_value_type: PromptConverterState, ensure_response=True
     ) -> None:
         """
-        Sets the skip criteria for the orchestrator.
+        Sets the skip criteria for the attack.
 
         If prompts match this in memory and are the same as one being sent, then they won't be sent to a target.
 
@@ -233,7 +234,7 @@ class PromptNormalizer:
         self._skip_criteria = skip_criteria
 
         skip_args: Dict[str, Any] = {
-            "orchestrator_id": self._skip_criteria.orchestrator_id,
+            "attack_id": self._skip_criteria.attack_id,
             "conversation_id": self._skip_criteria.conversation_id,
             "prompt_ids": self._skip_criteria.prompt_ids,
             "labels": self._skip_criteria.labels,
@@ -301,9 +302,8 @@ class PromptNormalizer:
         conversation_id: str,
         request_converter_configurations: list[PromptConverterConfiguration],
         target: PromptTarget,
-        sequence: int,
         labels: dict[str, str],
-        orchestrator_identifier: Optional[dict[str, str]] = None,
+        attack_identifier: Optional[dict[str, str]] = None,
     ) -> PromptRequestResponse:
         """
         Builds a prompt request response based on the given parameters.
@@ -316,9 +316,8 @@ class PromptNormalizer:
             request_converter_configurations (list[PromptConverterConfiguration]): List of configurations for
                 request converters.
             target (PromptTarget): The target for the prompt.
-            sequence (int): The sequence number of the prompt.
             labels (dict[str, str]): A dictionary of labels associated with the prompt.
-            orchestrator_identifier (Optional[dict[str, str]]): An optional dictionary for orchestrator identifiers.
+            attack_identifier (Optional[dict[str, str]]): An optional dictionary for attack identifiers.
 
         Returns:
             PromptRequestResponse: The prompt request response object.
@@ -329,17 +328,17 @@ class PromptNormalizer:
         # All prompt request pieces within PromptRequestResponse needs to have same conversation ID.
         conversation_id = conversation_id if conversation_id else str(uuid4())
         for seed_prompt in seed_prompt_group.prompts:
-
             prompt_request_piece = PromptRequestPiece(
-                role="user",
+                role=seed_prompt.role,
                 original_value=seed_prompt.value,
                 conversation_id=conversation_id,
-                sequence=sequence,
+                sequence=seed_prompt.sequence,
                 labels=labels,
                 prompt_metadata=seed_prompt.metadata,
                 prompt_target_identifier=target.get_identifier(),
-                orchestrator_identifier=orchestrator_identifier,
+                attack_identifier=attack_identifier,
                 original_value_data_type=seed_prompt.data_type,
+                targeted_harm_categories=list(seed_prompt.harm_categories) if seed_prompt.harm_categories else None,
             )
 
             entries.append(prompt_request_piece)
@@ -354,7 +353,7 @@ class PromptNormalizer:
         conversation_id: str,
         should_convert: bool = True,
         converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
-        orchestrator_identifier: Optional[dict[str, str]] = None,
+        attack_identifier: Optional[dict[str, str]] = None,
         prepended_conversation: Optional[list[PromptRequestResponse]] = None,
     ) -> Optional[list[PromptRequestResponse]]:
         """
@@ -365,7 +364,7 @@ class PromptNormalizer:
             should_convert (bool): Whether to convert the prepended conversation
             converter_configurations (Optional[list[PromptConverterConfiguration]]): Configurations for converting the
                 request
-            orchestrator_identifier (Optional[dict[str, str]]): Identifier for the orchestrator
+            attack_identifier (Optional[dict[str, str]]): Identifier for the attack
             prepended_conversation (Optional[list[PromptRequestResponse]]): The conversation to prepend
 
         Returns:
@@ -382,8 +381,8 @@ class PromptNormalizer:
                 await self.convert_values(request_response=request, converter_configurations=converter_configurations)
             for piece in request.request_pieces:
                 piece.conversation_id = conversation_id
-                if orchestrator_identifier:
-                    piece.orchestrator_identifier = orchestrator_identifier
+                if attack_identifier:
+                    piece.attack_identifier = attack_identifier
 
                 # if the piece is retrieved from somewhere else, it needs to be unique
                 # and if not, this won't hurt anything

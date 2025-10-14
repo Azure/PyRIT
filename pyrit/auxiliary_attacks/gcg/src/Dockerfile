@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/azureml/curated/acpt-pytorch-2.2-cuda12.1:7
+FROM mcr.microsoft.com/azureml/curated/acpt-pytorch-2.2-cuda12.1:37
 
 RUN apt-get update
 
@@ -15,9 +15,6 @@ RUN conda env create -p $CONDA_ENVIRONMENT_PATH -f conda_dependencies.yaml -q &&
     conda clean -a -y
 
 RUN conda list
-
-# sentencepiece is required for GCG but can't be installed with pip like other dependencies starting with python 3.13
-RUN conda install -c conda-forge sentencepiece -y
 
 RUN git clone https://github.com/Azure/PyRIT.git
 

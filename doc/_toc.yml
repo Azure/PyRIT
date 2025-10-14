@@ -5,6 +5,8 @@ chapters:
     sections:
     - file: cookbooks/1_sending_prompts
     - file: cookbooks/2_precomputing_turns
+    - file: cookbooks/3_copyright_violations
+    - file: cookbooks/4_testing_bias
   - file: setup/install_pyrit
     sections:
     - file: setup/jupyter_setup
@@ -30,25 +32,31 @@ chapters:
       sections:
       - file: code/datasets/1_seed_prompt
       - file: code/datasets/2_fetch_dataset
-    - file: code/orchestrators/0_orchestrator
+    - file: code/executor/0_executor
       sections:
-      - file: code/orchestrators/1_prompt_sending_orchestrator
-      - file: code/orchestrators/2_multi_turn_orchestrators
-      - file: code/orchestrators/3_xpia_orchestrator
-      - file: code/orchestrators/4_scoring_orchestrator
-      - file: code/orchestrators/5_crescendo_orchestrator
-      - file: code/orchestrators/6_skeleton_key_attack
-      - file: code/orchestrators/context_compliance_orchestrator
-      - file: code/orchestrators/flip_orchestrator
-      - file: code/orchestrators/fuzzing_jailbreak_templates
-      - file: code/orchestrators/HITL_Scoring_Orchestrator
-      - file: code/orchestrators/many_shot_jailbreak
-      - file: code/orchestrators/pair_orchestrator
-      - file: code/orchestrators/qa_benchmark_orchestrator
-      - file: code/orchestrators/role_playing_orchestrator
-      - file: code/orchestrators/tree_of_attacks_with_pruning
-      - file: code/orchestrators/violent_durian
-      - file: code/orchestrators/anecdoctor_orchestrator
+        - file: code/executor/attack/0_attack
+          sections:
+          - file: code/executor/attack/1_prompt_sending_attack
+          - file: code/executor/attack/2_red_teaming_attack
+          - file: code/executor/attack/3_crescendo_attack
+          - file: code/executor/attack/skeleton_key_attack
+          - file: code/executor/attack/violent_durian_attack
+          - file: code/executor/attack/flip_attack
+          - file: code/executor/attack/context_compliance_attack
+          - file: code/executor/attack/role_play_attack
+          - file: code/executor/attack/many_shot_jailbreak_attack
+          - file: code/executor/attack/tap_attack
+          - file: code/executor/attack/multi_prompt_sending_attack
+        - file: code/executor/workflow/0_workflow
+          sections:
+          - file: code/executor/workflow/1_xpia_workflow
+        - file: code/executor/benchmark/0_benchmark
+          sections:
+          - file: code/executor/benchmark/1_qa_benchmark
+        - file: code/executor/promptgen/0_promptgen
+          sections:
+          - file: code/executor/promptgen/1_anecdoctor_generator
+          - file: code/executor/promptgen/fuzzer_generator
     - file: code/targets/0_prompt_targets
       sections:
       - file: code/targets/1_openai_chat_target
@@ -77,45 +85,49 @@ chapters:
         - file: code/converters/char_swap_attack_converter
         - file: code/converters/pdf_converter
         - file: code/converters/math_prompt_converter
+        - file: code/converters/transparency_attack_converter
     - file: code/scoring/0_scoring
       sections:
       - file: code/scoring/1_azure_content_safety_scorers
       - file: code/scoring/2_true_false_scorers
       - file: code/scoring/3_classification_scorers
       - file: code/scoring/4_likert_scorers
-      - file: code/scoring/5_human_scorers
+      - file: code/scoring/5_human_in_the_loop_scorer
       - file: code/scoring/6_refusal_scorer
+      - file: code/scoring/7_batch_scorer
       - file: code/scoring/insecure_code_scorer
       - file: code/scoring/look_back_scorer
       - file: code/scoring/prompt_shield_scorer
-      - file: code/scoring/true_false_batch_scoring
-      - file: code/scoring/human_in_the_loop_scorer_gradio
       - file: code/scoring/generic_scorers
       - file: code/scoring/scorer_evals
     - file: code/memory/0_memory
       sections:
-      - file: code/memory/1_duck_db_memory
+      - file: code/memory/1_sqlite_memory
       - file: code/memory/2_basic_memory_programming
       - file: code/memory/3_prompt_request
       - file: code/memory/4_manually_working_with_memory
       - file: code/memory/5_memory_labels
       - file: code/memory/6_azure_sql_memory
-      - file: code/memory/7_azure_sql_memory_orchestrators
+      - file: code/memory/7_azure_sql_memory_attacks
       - file: code/memory/8_seed_prompt_database
       - file: code/memory/9_exporting_data
       - file: code/memory/10_schema_diagram.md
+      - file: code/memory/11_harm_categories
       - file: code/memory/azure_embeddings
       - file: code/memory/chat_message
     - file: code/auxiliary_attacks/0_auxiliary_attacks
       sections:
       - file: code/auxiliary_attacks/1_gcg_azure_ml
-    - file: deployment/README
+    - file: code/scanner/0_scanner
       sections:
-      - file: deployment/deploy_hf_model_aml
-      - file: deployment/download_and_register_hf_model_aml
-      - file: deployment/hf_aml_model_endpoint_guide
-      - file: deployment/score_aml_endpoint
-      - file: deployment/troubleshooting_guide_hf_azureml
+      - file: code/scanner/1_configuration
+  - file: deployment/README
+    sections:
+    - file: deployment/deploy_hf_model_aml
+    - file: deployment/download_and_register_hf_model_aml
+    - file: deployment/hf_aml_model_endpoint_guide
+    - file: deployment/score_aml_endpoint
+    - file: deployment/troubleshooting_guide_hf_azureml
   - file: api.rst
   - file: blog/README
     sections:

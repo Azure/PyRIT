@@ -9,9 +9,10 @@ import uuid
 import weakref
 from datetime import datetime
 from pathlib import Path
-from typing import MutableSequence, Optional, Sequence, TypeVar, Union
+from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
 
-from sqlalchemy import and_
+from sqlalchemy import MetaData, and_, exists, func
+from sqlalchemy.engine.base import Engine
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql.elements import ColumnElement
 
@@ -62,6 +63,7 @@ class MemoryInterface(abc.ABC):
     memory_embedding: MemoryEmbedding = None
     results_storage_io: StorageIO = None
     results_path: str = None
+    engine: Engine = None
 
     def __init__(self, embedding_model=None):
         """Initialize the MemoryInterface.
@@ -126,22 +128,22 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _get_prompt_pieces_orchestrator_conditions(self, *, orchestrator_id: str):
+    def _get_prompt_pieces_attack_conditions(self, *, attack_id: str) -> Any:
         """
-        Returns a condition to retrieve based on orchestrator ID.
+        Returns a condition to retrieve based on attack ID.
         """
 
     @abc.abstractmethod
-    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]):
+    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> Any:
         """
-        Returns a list of conditions for filtering seed prompt entries based on prompt metadata.
+        Returns a condition for filtering seed prompt entries based on prompt metadata.
 
         Args:
-            prompt_metadata (dict[str, str | int]): A free-form dictionary for tagging prompts with custom metadata.
+            metadata (dict[str, str | int]): A free-form dictionary for tagging prompts with custom metadata.
                 This includes information that is useful for the specific target you're probing, such as encoding data.
 
         Returns:
-            list: A list of conditions for filtering memory entries based on prompt metadata.
+            Any: A SQLAlchemy condition for filtering memory entries based on prompt metadata.
         """
 
     @abc.abstractmethod
@@ -212,56 +214,104 @@ class MemoryInterface(abc.ABC):
                     score.prompt_request_response_id = prompt_piece[0].original_prompt_id
         self._insert_entries(entries=[ScoreEntry(entry=score) for score in scores])
 
-    def get_scores_by_prompt_ids(self, *, prompt_request_response_ids: Sequence[str]) -> Sequence[Score]:
+    def get_scores(
+        self,
+        *,
+        score_ids: Optional[Sequence[str]] = None,
+        score_type: Optional[str] = None,
+        score_category: Optional[str] = None,
+        sent_after: Optional[datetime] = None,
+        sent_before: Optional[datetime] = None,
+    ) -> Sequence[Score]:
         """
-        Gets a list of scores based on prompt_request_response_ids.
-        """
-        prompt_pieces = self.get_prompt_request_pieces(prompt_ids=prompt_request_response_ids)
-        # Get the original prompt IDs from the prompt pieces so correct scores can be obtained
-        prompt_request_response_ids = [str(piece.original_prompt_id) for piece in prompt_pieces]
-        entries: Sequence[ScoreEntry] = self._query_entries(
-            ScoreEntry, conditions=ScoreEntry.prompt_request_response_id.in_(prompt_request_response_ids)
-        )
+        Retrieves a list of Score objects based on the specified filters.
 
+        Args:
+            score_ids (Optional[Sequence[str]]): A list of score IDs to filter by.
+            score_type (Optional[str]): The type of the score to filter by.
+            score_category (Optional[str]): The category of the score to filter by.
+            sent_after (Optional[datetime]): Filter for scores sent after this datetime.
+            sent_before (Optional[datetime]): Filter for scores sent before this datetime.
+
+        Returns:
+            Sequence[Score]: A list of Score objects that match the specified filters.
+        """
+        conditions: list[Any] = []
+
+        if score_ids:
+            conditions.append(ScoreEntry.id.in_(score_ids))
+        if score_type:
+            conditions.append(ScoreEntry.score_type == score_type)
+        if score_category:
+            conditions.append(ScoreEntry.score_category == score_category)
+        if sent_after:
+            conditions.append(ScoreEntry.timestamp >= sent_after)
+        if sent_before:
+            conditions.append(ScoreEntry.timestamp <= sent_before)
+
+        if not conditions:
+            return []
+
+        entries: Sequence[ScoreEntry] = self._query_entries(ScoreEntry, conditions=and_(*conditions))
         return [entry.get_score() for entry in entries]
 
-    def get_scores_by_orchestrator_id(self, *, orchestrator_id: str) -> Sequence[Score]:
+    def get_prompt_scores(
+        self,
+        *,
+        attack_id: Optional[str | uuid.UUID] = None,
+        role: Optional[str] = None,
+        conversation_id: Optional[str | uuid.UUID] = None,
+        prompt_ids: Optional[Sequence[str | uuid.UUID]] = None,
+        labels: Optional[dict[str, str]] = None,
+        prompt_metadata: Optional[dict[str, Union[str, int]]] = None,
+        sent_after: Optional[datetime] = None,
+        sent_before: Optional[datetime] = None,
+        original_values: Optional[Sequence[str]] = None,
+        converted_values: Optional[Sequence[str]] = None,
+        data_type: Optional[str] = None,
+        not_data_type: Optional[str] = None,
+        converted_value_sha256: Optional[Sequence[str]] = None,
+    ) -> Sequence[Score]:
         """
-        Retrieves a list of Score objects associated with the PromptRequestPiece objects
-        which have the specified orchestrator ID.
+        Retrieves scores attached to prompt request pieces based on the specified filters.
 
         Args:
-            orchestrator_id (str): The id of the orchestrator.
-                Can be retrieved by calling orchestrator.get_identifier()["id"]
+            Same as `get_prompt_request_pieces`.
 
         Returns:
-            Sequence[Score]: A list of Score objects associated with the PromptRequestPiece objects
-                which match the specified orchestrator ID.
+            Sequence[Score]: A list of scores extracted from the prompt request pieces.
         """
-        prompt_pieces = self.get_prompt_request_pieces(orchestrator_id=orchestrator_id)
-        # Since duplicate pieces do not have their own score entries, get the original prompt IDs from the pieces.
-        prompt_ids = [str(piece.original_prompt_id) for piece in prompt_pieces]
-        return self.get_scores_by_prompt_ids(prompt_request_response_ids=prompt_ids)
+        prompt_pieces = self.get_prompt_request_pieces(
+            attack_id=attack_id,
+            role=role,
+            conversation_id=conversation_id,
+            prompt_ids=prompt_ids,
+            labels=labels,
+            prompt_metadata=prompt_metadata,
+            sent_after=sent_after,
+            sent_before=sent_before,
+            original_values=original_values,
+            converted_values=converted_values,
+            data_type=data_type,
+            not_data_type=not_data_type,
+            converted_value_sha256=converted_value_sha256,
+        )
 
-    def get_scores_by_memory_labels(self, *, memory_labels: dict[str, str]) -> Sequence[Score]:
-        """
-        Retrieves a list of Score objects associated with the PromptRequestPiece objects
-        which have the specified memory labels.
+        # Deduplicate prompt pieces by original_prompt_id to avoid duplicate scores
+        # since duplicated pieces share scores with their originals
+        seen_original_ids = set()
+        unique_pieces = []
+        for piece in prompt_pieces:
+            if piece.original_prompt_id not in seen_original_ids:
+                seen_original_ids.add(piece.original_prompt_id)
+                unique_pieces.append(piece)
 
-        Args:
-            memory_labels (dict[str, str]): A free-form dictionary for tagging prompts with custom labels.
-                These labels can be used to track all prompts sent as part of an operation, score prompts based on
-                the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
-                Users can define any key-value pairs according to their needs.
+        scores = []
+        for piece in unique_pieces:
+            if piece.scores:
+                scores.extend(piece.scores)
 
-        Returns:
-            Sequence[Score]: A list of Score objects associated with the PromptRequestPiece objects
-                which match the specified memory labels.
-        """
-        prompt_pieces = self.get_prompt_request_pieces(labels=memory_labels)
-        # Since duplicate pieces do not have their own score entries, get the original prompt IDs from the pieces.
-        prompt_ids = [str(piece.original_prompt_id) for piece in prompt_pieces]
-        return self.get_scores_by_prompt_ids(prompt_request_response_ids=prompt_ids)
+        return list(scores)
 
     def get_conversation(self, *, conversation_id: str) -> MutableSequence[PromptRequestResponse]:
         """
@@ -279,7 +329,7 @@ class MemoryInterface(abc.ABC):
     def get_prompt_request_pieces(
         self,
         *,
-        orchestrator_id: Optional[str | uuid.UUID] = None,
+        attack_id: Optional[str | uuid.UUID] = None,
         role: Optional[str] = None,
         conversation_id: Optional[str | uuid.UUID] = None,
         prompt_ids: Optional[Sequence[str | uuid.UUID]] = None,
@@ -297,7 +347,7 @@ class MemoryInterface(abc.ABC):
         Retrieves a list of PromptRequestPiece objects based on the specified filters.
 
         Args:
-            orchestrator_id (Optional[str | uuid.UUID], optional): The ID of the orchestrator. Defaults to None.
+            attack_id (Optional[str | uuid.UUID], optional): The ID of the attack. Defaults to None.
             role (Optional[str], optional): The role of the prompt. Defaults to None.
             conversation_id (Optional[str | uuid.UUID], optional): The ID of the conversation. Defaults to None.
             prompt_ids (Optional[Sequence[str] | Sequence[uuid.UUID]], optional): A list of prompt IDs.
@@ -319,8 +369,8 @@ class MemoryInterface(abc.ABC):
         """
 
         conditions = []
-        if orchestrator_id:
-            conditions.append(self._get_prompt_pieces_orchestrator_conditions(orchestrator_id=str(orchestrator_id)))
+        if attack_id:
+            conditions.append(self._get_prompt_pieces_attack_conditions(attack_id=str(attack_id)))
         if role:
             conditions.append(PromptMemoryEntry.role == role)
         if conversation_id:
@@ -329,9 +379,9 @@ class MemoryInterface(abc.ABC):
             prompt_ids = [str(pi) for pi in prompt_ids]
             conditions.append(PromptMemoryEntry.id.in_(prompt_ids))
         if labels:
-            conditions.append(self._get_prompt_pieces_memory_label_conditions(memory_labels=labels))
+            conditions.extend(self._get_prompt_pieces_memory_label_conditions(memory_labels=labels))
         if prompt_metadata:
-            conditions.append(self._get_prompt_pieces_prompt_metadata_conditions(prompt_metadata=prompt_metadata))
+            conditions.extend(self._get_prompt_pieces_prompt_metadata_conditions(prompt_metadata=prompt_metadata))
         if sent_after:
             conditions.append(PromptMemoryEntry.timestamp >= sent_after)
         if sent_before:
@@ -357,18 +407,18 @@ class MemoryInterface(abc.ABC):
             logger.exception(f"Failed to retrieve prompts with error {e}")
             return []
 
-    def duplicate_conversation(self, *, conversation_id: str, new_orchestrator_id: Optional[str] = None) -> str:
+    def duplicate_conversation(self, *, conversation_id: str, new_attack_id: Optional[str] = None) -> str:
         """
         Duplicates a conversation for reuse
 
         This can be useful when an attack strategy requires branching out from a particular point in the conversation.
-        One cannot continue both branches with the same orchestrator and conversation IDs since that would corrupt
-        the memory. Instead, one needs to duplicate the conversation and continue with the new orchestrator ID.
+        One cannot continue both branches with the same attack and conversation IDs since that would corrupt
+        the memory. Instead, one needs to duplicate the conversation and continue with the new attack ID.
 
         Args:
             conversation_id (str): The conversation ID with existing conversations.
-            new_orchestrator_id (str, Optional): The new orchestrator ID to assign to the duplicated conversations.
-                If no new orchestrator ID is provided, the orchestrator ID will remain the same. Defaults to None.
+            new_attack_id (str, Optional): The new attack ID to assign to the duplicated conversations.
+                If no new attack ID is provided, the attack ID will remain the same. Defaults to None.
         Returns:
             The uuid for the new conversation.
         """
@@ -378,11 +428,11 @@ class MemoryInterface(abc.ABC):
         for piece in prompt_pieces:
             # Assign duplicated piece a new ID, but note that the `original_prompt_id` remains the same.
             piece.id = uuid.uuid4()
-            if piece.orchestrator_identifier["id"] == new_orchestrator_id:
-                raise ValueError("The new orchestrator ID must be different from the existing orchestrator ID.")
+            if piece.attack_identifier["id"] == new_attack_id:
+                raise ValueError("The new attack ID must be different from the existing attack ID.")
 
-            if new_orchestrator_id:
-                piece.orchestrator_identifier["id"] = new_orchestrator_id
+            if new_attack_id:
+                piece.attack_identifier["id"] = new_attack_id
 
             piece.conversation_id = new_conversation_id
 
@@ -390,7 +440,7 @@ class MemoryInterface(abc.ABC):
         return new_conversation_id
 
     def duplicate_conversation_excluding_last_turn(
-        self, *, conversation_id: str, new_orchestrator_id: Optional[str] = None
+        self, *, conversation_id: str, new_attack_id: Optional[str] = None
     ) -> str:
         """
         Duplicate a conversation, excluding the last turn. In this case, last turn is defined as before the last
@@ -400,8 +450,8 @@ class MemoryInterface(abc.ABC):
 
         Args:
             conversation_id (str): The conversation ID with existing conversations.
-            new_orchestrator_id (str, Optional): The new orchestrator ID to assign to the duplicated conversations.
-                If no new orchestrator ID is provided, the orchestrator ID will remain the same. Defaults to None.
+            new_attack_id (str, Optional): The new attack ID to assign to the duplicated conversations.
+                If no new attack ID is provided, the attack ID will remain the same. Defaults to None.
         Returns:
             The uuid for the new conversation.
         """
@@ -431,8 +481,8 @@ class MemoryInterface(abc.ABC):
         for piece in prompt_pieces:
             # Assign duplicated piece a new ID, but note that the `original_prompt_id` remains the same.
             piece.id = uuid.uuid4()
-            if new_orchestrator_id:
-                piece.orchestrator_identifier["id"] = new_orchestrator_id
+            if new_attack_id:
+                piece.attack_identifier["id"] = new_attack_id
             piece.conversation_id = new_conversation_id
 
         self.add_request_pieces_to_memory(request_pieces=prompt_pieces)
@@ -800,7 +850,7 @@ class MemoryInterface(abc.ABC):
         groups: Optional[Sequence[str]] = None,
         source: Optional[str] = None,
     ) -> Sequence[SeedPromptGroup]:
-        """Retrieves groups of seed prompts based on the provided filtering criteria.
+        """Retrieves groups of seed prompts based on the provided filtering criteria
 
         Args:
             value_sha256 (Optional[Sequence[str]], Optional): SHA256 hash of value to filter seed prompt groups by.
@@ -832,7 +882,7 @@ class MemoryInterface(abc.ABC):
     def export_conversations(
         self,
         *,
-        orchestrator_id: Optional[str | uuid.UUID] = None,
+        attack_id: Optional[str | uuid.UUID] = None,
         conversation_id: Optional[str | uuid.UUID] = None,
         prompt_ids: Optional[Sequence[str] | Sequence[uuid.UUID]] = None,
         labels: Optional[dict[str, str]] = None,
@@ -851,7 +901,7 @@ class MemoryInterface(abc.ABC):
             Defaults to all conversations if no filters are provided.
 
         Args:
-            orchestrator_id (Optional[str | uuid.UUID], optional): The ID of the orchestrator. Defaults to None.
+            attack_id (Optional[str | uuid.UUID], optional): The ID of the attack. Defaults to None.
             conversation_id (Optional[str | uuid.UUID], optional): The ID of the conversation. Defaults to None.
             prompt_ids (Optional[Sequence[str] | Sequence[uuid.UUID]], optional): A list of prompt IDs.
                 Defaults to None.
@@ -869,7 +919,7 @@ class MemoryInterface(abc.ABC):
             export_type (str, optional): The format of the export. Defaults to "json".
         """
         data = self.get_prompt_request_pieces(
-            orchestrator_id=orchestrator_id,
+            attack_id=attack_id,
             conversation_id=conversation_id,
             prompt_ids=prompt_ids,
             labels=labels,
@@ -906,6 +956,8 @@ class MemoryInterface(abc.ABC):
         objective: Optional[str] = None,
         objective_sha256: Optional[Sequence[str]] = None,
         outcome: Optional[str] = None,
+        targeted_harm_categories: Optional[Sequence[str]] = None,
+        labels: Optional[dict[str, str]] = None,
     ) -> Sequence[AttackResult]:
         """
         Retrieves a list of AttackResult objects based on the specified filters.
@@ -918,7 +970,16 @@ class MemoryInterface(abc.ABC):
                 Defaults to None.
             outcome (Optional[str], optional): The outcome to filter by (success, failure, undetermined).
                 Defaults to None.
-
+            targeted_harm_categories (Optional[Sequence[str]], optional):
+                A list of targeted harm categories to filter results by.
+                These targeted harm categories are associated with the prompts themselves,
+                meaning they are harm(s) we're trying to elicit with the prompt,
+                not necessarily one(s) that were found in the response.
+                By providing a list, this means ALL categories in the list must be present.
+                Defaults to None.
+            labels (Optional[dict[str, str]], optional): A dictionary of memory labels to filter results by.
+                These labels are associated with the prompts themselves, used for custom tagging and tracking.
+                Defaults to None.
         Returns:
             Sequence[AttackResult]: A list of AttackResult objects that match the specified filters.
         """
@@ -933,11 +994,45 @@ class MemoryInterface(abc.ABC):
             conditions.append(AttackResultEntry.conversation_id == conversation_id)
         if objective:
             conditions.append(AttackResultEntry.objective.contains(objective))
+
         if objective_sha256:
             conditions.append(AttackResultEntry.objective_sha256.in_(objective_sha256))
         if outcome:
             conditions.append(AttackResultEntry.outcome == outcome)
 
+        if targeted_harm_categories:
+            # construct query to ensure ALL categories must be present in the SAME conversation
+            targeted_harm_categories_subquery = exists().where(
+                and_(
+                    PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
+                    # Exclude empty strings, None, and empty lists
+                    PromptMemoryEntry.targeted_harm_categories.isnot(None),
+                    PromptMemoryEntry.targeted_harm_categories != "",
+                    PromptMemoryEntry.targeted_harm_categories != "[]",
+                    and_(
+                        *[
+                            func.json_extract(PromptMemoryEntry.targeted_harm_categories, "$").like(f'%"{category}"%')
+                            for category in targeted_harm_categories
+                        ]
+                    ),
+                )
+            )
+            conditions.append(targeted_harm_categories_subquery)
+        if labels:
+            # ALL labels must be present in the SAME conversation
+            labels_subquery = exists().where(
+                and_(
+                    PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
+                    PromptMemoryEntry.labels.isnot(None),
+                    and_(
+                        *[
+                            func.json_extract(PromptMemoryEntry.labels, f"$.{key}") == value
+                            for key, value in labels.items()
+                        ]
+                    ),
+                )
+            )
+            conditions.append(labels_subquery)
         try:
             entries: Sequence[AttackResultEntry] = self._query_entries(
                 AttackResultEntry, conditions=and_(*conditions) if conditions else None
@@ -946,3 +1041,14 @@ class MemoryInterface(abc.ABC):
         except Exception as e:
             logger.exception(f"Failed to retrieve attack results with error {e}")
             return []
+
+    def print_schema(self):
+        """Prints the schema of all tables in the database."""
+        metadata = MetaData()
+        metadata.reflect(bind=self.engine)
+
+        for table_name in metadata.tables:
+            table = metadata.tables[table_name]
+            print(f"Schema for {table_name}:")
+            for column in table.columns:
+                print(f"  Column {column.name} ({column.type})")

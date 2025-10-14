@@ -14,6 +14,17 @@ window.addEventListener("DOMContentLoaded", () => {
 
 		headerButtons.prepend(discordBtn);
 	}
+
+	// Add RSS feed link to the blog README page only
+	if (window.location.pathname.endsWith('/blog/README.html')) {
+		const rssLink = document.createElement('link');
+		rssLink.rel = 'alternate';
+		rssLink.type = 'application/rss+xml';
+		rssLink.title = 'PyRIT Blog RSS Feed';
+		rssLink.href = 'https://azure.github.io/PyRIT/blog/rss.xml';
+
+		document.head.appendChild(rssLink);
+	}
 });
 (function(cfg) {
 	function e() {

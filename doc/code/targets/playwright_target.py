@@ -5,11 +5,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
-# # Playwright Target:
+# # Playwright Target - optional
 #
 # This notebook demonstrates how to interact with the **Playwright Target** in PyRIT.
 #
@@ -90,7 +90,6 @@ from playwright.async_api import Page, async_playwright
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.models import PromptRequestPiece
-from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import PlaywrightTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
@@ -130,10 +129,12 @@ async def interact_with_my_app(page: Page, request_piece: PromptRequestPiece) ->
 # ### Using `PlaywrightTarget` with the Interaction Function and Scorer
 #
 # Now, we can use the `PlaywrightTarget` by passing the interaction function we defined.
-# We'll use the `PromptSendingOrchestrator` to send prompts to the target and collects responses.
+# We'll use the `PromptSendingAttack` to send prompts to the target and collects responses.
 # %%
 import asyncio
 import sys
+
+from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
 
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -143,12 +144,12 @@ if sys.platform == "win32":
 async def main(page: Page) -> None:
     target = PlaywrightTarget(interaction_func=interact_with_my_app, page=page)
 
-    orchestrator = PromptSendingOrchestrator(objective_target=target)
+    attack = PromptSendingAttack(objective_target=target)
 
     objective = "Tell me a joke about computer programming."
 
-    result = await orchestrator.run_attack_async(objective=objective)  # type: ignore
-    await result.print_conversation_async()  # type: ignore
+    result = await attack.execute_async(objective=objective)  # type: ignore
+    await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
 
 
 async def run() -> None:

@@ -5,11 +5,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.1
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
-# # Scorer Evaluations
+# # Scorer Evaluations - optional
 # You may want to run evaluations on PyRIT scorers to see how their scores align with human assessment. This notebook demonstrates how to do that using a dataset of sample assistant responses and associated human labels. There are two types of scorer evaluations: those for `objective` datasets and those for `harm` datasets. Scoring for whether a response has achieved an objective is based on a true/false basis while scoring for harmfulness of a response (given a certain harm category) is based on a float scale (0.0 to 1.0 where 0.0 is minimal severity and 1.0 is maximal), often on a Likert basis. Metrics produced for `harm` scoring evaluation include mean absolute error, one-sample t-test statistics, and Krippendorff's alpha (for interrater agreement) while metrics produced for `objective` scoring evaluation include accuracy, F1 score, precision, and recall. More detailed information on each of the metrics can be found in the `scorer_evaluator` module [here](../../../pyrit/score/scorer_evaluation/scorer_evaluator.py).
 #
 # To actually run the evaluation in PyRIT, you need a `HumanLabeledDataset` object or a CSV file that includes columns of assistant responses, harm category or objectives (depending on the type of dataset you have), and human scores. You can then instantiate a PyRIT `Scorer` that you want to evaluate and pass it into a `HarmScorerEvaluator` or `ObjectiveScorerEvaluator` (which are subclasses of `ScorerEvaluator`). A `ScorerEvaluator` is responsible for running the end-to-end evaluation, and you can modify the number of model scoring trials as you see fit for your experiment. Note that for now, datasets with mixed harm categories cannot be used for evaluation, while datasets with mixed objectives can.

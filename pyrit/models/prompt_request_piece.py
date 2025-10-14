@@ -12,7 +12,7 @@ from pyrit.models.chat_message import ChatMessage, ChatMessageRole
 from pyrit.models.literals import PromptDataType, PromptResponseError
 from pyrit.models.score import Score
 
-Originator = Literal["orchestrator", "converter", "undefined", "scorer"]
+Originator = Literal["attack", "converter", "undefined", "scorer"]
 
 
 class PromptRequestPiece:
@@ -38,15 +38,16 @@ class PromptRequestPiece:
         prompt_metadata: Optional[Dict[str, Union[str, int]]] = None,
         converter_identifiers: Optional[List[Dict[str, str]]] = None,
         prompt_target_identifier: Optional[Dict[str, str]] = None,
-        orchestrator_identifier: Optional[Dict[str, str]] = None,
+        attack_identifier: Optional[Dict[str, str]] = None,
         scorer_identifier: Optional[Dict[str, str]] = None,
         original_value_data_type: PromptDataType = "text",
-        converted_value_data_type: PromptDataType = "text",
+        converted_value_data_type: Optional[PromptDataType] = None,
         response_error: PromptResponseError = "none",
         originator: Originator = "undefined",
         original_prompt_id: Optional[uuid.UUID] = None,
         timestamp: Optional[datetime] = None,
         scores: Optional[List[Score]] = None,
+        targeted_harm_categories: Optional[List[str]] = None,
     ):
         """Initialize a PromptRequestPiece.
 
@@ -67,7 +68,7 @@ class PromptRequestPiece:
                 Defaults to None.
             converter_identifiers: The converter identifiers for the prompt. Defaults to None.
             prompt_target_identifier: The target identifier for the prompt. Defaults to None.
-            orchestrator_identifier: The orchestrator identifier for the prompt. Defaults to None.
+            attack_identifier: The attack identifier for the prompt. Defaults to None.
             scorer_identifier: The scorer identifier for the prompt. Defaults to None.
             original_value_data_type: The data type of the original prompt (text, image). Defaults to "text".
             converted_value_data_type: The data type of the converted prompt (text, image). Defaults to "text".
@@ -76,6 +77,7 @@ class PromptRequestPiece:
             original_prompt_id: The original prompt id. It is equal to id unless it is a duplicate. Defaults to None.
             timestamp: The timestamp of the memory entry. Defaults to None (auto-generated).
             scores: The scores associated with the prompt. Defaults to None.
+            targeted_harm_categories: The harm categories associated with the prompt. Defaults to None.
         """
 
         self.id = id if id else uuid4()
@@ -83,11 +85,16 @@ class PromptRequestPiece:
         if role not in ChatMessageRole.__args__:  # type: ignore
             raise ValueError(f"Role {role} is not a valid role.")
 
-        self.role = role
+        self.role: ChatMessageRole = role
 
         if converted_value is None:
             converted_value = original_value
-            converted_value_data_type = original_value_data_type
+            if converted_value_data_type is None:
+                converted_value_data_type = original_value_data_type
+        else:
+            # If converted_value is provided but converted_value_data_type is not, default to original_value_data_type
+            if converted_value_data_type is None:
+                converted_value_data_type = original_value_data_type
 
         self.conversation_id = conversation_id if conversation_id else str(uuid4())
         self.sequence = sequence
@@ -99,7 +106,7 @@ class PromptRequestPiece:
         self.converter_identifiers = converter_identifiers if converter_identifiers else []
 
         self.prompt_target_identifier = prompt_target_identifier or {}
-        self.orchestrator_identifier = orchestrator_identifier or {}
+        self.attack_identifier = attack_identifier or {}
         self.scorer_identifier = scorer_identifier or {}
 
         self.original_value = original_value
@@ -107,7 +114,7 @@ class PromptRequestPiece:
         if original_value_data_type not in get_args(PromptDataType):
             raise ValueError(f"original_value_data_type {original_value_data_type} is not a valid data type.")
 
-        self.original_value_data_type = original_value_data_type
+        self.original_value_data_type: PromptDataType = original_value_data_type
 
         self.original_value_sha256 = original_value_sha256
 
@@ -116,7 +123,7 @@ class PromptRequestPiece:
         if converted_value_data_type not in get_args(PromptDataType):
             raise ValueError(f"converted_value_data_type {converted_value_data_type} is not a valid data type.")
 
-        self.converted_value_data_type = converted_value_data_type
+        self.converted_value_data_type: PromptDataType = converted_value_data_type
 
         self.converted_value_sha256 = converted_value_sha256
 
@@ -130,6 +137,7 @@ class PromptRequestPiece:
         self.original_prompt_id = original_prompt_id or self.id
 
         self.scores = scores if scores else []
+        self.targeted_harm_categories = targeted_harm_categories if targeted_harm_categories else []
 
     async def set_sha256_values_async(self):
         """
@@ -175,6 +183,14 @@ class PromptRequestPiece:
         """
         return self.response_error == "blocked"
 
+    def set_piece_not_in_database(self):
+        """
+        Set that the prompt is not in the database.
+
+        This is needed when we're scoring prompts or other things that have not been sent by PyRIT
+        """
+        self.id = None
+
     def to_dict(self) -> dict:
         return {
             "id": str(self.id),
@@ -183,10 +199,11 @@ class PromptRequestPiece:
             "sequence": self.sequence,
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,
             "labels": self.labels,
+            "targeted_harm_categories": self.targeted_harm_categories if self.targeted_harm_categories else None,
             "prompt_metadata": self.prompt_metadata,
             "converter_identifiers": self.converter_identifiers,
             "prompt_target_identifier": self.prompt_target_identifier,
-            "orchestrator_identifier": self.orchestrator_identifier,
+            "attack_identifier": self.attack_identifier,
             "scorer_identifier": self.scorer_identifier,
             "original_value_data_type": self.original_value_data_type,
             "original_value": self.original_value,
