@@ -51,7 +51,7 @@ class OpenAIDALLETarget(OpenAITarget):
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
                 Defaults to the `OPENAI_DALLE_API_KEY` environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
-            use_aad_auth (bool, Optional): When set to True, user authentication is used
+            use_entra_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default . Please run `az login` locally
                 to leverage user AuthN.
@@ -122,7 +122,7 @@ class OpenAIDALLETarget(OpenAITarget):
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
-        # Refresh auth headers if using AAD
+        # Refresh auth headers if using Entra authentication
         self.refresh_auth_headers()
 
         body = self._construct_request_body(prompt=request.converted_value)
