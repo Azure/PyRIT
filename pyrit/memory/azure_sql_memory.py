@@ -8,13 +8,13 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
 
 from azure.core.credentials import AccessToken
-from azure.identity import DefaultAzureCredential
 from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload, sessionmaker
 from sqlalchemy.orm.session import Session
 
+from pyrit.auth.azure_auth import AzureAuth
 from pyrit.common import default_values
 from pyrit.common.singleton import Singleton
 from pyrit.memory.memory_interface import MemoryInterface
@@ -117,10 +117,9 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Creates an Azure Entra ID access token.
         Stores the token and its expiry time.
         """
-        azure_credentials = DefaultAzureCredential()
-        token: AccessToken = azure_credentials.get_token(self.TOKEN_URL)
-        self._auth_token = token
-        self._auth_token_expiry = token.expires_on
+        azure_auth = AzureAuth(token_scope=self.TOKEN_URL)
+        self._auth_token = azure_auth.access_token
+        self._auth_token_expiry = azure_auth.access_token.expires_on
 
     def _refresh_token_if_needed(self) -> None:
         """
