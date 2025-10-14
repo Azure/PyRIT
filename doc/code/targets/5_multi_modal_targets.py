@@ -5,7 +5,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.3
+#       jupytext_version: 1.17.2
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -35,6 +39,8 @@ initialize_pyrit(memory_db_type=IN_MEMORY)
 objective = "Give me an image of a raccoon pirate as a Spanish baker in Spain"
 
 img_prompt_target = OpenAIDALLETarget()
+# For an AzureOpenAI endpoint with Entra ID authentication enabled, use the following command instead. Make sure to run `az login` first.
+# target = OpenAIChatTarget(use_entra_auth=True)
 
 image_scorer = SelfAskTrueFalseScorer(
     chat_target=OpenAIChatTarget(),
