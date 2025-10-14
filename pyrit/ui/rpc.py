@@ -81,7 +81,7 @@ class AppRPCServer:
 
         def exposed_receive_ping(self):
             # A ping should be received every 2s from the client. If a client misses a ping then the server should
-            # stoped
+            # stopped
             self._last_ping = time.time()
             logger.debug("Ping received")
 

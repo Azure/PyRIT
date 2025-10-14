@@ -224,7 +224,7 @@ class OpenAISoraTarget(OpenAITarget):
         """
         Asynchronously check status of a submitted video generation job using the job_id.
 
-        Retries a maxium of {self.CHECK_JOB_RETRY_MAX_NUM_ATTEMPTS} times,
+        Retries a maximum of {self.CHECK_JOB_RETRY_MAX_NUM_ATTEMPTS} times,
         until the job is complete (succeeded, failed, or cancelled). Also
         retries upon RateLimitException.
 
