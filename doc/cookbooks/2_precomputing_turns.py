@@ -161,22 +161,25 @@ new_attack = CrescendoAttack(
     max_backtracks=2,
 )
 
-# Note, we want a better way to retrieve successful conversations from memory, so that's coming very soon.
-# We are tackling this internally.
+# Retrieve the conversations from memory and prepend them to the new attack.
+# (in this case, we have results in a variable, but you can assume it's from an old session)
 
-# For now, let's use results
-# But if you save the output of the attack, you can also view the conersation_ids in the results object, or reconstruct them.
+memory = CentralMemory.get_memory_instance()
+pieces = memory.get_prompt_request_pieces(labels=memory_labels)
+conversation_ids = set(piece.conversation_id for piece in pieces)
 
-# this object is a dictionary of the first N-1 turns of the successful conversations from the earlier attack
+attack_results = [result for cid in conversation_ids for result in memory.get_attack_results(conversation_id=cid)]
+
 conversation_starters = {}
 
-for result in results:
+for result in attack_results:
     new_conversation = memory.duplicate_conversation_excluding_last_turn(
         conversation_id=result.conversation_id,
         new_attack_id=new_attack.get_identifier()["id"],
     )
 
     conversation_starters[result.objective] = list(memory.get_conversation(conversation_id=new_conversation))
+
 
 for objective, conversation in conversation_starters.items():
     new_result = await new_attack.execute_async(objective=objective, prepended_conversation=conversation, memory_labels=memory_labels)  # type: ignore
