@@ -3,7 +3,7 @@
 import logging
 import pathlib
 import sys
-from typing import Any, List, Literal, Optional, Union, get_args
+from typing import Any, Literal, Optional, Sequence, Union, get_args
 
 import dotenv
 
@@ -48,7 +48,7 @@ def _load_environment_files() -> None:
 
 
 def _execute_initialization_scripts(
-    *, script_paths: List[Union[str, pathlib.Path]], expose_private_vars: bool = False
+    *, script_paths: Sequence[Union[str, pathlib.Path]], expose_private_vars: bool = False
 ) -> None:
     """
     Executes Python initialization scripts in order.
@@ -63,7 +63,7 @@ def _execute_initialization_scripts(
     namespace. This follows Python's convention for indicating private/internal variables.
 
     Args:
-        script_paths (List[Union[str, pathlib.Path]]): List of file paths to Python scripts to execute.
+        script_paths (Sequence[Union[str, pathlib.Path]]): Sequence of file paths to Python scripts to execute.
         expose_private_vars (bool): If False (default), variables starting with '_' are not
             exposed to the caller's namespace. If True, all variables are exposed.
 
@@ -152,7 +152,7 @@ def _execute_initialization_scripts(
 def initialize_pyrit(
     memory_db_type: Union[MemoryDatabaseType, str],
     *,
-    initialization_scripts: Optional[List[Union[str, pathlib.Path]]] = None,
+    initialization_scripts: Optional[Sequence[Union[str, pathlib.Path]]] = None,
     **memory_instance_kwargs: Optional[Any],
 ) -> None:
     """
@@ -161,7 +161,7 @@ def initialize_pyrit(
     Args:
         memory_db_type (MemoryDatabaseType): The MemoryDatabaseType string literal which indicates the memory
             instance to use for central memory. Options include "InMemory", "SQLite", and "AzureSQL".
-        initialization_scripts (Optional[List[Union[str, pathlib.Path]]]): Optional list of Python script paths
+        initialization_scripts (Optional[Sequence[Union[str, pathlib.Path]]]): Optional sequence of Python script paths
             to execute in order. These scripts can set global variables and configure default values using
             set_default_value from pyrit.setup.
         **memory_instance_kwargs (Optional[Any]): Additional keyword arguments to pass to the memory instance.

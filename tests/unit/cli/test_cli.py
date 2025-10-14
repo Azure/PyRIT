@@ -138,7 +138,8 @@ test_cases_error = [
     ),
     (
         "--config-file 'tests/unit/cli/multi_turn_rto_wrong_arg.yaml'",
-        "Failed to instantiate scenario 'RedTeamingAttack': " "got an unexpected keyword argument 'wrong_arg'",
+        "Failed to instantiate scenario 'RedTeamingAttack': "
+        "RedTeamingAttack.__init__() got an unexpected keyword argument 'wrong_arg'",
         ValueError,
     ),
     (
@@ -149,7 +150,7 @@ test_cases_error = [
     (
         "--config-file 'tests/unit/cli/multi_turn_tap_wrong_arg.yaml'",
         "Failed to instantiate scenario 'TreeOfAttacksWithPruningAttack': "
-        "got an unexpected keyword argument 'wrong_arg'",
+        "TreeOfAttacksWithPruningAttack.__init__() got an unexpected keyword argument 'wrong_arg'",
         ValueError,
     ),
     (

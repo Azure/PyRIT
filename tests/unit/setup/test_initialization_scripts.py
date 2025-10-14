@@ -3,7 +3,7 @@
 
 import pathlib
 import tempfile
-from typing import Optional
+from typing import Optional, Sequence, Union, cast
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -58,7 +58,7 @@ class TestExecuteInitializationScripts:
                 script_paths.append(f.name)
 
             # Execute both scripts
-            _execute_initialization_scripts(script_paths=script_paths)
+            _execute_initialization_scripts(script_paths=cast(Sequence[Union[str, pathlib.Path]], script_paths))
 
             # Verify both scripts executed in order
             assert hasattr(sys.modules["__main__"], "test_list_multi")
@@ -296,7 +296,7 @@ class TestExecuteInitializationScripts:
                 f.write("_helper2 = 'second'\n" "result2 = _helper2.upper()\n")
                 script_paths.append(f.name)
 
-            _execute_initialization_scripts(script_paths=script_paths)
+            _execute_initialization_scripts(script_paths=cast(Sequence[Union[str, pathlib.Path]], script_paths))
 
             # Public results should be accessible
             assert hasattr(sys.modules["__main__"], "result1")
@@ -383,7 +383,9 @@ class TestInitializePyritWithScripts:
                 f.write("script_order_init.append(2)\n")
                 script_paths.append(f.name)
 
-            initialize_pyrit(memory_db_type=IN_MEMORY, initialization_scripts=script_paths)
+            initialize_pyrit(
+                memory_db_type=IN_MEMORY, initialization_scripts=cast(Sequence[Union[str, pathlib.Path]], script_paths)
+            )
             mock_central_memory.set_memory_instance.assert_called_once()
 
             # Verify execution order
