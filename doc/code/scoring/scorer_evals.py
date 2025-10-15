@@ -108,36 +108,55 @@ refusal_scorer.get_scorer_metrics(dataset_name="SAMPLE_mixed_objective_refusal")
 # %% [markdown]
 # In this case we use a `true_false_scorer` which determines whether the responses are harmful or not according to their harm category.
 
+# %%
 from pathlib import Path
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
-
-# %%
 from pyrit.common.path import SCORER_EVALS_OBJECTIVE_PATH
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import SelfAskTrueFalseScorer
+from pyrit.score import ScorerEvaluator, SelfAskTrueFalseScorer
 from pyrit.score.true_false.self_ask_true_false_scorer import TRUE_FALSE_QUESTIONS_PATH
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
 target = OpenAIChatTarget()
 
-# we define our scoring evaluation in a yaml file, in this example information_integrity.yaml
-true_false_scorer = SelfAskTrueFalseScorer(
-    true_false_question_path=Path(TRUE_FALSE_QUESTIONS_PATH, "information_integrity.yaml"), chat_target=target
-)
+# Map harm categories to their respective dataset file paths and evaluation rubric file paths
+# This allows for easy extension to new harm categories by or editing entries in this map.
+# This also allows for easy editing of dataset file paths and evaluation rubric file paths without changing code logic.
+harm_category_map = {
+    "exploit": {
+        "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "exploits.yaml")),
+        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/exploit_eval_dataset.csv",
+        "dataset_name": "exploit_eval_dataset",
+    },
+    "information_integrity": {
+        "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "information_integrity.yaml")),
+        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/information_integrity_eval_dataset.csv",
+        "dataset_name": "information_integrity_eval_dataset",
+    },
+}
 
-evaluator = ScorerEvaluator.from_scorer(scorer=true_false_scorer)
-csv_path = f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/information_integrity_eval_dataset.csv"
+harm_categories_to_evaluate = ["information_integrity", "exploit"]
+for harm_category in harm_categories_to_evaluate:
 
-# assistant_response_data_type_col_name is optional and can be used to specify the type of data for each response in the assistant response column.
-metrics = await evaluator.run_evaluation_from_csv_async(  # type:ignore
-    csv_path=csv_path,
-    assistant_response_col_name="assistant_response",
-    human_label_col_names=["human_score"],
-    objective_or_harm_col_name="objective",
-    assistant_response_data_type_col_name="data_type",
-    num_scorer_trials=1,
-)
+    eval_rubric_path = harm_category_map[harm_category]["evaluation_rubric_file_path"]
+    csv_path = Path(harm_category_map[harm_category]["dataset_file_path"])
+    dataset_name = harm_category_map[harm_category]["dataset_name"]
 
-true_false_scorer.get_scorer_metrics(dataset_name="information_integrity_eval_dataset")
+    true_false_scorer = SelfAskTrueFalseScorer(true_false_question_path=Path(eval_rubric_path), chat_target=target)
+
+    evaluator = ScorerEvaluator.from_scorer(scorer=true_false_scorer)
+
+    # assistant_response_data_type_col_name is optional and can be used to specify the type of data for each response in the assistant response column.
+    metrics = await evaluator.run_evaluation_from_csv_async(  # type:ignore
+        csv_path=csv_path,
+        assistant_response_col_name="assistant_response",
+        human_label_col_names=["human_score"],
+        objective_or_harm_col_name="objective",
+        assistant_response_data_type_col_name="data_type",
+        num_scorer_trials=1,
+    )
+
+    print("Evaluation for harm category:", harm_category)
+    print(true_false_scorer.get_scorer_metrics(dataset_name=dataset_name))
