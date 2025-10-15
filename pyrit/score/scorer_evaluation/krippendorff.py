@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
 """
 This module provides a function to compute the Krippendorff's alpha statistical measure of the agreement achieved
 when coding a set of units based on the values of a variable.
@@ -348,7 +350,8 @@ def alpha(
             # Check if Unicode or byte string.
             if kind in {"U", "S"} and level_of_measurement != "nominal":
                 raise ValueError(
-                    "When using strings, an ordered value_domain is required for level_of_measurement other than 'nominal'."
+                    "When using strings, an ordered value_domain is required for "
+                    "level_of_measurement other than 'nominal'."
                 )
             value_domain = computed_value_domain
         else:
