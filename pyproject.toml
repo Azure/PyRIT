@@ -67,7 +67,6 @@ dev = [
     "feedgen>=1.0.0",
     "flake8>=7.2.0",
     "flake8-copyright>=0.2.4",
-    "fpdf2>=2.8.3",
     "ipykernel>=6.29.5",
     "jupyter>=1.1.1",
     "jupyter-book>=1.0.4",

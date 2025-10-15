@@ -7,8 +7,6 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from pypdf import PageObject, PdfReader, PdfWriter
-
-# from fpdf import FPDF
 from reportlab.lib.units import mm
 from reportlab.lib.utils import simpleSplit
 from reportlab.pdfgen import canvas
@@ -174,29 +172,9 @@ class PDFConverter(PromptConverter):
             logger.error("Prompt must be a string when no template is provided.")
             raise ValueError("Prompt must be a string when no template is provided.")
 
-    # def _generate_pdf(self, content: str) -> bytes:
-    #     """
-    #     Generates a PDF with the given content.
-
-    #     Args:
-    #         content (str): The text content to include in the PDF.
-
-    #     Returns:
-    #         bytes: The generated PDF content in bytes.
-    #     """
-    #     pdf = FPDF(format=(self._page_width, self._page_height))  # Use custom page size
-    #     pdf.add_page()
-    #     pdf.set_font(self._font_type, size=self._font_size)  # Use custom font settings
-    #     pdf.multi_cell(self._column_width, self._row_height, content)  # Use configurable cell dimensions
-
-    #     pdf_bytes = BytesIO()
-    #     pdf.output(pdf_bytes)
-    #     return pdf_bytes.getvalue()
-
     def _generate_pdf(self, content: str) -> bytes:
         """
         Generates a PDF with the given content using ReportLab.
-        Matches FPDF's multi_cell behavior exactly.
 
         Args:
             content (str): The text content to include in the PDF.
@@ -207,14 +185,13 @@ class PDFConverter(PromptConverter):
 
         pdf_buffer = BytesIO()
 
-        # Convert mm to points (FPDF uses mm, ReportLab uses points)
+        # Convert mm to points
         # 1mm = 2.83465 points
         page_width_pt = self._page_width * mm
         page_height_pt = self._page_height * mm
 
         c = canvas.Canvas(pdf_buffer, pagesize=(page_width_pt, page_height_pt))
 
-        # Map FPDF font names to ReportLab equivalents
         font_map = {
             "Arial": "Helvetica",
             "Times": "Times-Roman",
@@ -227,14 +204,12 @@ class PDFConverter(PromptConverter):
 
         c.setFont(reportlab_font, self._font_size)
 
-        # FPDF multi_cell starts with 10mm margins by default
         margin = 10 * mm
         x = margin
         y = page_height_pt - margin  # ReportLab uses bottom-left origin
 
         # Calculate actual column width
         if self._column_width == 0:
-            # FPDF: column_width=0 means use full page width minus margins
             actual_width = page_width_pt - (2 * margin)
         else:
             actual_width = self._column_width * mm
@@ -250,8 +225,8 @@ class PDFConverter(PromptConverter):
                 y -= line_height
                 continue
 
-            # Word wrap the paragraph (mimics FPDF's multi_cell)
-            # simpleSplit handles word wrapping like FPDF
+            # Word wrap the paragraph
+            # simpleSplit handles word wrapping
             wrapped_lines = simpleSplit(paragraph, reportlab_font, self._font_size, actual_width)
 
             for line in wrapped_lines:
@@ -340,75 +315,11 @@ class PDFConverter(PromptConverter):
 
         return output_pdf.getvalue()
 
-    # def _inject_text_into_page(
-    #     self, page: PageObject, x: float, y: float, text: str, font: str, font_size: int, font_color: tuple
-    # ) -> tuple[PageObject, BytesIO]:
-    #     """
-    #     Generates an overlay PDF with the given text injected at the specified coordinates.
-
-    #     Args:
-    #         page (PageObject): The original PDF page to overlay on.
-    #         x (float): The x-coordinate for the text.
-    #         y (float): The y-coordinate for the text.
-    #         text (str): The text to inject.
-    #         font (str): The font type.
-    #         font_size (int): The font size.
-    #         font_color (tuple): The font color in RGB format.
-
-    #     Returns:
-    #         tuple[PageObject, BytesIO]: The overlay page object and its corresponding buffer.
-    #     """
-    #     # Determine page size from the original page's MediaBox
-    #     page_width = float(page.mediabox[2] - page.mediabox[0])
-    #     page_height = float(page.mediabox[3] - page.mediabox[1])
-
-    #     # Out-of-Bounds Checks
-    #     if x < 0:
-    #         logger.error(f"x_pos is less than 0 and therefore out of bounds: x={x}")
-    #         raise ValueError(f"x_pos is less than 0 and therefore out of bounds: x={x}")
-    #     if x > page_width:
-    #         logger.error(f"x_pos exceeds page width and is out of bounds: x={x}, page_width={page_width}")
-    #         raise ValueError(f"x_pos exceeds page width and is out of bounds: x={x}, page_width={page_width}")
-    #     if y < 0:
-    #         logger.error(f"y_pos is less than 0 and therefore out of bounds: y={y}")
-    #         raise ValueError(f"y_pos is less than 0 and therefore out of bounds: y={y}")
-    #     if y > page_height:
-    #         logger.error(f"y_pos exceeds page height and is out of bounds: y={y}, page_height={page_height}")
-    #         raise ValueError(f"y_pos exceeds page height and is out of bounds: y={y}, page_height={page_height}")
-
-    #     # Create a small overlay PDF in memory
-    #     overlay_pdf = FPDF(unit="pt", format=(page_width, page_height))
-    #     overlay_pdf.add_page()
-
-    #     # Set font
-    #     overlay_pdf.set_font(font, size=font_size)
-    #     r, g, b = font_color
-    #     overlay_pdf.set_text_color(r, g, b)
-
-    #     # Position text: FPDF starts (0,0) at top-left, so (x, y) from bottom-left
-    #     # means we do "set_xy(x, page_height - y)" if your coordinates assume bottom-left origin
-    #     overlay_pdf.set_xy(x, page_height - y)
-
-    #     # Insert the text
-    #     overlay_pdf.cell(0, 0, text)
-
-    #     # Convert overlay FPDF to bytes
-    #     overlay_buffer = BytesIO()
-    #     overlay_pdf.output(overlay_buffer)
-    #     overlay_buffer.seek(0)
-
-    #     # Create a pypdf PageObject from the overlay
-    #     overlay_reader = PdfReader(overlay_buffer)
-    #     overlay_page = overlay_reader.pages[0]
-
-    #     return overlay_page, overlay_buffer
-
     def _inject_text_into_page(
         self, page: PageObject, x: float, y: float, text: str, font: str, font_size: int, font_color: tuple
     ) -> tuple[PageObject, BytesIO]:
         """
         Generates an overlay PDF with the given text using ReportLab.
-        Exactly matches FPDF's behavior for overlay creation.
 
         Args:
             page (PageObject): The original PDF page to overlay on.
@@ -446,7 +357,6 @@ class PDFConverter(PromptConverter):
         overlay_buffer = BytesIO()
         c = canvas.Canvas(overlay_buffer, pagesize=(page_width, page_height))
 
-        # Map FPDF fonts to ReportLab fonts
         font_map = {
             "Arial": "Helvetica",
             "Times": "Times-Roman",
@@ -459,16 +369,10 @@ class PDFConverter(PromptConverter):
 
         c.setFont(reportlab_font, font_size)
 
-        # Set color - ReportLab uses 0-1 range, FPDF uses 0-255
+        # Set color - ReportLab uses 0-1 range
         r, g, b = font_color
         c.setFillColorRGB(r / 255.0, g / 255.0, b / 255.0)
 
-        # CRITICAL: Match FPDF's coordinate system exactly
-        # FPDF's set_xy(x, page_height - y) in line 310 suggests they're converting
-        # from bottom-left to top-left. We need to match this behavior.
-        # The original code does: overlay_pdf.set_xy(x, page_height - y)
-        # This means FPDF is positioning at (x, page_height - y) in FPDF's top-left system
-        # ReportLab uses bottom-left, so we position at (x, y) directly
         c.drawString(x, y, text)
 
         c.save()
