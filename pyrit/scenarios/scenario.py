@@ -8,6 +8,11 @@ This module provides the Scenario class that orchestrates the execution of multi
 AttackRun instances sequentially, enabling comprehensive security testing campaigns.
 """
 
+import pyrit
+import inspect
+import os
+from pathlib import Path
+
 import logging
 from typing import Dict, List, Optional
 
@@ -15,6 +20,32 @@ from pyrit.models import AttackResult
 from pyrit.scenarios.attack_run import AttackRun
 
 logger = logging.getLogger(__name__)
+
+
+class ScenarioIdentifier:
+    def __init__(
+        self,
+        name: str,
+        version: int = 1,
+        pyrit_version: Optional[str] = None,
+        init_data: Optional[dict] = None,
+    ):
+        self.name = name
+        self.version = version
+        self.pyrit_version = pyrit_version if pyrit_version is not None else pyrit.__version__
+        self.init_data = init_data
+
+
+class ScenarioResult:
+    def __init__(
+            self,
+            *,
+            scenario_identifier: ScenarioIdentifier,
+            attack_results: List[AttackResult]
+    ):
+        
+        self.scenario_identifier = scenario_identifier
+        self.attack_results = attack_results
 
 
 class Scenario:
@@ -52,6 +83,7 @@ class Scenario:
         self,
         *,
         name: str,
+        version: int,
         attack_runs: List[AttackRun],
         memory_labels: Optional[Dict[str, str]] = None,
     ) -> None:
@@ -70,6 +102,11 @@ class Scenario:
         if not attack_runs:
             raise ValueError("Scenario must contain at least one AttackRun")
 
+        self._identifier = ScenarioIdentifier(
+            name=type(self).__name__,
+            version=version,
+        )
+
         self._name = name
         self._attack_runs = attack_runs
         self._memory_labels = memory_labels or {}
@@ -86,7 +123,7 @@ class Scenario:
         """Get the number of attack runs in this scenario."""
         return len(self._attack_runs)
 
-    async def run_async(self, *, max_concurrency: int = 1) -> List[AttackResult]:
+    async def run_async(self, *, max_concurrency: int = 1) -> ScenarioResult:
         """
         Execute all attack runs in the scenario sequentially.
 
@@ -122,4 +159,4 @@ class Scenario:
                 raise ValueError(f"Failed to execute attack run {i} in scenario '{self._name}': {str(e)}") from e
 
         logger.info(f"Scenario '{self._name}' completed successfully with {len(all_results)} total results")
-        return all_results
+        return ScenarioResult(scenario_identifier=self._identifier, attack_results=all_results)

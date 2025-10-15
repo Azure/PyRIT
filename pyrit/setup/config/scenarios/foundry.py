@@ -10,6 +10,7 @@ creating a comprehensive test scenario for evaluating AI safety across multiple 
 
 from typing import Any, Dict
 
+from pyrit.prompt_converter import AnsiAttackConverter, Base64Converter
 from pyrit.setup.configuration_paths import ConfigurationPaths
 
 # Define the scenario configuration
@@ -18,20 +19,18 @@ scenario_config: Dict[str, Any] = {
     "description": "Tests all Foundry attack methods against the HarmBench dataset",
     "attack_runs": [
         {
-            "attack_config": ConfigurationPaths.attack.foundry.ansi_attack,
+            "attack_config": ConfigurationPaths.attack.prompt_sending,
+            "additional_request_converters": [
+                AnsiAttackConverter()
+            ],
             "dataset_config": ConfigurationPaths.dataset.harm_bench,
         },
         {
-            "attack_config": ConfigurationPaths.attack.foundry.ascii_art,
+            "attack_config": ConfigurationPaths.attack.prompt_sending,
+            "additional_request_converters": [
+                Base64Converter()
+            ],
             "dataset_config": ConfigurationPaths.dataset.harm_bench,
-        },
-        {
-            "attack_config": ConfigurationPaths.attack.foundry.crescendo,
-            "dataset_config": ConfigurationPaths.dataset.harm_bench,
-        },
-        {
-            "attack_config": ConfigurationPaths.attack.foundry.tense,
-            "dataset_config": ConfigurationPaths.dataset.harm_bench,
-        },
-    ],
+        }
+    ]
 }

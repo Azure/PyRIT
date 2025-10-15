@@ -11,6 +11,7 @@ import pytest
 
 from pyrit.executor.attack import AttackExecutor
 from pyrit.models import AttackOutcome, AttackResult
+from pyrit.prompt_converter import Base64Converter, LeetspeakConverter, PromptConverter
 from pyrit.prompt_target import PromptTarget
 from pyrit.scenarios import AttackRun
 from pyrit.setup import ConfigurationPaths
@@ -90,6 +91,74 @@ def sample_attack_results():
             executed_turns=1,
         ),
     ]
+
+
+@pytest.fixture
+def valid_converter_config_base64():
+    """Create a temporary valid converter configuration file for Base64."""
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+        f.write(
+            """
+from pyrit.prompt_converter import Base64Converter
+
+additional_converter = Base64Converter()
+"""
+        )
+        temp_path = f.name
+
+    yield Path(temp_path)
+    Path(temp_path).unlink()
+
+
+@pytest.fixture
+def valid_converter_config_leetspeak():
+    """Create a temporary valid converter configuration file for Leetspeak."""
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+        f.write(
+            """
+from pyrit.prompt_converter import LeetspeakConverter
+
+additional_converter = LeetspeakConverter()
+"""
+        )
+        temp_path = f.name
+
+    yield Path(temp_path)
+    Path(temp_path).unlink()
+
+
+@pytest.fixture
+def invalid_converter_config_no_attribute():
+    """Create an invalid converter configuration file (missing additional_converter)."""
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+        f.write(
+            """
+from pyrit.prompt_converter import Base64Converter
+
+# Missing additional_converter attribute
+some_other_converter = Base64Converter()
+"""
+        )
+        temp_path = f.name
+
+    yield Path(temp_path)
+    Path(temp_path).unlink()
+
+
+@pytest.fixture
+def invalid_converter_config_wrong_type():
+    """Create an invalid converter configuration file (wrong type)."""
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+        f.write(
+            """
+# additional_converter is not a PromptConverter
+additional_converter = "not a converter"
+"""
+        )
+        temp_path = f.name
+
+    yield Path(temp_path)
+    Path(temp_path).unlink()
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -431,3 +500,264 @@ class TestAttackRunIntegration:
             assert call_kwargs["attack"] == attack_run._attack
             assert call_kwargs["objectives"] == ["objective1", "objective2", "objective3"]
             assert call_kwargs["memory_labels"] == memory_labels
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestAttackRunAdditionalConverters:
+    """Tests for AttackRun with additional_request_converters functionality."""
+
+    def test_init_with_single_additional_converter(
+        self,
+        mock_target: PromptTarget,
+        valid_attack_config,
+        valid_dataset_config,
+        valid_converter_config_base64,
+    ):
+        """Test initialization with a single additional converter."""
+        attack_run = AttackRun(
+            attack_config=valid_attack_config,
+            dataset_config=valid_dataset_config,
+            objective_target=mock_target,
+            additional_request_converters=[valid_converter_config_base64],
+        )
+
+        # Verify the attack was created
+        assert attack_run._attack is not None
+
+        # Verify that additional converters were applied
+        assert hasattr(attack_run._attack, "_request_converters")
+        # Should have the original converter + 1 additional
+        assert len(attack_run._attack._request_converters) == 2  # type: ignore
+
+        # Verify the additional converter is of the correct type
+        additional_converter = attack_run._attack._request_converters[1].converters[0]  # type: ignore
+        assert isinstance(additional_converter, Base64Converter)
+
+    def test_init_with_multiple_additional_converters(
+        self,
+        mock_target: PromptTarget,
+        valid_attack_config,
+        valid_dataset_config,
+        valid_converter_config_base64,
+        valid_converter_config_leetspeak,
+    ):
+        """Test initialization with multiple additional converters."""
+        attack_run = AttackRun(
+            attack_config=valid_attack_config,
+            dataset_config=valid_dataset_config,
+            objective_target=mock_target,
+            additional_request_converters=[valid_converter_config_base64, valid_converter_config_leetspeak],
+        )
+
+        # Verify the attack was created
+        assert attack_run._attack is not None
+
+        # Verify that additional converters were applied
+        assert hasattr(attack_run._attack, "_request_converters")
+        # Should have the original converter + 2 additional
+        assert len(attack_run._attack._request_converters) == 3  # type: ignore
+
+        # Verify the additional converters are of the correct types
+        converter1 = attack_run._attack._request_converters[1].converters[0]  # type: ignore
+        converter2 = attack_run._attack._request_converters[2].converters[0]  # type: ignore
+        assert isinstance(converter1, Base64Converter)
+        assert isinstance(converter2, LeetspeakConverter)
+
+    def test_init_with_additional_converters_using_configuration_paths(
+        self, mock_target: PromptTarget, valid_attack_config, valid_dataset_config
+    ):
+        """Test initialization with additional converters from ConfigurationPaths."""
+        attack_run = AttackRun(
+            attack_config=valid_attack_config,
+            dataset_config=valid_dataset_config,
+            objective_target=mock_target,
+            additional_request_converters=[
+                ConfigurationPaths.converter.base64,
+                ConfigurationPaths.converter.leetspeak,
+            ],
+        )
+
+        # Verify the attack was created
+        assert attack_run._attack is not None
+
+        # Verify that additional converters were applied
+        assert hasattr(attack_run._attack, "_request_converters")
+        # Should have the original converter + 2 additional
+        assert len(attack_run._attack._request_converters) == 3  # type: ignore
+
+    def test_init_with_string_paths_for_converters(
+        self,
+        mock_target: PromptTarget,
+        valid_attack_config,
+        valid_dataset_config,
+        valid_converter_config_base64,
+    ):
+        """Test initialization with string paths for additional converters."""
+        attack_run = AttackRun(
+            attack_config=valid_attack_config,
+            dataset_config=valid_dataset_config,
+            objective_target=mock_target,
+            additional_request_converters=[str(valid_converter_config_base64)],
+        )
+
+        # Verify the attack was created and converters applied
+        assert attack_run._attack is not None
+        assert len(attack_run._attack._request_converters) == 2  # type: ignore
+
+    def test_init_without_additional_converters(
+        self, mock_target: PromptTarget, valid_attack_config, valid_dataset_config
+    ):
+        """Test initialization without additional converters (default behavior)."""
+        attack_run = AttackRun(
+            attack_config=valid_attack_config,
+            dataset_config=valid_dataset_config,
+            objective_target=mock_target,
+        )
+
+        # Verify the attack was created
+        assert attack_run._attack is not None
+
+        # Should only have the original converter from the attack config
+        assert len(attack_run._attack._request_converters) == 1  # type: ignore
+
+    def test_init_with_empty_additional_converters_list(
+        self, mock_target: PromptTarget, valid_attack_config, valid_dataset_config
+    ):
+        """Test initialization with an empty list of additional converters."""
+        attack_run = AttackRun(
+            attack_config=valid_attack_config,
+            dataset_config=valid_dataset_config,
+            objective_target=mock_target,
+            additional_request_converters=[],
+        )
+
+        # Verify the attack was created
+        assert attack_run._attack is not None
+
+        # Should only have the original converter from the attack config
+        assert len(attack_run._attack._request_converters) == 1  # type: ignore
+
+    def test_init_with_nonexistent_converter_config(
+        self, mock_target: PromptTarget, valid_attack_config, valid_dataset_config
+    ):
+        """Test initialization with a non-existent converter configuration file."""
+        nonexistent_path = Path("/nonexistent/converter.py")
+
+        with pytest.raises(ValueError) as exc_info:
+            AttackRun(
+                attack_config=valid_attack_config,
+                dataset_config=valid_dataset_config,
+                objective_target=mock_target,
+                additional_request_converters=[nonexistent_path],
+            )
+
+        assert "Failed to load additional converter" in str(exc_info.value)
+        assert "not found" in str(exc_info.value).lower()
+
+    def test_init_with_invalid_converter_config_no_attribute(
+        self,
+        mock_target: PromptTarget,
+        valid_attack_config,
+        valid_dataset_config,
+        invalid_converter_config_no_attribute,
+    ):
+        """Test initialization with converter config missing 'additional_converter' attribute."""
+        with pytest.raises(ValueError) as exc_info:
+            AttackRun(
+                attack_config=valid_attack_config,
+                dataset_config=valid_dataset_config,
+                objective_target=mock_target,
+                additional_request_converters=[invalid_converter_config_no_attribute],
+            )
+
+        assert "Failed to load additional converter" in str(exc_info.value)
+        assert "additional_converter" in str(exc_info.value)
+
+    def test_init_with_invalid_converter_config_wrong_type(
+        self,
+        mock_target: PromptTarget,
+        valid_attack_config,
+        valid_dataset_config,
+        invalid_converter_config_wrong_type,
+    ):
+        """Test initialization with converter config having wrong type for 'additional_converter'."""
+        with pytest.raises(ValueError) as exc_info:
+            AttackRun(
+                attack_config=valid_attack_config,
+                dataset_config=valid_dataset_config,
+                objective_target=mock_target,
+                additional_request_converters=[invalid_converter_config_wrong_type],
+            )
+
+        assert "Failed to load additional converter" in str(exc_info.value)
+        assert "PromptConverter" in str(exc_info.value)
+
+    def test_load_converter_from_config(
+        self, mock_target: PromptTarget, valid_attack_config, valid_dataset_config, valid_converter_config_base64
+    ):
+        """Test the _load_converter_from_config method directly."""
+        attack_run = AttackRun(
+            attack_config=valid_attack_config,
+            dataset_config=valid_dataset_config,
+            objective_target=mock_target,
+        )
+
+        # Test loading a valid converter
+        converter = attack_run._load_converter_from_config(valid_converter_config_base64)
+        assert isinstance(converter, Base64Converter)
+
+    def test_additional_converters_with_real_attack_configs(self, mock_target: PromptTarget):
+        """Test additional converters with real attack configuration from ConfigurationPaths."""
+        attack_run = AttackRun(
+            attack_config=ConfigurationPaths.attack.foundry.ascii_art,
+            dataset_config=ConfigurationPaths.dataset.harm_bench,
+            objective_target=mock_target,
+            additional_request_converters=[
+                ConfigurationPaths.converter.base64,
+                ConfigurationPaths.converter.rot13,
+            ],
+        )
+
+        assert attack_run._attack is not None
+        assert hasattr(attack_run._attack, "_request_converters")
+        # Original converters + 2 additional
+        initial_count = len(attack_run._attack._request_converters)  # type: ignore
+        assert initial_count >= 2  # At least the additional converters should be present
+
+    @pytest.mark.asyncio
+    async def test_attack_run_execution_with_additional_converters(
+        self,
+        mock_target: PromptTarget,
+        valid_attack_config,
+        valid_dataset_config,
+        valid_converter_config_base64,
+    ):
+        """Test that attack runs successfully with additional converters applied."""
+        attack_run = AttackRun(
+            attack_config=valid_attack_config,
+            dataset_config=valid_dataset_config,
+            objective_target=mock_target,
+            additional_request_converters=[valid_converter_config_base64],
+        )
+
+        # Create mock results
+        mock_results = [
+            AttackResult(
+                conversation_id=f"conv-{i}",
+                objective=f"objective{i+1}",
+                attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": str(i)},
+                outcome=AttackOutcome.SUCCESS,
+                executed_turns=1,
+            )
+            for i in range(3)
+        ]
+
+        with patch.object(AttackExecutor, "execute_multi_objective_attack_async", new_callable=AsyncMock) as mock_exec:
+            mock_exec.return_value = mock_results
+
+            results = await attack_run.run_async(max_concurrency=1)
+
+            # Verify execution was successful
+            assert len(results) == 3
+            # Verify the attack has the additional converter
+            assert len(attack_run._attack._request_converters) == 2  # type: ignore

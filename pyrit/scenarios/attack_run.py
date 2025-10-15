@@ -5,45 +5,50 @@
 AttackRun class for executing single attack configurations against datasets.
 
 This module provides the AttackRun class that represents an atomic test combining
-an attack configuration, a dataset, and a target. Multiple AttackRuns can be grouped
+an attack, a dataset, and execution parameters. Multiple AttackRuns can be grouped
 together into larger test scenarios for comprehensive security testing.
 """
 
 import logging
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from pyrit.executor.attack import AttackExecutor, AttackStrategy
-from pyrit.models import AttackResult
-from pyrit.prompt_target import PromptTarget
-from pyrit.setup import create_attack_from_config, create_dataset_from_config
+from pyrit.models import AttackResult, PromptRequestResponse
 
 logger = logging.getLogger(__name__)
 
 
 class AttackRun:
     """
-    Represents a single atomic attack test combining an attack, dataset, and target.
+    Represents a single atomic attack test combining an attack strategy and dataset.
 
-    An AttackRun is an executable unit that:
-    1. Creates an attack from a configuration file
-    2. Loads a dataset from a configuration file
-    3. Executes the attack against all objectives in the dataset
-
-    Multiple AttackRuns can be grouped together into larger test scenarios for
-    comprehensive security testing and evaluation.
+    An AttackRun is an executable unit that executes a configured attack against
+    all objectives in a dataset. Multiple AttackRuns can be grouped together into
+    larger test scenarios for comprehensive security testing and evaluation.
 
     Example:
         >>> from pyrit.scenarios import AttackRun
-        >>> from pyrit.setup import ConfigurationPaths
+        >>> from pyrit.attacks import PromptAttack
         >>> from pyrit.prompt_target import OpenAIChatTarget
         >>>
         >>> target = OpenAIChatTarget()
+        >>> attack = PromptAttack(objective_target=target)
+        >>> objectives = ["how to make a bomb", "how to hack a system"]
+        >>>
         >>> attack_run = AttackRun(
-        ...     attack_config=ConfigurationPaths.attack.foundry.ascii_art,
-        ...     dataset_config=ConfigurationPaths.dataset.harm_bench,
-        ...     objective_target=target,
+        ...     attack=attack,
+        ...     objectives=objectives,
         ...     memory_labels={"test": "run1"}
+        ... )
+        >>> results = await attack_run.run_async(max_concurrency=5)
+        >>>
+        >>> # With prepended conversation
+        >>> from pyrit.models import PromptRequestResponse
+        >>> conversation = [PromptRequestResponse(...)]
+        >>> attack_run = AttackRun(
+        ...     attack=attack,
+        ...     objectives=objectives,
+        ...     prepended_conversation=conversation
         ... )
         >>> results = await attack_run.run_async(max_concurrency=5)
     """
@@ -51,120 +56,48 @@ class AttackRun:
     def __init__(
         self,
         *,
-        attack_config: Union[str, Path],
-        dataset_config: Union[str, Path],
-        objective_target: PromptTarget,
+        attack: AttackStrategy,
+        objectives: List[str],
+        prepended_conversation: Optional[List[PromptRequestResponse]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
         **attack_execute_params: Any,
     ) -> None:
         """
-        Initialize an attack run with attack and dataset configurations.
+        Initialize an attack run with an attack strategy and dataset parameters.
 
         Args:
-            attack_config (Union[str, Path]): Path to the attack configuration file.
-                Must be a valid attack configuration that defines attack_config dictionary.
-            dataset_config (Union[str, Path]): Path to the dataset configuration file.
-                Must be a valid dataset configuration that defines dataset_config dictionary.
-            objective_target (PromptTarget): The target system to attack.
+            attack (AttackStrategy): The configured attack strategy to execute.
+            objectives (List[str]): List of attack objectives to test against.
+            prepended_conversation (Optional[List[PromptRequestResponse]]): Optional
+                conversation history to prepend to each attack execution.
             memory_labels (Optional[Dict[str, str]]): Additional labels to apply to prompts.
                 These labels help track and categorize the attack run in memory.
             **attack_execute_params (Any): Additional parameters to pass to the attack
-                execution method (e.g., custom_prompts).
+                execution method (e.g., custom_prompts, batch_size).
 
         Raises:
-            ValueError: If configurations are invalid or cannot be loaded.
-            FileNotFoundError: If configuration files don't exist.
+            ValueError: If objectives list is empty.
         """
-        self._attack_config_path = Path(attack_config)
-        self._dataset_config_path = Path(dataset_config)
-        self._objective_target = objective_target
+        if not objectives:
+            raise ValueError("objectives list cannot be empty")
+
+        self._attack = attack
+        self._objectives = objectives
+        self._prepended_conversation = prepended_conversation
         self._memory_labels = memory_labels or {}
         self._attack_execute_params = attack_execute_params
 
-        # Validate that configuration files exist
-        self._validate_config_paths()
-
-        # Create the attack instance from configuration
-        self._attack = self._create_attack()
-
-        # Load dataset parameters from configuration
-        self._dataset_params = self._load_dataset()
-
         logger.info(
-            f"Initialized attack run with attack config: {self._attack_config_path.name} "
-            f"and dataset config: {self._dataset_config_path.name}"
+            f"Initialized attack run with {len(self._objectives)} objectives "
+            f"and attack type: {type(attack).__name__}"
         )
-
-    def _validate_config_paths(self) -> None:
-        """
-        Validate that configuration paths exist and are files.
-
-        Raises:
-            FileNotFoundError: If either configuration file doesn't exist.
-            ValueError: If either path is not a file.
-        """
-        if not self._attack_config_path.exists():
-            raise FileNotFoundError(f"Attack configuration file not found: {self._attack_config_path}")
-
-        if not self._dataset_config_path.exists():
-            raise FileNotFoundError(f"Dataset configuration file not found: {self._dataset_config_path}")
-
-        if not self._attack_config_path.is_file():
-            raise ValueError(f"Attack configuration path is not a file: {self._attack_config_path}")
-
-        if not self._dataset_config_path.is_file():
-            raise ValueError(f"Dataset configuration path is not a file: {self._dataset_config_path}")
-
-    def _create_attack(self) -> AttackStrategy:
-        """
-        Create the attack instance from the configuration file.
-
-        Returns:
-            AttackStrategy: The configured attack strategy instance.
-
-        Raises:
-            ValueError: If the attack configuration is invalid.
-        """
-        try:
-            attack = create_attack_from_config(
-                config_path=self._attack_config_path,
-                objective_target=self._objective_target,
-            )
-            logger.info(f"Successfully created attack from config: {self._attack_config_path.name}")
-            return attack
-        except Exception as e:
-            raise ValueError(
-                f"Failed to create attack from configuration file {self._attack_config_path}: {str(e)}"
-            ) from e
-
-    def _load_dataset(self) -> Dict[str, Any]:
-        """
-        Load dataset parameters from the configuration file.
-
-        Returns:
-            Dict[str, Any]: Dictionary containing dataset parameters (objectives, etc.).
-
-        Raises:
-            ValueError: If the dataset configuration is invalid.
-        """
-        try:
-            dataset_params = create_dataset_from_config(config_path=self._dataset_config_path)
-            logger.info(
-                f"Successfully loaded dataset from config: {self._dataset_config_path.name} "
-                f"with {len(dataset_params.get('objectives', []))} objectives"
-            )
-            return dataset_params
-        except Exception as e:
-            raise ValueError(
-                f"Failed to load dataset from configuration file {self._dataset_config_path}: {str(e)}"
-            ) from e
 
     async def run_async(self, *, max_concurrency: int = 1) -> List[AttackResult]:
         """
         Execute the attack run against all objectives in the dataset.
 
         This method uses AttackExecutor to run the configured attack against
-        all objectives from the dataset configuration.
+        all objectives from the dataset.
 
         Args:
             max_concurrency (int): Maximum number of concurrent attack executions.
@@ -188,15 +121,16 @@ class AttackRun:
         # Merge memory labels from initialization and execution parameters
         merged_memory_labels = {**self._memory_labels}
 
-        # Merge attack execute params with dataset params
+        # Build the parameters for execute_multi_objective_attack_async
         execute_params = {
-            **self._dataset_params,
-            **self._attack_execute_params,
+            "objectives": self._objectives,
+            "prepended_conversation": self._prepended_conversation,
             "memory_labels": merged_memory_labels,
+            **self._attack_execute_params,
         }
 
         logger.info(
-            f"Starting attack run execution with {len(self._dataset_params.get('objectives', []))} objectives "
+            f"Starting attack run execution with {len(self._objectives)} objectives "
             f"and max_concurrency={max_concurrency}"
         )
 

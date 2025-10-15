@@ -25,7 +25,7 @@ class TenseConverter(LLMGenericTextConverter):
     def __init__(
         self,
         *,
-        converter_target: Optional[PromptChatTarget] = None,
+        converter_target: Optional[PromptChatTarget],
         tense: str,
         prompt_template: Optional[SeedPrompt] = None,
     ):

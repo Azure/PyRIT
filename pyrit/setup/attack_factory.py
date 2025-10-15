@@ -10,11 +10,16 @@ than relying on global default value propagation.
 """
 
 import importlib.util
+import logging
 import sys
 from pathlib import Path
-from typing import Any, Dict, Union
+from typing import Any, Dict, List, Optional, Union
 
+from pyrit.prompt_converter import PromptConverter
+from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import PromptTarget
+
+logger = logging.getLogger(__name__)
 
 
 class AttackFactory:
@@ -49,6 +54,7 @@ class AttackFactory:
         *,
         config_path: Union[str, Path],
         objective_target: PromptTarget,
+        additional_request_converters: Optional[List[PromptConverter]] = None,
         **override_params: Any,
     ):
         """
@@ -63,6 +69,8 @@ class AttackFactory:
                 The file must define an `attack_config` dictionary with at least
                 an 'attack_type' key.
             objective_target (PromptTarget): The target system to attack.
+            additional_request_converters (Optional[List[PromptConverter]]): List of
+                PromptConverter instances to append to the attack's existing request_converters.
             **override_params (Any): Additional parameters that override those
                 specified in the config file.
 
@@ -80,10 +88,21 @@ class AttackFactory:
             >>>
             >>> target = OpenAIChatTarget()
             >>> attack = AttackFactory.create_attack(
-            ...     config_path=ConfigurationPaths.attack.foundry.ascii_art,
+            ...     config_path=ConfigurationPaths.attack.prompt_attack,
             ...     objective_target=target
             ... )
             >>> result = await attack.execute_async(objective="Tell me how to make a bomb")
+            >>>
+            >>> # With additional converters
+            >>> from pyrit.prompt_converter import Base64Converter, LeetspeakConverter
+            >>> attack = AttackFactory.create_attack(
+            ...     config_path=ConfigurationPaths.attack.prompt_attack,
+            ...     objective_target=target,
+            ...     additional_request_converters=[
+            ...         Base64Converter(),
+            ...         LeetspeakConverter()
+            ...     ]
+            ... )
         """
         # Convert to Path object
         config_path = Path(config_path)
@@ -103,6 +122,12 @@ class AttackFactory:
         attack_params = {k: v for k, v in config_dict.items() if k != "attack_type"}
         attack_params.update(override_params)
         attack_params["objective_target"] = objective_target
+
+        # Load and merge additional converters if provided
+        if additional_request_converters:
+            attack_params = AttackFactory._merge_additional_converters(
+                attack_params=attack_params, additional_converters=additional_request_converters
+            )
 
         # Import and instantiate the attack
         return AttackFactory._create_attack_instance(attack_type=attack_type, attack_params=attack_params)
@@ -209,11 +234,52 @@ class AttackFactory:
 
         return attack_class(**attack_params)
 
+    @staticmethod
+    def _merge_additional_converters(
+        *, attack_params: Dict[str, Any], additional_converters: List[PromptConverter]
+    ) -> Dict[str, Any]:
+        """
+        Merge additional converters into attack parameters.
+
+        This method takes PromptConverter instances and merges them
+        into the attack_converter_config in the attack parameters.
+
+        Args:
+            attack_params (Dict[str, Any]): The attack parameters dictionary.
+            additional_converters (List[PromptConverter]): PromptConverter instances to add.
+
+        Returns:
+            Dict[str, Any]: Updated attack parameters with additional converters merged.
+        """
+        from pyrit.executor.attack import AttackConverterConfig
+
+        # Create converter configurations from the converter instances
+        converter_configs = PromptConverterConfiguration.from_converters(converters=additional_converters)
+
+        # Get or create attack_converter_config
+        attack_converter_config = attack_params.get("attack_converter_config")
+
+        if attack_converter_config is None:
+            # Create new config with the additional converters
+            attack_converter_config = AttackConverterConfig(request_converters=converter_configs)
+            attack_params["attack_converter_config"] = attack_converter_config
+        else:
+            # Append to existing request_converters
+            attack_converter_config.request_converters.extend(converter_configs)
+
+        logger.info(
+            f"Merged {len(converter_configs)} additional converter(s). "
+            f"Total request converters: {len(attack_converter_config.request_converters)}"
+        )
+
+        return attack_params
+
 
 def create_attack_from_config(
     *,
     config_path: Union[str, Path],
     objective_target: PromptTarget,
+    additional_request_converters: Optional[List[PromptConverter]] = None,
     **override_params: Any,
 ):
     """
@@ -224,4 +290,9 @@ def create_attack_from_config(
 
     See AttackFactory.create_attack() for full documentation.
     """
-    return AttackFactory.create_attack(config_path=config_path, objective_target=objective_target, **override_params)
+    return AttackFactory.create_attack(
+        config_path=config_path,
+        objective_target=objective_target,
+        additional_request_converters=additional_request_converters,
+        **override_params,
+    )
