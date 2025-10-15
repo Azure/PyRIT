@@ -44,10 +44,11 @@ This rich context allows PyRIT to track the full lifecycle of each interaction, 
 - A conversation: Multiple `PromptRequestResponses` linked by the same `conversation_id`
 
 **Validation Rules:**
-- All pieces in a `PromptRequestResponse` must share the same `conversation_id`
-- All pieces must have the same `sequence` number
-- All pieces must have the same `role`
-- All pieces must have a non-null `converted_value`
+- All `PromptRequestPieces` in a `PromptRequestResponse` must share the same
+   -  `conversation_id`
+   - `sequence` number
+   - `role`
+- All `PromptRequestPieces` have a non-null `converted_value`
 
 ### Conversation Structure
 
