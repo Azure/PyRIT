@@ -114,7 +114,7 @@ class SeedPromptDataset(YamlLoadable):
         last_part = values[-last:] if last is not None else []
 
         return first_part + last_part
-    
+
     def get_random_values(self, number: PositiveInt) -> Sequence[str]:
         """
         Extracts and returns a list of random prompt values from the dataset.

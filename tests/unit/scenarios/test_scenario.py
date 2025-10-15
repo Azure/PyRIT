@@ -8,14 +8,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from pyrit.models import AttackOutcome, AttackResult
-from pyrit.prompt_target import PromptTarget
 from pyrit.scenarios import AttackRun, Scenario
-
-
-@pytest.fixture
-def mock_target():
-    """Create a mock PromptTarget for testing."""
-    return MagicMock(spec=PromptTarget)
+from pyrit.scenarios.scenario import ScenarioIdentifier, ScenarioResult
 
 
 @pytest.fixture
@@ -50,6 +44,7 @@ class TestScenarioInitialization:
         """Test successful initialization with valid parameters."""
         scenario = Scenario(
             name="Test Scenario",
+            version=1,
             attack_runs=mock_attack_runs,
         )
 
@@ -57,6 +52,8 @@ class TestScenarioInitialization:
         assert scenario.attack_run_count == 3
         assert scenario._attack_runs == mock_attack_runs
         assert scenario._memory_labels == {}
+        assert scenario._identifier.name == "Scenario"
+        assert scenario._identifier.version == 1
 
     def test_init_with_memory_labels(self, mock_attack_runs):
         """Test initialization with memory labels."""
@@ -64,17 +61,32 @@ class TestScenarioInitialization:
 
         scenario = Scenario(
             name="Test Scenario",
+            version=2,
             attack_runs=mock_attack_runs,
             memory_labels=memory_labels,
         )
 
         assert scenario._memory_labels == memory_labels
 
+    def test_init_creates_scenario_identifier(self, mock_attack_runs):
+        """Test that initialization creates a proper ScenarioIdentifier."""
+        scenario = Scenario(
+            name="Test Scenario",
+            version=3,
+            attack_runs=mock_attack_runs,
+        )
+
+        assert isinstance(scenario._identifier, ScenarioIdentifier)
+        assert scenario._identifier.name == "Scenario"
+        assert scenario._identifier.version == 3
+        assert scenario._identifier.pyrit_version is not None
+
     def test_init_fails_with_empty_attack_runs(self):
         """Test that initialization fails when attack_runs list is empty."""
         with pytest.raises(ValueError, match="Scenario must contain at least one AttackRun"):
             Scenario(
                 name="Test Scenario",
+                version=1,
                 attack_runs=[],
             )
 
@@ -92,20 +104,24 @@ class TestScenarioExecution:
 
         scenario = Scenario(
             name="Test Scenario",
+            version=1,
             attack_runs=mock_attack_runs,
         )
 
-        results = await scenario.run_async()
+        result = await scenario.run_async()
+
+        # Verify return type is ScenarioResult
+        assert isinstance(result, ScenarioResult)
 
         # Verify all runs were executed
-        assert len(results) == 3
+        assert len(result.attack_results) == 3
         for run in mock_attack_runs:
             run.run_async.assert_called_once()
 
         # Verify results are aggregated correctly
-        assert results[0] == sample_attack_results[0]
-        assert results[1] == sample_attack_results[1]
-        assert results[2] == sample_attack_results[2]
+        assert result.attack_results[0] == sample_attack_results[0]
+        assert result.attack_results[1] == sample_attack_results[1]
+        assert result.attack_results[2] == sample_attack_results[2]
 
     @pytest.mark.asyncio
     async def test_run_async_with_custom_concurrency(self, mock_attack_runs, sample_attack_results):
@@ -115,14 +131,19 @@ class TestScenarioExecution:
 
         scenario = Scenario(
             name="Test Scenario",
+            version=1,
             attack_runs=mock_attack_runs,
         )
 
-        await scenario.run_async(max_concurrency=5)
+        result = await scenario.run_async(max_concurrency=5)
 
         # Verify max_concurrency was passed to each run
         for run in mock_attack_runs:
             run.run_async.assert_called_once_with(max_concurrency=5)
+
+        # Verify result structure
+        assert isinstance(result, ScenarioResult)
+        assert len(result.attack_results) == 3
 
     @pytest.mark.asyncio
     async def test_run_async_aggregates_multiple_results(self, mock_attack_runs, sample_attack_results):
@@ -134,14 +155,16 @@ class TestScenarioExecution:
 
         scenario = Scenario(
             name="Test Scenario",
+            version=1,
             attack_runs=mock_attack_runs,
         )
 
-        results = await scenario.run_async()
+        result = await scenario.run_async()
 
         # Should have 5 total results (2 + 2 + 1)
-        assert len(results) == 5
-        assert results == sample_attack_results
+        assert isinstance(result, ScenarioResult)
+        assert len(result.attack_results) == 5
+        assert result.attack_results == sample_attack_results
 
     @pytest.mark.asyncio
     async def test_run_async_stops_on_error(self, mock_attack_runs, sample_attack_results):
@@ -152,6 +175,7 @@ class TestScenarioExecution:
 
         scenario = Scenario(
             name="Test Scenario",
+            version=1,
             attack_runs=mock_attack_runs,
         )
 
@@ -173,14 +197,38 @@ class TestScenarioExecution:
 
         scenario = Scenario(
             name="Test Scenario",
+            version=1,
             attack_runs=mock_attack_runs,
         )
 
-        await scenario.run_async()
+        result = await scenario.run_async()
 
         # Verify default concurrency of 1 was passed
         for run in mock_attack_runs:
             run.run_async.assert_called_once_with(max_concurrency=1)
+
+        # Verify result structure
+        assert isinstance(result, ScenarioResult)
+
+    @pytest.mark.asyncio
+    async def test_run_async_returns_scenario_result_with_identifier(self, mock_attack_runs, sample_attack_results):
+        """Test that run_async returns ScenarioResult with proper identifier."""
+        for i, run in enumerate(mock_attack_runs):
+            run.run_async = AsyncMock(return_value=[sample_attack_results[i]])
+
+        scenario = Scenario(
+            name="Test Scenario",
+            version=5,
+            attack_runs=mock_attack_runs,
+        )
+
+        result = await scenario.run_async()
+
+        assert isinstance(result, ScenarioResult)
+        assert isinstance(result.scenario_identifier, ScenarioIdentifier)
+        assert result.scenario_identifier.name == "Scenario"
+        assert result.scenario_identifier.version == 5
+        assert result.scenario_identifier.pyrit_version is not None
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -191,6 +239,7 @@ class TestScenarioProperties:
         """Test that name property returns the scenario name."""
         scenario = Scenario(
             name="My Test Scenario",
+            version=1,
             attack_runs=mock_attack_runs,
         )
 
@@ -200,6 +249,7 @@ class TestScenarioProperties:
         """Test that attack_run_count returns the correct count."""
         scenario = Scenario(
             name="Test Scenario",
+            version=1,
             attack_runs=mock_attack_runs,
         )
 
@@ -208,9 +258,56 @@ class TestScenarioProperties:
     def test_attack_run_count_with_different_sizes(self):
         """Test attack_run_count with different numbers of runs."""
         single_run = [MagicMock(spec=AttackRun)]
-        scenario1 = Scenario(name="Single", attack_runs=single_run)  # type: ignore
+        scenario1 = Scenario(name="Single", version=1, attack_runs=single_run)  # type: ignore
         assert scenario1.attack_run_count == 1
 
         many_runs = [MagicMock(spec=AttackRun) for _ in range(10)]
-        scenario2 = Scenario(name="Many", attack_runs=many_runs)  # type: ignore
+        scenario2 = Scenario(name="Many", version=1, attack_runs=many_runs)  # type: ignore
         assert scenario2.attack_run_count == 10
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestScenarioResult:
+    """Tests for ScenarioResult class."""
+
+    def test_scenario_result_initialization(self, sample_attack_results):
+        """Test ScenarioResult initialization."""
+        identifier = ScenarioIdentifier(name="TestScenario", version=1)
+        result = ScenarioResult(scenario_identifier=identifier, attack_results=sample_attack_results)
+
+        assert result.scenario_identifier == identifier
+        assert result.attack_results == sample_attack_results
+        assert len(result.attack_results) == 5
+
+    def test_scenario_result_with_empty_results(self):
+        """Test ScenarioResult with empty attack results."""
+        identifier = ScenarioIdentifier(name="TestScenario", version=1)
+        result = ScenarioResult(scenario_identifier=identifier, attack_results=[])
+
+        assert len(result.attack_results) == 0
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestScenarioIdentifier:
+    """Tests for ScenarioIdentifier class."""
+
+    def test_scenario_identifier_initialization(self):
+        """Test ScenarioIdentifier initialization."""
+        identifier = ScenarioIdentifier(name="TestScenario", version=2)
+
+        assert identifier.name == "TestScenario"
+        assert identifier.version == 2
+        assert identifier.pyrit_version is not None
+
+    def test_scenario_identifier_with_custom_pyrit_version(self):
+        """Test ScenarioIdentifier with custom pyrit version."""
+        identifier = ScenarioIdentifier(name="TestScenario", version=1, pyrit_version="1.2.3")
+
+        assert identifier.pyrit_version == "1.2.3"
+
+    def test_scenario_identifier_with_init_data(self):
+        """Test ScenarioIdentifier with init_data."""
+        init_data = {"param1": "value1", "param2": 42}
+        identifier = ScenarioIdentifier(name="TestScenario", version=1, init_data=init_data)
+
+        assert identifier.init_data == init_data
