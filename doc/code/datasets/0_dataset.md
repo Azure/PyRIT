@@ -1,6 +1,6 @@
 # Datasets
 
-The datasets component within PyRIT is the first piece of an attack. By fetching datsets from different sources, we often load them into PyRIT as a `SeedPromptDataset` to build out the prompts which we will attack with. The building block of this dataset consists of a `SeedPrompt` which can use a template with parameters or just a prompt. The datasets can be loaded through different formats such as from an open source repository or through a YAML file. By storing these datasets within PyRIT, we can further distinguish them by incorporating data attributes such as `harm_categories` or other labels. In order to further define these datasets, we use `SeedPrompts`.
+The datasets component within PyRIT is the first piece of an attack. By fetching datasets from different sources, we often load them into PyRIT as a `SeedPromptDataset` to build out the prompts which we will attack with. The building block of this dataset consists of a `SeedPrompt` which can use a template with parameters or just a prompt. The datasets can be loaded through different formats such as from an open source repository or through a YAML file. By storing these datasets within PyRIT, we can further distinguish them by incorporating data attributes such as `harm_categories` or other labels. In order to further define these datasets, we use `SeedPrompts`.
 
 **Seed Prompts**:
 
