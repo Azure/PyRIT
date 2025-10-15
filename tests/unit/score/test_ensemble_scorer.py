@@ -52,7 +52,7 @@ def create_ensemble_scorer(self_ask_scale_score_value,
                            self_ask_scale_weight,
                            azure_content_filter_score_values,
                            azure_content_filter_weights,
-                           ensemble_category,
+                           ensemble_category = 'jailbreak',
                            ground_truth_score: float = 0.1,
                            lr: float = 1e-2) -> EnsembleScorer:
     self_ask_scale_objective_scorer = AsyncMock()
@@ -87,7 +87,7 @@ def create_ensemble_scorer(self_ask_scale_score_value,
         ]
     )
 
-    weak_scorer_spec = {"SelfAskScaleScorer": WeakScorerSpec(self_ask_scale_objective_scorer, 
+    weak_scorer_dict = {"SelfAskScaleScorer": WeakScorerSpec(self_ask_scale_objective_scorer, 
                                                              self_ask_scale_weight), 
                         "AzureContentFilterScorer": WeakScorerSpec(azure_content_filter_objective_scorer, 
                                                                    {k: v for k,v in azure_content_filter_weights.items()})}
@@ -108,7 +108,7 @@ def create_ensemble_scorer(self_ask_scale_score_value,
         ]
     )
     
-    scorer = EnsembleScorer(weak_scorer_dict=weak_scorer_spec,
+    scorer = EnsembleScorer(weak_scorer_dict=weak_scorer_dict,
                             ground_truth_scorer=ground_truth_scorer,
                             category=ensemble_category,
                             lr=lr)
@@ -117,16 +117,36 @@ def create_ensemble_scorer(self_ask_scale_score_value,
 
 @pytest.mark.asyncio
 async def test_ensemble_scorer_validate_audio(audio_request_piece: PromptRequestPiece):
-    scorer = create_ensemble_scorer()
-    with pytest.raises(ValueError, match="Ensemble Scorer only supports text data type"):
+    self_ask_scale_score_value = 0.4
+    self_ask_scale_score_weight = 0.8
+    azure_content_filter_values = {"Hate": 0.05,
+                                   "Violence": 0.05}
+    azure_content_filter_weights = {"Hate": 0.1,
+                                    "Violence": 0.1}
+
+    scorer = create_ensemble_scorer(self_ask_scale_score_value,
+                                    self_ask_scale_score_weight,
+                                    azure_content_filter_values,
+                                    azure_content_filter_weights)
+    with pytest.raises(ValueError, match="The original value data type must be text."):
         await scorer.validate(audio_request_piece)
 
     os.remove(audio_request_piece.converted_value)
 
 @pytest.mark.asyncio
 async def test_ensemble_scorer_validate_image(image_request_piece: PromptRequestPiece):
-    scorer = create_ensemble_scorer()
-    with pytest.raises(ValueError, match="Ensemble Scorer only supports text data type"):
+    self_ask_scale_score_value = 0.4
+    self_ask_scale_score_weight = 0.8
+    azure_content_filter_values = {"Hate": 0.05,
+                                   "Violence": 0.05}
+    azure_content_filter_weights = {"Hate": 0.1,
+                                    "Violence": 0.1}
+
+    scorer = create_ensemble_scorer(self_ask_scale_score_value,
+                                    self_ask_scale_score_weight,
+                                    azure_content_filter_values,
+                                    azure_content_filter_weights)
+    with pytest.raises(ValueError, match="The original value data type must be text."):
         await scorer.validate(image_request_piece)
 
     os.remove(image_request_piece.converted_value)
@@ -143,7 +163,17 @@ async def test_ensemble_scorer_validate_text(text_request_piece: PromptRequestPi
 async def test_ensemble_scorer_adds_to_memory():
     memory = MagicMock(MemoryInterface)
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        scorer = create_ensemble_scorer()
+        self_ask_scale_score_value = 0.4
+        self_ask_scale_score_weight = 0.8
+        azure_content_filter_values = {"Hate": 0.05,
+                                    "Violence": 0.05}
+        azure_content_filter_weights = {"Hate": 0.1,
+                                        "Violence": 0.1}
+
+        scorer = create_ensemble_scorer(self_ask_scale_score_value,
+                                        self_ask_scale_score_weight,
+                                        azure_content_filter_values,
+                                        azure_content_filter_weights)
         await scorer.score_text_async(text="I hate you!")
 
         memory.add_scores_to_memory.assert_called_once()
@@ -156,13 +186,11 @@ async def test_ensemble_scorer_score():
                                    "Violence": 0.05}
     azure_content_filter_weights = {"Hate": 0.1,
                                     "Violence": 0.1}
-    ensemble_category = "jailbreak"
 
     scorer = create_ensemble_scorer(self_ask_scale_score_value,
                                     self_ask_scale_score_weight,
                                     azure_content_filter_values,
-                                    azure_content_filter_weights,
-                                    ensemble_category)
+                                    azure_content_filter_weights)
     score = await scorer.score_text_async(text="example text", task="example task")
 
     assert len(scorer) == 1
@@ -188,7 +216,7 @@ async def test_ensemble_scorer_invalid_learning_rate():
                                    "Violence": 0.05}
     azure_content_filter_weights = {"Hate": 0.1,
                                     "Violence": 0.1}
-    with pytest.raises(ValueError, match="Learning rate passed is invalid:"):
+    with pytest.raises(ValueError, match="Learning rate must be a floating point number greater than 0"):
         scorer = create_ensemble_scorer(self_ask_scale_score_value,
                                         self_ask_scale_score_weight,
                                         azure_content_filter_values,
@@ -201,7 +229,7 @@ async def test_ensemble_scorer_invalid_weights_azure_content_filter():
     weak_scorer_dict = {"AzureContentFilterScorer": WeakScorerSpec(azure_content_filter_scorer, 0.1)}
 
     ground_truth_scorer = MagicMock()
-    with pytest.raises(ValueError, match="Incorrect format for AzureContentFilterScorer weights was passed:"):
+    with pytest.raises(ValueError, match="Weights for AzureContentFilterScorer must be a dictionary of category (str) to weight (float)"):
         scorer = EnsembleScorer(weak_scorer_dict=weak_scorer_dict,
                                 ground_truth_scorer=ground_truth_scorer)
         
@@ -212,7 +240,7 @@ async def test_ensemble_scorer_invalid_weight_non_azure_content_filter():
     weak_scorer_dict = {"SelfAskScaleScorer": WeakScorerSpec(self_ask_scale_scorer, True)}
 
     ground_truth_scorer = MagicMock()
-    with pytest.raises(ValueError, match="Incorrect format for Scorer weights was passed:"):
+    with pytest.raises(ValueError, match="Weight for this scorer must be a float"):
         scorer = EnsembleScorer(weak_scorer_dict=weak_scorer_dict,
                                 ground_truth_scorer=ground_truth_scorer)
 
@@ -227,7 +255,6 @@ async def test_ensemble_scorer_step(loss, scorer_scale_response):
                                     "Violence": 0.1}
     score_values = {"SelfAskScaleScorer": 0.4,
                     "AzureContentFilterScorer": {"Hate": 0.05, "Violence": 0.05}}
-    ensemble_category = "jailbreak"
     ground_truth_score = 0.3
     lr = 1e-2
 
@@ -239,7 +266,6 @@ async def test_ensemble_scorer_step(loss, scorer_scale_response):
                                     self_ask_scale_score_weight,
                                     azure_content_filter_values,
                                     azure_content_filter_weights,
-                                    ensemble_category, 
                                     ground_truth_score,
                                     lr = 1e-2)
     score = await scorer.score_text_async(text="example text", task="example task")
@@ -277,7 +303,7 @@ async def test_ensemble_scorer_invalid_loss_metric(scorer_scale_response):
                                     azure_content_filter_values,
                                     azure_content_filter_weights)
 
-    with pytest.raises(ValueError, match="Invalid loss metric used:"):
+    with pytest.raises(ValueError, match=f"Loss metric {loss_metric} is not a valid loss metric."):
         scorer.step_weights(score_values=score_values,
                             ensemble_score=0.1,
                             loss_metric=loss_metric,
