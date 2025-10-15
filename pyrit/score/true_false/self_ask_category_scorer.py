@@ -26,7 +26,7 @@ class ContentClassifierPaths(enum.Enum):
 class SelfAskCategoryScorer(TrueFalseScorer):
     """
     A class that represents a self-ask score for text classification and scoring.
-    Given a classifer file, it scores according to these categories and returns the category
+    Given a classifier file, it scores according to these categories and returns the category
     the PromptRequestPiece fits best.
 
     There is also a false category that is used if the promptrequestpiece does not fit any of the categories.

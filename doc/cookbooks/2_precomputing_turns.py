@@ -67,7 +67,7 @@ memory_labels = {"op_name": "new_op", "user_name": "roakey", "test_name": "cookb
 
 # Configure any converters you want to use for the first few turns of the conversation.
 # In this case, we are using a tense converter to make the prompts in past tense, and then
-# we are using a translation converter to translate the promtps to Spanish.
+# we are using a translation converter to translate the prompts to Spanish.
 
 # All of this is very slow (but we only are doing it once)
 
