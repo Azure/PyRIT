@@ -25,6 +25,7 @@ class SupportedContentType(Enum):
     """
 
     PLAIN_TEXT = "text/plain"
+    HTML = "text/html"
 
 
 class AzureBlobStorageTarget(PromptTarget):
