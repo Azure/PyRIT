@@ -54,7 +54,7 @@ class Scenario:
         >>> from pyrit.prompt_converter import Base64Converter
         >>>
         >>> target = OpenAIChatTarget()
-        >>> 
+        >>>
         >>> # Create attack instances
         >>> base64_attack = PromptSendingAttack(
         ...     objective_target=target,
@@ -141,7 +141,7 @@ class Scenario:
                 within each AttackRun. Defaults to 1 for sequential execution.
 
         Returns:
-            ScenarioResult: Contains scenario identifier and aggregated list of all 
+            ScenarioResult: Contains scenario identifier and aggregated list of all
                 attack results from all runs.
 
         Example:

@@ -6,6 +6,10 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.3
+#   kernelspec:
+#     display_name: pyrit-dev2
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -53,11 +57,10 @@
 #
 
 # %%
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import ConsoleAttackResultPrinter
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.scenarios import FoundryScenario, FoundryAttackStrategy
-
-from pyrit.common import initialize_pyrit, IN_MEMORY
+from pyrit.scenarios import FoundryAttackStrategy, FoundryScenario
 
 initialize_pyrit(
     memory_db_type=IN_MEMORY,
@@ -73,7 +76,7 @@ print(f"Created scenario: {foundry_scenario.name}")
 print(f"Number of attack runs: {foundry_scenario.attack_run_count}")
 
 # Execute the entire scenario
-results = await foundry_scenario.run_async()
+results = await foundry_scenario.run_async()  # type: ignore
 
 print(f"\nScenario completed with {len(results.attack_results)} total results")
 
