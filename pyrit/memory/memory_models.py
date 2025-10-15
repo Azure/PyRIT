@@ -335,6 +335,7 @@ class SeedPromptEntry(Base):
         sequence (int): The turn of the seed prompt in a group. When entire multi-turn conversations
             are stored, this is used to order the prompts.
         role (str): The role of the prompt (e.g., user, system, assistant).
+        use_as_objective (bool): Whether this prompt is used as an objective.
 
     Methods:
         __str__(): Returns a string representation of the memory entry.
@@ -360,6 +361,7 @@ class SeedPromptEntry(Base):
     prompt_group_id: Mapped[Optional[uuid.UUID]] = mapped_column(CustomUUID, nullable=True)
     sequence: Mapped[Optional[int]] = mapped_column(INTEGER, nullable=True)
     role: Mapped[ChatMessageRole] = mapped_column(String, nullable=True)
+    use_as_objective: Mapped[Optional[bool]] = mapped_column(String, nullable=True)
 
     def __init__(self, *, entry: SeedPrompt):
         self.id = entry.id
@@ -380,6 +382,7 @@ class SeedPromptEntry(Base):
         self.prompt_group_id = entry.prompt_group_id
         self.sequence = entry.sequence
         self.role = entry.role
+        self.use_as_objective = entry.use_as_objective
 
     def get_seed_prompt(self) -> SeedPrompt:
         return SeedPrompt(
@@ -401,6 +404,7 @@ class SeedPromptEntry(Base):
             prompt_group_id=self.prompt_group_id,
             sequence=self.sequence,
             role=self.role,
+            use_as_objective=self.use_as_objective,
         )
 
 

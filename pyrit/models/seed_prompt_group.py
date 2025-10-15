@@ -6,10 +6,11 @@ from __future__ import annotations
 import logging
 import uuid
 from collections import defaultdict
-from typing import Any, Dict, Sequence, Union
+from typing import Any, Dict, Optional, Sequence, Union
 
 from pyrit.common.yaml_loadable import YamlLoadable
 from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models.seed_objective import SeedObjective
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,7 @@ class SeedPromptGroup(YamlLoadable):
     This class is useful when a target requires multiple prompt pieces to be grouped and sent together.
     All prompts in the group should share the same `prompt_group_id`.
     """
-
+    objective: Optional[SeedObjective] = None
     prompts: Sequence[SeedPrompt]
 
     def __init__(
@@ -37,6 +38,28 @@ class SeedPromptGroup(YamlLoadable):
                 self.prompts.append(prompt)
             elif isinstance(prompt, dict):
                 self.prompts.append(SeedPrompt(**prompt))
+
+            # Check if the prompt is marked to be used as the objective
+            current_prompt = self.prompts[-1]
+            if current_prompt.use_as_objective:
+                if self.objective is not None:
+                    raise ValueError("SeedPromptGroups can only have one objective.")
+                # If the group has only one prompt, use it as the objective
+                if len(prompts) == 1:
+                    self.prompts = []
+                self.objective = SeedObjective(value=current_prompt.value,
+                                               value_sha256=current_prompt.value_sha256, 
+                                               id=current_prompt.id,
+                                               data_type=current_prompt.data_type,
+                                               name=current_prompt.name, 
+                                               dataset_name=current_prompt.dataset_name,
+                                               authors=current_prompt.authors,
+                                               groups=current_prompt.groups,
+                                               source=current_prompt.source,
+                                               added_by=current_prompt.added_by,
+                                               harm_categories=current_prompt.harm_categories,
+                                               parameters=current_prompt.parameters,
+                                               metadata=current_prompt.metadata)
 
         self._enforce_consistent_group_id()
         self._enforce_consistent_role()
