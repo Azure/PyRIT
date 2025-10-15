@@ -62,7 +62,7 @@ This architecture is plumbed throughout PyRIT, providing flexibility to interact
 
 ## SeedPrompts
 
-[`SeedPrompt`](../../../pyrit/models/seed_prompt.py) objects represent the starting points of conversations or attack objectives. They are used to assemble and initiate attacks, and can be translated to and from `PromptRequestPieces`/conversations.
+[`SeedPrompt`](../../../pyrit/models/seed_prompt.py) objects represent the starting points of conversations or attack objectives. They are used to assemble and initiate attacks, and can be translated to and from `PromptRequestPieces`.
 
 **Key Fields:**
 
