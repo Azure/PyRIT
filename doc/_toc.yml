@@ -119,10 +119,11 @@ chapters:
       sections:
       - file: code/auxiliary_attacks/1_gcg_azure_ml
     - file: code/scenarios/scenarios
+      sections:
+      - file: code/scenarios/default_values
     - file: code/scanner/0_scanner
       sections:
       - file: code/scanner/1_configuration
-      - file: code/setup/using_configuration_files
   - file: deployment/README
     sections:
     - file: deployment/deploy_hf_model_aml

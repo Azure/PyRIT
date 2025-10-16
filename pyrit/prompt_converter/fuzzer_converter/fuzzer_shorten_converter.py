@@ -9,6 +9,7 @@ from pyrit.prompt_converter.fuzzer_converter.fuzzer_converter_base import (
     FuzzerConverter,
 )
 from pyrit.prompt_target import PromptChatTarget
+from pyrit.setup.pyrit_default_value import apply_defaults
 
 
 class FuzzerShortenConverter(FuzzerConverter):
@@ -16,6 +17,7 @@ class FuzzerShortenConverter(FuzzerConverter):
     Generates versions of a prompt with shortened sentences.
     """
 
+    @apply_defaults
     def __init__(self, *, converter_target: PromptChatTarget, prompt_template: SeedPrompt = None):
         prompt_template = (
             prompt_template

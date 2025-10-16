@@ -21,6 +21,7 @@ from pyrit.models import (
 )
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_target import PromptChatTarget
+from pyrit.setup.pyrit_default_value import apply_defaults
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,7 @@ class VariationConverter(PromptConverter):
     Generates variations of the input prompts using the converter target.
     """
 
+    @apply_defaults
     def __init__(self, *, converter_target: PromptChatTarget, prompt_template: SeedPrompt = None):
         """
         Initializes the converter with the specified target and prompt template.

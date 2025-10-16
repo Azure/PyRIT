@@ -16,6 +16,7 @@ from pyrit.prompt_converter.fuzzer_converter.fuzzer_converter_base import (
 )
 from pyrit.prompt_converter.prompt_converter import ConverterResult
 from pyrit.prompt_target import PromptChatTarget
+from pyrit.setup.pyrit_default_value import apply_defaults
 
 
 class FuzzerCrossOverConverter(FuzzerConverter):
@@ -23,6 +24,7 @@ class FuzzerCrossOverConverter(FuzzerConverter):
     Uses multiple prompt templates to generate new prompts.
     """
 
+    @apply_defaults
     def __init__(
         self,
         *,

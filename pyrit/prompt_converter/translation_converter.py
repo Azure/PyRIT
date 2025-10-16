@@ -23,6 +23,7 @@ from pyrit.models import (
 )
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_target import PromptChatTarget
+from pyrit.setup.pyrit_default_value import apply_defaults
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,7 @@ class TranslationConverter(PromptConverter):
     Translates prompts into different languages using an LLM.
     """
 
+    @apply_defaults
     def __init__(
         self,
         *,
