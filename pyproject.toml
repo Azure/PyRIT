@@ -88,7 +88,7 @@ dev = [
     "types-requests>=2.31.0.20250515",
 ]
 huggingface = [
-    "torch>=2.7.0; python_version < '3.14'",  # https://github.com/pytorch/pytorch/issues/156856
+    "torch>=2.7.0; python_version < '3.14'", # https://github.com/pytorch/pytorch/issues/156856
 ]
 gcg = [
     "accelerate>=1.7.0",
