@@ -11,28 +11,206 @@ potentially harmful outputs, which can take many forms, including harmful conten
 incitement or glorification of violence, or sexual content." Additionally, a variety of security risks
 can be introduced by the deployment of an AI system.
 
+## Installation Guide
+
+PyRIT offers flexible installation options to suit different needs. Choose the path that best fits your use case:
+
+```{important}
+**Version Compatibility:**
+- **User installations** (Docker, Pip/Conda) install the **latest stable release** from PyPI
+- **Contributor installations** (DevContainers, Local Development) use the **latest development code** from the `main` branch
+- Always match your notebooks to your PyRIT version - download from the corresponding release branch if using a stable release
+```
+
+::::{grid} 1 1 2 2
+:gutter: 3
+
+:::{grid-item-card} 🐋 Docker Installation
+:link: ./setup/1b_install_docker.md
+:class-header: bg-light
+
+**For Users - Quick Start** ⭐
+
+^^^
+
+Get started immediately with a pre-configured environment:
+
+- ✅ All dependencies included
+- ✅ No Python setup needed
+- ✅ JupyterLab built-in
+- ✅ Works on all platforms
+
++++
+
+**Best for:** First-time users who want to start quickly without environment setup.
+
+:::
+
+:::{grid-item-card} 🐍 Local Pip/Conda Installation
+:link: ./setup/1a_install_conda.md
+:class-header: bg-light
+
+**For Users - Custom Setup**
+
+^^^
+
+Install PyRIT directly on your machine:
+
+- ✅ Full Python environment control
+- ✅ Lighter weight installation
+- ✅ Easy integration with existing workflows
+- ✅ Direct system access
+
++++
+
+**Best for:** Users comfortable with Python environments or integrating PyRIT into existing projects.
+
+:::
+
+:::{grid-item-card} 🐋 DevContainers in VS Code
+:link: ./contributing/1b_install_devcontainers.md
+:class-header: bg-light
+
+**For Contributors** ⭐
+
+^^^
+
+Standardized development environment:
+
+- ✅ Pre-configured VS Code setup
+- ✅ Consistent across all contributors
+- ✅ All extensions pre-installed
+- ✅ Zero configuration needed
+
++++
+
+**Best for:** Contributors using VS Code who want a ready-to-go development environment.
+
+:::
+
+:::{grid-item-card} 🐍 Local Conda Development
+:link: ./contributing/1a_install_conda.md#local-installation-with-condapython
+:class-header: bg-light
+
+**For Contributors - Custom Dev Setup**
+
+^^^
+
+Install from source in editable mode:
+
+- ✅ Full development control
+- ✅ Use any IDE or editor
+- ✅ Customize environment
+- ✅ Advanced configuration options
+
++++
+
+**Best for:** Contributors who prefer custom development setups or don't use VS Code.
+
+:::
+
+::::
+
 ## Recommended Docs Reading Order
 
 There is no single way to read the documentation, and it's perfectly fine to jump around. However, here is a recommended reading order. Note that in many sections there are numbered documentation pages. If there is no number attached, it is supplemental and the recommended reading order would be to skip it on a first pass.
 
-1. [Cookbooks](./cookbooks/README.md): This provides an overview of PyRIT. It's useful to have an installation, but this is a good place to look to see PyRIT in action.
-2. **Installation**: Before diving in, it's useful to have a working version so you can follow along.
-   - [Setup](./setup/install_pyrit.md): Includes help setting up PyRIT and related resources for users.
-   - [Contributing](./contributing/README.md): Contains information for people contributing to the project.
-3. [Architecture](./code/architecture.md): This section provides a high-level overview of all the components. Understanding any single component is difficult without some knowledge of the others.
-4. [Attacks](./code/executor/attack/0_attack.md): These are the top-level components of PyRIT that implement end-to-end attack techniques. Reviewing their usage can help users understand how all components fit together.
-5. [Datasets](./code/datasets/0_dataset.md): This is the first piece of building an attack using seed prompts and fetching datasets.
-6. [Targets](./code/targets/0_prompt_targets.md): These are the endpoints that PyRIT sends prompts to. Nearly any scenario where PyRIT is used will need targets. This section dives into what targets are available and how to use them.
-7. [Converters](./code/converters/0_converters.ipynb): These transform prompts from one format to another. This is one of the most powerful capabilities within PyRIT.
-8. [Scorers](./code/scoring/0_scoring.md): These are how PyRIT makes decisions and records output.
-9. [Memory](./code/memory/0_memory.md): This is how PyRIT components communicate about the state of things.
-10. [Auxiliary Attacks](./code/auxiliary_attacks/0_auxiliary_attacks.ipynb): (Optional) Attacks and techniques that do not fit into the core PyRIT functionality.
+::::{grid} 1
+:gutter: 2
 
-Miscellaneous Extra Docs:
+:::{grid-item-card} 1️⃣ Cookbooks
+:link: ./cookbooks/README.md
+:class-header: bg-light
 
-- [Deployment](./deployment/README.md): Includes code to download, deploy, and score open-source models (such as those from Hugging Face) on Azure.
+This provides an overview of PyRIT in action. A great place to see practical examples and get started quickly.
 
+:::
 
-Ongoing:
+:::{grid-item-card} 2️⃣ Architecture
+:link: ./code/architecture.md
+:class-header: bg-light
 
-- [Blogs](./blog/README.md): Include notable new changes and are a good way to stay up to date.
+High-level overview of all PyRIT components. Understanding any single component is easier with knowledge of the others.
+
+:::
+
+:::{grid-item-card} 3️⃣ Attacks
+:link: ./code/executor/0_executor.md
+:class-header: bg-light
+
+Top-level components implementing end-to-end attack techniques. Shows how all PyRIT components fit together.
+
+:::
+
+:::{grid-item-card} 4️⃣ Datasets
+:link: ./code/datasets/0_dataset.md
+:class-header: bg-light
+
+Building attacks using seed prompts and fetching datasets. The foundation for creating test scenarios.
+
+:::
+
+:::{grid-item-card} 5️⃣ Targets
+:link: ./code/targets/0_prompt_targets.md
+:class-header: bg-light
+
+Endpoints that PyRIT sends prompts to. Essential for nearly any PyRIT scenario - learn what targets are available.
+
+:::
+
+:::{grid-item-card} 6️⃣ Converters
+:link: ./code/converters/0_converters.ipynb
+:class-header: bg-light
+
+Transform prompts from one format to another. One of the most powerful capabilities within PyRIT.
+
+:::
+
+:::{grid-item-card} 7️⃣ Scorers
+:link: ./code/scoring/0_scoring.md
+:class-header: bg-light
+
+How PyRIT makes decisions and records output. Essential for evaluating AI system responses.
+
+:::
+
+:::{grid-item-card} 8️⃣ Memory
+:link: ./code/memory/0_memory.md
+:class-header: bg-light
+
+How PyRIT components communicate state information. Understand the data flow and storage mechanisms.
+
+:::
+
+:::{grid-item-card} 9️⃣ Auxiliary Attacks (Optional)
+:link: ./code/auxiliary_attacks/0_auxiliary_attacks.ipynb
+:class-header: bg-light
+
+Attacks and techniques that don't fit into core PyRIT functionality. Advanced and specialized methods.
+
+:::
+
+::::
+
+### Additional Resources
+
+::::{grid} 1 1 2 2
+:gutter: 2
+
+:::{grid-item-card} 🚀 Deployment
+:link: ./deployment/README.md
+:class-header: bg-light
+
+Code to download, deploy, and score open-source models (such as Hugging Face) on Azure.
+
+:::
+
+:::{grid-item-card} 📰 Blog
+:link: ./blog/README.md
+:class-header: bg-light
+
+Notable new changes and updates. Stay current with the latest PyRIT developments.
+
+:::
+
+::::
