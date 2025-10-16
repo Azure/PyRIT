@@ -8,7 +8,6 @@ import uuid
 from unittest.mock import MagicMock, patch
 
 import numpy as np
-from pyrit.models.seed_objective import SeedObjective
 import pytest
 from PIL import Image
 from scipy.io import wavfile
@@ -98,6 +97,7 @@ def test_seed_prompt_group_initialization(seed_prompt_fixture):
     assert len(group.prompts) == 1
     assert group.prompts[0].sequence == 1
 
+
 def test_seed_prompt_group_with_one_objective_no_seed_prompts():
     prompt = SeedPrompt(value="Test prompt", data_type="text", use_as_objective=True)
     group = SeedPromptGroup(prompts=[prompt])
@@ -111,13 +111,17 @@ def test_seed_prompt_group_with_one_objective_multiple_seed_prompts(seed_prompt_
     assert len(group.prompts) == 2
     assert group.objective.value == "Test prompt"
 
+
 def test_seed_prompt_group_with_multiple_objectives(seed_prompt_fixture):
-    prompts = [SeedPrompt(value="Test prompt", data_type="text", use_as_objective=True, sequence=1),
-               SeedPrompt(value="Test prompt 2", data_type="text", use_as_objective=True, sequence=2)]
+    prompts = [
+        SeedPrompt(value="Test prompt", data_type="text", use_as_objective=True, sequence=1),
+        SeedPrompt(value="Test prompt 2", data_type="text", use_as_objective=True, sequence=2),
+    ]
     with pytest.raises(ValueError) as exc_info:
         SeedPromptGroup(prompts=prompts)
 
     assert ("SeedPromptGroups can only have one objective.") in str(exc_info.value)
+
 
 def test_seed_prompt_group_sequence_default():
     prompt = SeedPrompt(value="Test prompt", data_type="text")

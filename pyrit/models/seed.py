@@ -9,7 +9,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, Sequence, Union
+from typing import Dict, Optional, Sequence, TypeVar, Union
 
 from jinja2 import BaseLoader, Environment, StrictUndefined, Template, Undefined
 
@@ -17,6 +17,9 @@ from pyrit.common.yaml_loadable import YamlLoadable
 from pyrit.models.literals import ChatMessageRole, PromptDataType
 
 logger = logging.getLogger(__name__)
+
+# TypeVar for generic return type in class methods
+T = TypeVar("T", bound="Seed")
 
 
 class PartialUndefined(Undefined):
@@ -50,9 +53,6 @@ class Seed(YamlLoadable):
 
     # Unique identifier for the prompt
     id: Optional[uuid.UUID] = field(default_factory=lambda: uuid.uuid4())
-
-    # The type of data this prompt represents (e.g., text, image, audio, video)
-    data_type: Optional[PromptDataType] = None
 
     # Name of the prompt
     name: Optional[str] = None
@@ -172,8 +172,11 @@ class Seed(YamlLoadable):
 
     @classmethod
     def from_yaml_with_required_parameters(
-        cls, template_path: Union[str, Path], required_parameters: list[str], error_message: Optional[str] = None
-    ) -> "Seed":
+        cls: type[T],
+        template_path: Union[str, Path],
+        required_parameters: list[str],
+        error_message: Optional[str] = None,
+    ) -> T:
         """
         Load a Seed from a YAML file and validate that it contains specific parameters.
 
@@ -183,7 +186,7 @@ class Seed(YamlLoadable):
             error_message: Custom error message if validation fails. If None, a default message is used.
 
         Returns:
-            Seed: The loaded and validated seed prompt.
+            T: The loaded and validated seed of the specific subclass type.
 
         Raises:
             ValueError: If the template doesn't contain all required parameters.

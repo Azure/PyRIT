@@ -9,8 +9,8 @@ from collections import defaultdict
 from typing import Any, Dict, Optional, Sequence, Union
 
 from pyrit.common.yaml_loadable import YamlLoadable
-from pyrit.models.seed_prompt import SeedPrompt
 from pyrit.models.seed_objective import SeedObjective
+from pyrit.models.seed_prompt import SeedPrompt
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +22,7 @@ class SeedPromptGroup(YamlLoadable):
     This class is useful when a target requires multiple prompt pieces to be grouped and sent together.
     All prompts in the group should share the same `prompt_group_id`.
     """
+
     objective: Optional[SeedObjective] = None
     prompts: Sequence[SeedPrompt]
 
@@ -47,19 +48,21 @@ class SeedPromptGroup(YamlLoadable):
                 # If the group has only one prompt, use it as the objective
                 if len(prompts) == 1:
                     self.prompts = []
-                self.objective = SeedObjective(value=current_prompt.value,
-                                               value_sha256=current_prompt.value_sha256, 
-                                               id=current_prompt.id,
-                                               data_type=current_prompt.data_type,
-                                               name=current_prompt.name, 
-                                               dataset_name=current_prompt.dataset_name,
-                                               authors=current_prompt.authors,
-                                               groups=current_prompt.groups,
-                                               source=current_prompt.source,
-                                               added_by=current_prompt.added_by,
-                                               harm_categories=current_prompt.harm_categories,
-                                               parameters=current_prompt.parameters,
-                                               metadata=current_prompt.metadata)
+                self.objective = SeedObjective(
+                    value=current_prompt.value,
+                    value_sha256=current_prompt.value_sha256,
+                    id=current_prompt.id,
+                    data_type=current_prompt.data_type,
+                    name=current_prompt.name,
+                    dataset_name=current_prompt.dataset_name,
+                    authors=current_prompt.authors,
+                    groups=current_prompt.groups,
+                    source=current_prompt.source,
+                    added_by=current_prompt.added_by,
+                    harm_categories=current_prompt.harm_categories,
+                    parameters=current_prompt.parameters,
+                    metadata=current_prompt.metadata,
+                )
 
         self._enforce_consistent_group_id()
         self._enforce_consistent_role()
