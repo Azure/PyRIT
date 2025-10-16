@@ -17,7 +17,7 @@ The main entry method follow the following signature:
 async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 ```
 
-A `PromptRequestResponse` object is a normalized object with all the information a target will need to send a prompt, including a way to get a history for that prompt (in the cases that also needs to be sent). This is discussed in more depth [here](../memory/3_prompt_request.md).
+A `PromptRequestResponse` object is a normalized object with all the information a target will need to send a prompt, including a way to get a history for that prompt (in the cases that also needs to be sent). This is discussed in more depth [here](../memory/3_memory_data_types.md).
 
 ## PromptChatTargets vs PromptTargets
 

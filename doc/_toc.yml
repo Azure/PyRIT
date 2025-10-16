@@ -105,7 +105,7 @@ chapters:
       sections:
       - file: code/memory/1_sqlite_memory
       - file: code/memory/2_basic_memory_programming
-      - file: code/memory/3_prompt_request
+      - file: code/memory/3_memory_data_types
       - file: code/memory/4_manually_working_with_memory
       - file: code/memory/5_memory_labels
       - file: code/memory/6_azure_sql_memory
@@ -119,6 +119,7 @@ chapters:
     - file: code/auxiliary_attacks/0_auxiliary_attacks
       sections:
       - file: code/auxiliary_attacks/1_gcg_azure_ml
+    - file: code/scenarios/scenarios
     - file: code/scanner/0_scanner
       sections:
       - file: code/scanner/1_configuration

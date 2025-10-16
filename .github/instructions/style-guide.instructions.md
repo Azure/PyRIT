@@ -234,6 +234,34 @@ from pyrit.models import AttackResult, PromptResponse
 from pyrit.prompt_target import PromptTarget
 ```
 
+### Import paths
+
+Often, pyrit has specific files that can be imported. However IF you are importing from a different module than your namespace,
+import from the root pyrit module if it's exposed from init.
+
+In the same module, importing from the specific path is usually necessary to prevent circular imports.
+
+```python
+# Correct
+from pyrit.prompt_target import PromptChatTarget, OpenAIChatTarget
+
+# Correct
+from pyrit.score import (
+    AzureContentFilterScorer,
+    FloatScaleThresholdScorer,
+    SelfAskRefusalScorer,
+    TrueFalseCompositeScorer,
+    TrueFalseInverterScorer,
+    TrueFalseScoreAggregator,
+    TrueFalseScorer,
+)
+
+# Incorrect (if importing from a non-target module)
+from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
+from pyrit.prompt_target.openai.openai_chat_target import OpenAIChatTarget
+
+```
+
 ## Error Handling
 
 ### Specific Exceptions

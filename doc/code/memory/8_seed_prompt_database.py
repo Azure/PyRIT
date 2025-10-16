@@ -69,9 +69,9 @@ for prompt in prompts:
 # <br> <center> <img src="../../../assets/seed_prompt.png" alt="seed_prompt.png" height="600" /> </center> </br>
 # When we add non-text seed prompts to memory, encoding data will automatically populate in the seed prompt's
 # `metadata` field, including `format` (i.e. png, mp4, wav, etc.) as well as additional metadata for audio
-# and video files, inclduing `bitrate` (kBits/s as int), `samplerate` (samples/second as int), `bitdepth` (as int),
+# and video files, including `bitrate` (kBits/s as int), `samplerate` (samples/second as int), `bitdepth` (as int),
 # `filesize` (bytes as int), and `duration` (seconds as int) if the file type is supported by TinyTag.
-# Example suppported file types include: MP3, MP4, M4A, and WAV. These may be helpful to filter for as some targets
+# Example supported file types include: MP3, MP4, M4A, and WAV. These may be helpful to filter for as some targets
 # have specific input prompt requirements.
 # %%
 import pathlib
