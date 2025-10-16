@@ -133,12 +133,12 @@ class TestFoundryScenarioInitialization:
         scenario = FoundryScenario(
             objective_target=mock_objective_target,
             attack_strategies={FoundryAttackStrategy.Base64},
-            adversarial_target=mock_adversarial_target,
+            adversarial_chat=mock_adversarial_target,
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
-        assert scenario._adversarial_target == mock_adversarial_target
+        assert scenario._adversarial_chat == mock_adversarial_target
 
     @patch("pyrit.scenarios.config.foundry_scenario.fetch_harmbench_dataset")
     @patch.dict(
@@ -381,7 +381,7 @@ class TestFoundryScenarioAttackCreation:
         scenario = FoundryScenario(
             objective_target=mock_objective_target,
             attack_strategies={FoundryAttackStrategy.Crescendo},
-            adversarial_target=mock_adversarial_target,
+            adversarial_chat=mock_adversarial_target,
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
@@ -437,7 +437,7 @@ class TestFoundryScenarioGetAttack:
         scenario = FoundryScenario(
             objective_target=mock_objective_target,
             attack_strategies={FoundryAttackStrategy.Crescendo},
-            adversarial_target=mock_adversarial_target,
+            adversarial_chat=mock_adversarial_target,
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
@@ -531,7 +531,7 @@ class TestFoundryScenarioAllStrategies:
         scenario = FoundryScenario(
             objective_target=mock_objective_target,
             attack_strategies={strategy},
-            adversarial_target=mock_adversarial_target,
+            adversarial_chat=mock_adversarial_target,
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
