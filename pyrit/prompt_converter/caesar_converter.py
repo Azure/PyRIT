@@ -14,7 +14,7 @@ class CaesarConverter(PromptConverter):
     Encodes text using the Caesar cipher with a specified offset.
 
     Using ``offset=1``, 'Hello 123' would encode to 'Ifmmp 234', as each character would shift by 1.
-    Shifts for digits 0-9 only work if the offset is less than 10, if the offset is equal to or greather than 10,
+    Shifts for digits 0-9 only work if the offset is less than 10, if the offset is equal to or greater than 10,
     any numeric values will not be shifted.
     """
 
