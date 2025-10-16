@@ -25,6 +25,7 @@ class SupportedContentType(Enum):
     """
 
     PLAIN_TEXT = "text/plain"
+    HTML = "text/html"
 
 
 class AzureBlobStorageTarget(PromptTarget):
@@ -101,9 +102,15 @@ class AzureBlobStorageTarget(PromptTarget):
             await self._create_container_client_async()
         # Parse the Azure Storage Blob URL to extract components
         _, blob_prefix = self._parse_url()
-        blob_path = f"{blob_prefix}/{file_name}"
+        # If a blob prefix is provided, prepend it to the file name.
+        # If not, the file will be put in the root of the container.
+        blob_path = f"{blob_prefix}/{file_name}" if blob_prefix else file_name
         try:
             blob_client = self._client_async.get_blob_client(blob=blob_path)
+            if await blob_client.exists():
+                logger.info(msg=f"Blob {blob_path} already exists. Deleting it before uploading a new version.")
+                await blob_client.delete_blob()
+            logger.info(msg=f"Uploading new blob to {blob_path}")
             await blob_client.upload_blob(data=data, content_settings=content_settings)
         except Exception as exc:
             if isinstance(exc, ClientAuthenticationError):
@@ -144,7 +151,11 @@ class AzureBlobStorageTarget(PromptTarget):
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
 
+        # default file name is <conversation_id>.txt, but can be overridden by prompt metadata
         file_name = f"{request.conversation_id}.txt"
+        if request.prompt_metadata.get("file_name"):
+            file_name = str(request.prompt_metadata["file_name"])
+
         data = str.encode(request.converted_value)
         blob_url = self._container_url + "/" + file_name
 
