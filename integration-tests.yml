@@ -68,6 +68,10 @@ jobs:
         az account get-access-token --scope https://cognitiveservices.azure.com/.default --output none
         echo "Cognitive Services access token cached successfully."
 
+        # Prefetch token for Azure ML / Foundry model endpoints
+        az account get-access-token --scope https://ml.azure.com/.default --output none
+        echo "Azure ML/Foundry access token cached successfully."
+
         # Run integration tests
         make integration-test
   - bash: rm -f .env

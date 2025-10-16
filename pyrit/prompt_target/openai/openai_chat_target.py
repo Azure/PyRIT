@@ -153,7 +153,7 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
     def _build_chat_messages_for_text(self, conversation: MutableSequence[PromptRequestResponse]) -> list[dict]:
         """
         Builds chat messages based on prompt request response entries. This is needed because many
-        openai "compatible" models don't support ChatMessageListDictContent format (this is more univerally accepted)
+        openai "compatible" models don't support ChatMessageListDictContent format (this is more universally accepted)
 
         Args:
             conversation (list[PromptRequestResponse]): A list of PromptRequestResponse objects.
