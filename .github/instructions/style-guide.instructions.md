@@ -239,7 +239,7 @@ from pyrit.prompt_target import PromptTarget
 Often, pyrit has specific files that can be imported. However IF you are importing from a different module than your namespace,
 import from the root pyrit module if it's exposed from init.
 
-In the same module, then importing from the specific path is usually necessary to prevent circular imports.
+In the same module, importing from the specific path is usually necessary to prevent circular imports.
 
 ```python
 # Correct
