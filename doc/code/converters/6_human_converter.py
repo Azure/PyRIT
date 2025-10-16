@@ -25,7 +25,7 @@
 # them; however, you can if you wish to alter the feedback for generating the next prompt.
 #
 #
-# # Before you begin, ensure you are setup with the correct version of [PyRIT installed](../../setup/1a_install_conda.md) and have [secrets configured](../../setup/populating_secrets.md).
+# # Before you begin, ensure you are setup with the correct version of [PyRIT installed](../index.md#Installation-Guide) and have [secrets configured](../../setup/populating_secrets.md).
 #
 
 # %%

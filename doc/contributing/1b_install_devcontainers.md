@@ -9,7 +9,7 @@ DevContainers provide a pre-configured development environment for PyRIT that en
 ## Who Should Use DevContainers?
 
 ✅ **Use DevContainers if you:**
-- Use Visual Studio Code as your editor
+- Use Visual Studio Code as your editor. (Note that DevContainers can be used independently but our installation guide leverages VS Code since it's seamless.)
 - Want a pre-configured development environment
 - Want consistency with other contributors
 - Prefer not to manage Python environments manually
@@ -53,6 +53,8 @@ code .
 ```
 
 ### 3. Reopen in Container
+
+Make sure Docker is running first, for example, by starting "Docker Desktop."
 
 Press `Ctrl + Shift + P` (or `Cmd + Shift + P` on macOS) to open the VS Code Command Palette, then type and select:
 

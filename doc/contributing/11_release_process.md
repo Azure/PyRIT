@@ -36,11 +36,13 @@ there should be any postfixes on the release version.
 With that in mind, the reason for the release and the set of changes
 that happened since the last release will influence the new version number.
 
-## 2. Update __init__.py and pyproject.toml
+## 2. Update the version
+
+### __init__.py and pyproject.toml
 
 Set the version in `pyproject.toml` and `pyrit/__init__.py` to the version established in step 1.
 
-## Update README File
+### Update README File
 
 The README file is published to PyPI and also needs to be updated so the
 links work properly. Note: There may not be any links to update, but it is
@@ -144,13 +146,19 @@ If successful, it will print
 > View at:
   https://pypi.org/project/pyrit/x.y.z/
 
+## 7. Update main
+
 After the release is on PyPI, make sure to create a PR for the `main` branch
-where the only change is the version increase in `__init__.py` (while keeping
-suffix `.dev0`). The PR should be made from your fork and should be a different
-branch than the releases branch you created earlier.
+where the only changes are:
+
+- the version increase in `__init__.py` (while keeping suffix `.dev0`).
+- Search for the previous release version in the codebase and replace any occurrences with the new version
+  (without `.dev0`). For example, some installation pages refer to the latest release.
+
+The PR should be made from your fork and should be a different branch than the releases branch you created earlier.
 This should be something like `x.y.z+1.dev0`.
 
-## 7. Create GitHub Release
+## 8. Create GitHub Release
 
 Finally, go to the [releases page](https://github.com/Azure/PyRIT/releases), select "Draft a new release" and the "tag"
 for which you want to create the release notes. It should match the version that you just released
