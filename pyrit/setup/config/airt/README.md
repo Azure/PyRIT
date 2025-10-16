@@ -1,0 +1,1 @@
+These are good defaults for AIRT. They can make use of any environment variable in .env_example and the north star goal is to be the best defaults for the Microsoft AI Red Team.

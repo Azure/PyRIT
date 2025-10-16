@@ -25,63 +25,106 @@ class InitializationPaths:
     """
     Provides access to initialization script paths.
 
-    This class provides direct access to PyRIT's initialization scripts.
+    This class provides direct access to PyRIT's initialization scripts,
+    organized into 'airt' (AI Red Team) and 'simple' categories.
 
     Attributes:
-        converter_initialization: Path to the converter initialization script.
-        scorer_initialization: Path to the scorer initialization script.
-        target_initialization: Path to the target initialization script.
+        airt_converter_initialization: Path to the AIRT converter initialization script.
+        airt_scorer_initialization: Path to the AIRT scorer initialization script.
+        airt_target_initialization: Path to the AIRT target initialization script.
+        simple_converter_initialization: Path to the simple converter initialization script.
+        simple_scorer_initialization: Path to the simple scorer initialization script.
+        simple_target_initialization: Path to the simple target initialization script.
 
     Example:
         # Access an initialization script
-        path = InitializationPaths.converter_initialization
+        path = InitializationPaths.airt_scorer_initialization
 
         # Use with initialize_pyrit
         initialize_pyrit(
             memory_db_type="InMemory",
-            initialization_scripts=[InitializationPaths.scorer_initialization]
+            initialization_scripts=[InitializationPaths.airt_scorer_initialization]
         )
 
-        # List all paths
-        all_paths = InitializationPaths.list_all_paths()
+        # List all AIRT paths
+        airt_paths = InitializationPaths.list_all_airt_paths()
+
+        # List all simple paths
+        simple_paths = InitializationPaths.list_all_simple_paths()
     """
 
     def __init__(self) -> None:
         self._CONFIG_PATH = pathlib.Path(__file__).parent / "config"
 
     @property
-    def converter_initialization(self) -> pathlib.Path:
-        """Path to the converter initialization script."""
-        return self._CONFIG_PATH / "converter_initialization.py"
+    def airt_converter_initialization(self) -> pathlib.Path:
+        """Path to the AIRT converter initialization script."""
+        return self._CONFIG_PATH / "airt" / "converter_initialization.py"
 
     @property
-    def scorer_initialization(self) -> pathlib.Path:
-        """Path to the scorer initialization script."""
-        return self._CONFIG_PATH / "scorer_initialization.py"
+    def airt_scorer_initialization(self) -> pathlib.Path:
+        """Path to the AIRT scorer initialization script."""
+        return self._CONFIG_PATH / "airt" / "scorer_initialization.py"
 
     @property
-    def target_initialization(self) -> pathlib.Path:
-        """Path to the target initialization script."""
-        return self._CONFIG_PATH / "target_initialization.py"
+    def airt_target_initialization(self) -> pathlib.Path:
+        """Path to the AIRT target initialization script."""
+        return self._CONFIG_PATH / "airt" / "target_initialization.py"
+
+    @property
+    def simple_converter_initialization(self) -> pathlib.Path:
+        """Path to the simple converter initialization script."""
+        return self._CONFIG_PATH / "simple" / "converter_initialization.py"
+
+    @property
+    def simple_scorer_initialization(self) -> pathlib.Path:
+        """Path to the simple scorer initialization script."""
+        return self._CONFIG_PATH / "simple" / "scorer_initialization.py"
+
+    @property
+    def simple_target_initialization(self) -> pathlib.Path:
+        """Path to the simple target initialization script."""
+        return self._CONFIG_PATH / "simple" / "target_initialization.py"
 
     @classmethod
-    def list_all_paths(cls) -> List[pathlib.Path]:
+    def list_all_airt_paths(cls) -> List[pathlib.Path]:
         """
-        Get a list of all available configuration script paths.
+        Get a list of all AIRT configuration script paths.
 
         Returns:
-            List[pathlib.Path]: List of configuration script paths.
+            List[pathlib.Path]: List of AIRT configuration script paths.
 
         Example:
-            # Get all paths
-            all_paths = InitializationPaths.list_all_paths()
+            # Get all AIRT paths
+            airt_paths = InitializationPaths.list_all_airt_paths()
         """
         instance = cls()
         paths: List[pathlib.Path] = []
 
-        paths.append(instance.converter_initialization)
-        paths.append(instance.scorer_initialization)
-        paths.append(instance.target_initialization)
+        paths.append(instance.airt_converter_initialization)
+        paths.append(instance.airt_scorer_initialization)
+        paths.append(instance.airt_target_initialization)
+
+        return paths
+
+    @classmethod
+    def list_all_simple_paths(cls) -> List[pathlib.Path]:
+        """
+        Get a list of all simple configuration script paths.
+
+        Returns:
+            List[pathlib.Path]: List of simple configuration script paths.
+
+        Example:
+            # Get all simple paths
+            simple_paths = InitializationPaths.list_all_simple_paths()
+        """
+        instance = cls()
+        paths: List[pathlib.Path] = []
+
+        paths.append(instance.simple_converter_initialization)
+        paths.append(instance.simple_scorer_initialization)
+        paths.append(instance.simple_target_initialization)
 
         return paths
 

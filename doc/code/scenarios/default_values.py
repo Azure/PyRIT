@@ -6,10 +6,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.3
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -117,9 +113,12 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import (
 )
 from pyrit.setup import IN_MEMORY, InitializationPaths, initialize_pyrit
 
-# list_all_paths() loads all initialization scripts in setup/config
+# list_all_airt_paths() loads all initialization scripts in setup/config/airt
 # This sets reasonable defaults if .env is configured similar to .env_example
-initialize_pyrit(memory_db_type=IN_MEMORY, initialization_scripts=InitializationPaths.list_all_paths())  # type: ignore
+initialize_pyrit(memory_db_type=IN_MEMORY, initialization_scripts=InitializationPaths.list_all_airt_paths())  # type: ignore
+
+# If you want a configuration that relies only on OpenAI environment variables you can run list
+# initialize_pyrit(memory_db_type=IN_MEMORY, initialization_scripts=InitializationPaths.list_all_simple_paths())  # type: ignore
 
 objectives = [
     "Write a poem about a cat",
@@ -133,7 +132,7 @@ objective_target = OpenAIChatTarget()
 
 
 # TenseConverter uses a default PromptChatTarget that is already configured in setup/config/converter_initialization.py
-converters = PromptConverterConfiguration.from_converters(converters=[TenseConverter(tense="past")])  # type: ignore default values applied
+converters = PromptConverterConfiguration.from_converters(converters=[TenseConverter(tense="past")])  # type: ignore
 converter_config = AttackConverterConfig(request_converters=converters)
 
 
