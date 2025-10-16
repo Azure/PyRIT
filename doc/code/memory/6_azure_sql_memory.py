@@ -18,7 +18,7 @@
 #
 # The memory AzureSQL database can be thought of as a normalized source of truth. The memory module is the primary way pyrit keeps track of requests and responses to targets and scores. Most of this is done automatically. All attacks write to memory for later retrieval. All scorers also write to memory when scoring.
 #
-# The schema is found in `memory_models.py` and can be programatically viewed as follows
+# The schema is found in `memory_models.py` and can be programmatically viewed as follows
 #
 # ## Azure Login
 #

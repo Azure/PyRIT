@@ -157,7 +157,7 @@ def group_conversation_request_pieces_by_sequence(
     >>>     favorite:"),
     >>>     PromptRequestPiece(conversation_id=1, sequence=2, text="Good question!"),
     >>>     PromptRequestPiece(conversation_id=1, sequence=1, text="Raccoon, Narwhal, or Sloth?"),
-    >>>     PromptRequestPiece(conversation_id=1, sequence=2, text="I'd have to say racoons are my favorite!"),
+    >>>     PromptRequestPiece(conversation_id=1, sequence=2, text="I'd have to say raccoons are my favorite!"),
     >>> ]
     >>> grouped_responses = group_conversation_request_pieces(request_pieces)
     ... [
@@ -168,7 +168,7 @@ def group_conversation_request_pieces_by_sequence(
     ...     ]),
     ...     PromptRequestResponse(request_pieces=[
     ...         PromptRequestPiece(conversation_id=1, sequence=2, text="Good question!"),
-    ...         PromptRequestPiece(conversation_id=1, sequence=2, text="I'd have to say racoons are my favorite!")
+    ...         PromptRequestPiece(conversation_id=1, sequence=2, text="I'd have to say raccoons are my favorite!")
     ...     ])
     ... ]
     """

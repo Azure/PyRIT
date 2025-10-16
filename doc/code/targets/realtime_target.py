@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.3
+#       jupytext_version: 1.17.2
 # ---
 
 # %% [markdown]
@@ -26,6 +26,8 @@ from pyrit.setup import IN_MEMORY, initialize_pyrit
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
 target = RealtimeTarget()
+# For an AzureOpenAI endpoint with Entra ID authentication enabled, use the following command instead. Make sure to run `az login` first.
+# target = RealtimeTarget(use_entra_auth=True)
 
 # %% [markdown]
 # ## Audio Conversation

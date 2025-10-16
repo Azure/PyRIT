@@ -52,7 +52,7 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
                 Defaults to the `OPENAI_CHAT_KEY` environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
-            use_aad_auth (bool, Optional): When set to True, user authentication is used
+            use_entra_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default . Please run `az login` locally
                 to leverage user AuthN.
@@ -153,7 +153,7 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
     def _build_chat_messages_for_text(self, conversation: MutableSequence[PromptRequestResponse]) -> list[dict]:
         """
         Builds chat messages based on prompt request response entries. This is needed because many
-        openai "compatible" models don't support ChatMessageListDictContent format (this is more univerally accepted)
+        openai "compatible" models don't support ChatMessageListDictContent format (this is more universally accepted)
 
         Args:
             conversation (list[PromptRequestResponse]): A list of PromptRequestResponse objects.

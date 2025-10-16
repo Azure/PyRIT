@@ -100,7 +100,7 @@ class OpenAISoraTarget(OpenAITarget):
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
                 Defaults to the `OPENAI_SORA_KEY` environment variable.
             headers (str, Optional): Extra headers of the endpoint (JSON).
-            use_aad_auth (bool, Optional): When set to True, user authentication is used
+            use_entra_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default. Please run `az login` locally
                 to leverage user AuthN.
@@ -224,7 +224,7 @@ class OpenAISoraTarget(OpenAITarget):
         """
         Asynchronously check status of a submitted video generation job using the job_id.
 
-        Retries a maxium of {self.CHECK_JOB_RETRY_MAX_NUM_ATTEMPTS} times,
+        Retries a maximum of {self.CHECK_JOB_RETRY_MAX_NUM_ATTEMPTS} times,
         until the job is complete (succeeded, failed, or cancelled). Also
         retries upon RateLimitException.
 
