@@ -204,6 +204,7 @@ API Reference
     ConversationSession
     CrescendoAttack
     FlipAttack
+    ImplicareAttack
     ManyShotJailbreakAttack
     MultiPromptSendingAttack
     MultiPromptSendingAttackContext
@@ -219,6 +220,7 @@ API Reference
     TreeOfAttacksWithPruningAttack
     SkeletonKeyAttack
     ConsoleAttackResultPrinter
+    
 
 :py:mod:`pyrit.executor.promptgen`
 ==================================
@@ -375,6 +377,7 @@ API Reference
     FuzzerSimilarConverter
     HumanInTheLoopConverter
     ImageCompressionConverter
+    ImplicareConverter
     InsertPunctuationConverter
     LeetspeakConverter
     LLMGenericTextConverter
