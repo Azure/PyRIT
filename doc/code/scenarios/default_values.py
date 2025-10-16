@@ -91,26 +91,31 @@ default_converter_target = OpenAIChatTarget(
 )
 
 
-set_default_value(
-    class_type=PromptConverter, parameter_name="converter_target", value=default_converter_target
-)
+set_default_value(class_type=PromptConverter, parameter_name="converter_target", value=default_converter_target)
 
 # %% [markdown]
 # ## Using Default Values
 #
-# As mentioned earlier, many types of classes could have better defaults that can be given. 
+# As mentioned earlier, many types of classes could have better defaults that can be given.
 #
 # We need the ability to pass in a `PromptChatTarget` to a scorer. But we don't want to have to pass it every single time.
 #
-# For our own use within Microsoft, all our configuration is done in `.env` (see [Populating Secrets](../../../setup/populating_secrets.md)). But then using these, we can create default values that make more sense than we can possibly make at a class level. Our own `.env` may make use of all the variables in `.env_example`. Your own initialization scripts may be different.
+# For our own use within Microsoft, all our configuration is done in `.env` (see [Populating Secrets](../../setup/populating_secrets.md)). But then using these, we can create default values that make more sense than we can possibly make at a class level. Our own `.env` may make use of all the variables in `.env_example`. Your own initialization scripts may be different.
 #
 # This is can be run as part of initialize_pyrit by doing the following.
 
 # %%
-from pyrit.executor.attack import PromptSendingAttack, AttackConverterConfig, AttackExecutor, ConsoleAttackResultPrinter
+from pyrit.executor.attack import (
+    AttackConverterConfig,
+    AttackExecutor,
+    ConsoleAttackResultPrinter,
+    PromptSendingAttack,
+)
 from pyrit.prompt_converter import TenseConverter
-from pyrit.prompt_normalizer.prompt_converter_configuration import PromptConverterConfiguration
-from pyrit.setup import initialize_pyrit, IN_MEMORY, InitializationPaths
+from pyrit.prompt_normalizer.prompt_converter_configuration import (
+    PromptConverterConfiguration,
+)
+from pyrit.setup import IN_MEMORY, InitializationPaths, initialize_pyrit
 
 # list_all_paths() loads all initialization scripts in setup/config
 # This sets reasonable defaults if .env is configured similar to .env_example
@@ -138,10 +143,7 @@ attack = PromptSendingAttack(
     attack_converter_config=converter_config,
 )
 
-results = await AttackExecutor().execute_single_turn_attacks_async(  # type: ignore
-    attack=attack,
-    objectives=objectives
-)
+results = await AttackExecutor().execute_single_turn_attacks_async(attack=attack, objectives=objectives)  # type: ignore
 
 for result in results:
     await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
