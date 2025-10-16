@@ -57,7 +57,7 @@ jobs:
       cp -r $PyRIT_DIR/tests/integration $NEW_DIR/tests
       cd $NEW_DIR
     displayName: "Create and switch to new integration test directory"
-  - bash: python -m tests/integration/targets --cov=pyrit tests/integration/targets --cov-report xml --junitxml=junit/test-results.xml --doctest-modules
+  - bash: make integration-test
     name: run_integration_tests
   - bash: rm -f .env
     name: clean_up_env_file
