@@ -165,6 +165,13 @@ class AttackExecutor:
         tasks = []
         for i, objective in enumerate(objectives):
             seed_prompt_group = seed_prompt_groups[i] if seed_prompt_groups else None
+            if seed_prompt_group and seed_prompt_group.objective and seed_prompt_group.objective.value != objective:
+                raise ValueError(
+                    "Attack can only specify one objective per turn. Objective parameter '%s' and seed"
+                    " prompt group objective '%s' are both defined",
+                    objective,
+                    seed_prompt_group.objective.value,
+                )
             prepended_conversation = prepended_conversations[i] if prepended_conversations else []
 
             task = execute_with_semaphore(
