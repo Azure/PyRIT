@@ -97,7 +97,7 @@ async def processing_callback() -> str:
     args = json.loads(tool_call.arguments)
 
     result = requests.get(args["url"]).content
-    
+
     input_messages.append(tool_call)
     input_messages.append({
         "type": "function_call_output",
