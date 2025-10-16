@@ -120,8 +120,7 @@ class SeedPromptDataset(YamlLoadable):
         Extracts and returns a list of random prompt values from the dataset.
 
         Args:
-            first (Optional[int]): If provided, values from the first N prompts are included.
-            last (Optional[int]): If provided, values from the last N prompts are included.
+            number (int): The number of random prompt values to return.
 
         Returns:
             Sequence[str]: A list of prompt values.

@@ -33,10 +33,20 @@ class ScenarioIdentifier:
 
 
 class ScenarioResult:
-    def __init__(self, *, scenario_identifier: ScenarioIdentifier, attack_results: List[AttackResult]):
+    def __init__(self, *, scenario_identifier: ScenarioIdentifier, attack_results: List[AttackResult]) -> None:
 
         self.scenario_identifier = scenario_identifier
         self.attack_results = attack_results
+
+    @property
+    def objective_achieved_rate(self) -> int:
+        """Get the success rate of this scenario."""
+        total_results = len(self.attack_results)
+        if total_results == 0:
+            return 0
+        successful_results = sum(1 for result in self.attack_results if result.outcome == "success")
+
+        return int((successful_results / total_results) * 100)
 
 
 class Scenario:

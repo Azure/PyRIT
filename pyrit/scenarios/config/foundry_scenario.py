@@ -73,35 +73,99 @@ AttackStrategyT = TypeVar("AttackStrategyT", bound=AttackStrategy)
 
 
 class FoundryAttackStrategy(Enum):
-    """Strategies for attacks."""
+    """
+    Strategies for attacks with associated complexity levels.
 
-    EASY = "easy"
-    MODERATE = "moderate"
-    DIFFICULT = "difficult"
-    AnsiAttack = "ansi_attack"
-    AsciiArt = "ascii_art"
-    AsciiSmuggler = "ascii_smuggler"
-    Atbash = "atbash"
-    Base64 = "base64"
-    Binary = "binary"
-    Caesar = "caesar"
-    CharacterSpace = "character_space"
-    CharSwap = "char_swap"
-    Diacritic = "diacritic"
-    Flip = "flip"
-    Leetspeak = "leetspeak"
-    Morse = "morse"
-    ROT13 = "rot13"
-    SuffixAppend = "suffix_append"
-    StringJoin = "string_join"
-    Tense = "tense"
-    UnicodeConfusable = "unicode_confusable"
-    UnicodeSubstitution = "unicode_substitution"
-    Url = "url"
-    Baseline = "baseline"
-    Jailbreak = "jailbreak"
-    MultiTurn = "multi_turn"
-    Crescendo = "crescendo"
+    Each enum member is defined as (value, complexity) where:
+    - value: The strategy name (string)
+    - complexity: The difficulty level ("baseline", "easy", "moderate", "difficult")
+
+    Complexity level shortcuts (EASY, MODERATE, DIFFICULT) can be used to expand
+    into all strategies of that complexity.
+
+    Example:
+        >>> strategy = FoundryAttackStrategy.Base64
+        >>> print(strategy.value)  # "base64"
+        >>> print(strategy.complexity)  # "easy"
+        >>>
+        >>> # Get all easy strategies
+        >>> easy_strategies = FoundryAttackStrategy.get_strategies_by_complexity("easy")
+    """
+
+    _complexity: str
+
+    def __new__(cls, value: str, complexity: str = "easy"):
+        """Create a new FoundryAttackStrategy with value and complexity."""
+        obj = object.__new__(cls)
+        obj._value_ = value
+        obj._complexity = complexity  # type: ignore[misc]
+        return obj
+
+    # Complexity level shortcuts (these are special and should not be included in complexity queries)
+    EASY = ("easy", "easy")
+    MODERATE = ("moderate", "moderate")
+    DIFFICULT = ("difficult", "difficult")
+
+    # Baseline strategy
+    Baseline = ("baseline", "baseline")
+
+    # Easy strategies
+    AnsiAttack = ("ansi_attack", "easy")
+    AsciiArt = ("ascii_art", "easy")
+    AsciiSmuggler = ("ascii_smuggler", "easy")
+    Atbash = ("atbash", "easy")
+    Base64 = ("base64", "easy")
+    Binary = ("binary", "easy")
+    Caesar = ("caesar", "easy")
+    CharacterSpace = ("character_space", "easy")
+    CharSwap = ("char_swap", "easy")
+    Diacritic = ("diacritic", "easy")
+    Flip = ("flip", "easy")
+    Leetspeak = ("leetspeak", "easy")
+    Morse = ("morse", "easy")
+    ROT13 = ("rot13", "easy")
+    SuffixAppend = ("suffix_append", "easy")
+    StringJoin = ("string_join", "easy")
+    UnicodeConfusable = ("unicode_confusable", "easy")
+    UnicodeSubstitution = ("unicode_substitution", "easy")
+    Url = ("url", "easy")
+    Jailbreak = ("jailbreak", "easy")
+
+    # Moderate strategies
+    Tense = ("tense", "moderate")
+
+    # Difficult strategies
+    MultiTurn = ("multi_turn", "difficult")
+    Crescendo = ("crescendo", "difficult")
+
+    @property
+    def complexity(self) -> str:
+        """
+        Get the complexity level of this attack strategy.
+
+        Returns:
+            str: One of "baseline", "easy", "moderate", or "difficult".
+        """
+        return self._complexity
+
+    @classmethod
+    def get_strategies_by_complexity(cls, complexity: str) -> set["FoundryAttackStrategy"]:
+        """
+        Get all attack strategies that match a given complexity level.
+
+        Excludes the complexity level shortcuts (EASY, MODERATE, DIFFICULT) themselves.
+
+        Args:
+            complexity (str): The complexity level ("baseline", "easy", "moderate", or "difficult").
+
+        Returns:
+            set[FoundryAttackStrategy]: Set of strategies matching the complexity level.
+        """
+        return {
+            strategy
+            for strategy in cls
+            if strategy.complexity == complexity and strategy not in (cls.EASY, cls.MODERATE, cls.DIFFICULT)
+        }
 
 
 class FoundryScenario(Scenario):
@@ -115,6 +179,9 @@ class FoundryScenario(Scenario):
 
     The scenario can expand difficulty levels (EASY, MODERATE, DIFFICULT) into their
     constituent attack strategies, or you can specify individual strategies directly.
+
+    Note this is not the same as the Foundry AI Red Teaming Agent. This is a PyRIT contract
+    so their library can make use of PyRIT in a consistent way.
 
     Example:
         >>> from pyrit.prompt_target import OpenAIChatTarget
@@ -147,8 +214,8 @@ class FoundryScenario(Scenario):
         self,
         *,
         objective_target: PromptTarget,
-        attack_strategies: set[FoundryAttackStrategy],
-        adversarial_target: Optional[PromptChatTarget] = None,
+        attack_strategies: set[FoundryAttackStrategy] = {FoundryAttackStrategy.EASY},
+        adversarial_chat: Optional[PromptChatTarget] = None,
         objectives: Optional[list[str]] = None,
         objective_scorer: Optional[TrueFalseScorer] = None,
         memory_labels: Optional[Dict[str, str]] = None,
@@ -161,9 +228,9 @@ class FoundryScenario(Scenario):
             attack_strategies (set[FoundryAttackStrategy]): Set of attack strategies to use.
                 Can include difficulty levels (EASY, MODERATE, DIFFICULT) which will be
                 expanded into specific strategies, or individual strategies.
-            adversarial_target (Optional[PromptChatTarget]): Target for multi-turn attacks
-                like Crescendo and RedTeaming. If not provided, a default OpenAI target
-                will be created using environment variables.
+            adversarial_chat (Optional[PromptChatTarget]): Target for multi-turn attacks
+                like Crescendo and RedTeaming. Additionally used for scoring defaults.
+                If not provided, a default OpenAI target will be created using environment variables.
             objectives (Optional[list[str]]): List of attack objectives/prompts to test.
                 If not provided, defaults to 4 random objectives from the HarmBench dataset.
             objective_scorer (Optional[TrueFalseScorer]): Scorer to evaluate attack success.
@@ -185,7 +252,7 @@ class FoundryScenario(Scenario):
 
         self._objective_target = objective_target
 
-        self._adversarial_target = adversarial_target if adversarial_target else self._get_default_adversarial_target()
+        self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
 
         self._objective_scorer = objective_scorer if objective_scorer else self._get_default_scorer()
 
@@ -234,6 +301,10 @@ class FoundryScenario(Scenario):
         """
         Normalize the set of attack strategies by expanding difficulty levels into specific strategies.
 
+        This method uses the complexity mapping defined in the FoundryAttackStrategy enum to
+        dynamically expand complexity levels (EASY, MODERATE, DIFFICULT) into their constituent
+        attack strategies. The Baseline strategy is always included.
+
         Args:
             strategies (set[FoundryAttackStrategy]): The initial set of attack strategies, which may include
                                                      difficulty levels (EASY, MODERATE, DIFFICULT).
@@ -243,39 +314,21 @@ class FoundryScenario(Scenario):
         """
         normalized_strategies = set(strategies)
 
-        easy_strategies = {
-            FoundryAttackStrategy.AnsiAttack,
-            FoundryAttackStrategy.Base64,
-            FoundryAttackStrategy.Leetspeak,
-            FoundryAttackStrategy.ROT13,
-            FoundryAttackStrategy.StringJoin,
-            FoundryAttackStrategy.CharSwap,
-        }
+        # Always include Baseline
+        normalized_strategies.add(FoundryAttackStrategy.Baseline)
 
-        moderate_strategies = {
-            FoundryAttackStrategy.Atbash,
-            FoundryAttackStrategy.Flip,
-            FoundryAttackStrategy.UnicodeSubstitution,
-            FoundryAttackStrategy.Tense,
-            FoundryAttackStrategy.Jailbreak,
-        }
-
-        difficult_strategies = {
-            FoundryAttackStrategy.MultiTurn,
-            FoundryAttackStrategy.Crescendo,
-        }
-
+        # Expand complexity level shortcuts into specific strategies
         if FoundryAttackStrategy.EASY in strategies:
             normalized_strategies.remove(FoundryAttackStrategy.EASY)
-            normalized_strategies.update(easy_strategies)
+            normalized_strategies.update(FoundryAttackStrategy.get_strategies_by_complexity("easy"))
 
         if FoundryAttackStrategy.MODERATE in strategies:
             normalized_strategies.remove(FoundryAttackStrategy.MODERATE)
-            normalized_strategies.update(moderate_strategies)
+            normalized_strategies.update(FoundryAttackStrategy.get_strategies_by_complexity("moderate"))
 
         if FoundryAttackStrategy.DIFFICULT in strategies:
             normalized_strategies.remove(FoundryAttackStrategy.DIFFICULT)
-            normalized_strategies.update(difficult_strategies)
+            normalized_strategies.update(FoundryAttackStrategy.get_strategies_by_complexity("difficult"))
 
         return normalized_strategies
 
@@ -329,7 +382,7 @@ class FoundryScenario(Scenario):
         elif strategy == FoundryAttackStrategy.Tense:
             attack = self._get_attack(
                 attack_type=PromptSendingAttack,
-                converters=[TenseConverter(tense="past", converter_target=self._adversarial_target)],
+                converters=[TenseConverter(tense="past", converter_target=self._adversarial_chat)],
             )
         elif strategy == FoundryAttackStrategy.UnicodeConfusable:
             attack = self._get_attack(attack_type=PromptSendingAttack, converters=[UnicodeConfusableConverter()])
@@ -417,7 +470,7 @@ class FoundryScenario(Scenario):
         sig = signature(attack_type.__init__)
         if "attack_adversarial_config" in sig.parameters:
             # This attack requires an adversarial config
-            if self._adversarial_target is None:
+            if self._adversarial_chat is None:
                 raise ValueError(
                     f"{attack_type.__name__} requires an adversarial target, "
                     f"but self._adversarial_target is None. "
@@ -425,7 +478,7 @@ class FoundryScenario(Scenario):
                 )
 
             # Create the adversarial config from self._adversarial_target
-            attack_adversarial_config = AttackAdversarialConfig(target=self._adversarial_target)
+            attack_adversarial_config = AttackAdversarialConfig(target=self._adversarial_chat)
             kwargs["attack_adversarial_config"] = attack_adversarial_config
 
         # Type ignore is used because this is a factory method that works with compatible

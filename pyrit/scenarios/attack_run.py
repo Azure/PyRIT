@@ -108,12 +108,6 @@ class AttackRun:
 
         Raises:
             ValueError: If the attack execution fails.
-
-        Example:
-            >>> results = await attack_run.run_async()
-            >>> for result in results:
-            ...     print(f"Objective: {result.objective}")
-            ...     print(f"Outcome: {result.outcome}")
         """
         # Create the executor with the specified concurrency
         executor = AttackExecutor(max_concurrency=max_concurrency)

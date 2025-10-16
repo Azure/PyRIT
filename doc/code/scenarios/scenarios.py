@@ -76,9 +76,10 @@ print(f"Created scenario: {foundry_scenario.name}")
 print(f"Number of attack runs: {foundry_scenario.attack_run_count}")
 
 # Execute the entire scenario
-results = await foundry_scenario.run_async()  # type: ignore
+results = await foundry_scenario.run_async(max_concurrency=5)  # type: ignore
 
 print(f"\nScenario completed with {len(results.attack_results)} total results")
+print(f"Success rate: {results.objective_achieved_rate}%\n")
 
 # Print summary for each result
 for result in results.attack_results:
