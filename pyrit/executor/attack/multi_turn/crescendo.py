@@ -47,6 +47,7 @@ from pyrit.score import (
     SelfAskRefusalScorer,
     SelfAskScaleScorer,
 )
+from pyrit.setup.pyrit_default_value import apply_defaults
 
 logger = logging.getLogger(__name__)
 
@@ -111,6 +112,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         Path(DATASETS_PATH) / "executors" / "crescendo" / "crescendo_variant_1.yaml"
     )
 
+    @apply_defaults
     def __init__(
         self,
         *,

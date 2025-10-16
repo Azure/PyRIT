@@ -9,6 +9,7 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.models import PromptDataType, SeedPrompt
 from pyrit.prompt_converter import ConverterResult, LLMGenericTextConverter
 from pyrit.prompt_target import PromptChatTarget
+from pyrit.setup.pyrit_default_value import apply_defaults
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,7 @@ class DenylistConverter(LLMGenericTextConverter):
     An existing ``PromptChatTarget`` is used to perform the conversion (like Azure OpenAI).
     """
 
+    @apply_defaults
     def __init__(
         self,
         *,

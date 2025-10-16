@@ -13,7 +13,7 @@ from pyrit.common.download_hf_model import (
     download_specific_files,
     get_available_files,
 )
-from pyrit.common.initialization import (
+from pyrit.setup.initialization import (
     initialize_pyrit,
     AZURE_SQL,
     SQLITE,

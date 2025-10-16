@@ -15,6 +15,7 @@ from pyrit.prompt_converter.fuzzer_converter.fuzzer_converter_base import (
 )
 from pyrit.prompt_converter.prompt_converter import ConverterResult
 from pyrit.prompt_target import PromptChatTarget
+from pyrit.setup.pyrit_default_value import apply_defaults
 
 
 class FuzzerExpandConverter(FuzzerConverter):
@@ -22,6 +23,7 @@ class FuzzerExpandConverter(FuzzerConverter):
     Generates versions of a prompt with new, prepended sentences.
     """
 
+    @apply_defaults
     def __init__(
         self,
         *,

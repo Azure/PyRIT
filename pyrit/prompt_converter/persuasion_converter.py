@@ -20,6 +20,7 @@ from pyrit.models import (
 )
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_target import PromptChatTarget
+from pyrit.setup.pyrit_default_value import apply_defaults
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,7 @@ class PersuasionConverter(PromptConverter):
             Presenting oneself or an issue in a way that's not genuine or true.
     """
 
+    @apply_defaults
     def __init__(self, *, converter_target: PromptChatTarget, persuasion_technique: str):
         """
         Initializes the converter with the specified target and prompt template.
