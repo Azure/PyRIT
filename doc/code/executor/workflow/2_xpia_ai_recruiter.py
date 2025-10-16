@@ -55,10 +55,10 @@ from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.core import StrategyConverterConfig
 from pyrit.executor.workflow import XPIATestWorkflow
+from pyrit.models import SeedPrompt, SeedPromptGroup
 from pyrit.prompt_converter import PDFConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import HTTPXAPITarget
-from pyrit.models import SeedPrompt, SeedPromptGroup
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

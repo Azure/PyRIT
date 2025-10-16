@@ -321,7 +321,7 @@ class URLDataTypeSerializer(DataTypeSerializer):
         self.value = prompt_text
         self.data_sub_directory = f"/{category}/urls"
         self.file_extension = extension if extension else "txt"
-        self.on_disk = not(prompt_text.startswith("http://") or prompt_text.startswith("https://"))
+        self.on_disk = not (prompt_text.startswith("http://") or prompt_text.startswith("https://"))
 
     def data_on_disk(self) -> bool:
         return self.on_disk

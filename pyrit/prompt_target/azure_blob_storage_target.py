@@ -154,7 +154,7 @@ class AzureBlobStorageTarget(PromptTarget):
         # default file name is <conversation_id>.txt, but can be overridden by prompt metadata
         file_name = f"{request.conversation_id}.txt"
         if request.prompt_metadata.get("file_name"):
-            file_name = request.prompt_metadata["file_name"]
+            file_name = str(request.prompt_metadata["file_name"])
 
         data = str.encode(request.converted_value)
         blob_url = self._container_url + "/" + file_name

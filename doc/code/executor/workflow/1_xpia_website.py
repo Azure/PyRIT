@@ -9,6 +9,8 @@
 #       jupytext_version: 1.17.3
 # ---
 
+import os
+
 # %% [markdown]
 # # 1. Cross-domain Prompt Injection Attack (XPIA) via a website
 #
@@ -19,9 +21,7 @@
 # The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../../memory/0_memory.md).
 # %%
 from pathlib import Path
-import os
 
-from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets import TextJailBreak
 from pyrit.models import SeedPrompt, SeedPromptGroup
 
@@ -37,7 +37,7 @@ xpia_prompt = SeedPrompt(
     data_type="text",
     metadata={
         "file_name": "index.html",  # This is the file name that will be used when uploading to Azure Blob Storage
-    }
+    },
 )
 xpia_prompt_group = SeedPromptGroup(prompts=[xpia_prompt])
 
@@ -46,20 +46,23 @@ xpia_prompt_group = SeedPromptGroup(prompts=[xpia_prompt])
 # _Note:_ to run this section of the demo you need to setup your `.env` file to properly authenticate to an Azure Storage Blob Container and an Azure OpenAI target.
 # See the section within [.env_example](https://github.com/Azure/PyRIT/blob/main/.env_example) if not sure where to find values for each of these variables.
 #
-# **`AzureStoragePlugin` uses delegation SAS-based authentication. Please run the AZ CLI command to authenticate with Azure using `az login --use-device-code` or `az login`.**
-# For more details, https://learn.microsoft.com/en-us/rest/api/storageservices/create-user-delegation-sas
-#
 # Below, we define a simple agent using OpenAI's responses API to retrieve content from websites.
 # This is to simulate a processing target similar to what one might expect in an XPIA-oriented AI red teaming operation.
 
 # %%
 import json
-from openai import AzureOpenAI
-from pyrit.common import SQLITE, initialize_pyrit
-import requests
 
+import requests
+from openai import AzureOpenAI
+from openai.types.responses import (
+    FunctionToolParam,
+    ResponseOutputMessage,
+)
+
+from pyrit.common import SQLITE, initialize_pyrit
 
 initialize_pyrit(memory_db_type=SQLITE)
+
 
 async def processing_callback() -> str:
     client = AzureOpenAI(
@@ -68,63 +71,68 @@ async def processing_callback() -> str:
         azure_endpoint=os.environ["XPIA_OPENAI_GPT4O_ENDPOINT"],
     )
 
-    tools = [{
-        "type": "function",
-        "name": "fetch_website",
-        "description": "Get the website at the provided url.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "url": {"type": "string"},
+    tools: list[FunctionToolParam] = [
+        FunctionToolParam(
+            type="function",
+            name="fetch_website",
+            description="Get the website at the provided url.",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "url": {"type": "string"},
+                },
+                "required": ["url"],
+                "additionalProperties": False,
             },
-            "required": ["url"],
-            "additionalProperties": False
-        },
-        "strict": True
-    }]
+            strict=True,
+        )
+    ]
 
     website_url = os.environ["AZURE_STORAGE_ACCOUNT_CONTAINER_URL"] + "/index.html"
 
     input_messages = [{"role": "user", "content": f"What's on the page {website_url}?"}]
 
+    # Create initial response with access to tools
     response = client.responses.create(
         model=os.environ["XPIA_OPENAI_MODEL"],
-        input=input_messages,
-        tools=tools,
+        input=input_messages,  # type: ignore[arg-type]
+        tools=tools,  # type: ignore[arg-type]
     )
-
     tool_call = response.output[0]
-    args = json.loads(tool_call.arguments)
+    args = json.loads(tool_call.arguments)  # type: ignore[union-attr]
 
     result = requests.get(args["url"]).content
 
-    input_messages.append(tool_call)
-    input_messages.append({
-        "type": "function_call_output",
-        "call_id": tool_call.call_id,
-        "output": str(result)
-    })
+    input_messages.append(tool_call)  # type: ignore[arg-type]
+    input_messages.append(
+        {"type": "function_call_output", "call_id": tool_call.call_id, "output": str(result)}  # type: ignore[typeddict-item,union-attr]
+    )
     response = client.responses.create(
         model=os.environ["XPIA_OPENAI_MODEL"],
-        input=input_messages,
-        tools=tools,
+        input=input_messages,  # type: ignore[arg-type]
+        tools=tools,  # type: ignore[arg-type]
     )
-    return response.output[0].content[0].text
+    output_item = response.output[0]
+    assert isinstance(output_item, ResponseOutputMessage)
+    content_item = output_item.content[0]
+    return content_item.text  # type: ignore[union-attr]
 
+
+import logging
+
+from pyrit.executor.core import StrategyConverterConfig
+from pyrit.executor.workflow import XPIAWorkflow
 
 # %% [markdown]
 #
 # Finally, we can put all the pieces together:
 # %%
 from pyrit.prompt_converter import TextJailbreakConverter
-from pyrit.executor.workflow import XPIAWorkflow
-from pyrit.executor.core import StrategyConverterConfig
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import AzureBlobStorageTarget
 from pyrit.prompt_target.azure_blob_storage_target import SupportedContentType
 from pyrit.score import SubStringScorer
 
-import logging
 logging.basicConfig(level=logging.DEBUG)
 
 abs_target = AzureBlobStorageTarget(
@@ -159,9 +167,7 @@ print(result.score)
 from pyrit.memory import CentralMemory
 
 memory = CentralMemory.get_memory_instance()
-processing_response = memory.get_prompt_request_pieces(
-    conversation_id=result.processing_conversation_id
-)
+processing_response = memory.get_prompt_request_pieces(conversation_id=result.processing_conversation_id)
 
 print(f"Attack result status: {result.status}")
 print(f"Response from processing callback: {processing_response}")
