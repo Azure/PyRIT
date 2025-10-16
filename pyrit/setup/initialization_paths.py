@@ -2,18 +2,18 @@
 # Licensed under the MIT license.
 
 """
-Provides convenient access to configuration script paths.
+Provides convenient access to initialization script paths.
 
 This module defines a path structure for accessing PyRIT's
-configuration scripts that can be used with initialize_pyrit().
+initialization scripts that can be used with initialize_pyrit().
 
 Example:
-    from pyrit.setup import ConfigurationPaths, initialize_pyrit
+    from pyrit.setup import initialization_paths, initialize_pyrit
 
-    # Use a configuration script
+    # Use an initialization script
     initialize_pyrit(
         memory_db_type="InMemory",
-        initialization_scripts=[ConfigurationPaths.converter_initialization]
+        initialization_scripts=[initialization_paths.converter_initialization]
     )
 """
 
@@ -21,11 +21,11 @@ import pathlib
 from typing import List
 
 
-class _ConfigurationPaths:
+class InitializationPaths:
     """
-    Provides access to configuration script paths.
+    Provides access to initialization script paths.
 
-    This class provides direct access to PyRIT's configuration scripts.
+    This class provides direct access to PyRIT's initialization scripts.
 
     Attributes:
         converter_initialization: Path to the converter initialization script.
@@ -34,16 +34,16 @@ class _ConfigurationPaths:
 
     Example:
         # Access an initialization script
-        path = ConfigurationPaths.converter_initialization
+        path = InitializationPaths.converter_initialization
 
         # Use with initialize_pyrit
         initialize_pyrit(
             memory_db_type="InMemory",
-            initialization_scripts=[ConfigurationPaths.scorer_initialization]
+            initialization_scripts=[InitializationPaths.scorer_initialization]
         )
 
         # List all paths
-        all_paths = ConfigurationPaths.list_all_paths()
+        all_paths = InitializationPaths.list_all_paths()
     """
 
     def __init__(self) -> None:
@@ -74,7 +74,7 @@ class _ConfigurationPaths:
 
         Example:
             # Get all paths
-            all_paths = ConfigurationPaths.list_all_paths()
+            all_paths = InitializationPaths.list_all_paths()
         """
         instance = cls()
         paths: List[pathlib.Path] = []
@@ -87,4 +87,4 @@ class _ConfigurationPaths:
 
 
 # Create a singleton instance for easy access
-ConfigurationPaths = _ConfigurationPaths()
+initialization_paths = InitializationPaths()

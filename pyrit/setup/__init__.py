@@ -3,7 +3,7 @@
 
 """This module contains initialization PyRIT."""
 
-from pyrit.setup.initialization_paths import ConfigurationPaths
+from pyrit.setup.initialization_paths import InitializationPaths, initialization_paths
 from pyrit.setup.initialization import (
     initialize_pyrit,
     AZURE_SQL,
@@ -23,7 +23,8 @@ __all__ = [
     "AZURE_SQL",
     "SQLITE",
     "IN_MEMORY",
-    "ConfigurationPaths",
+    "InitializationPaths",
+    "initialization_paths",
     "initialize_pyrit",
     "apply_defaults",
     "apply_defaults_to_method",
