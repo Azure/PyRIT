@@ -92,5 +92,21 @@ class SingleTurnAttackStrategy(AttackStrategy[SingleTurnAttackContext, AttackRes
         seed_prompt_group = get_kwarg_param(
             kwargs=kwargs, param_name="seed_prompt_group", expected_type=SeedPromptGroup, required=False
         )
+        objective = get_kwarg_param(kwargs=kwargs, param_name="objective", expected_type=str, required=False)
+        if (
+            objective
+            and seed_prompt_group
+            and seed_prompt_group.objective
+            and (seed_prompt_group.objective.value.strip().lower() != objective.strip().lower())
+        ):
+            raise ValueError(
+                "Attack can only specify one objective per turn. Objective parameter '%s' and seed"
+                " prompt group objective '%s' are both defined",
+                objective,
+                seed_prompt_group.objective.value,
+            )
+
         system_prompt = get_kwarg_param(kwargs=kwargs, param_name="system_prompt", expected_type=str, required=False)
-        return await super().execute_async(**kwargs, seed_prompt_group=seed_prompt_group, system_prompt=system_prompt)
+        return await super().execute_async(
+            **kwargs, seed_prompt_group=seed_prompt_group, system_prompt=system_prompt, objective=objective
+        )

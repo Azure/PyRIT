@@ -26,6 +26,7 @@ prompts:
     value: Use this image as inspiration
     data_type: text
     sequence: 2
+    use_as_objective: true
     prompt_group_alias: group_1
     role: user
   - dataset_name: TestMultimodalTextImageAudioVideo

@@ -34,6 +34,8 @@ from pyrit.models.prompt_request_response import (
 from pyrit.models.prompt_response import PromptResponse
 from pyrit.models.question_answering import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
 from pyrit.models.score import Score, ScoreType, UnvalidatedScore
+from pyrit.models.seed import Seed
+from pyrit.models.seed_objective import SeedObjective
 from pyrit.models.seed_prompt import SeedPrompt
 from pyrit.models.seed_prompt_dataset import SeedPromptDataset
 from pyrit.models.seed_prompt_group import SeedPromptGroup
@@ -77,6 +79,8 @@ __all__ = [
     "AttackResultT",
     "Score",
     "ScoreType",
+    "Seed",
+    "SeedObjective",
     "SeedPrompt",
     "SeedPromptDataset",
     "SeedPromptGroup",
