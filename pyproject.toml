@@ -82,7 +82,6 @@ dev = [
     "pytest-cov>=6.1.1",
     "pytest-timeout>=2.4.0",
     "respx>=0.22.0",
-    "semantic-kernel>=1.32.0",
     "sphinxcontrib-mermaid>=1.0.0",
     "types-PyYAML>=6.0.12.20250516",
     "types-requests>=2.31.0.20250515",
