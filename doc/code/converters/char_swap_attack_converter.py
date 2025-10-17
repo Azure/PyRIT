@@ -17,6 +17,8 @@
 #
 # The attack technique is inspired by the char-swap attack method from Project Moonshot.
 # Reference: [Charswap Attack](https://github.com/aiverify-foundation/moonshot-data/blob/main/attack-modules/charswap_attack.py)
+# %%
+
 
 from pyrit.executor.attack import (
     AttackConverterConfig,
@@ -26,8 +28,6 @@ from pyrit.executor.attack import (
 from pyrit.prompt_converter import CharSwapConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import OpenAIChatTarget
-
-# %%
 from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)

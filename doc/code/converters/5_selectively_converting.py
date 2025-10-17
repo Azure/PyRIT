@@ -12,6 +12,7 @@
 # # 5. Selectively Converting
 #
 # You can selectively convert strings from text converters using most attacks or the `convert_tokens_async` function. This function uses a `start_token` and `end_token` to determine where to do the converting (by default these are the unicode characters ⟪ and ⟫). Here is an example that uses `PromptSendingAttack` to convert pieces of the text to base64.
+# %%
 
 from pyrit.executor.attack import (
     AttackConverterConfig,
@@ -21,8 +22,6 @@ from pyrit.executor.attack import (
 from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import TextTarget
-
-# %%
 from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)

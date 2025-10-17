@@ -56,11 +56,12 @@
 # Scenarios will be exposed for simple runs (e.g. the cli). Below is an example of how to execute them in code.
 #
 
-# %%
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import ConsoleAttackResultPrinter
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.scenarios import FoundryAttackStrategy, FoundryScenario
+
+# %%
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(
     memory_db_type=IN_MEMORY,

@@ -13,10 +13,9 @@
 # # 5. Human in the Loop Scoring with Gradio
 # This example shows how to use the Gradio UI to perform human-in-the-loop scoring. This is in beta but will be extended.
 
+# %%
 from pyrit.memory import CentralMemory
 from pyrit.score import HumanInTheLoopScorerGradio
-
-# %%
 from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)

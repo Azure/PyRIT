@@ -42,9 +42,8 @@
 # - `AZURE_STORAGE_ACCOUNT_DB_DATA_SAS_TOKEN`
 #
 
-from pyrit.memory import CentralMemory
-
 # %%
+from pyrit.memory import CentralMemory
 from pyrit.setup import AZURE_SQL, initialize_pyrit
 
 initialize_pyrit(memory_db_type=AZURE_SQL)

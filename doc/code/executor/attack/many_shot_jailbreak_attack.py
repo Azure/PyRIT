@@ -23,6 +23,9 @@
 # - Original: https://github.com/centerforaisafety/HarmBench
 # - Replicated: https://github.com/KutalVolkan/many-shot-jailbreaking-dataset
 
+# %%
+
+
 from pyrit.executor.attack import (
     AttackScoringConfig,
     ConsoleAttackResultPrinter,
@@ -30,9 +33,6 @@ from pyrit.executor.attack import (
 )
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import LikertScalePaths, SelfAskLikertScorer
-
-# %%
-# Import necessary packages
 from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)

@@ -96,7 +96,7 @@ set_default_value(class_type=PromptConverter, parameter_name="converter_target",
 #
 # We need the ability to pass in a `PromptChatTarget` to a scorer. But we don't want to have to pass it every single time.
 #
-# For our own use within Microsoft, all our configuration is done in `.env` (see [Populating Secrets](../../setup/populating_secrets.md)). But then using these, we can create default values that make more sense than we can possibly make at a class level. Our own `.env` may make use of all the variables in `.env_example`. Your own initialization scripts may be different.
+# Much of the configuration is done in `.env` (see [Populating Secrets](../../setup/populating_secrets.md)). And then using these, we can create default values that make more sense than we can possibly make at a class level. Included in PyRIT is a `list_all_airt_paths` function that may make use of all secrets in .env. Or there is a simpler one `list_all_simple_paths` that requires less configuration, but still gives good defaults. Your own initialization scripts may be different, but you can use these as a starting point.
 #
 # This is can be run as part of initialize_pyrit by doing the following.
 

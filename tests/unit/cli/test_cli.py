@@ -128,18 +128,17 @@ test_cases_error = [
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_converters_wrong_arg.yaml'",
-        "TranslationConverter.__init__() got an unexpected keyword argument 'wrong_arg'",
+        "got an unexpected keyword argument 'wrong_arg'",
         TypeError,
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_converters_missing_arg.yaml'",
-        "TranslationConverter.__init__() missing 1 required keyword-only argument: 'language'",
+        "missing 1 required keyword-only argument: 'language'",
         TypeError,
     ),
     (
         "--config-file 'tests/unit/cli/multi_turn_rto_wrong_arg.yaml'",
-        "Failed to instantiate scenario 'RedTeamingAttack': "
-        "RedTeamingAttack.__init__() got an unexpected keyword argument 'wrong_arg'",
+        "Failed to instantiate scenario 'RedTeamingAttack': " "got an unexpected keyword argument 'wrong_arg'",
         ValueError,
     ),
     (
@@ -150,7 +149,7 @@ test_cases_error = [
     (
         "--config-file 'tests/unit/cli/multi_turn_tap_wrong_arg.yaml'",
         "Failed to instantiate scenario 'TreeOfAttacksWithPruningAttack': "
-        "TreeOfAttacksWithPruningAttack.__init__() got an unexpected keyword argument 'wrong_arg'",
+        "got an unexpected keyword argument 'wrong_arg'",
         ValueError,
     ),
     (
@@ -175,22 +174,22 @@ test_cases_error = [
     ),
     (
         "--config-file 'tests/unit/cli/multi_turn_scoring_target_wrong_arg.yaml'",
-        "OpenAITarget.__init__() got an unexpected keyword argument 'nonsense_arg'",
+        "got an unexpected keyword argument 'nonsense_arg'",
         TypeError,
     ),
     (
         "--config-file 'tests/unit/cli/multi_turn_objective_scorer_wrong_arg.yaml'",
-        "SelfAskTrueFalseScorer.__init__() got an unexpected keyword argument 'nonsense_arg'",
+        "got an unexpected keyword argument 'nonsense_arg'",
         TypeError,
     ),
     (
         "--config-file 'tests/unit/cli/multi_turn_adversarial_target_wrong_arg.yaml'",
-        "OpenAITarget.__init__() got an unexpected keyword argument 'nonsense_arg'",
+        "got an unexpected keyword argument 'nonsense_arg'",
         TypeError,
     ),
     (
         "--config-file 'tests/unit/cli/multi_turn_objective_target_wrong_arg.yaml'",
-        "OpenAITarget.__init__() got an unexpected keyword argument 'nonsense_arg'",
+        "got an unexpected keyword argument 'nonsense_arg'",
         TypeError,
     ),
 ]

@@ -16,10 +16,9 @@
 #
 # Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
 
+# %%
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import ContentClassifierPaths, SelfAskCategoryScorer
-
-# %%
 from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)

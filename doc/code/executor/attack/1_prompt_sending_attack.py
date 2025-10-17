@@ -26,11 +26,11 @@
 # >
 # > It is required to manually set the memory instance using `initialize_pyrit`. For details, see the [Memory Configuration Guide](../../memory/0_memory.md).
 #
+# %%
+
 
 from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
 from pyrit.prompt_target import OpenAIChatTarget
-
-# %%
 from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)

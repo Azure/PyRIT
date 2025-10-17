@@ -18,9 +18,8 @@
 # %% [markdown]
 # ## Target Initialization
 
-from pyrit.prompt_target import RealtimeTarget
-
 # %%
+from pyrit.prompt_target import RealtimeTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)

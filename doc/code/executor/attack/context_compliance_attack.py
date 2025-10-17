@@ -27,6 +27,9 @@
 #
 # The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../../memory/0_memory.md).
 
+# %%
+
+
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackConverterConfig,
@@ -39,8 +42,6 @@ from pyrit.prompt_converter import RandomCapitalLettersConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import AzureContentFilterScorer
-
-# %%
 from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
