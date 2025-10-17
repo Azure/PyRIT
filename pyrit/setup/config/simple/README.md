@@ -1,6 +1,6 @@
 These are good defaults with as simple of a setup as possible.
 
-They are meant so that the only thing that needs to be configured are the following envionment variables. 
+They are meant so that the only thing that needs to be configured are the following envionment variables.
 
 ```
 OPENAI_CHAT_ENDPOINT=xxxxxx

@@ -38,6 +38,7 @@ from pyrit.models import (
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target.common.prompt_target import PromptTarget
 from pyrit.score import Scorer
+from pyrit.setup.pyrit_default_value import apply_defaults
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +80,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         "that can be passed to the red teaming chat. "
     )
 
+    @apply_defaults
     def __init__(
         self,
         *,

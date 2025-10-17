@@ -21,6 +21,7 @@ from pyrit.models import (
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
+from pyrit.setup.pyrit_default_value import apply_defaults
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +46,7 @@ class SkeletonKeyAttack(PromptSendingAttack):
     # Default skeleton key prompt path
     DEFAULT_SKELETON_KEY_PROMPT_PATH: Path = Path(DATASETS_PATH) / "executors" / "skeleton_key" / "skeleton_key.prompt"
 
+    @apply_defaults
     def __init__(
         self,
         *,

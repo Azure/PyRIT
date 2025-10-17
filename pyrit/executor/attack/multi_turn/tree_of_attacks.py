@@ -45,6 +45,7 @@ from pyrit.score import (
     TrueFalseQuestion,
     TrueFalseQuestionPaths,
 )
+from pyrit.setup.pyrit_default_value import apply_defaults
 
 logger = logging.getLogger(__name__)
 
@@ -931,6 +932,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         DATASETS_PATH / "executors" / "tree_of_attacks" / "adversarial_seed_prompt.yaml"
     )
 
+    @apply_defaults
     def __init__(
         self,
         *,

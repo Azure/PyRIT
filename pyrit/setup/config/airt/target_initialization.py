@@ -7,8 +7,13 @@ adversarial targets for Executors.
 """
 import os
 
-from pyrit.executor.attack import AttackAdversarialConfig
-from pyrit.executor.attack.multi_turn.crescendo import CrescendoAttack
+from pyrit.executor.attack import (
+    AttackAdversarialConfig,
+    CrescendoAttack,
+    PromptSendingAttack,
+    RedTeamingAttack,
+    TreeOfAttacksWithPruningAttack,
+)
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.setup import set_default_value
 
@@ -20,4 +25,9 @@ _adversarial_config = AttackAdversarialConfig(
     )
 )
 
+set_default_value(class_type=PromptSendingAttack, parameter_name="attack_adversarial_config", value=_adversarial_config)
 set_default_value(class_type=CrescendoAttack, parameter_name="attack_adversarial_config", value=_adversarial_config)
+set_default_value(class_type=RedTeamingAttack, parameter_name="attack_adversarial_config", value=_adversarial_config)
+set_default_value(
+    class_type=TreeOfAttacksWithPruningAttack, parameter_name="attack_adversarial_config", value=_adversarial_config
+)

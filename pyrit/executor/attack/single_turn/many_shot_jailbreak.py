@@ -13,6 +13,7 @@ from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.models import AttackResult, SeedPrompt, SeedPromptGroup
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
+from pyrit.setup.pyrit_default_value import apply_defaults
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,7 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
     examples to bypass safety measures.
     """
 
+    @apply_defaults
     def __init__(
         self,
         objective_target: PromptTarget,

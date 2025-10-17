@@ -22,6 +22,7 @@ from pyrit.models import (
 from pyrit.prompt_converter import FlipConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
+from pyrit.setup.pyrit_default_value import apply_defaults
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,7 @@ class FlipAttack(PromptSendingAttack):
     Essentially, it adds a system prompt to the beginning of the conversation to flip each word in the prompt.
     """
 
+    @apply_defaults
     def __init__(
         self,
         objective_target: PromptChatTarget,

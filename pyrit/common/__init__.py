@@ -13,12 +13,7 @@ from pyrit.common.download_hf_model import (
     download_specific_files,
     get_available_files,
 )
-from pyrit.setup.initialization import (
-    initialize_pyrit,
-    AZURE_SQL,
-    SQLITE,
-    IN_MEMORY,
-)
+
 from pyrit.common.net_utility import get_httpx_client, make_request_and_raise_if_error_async
 from pyrit.common.notebook_utils import is_in_ipython_session
 from pyrit.common.print import print_chat_messages_with_color
@@ -28,9 +23,6 @@ from pyrit.common.yaml_loadable import YamlLoadable
 from pyrit.common.deprecation import deprecation_message
 
 __all__ = [
-    "AZURE_SQL",
-    "SQLITE",
-    "IN_MEMORY",
     "combine_dict",
     "combine_list",
     "convert_local_image_to_data_url",
@@ -44,7 +36,6 @@ __all__ = [
     "get_non_required_value",
     "get_random_indices",
     "get_required_value",
-    "initialize_pyrit",
     "is_in_ipython_session",
     "make_request_and_raise_if_error_async",
     "print_chat_messages_with_color",

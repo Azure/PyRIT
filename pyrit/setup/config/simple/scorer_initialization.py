@@ -22,7 +22,6 @@ from pyrit.score import (
 from pyrit.score.float_scale.self_ask_scale_scorer import SelfAskScaleScorer
 from pyrit.setup import set_default_value
 
-
 default_harm_objective_scorer = TrueFalseCompositeScorer(
     aggregator=TrueFalseScoreAggregator.AND,
     scorers=[
