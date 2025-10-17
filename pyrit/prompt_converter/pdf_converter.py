@@ -6,8 +6,10 @@ from io import BytesIO
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from fpdf import FPDF
 from pypdf import PageObject, PdfReader, PdfWriter
+from reportlab.lib.units import mm
+from reportlab.lib.utils import simpleSplit
+from reportlab.pdfgen import canvas
 
 from pyrit.common.logger import logger
 from pyrit.models import PromptDataType, SeedPrompt, data_serializer_factory
@@ -172,7 +174,7 @@ class PDFConverter(PromptConverter):
 
     def _generate_pdf(self, content: str) -> bytes:
         """
-        Generates a PDF with the given content.
+        Generates a PDF with the given content using ReportLab.
 
         Args:
             content (str): The text content to include in the PDF.
@@ -180,14 +182,67 @@ class PDFConverter(PromptConverter):
         Returns:
             bytes: The generated PDF content in bytes.
         """
-        pdf = FPDF(format=(self._page_width, self._page_height))  # Use custom page size
-        pdf.add_page()
-        pdf.set_font(self._font_type, size=self._font_size)  # Use custom font settings
-        pdf.multi_cell(self._column_width, self._row_height, content)  # Use configurable cell dimensions
 
-        pdf_bytes = BytesIO()
-        pdf.output(pdf_bytes)
-        return pdf_bytes.getvalue()
+        pdf_buffer = BytesIO()
+
+        # Convert mm to points
+        # 1mm = 2.83465 points
+        page_width_pt = self._page_width * mm
+        page_height_pt = self._page_height * mm
+
+        c = canvas.Canvas(pdf_buffer, pagesize=(page_width_pt, page_height_pt))
+
+        font_map = {
+            "Arial": "Helvetica",
+            "Times": "Times-Roman",
+            "Courier": "Courier",
+            "Helvetica": "Helvetica",
+            "Symbol": "Symbol",
+            "ZapfDingbats": "ZapfDingbats",
+        }
+        reportlab_font = font_map.get(self._font_type, "Helvetica")
+
+        c.setFont(reportlab_font, self._font_size)
+
+        margin = 10 * mm
+        x = margin
+        y = page_height_pt - margin  # ReportLab uses bottom-left origin
+
+        # Calculate actual column width
+        if self._column_width == 0:
+            actual_width = page_width_pt - (2 * margin)
+        else:
+            actual_width = self._column_width * mm
+
+        # Convert row_height from mm to points
+        line_height = self._row_height * mm if self._row_height else self._font_size * 1.2
+
+        # Split content into lines (handle existing newlines)
+        paragraphs = content.split("\n")
+
+        for paragraph in paragraphs:
+            if not paragraph:  # Empty line
+                y -= line_height
+                continue
+
+            # Word wrap the paragraph
+            # simpleSplit handles word wrapping
+            wrapped_lines = simpleSplit(paragraph, reportlab_font, self._font_size, actual_width)
+
+            for line in wrapped_lines:
+                # Check if we need a new page
+                if y < margin + line_height:
+                    c.showPage()
+                    c.setFont(reportlab_font, self._font_size)
+                    y = page_height_pt - margin
+
+                # Draw the text (ReportLab origin is bottom-left)
+                c.drawString(x, y, line)
+                y -= line_height
+
+        c.save()
+        pdf_buffer.seek(0)
+        return pdf_buffer.getvalue()
 
     def _modify_existing_pdf(self) -> bytes:
         """
@@ -264,25 +319,27 @@ class PDFConverter(PromptConverter):
         self, page: PageObject, x: float, y: float, text: str, font: str, font_size: int, font_color: tuple
     ) -> tuple[PageObject, BytesIO]:
         """
-        Generates an overlay PDF with the given text injected at the specified coordinates.
+        Generates an overlay PDF with the given text using ReportLab.
 
         Args:
             page (PageObject): The original PDF page to overlay on.
-            x (float): The x-coordinate for the text.
-            y (float): The y-coordinate for the text.
+            x (float): The x-coordinate for the text (in points).
+            y (float): The y-coordinate for the text (in points).
             text (str): The text to inject.
             font (str): The font type.
             font_size (int): The font size.
-            font_color (tuple): The font color in RGB format.
+            font_color (tuple): The font color in RGB format (0-255).
 
         Returns:
             tuple[PageObject, BytesIO]: The overlay page object and its corresponding buffer.
         """
+        from reportlab.pdfgen import canvas
+
         # Determine page size from the original page's MediaBox
         page_width = float(page.mediabox[2] - page.mediabox[0])
         page_height = float(page.mediabox[3] - page.mediabox[1])
 
-        # Out-of-Bounds Checks
+        # Out-of-Bounds Checks (same as original)
         if x < 0:
             logger.error(f"x_pos is less than 0 and therefore out of bounds: x={x}")
             raise ValueError(f"x_pos is less than 0 and therefore out of bounds: x={x}")
@@ -296,25 +353,29 @@ class PDFConverter(PromptConverter):
             logger.error(f"y_pos exceeds page height and is out of bounds: y={y}, page_height={page_height}")
             raise ValueError(f"y_pos exceeds page height and is out of bounds: y={y}, page_height={page_height}")
 
-        # Create a small overlay PDF in memory
-        overlay_pdf = FPDF(unit="pt", format=(page_width, page_height))
-        overlay_pdf.add_page()
-
-        # Set font
-        overlay_pdf.set_font(font, size=font_size)
-        r, g, b = font_color
-        overlay_pdf.set_text_color(r, g, b)
-
-        # Position text: FPDF starts (0,0) at top-left, so (x, y) from bottom-left
-        # means we do "set_xy(x, page_height - y)" if your coordinates assume bottom-left origin
-        overlay_pdf.set_xy(x, page_height - y)
-
-        # Insert the text
-        overlay_pdf.cell(0, 0, text)
-
-        # Convert overlay FPDF to bytes
+        # Create overlay buffer
         overlay_buffer = BytesIO()
-        overlay_pdf.output(overlay_buffer)
+        c = canvas.Canvas(overlay_buffer, pagesize=(page_width, page_height))
+
+        font_map = {
+            "Arial": "Helvetica",
+            "Times": "Times-Roman",
+            "Courier": "Courier",
+            "Helvetica": "Helvetica",
+            "Symbol": "Symbol",
+            "ZapfDingbats": "ZapfDingbats",
+        }
+        reportlab_font = font_map.get(font, "Helvetica")
+
+        c.setFont(reportlab_font, font_size)
+
+        # Set color - ReportLab uses 0-1 range
+        r, g, b = font_color
+        c.setFillColorRGB(r / 255.0, g / 255.0, b / 255.0)
+
+        c.drawString(x, y, text)
+
+        c.save()
         overlay_buffer.seek(0)
 
         # Create a pypdf PageObject from the overlay
