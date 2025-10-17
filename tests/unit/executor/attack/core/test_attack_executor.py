@@ -14,6 +14,7 @@ from pyrit.executor.attack import (
     SingleTurnAttackContext,
 )
 from pyrit.models import AttackOutcome, AttackResult, SeedPrompt, SeedPromptGroup
+from pyrit.models.seed_objective import SeedObjective
 
 
 @pytest.fixture
@@ -821,26 +822,6 @@ class TestExecuteSingleTurnAttacksAsync:
         # Verify execute_async was called with correct seed prompt groups
         for i, call in enumerate(mock_single_turn_attack_strategy.execute_async.call_args_list):
             assert call.kwargs["seed_prompt_group"] == sample_seed_prompt_groups[i]
-
-    @pytest.mark.asyncio
-    async def test_execute_single_turn_with_seed_prompt_groups_and_objectives_error(
-        self, mock_single_turn_attack_strategy
-    ):
-        executor = AttackExecutor(max_concurrency=1)
-        objectives = ["Obj1", "Obj2", "Obj3"]
-        seed_prompt_groups = [
-            SeedPromptGroup(prompts=[SeedPrompt(value="First prompt", data_type="text", use_as_objective=True)]),
-            SeedPromptGroup(prompts=[SeedPrompt(value="Second prompt", data_type="text")]),
-            SeedPromptGroup(prompts=[SeedPrompt(value="Third prompt", data_type="text")]),
-        ]
-
-        # mock_single_turn_attack_strategy.execute_async.return_value = MagicMock()
-        with pytest.raises(ValueError, match="Attack can only specify one objective per turn."):
-            await executor.execute_single_turn_attacks_async(
-                attack=mock_single_turn_attack_strategy,
-                objectives=objectives,
-                seed_prompt_groups=seed_prompt_groups,
-            )
 
     @pytest.mark.asyncio
     async def test_execute_single_turn_validates_context_type(self, mock_multi_turn_attack_strategy):

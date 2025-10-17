@@ -22,6 +22,7 @@ from pyrit.models import (
     SeedPrompt,
     SeedPromptGroup,
 )
+from pyrit.models.seed_objective import SeedObjective
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptTarget
@@ -931,6 +932,36 @@ class TestAttackLifecycle:
         assert context.memory_labels == {"test": "label"}
         assert context.seed_prompt_group == seed_group
         assert context.system_prompt == "System prompt"
+
+    @pytest.mark.asyncio
+    async def test_execute_async_with_parameters_multiple_objectives(self, mock_target, sample_response):
+        """Test execute_async creates context using factory method and executes attack"""
+        attack = PromptSendingAttack(objective_target=mock_target, max_attempts_on_failure=3)
+
+        attack._validate_context = MagicMock()
+        attack._setup_async = AsyncMock()
+        mock_result = AttackResult(
+            conversation_id="test-id",
+            objective="Test objective",
+            attack_identifier=attack.get_identifier(),
+            outcome=AttackOutcome.SUCCESS,
+            last_response=sample_response.get_piece(),
+        )
+        attack._perform_async = AsyncMock(return_value=mock_result)
+        attack._teardown_async = AsyncMock()
+
+        # Create test data
+        seed_group = SeedPromptGroup(
+            prompts=[SeedPrompt(value="test", data_type="text"), SeedObjective(value="another test objective")],
+        )
+        with pytest.raises(ValueError, match="Attack can only specify one objective per turn."):
+            await attack.execute_async(
+                objective="Test objective",
+                prepended_conversation=[sample_response],
+                memory_labels={"test": "label"},
+                seed_prompt_group=seed_group,
+                system_prompt="System prompt",
+            )
 
     @pytest.mark.asyncio
     async def test_execute_async_with_invalid_params_raises_error(self, mock_target):

@@ -640,7 +640,7 @@ class MemoryInterface(abc.ABC):
         authors: Optional[Sequence[str]] = None,
         groups: Optional[Sequence[str]] = None,
         source: Optional[str] = None,
-        use_as_objective: Optional[bool] = None,
+        is_objective: Optional[bool] = None,
         parameters: Optional[Sequence[str]] = None,
         metadata: Optional[dict[str, Union[str, int]]] = None,
     ) -> Sequence[SeedPrompt]:
@@ -662,7 +662,7 @@ class MemoryInterface(abc.ABC):
                 is "A. Jones", "Jones, Adam", etc. If None, all authors are considered.
             groups (Sequence[str]): A list of groups to filter by. If None, all groups are considered.
             source (str): The source to filter by. If None, all sources are considered.
-            use_as_objective (bool): Whether to filter by prompts that are used as objectives.
+            is_objective (bool): Whether to filter by prompts that are used as objectives.
             parameters (Sequence[str]): A list of parameters to filter by. Specifying parameters effectively returns
                 prompt templates instead of prompts.
             metadata (dict[str, str | int]): A free-form dictionary for tagging prompts with custom metadata.
@@ -686,8 +686,8 @@ class MemoryInterface(abc.ABC):
             conditions.append(SeedPromptEntry.added_by == added_by)
         if source:
             conditions.append(SeedPromptEntry.source == source)
-        if use_as_objective is not None:
-            conditions.append(SeedPromptEntry.use_as_objective == use_as_objective)
+        if is_objective is not None:
+            conditions.append(SeedPromptEntry.is_objective == is_objective)
 
         self._add_list_conditions(field=SeedPromptEntry.harm_categories, values=harm_categories, conditions=conditions)
         self._add_list_conditions(field=SeedPromptEntry.authors, values=authors, conditions=conditions)

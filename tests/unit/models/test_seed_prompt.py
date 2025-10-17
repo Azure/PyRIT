@@ -14,6 +14,7 @@ from scipy.io import wavfile
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt, SeedPromptDataset, SeedPromptGroup
+from pyrit.models.seed_objective import SeedObjective
 
 
 @pytest.fixture
@@ -99,24 +100,20 @@ def test_seed_prompt_group_initialization(seed_prompt_fixture):
 
 
 def test_seed_prompt_group_with_one_objective_no_seed_prompts():
-    prompt = SeedPrompt(value="Test prompt", data_type="text", use_as_objective=True)
+    prompt = SeedObjective(value="Test prompt")
     group = SeedPromptGroup(prompts=[prompt])
     assert len(group.prompts) == 0
     assert group.objective.value == "Test prompt"
 
 
 def test_seed_prompt_group_with_one_objective_multiple_seed_prompts(seed_prompt_fixture):
-    prompt = SeedPrompt(value="Test prompt", data_type="text", use_as_objective=True, sequence=1)
-    group = SeedPromptGroup(prompts=[prompt, seed_prompt_fixture])
-    assert len(group.prompts) == 2
+    group = SeedPromptGroup(prompts=[seed_prompt_fixture, SeedObjective(value="Test prompt")])
+    assert len(group.prompts) == 1
     assert group.objective.value == "Test prompt"
 
 
-def test_seed_prompt_group_with_multiple_objectives(seed_prompt_fixture):
-    prompts = [
-        SeedPrompt(value="Test prompt", data_type="text", use_as_objective=True, sequence=1),
-        SeedPrompt(value="Test prompt 2", data_type="text", use_as_objective=True, sequence=2),
-    ]
+def test_seed_prompt_group_with_multiple_objectives():
+    prompts = [SeedObjective(value="Test prompt"), SeedObjective(value="Test prompt 2")]
     with pytest.raises(ValueError) as exc_info:
         SeedPromptGroup(prompts=prompts)
 
@@ -613,3 +610,115 @@ metadata:
     assert seed_prompt.metadata is not None
     assert seed_prompt.metadata["complexity"] == "high"
     assert seed_prompt.metadata["version"] == 1
+
+
+def test_seed_prompt_group_single_seed_prompt_creates_objective():
+    prompt_dict = {"value": "Test prompt from dict", "is_objective": True, "sequence": 1}
+
+    group = SeedPromptGroup(prompts=[prompt_dict])
+
+    # Should create objective from the single prompt
+    assert group.objective is not None
+
+    # Prompts list should be empty
+    assert len(group.prompts) == 0
+
+
+def test_seed_prompt_group_dict_with_is_objective_true():
+    """Test that a dictionary with is_objective=True creates an objective."""
+    prompt_dict = {
+        "value": "Test objective from dict",
+        "is_objective": True,
+    }
+
+    group = SeedPromptGroup(prompts=[prompt_dict])
+
+    # Should create objective from the dictionary
+    assert group.objective is not None
+    assert group.objective.value == "Test objective from dict"
+
+    # Prompts list should be empty
+    assert len(group.prompts) == 0
+
+
+def test_seed_prompt_group_dict_with_is_objective_false():
+    """Test that a dictionary with is_objective=False creates a prompt."""
+    prompt_dict = {"value": "Test prompt from dict", "is_objective": False, "sequence": 1}
+
+    group = SeedPromptGroup(prompts=[prompt_dict])
+
+    # Should create prompt from the dictionary
+    assert len(group.prompts) == 1
+    assert group.prompts[0].value == "Test prompt from dict"
+    assert group.prompts[0].sequence == 1
+
+    # No objective should be created
+    assert group.objective is None
+
+
+def test_seed_prompt_group_dict_without_is_objective():
+    """Test that a dictionary without is_objective creates a prompt."""
+    prompt_dict = {
+        "value": "Test prompt without is_objective",
+        "data_type": "text",
+        "name": "Default Prompt",
+        "sequence": 2,
+    }
+
+    group = SeedPromptGroup(prompts=[prompt_dict])
+
+    # Should create prompt from the dictionary (default behavior)
+    assert len(group.prompts) == 1
+    assert group.prompts[0].value == "Test prompt without is_objective"
+    assert group.prompts[0].name == "Default Prompt"
+    assert group.prompts[0].sequence == 2
+
+    # No objective should be created
+    assert group.objective is None
+
+
+def test_seed_prompt_group_multiple_objectives_from_seed_objective():
+    """Test that multiple SeedObjective instances raises ValueError."""
+    objective1 = SeedObjective(value="First objective")
+    objective2 = SeedObjective(value="Second objective")
+
+    with pytest.raises(ValueError, match="SeedPromptGroups can only have one objective."):
+        SeedPromptGroup(prompts=[objective1, objective2])
+
+
+def test_seed_prompt_group_multiple_objectives_from_dict():
+    """Test that multiple dictionaries with is_objective=True raises ValueError."""
+    dict1 = {"value": "First dict objective", "data_type": "text", "is_objective": True}
+    dict2 = {"value": "Second dict objective", "data_type": "text", "is_objective": True}
+
+    with pytest.raises(ValueError, match="SeedPromptGroups can only have one objective."):
+        SeedPromptGroup(prompts=[dict1, dict2])
+
+
+def test_seed_prompt_group_mixed_objective_types():
+    """Test that mixing SeedObjective and dict with is_objective=True raises ValueError."""
+    objective = SeedObjective(value="Seed objective")
+    dict_objective = {"value": "Dict objective", "data_type": "text", "is_objective": True}
+
+    with pytest.raises(ValueError, match="SeedPromptGroups can only have one objective."):
+        SeedPromptGroup(prompts=[objective, dict_objective])
+
+
+def test_seed_prompt_group_mixed_prompt_types():
+    """Test that mixing different prompt types works correctly."""
+    seed_prompt = SeedPrompt(value="Seed prompt", data_type="text", sequence=1, role="user")
+    dict_prompt = {"value": "Dict prompt", "data_type": "text", "sequence": 2, "role": "user"}
+    objective = SeedObjective(value="Test objective")
+
+    group = SeedPromptGroup(prompts=[seed_prompt, dict_prompt, objective])
+
+    # Should have both prompts
+    assert len(group.prompts) == 2
+    assert group.prompts[0].value == "Seed prompt"
+    assert group.prompts[0].sequence == 1
+    assert group.prompts[1].value == "Dict prompt"
+    assert group.prompts[1].sequence == 2
+
+    # Should have the objective
+    assert group.objective is not None
+    assert group.objective.value == "Test objective"

@@ -9,6 +9,7 @@ from collections import defaultdict
 from typing import Any, Dict, Optional, Sequence, Union
 
 from pyrit.common.yaml_loadable import YamlLoadable
+from pyrit.models.seed import Seed
 from pyrit.models.seed_objective import SeedObjective
 from pyrit.models.seed_prompt import SeedPrompt
 
@@ -29,7 +30,7 @@ class SeedPromptGroup(YamlLoadable):
     def __init__(
         self,
         *,
-        prompts: Union[Sequence[SeedPrompt], Sequence[Dict[str, Any]]],
+        prompts: Union[Sequence[Seed], Sequence[Dict[str, Any]]],
     ):
         if not prompts:
             raise ValueError("SeedPromptGroup cannot be empty.")
@@ -37,32 +38,17 @@ class SeedPromptGroup(YamlLoadable):
         for prompt in prompts:
             if isinstance(prompt, SeedPrompt):
                 self.prompts.append(prompt)
+            elif isinstance(prompt, SeedObjective):
+                self._set_objective_from_prompt(objective_prompt=prompt)
             elif isinstance(prompt, dict):
+                # create an SeedObjective in addition to the SeedPrompt if is_objective is True
+                is_objective = prompt.pop("is_objective", False)
                 self.prompts.append(SeedPrompt(**prompt))
-
-            # Check if the prompt is marked to be used as the objective
-            current_prompt = self.prompts[-1]
-            if current_prompt.use_as_objective:
-                if self.objective is not None:
-                    raise ValueError("SeedPromptGroups can only have one objective.")
-                # If the group has only one prompt, use it as the objective
-                if len(prompts) == 1:
-                    self.prompts = []
-                self.objective = SeedObjective(
-                    value=current_prompt.value,
-                    value_sha256=current_prompt.value_sha256,
-                    id=current_prompt.id,
-                    data_type=current_prompt.data_type,
-                    name=current_prompt.name,
-                    dataset_name=current_prompt.dataset_name,
-                    authors=current_prompt.authors,
-                    groups=current_prompt.groups,
-                    source=current_prompt.source,
-                    added_by=current_prompt.added_by,
-                    harm_categories=current_prompt.harm_categories,
-                    parameters=current_prompt.parameters,
-                    metadata=current_prompt.metadata,
-                )
+                if is_objective:
+                    self._set_objective_from_prompt()
+                    # if the only prompt is the objective, remove it from prompts
+                    if len(prompts) == 1:
+                        self.prompts = []
 
         self._enforce_consistent_group_id()
         self._enforce_consistent_role()
@@ -146,6 +132,27 @@ class SeedPromptGroup(YamlLoadable):
             role = roles.pop() if len(roles) else "user"
             for prompt in prompts:
                 prompt.role = role
+
+    def _set_objective_from_prompt(self, objective_prompt: Optional[SeedObjective] = None):
+        """Sets the objective from the prompt marked as objective and removes it from prompts list."""
+        prompt = objective_prompt if objective_prompt else self.prompts[-1]
+        if self.objective is not None:
+            raise ValueError("SeedPromptGroups can only have one objective.")
+        self.objective = SeedObjective(
+            value=prompt.value,
+            value_sha256=prompt.value_sha256,
+            id=prompt.id,
+            data_type=prompt.data_type,
+            name=prompt.name,
+            dataset_name=prompt.dataset_name,
+            authors=prompt.authors,
+            groups=prompt.groups,
+            source=prompt.source,
+            added_by=prompt.added_by,
+            harm_categories=prompt.harm_categories,
+            metadata=prompt.metadata,
+        )
+        return
 
     def is_single_request(self) -> bool:
         unique_sequences = {prompt.sequence for prompt in self.prompts}

@@ -14,7 +14,7 @@ from typing import Dict, Optional, Sequence, TypeVar, Union
 from jinja2 import BaseLoader, Environment, StrictUndefined, Template, Undefined
 
 from pyrit.common.yaml_loadable import YamlLoadable
-from pyrit.models.literals import ChatMessageRole, PromptDataType
+from pyrit.models.literals import PromptDataType
 
 logger = logging.getLogger(__name__)
 
@@ -84,21 +84,8 @@ class Seed(YamlLoadable):
     # Arbitrary metadata that can be attached to the prompt
     metadata: Optional[Dict[str, Union[str, int]]] = field(default_factory=lambda: {})
 
-    # Parameters that can be used in the prompt template
-    parameters: Optional[Sequence[str]] = field(default_factory=lambda: [])
-
     # Unique identifier for the prompt group
     prompt_group_id: Optional[uuid.UUID] = None
-
-    # Alias for the prompt group
-    prompt_group_alias: Optional[str] = None
-
-    # Role of the prompt in a conversation (e.g., "user", "assistant")
-    role: Optional[ChatMessageRole] = None
-
-    # Sequence number for ordering prompts in a conversation, prompts with
-    # the same sequence number are grouped together if they also share the same prompt_group_id
-    sequence: Optional[int] = 0
 
     def render_template_value(self, **kwargs) -> str:
         """Renders self.value as a template, applying provided parameters in kwargs
@@ -171,12 +158,13 @@ class Seed(YamlLoadable):
         """
 
     @classmethod
+    @abc.abstractmethod
     def from_yaml_with_required_parameters(
-        cls: type[T],
+        cls,
         template_path: Union[str, Path],
         required_parameters: list[str],
         error_message: Optional[str] = None,
-    ) -> T:
+    ) -> "Seed":
         """
         Load a Seed from a YAML file and validate that it contains specific parameters.
 
@@ -186,16 +174,6 @@ class Seed(YamlLoadable):
             error_message: Custom error message if validation fails. If None, a default message is used.
 
         Returns:
-            T: The loaded and validated seed of the specific subclass type.
+            Seed: The loaded and validated seed of the specific subclass type.
 
-        Raises:
-            ValueError: If the template doesn't contain all required parameters.
         """
-        sp = cls.from_yaml_file(template_path)
-
-        if sp.parameters is None or not all(param in sp.parameters for param in required_parameters):
-            if error_message is None:
-                error_message = f"Template must have these parameters: {', '.join(required_parameters)}"
-            raise ValueError(f"{error_message}: '{sp}'")
-
-        return sp

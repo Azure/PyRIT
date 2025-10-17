@@ -105,10 +105,10 @@ memory.get_seed_prompts(metadata={"format": "wav", "samplerate": 24000})
 # %% [markdown]
 # ## Filtering seed prompts by objective
 # It may be useful to see which seed prompts are used as objectives in attacks. In "2025_06_pyrit_illegal_multimodal_example,"
-# we set the use_as_objective equal to true for one of the seed prompts in group_1. We can retrieve that prompt as follows:
+# we set the is_objective equal to true for one of the seed prompts in group_1. We can retrieve that prompt as follows:
 # %%
 # Filter by objective to get seed prompts that are used as objectives
-memory.get_seed_prompts(use_as_objective=True)
+memory.get_seed_prompts(is_objective=True)
 
 
 # %%

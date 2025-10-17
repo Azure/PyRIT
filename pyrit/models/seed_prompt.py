@@ -5,9 +5,9 @@ from __future__ import annotations
 
 import logging
 import os
-import uuid
-from dataclasses import dataclass
-from typing import Optional
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Optional, Sequence, Union
 
 from tinytag import TinyTag
 
@@ -23,9 +23,6 @@ logger = logging.getLogger(__name__)
 class SeedPrompt(Seed):
     """Represents a seed prompt with various attributes and metadata."""
 
-    # Unique identifier for the prompt group
-    prompt_group_id: Optional[uuid.UUID] = None
-
     # Alias for the prompt group
     prompt_group_alias: Optional[str] = None
 
@@ -36,8 +33,8 @@ class SeedPrompt(Seed):
     # the same sequence number are grouped together if they also share the same prompt_group_id
     sequence: Optional[int] = 0
 
-    # Whether this prompt should be used as the objective for an attack
-    use_as_objective: Optional[bool] = None
+    # Parameters that can be used in the prompt template
+    parameters: Optional[Sequence[str]] = field(default_factory=lambda: [])
 
     def __post_init__(self) -> None:
         """Post-initialization to render the template to replace existing values"""
@@ -95,3 +92,33 @@ class SeedPrompt(Seed):
                     f"Getting audio/video data via TinyTag is not supported for {self.value}.\
                                 If needed, update metadata manually."
                 )
+
+    @classmethod
+    def from_yaml_with_required_parameters(
+        cls,
+        template_path: Union[str, Path],
+        required_parameters: list[str],
+        error_message: Optional[str] = None,
+    ) -> "SeedPrompt":
+        """
+        Load a Seed from a YAML file and validate that it contains specific parameters.
+
+        Args:
+            template_path: Path to the YAML file containing the template.
+            required_parameters: List of parameter names that must exist in the template.
+            error_message: Custom error message if validation fails. If None, a default message is used.
+
+        Returns:
+            SeedPrompt: The loaded and validated SeedPrompt of the specific subclass type.
+
+        Raises:
+            ValueError: If the template doesn't contain all required parameters.
+        """
+        sp = cls.from_yaml_file(template_path)
+
+        if sp.parameters is None or not all(param in sp.parameters for param in required_parameters):
+            if error_message is None:
+                error_message = f"Template must have these parameters: {', '.join(required_parameters)}"
+            raise ValueError(f"{error_message}: '{sp}'")
+
+        return sp
