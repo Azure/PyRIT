@@ -47,25 +47,19 @@ def _load_environment_files() -> None:
         dotenv.load_dotenv(dotenv_path=dotenv.find_dotenv(".env.local"), override=True, verbose=True)
 
 
-def _execute_initialization_scripts(
-    *, script_paths: Sequence[Union[str, pathlib.Path]], expose_private_vars: bool = False
-) -> None:
+def _execute_initialization_scripts(*, script_paths: Sequence[Union[str, pathlib.Path]]) -> None:
     """
     Executes Python initialization scripts in order.
 
-    These scripts are executed in the __main__ module's global namespace. Variables and
-    functions defined in the scripts are made accessible to the caller based on naming:
+    These scripts are executed to configure default values and set up global variables.
+    Scripts should use explicit functions to set global variables rather than relying
+    on naming conventions:
 
-    - Variables starting with '_' are considered private/helper variables
-    - Other variables are considered global/public variables
-
-    By default, only public variables (not starting with '_') are exposed to the caller's
-    namespace. This follows Python's convention for indicating private/internal variables.
+    - Use set_global_variable(name="var_name", value=var_value) to set global variables
+    - Use set_default_value() to configure class parameter defaults
 
     Args:
         script_paths (Sequence[Union[str, pathlib.Path]]): Sequence of file paths to Python scripts to execute.
-        expose_private_vars (bool): If False (default), variables starting with '_' are not
-            exposed to the caller's namespace. If True, all variables are exposed.
 
     Raises:
         FileNotFoundError: If a script path does not exist.
@@ -73,22 +67,20 @@ def _execute_initialization_scripts(
 
     Example:
         Script content (my_init.py):
-            # Helper variables (not exposed to caller by default)
+            # Helper variables (local to the script)
             _temp_config = {"key": "value"}
-            _helper_function = lambda x: x * 2
-
-            # Global variables (exposed to caller)
-            myVar = "test_value"
+            
+            # Explicitly set global variables
+            from pyrit.setup import set_global_variable, set_default_value
+            set_global_variable(name="myVar", value="test_value")
 
             # Configure default values
-            from pyrit.setup import set_default_value
             from pyrit.prompt_target import OpenAIChatTarget
             set_default_value(class_type=OpenAIChatTarget, parameter_name="temperature", value=0.7)
 
         Usage:
             initialize_pyrit(memory_db_type="InMemory", initialization_scripts=["my_init.py"])
-            print(myVar)  # "test_value" is accessible
-            print(_temp_config)  # NameError: _temp_config is not exposed
+            print(myVar)  # "test_value" is accessible via explicit set_global_variable call
     """
 
     # Get the __main__ module's globals to inject variables into the caller's namespace
@@ -127,22 +119,7 @@ def _execute_initialization_scripts(
             post_execution_vars = set(script_globals.keys())
             new_vars = post_execution_vars - pre_execution_vars
 
-            # Filter and inject new variables into __main__ based on naming convention
-            for name in new_vars:
-                value = script_globals[name]
-
-                # Skip built-in variables like __builtins__, __name__, etc.
-                if name.startswith("__") and name.endswith("__"):
-                    continue
-
-                # Filter private variables unless expose_private_vars is True
-                if not expose_private_vars and name.startswith("_"):
-                    logger.debug(f"Skipping private variable '{name}' from {script.name}")
-                    continue
-
-                # Inject public variables into __main__
-                main_globals[name] = value
-                logger.debug(f"Exposed variable '{name}' from {script.name}")
+            logger.debug(f"Initialization script {script.name} executed successfully. ")
 
         except Exception as e:
             logger.error(f"Error executing initialization script {script}: {e}")

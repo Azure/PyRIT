@@ -9,12 +9,13 @@ adversarial targets for Executors.
 from pyrit.executor.attack import AttackAdversarialConfig
 from pyrit.executor.attack.multi_turn.crescendo import CrescendoAttack
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.setup import set_default_value
+from pyrit.setup import set_default_value, set_global_variable
 
-_adversarial_config = AttackAdversarialConfig(
+adversarial_config = AttackAdversarialConfig(
     target=OpenAIChatTarget(
         temperature=0.5,
     )
 )
 
-set_default_value(class_type=CrescendoAttack, parameter_name="attack_adversarial_config", value=_adversarial_config)
+set_global_variable(name="adversarial_config", value=adversarial_config)
+set_default_value(class_type=CrescendoAttack, parameter_name="attack_adversarial_config", value=adversarial_config)

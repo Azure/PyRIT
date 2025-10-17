@@ -25,7 +25,7 @@ from pyrit.score import (
     TrueFalseScoreAggregator,
 )
 from pyrit.score.float_scale.self_ask_scale_scorer import SelfAskScaleScorer
-from pyrit.setup import set_default_value
+from pyrit.setup import set_default_value, set_global_variable
 
 _scorer_target = OpenAIChatTarget(
     endpoint=os.getenv("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT2"),
@@ -59,6 +59,10 @@ default_objective_scorer = TrueFalseCompositeScorer(
         FloatScaleThresholdScorer(scorer=SelfAskScaleScorer(chat_target=_scorer_target), threshold=0.7),
     ],
 )
+
+# Explicitly set global variables
+set_global_variable(name="default_harm_scorer", value=default_harm_scorer)
+set_global_variable(name="default_objective_scorer", value=default_objective_scorer)
 
 _default_objective_scorer_config = AttackScoringConfig(objective_scorer=default_objective_scorer)
 

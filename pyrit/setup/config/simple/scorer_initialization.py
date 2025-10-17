@@ -22,7 +22,7 @@ from pyrit.score import (
     TrueFalseScoreAggregator,
 )
 from pyrit.score.float_scale.self_ask_scale_scorer import SelfAskScaleScorer
-from pyrit.setup import set_default_value
+from pyrit.setup import set_default_value, set_global_variable
 
 _scorer_target = OpenAIChatTarget()
 
@@ -40,6 +40,7 @@ default_objective_scorer = TrueFalseCompositeScorer(
     ],
 )
 
+set_global_variable(name="default_objective_scorer", value=default_objective_scorer)
 _default_objective_scorer_config = AttackScoringConfig(objective_scorer=default_objective_scorer)
 
 

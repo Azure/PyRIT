@@ -8,6 +8,7 @@ from pyrit.setup import (
     get_global_default_values,
     reset_default_values,
     set_default_value,
+    set_global_variable,
 )
 from pyrit.setup.pyrit_default_value import DefaultValueScope
 
@@ -601,3 +602,92 @@ class TestResetDefaultValues:
         obj = TestClass()
         assert obj.param1 is None
         assert obj.param2 is None
+
+
+class TestSetGlobalVariable:
+    """Tests for the set_global_variable function."""
+
+    def test_set_global_variable_creates_variable(self) -> None:
+        """Test that set_global_variable creates a variable in __main__ namespace."""
+        import sys
+        
+        # Ensure the variable doesn't exist initially
+        if hasattr(sys.modules["__main__"], "test_global_var"):
+            delattr(sys.modules["__main__"], "test_global_var")
+        
+        try:
+            # Set a global variable
+            set_global_variable(name="test_global_var", value="test_value")
+            
+            # Verify it exists in __main__ namespace
+            assert hasattr(sys.modules["__main__"], "test_global_var")
+            assert sys.modules["__main__"].test_global_var == "test_value"  # type: ignore[attr-defined]
+            
+        finally:
+            # Cleanup
+            if hasattr(sys.modules["__main__"], "test_global_var"):
+                delattr(sys.modules["__main__"], "test_global_var")
+
+    def test_set_global_variable_overwrites_existing(self) -> None:
+        """Test that set_global_variable overwrites existing variables."""
+        import sys
+        
+        try:
+            # Set initial value
+            set_global_variable(name="test_overwrite_var", value="initial_value")
+            assert sys.modules["__main__"].test_overwrite_var == "initial_value"  # type: ignore[attr-defined]
+            
+            # Overwrite with new value
+            set_global_variable(name="test_overwrite_var", value="new_value")
+            assert sys.modules["__main__"].test_overwrite_var == "new_value"  # type: ignore[attr-defined]
+            
+        finally:
+            # Cleanup
+            if hasattr(sys.modules["__main__"], "test_overwrite_var"):
+                delattr(sys.modules["__main__"], "test_overwrite_var")
+
+    def test_set_global_variable_with_complex_objects(self) -> None:
+        """Test that set_global_variable works with complex objects."""
+        import sys
+        
+        try:
+            # Test with a dictionary
+            test_dict = {"key1": "value1", "key2": [1, 2, 3]}
+            set_global_variable(name="test_dict_var", value=test_dict)
+            
+            assert hasattr(sys.modules["__main__"], "test_dict_var")
+            assert sys.modules["__main__"].test_dict_var == test_dict  # type: ignore[attr-defined]
+            assert sys.modules["__main__"].test_dict_var["key1"] == "value1"  # type: ignore[attr-defined]
+            
+            # Test with a class instance
+            class TestClass:
+                def __init__(self, *, value: str) -> None:
+                    self.value = value
+            
+            test_obj = TestClass(value="test_instance")
+            set_global_variable(name="test_obj_var", value=test_obj)
+            
+            assert hasattr(sys.modules["__main__"], "test_obj_var")
+            assert sys.modules["__main__"].test_obj_var.value == "test_instance"  # type: ignore[attr-defined]
+            
+        finally:
+            # Cleanup
+            if hasattr(sys.modules["__main__"], "test_dict_var"):
+                delattr(sys.modules["__main__"], "test_dict_var")
+            if hasattr(sys.modules["__main__"], "test_obj_var"):
+                delattr(sys.modules["__main__"], "test_obj_var")
+
+    def test_set_global_variable_with_none_value(self) -> None:
+        """Test that set_global_variable can set None as a value."""
+        import sys
+        
+        try:
+            set_global_variable(name="test_none_var", value=None)
+            
+            assert hasattr(sys.modules["__main__"], "test_none_var")
+            assert sys.modules["__main__"].test_none_var is None  # type: ignore[attr-defined]
+            
+        finally:
+            # Cleanup
+            if hasattr(sys.modules["__main__"], "test_none_var"):
+                delattr(sys.modules["__main__"], "test_none_var")

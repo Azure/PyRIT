@@ -8,7 +8,7 @@ import os
 
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.setup.pyrit_default_value import set_default_value
+from pyrit.setup.pyrit_default_value import set_default_value, set_global_variable
 
 default_converter_target = OpenAIChatTarget(
     endpoint=os.getenv("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"),
@@ -16,5 +16,5 @@ default_converter_target = OpenAIChatTarget(
     temperature=0.5,
 )
 
-
+set_global_variable(name="default_converter_target", value=default_converter_target)
 set_default_value(class_type=PromptConverter, parameter_name="converter_target", value=default_converter_target)

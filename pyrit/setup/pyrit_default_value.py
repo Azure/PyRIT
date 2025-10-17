@@ -261,3 +261,36 @@ def reset_default_values() -> None:
         reset_default_values()
     """
     _global_default_values.reset_default_values()
+
+
+def set_global_variable(*, name: str, value: Any) -> None:
+    """
+    Explicitly sets a global variable in the __main__ module namespace.
+
+    This function provides an alternative to relying on naming conventions for variable exposure.
+    Instead of using underscore-prefixed variables that may or may not be exposed based on
+    the expose_private_vars parameter, this function explicitly sets variables in the global
+    namespace, making the intent clear and the behavior predictable.
+
+    Args:
+        name (str): The name of the global variable to set.
+        value (Any): The value to assign to the global variable.
+
+    Example:
+        # Instead of relying on naming conventions:
+        # _helper_config = SomeConfig(...)  # May not be exposed
+        # global_config = _helper_config    # Exposed globally
+
+        # Use explicit global variable setting:
+        helper_config = SomeConfig(...)
+        set_global_variable(name="global_config", value=helper_config)
+
+    Note:
+        This function directly modifies the __main__ module's namespace, making the
+        variable accessible to code that imports or executes after the initialization
+        script runs.
+    """
+    import sys
+    
+    # Set the variable in the __main__ module's global namespace
+    sys.modules["__main__"].__dict__[name] = value
