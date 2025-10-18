@@ -12,12 +12,13 @@ recommended as they provide complete configuration profiles with
 clear documentation of requirements.
 
 Example:
-    from pyrit.setup import InitializationPaths, initialize_pyrit
+    from pyrit.setup import initialize_pyrit
+    from pyrit.setup.initializers import AIRTInitializer
 
     # Recommended: Use unified class-based initializers
     initialize_pyrit(
         memory_db_type="InMemory",
-        initializers=InitializationPaths.get_airt_initializers()
+        initializers=[AIRTInitializer()]
     )
 
     # Legacy: Use initialization scripts
@@ -28,11 +29,9 @@ Example:
 """
 
 import pathlib
-from typing import List, TYPE_CHECKING
+from typing import List
 
-# Use TYPE_CHECKING to avoid circular imports at runtime
-if TYPE_CHECKING:
-    from pyrit.setup.initializers import AIRTInitializer, SimpleInitializer, PyRITInitializer
+from pyrit.setup.initializers import AIRTInitializer, SimpleInitializer, PyRITInitializer
 
 
 class InitializationPaths:
@@ -71,45 +70,7 @@ class InitializationPaths:
         self._CONFIG_PATH = pathlib.Path(__file__).parent / "initialization_scripts"
 
     @classmethod
-    def get_airt_initializer(cls) -> "AIRTInitializer":
-        """
-        Get the unified AIRT configuration initializer.
-
-        This is the recommended way to configure PyRIT for AIRT scenarios.
-        It provides a complete setup with converters, scorers, and adversarial targets.
-
-        Returns:
-            AIRTInitializer: Complete AIRT configuration initializer.
-
-        Example:
-            # Get AIRT initializer
-            airt_init = InitializationPaths.get_airt_initializer()
-            initialize_pyrit(memory_db_type="InMemory", initializers=[airt_init])
-        """
-        from pyrit.setup.initializers import AIRTInitializer
-        return AIRTInitializer()
-
-    @classmethod
-    def get_simple_initializer(cls) -> "SimpleInitializer":
-        """
-        Get the unified simple configuration initializer.
-
-        This is the recommended way to configure PyRIT for basic usage.
-        It provides a complete setup with minimal configuration requirements.
-
-        Returns:
-            SimpleInitializer: Complete simple configuration initializer.
-
-        Example:
-            # Get simple initializer
-            simple_init = InitializationPaths.get_simple_initializer()
-            initialize_pyrit(memory_db_type="InMemory", initializers=[simple_init])
-        """
-        from pyrit.setup.initializers import SimpleInitializer
-        return SimpleInitializer()
-
-    @classmethod
-    def list_all_initializers(cls) -> List["PyRITInitializer"]:
+    def list_all_initializers(cls) -> List[PyRITInitializer]:
         """
         Get all available unified initializers.
 
@@ -122,7 +83,7 @@ class InitializationPaths:
             for init in initializers:
                 print(f"{init.name}: {init.description}")
         """
-        return [cls.get_simple_initializer(), cls.get_airt_initializer()]
+        return [SimpleInitializer(), AIRTInitializer()]
 
     @classmethod
     def get_initializer_info(cls) -> None:

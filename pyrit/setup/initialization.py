@@ -246,10 +246,12 @@ def initialize_pyrit(
 
     Example:
         # Using class-based initializers (recommended)
-        from pyrit.setup import initialize_pyrit, InitializationPaths
+        from pyrit.setup import initialize_pyrit
+        from pyrit.setup.initializers import SimpleInitializer
+        
         initialize_pyrit(
             memory_db_type="InMemory",
-            initializers=[InitializationPaths.get_simple_initializer()]
+            initializers=[SimpleInitializer()]
         )
 
         # Using external script files containing PyRITInitializer classes
@@ -261,7 +263,7 @@ def initialize_pyrit(
         # Using both together (all initializers are combined and sorted by execution_order)
         initialize_pyrit(
             memory_db_type="InMemory",
-            initializers=[InitializationPaths.get_simple_initializer()],
+            initializers=[SimpleInitializer()],
             initialization_scripts=["c:\\myfiles\\additional_initializers.py"]
         )
     """
