@@ -72,6 +72,8 @@ from pyrit.prompt_converter.toxic_sentence_generator_converter import ToxicSente
 from pyrit.prompt_converter.denylist_converter import DenylistConverter
 from pyrit.prompt_converter.text_jailbreak_converter import TextJailbreakConverter
 from pyrit.prompt_converter.template_segment_converter import TemplateSegmentConverter
+from pyrit.prompt_converter.braile_converter import BrailleConverter
+from pyrit.prompt_converter.ask_to_decode_converter import AskToDecodeConverter
 
 
 __all__ = [
@@ -81,12 +83,14 @@ __all__ = [
     "AnsiAttackConverter",
     "AsciiArtConverter",
     "AsciiSmugglerConverter",
+    "AskToDecodeConverter",
     "AtbashConverter",
     "AudioFrequencyConverter",
     "AzureSpeechAudioToTextConverter",
     "AzureSpeechTextToAudioConverter",
     "Base64Converter",
     "BinaryConverter",
+    "BrailleConverter",
     "CaesarConverter",
     "CharacterSpaceConverter",
     "CharSwapConverter",
