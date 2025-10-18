@@ -3,7 +3,8 @@
 
 import pytest
 
-from pyrit.prompt_converter import ConverterResult, AskToDecodeConverter
+from pyrit.prompt_converter import AskToDecodeConverter, ConverterResult
+
 
 @pytest.mark.asyncio
 async def test_ask_to_decode_converter_with_custom_template():
@@ -11,9 +12,9 @@ async def test_ask_to_decode_converter_with_custom_template():
     template = "Decode this: {encoded_text}"
     converter = AskToDecodeConverter(template=template)
     prompt = "SGVsbG8gV29ybGQ="  # Base64 encoded "Hello World"
-    
+
     result = await converter.convert_async(prompt=prompt, input_type="text")
-    
+
     assert isinstance(result, ConverterResult)
     assert result.output_text == "Decode this: SGVsbG8gV29ybGQ="
     assert result.output_type == "text"
@@ -25,9 +26,9 @@ async def test_ask_to_decode_converter_with_encoding_name_and_template():
     template = "{encoding_name}: {encoded_text}"
     converter = AskToDecodeConverter(template=template, encoding_name="Base64")
     prompt = "SGVsbG8gV29ybGQ="
-    
+
     result = await converter.convert_async(prompt=prompt, input_type="text")
-    
+
     assert isinstance(result, ConverterResult)
     assert result.output_text == "Base64: SGVsbG8gV29ybGQ="
     assert result.output_type == "text"
@@ -38,9 +39,9 @@ async def test_ask_to_decode_converter_random_template():
     """Test converter with random template selection."""
     converter = AskToDecodeConverter()
     prompt = "test_encoded_text"
-    
+
     result = await converter.convert_async(prompt=prompt, input_type="text")
-    
+
     assert isinstance(result, ConverterResult)
     assert result.output_type == "text"
     # The result should contain the encoded text somewhere
@@ -52,9 +53,9 @@ async def test_ask_to_decode_converter_random_template_with_encoding_name():
     """Test converter with random template and encoding name."""
     converter = AskToDecodeConverter(encoding_name="ROT13")
     prompt = "grfg"
-    
+
     result = await converter.convert_async(prompt=prompt, input_type="text")
-    
+
     assert isinstance(result, ConverterResult)
     assert result.output_type == "text"
     # The result should contain the encoded text
@@ -65,7 +66,7 @@ async def test_ask_to_decode_converter_random_template_with_encoding_name():
 async def test_ask_to_decode_converter_input_type_not_supported():
     """Test that non-text input types raise ValueError."""
     converter = AskToDecodeConverter()
-    
+
     with pytest.raises(ValueError, match="Input type not supported"):
         await converter.convert_async(prompt="test", input_type="image_path")
 
