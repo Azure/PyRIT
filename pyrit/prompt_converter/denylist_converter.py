@@ -9,7 +9,7 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.models import PromptDataType, SeedPrompt
 from pyrit.prompt_converter import ConverterResult, LLMGenericTextConverter
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.setup.pyrit_default_value import apply_defaults
+from pyrit.common.apply_defaults import apply_defaults
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class DenylistConverter(LLMGenericTextConverter):
     def __init__(
         self,
         *,
-        converter_target: PromptChatTarget,
+        converter_target: Optional[PromptChatTarget] = None,
         system_prompt_template: Optional[SeedPrompt] = None,
         denylist: list[str] = [],
     ):
@@ -34,6 +34,7 @@ class DenylistConverter(LLMGenericTextConverter):
 
         Args:
             converter_target (PromptChatTarget): The target for the prompt conversion.
+                Can be omitted if a default has been configured via PyRIT initialization.
             system_prompt_template (Optional[SeedPrompt]): The system prompt template to use for the conversion.
                 If not provided, a default template will be used.
             denylist (list[str]): A list of words or phrases that should be replaced in the prompt.

@@ -16,7 +16,7 @@ from pyrit.prompt_converter.fuzzer_converter.fuzzer_converter_base import (
 )
 from pyrit.prompt_converter.prompt_converter import ConverterResult
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.setup.pyrit_default_value import apply_defaults
+from pyrit.common.apply_defaults import apply_defaults
 
 
 class FuzzerCrossOverConverter(FuzzerConverter):

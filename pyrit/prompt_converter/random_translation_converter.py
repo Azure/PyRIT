@@ -12,7 +12,7 @@ from pyrit.models import PromptDataType, SeedPrompt, SeedPromptDataset
 from pyrit.prompt_converter import ConverterResult, LLMGenericTextConverter
 from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.setup.pyrit_default_value import apply_defaults
+from pyrit.common.apply_defaults import apply_defaults
 
 logger = logging.getLogger(__name__)
 

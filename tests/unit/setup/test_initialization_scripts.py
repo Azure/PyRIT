@@ -13,7 +13,6 @@ from pyrit.setup import (
     get_global_default_values,
     initialize_pyrit,
     set_default_value,
-    set_global_variable,
 )
 from pyrit.setup.initialization import _execute_initialization_scripts
 

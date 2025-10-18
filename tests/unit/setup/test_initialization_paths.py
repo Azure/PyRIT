@@ -14,7 +14,7 @@ class TestInitializationPaths:
         path = initialization_paths.airt_converter_initialization
         assert isinstance(path, pathlib.Path)
         assert path.name == "converter_initialization.py"
-        assert "config" in str(path)
+        assert "initialization_scripts" in str(path)
         assert "airt" in str(path)
         assert path.exists(), f"Expected airt_converter_initialization path to exist: {path}"
 
@@ -23,7 +23,7 @@ class TestInitializationPaths:
         path = initialization_paths.airt_scorer_initialization
         assert isinstance(path, pathlib.Path)
         assert path.name == "scorer_initialization.py"
-        assert "config" in str(path)
+        assert "initialization_scripts" in str(path)
         assert "airt" in str(path)
         assert path.exists(), f"Expected airt_scorer_initialization path to exist: {path}"
 
@@ -32,7 +32,7 @@ class TestInitializationPaths:
         path = initialization_paths.airt_target_initialization
         assert isinstance(path, pathlib.Path)
         assert path.name == "target_initialization.py"
-        assert "config" in str(path)
+        assert "initialization_scripts" in str(path)
         assert "airt" in str(path)
         assert path.exists(), f"Expected airt_target_initialization path to exist: {path}"
 
@@ -41,7 +41,7 @@ class TestInitializationPaths:
         path = initialization_paths.simple_converter_initialization
         assert isinstance(path, pathlib.Path)
         assert path.name == "converter_initialization.py"
-        assert "config" in str(path)
+        assert "initialization_scripts" in str(path)
         assert "simple" in str(path)
         assert path.exists(), f"Expected simple_converter_initialization path to exist: {path}"
 
@@ -50,7 +50,7 @@ class TestInitializationPaths:
         path = initialization_paths.simple_scorer_initialization
         assert isinstance(path, pathlib.Path)
         assert path.name == "scorer_initialization.py"
-        assert "config" in str(path)
+        assert "initialization_scripts" in str(path)
         assert "simple" in str(path)
         assert path.exists(), f"Expected simple_scorer_initialization path to exist: {path}"
 
@@ -59,7 +59,7 @@ class TestInitializationPaths:
         path = initialization_paths.simple_target_initialization
         assert isinstance(path, pathlib.Path)
         assert path.name == "target_initialization.py"
-        assert "config" in str(path)
+        assert "initialization_scripts" in str(path)
         assert "simple" in str(path)
         assert path.exists(), f"Expected simple_target_initialization path to exist: {path}"
 
@@ -108,7 +108,7 @@ class TestInitializationPaths:
         from pyrit.setup.initialization_paths import InitializationPaths
 
         # Get the expected config directory
-        module_dir = pathlib.Path(__file__).parent.parent.parent.parent / "pyrit" / "setup" / "config" / "airt"
+        module_dir = pathlib.Path(__file__).parent.parent.parent.parent / "pyrit" / "setup" / "initialization_scripts" / "airt"
 
         airt_paths = InitializationPaths.list_all_airt_paths()
         for path in airt_paths:
@@ -121,7 +121,7 @@ class TestInitializationPaths:
         from pyrit.setup.initialization_paths import InitializationPaths
 
         # Get the expected config directory
-        module_dir = pathlib.Path(__file__).parent.parent.parent.parent / "pyrit" / "setup" / "config" / "simple"
+        module_dir = pathlib.Path(__file__).parent.parent.parent.parent / "pyrit" / "setup" / "initialization_scripts" / "simple"
 
         simple_paths = InitializationPaths.list_all_simple_paths()
         for path in simple_paths:
@@ -177,6 +177,6 @@ class TestInitializationPaths:
         config_path = initialization_paths._CONFIG_PATH
 
         assert isinstance(config_path, pathlib.Path)
-        assert config_path.name == "config"
+        assert config_path.name == "initialization_scripts"
         assert config_path.exists()
         assert config_path.is_dir()

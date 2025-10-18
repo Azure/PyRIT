@@ -3,6 +3,14 @@
 
 """This module contains common utilities for PyRIT."""
 
+from pyrit.common.apply_defaults import (
+    apply_defaults,
+    apply_defaults_to_method,
+    set_default_value,
+    reset_default_values,
+    get_global_default_values,
+    DefaultValueScope,
+)
 from pyrit.common.data_url_converter import convert_local_image_to_data_url
 from pyrit.common.default_values import get_non_required_value, get_required_value
 from pyrit.common.display_response import display_image_response

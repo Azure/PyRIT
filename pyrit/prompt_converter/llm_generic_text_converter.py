@@ -13,7 +13,7 @@ from pyrit.models import (
 )
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.setup.pyrit_default_value import apply_defaults
+from pyrit.common.apply_defaults import apply_defaults
 
 logger = logging.getLogger(__name__)
 
@@ -37,13 +37,21 @@ class LLMGenericTextConverter(PromptConverter):
 
         Args:
             converter_target (PromptChatTarget): The endpoint that converts the prompt.
+                Can be omitted if a default has been configured via PyRIT initialization.
             system_prompt_template (SeedPrompt, Optional): The prompt template to set as the system prompt.
             user_prompt_template_with_objective (SeedPrompt, Optional): The prompt template to set as the user prompt.
                 expects
             kwargs: Additional parameters for the prompt template.
+            
+        Raises:
+            ValueError: If converter_target is not provided and no default has been configured.
         """
         if converter_target is None:
-            raise ValueError("converter_target is required but was not provided")
+            raise ValueError(
+                "converter_target is required for LLM-based converters. "
+                "Either pass it explicitly or configure a default via PyRIT initialization "
+                "(e.g., initialize_pyrit with SimpleInitializer or AIRTInitializer)."
+            )
 
         self._converter_target = converter_target
         self._system_prompt_template = system_prompt_template

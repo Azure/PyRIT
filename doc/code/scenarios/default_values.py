@@ -38,7 +38,7 @@
 # Classes that want to participate in the default value system use the `@apply_defaults` decorator on their `__init__` method:
 #
 # ```python
-# from pyrit.setup.pyrit_default_value import apply_defaults
+# from pyrit.common.apply_defaults import apply_defaults
 #
 # class MyConverter(PromptConverter):
 #     @apply_defaults
@@ -75,7 +75,7 @@ import os
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.setup.initialization import initialize_pyrit
-from pyrit.setup.pyrit_default_value import set_default_value
+from pyrit.common.apply_defaults import set_default_value
 
 # This is not necessary usually, but we need it here because we're running as a stand alone
 initialize_pyrit(memory_db_type="InMemory")

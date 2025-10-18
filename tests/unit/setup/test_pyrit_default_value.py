@@ -10,7 +10,7 @@ from pyrit.setup import (
     set_default_value,
     set_global_variable,
 )
-from pyrit.setup.pyrit_default_value import DefaultValueScope
+from pyrit.common.apply_defaults import DefaultValueScope
 
 
 class TestApplyDefaultsDecorator:

@@ -10,7 +10,7 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt
 from pyrit.prompt_converter import LLMGenericTextConverter
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.setup.pyrit_default_value import apply_defaults
+from pyrit.common.apply_defaults import apply_defaults
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class NoiseConverter(LLMGenericTextConverter):
     def __init__(
         self,
         *,
-        converter_target: PromptChatTarget,
+        converter_target: Optional[PromptChatTarget] = None,
         noise: Optional[str] = None,
         number_errors: int = 5,
         prompt_template: Optional[SeedPrompt] = None,
@@ -36,6 +36,7 @@ class NoiseConverter(LLMGenericTextConverter):
 
         Args:
             converter_target (PromptChatTarget): The endpoint that converts the prompt.
+                Can be omitted if a default has been configured via PyRIT initialization.
             noise (str): The noise to inject. Grammar error, delete random letter, insert random space, etc.
             number_errors (int): The number of errors to inject.
             prompt_template (SeedPrompt, Optional): The prompt template for the conversion.
