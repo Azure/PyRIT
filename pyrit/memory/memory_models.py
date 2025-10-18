@@ -29,7 +29,7 @@ from sqlalchemy.orm import (  # type: ignore
 from sqlalchemy.types import Uuid  # type: ignore
 
 from pyrit.common.utils import to_sha256
-from pyrit.models import PromptDataType, PromptRequestPiece, Score, SeedPrompt
+from pyrit.models import PromptDataType, MessagePiece, Score, SeedPrompt
 from pyrit.models.attack_result import AttackOutcome, AttackResult
 from pyrit.models.conversation_reference import ConversationReference, ConversationType
 from pyrit.models.literals import ChatMessageRole
@@ -138,7 +138,7 @@ class PromptMemoryEntry(Base):
         foreign_keys="ScoreEntry.prompt_request_response_id",
     )
 
-    def __init__(self, *, entry: PromptRequestPiece):
+    def __init__(self, *, entry: MessagePiece):
         self.id = entry.id
         self.role = entry.role
         self.conversation_id = entry.conversation_id
@@ -163,8 +163,8 @@ class PromptMemoryEntry(Base):
 
         self.original_prompt_id = entry.original_prompt_id
 
-    def get_prompt_request_piece(self) -> PromptRequestPiece:
-        prompt_request_piece = PromptRequestPiece(
+    def get_prompt_request_piece(self) -> MessagePiece:
+        prompt_request_piece = MessagePiece(
             role=self.role,
             original_value=self.original_value,
             original_value_sha256=self.original_value_sha256,
@@ -416,7 +416,7 @@ class AttackResultEntry(Base):
         objective (str): Natural-language description of the attacker's objective.
         attack_identifier (dict[str, str]): Identifier of the attack (e.g., name, module).
         objective_sha256 (str): The SHA256 hash of the objective.
-        last_response_id (Uuid): Foreign key to the last response PromptRequestPiece.
+        last_response_id (Uuid): Foreign key to the last response MessagePiece.
         last_score_id (Uuid): Foreign key to the last score ScoreEntry.
         executed_turns (int): Total number of turns that were executed.
         execution_time_ms (int): Total execution time of the attack in milliseconds.

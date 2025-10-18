@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from pyrit.memory.central_memory import CentralMemory
-from pyrit.models import PromptRequestPiece, Score
+from pyrit.models import MessagePiece, Score
 from pyrit.score import (
     FloatScaleScorer,
     TrueFalseCompositeScorer,
@@ -31,7 +31,7 @@ class MockScorer(TrueFalseScorer):
         self.aggregator = aggregator
 
     async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+        self, request_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         return [
             Score(
@@ -51,7 +51,7 @@ class MockScorer(TrueFalseScorer):
 @pytest.fixture
 def mock_request(patch_central_database):
     memory = CentralMemory.get_memory_instance()
-    request = PromptRequestPiece(role="user", original_value="test content", conversation_id="test-conv", sequence=1)
+    request = MessagePiece(role="user", original_value="test content", conversation_id="test-conv", sequence=1)
     memory.add_request_pieces_to_memory(request_pieces=[request])
     return request.to_prompt_request_response()
 
@@ -145,7 +145,7 @@ def test_composite_scorer_invalid_scorer_type():
             self._validator = MagicMock()
 
         async def _score_piece_async(
-            self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+            self, request_piece: MessagePiece, *, objective: Optional[str] = None
         ) -> list[Score]:
             return []
 

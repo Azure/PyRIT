@@ -4,7 +4,7 @@
 from typing import TYPE_CHECKING, Protocol
 
 from pyrit.models import (
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     construct_response_from_request,
 )
@@ -22,7 +22,7 @@ class InteractionFunction(Protocol):
     Defines the structure of interaction functions used with PlaywrightTarget.
     """
 
-    async def __call__(self, page: "Page", request_piece: PromptRequestPiece) -> str: ...
+    async def __call__(self, page: "Page", request_piece: MessagePiece) -> str: ...
 
 
 class PlaywrightTarget(PromptTarget):

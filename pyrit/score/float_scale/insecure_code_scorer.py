@@ -6,7 +6,7 @@ from typing import Optional, Union
 
 from pyrit.common.path import SCORER_CONFIG_PATH
 from pyrit.exceptions.exception_classes import InvalidJsonException
-from pyrit.models import PromptRequestPiece, Score, SeedPrompt
+from pyrit.models import MessagePiece, Score, SeedPrompt
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -45,13 +45,13 @@ class InsecureCodeScorer(FloatScaleScorer):
         self._system_prompt = scoring_instructions_template.render_template_value(harm_categories=self._harm_category)
 
     async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+        self, request_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """
         Scores the given request piece using LLM to detect security vulnerabilities.
 
         Args:
-            request_piece (PromptRequestPiece): The code snippet to be scored.
+            request_piece (MessagePiece): The code snippet to be scored.
             objective (Optional[str]): Optional objective description for scoring. Defaults to None.
 
         Returns:

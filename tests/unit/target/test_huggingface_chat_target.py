@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from pyrit.models.prompt_request_response import (
-    PromptRequestPiece,
+    MessagePiece,
     Message,
 )
 from pyrit.prompt_target import HuggingFaceChatTarget
@@ -153,7 +153,7 @@ async def test_send_prompt_async():
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
     await hf_chat.load_model_and_tokenizer()
 
-    request_piece = PromptRequestPiece(
+    request_piece = MessagePiece(
         role="user",
         original_value="Hello, how are you?",
         converted_value="Hello, how are you?",
@@ -175,7 +175,7 @@ async def test_missing_chat_template_error():
     await hf_chat.load_model_and_tokenizer()
     hf_chat.tokenizer.chat_template = None
 
-    request_piece = PromptRequestPiece(
+    request_piece = MessagePiece(
         role="user",
         original_value="Hello, how are you?",
         converted_value="Hello, how are you?",
@@ -195,14 +195,14 @@ def test_invalid_prompt_request_validation():
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
 
     # Create an invalid prompt request with multiple request pieces
-    request_piece1 = PromptRequestPiece(
+    request_piece1 = MessagePiece(
         role="user",
         original_value="First piece",
         converted_value="First piece",
         converted_value_data_type="text",
         conversation_id="123",
     )
-    request_piece2 = PromptRequestPiece(
+    request_piece2 = MessagePiece(
         role="user",
         original_value="Second piece",
         converted_value="Second piece",

@@ -27,7 +27,7 @@ from pyrit.models import (
     AttackOutcome,
     ChatMessageRole,
     ConversationType,
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     Score,
     ScoreType,
@@ -96,7 +96,7 @@ def create_prompt_response(*, text: str, role: ChatMessageRole = "assistant") ->
     """
     return Message(
         request_pieces=[
-            PromptRequestPiece(
+            MessagePiece(
                 role=role,
                 original_value=text,
                 original_value_data_type="text",
@@ -641,7 +641,7 @@ class TestPromptGeneration:
         # Mock the adversarial response
         response = Message(
             request_pieces=[
-                PromptRequestPiece(
+                MessagePiece(
                     role="assistant",
                     original_value=adversarial_response,
                     converted_value=adversarial_response,
@@ -1018,7 +1018,7 @@ class TestAttackExecution:
         # Mock adversarial response
         adv_response = Message(
             request_pieces=[
-                PromptRequestPiece(
+                MessagePiece(
                     role="assistant",
                     original_value=adversarial_response,
                     converted_value=adversarial_response,
@@ -1069,7 +1069,7 @@ class TestAttackExecution:
         # Mock adversarial response
         adv_response = Message(
             request_pieces=[
-                PromptRequestPiece(
+                MessagePiece(
                     role="assistant",
                     original_value=adversarial_response,
                     converted_value=adversarial_response,
@@ -1135,7 +1135,7 @@ class TestAttackExecution:
         # Mock adversarial response
         adv_response = Message(
             request_pieces=[
-                PromptRequestPiece(
+                MessagePiece(
                     role="assistant",
                     original_value=adversarial_response,
                     converted_value=adversarial_response,
@@ -1200,7 +1200,7 @@ class TestAttackExecution:
         # Mock adversarial response
         adv_response = Message(
             request_pieces=[
-                PromptRequestPiece(
+                MessagePiece(
                     role="assistant",
                     original_value=adversarial_response,
                     converted_value=adversarial_response,

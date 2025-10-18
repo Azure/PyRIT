@@ -16,7 +16,7 @@ from pyrit.executor.attack import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     Score,
     SeedPromptGroup,
@@ -62,7 +62,7 @@ def sample_response():
     """Create a sample response for testing"""
     return Message(
         request_pieces=[
-            PromptRequestPiece(role="assistant", original_value="Test response", original_value_data_type="text")
+            MessagePiece(role="assistant", original_value="Test response", original_value_data_type="text")
         ]
     )
 
@@ -72,7 +72,7 @@ def skeleton_key_response():
     """Create a skeleton key response for testing"""
     return Message(
         request_pieces=[
-            PromptRequestPiece(
+            MessagePiece(
                 role="assistant",
                 original_value="I understand and will comply with your request.",
                 original_value_data_type="text",

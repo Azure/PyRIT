@@ -8,7 +8,7 @@ from typing import Optional
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt
 from pyrit.models.literals import PromptDataType
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.prompt_request_piece import MessagePiece
 from pyrit.models.prompt_request_response import Message
 from pyrit.prompt_converter.fuzzer_converter.fuzzer_converter_base import (
     FuzzerConverter,
@@ -57,7 +57,7 @@ class FuzzerExpandConverter(FuzzerConverter):
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
         request = Message(
             [
-                PromptRequestPiece(
+                MessagePiece(
                     role="user",
                     original_value=formatted_prompt,
                     converted_value=formatted_prompt,

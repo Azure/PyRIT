@@ -10,12 +10,12 @@ from azure.storage.blob.aio import BlobClient as AsyncBlobClient
 from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
 from unit.mocks import get_image_request_piece, get_sample_conversations
 
-from pyrit.models import PromptRequestPiece, Message
+from pyrit.models import MessagePiece, Message
 from pyrit.prompt_target import AzureBlobStorageTarget
 
 
 @pytest.fixture
-def sample_entries() -> MutableSequence[PromptRequestPiece]:
+def sample_entries() -> MutableSequence[MessagePiece]:
     conversations = get_sample_conversations()
     return Message.flatten_to_prompt_request_pieces(conversations)
 
@@ -65,8 +65,8 @@ async def test_azure_blob_storage_validate_request_length(
     mock_upload_async.return_value = None
     request = Message(
         request_pieces=[
-            PromptRequestPiece(role="user", conversation_id="123", original_value="test1"),
-            PromptRequestPiece(role="user", conversation_id="123", original_value="test2"),
+            MessagePiece(role="user", conversation_id="123", original_value="test1"),
+            MessagePiece(role="user", conversation_id="123", original_value="test2"),
         ]
     )
     with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
@@ -90,7 +90,7 @@ async def test_azure_blob_storage_validate_prompt_type(
 async def test_azure_blob_storage_validate_prev_convs(
     mock_upload_async,
     azure_blob_storage_target: AzureBlobStorageTarget,
-    sample_entries: MutableSequence[PromptRequestPiece],
+    sample_entries: MutableSequence[MessagePiece],
 ):
     mock_upload_async.return_value = None
     request_piece = sample_entries[0]
@@ -112,7 +112,7 @@ async def test_send_prompt_async(
     mock_upload_blob,
     mock_create_client,
     azure_blob_storage_target: AzureBlobStorageTarget,
-    sample_entries: MutableSequence[PromptRequestPiece],
+    sample_entries: MutableSequence[MessagePiece],
 ):
     mock_blob_client = AsyncMock()
     mock_get_blob_client.return_value = mock_blob_client

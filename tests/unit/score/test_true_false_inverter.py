@@ -9,17 +9,17 @@ from unit.mocks import get_image_request_piece
 
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece
+from pyrit.models import MessagePiece
 from pyrit.score import SubStringScorer, TrueFalseInverterScorer
 
 
 @pytest.fixture
-def image_request_piece() -> PromptRequestPiece:
+def image_request_piece() -> MessagePiece:
     return get_image_request_piece()
 
 
 @pytest.mark.asyncio
-async def test_inverter_scorer_validate(image_request_piece: PromptRequestPiece):
+async def test_inverter_scorer_validate(image_request_piece: MessagePiece):
     sub_scorer = SubStringScorer(substring="test", categories=["new_category"])
     scorer = TrueFalseInverterScorer(scorer=sub_scorer)
 

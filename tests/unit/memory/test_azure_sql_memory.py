@@ -14,7 +14,7 @@ from unit.mocks import get_azure_sql_memory, get_sample_conversation_entries
 from pyrit.executor.attack import PromptSendingAttack
 from pyrit.memory import AzureSQLMemory, EmbeddingDataEntry, PromptMemoryEntry
 from pyrit.memory.memory_models import Base
-from pyrit.models import PromptRequestPiece
+from pyrit.models import MessagePiece
 from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_target.text_target import TextTarget
 
@@ -31,7 +31,7 @@ def sample_conversation_entries() -> Sequence[PromptMemoryEntry]:
 
 @pytest.mark.asyncio
 async def test_insert_entry(memory_interface):
-    prompt_request_piece = PromptRequestPiece(
+    prompt_request_piece = MessagePiece(
         id=uuid.uuid4(),
         conversation_id="123",
         role="user",
@@ -56,7 +56,7 @@ async def test_insert_entry(memory_interface):
 def test_insert_entries(memory_interface: AzureSQLMemory):
     entries = [
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 conversation_id=str(i),
                 role="user",
                 original_value=f"Message {i}",
@@ -82,7 +82,7 @@ def test_insert_entries(memory_interface: AzureSQLMemory):
 def test_insert_embedding_entry(memory_interface: AzureSQLMemory):
     # Create a ConversationData entry
     conversation_entry = PromptMemoryEntry(
-        entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="abc")
+        entry=MessagePiece(conversation_id="123", role="user", original_value="Hello", converted_value="abc")
     )
 
     # Insert the ConversationData entry using the _insert_entry method
@@ -181,7 +181,7 @@ def test_get_memories_with_json_properties(memory_interface: AzureSQLMemory):
     with memory_interface.get_session() as session:  # type: ignore
         # Create a ConversationData entry with all attributes filled
         entry = PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 conversation_id=specific_conversation_id,
                 role="user",
                 sequence=1,
@@ -228,7 +228,7 @@ def test_get_memories_with_attack_id(memory_interface: AzureSQLMemory):
     # Create a list of ConversationData entries, some with the specific normalizer_id
     entries = [
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 conversation_id="123",
                 role="user",
                 original_value="Hello 1",
@@ -237,7 +237,7 @@ def test_get_memories_with_attack_id(memory_interface: AzureSQLMemory):
             )
         ),
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 conversation_id="456",
                 role="user",
                 original_value="Hello 2",
@@ -246,7 +246,7 @@ def test_get_memories_with_attack_id(memory_interface: AzureSQLMemory):
             )
         ),
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 conversation_id="789",
                 role="user",
                 original_value="Hello 3",
@@ -285,7 +285,7 @@ def test_get_memories_with_attack_id(memory_interface: AzureSQLMemory):
 def test_update_entries(memory_interface: AzureSQLMemory):
     # Insert a test entry
     entry = PromptMemoryEntry(
-        entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
+        entry=MessagePiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
     )
 
     memory_interface._insert_entry(entry)
@@ -305,7 +305,7 @@ def test_update_entries(memory_interface: AzureSQLMemory):
 def test_update_entries_empty_update_fields(memory_interface: AzureSQLMemory):
     # Insert a test entry
     entry = PromptMemoryEntry(
-        entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
+        entry=MessagePiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
     )
 
     memory_interface._insert_entry(entry)
@@ -321,7 +321,7 @@ def test_update_entries_empty_update_fields(memory_interface: AzureSQLMemory):
 def test_update_entries_nonexistent_fields(memory_interface):
     # Insert a test entry
     entry = PromptMemoryEntry(
-        entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
+        entry=MessagePiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
     )
 
     memory_interface._insert_entry(entry)
@@ -362,7 +362,7 @@ def test_update_prompt_entries_by_conversation_id(memory_interface: AzureSQLMemo
 def test_update_labels_by_conversation_id(memory_interface: AzureSQLMemory):
     # Insert a test entry
     entry = PromptMemoryEntry(
-        entry=PromptRequestPiece(
+        entry=MessagePiece(
             conversation_id="123",
             role="user",
             original_value="Hello",
@@ -385,7 +385,7 @@ def test_update_labels_by_conversation_id(memory_interface: AzureSQLMemory):
 def test_update_prompt_metadata_by_conversation_id(memory_interface: AzureSQLMemory):
     # Insert a test entry
     entry = PromptMemoryEntry(
-        entry=PromptRequestPiece(
+        entry=MessagePiece(
             conversation_id="123",
             role="user",
             original_value="Hello",

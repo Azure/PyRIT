@@ -10,7 +10,7 @@ import pytest
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece, Message
+from pyrit.models import MessagePiece, Message
 from pyrit.score import (
     ContentClassifierPaths,
     SelfAskCategoryScorer,
@@ -31,7 +31,7 @@ def scorer_category_response_bullying() -> Message:
         .replace("\n", " ")
     )
 
-    return Message(request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)])
+    return Message(request_pieces=[MessagePiece(role="assistant", original_value=json_response)])
 
 
 @pytest.fixture
@@ -48,7 +48,7 @@ def scorer_category_response_false() -> Message:
         .replace("\n", " ")
     )
 
-    return Message(request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)])
+    return Message(request_pieces=[MessagePiece(role="assistant", original_value=json_response)])
 
 
 def test_category_scorer_set_no_category_found():
@@ -152,7 +152,7 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries(patch_centra
     chat_target = MagicMock()
 
     bad_json_resp = Message(
-        request_pieces=[PromptRequestPiece(role="assistant", original_value="this is not a json")]
+        request_pieces=[MessagePiece(role="assistant", original_value="this is not a json")]
     )
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
     with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
@@ -185,7 +185,7 @@ async def test_self_ask_objective_scorer_json_missing_key_exception_retries(patc
     )
 
     bad_json_resp = Message(
-        request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)]
+        request_pieces=[MessagePiece(role="assistant", original_value=json_response)]
     )
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
     with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
@@ -217,8 +217,8 @@ async def test_score_prompts_batch_async(
             content_classifier_path=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
         )
 
-        prompt = PromptRequestPiece(role="assistant", original_value="test").to_prompt_request_response()
-        prompt2 = PromptRequestPiece(role="assistant", original_value="test 2").to_prompt_request_response()
+        prompt = MessagePiece(role="assistant", original_value="test").to_prompt_request_response()
+        prompt2 = MessagePiece(role="assistant", original_value="test 2").to_prompt_request_response()
 
         with patch.object(chat_target, "send_prompt_async", return_value=scorer_category_response_false):
             if batch_size != 1 and max_requests_per_minute:

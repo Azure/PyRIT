@@ -8,7 +8,7 @@ from typing import Optional, Union
 import yaml
 
 from pyrit.common.path import SCORER_CONFIG_PATH
-from pyrit.models import PromptRequestPiece, SeedPrompt
+from pyrit.models import MessagePiece, SeedPrompt
 from pyrit.models.score import Score, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -114,13 +114,13 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
         )
 
     async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+        self, request_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """
         Scores the given request piece using "self-ask" for the chat target.
 
         Args:
-            request_piece (PromptRequestPiece): The prompt request piece containing the text to be scored.
+            request_piece (MessagePiece): The prompt request piece containing the text to be scored.
             objective (Optional[str]): The objective to evaluate against (the original attacker model's objective).
                 Defaults to None.
 

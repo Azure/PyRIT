@@ -4,7 +4,7 @@
 import uuid
 from typing import Optional
 
-from pyrit.models import PromptRequestPiece, Score
+from pyrit.models import MessagePiece, Score
 from pyrit.models.literals import ChatMessageRole
 from pyrit.models.prompt_request_response import Message
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -69,12 +69,12 @@ class TrueFalseInverterScorer(TrueFalseScorer):
         return [inv_score]
 
     async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+        self, request_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """True False Inverter scorers do not support piecewise scoring.
 
         Args:
-            request_piece (PromptRequestPiece): Unused.
+            request_piece (MessagePiece): Unused.
             objective (Optional[str]): Unused.
 
         Raises:

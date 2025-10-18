@@ -12,7 +12,7 @@ from tenacity import RetryError
 from unit.mocks import get_sample_conversations
 
 from pyrit.exceptions.exception_classes import RateLimitException
-from pyrit.models import PromptRequestPiece, Message
+from pyrit.models import MessagePiece, Message
 from pyrit.prompt_target import OpenAISoraTarget
 
 
@@ -130,7 +130,7 @@ def video_generation_response() -> dict:
 
 
 @pytest.fixture
-def sample_conversations() -> MutableSequence[PromptRequestPiece]:
+def sample_conversations() -> MutableSequence[MessagePiece]:
     conversations = get_sample_conversations()
     return Message.flatten_to_prompt_request_pieces(conversations)
 
@@ -194,7 +194,7 @@ def test_initialization_invalid_input(resolution_dimensions, n_seconds, n_varian
 @pytest.mark.asyncio
 async def test_send_prompt_async_succeeded_download(
     sora_target: OpenAISoraTarget,
-    sample_conversations: MutableSequence[PromptRequestPiece],
+    sample_conversations: MutableSequence[MessagePiece],
     video_generation_response_success: dict,
 ):
     request = sample_conversations[0]
@@ -233,7 +233,7 @@ async def test_send_prompt_async_succeeded_download(
 @pytest.mark.asyncio
 async def test_send_prompt_async_succeeded_download_error(
     sora_target: OpenAISoraTarget,
-    sample_conversations: MutableSequence[PromptRequestPiece],
+    sample_conversations: MutableSequence[MessagePiece],
     video_generation_response_success: dict,
 ):
     request = sample_conversations[0]
@@ -264,7 +264,7 @@ async def test_send_prompt_async_succeeded_download_error(
 @pytest.mark.asyncio
 async def test_send_prompt_async_failed_unknown(
     sora_target: OpenAISoraTarget,
-    sample_conversations: MutableSequence[PromptRequestPiece],
+    sample_conversations: MutableSequence[MessagePiece],
     video_generation_response_failure_unknown: dict,
 ):
     request = sample_conversations[0]
@@ -291,7 +291,7 @@ async def test_send_prompt_async_failed_unknown(
 @pytest.mark.asyncio
 async def test_send_prompt_async_failed_moderation(
     sora_target: OpenAISoraTarget,
-    sample_conversations: MutableSequence[PromptRequestPiece],
+    sample_conversations: MutableSequence[MessagePiece],
     video_generation_response_failure_moderation: dict,
 ):
     request = sample_conversations[0]
@@ -343,7 +343,7 @@ async def test_download_video_content_async_custom_retry(
 @pytest.mark.asyncio
 async def test_send_prompt_async_timeout(
     sora_target: OpenAISoraTarget,
-    sample_conversations: MutableSequence[PromptRequestPiece],
+    sample_conversations: MutableSequence[MessagePiece],
     video_generation_response: dict,
 ):
     request = sample_conversations[0]
@@ -400,7 +400,7 @@ async def test_check_job_status_async_custom_retry(
 @pytest.mark.asyncio
 async def test_send_prompt_async_exceptions(
     sora_target: OpenAISoraTarget,
-    sample_conversations: MutableSequence[PromptRequestPiece],
+    sample_conversations: MutableSequence[MessagePiece],
     err_class: Exception,
     status_code: int,
     message: str,

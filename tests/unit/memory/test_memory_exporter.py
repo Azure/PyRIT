@@ -57,7 +57,7 @@ def test_export_to_json_creates_file(tmp_path, export_type):
     content = read_file(file_path=file_path, export_type=export_type)
     # Perform more detailed checks on content if necessary
     assert len(content) == 3  # Simple check for the number of items
-    # Convert each PromptRequestPiece instance to a dictionary
+    # Convert each MessagePiece instance to a dictionary
     expected_content = [prompt_request_piece.to_dict() for prompt_request_piece in sample_conversation_entries]
 
     for expected, actual in zip(expected_content, content):

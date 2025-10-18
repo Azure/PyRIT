@@ -17,7 +17,7 @@ from tenacity import (
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import (
     PromptDataType,
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     SeedPrompt,
 )
@@ -108,7 +108,7 @@ class TranslationConverter(PromptConverter):
 
         request = Message(
             [
-                PromptRequestPiece(
+                MessagePiece(
                     role="user",
                     original_value=prompt,
                     converted_value=formatted_prompt,

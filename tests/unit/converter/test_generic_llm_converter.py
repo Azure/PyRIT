@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from pyrit.models import PromptRequestPiece, Message
+from pyrit.models import MessagePiece, Message
 from pyrit.prompt_converter import (
     LLMGenericTextConverter,
     MaliciousQuestionGeneratorConverter,
@@ -21,7 +21,7 @@ def mock_target() -> PromptTarget:
     target = MagicMock()
     response = Message(
         request_pieces=[
-            PromptRequestPiece(
+            MessagePiece(
                 role="assistant",
                 original_value="prompt value",
             )

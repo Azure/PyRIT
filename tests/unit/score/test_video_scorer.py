@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock
 import numpy as np
 import pytest
 
-from pyrit.models import PromptRequestPiece, Score
+from pyrit.models import MessagePiece, Score
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.float_scale.video_float_scale_scorer import VideoFloatScaleScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -45,7 +45,7 @@ def video_converter_sample_video(patch_central_database):
 
         output_video.release()
 
-    request_piece = PromptRequestPiece(
+    request_piece = MessagePiece(
         role="user",
         original_value=video_path,
         converted_value=video_path,
@@ -68,7 +68,7 @@ class MockTrueFalseScorer(TrueFalseScorer):
         self.return_value = return_value
 
     async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+        self, request_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         return [
             Score(
@@ -93,7 +93,7 @@ class MockFloatScaleScorer(FloatScaleScorer):
         self.return_value = return_value
 
     async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+        self, request_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         return [
             Score(

@@ -12,14 +12,14 @@ import pytest
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.memory import MemoryInterface, PromptMemoryEntry
 from pyrit.models import (
-    PromptRequestPiece,
+    MessagePiece,
     Score,
     SeedPrompt,
 )
 
 
 def test_get_scores_by_attack_id_and_label(
-    sqlite_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
+    sqlite_instance: MemoryInterface, sample_conversations: Sequence[MessagePiece]
 ):
     # create list of scores that are associated with sample conversation entries
     # assert that that list of scores is the same as expected :-)
@@ -124,7 +124,7 @@ def test_add_score_duplicate_prompt(sqlite_instance: MemoryInterface):
     attack = PromptSendingAttack(objective_target=MagicMock())
     conversation_id = str(uuid4())
     pieces = [
-        PromptRequestPiece(
+        MessagePiece(
             id=original_id,
             role="assistant",
             original_value="original prompt text",
@@ -164,7 +164,7 @@ def test_add_score_duplicate_prompt(sqlite_instance: MemoryInterface):
 def test_get_scores_by_memory_labels(sqlite_instance: MemoryInterface):
     prompt_id = uuid4()
     pieces = [
-        PromptRequestPiece(
+        MessagePiece(
             id=prompt_id,
             role="user",
             original_value="original prompt text",

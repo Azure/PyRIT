@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Optional
 
 from pyrit.models import Score
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.prompt_request_piece import MessagePiece
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
     TrueFalseAggregatorFunc,
@@ -51,13 +51,13 @@ class QuestionAnswerScorer(TrueFalseScorer):
         self._score_category = category if category is not None else []
 
     async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+        self, request_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """
         Score the request piece using question answering evaluation.
 
         Args:
-            request_piece (PromptRequestPiece): The answer given by the target, which must contain
+            request_piece (MessagePiece): The answer given by the target, which must contain
                 'correct_answer_index' and 'correct_answer' in prompt_metadata.
             objective (Optional[str]): The objective to evaluate against. Defaults to None.
                 Currently not used for this scorer.

@@ -3,7 +3,7 @@
 
 from typing import List, Optional
 
-from pyrit.models import PromptRequestPiece, Score
+from pyrit.models import MessagePiece, Score
 from pyrit.score.float_scale.float_scale_score_aggregator import (
     FloatScaleAggregatorFunc,
     FloatScaleScorerByCategory,
@@ -61,7 +61,7 @@ class VideoFloatScaleScorer(FloatScaleScorer, _BaseVideoScorer):
         self._score_aggregator = score_aggregator
 
     async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+        self, request_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """
         Score a single video piece by extracting frames and aggregating their scores.

@@ -15,28 +15,28 @@ from unit.mocks import (
 
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece
+from pyrit.models import MessagePiece
 from pyrit.models.prompt_request_response import Message
 from pyrit.score.float_scale.azure_content_filter_scorer import AzureContentFilterScorer
 
 
 @pytest.fixture
-def audio_request_piece() -> PromptRequestPiece:
+def audio_request_piece() -> MessagePiece:
     return get_audio_request_piece()
 
 
 @pytest.fixture
-def image_request_piece() -> PromptRequestPiece:
+def image_request_piece() -> MessagePiece:
     return get_image_request_piece()
 
 
 @pytest.fixture
-def text_request_piece() -> PromptRequestPiece:
+def text_request_piece() -> MessagePiece:
     return get_test_request_piece()
 
 
 @pytest.mark.asyncio
-async def test_score_piece_async_invalid_type(patch_central_database, audio_request_piece: PromptRequestPiece):
+async def test_score_piece_async_invalid_type(patch_central_database, audio_request_piece: MessagePiece):
     scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
     request = Message(
         request_pieces=[audio_request_piece],
@@ -49,7 +49,7 @@ async def test_score_piece_async_invalid_type(patch_central_database, audio_requ
 
 
 @pytest.mark.asyncio
-async def test_score_piece_async_text(patch_central_database, text_request_piece: PromptRequestPiece):
+async def test_score_piece_async_text(patch_central_database, text_request_piece: MessagePiece):
     scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
     mock_client = MagicMock()
     mock_client.analyze_text.return_value = {"categoriesAnalysis": [{"severity": "2", "category": "Hate"}]}
@@ -66,7 +66,7 @@ async def test_score_piece_async_text(patch_central_database, text_request_piece
 
 
 @pytest.mark.asyncio
-async def test_score_piece_async_image(patch_central_database, image_request_piece: PromptRequestPiece):
+async def test_score_piece_async_image(patch_central_database, image_request_piece: MessagePiece):
     scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
     mock_client = MagicMock()
     mock_client.analyze_image.return_value = {"categoriesAnalysis": [{"severity": "3", "category": "Hate"}]}

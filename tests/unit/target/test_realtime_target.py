@@ -11,7 +11,7 @@ from websockets.exceptions import ConnectionClosed
 from websockets.frames import Close
 
 from pyrit.exceptions.exception_classes import ServerErrorException
-from pyrit.models import PromptRequestPiece, Message
+from pyrit.models import MessagePiece, Message
 from pyrit.prompt_target import RealtimeTarget
 from pyrit.prompt_target.openai.openai_realtime_target import RealtimeTargetResult
 
@@ -49,7 +49,7 @@ async def test_send_prompt_async(target):
     target.set_system_prompt = MagicMock()
 
     # Create a mock Message with a valid data type
-    request_piece = PromptRequestPiece(
+    request_piece = MessagePiece(
         original_value="Hello",
         original_value_data_type="text",
         converted_value="Hello",
@@ -86,7 +86,7 @@ async def test_send_prompt_async_adds_system_prompt_to_memory(target):
     target.set_system_prompt = MagicMock()
 
     # Create a mock Message with a valid data type
-    request_piece = PromptRequestPiece(
+    request_piece = MessagePiece(
         original_value="Hello",
         original_value_data_type="text",
         converted_value="Hello",
@@ -122,7 +122,7 @@ async def test_multiple_websockets_created_for_multiple_conversations(target):
     target.set_system_prompt = MagicMock()
 
     # Create mock Messages for two different conversations
-    request_piece_1 = PromptRequestPiece(
+    request_piece_1 = MessagePiece(
         original_value="Hello",
         original_value_data_type="text",
         converted_value="Hello",
@@ -132,7 +132,7 @@ async def test_multiple_websockets_created_for_multiple_conversations(target):
     )
     prompt_request_1 = Message(request_pieces=[request_piece_1])
 
-    request_piece_2 = PromptRequestPiece(
+    request_piece_2 = MessagePiece(
         original_value="Hi",
         original_value_data_type="text",
         converted_value="Hi",
@@ -159,7 +159,7 @@ async def test_multiple_websockets_created_for_multiple_conversations(target):
 async def test_send_prompt_async_invalid_request(target):
 
     # Create a mock Message with an invalid data type
-    request_piece = PromptRequestPiece(
+    request_piece = MessagePiece(
         original_value="Invalid",
         original_value_data_type="image_path",
         converted_value="Invalid",
@@ -189,7 +189,7 @@ async def test_realtime_target_no_api_version(target):
         mock_websocket_connect.return_value = mock_websocket
 
         # Create a mock request
-        request_piece = PromptRequestPiece(
+        request_piece = MessagePiece(
             original_value="Hello",
             original_value_data_type="text",
             converted_value="Hello",
@@ -236,7 +236,7 @@ async def test_realtime_target_default_api_version(target):
         mock_websocket_connect.return_value = mock_websocket
 
         # Create a mock request
-        request_piece = PromptRequestPiece(
+        request_piece = MessagePiece(
             original_value="Hello",
             original_value_data_type="text",
             converted_value="Hello",

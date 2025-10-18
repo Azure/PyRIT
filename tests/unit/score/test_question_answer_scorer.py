@@ -10,18 +10,18 @@ from unit.mocks import get_image_request_piece
 
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece, Message
+from pyrit.models import MessagePiece, Message
 from pyrit.score import QuestionAnswerScorer
 
 
 @pytest.fixture
-def image_request_piece() -> PromptRequestPiece:
+def image_request_piece() -> MessagePiece:
     return get_image_request_piece()
 
 
 @pytest.fixture
-def text_request_piece(patch_central_database) -> PromptRequestPiece:
-    piece = PromptRequestPiece(
+def text_request_piece(patch_central_database) -> MessagePiece:
+    piece = MessagePiece(
         id=uuid.uuid4(),
         role="user",
         original_value="test content",
@@ -33,7 +33,7 @@ def text_request_piece(patch_central_database) -> PromptRequestPiece:
 
 
 @pytest.mark.asyncio
-async def test_question_answer_scorer_validate_image(image_request_piece: PromptRequestPiece):
+async def test_question_answer_scorer_validate_image(image_request_piece: MessagePiece):
 
     scorer = QuestionAnswerScorer(category=["new_category"])
     request_response = Message(request_pieces=[image_request_piece])
@@ -45,7 +45,7 @@ async def test_question_answer_scorer_validate_image(image_request_piece: Prompt
 
 @pytest.mark.asyncio
 async def test_question_answer_scorer_validate_missing_metadata():
-    request = PromptRequestPiece(
+    request = MessagePiece(
         id="test_id",
         role="user",
         original_value="test content",
@@ -71,7 +71,7 @@ async def test_question_answer_scorer_validate_missing_metadata():
     ],
 )
 async def test_question_answer_scorer_score(
-    response: str, expected_score: bool, text_request_piece: PromptRequestPiece
+    response: str, expected_score: bool, text_request_piece: MessagePiece
 ):
     text_request_piece.converted_value = response
     scorer = QuestionAnswerScorer(category=["new_category"])
@@ -91,7 +91,7 @@ async def test_question_answer_scorer_adds_to_memory():
     memory = MagicMock(MemoryInterface)
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = QuestionAnswerScorer(category=["new_category"])
-        request_response = PromptRequestPiece(
+        request_response = MessagePiece(
             id="test_id",
             role="user",
             original_value="test content",
@@ -110,7 +110,7 @@ async def test_question_answer_scorer_no_category():
     memory = MagicMock(MemoryInterface)
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = QuestionAnswerScorer()
-        request_response = PromptRequestPiece(
+        request_response = MessagePiece(
             id="test_id",
             role="user",
             original_value="test content",

@@ -16,7 +16,7 @@ from pyrit.models import (
     AttackOutcome,
     AttackResult,
     ConversationType,
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     Score,
     SeedPrompt,
@@ -71,7 +71,7 @@ def sample_response():
     """Create a sample response for testing"""
     return Message(
         request_pieces=[
-            PromptRequestPiece(role="assistant", original_value="Test response", original_value_data_type="text")
+            MessagePiece(role="assistant", original_value="Test response", original_value_data_type="text")
         ]
     )
 

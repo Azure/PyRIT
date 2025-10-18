@@ -5,7 +5,7 @@ from typing import Dict, MutableSequence, Optional, Sequence, Union
 
 from pyrit.common.utils import combine_dict
 from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.prompt_request_piece import MessagePiece
 
 
 class Message:
@@ -15,10 +15,10 @@ class Message:
     This is a single request to a target. It can contain multiple prompt request pieces.
 
     Parameters:
-        request_pieces (Sequence[PromptRequestPiece]): The list of prompt request pieces.
+        request_pieces (Sequence[MessagePiece]): The list of prompt request pieces.
     """
 
-    def __init__(self, request_pieces: Sequence[PromptRequestPiece], *, skip_validation: Optional[bool] = False):
+    def __init__(self, request_pieces: Sequence[MessagePiece], *, skip_validation: Optional[bool] = False):
         if not request_pieces:
             raise ValueError("Message must have at least one request piece.")
         self.request_pieces = request_pieces
@@ -35,7 +35,7 @@ class Message:
         """Return the converted values of all request pieces."""
         return [request_piece.converted_value for request_piece in self.request_pieces]
 
-    def get_piece(self, n: int = 0) -> PromptRequestPiece:
+    def get_piece(self, n: int = 0) -> MessagePiece:
         """Return the nth request piece."""
         if len(self.request_pieces) == 0:
             raise ValueError("Empty request pieces.")
@@ -111,10 +111,10 @@ class Message:
     @staticmethod
     def flatten_to_prompt_request_pieces(
         request_responses: Sequence["Message"],
-    ) -> MutableSequence[PromptRequestPiece]:
+    ) -> MutableSequence[MessagePiece]:
         if not request_responses:
             return []
-        response_pieces: MutableSequence[PromptRequestPiece] = []
+        response_pieces: MutableSequence[MessagePiece] = []
 
         for response in request_responses:
             response_pieces.extend(response.request_pieces)
@@ -123,7 +123,7 @@ class Message:
 
     @classmethod
     def from_prompt(cls, *, prompt: str, role: ChatMessageRole) -> "Message":
-        piece = PromptRequestPiece(original_value=prompt, role=role)
+        piece = MessagePiece(original_value=prompt, role=role)
         return cls(request_pieces=[piece])
 
     @classmethod
@@ -132,7 +132,7 @@ class Message:
 
 
 def group_conversation_request_pieces_by_sequence(
-    request_pieces: Sequence[PromptRequestPiece],
+    request_pieces: Sequence[MessagePiece],
 ) -> MutableSequence[Message]:
     """
     Groups prompt request pieces from the same conversation into Messages.
@@ -140,7 +140,7 @@ def group_conversation_request_pieces_by_sequence(
     This is done using the sequence number and conversation ID.
 
     Args:
-        request_pieces (Sequence[PromptRequestPiece]): A list of PromptRequestPiece objects representing individual
+        request_pieces (Sequence[MessagePiece]): A list of MessagePiece objects representing individual
             request pieces.
 
     Returns:
@@ -153,22 +153,22 @@ def group_conversation_request_pieces_by_sequence(
 
     Example:
     >>> request_pieces = [
-    >>>     PromptRequestPiece(conversation_id=1, sequence=1, text="Given this list of creatures, which is your
+    >>>     MessagePiece(conversation_id=1, sequence=1, text="Given this list of creatures, which is your
     >>>     favorite:"),
-    >>>     PromptRequestPiece(conversation_id=1, sequence=2, text="Good question!"),
-    >>>     PromptRequestPiece(conversation_id=1, sequence=1, text="Raccoon, Narwhal, or Sloth?"),
-    >>>     PromptRequestPiece(conversation_id=1, sequence=2, text="I'd have to say raccoons are my favorite!"),
+    >>>     MessagePiece(conversation_id=1, sequence=2, text="Good question!"),
+    >>>     MessagePiece(conversation_id=1, sequence=1, text="Raccoon, Narwhal, or Sloth?"),
+    >>>     MessagePiece(conversation_id=1, sequence=2, text="I'd have to say raccoons are my favorite!"),
     >>> ]
     >>> grouped_responses = group_conversation_request_pieces(request_pieces)
     ... [
     ...     Message(request_pieces=[
-    ...         PromptRequestPiece(conversation_id=1, sequence=1, text="Given this list of creatures, which is your
+    ...         MessagePiece(conversation_id=1, sequence=1, text="Given this list of creatures, which is your
     ...         favorite:"),
-    ...         PromptRequestPiece(conversation_id=1, sequence=1, text="Raccoon, Narwhal, or Sloth?")
+    ...         MessagePiece(conversation_id=1, sequence=1, text="Raccoon, Narwhal, or Sloth?")
     ...     ]),
     ...     Message(request_pieces=[
-    ...         PromptRequestPiece(conversation_id=1, sequence=2, text="Good question!"),
-    ...         PromptRequestPiece(conversation_id=1, sequence=2, text="I'd have to say raccoons are my favorite!")
+    ...         MessagePiece(conversation_id=1, sequence=2, text="Good question!"),
+    ...         MessagePiece(conversation_id=1, sequence=2, text="I'd have to say raccoons are my favorite!")
     ...     ])
     ... ]
     """
@@ -178,7 +178,7 @@ def group_conversation_request_pieces_by_sequence(
 
     conversation_id = request_pieces[0].conversation_id
 
-    conversation_by_sequence: dict[int, list[PromptRequestPiece]] = {}
+    conversation_by_sequence: dict[int, list[MessagePiece]] = {}
 
     for request_piece in request_pieces:
         if request_piece.conversation_id != conversation_id:
@@ -197,7 +197,7 @@ def group_conversation_request_pieces_by_sequence(
 
 
 def group_request_pieces_into_conversations(
-    request_pieces: Sequence[PromptRequestPiece],
+    request_pieces: Sequence[MessagePiece],
 ) -> list[list[Message]]:
     """
     Groups prompt request pieces from multiple conversations into separate conversation groups.
@@ -207,7 +207,7 @@ def group_request_pieces_into_conversations(
     Message objects.
 
     Args:
-        request_pieces (Sequence[PromptRequestPiece]): A list of PromptRequestPiece objects from
+        request_pieces (Sequence[MessagePiece]): A list of MessagePiece objects from
             potentially different conversations.
 
     Returns:
@@ -216,10 +216,10 @@ def group_request_pieces_into_conversations(
 
     Example:
     >>> request_pieces = [
-    >>>     PromptRequestPiece(conversation_id="conv1", sequence=1, text="Hello"),
-    >>>     PromptRequestPiece(conversation_id="conv2", sequence=1, text="Hi there"),
-    >>>     PromptRequestPiece(conversation_id="conv1", sequence=2, text="How are you?"),
-    >>>     PromptRequestPiece(conversation_id="conv2", sequence=2, text="I'm good"),
+    >>>     MessagePiece(conversation_id="conv1", sequence=1, text="Hello"),
+    >>>     MessagePiece(conversation_id="conv2", sequence=1, text="Hi there"),
+    >>>     MessagePiece(conversation_id="conv1", sequence=2, text="How are you?"),
+    >>>     MessagePiece(conversation_id="conv2", sequence=2, text="I'm good"),
     >>> ]
     >>> conversations = group_request_pieces_into_conversations(request_pieces)
     >>> # Returns a list of 2 conversations:
@@ -232,7 +232,7 @@ def group_request_pieces_into_conversations(
         return []
 
     # Group pieces by conversation ID
-    conversations: dict[str, list[PromptRequestPiece]] = {}
+    conversations: dict[str, list[MessagePiece]] = {}
     for piece in request_pieces:
         conv_id = piece.conversation_id
         if conv_id not in conversations:
@@ -249,7 +249,7 @@ def group_request_pieces_into_conversations(
 
 
 def construct_response_from_request(
-    request: PromptRequestPiece,
+    request: MessagePiece,
     response_text_pieces: list[str],
     response_type: PromptDataType = "text",
     prompt_metadata: Optional[Dict[str, Union[str, int]]] = None,
@@ -264,7 +264,7 @@ def construct_response_from_request(
 
     return Message(
         request_pieces=[
-            PromptRequestPiece(
+            MessagePiece(
                 role="assistant",
                 original_value=resp_text,
                 conversation_id=request.conversation_id,

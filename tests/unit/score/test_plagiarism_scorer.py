@@ -7,7 +7,7 @@ import pytest
 
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece
+from pyrit.models import MessagePiece
 from pyrit.score import (
     PlagiarismMetric,
     PlagiarismScorer,
@@ -47,7 +47,7 @@ class TestPlagiarismScorer:
 
         scorer = PlagiarismScorer(reference_text=reference_text, metric=PlagiarismMetric.LCS)
 
-        request_piece = PromptRequestPiece(
+        request_piece = MessagePiece(
             role="assistant",
             original_value=response_text,
             converted_value=response_text,
@@ -77,7 +77,7 @@ class TestPlagiarismScorer:
 
         scorer = PlagiarismScorer(reference_text=reference_text, metric=PlagiarismMetric.LEVENSHTEIN)
 
-        request = PromptRequestPiece(
+        request = MessagePiece(
             role="assistant",
             original_value=response_text,
             converted_value=response_text,
@@ -101,7 +101,7 @@ class TestPlagiarismScorer:
 
         scorer = PlagiarismScorer(reference_text=reference_text, metric=PlagiarismMetric.JACCARD, n=3)
 
-        request = PromptRequestPiece(
+        request = MessagePiece(
             role="assistant",
             original_value=response_text,
             converted_value=response_text,
@@ -123,7 +123,7 @@ class TestPlagiarismScorer:
         reference_text = "Sample reference text"
         scorer = PlagiarismScorer(reference_text=reference_text)
 
-        request = PromptRequestPiece(
+        request = MessagePiece(
             role="assistant", original_value="", converted_value="", converted_value_data_type="text"
         ).to_prompt_request_response()
 
@@ -141,7 +141,7 @@ class TestPlagiarismScorer:
 
         scorer = PlagiarismScorer(reference_text=reference_text, metric=PlagiarismMetric.LCS)
 
-        request = PromptRequestPiece(
+        request = MessagePiece(
             role="assistant",
             original_value=reference_text,
             converted_value=reference_text,
@@ -163,7 +163,7 @@ class TestPlagiarismScorer:
 
         scorer = PlagiarismScorer(reference_text=reference_text, metric=PlagiarismMetric.LCS)
 
-        request = PromptRequestPiece(
+        request = MessagePiece(
             role="assistant",
             original_value=response_text,
             converted_value=response_text,
@@ -184,7 +184,7 @@ class TestPlagiarismScorer:
         reference_text = "Test reference text"
         scorer = PlagiarismScorer(reference_text=reference_text)
 
-        request = PromptRequestPiece(
+        request = MessagePiece(
             role="assistant",
             original_value="Test response text",
             converted_value="Test response text",
@@ -201,7 +201,7 @@ class TestPlagiarismScorer:
         reference_text = "Test reference text"
         scorer = PlagiarismScorer(reference_text=reference_text)
 
-        request = PromptRequestPiece(
+        request = MessagePiece(
             role="assistant",
             original_value="image_data",
             converted_value="image_data",

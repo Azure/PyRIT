@@ -7,7 +7,7 @@ from typing import List, Optional
 
 import numpy as np
 
-from pyrit.models import PromptRequestPiece, Score
+from pyrit.models import MessagePiece, Score
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
@@ -131,12 +131,12 @@ class PlagiarismScorer(FloatScaleScorer):
             raise ValueError("metric must be 'lcs', 'levenshtein', or 'jaccard'")
 
     async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+        self, request_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """Scores the AI response against the reference text using the specified metric.
 
         Args:
-            request_piece (PromptRequestPiece): The piece to score.
+            request_piece (MessagePiece): The piece to score.
             objective (Optional[str]): Not applicable for this scorer.
 
         Returns:

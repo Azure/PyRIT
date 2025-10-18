@@ -16,7 +16,7 @@ from pyrit.exceptions.exception_classes import (
     RateLimitException,
 )
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece, Message
+from pyrit.models import MessagePiece, Message
 from pyrit.prompt_target import OpenAIDALLETarget
 
 
@@ -42,7 +42,7 @@ def dalle_response_json() -> dict:
 
 
 @pytest.fixture
-def sample_conversations() -> MutableSequence[PromptRequestPiece]:
+def sample_conversations() -> MutableSequence[MessagePiece]:
     conversations = get_sample_conversations()
     return Message.flatten_to_prompt_request_pieces(conversations)
 
@@ -66,7 +66,7 @@ def test_initialization_invalid_num_images():
 @pytest.mark.asyncio
 async def test_send_prompt_async(
     dalle_target: OpenAIDALLETarget,
-    sample_conversations: MutableSequence[PromptRequestPiece],
+    sample_conversations: MutableSequence[MessagePiece],
     dalle_response_json: dict,
 ):
     request = sample_conversations[0]
@@ -95,7 +95,7 @@ async def test_send_prompt_async(
 @pytest.mark.asyncio
 async def test_send_prompt_async_empty_response(
     dalle_target: OpenAIDALLETarget,
-    sample_conversations: MutableSequence[PromptRequestPiece],
+    sample_conversations: MutableSequence[MessagePiece],
     dalle_response_json: dict,
 ):
     request = sample_conversations[0]
@@ -119,7 +119,7 @@ async def test_send_prompt_async_empty_response(
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_rate_limit_exception(
-    dalle_target: OpenAIDALLETarget, sample_conversations: MutableSequence[PromptRequestPiece]
+    dalle_target: OpenAIDALLETarget, sample_conversations: MutableSequence[MessagePiece]
 ):
     request = sample_conversations[0]
     request.conversation_id = str(uuid.uuid4())
@@ -141,7 +141,7 @@ async def test_send_prompt_async_rate_limit_exception(
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_bad_request_error(
-    dalle_target: OpenAIDALLETarget, sample_conversations: MutableSequence[PromptRequestPiece]
+    dalle_target: OpenAIDALLETarget, sample_conversations: MutableSequence[MessagePiece]
 ):
     request = sample_conversations[0]
     request.conversation_id = str(uuid.uuid4())
@@ -165,8 +165,8 @@ async def test_send_prompt_async_bad_request_error(
 async def test_dalle_validate_request_length(dalle_target: OpenAIDALLETarget):
     request = Message(
         request_pieces=[
-            PromptRequestPiece(role="user", conversation_id="123", original_value="test"),
-            PromptRequestPiece(role="user", conversation_id="123", original_value="test2"),
+            MessagePiece(role="user", conversation_id="123", original_value="test"),
+            MessagePiece(role="user", conversation_id="123", original_value="test2"),
         ]
     )
 
@@ -184,7 +184,7 @@ async def test_dalle_validate_prompt_type(dalle_target: OpenAIDALLETarget):
 @pytest.mark.asyncio
 async def test_send_prompt_async_empty_response_adds_memory(
     dalle_target: OpenAIDALLETarget,
-    sample_conversations: MutableSequence[PromptRequestPiece],
+    sample_conversations: MutableSequence[MessagePiece],
     dalle_response_json: dict,
 ) -> None:
 
@@ -214,7 +214,7 @@ async def test_send_prompt_async_empty_response_adds_memory(
 @pytest.mark.asyncio
 async def test_send_prompt_async_rate_limit_adds_memory(
     dalle_target: OpenAIDALLETarget,
-    sample_conversations: MutableSequence[PromptRequestPiece],
+    sample_conversations: MutableSequence[MessagePiece],
 ) -> None:
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
@@ -240,7 +240,7 @@ async def test_send_prompt_async_rate_limit_adds_memory(
 @pytest.mark.asyncio
 async def test_send_prompt_async_bad_request_content_filter(
     dalle_target: OpenAIDALLETarget,
-    sample_conversations: MutableSequence[PromptRequestPiece],
+    sample_conversations: MutableSequence[MessagePiece],
 ) -> None:
 
     request = sample_conversations[0]
@@ -274,7 +274,7 @@ def test_is_json_response_supported(patch_central_database):
 @pytest.mark.asyncio
 async def test_dalle_target_no_api_version(
     dalle_target: OpenAIDALLETarget,
-    sample_conversations: MutableSequence[PromptRequestPiece],
+    sample_conversations: MutableSequence[MessagePiece],
     dalle_response_json: dict,
 ):
     target = OpenAIDALLETarget(
@@ -298,7 +298,7 @@ async def test_dalle_target_no_api_version(
 @pytest.mark.asyncio
 async def test_dalle_target_default_api_version(
     dalle_target: OpenAIDALLETarget,
-    sample_conversations: MutableSequence[PromptRequestPiece],
+    sample_conversations: MutableSequence[MessagePiece],
     dalle_response_json: dict,
 ):
     target = OpenAIDALLETarget(api_key="test_key", endpoint="https://mock.azure.com", model_name="dalle-3")
@@ -337,7 +337,7 @@ async def test_send_prompt_async_calls_refresh_auth_headers(dalle_target):
 
         prompt_request = Message(
             request_pieces=[
-                PromptRequestPiece(
+                MessagePiece(
                     role="user",
                     original_value="test prompt",
                     converted_value="test prompt",

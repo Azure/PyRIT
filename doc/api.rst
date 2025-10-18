@@ -315,7 +315,7 @@ API Reference
     group_conversation_request_pieces_by_sequence
     Identifier
     ImagePathDataTypeSerializer
-    PromptRequestPiece
+    MessagePiece
     PromptResponse
     PromptResponseError
     PromptDataType

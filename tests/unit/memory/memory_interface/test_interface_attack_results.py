@@ -8,14 +8,14 @@ from typing import Sequence
 from pyrit.common.utils import to_sha256
 from pyrit.memory import MemoryInterface
 from pyrit.memory.memory_models import AttackResultEntry
-from pyrit.models import PromptRequestPiece, Score
+from pyrit.models import MessagePiece, Score
 from pyrit.models.attack_result import AttackOutcome, AttackResult
 from pyrit.models.conversation_reference import ConversationReference, ConversationType
 
 
 def create_prompt_piece(conversation_id: str, prompt_num: int, targeted_harm_categories=None, labels=None):
-    """Helper function to create PromptRequestPiece with optional targeted harm categories and labels."""
-    return PromptRequestPiece(
+    """Helper function to create MessagePiece with optional targeted harm categories and labels."""
+    return MessagePiece(
         role="user",
         original_value=f"Test prompt {prompt_num}",
         converted_value=f"Test prompt {prompt_num}",
@@ -418,7 +418,7 @@ def test_get_attack_results_nonexistent_ids(sqlite_instance: MemoryInterface):
 def test_attack_result_with_last_response_and_score(sqlite_instance: MemoryInterface):
     """Test attack result with last_response and last_score relationships."""
     # Create a prompt request piece first
-    prompt_piece = PromptRequestPiece(
+    prompt_piece = MessagePiece(
         role="user",
         original_value="Test prompt",
         converted_value="Test prompt",

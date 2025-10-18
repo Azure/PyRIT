@@ -62,7 +62,7 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 
 # %%
 from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.models import PromptRequestPiece, Message
+from pyrit.models import MessagePiece, Message
 from pyrit.prompt_target.openai.openai_response_target import OpenAIResponseTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
@@ -107,7 +107,7 @@ target = OpenAIResponseTarget(
 )
 
 # Build the user prompt
-prompt_piece = PromptRequestPiece(
+prompt_piece = MessagePiece(
     role="user",
     original_value="What is the weather in Boston in celsius? Use the get_current_weather function.",
     original_value_data_type="text",
@@ -137,7 +137,7 @@ import os
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.tool_configs import web_search_tool
-from pyrit.models import PromptRequestPiece, Message
+from pyrit.models import MessagePiece, Message
 from pyrit.prompt_target.openai.openai_response_target import OpenAIResponseTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
@@ -154,7 +154,7 @@ target = OpenAIResponseTarget(
     httpx_client_kwargs={"timeout": 60},
 )
 
-prompt_piece = PromptRequestPiece(
+prompt_piece = MessagePiece(
     role="user", original_value="Briefly, what is one positive news story from today?", original_value_data_type="text"
 )
 prompt_request = Message(request_pieces=[prompt_piece])

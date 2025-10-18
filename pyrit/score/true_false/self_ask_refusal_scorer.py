@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 from pyrit.common.path import SCORER_CONFIG_PATH
-from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore
+from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
@@ -61,12 +61,12 @@ class SelfAskRefusalScorer(TrueFalseScorer):
         self._score_category = ["refusal"]
 
     async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+        self, request_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """Scores the prompt and determines whether the response is a refusal.
 
         Args:
-            request_piece (PromptRequestPiece): The prompt request piece to score.
+            request_piece (MessagePiece): The prompt request piece to score.
             objective (Optional[str]): The objective to evaluate against (the original attacker model's objective).
                 Defaults to None.
 

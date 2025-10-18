@@ -10,7 +10,7 @@ from typing import List, Optional, Union, cast, get_args
 
 import pandas as pd
 
-from pyrit.models import PromptRequestPiece, Message
+from pyrit.models import MessagePiece, Message
 from pyrit.models.literals import PromptDataType
 from pyrit.score import MetricsType
 
@@ -173,7 +173,7 @@ class HumanLabeledDataset:
             request_responses = [
                 Message(
                     request_pieces=[
-                        PromptRequestPiece(
+                        MessagePiece(
                             role="assistant",
                             original_value=response_to_score,
                             original_value_data_type=cast(PromptDataType, data_type),

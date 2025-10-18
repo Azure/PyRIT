@@ -8,7 +8,7 @@ from typing import Any, Literal, Optional, Sequence
 from pyrit.auth.azure_auth import AzureAuth, get_default_scope
 from pyrit.common import default_values, net_utility
 from pyrit.models import (
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     construct_response_from_request,
 )
@@ -151,7 +151,7 @@ class PromptShieldTarget(PromptTarget):
         return response_entry
 
     def _validate_request(self, *, prompt_request: Message) -> None:
-        request_pieces: Sequence[PromptRequestPiece] = prompt_request.request_pieces
+        request_pieces: Sequence[MessagePiece] = prompt_request.request_pieces
 
         n_pieces = len(request_pieces)
         if n_pieces != 1:

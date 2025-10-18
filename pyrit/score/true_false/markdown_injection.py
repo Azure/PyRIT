@@ -4,7 +4,7 @@
 import re
 from typing import Optional
 
-from pyrit.models import PromptRequestPiece, Score
+from pyrit.models import MessagePiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
     TrueFalseAggregatorFunc,
@@ -34,13 +34,13 @@ class MarkdownInjectionScorer(TrueFalseScorer):
         self._category = "security"
 
     async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+        self, request_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """
         Check for markdown injection in the text. It returns True if markdown injection is detected, else False.
 
         Args:
-            request_piece (PromptRequestPiece): The PromptRequestPiece object containing the text to check for
+            request_piece (MessagePiece): The MessagePiece object containing the text to check for
                 markdown injection.
             objective (Optional[str]): The objective to evaluate against. Defaults to None.
                 Currently not used for this scorer.

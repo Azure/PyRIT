@@ -11,7 +11,7 @@ import pytest
 
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.prompt_request_piece import MessagePiece
 from pyrit.models.score import Score
 from pyrit.score import HumanInTheLoopScorerGradio
 from pyrit.ui.rpc import RPCAlreadyRunningException
@@ -36,8 +36,8 @@ def score() -> Score:
 
 
 @pytest.fixture
-def promptOriginal() -> PromptRequestPiece:
-    return PromptRequestPiece(
+def promptOriginal() -> MessagePiece:
+    return MessagePiece(
         role="assistant",
         original_value="This is the original value",
         converted_value="This is the converted value",
@@ -45,7 +45,7 @@ def promptOriginal() -> PromptRequestPiece:
 
 
 class IntegrationRpcClient:
-    def __init__(self, score_callback: Callable[[PromptRequestPiece], bool], disconnect_callback: Optional[Callable]):
+    def __init__(self, score_callback: Callable[[MessagePiece], bool], disconnect_callback: Optional[Callable]):
         self._score_callback = score_callback
         self.rpc_client = RPCClient(disconnect_callback)
         self._is_running = False
@@ -88,7 +88,7 @@ class TestHiTLGradioIntegration:
     @patch("pyrit.ui.rpc.is_app_running")
     @pytest.mark.asyncio
     @pytest.mark.timeout(30)
-    async def test_scorer_can_start(self, mock_is_app_running, promptOriginal: PromptRequestPiece):
+    async def test_scorer_can_start(self, mock_is_app_running, promptOriginal: MessagePiece):
         memory = MagicMock(MemoryInterface)
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
 
@@ -98,7 +98,7 @@ class TestHiTLGradioIntegration:
                 print("Disconnected called")
                 disconnected_event.set()
 
-            def score_callback(prompt: PromptRequestPiece) -> bool:
+            def score_callback(prompt: MessagePiece) -> bool:
                 assert prompt.original_value == promptOriginal.original_value
                 assert prompt.converted_value == promptOriginal.converted_value
                 return True
@@ -123,7 +123,7 @@ class TestHiTLGradioIntegration:
     @patch("pyrit.ui.rpc.is_app_running")
     @pytest.mark.asyncio
     @pytest.mark.timeout(30)
-    async def test_scorer_receive_multiple(self, mock_is_app_running, promptOriginal: PromptRequestPiece):
+    async def test_scorer_receive_multiple(self, mock_is_app_running, promptOriginal: MessagePiece):
         memory = MagicMock(MemoryInterface)
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
 
@@ -135,7 +135,7 @@ class TestHiTLGradioIntegration:
 
             i = -1
 
-            def score_callback(prompt: PromptRequestPiece) -> bool:
+            def score_callback(prompt: MessagePiece) -> bool:
                 nonlocal i
                 i += 1
                 assert prompt.original_value == promptOriginal.original_value
@@ -183,7 +183,7 @@ class TestHiTLGradioIntegration:
                 print("Disconnected called")
                 disconnected_event.set()
 
-            def score_callback(prompt: PromptRequestPiece) -> bool:
+            def score_callback(prompt: MessagePiece) -> bool:
                 pytest.fail("Should not be called")
                 return True
 
@@ -214,7 +214,7 @@ class TestHiTLGradioIntegration:
                 print("Disconnected called")
                 disconnected_event.set()
 
-            def score_callback(prompt: PromptRequestPiece) -> bool:
+            def score_callback(prompt: MessagePiece) -> bool:
                 pytest.fail("Should not be called")
                 return True
 

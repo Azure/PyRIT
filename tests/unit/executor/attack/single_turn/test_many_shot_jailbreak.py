@@ -15,7 +15,7 @@ from pyrit.executor.attack import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     SeedPrompt,
 )
@@ -368,7 +368,7 @@ class TestManyShotJailbreakAttackLifecycle:
         # Context with prepended conversation (not allowed)
         basic_context.prepended_conversation = [
             Message(
-                request_pieces=[PromptRequestPiece(role="user", original_value="Test prepended conversation")]
+                request_pieces=[MessagePiece(role="user", original_value="Test prepended conversation")]
             )
         ]
 

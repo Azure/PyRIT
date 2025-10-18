@@ -4,7 +4,7 @@
 import asyncio
 from typing import Optional
 
-from pyrit.models import PromptRequestPiece, Score
+from pyrit.models import MessagePiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
     TrueFalseAggregatorFunc,
@@ -44,12 +44,12 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
         self._rpc_server.start()
 
     async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+        self, request_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """Score a prompt request piece using human input through Gradio interface.
 
         Args:
-            request_piece (PromptRequestPiece): The prompt request piece to be scored by a human.
+            request_piece (MessagePiece): The prompt request piece to be scored by a human.
             objective (Optional[str]): The objective to evaluate against. Defaults to None.
 
         Returns:
@@ -63,11 +63,11 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
             self._rpc_server.stop()
             raise
 
-    def retrieve_score(self, request_prompt: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
+    def retrieve_score(self, request_prompt: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """Retrieve a score from the human evaluator through the RPC server.
 
         Args:
-            request_prompt (PromptRequestPiece): The prompt request piece to be scored.
+            request_prompt (MessagePiece): The prompt request piece to be scored.
             objective (Optional[str]): The objective to evaluate against. Defaults to None.
 
         Returns:

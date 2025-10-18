@@ -4,7 +4,7 @@
 import abc
 from typing import Optional
 
-from pyrit.models import PromptRequestPiece
+from pyrit.models import MessagePiece
 from pyrit.prompt_target import PromptTarget
 
 
@@ -39,7 +39,7 @@ class PromptChatTarget(PromptTarget):
             raise RuntimeError("Conversation already exists, system prompt needs to be set at the beginning")
 
         self._memory.add_request_response_to_memory(
-            request=PromptRequestPiece(
+            request=MessagePiece(
                 role="system",
                 conversation_id=conversation_id,
                 original_value=system_prompt,
@@ -60,12 +60,12 @@ class PromptChatTarget(PromptTarget):
         """
         pass
 
-    def is_response_format_json(self, request_piece: PromptRequestPiece) -> bool:
+    def is_response_format_json(self, request_piece: MessagePiece) -> bool:
         """
         Checks if the response format is JSON and ensures the target supports it.
 
         Args:
-            request_piece: A PromptRequestPiece object with a `prompt_metadata` dictionary that may
+            request_piece: A MessagePiece object with a `prompt_metadata` dictionary that may
                 include a "response_format" key.
 
         Returns:

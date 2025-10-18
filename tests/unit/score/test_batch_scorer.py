@@ -9,7 +9,7 @@ import pytest
 from unit.mocks import get_sample_conversations
 
 from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestPiece, Message
+from pyrit.models import MessagePiece, Message
 from pyrit.score import BatchScorer
 
 
@@ -144,28 +144,28 @@ class TestBatchScorerUtilityMethods:
             batch_scorer = BatchScorer()
 
             pieces = [
-                PromptRequestPiece(
+                MessagePiece(
                     id=prompt_id1,
                     role="user",
                     original_value="original prompt text",
                     converted_value="Hello, how are you?",
                     sequence=0,
                 ),
-                PromptRequestPiece(
+                MessagePiece(
                     id=prompt_id2,
                     role="assistant",
                     original_value="original prompt text",
                     converted_value="I'm fine, thank you!",
                     sequence=1,
                 ),
-                PromptRequestPiece(
+                MessagePiece(
                     role="user",
                     original_value="original prompt text",
                     converted_value="Hello, how are you?",
                     sequence=0,
                     original_prompt_id=prompt_id1,
                 ),
-                PromptRequestPiece(
+                MessagePiece(
                     role="assistant",
                     original_value="original prompt text",
                     converted_value="I'm fine, thank you!",
@@ -224,25 +224,25 @@ class TestBatchScorerErrorHandling:
 
         # Create pieces from different conversations
         pieces = [
-            PromptRequestPiece(
+            MessagePiece(
                 role="user",
                 conversation_id="conv1",
                 sequence=0,
                 original_value="Conv1 message",
             ),
-            PromptRequestPiece(
+            MessagePiece(
                 role="assistant",
                 conversation_id="conv1",
                 sequence=1,
                 original_value="Conv1 response",
             ),
-            PromptRequestPiece(
+            MessagePiece(
                 role="user",
                 conversation_id="conv2",
                 sequence=0,
                 original_value="Conv2 message",
             ),
-            PromptRequestPiece(
+            MessagePiece(
                 role="assistant",
                 conversation_id="conv2",
                 sequence=1,
@@ -280,25 +280,25 @@ class TestBatchScorerErrorHandling:
 
         # Create multiple pieces in the same sequence
         pieces = [
-            PromptRequestPiece(
+            MessagePiece(
                 role="system",
                 conversation_id="conv1",
                 sequence=0,
                 original_value="System prompt",
             ),
-            PromptRequestPiece(
+            MessagePiece(
                 role="user",
                 conversation_id="conv1",
                 sequence=1,
                 original_value="User message 1",
             ),
-            PromptRequestPiece(
+            MessagePiece(
                 role="user",
                 conversation_id="conv1",
                 sequence=1,
                 original_value="User message 2",
             ),
-            PromptRequestPiece(
+            MessagePiece(
                 role="assistant",
                 conversation_id="conv1",
                 sequence=2,

@@ -8,17 +8,17 @@ import pytest
 from unit.mocks import get_audio_request_piece, get_sample_conversations
 
 from pyrit.memory.central_memory import CentralMemory
-from pyrit.models import PromptRequestPiece, Message
+from pyrit.models import MessagePiece, Message
 from pyrit.prompt_target import PromptShieldTarget
 
 
 @pytest.fixture
-def audio_request_piece() -> PromptRequestPiece:
+def audio_request_piece() -> MessagePiece:
     return get_audio_request_piece()
 
 
 @pytest.fixture
-def sample_conversations() -> MutableSequence[PromptRequestPiece]:
+def sample_conversations() -> MutableSequence[MessagePiece]:
     conversations = get_sample_conversations()
     return Message.flatten_to_prompt_request_pieces(conversations)
 
@@ -46,8 +46,8 @@ def sample_delineated_prompt_as_dict() -> dict:
 
 
 @pytest.fixture
-def sample_conversation_piece(sample_delineated_prompt_as_str: str) -> PromptRequestPiece:
-    prp = PromptRequestPiece(role="user", original_value=sample_delineated_prompt_as_str)
+def sample_conversation_piece(sample_delineated_prompt_as_str: str) -> MessagePiece:
+    prp = MessagePiece(role="user", original_value=sample_delineated_prompt_as_str)
     return prp
 
 
@@ -59,8 +59,8 @@ def test_promptshield_init(promptshield_target: PromptShieldTarget):
 async def test_prompt_shield_validate_request_length(promptshield_target: PromptShieldTarget):
     request = Message(
         request_pieces=[
-            PromptRequestPiece(role="user", conversation_id="123", original_value="test1"),
-            PromptRequestPiece(role="user", conversation_id="123", original_value="test2"),
+            MessagePiece(role="user", conversation_id="123", original_value="test1"),
+            MessagePiece(role="user", conversation_id="123", original_value="test2"),
         ]
     )
     with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
@@ -69,7 +69,7 @@ async def test_prompt_shield_validate_request_length(promptshield_target: Prompt
 
 @pytest.mark.asyncio
 async def test_prompt_shield_reject_non_text(
-    promptshield_target: PromptShieldTarget, audio_request_piece: PromptRequestPiece
+    promptshield_target: PromptShieldTarget, audio_request_piece: MessagePiece
 ):
     with pytest.raises(ValueError):
         await promptshield_target.send_prompt_async(prompt_request=Message([audio_request_piece]))

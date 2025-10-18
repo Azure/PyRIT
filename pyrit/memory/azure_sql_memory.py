@@ -26,7 +26,7 @@ from pyrit.memory.memory_models import (
 )
 from pyrit.models import (
     AzureBlobStorageIO,
-    PromptRequestPiece,
+    MessagePiece,
 )
 
 logger = logging.getLogger(__name__)
@@ -234,7 +234,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
     def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> Any:
         return self._get_metadata_conditions(prompt_metadata=metadata)[0]
 
-    def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
+    def add_request_pieces_to_memory(self, *, request_pieces: Sequence[MessagePiece]) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.
 

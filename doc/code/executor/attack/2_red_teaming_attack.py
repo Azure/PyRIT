@@ -120,14 +120,14 @@ await ConsoleAttackResultPrinter().print_result_async(result=result)  # type: ig
 import os
 
 from pyrit.datasets import TextJailBreak
-from pyrit.models import PromptRequestPiece, Message
+from pyrit.models import MessagePiece, Message
 
 jailbreak = TextJailBreak(template_file_name="dan_1.yaml")
 
 prepended_conversation = [
     Message(
         request_pieces=[
-            PromptRequestPiece(
+            MessagePiece(
                 role="system",
                 original_value=jailbreak.get_jailbreak_system_prompt(),
             )
@@ -165,7 +165,7 @@ prepended_conversation = conversation_history
 prepended_conversation.append(
     Message(
         request_pieces=[
-            PromptRequestPiece(
+            MessagePiece(
                 role="user",
                 original_value="Custom message to continue the conversation with the objective target",
             )

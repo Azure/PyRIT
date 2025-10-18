@@ -4,7 +4,7 @@
 import pytest
 from unit.mocks import get_image_request_piece
 
-from pyrit.models import PromptRequestPiece, Message
+from pyrit.models import MessagePiece, Message
 from pyrit.prompt_target import CrucibleTarget
 
 
@@ -21,8 +21,8 @@ def test_crucible_initializes(crucible_target: CrucibleTarget):
 async def test_crucible_validate_request_length(crucible_target: CrucibleTarget):
     request = Message(
         request_pieces=[
-            PromptRequestPiece(role="user", conversation_id="123", original_value="test"),
-            PromptRequestPiece(role="user", conversation_id="123", original_value="test2"),
+            MessagePiece(role="user", conversation_id="123", original_value="test"),
+            MessagePiece(role="user", conversation_id="123", original_value="test2"),
         ]
     )
     with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):

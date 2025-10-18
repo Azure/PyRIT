@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from pyrit.models import (
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     construct_response_from_request,
 )
@@ -15,15 +15,15 @@ from pyrit.prompt_target import PlaywrightTarget
 
 
 @pytest.fixture
-def sample_conversations() -> MutableSequence[PromptRequestPiece]:
-    conversation_1 = PromptRequestPiece(
+def sample_conversations() -> MutableSequence[MessagePiece]:
+    conversation_1 = MessagePiece(
         role="user",
         converted_value="Hello",
         original_value="Hello",
         original_value_data_type="text",
         converted_value_data_type="text",
     )
-    conversation_2 = PromptRequestPiece(
+    conversation_2 = MessagePiece(
         role="assistant",
         converted_value="World",
         original_value="World",
@@ -56,8 +56,8 @@ async def test_playwright_validate_request_length(mock_interaction_func, mock_pa
     target = PlaywrightTarget(interaction_func=mock_interaction_func, page=mock_page)
     request = Message(
         request_pieces=[
-            PromptRequestPiece(role="user", conversation_id="123", original_value="test1"),
-            PromptRequestPiece(role="user", conversation_id="123", original_value="test2"),
+            MessagePiece(role="user", conversation_id="123", original_value="test1"),
+            MessagePiece(role="user", conversation_id="123", original_value="test2"),
         ]
     )
     with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
@@ -67,7 +67,7 @@ async def test_playwright_validate_request_length(mock_interaction_func, mock_pa
 @pytest.mark.asyncio
 async def test_playwright_send_prompt_async(mock_interaction_func, mock_page):
     target = PlaywrightTarget(interaction_func=mock_interaction_func, page=mock_page)
-    request_piece = PromptRequestPiece(
+    request_piece = MessagePiece(
         role="user",
         converted_value="Hello",
         original_value="Hello",
@@ -98,7 +98,7 @@ async def test_playwright_interaction_func_exception(mock_page):
         raise Exception("Interaction failed")
 
     target = PlaywrightTarget(interaction_func=failing_interaction_func, page=mock_page)
-    request_piece = PromptRequestPiece(
+    request_piece = MessagePiece(
         role="user",
         converted_value="Hello",
         original_value="Hello",

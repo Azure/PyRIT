@@ -10,12 +10,12 @@ import pytest
 from unit.mocks import get_sample_conversations, openai_chat_response_json_dict
 
 from pyrit.executor.attack.core.attack_strategy import AttackStrategy
-from pyrit.models import PromptRequestPiece, Message
+from pyrit.models import MessagePiece, Message
 from pyrit.prompt_target import OpenAIChatTarget
 
 
 @pytest.fixture
-def sample_entries() -> MutableSequence[PromptRequestPiece]:
+def sample_entries() -> MutableSequence[MessagePiece]:
     conversations = get_sample_conversations()
     return Message.flatten_to_prompt_request_pieces(conversations)
 
@@ -82,7 +82,7 @@ async def test_set_system_prompt_adds_memory(
 async def test_send_prompt_with_system_calls_chat_complete(
     azure_openai_target: OpenAIChatTarget,
     openai_response_json: dict,
-    sample_entries: MutableSequence[PromptRequestPiece],
+    sample_entries: MutableSequence[MessagePiece],
     mock_attack_strategy: AttackStrategy,
 ):
 
@@ -113,7 +113,7 @@ async def test_send_prompt_with_system_calls_chat_complete(
 async def test_send_prompt_async_with_delay(
     azure_openai_target: OpenAIChatTarget,
     openai_response_json: dict,
-    sample_entries: MutableSequence[PromptRequestPiece],
+    sample_entries: MutableSequence[MessagePiece],
 ):
     azure_openai_target._max_requests_per_minute = 10
 

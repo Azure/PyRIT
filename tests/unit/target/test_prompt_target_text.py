@@ -9,18 +9,18 @@ from typing import MutableSequence
 import pytest
 from unit.mocks import get_sample_conversations
 
-from pyrit.models import PromptRequestPiece, Message
+from pyrit.models import MessagePiece, Message
 from pyrit.prompt_target import TextTarget
 
 
 @pytest.fixture
-def sample_entries() -> MutableSequence[PromptRequestPiece]:
+def sample_entries() -> MutableSequence[MessagePiece]:
     conversations = get_sample_conversations()
     return Message.flatten_to_prompt_request_pieces(conversations)
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_user_no_system(sample_entries: MutableSequence[PromptRequestPiece]):
+async def test_send_prompt_user_no_system(sample_entries: MutableSequence[MessagePiece]):
     output_stream = io.StringIO()
     no_op = TextTarget(text_stream=output_stream)
 
@@ -37,7 +37,7 @@ async def test_send_prompt_user_no_system(sample_entries: MutableSequence[Prompt
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_stream(sample_entries: MutableSequence[PromptRequestPiece]):
+async def test_send_prompt_stream(sample_entries: MutableSequence[MessagePiece]):
     with NamedTemporaryFile(mode="w+", delete=False) as tmp_file:
         prompt = "hi, I am a victim chatbot, how can I help?"
         no_op = TextTarget(text_stream=tmp_file)

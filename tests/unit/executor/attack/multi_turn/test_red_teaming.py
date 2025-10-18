@@ -23,7 +23,7 @@ from pyrit.models import (
     AttackResult,
     ConversationReference,
     ConversationType,
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     Score,
     SeedPrompt,
@@ -78,7 +78,7 @@ def basic_context() -> MultiTurnAttackContext:
 def sample_response() -> Message:
     return Message(
         request_pieces=[
-            PromptRequestPiece(
+            MessagePiece(
                 role="assistant",
                 original_value="Test response",
                 original_value_data_type="text",
@@ -824,7 +824,7 @@ class TestAdversarialPromptBuilding:
             attack_scoring_config=scoring_config,
         )
 
-        response_piece = MagicMock(spec=PromptRequestPiece)
+        response_piece = MagicMock(spec=MessagePiece)
         response_piece.converted_value_data_type = data_type
         response_piece.converted_value = converted_value
         response_piece.has_error.return_value = has_error
@@ -858,7 +858,7 @@ class TestAdversarialPromptBuilding:
             attack_scoring_config=scoring_config,
         )
 
-        response_piece = MagicMock(spec=PromptRequestPiece)
+        response_piece = MagicMock(spec=MessagePiece)
         response_piece.converted_value_data_type = "text"
         response_piece.converted_value = "Target response"
         response_piece.has_error.return_value = False
@@ -912,7 +912,7 @@ class TestAdversarialPromptBuilding:
             attack_scoring_config=scoring_config,
         )
 
-        response_piece = MagicMock(spec=PromptRequestPiece)
+        response_piece = MagicMock(spec=MessagePiece)
         response_piece.converted_value_data_type = "image_path"
         response_piece.has_error.return_value = True
         response_piece.response_error = "File error"
@@ -940,7 +940,7 @@ class TestAdversarialPromptBuilding:
             attack_scoring_config=scoring_config,
         )
 
-        response_piece = MagicMock(spec=PromptRequestPiece)
+        response_piece = MagicMock(spec=MessagePiece)
         response_piece.converted_value_data_type = "image_path"
         response_piece.has_error.return_value = False
 
@@ -968,7 +968,7 @@ class TestAdversarialPromptBuilding:
             attack_scoring_config=scoring_config,
         )
 
-        response_piece = MagicMock(spec=PromptRequestPiece)
+        response_piece = MagicMock(spec=MessagePiece)
         response_piece.converted_value_data_type = "image_path"
         response_piece.has_error.return_value = False
 
@@ -1059,7 +1059,7 @@ class TestResponseScoring:
             attack_scoring_config=scoring_config,
         )
 
-        response_piece = MagicMock(spec=PromptRequestPiece)
+        response_piece = MagicMock(spec=MessagePiece)
         response_piece.is_blocked.return_value = True
 
         basic_context.last_response = MagicMock(spec=Message)

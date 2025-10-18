@@ -8,7 +8,7 @@ from typing import Optional, Sequence
 
 from pyrit.memory import CentralMemory
 from pyrit.models import (
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     Score,
     group_request_pieces_into_conversations,
@@ -86,7 +86,7 @@ class BatchScorer:
         Raises:
             ValueError: If no entries match the provided filters.
         """
-        request_pieces: Sequence[PromptRequestPiece] = []
+        request_pieces: Sequence[MessagePiece] = []
         request_pieces = self._memory.get_prompt_request_pieces(
             attack_id=attack_id,
             conversation_id=conversation_id,
@@ -116,17 +116,17 @@ class BatchScorer:
             request_responses=responses, objectives=[objective] * len(responses), batch_size=self._batch_size
         )
 
-    def _remove_duplicates(self, request_responses: Sequence[PromptRequestPiece]) -> list[PromptRequestPiece]:
+    def _remove_duplicates(self, request_responses: Sequence[MessagePiece]) -> list[MessagePiece]:
         """
-        Remove duplicates from the list of PromptRequestPiece objects.
+        Remove duplicates from the list of MessagePiece objects.
 
         This ensures that identical prompts are not scored twice by filtering
         to only include original prompts (where original_prompt_id == id).
 
         Args:
-            request_responses (Sequence[PromptRequestPiece]): The request responses to deduplicate.
+            request_responses (Sequence[MessagePiece]): The request responses to deduplicate.
 
         Returns:
-            list[PromptRequestPiece]: A list with duplicates removed.
+            list[MessagePiece]: A list with duplicates removed.
         """
         return [response for response in request_responses if response.original_prompt_id == response.id]

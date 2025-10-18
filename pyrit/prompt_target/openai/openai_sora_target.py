@@ -16,7 +16,7 @@ from pyrit.exceptions import (
     pyrit_target_retry,
 )
 from pyrit.models import (
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     construct_response_from_request,
     data_serializer_factory,
@@ -285,7 +285,7 @@ class OpenAISoraTarget(OpenAITarget):
         data: bytes,
         job_id: str,
         generation_id: str,
-        request: PromptRequestPiece,
+        request: MessagePiece,
     ) -> Message:
         """
         Asynchronously save the video content to storage using a serializer.
@@ -296,7 +296,7 @@ class OpenAISoraTarget(OpenAITarget):
             data (bytes): The video content to save.
             job_id (str): The video generation job ID.
             generation_id (str): The video generation ID.
-            request (PromptRequestPiece): The request piece associated with the prompt.
+            request (MessagePiece): The request piece associated with the prompt.
 
         Returns:
             Message: The response entry with the saved video path.
@@ -316,7 +316,7 @@ class OpenAISoraTarget(OpenAITarget):
         return response_entry
 
     async def _handle_response_async(
-        self, request: PromptRequestPiece, response: httpx.Response
+        self, request: MessagePiece, response: httpx.Response
     ) -> Message:
         """
         Asynchronously handle the response to a video generation request.
@@ -324,7 +324,7 @@ class OpenAISoraTarget(OpenAITarget):
         This includes checking the status of the job and downloading the video content if successful.
 
         Args:
-            request (PromptRequestPiece): The request piece associated with the prompt.
+            request (MessagePiece): The request piece associated with the prompt.
             response (httpx.Response): The response from the API.
 
         Returns:

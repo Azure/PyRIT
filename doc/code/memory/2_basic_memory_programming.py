@@ -18,18 +18,18 @@
 from uuid import uuid4
 
 from pyrit.memory import SQLiteMemory
-from pyrit.models import PromptRequestPiece
+from pyrit.models import MessagePiece
 
 conversation_id = str(uuid4())
 
 message_list = [
-    PromptRequestPiece(
+    MessagePiece(
         role="user", original_value="Hi, chat bot! This is my initial prompt.", conversation_id=conversation_id
     ),
-    PromptRequestPiece(
+    MessagePiece(
         role="assistant", original_value="Nice to meet you! This is my response.", conversation_id=conversation_id
     ),
-    PromptRequestPiece(
+    MessagePiece(
         role="user",
         original_value="Wonderful! This is my second prompt to the chat bot!",
         conversation_id=conversation_id,

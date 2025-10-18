@@ -22,7 +22,7 @@ from pyrit.exceptions import (
 )
 from pyrit.models import (
     PromptDataType,
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     PromptResponseError,
 )
@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 ToolExecutor = Callable[[dict[str, Any]], Awaitable[dict[str, Any]]]
 
 
-class PromptRequestPieceType(str, Enum):
+class MessagePieceType(str, Enum):
     MESSAGE = "message"
     REASONING = "reasoning"
     IMAGE_GENERATION_CALL = "image_generation_call"
@@ -155,7 +155,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             content.clear()
         return
 
-    async def _construct_input_item_from_piece(self, piece: PromptRequestPiece) -> Dict[str, Any]:
+    async def _construct_input_item_from_piece(self, piece: MessagePiece) -> Dict[str, Any]:
         """
         Convert a single inline piece into a Responses API content item.
 
@@ -307,7 +307,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         self,
         *,
         open_ai_str_response: str,
-        request_piece: PromptRequestPiece,
+        request_piece: MessagePiece,
     ) -> Message:
         """
         Parse the Responses API JSON into internal Message.
@@ -340,7 +340,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             raise PyritException(message=f"Status {status} and error {error} from response: {response}")
 
         # Extract response pieces from the response object
-        extracted_response_pieces: List[PromptRequestPiece] = []
+        extracted_response_pieces: List[MessagePiece] = []
         for section in response.get("output", []):
             piece = self._parse_response_output_section(section=section, request_piece=request_piece, error=error)
             if piece is None:
@@ -388,7 +388,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             conversation.append(tool_message)
 
             # Re-ask with combined history (user + function_call + function_call_output)
-            merged: List[PromptRequestPiece] = []
+            merged: List[MessagePiece] = []
             for msg in conversation:
                 merged.extend(msg.request_pieces)
 
@@ -402,8 +402,8 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         return conversation[-1]
 
     def _parse_response_output_section(
-        self, *, section: dict, request_piece: PromptRequestPiece, error: Optional[PromptResponseError]
-    ) -> PromptRequestPiece | None:
+        self, *, section: dict, request_piece: MessagePiece, error: Optional[PromptResponseError]
+    ) -> MessagePiece | None:
         """
         Parse model output sections, forwarding tool-calls for the agentic loop.
 
@@ -413,29 +413,29 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             error: Any error information from OpenAI.
 
         Returns:
-            A PromptRequestPiece for this section, or None to skip.
+            A MessagePiece for this section, or None to skip.
         """
         section_type = section.get("type", "")
         piece_type: PromptDataType = "text"  # Default, always set!
         piece_value = ""
 
-        if section_type == PromptRequestPieceType.MESSAGE:
+        if section_type == MessagePieceType.MESSAGE:
             section_content = section.get("content", [])
             if len(section_content) == 0:
                 raise EmptyResponseException(message="The chat returned an empty message section.")
             piece_value = section_content[0].get("text", "")
 
-        elif section_type == PromptRequestPieceType.REASONING:
+        elif section_type == MessagePieceType.REASONING:
             # Keep the full reasoning JSON as a piece (internal use / debugging)
             piece_value = json.dumps(section, separators=(",", ":"))
             piece_type = "reasoning"
 
-        elif section_type == PromptRequestPieceType.FUNCTION_CALL:
+        elif section_type == MessagePieceType.FUNCTION_CALL:
             # Forward the tool call verbatim so the agentic loop can execute it
             piece_value = json.dumps(section, separators=(",", ":"))
             piece_type = "function_call"
 
-        elif section_type == PromptRequestPieceType.WEB_SEARCH_CALL:
+        elif section_type == MessagePieceType.WEB_SEARCH_CALL:
             # Forward web_search_call verbatim as a tool_call
             piece_value = json.dumps(section, separators=(",", ":"))
             piece_type = "tool_call"
@@ -448,7 +448,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         if not piece_value:
             raise EmptyResponseException(message="The chat returned an empty response.")
 
-        return PromptRequestPiece(
+        return MessagePiece(
             role="assistant",
             original_value=piece_value,
             conversation_id=request_piece.conversation_id,
@@ -542,7 +542,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         return await fn(args)
 
     def _make_tool_message(
-        self, output: dict[str, Any], call_id: str, *, reference_piece: PromptRequestPiece
+        self, output: dict[str, Any], call_id: str, *, reference_piece: MessagePiece
     ) -> Message:
         """
         Wrap tool output as a top-level function_call_output artifact.
@@ -556,7 +556,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             A Message containing the function call output.
         """
         output_str = output if isinstance(output, str) else json.dumps(output, separators=(",", ":"))
-        piece = PromptRequestPiece(
+        piece = MessagePiece(
             role="assistant",
             original_value=json.dumps(
                 {"type": "function_call_output", "call_id": call_id, "output": output_str},

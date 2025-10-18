@@ -13,7 +13,7 @@ from pyrit.executor.benchmark.question_answering import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     QuestionAnsweringEntry,
     QuestionChoice,
@@ -399,7 +399,7 @@ class TestQuestionAnsweringBenchmarkContextIntegration:
     ) -> None:
         """Test context with prepended conversation."""
         # Create a proper mock Message
-        mock_request_piece = MagicMock(spec=PromptRequestPiece)
+        mock_request_piece = MagicMock(spec=MessagePiece)
         mock_request_piece.conversation_id = "test-conversation"
         mock_request_piece.role = "user"
         mock_request_piece.original_value = "Test message"

@@ -10,7 +10,7 @@ from IPython.display import Markdown, display
 from pyrit.executor.attack.printer.attack_result_printer import AttackResultPrinter
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackResult, Score
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.prompt_request_piece import MessagePiece
 from pyrit.models.prompt_request_response import Message
 
 
@@ -351,12 +351,12 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
 
         return lines
 
-    def _format_error_content(self, *, piece: PromptRequestPiece) -> List[str]:
+    def _format_error_content(self, *, piece: MessagePiece) -> List[str]:
         """
         Format error response content with proper styling.
 
         Args:
-            piece (PromptRequestPiece): The prompt piece containing the error.
+            piece (MessagePiece): The prompt piece containing the error.
 
         Returns:
             List[str]: List of markdown lines for the error response.
@@ -370,12 +370,12 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
 
         return lines
 
-    def _format_text_content(self, *, piece: PromptRequestPiece, show_original: bool) -> List[str]:
+    def _format_text_content(self, *, piece: MessagePiece, show_original: bool) -> List[str]:
         """
         Format regular text content.
 
         Args:
-            piece (PromptRequestPiece): The prompt piece containing the text.
+            piece (MessagePiece): The prompt piece containing the text.
             show_original (bool): Whether to show original value if different.
 
         Returns:
@@ -392,14 +392,14 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
 
         return lines
 
-    async def _format_piece_content_async(self, *, piece: PromptRequestPiece, show_original: bool) -> List[str]:
+    async def _format_piece_content_async(self, *, piece: MessagePiece, show_original: bool) -> List[str]:
         """
         Format a single piece content based on its data type.
 
         Handles different content types including text, images, audio, and error responses.
 
         Args:
-            piece (PromptRequestPiece): The prompt piece to format.
+            piece (MessagePiece): The prompt piece to format.
             show_original (bool): Whether to show original value if different
                 from converted value.
 

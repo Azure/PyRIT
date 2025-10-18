@@ -9,17 +9,17 @@ from unit.mocks import get_image_request_piece
 
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece
+from pyrit.models import MessagePiece
 from pyrit.score import SubStringScorer
 
 
 @pytest.fixture
-def image_request_piece() -> PromptRequestPiece:
+def image_request_piece() -> MessagePiece:
     return get_image_request_piece()
 
 
 @pytest.mark.asyncio
-async def test_substring_scorer_validate(patch_central_database, image_request_piece: PromptRequestPiece):
+async def test_substring_scorer_validate(patch_central_database, image_request_piece: MessagePiece):
     image_request_piece.id = None
     request = image_request_piece.to_prompt_request_response()
     scorer = SubStringScorer(substring="test", categories=["new_category"])

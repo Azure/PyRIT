@@ -9,11 +9,11 @@ from unittest.mock import MagicMock, patch
 
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.memory import MemoryExporter, MemoryInterface
-from pyrit.models import PromptRequestPiece
+from pyrit.models import MessagePiece
 
 
 def test_export_conversation_by_attack_id_file_created(
-    sqlite_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
+    sqlite_instance: MemoryInterface, sample_conversations: Sequence[MessagePiece]
 ):
     attack1_id = sample_conversations[0].attack_identifier["id"]
 

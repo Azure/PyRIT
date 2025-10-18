@@ -10,7 +10,7 @@ from pyrit.executor.attack import (
     ConversationManager,
     ConversationState,
 )
-from pyrit.models import PromptRequestPiece, Message, Score
+from pyrit.models import MessagePiece, Message, Score
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 
@@ -53,7 +53,7 @@ def attack_identifier():
 @pytest.fixture
 def sample_user_piece():
     """Create a sample user prompt request piece"""
-    return PromptRequestPiece(
+    return MessagePiece(
         role="user",
         original_value="Hello, how are you?",
         original_value_data_type="text",
@@ -64,7 +64,7 @@ def sample_user_piece():
 @pytest.fixture
 def sample_assistant_piece():
     """Create a sample assistant prompt request piece"""
-    return PromptRequestPiece(
+    return MessagePiece(
         role="assistant",
         original_value="I'm doing well, thank you!",
         original_value_data_type="text",
@@ -75,7 +75,7 @@ def sample_assistant_piece():
 @pytest.fixture
 def sample_system_piece():
     """Create a sample system prompt request piece"""
-    return PromptRequestPiece(
+    return MessagePiece(
         role="system",
         original_value="You are a helpful assistant",
         original_value_data_type="text",
@@ -84,7 +84,7 @@ def sample_system_piece():
 
 
 @pytest.fixture
-def sample_conversation(sample_user_piece: PromptRequestPiece, sample_assistant_piece: PromptRequestPiece):
+def sample_conversation(sample_user_piece: MessagePiece, sample_assistant_piece: MessagePiece):
     """Create a sample conversation with user and assistant messages"""
     return [
         Message(request_pieces=[sample_user_piece]),
@@ -311,7 +311,7 @@ class TestConversationStateUpdate:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_multi_turn_mode_excludes_last_user_message(
-        self, attack_identifier: dict[str, str], sample_user_piece: PromptRequestPiece
+        self, attack_identifier: dict[str, str], sample_user_piece: MessagePiece
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
@@ -376,7 +376,7 @@ class TestConversationStateUpdate:
         attack_identifier: dict[str, str],
         mock_prompt_normalizer: MagicMock,
         mock_chat_target: MagicMock,
-        sample_system_piece: PromptRequestPiece,
+        sample_system_piece: MessagePiece,
     ):
         """Test that system messages do not get converters applied regardless of config"""
         manager = ConversationManager(attack_identifier=attack_identifier, prompt_normalizer=mock_prompt_normalizer)
@@ -402,7 +402,7 @@ class TestConversationStateUpdate:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_processes_system_prompts_multi_turn(
-        self, attack_identifier: dict[str, str], mock_chat_target: MagicMock, sample_system_piece: PromptRequestPiece
+        self, attack_identifier: dict[str, str], mock_chat_target: MagicMock, sample_system_piece: MessagePiece
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
@@ -426,7 +426,7 @@ class TestConversationStateUpdate:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_processes_system_prompts_single_turn(
-        self, attack_identifier: dict[str, str], mock_chat_target: MagicMock, sample_system_piece: PromptRequestPiece
+        self, attack_identifier: dict[str, str], mock_chat_target: MagicMock, sample_system_piece: MessagePiece
     ):
         """Test that system messages in single-turn mode are NOT added to memory"""
         manager = ConversationManager(attack_identifier=attack_identifier)
@@ -450,9 +450,9 @@ class TestConversationStateUpdate:
         self,
         attack_identifier: dict[str, str],
         mock_chat_target: MagicMock,
-        sample_user_piece: PromptRequestPiece,
-        sample_assistant_piece: PromptRequestPiece,
-        sample_system_piece: PromptRequestPiece,
+        sample_user_piece: MessagePiece,
+        sample_assistant_piece: MessagePiece,
+        sample_system_piece: MessagePiece,
     ):
         """Test that single-turn behavior correctly excludes system messages from memory"""
         manager = ConversationManager(attack_identifier=attack_identifier)
@@ -499,7 +499,7 @@ class TestConversationStateUpdate:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_system_prompt_without_target_raises_error(
-        self, attack_identifier: dict[str, str], sample_system_piece: PromptRequestPiece
+        self, attack_identifier: dict[str, str], sample_system_piece: MessagePiece
     ):
         """Test that providing system prompts without a target raises an error"""
         manager = ConversationManager(attack_identifier=attack_identifier)
@@ -517,7 +517,7 @@ class TestConversationStateUpdate:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_system_prompt_with_non_chat_target_raises_error(
-        self, attack_identifier: dict[str, str], mock_prompt_target: MagicMock, sample_system_piece: PromptRequestPiece
+        self, attack_identifier: dict[str, str], mock_prompt_target: MagicMock, sample_system_piece: MessagePiece
     ):
         """Test that providing system prompts with non-chat target raises an error"""
         manager = ConversationManager(attack_identifier=attack_identifier)
@@ -538,9 +538,9 @@ class TestConversationStateUpdate:
         self,
         attack_identifier: dict[str, str],
         mock_chat_target: MagicMock,
-        sample_user_piece: PromptRequestPiece,
-        sample_assistant_piece: PromptRequestPiece,
-        sample_system_piece: PromptRequestPiece,
+        sample_user_piece: MessagePiece,
+        sample_assistant_piece: MessagePiece,
+        sample_system_piece: MessagePiece,
     ):
         """Test that in multi-turn mode, system prompts are excluded but other messages are added"""
         manager = ConversationManager(attack_identifier=attack_identifier)
@@ -574,7 +574,7 @@ class TestConversationStateUpdate:
     async def test_update_conversation_state_preserves_original_values_like_legacy(
         self,
         attack_identifier: dict[str, str],
-        sample_user_piece: PromptRequestPiece,
+        sample_user_piece: MessagePiece,
     ):
         """Test that original values and other piece properties are preserved like the legacy function"""
         manager = ConversationManager(attack_identifier=attack_identifier)
@@ -610,8 +610,8 @@ class TestConversationStateUpdate:
     async def test_update_conversation_state_counts_turns_correctly(
         self,
         attack_identifier: dict[str, str],
-        sample_user_piece: PromptRequestPiece,
-        sample_assistant_piece: PromptRequestPiece,
+        sample_user_piece: MessagePiece,
+        sample_assistant_piece: MessagePiece,
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
@@ -634,8 +634,8 @@ class TestConversationStateUpdate:
     async def test_update_conversation_state_exceeds_max_turns_raises_error(
         self,
         attack_identifier: dict[str, str],
-        sample_user_piece: PromptRequestPiece,
-        sample_assistant_piece: PromptRequestPiece,
+        sample_user_piece: MessagePiece,
+        sample_assistant_piece: MessagePiece,
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
@@ -659,8 +659,8 @@ class TestConversationStateUpdate:
     async def test_update_conversation_state_extracts_assistant_scores(
         self,
         attack_identifier: dict[str, str],
-        sample_user_piece: PromptRequestPiece,
-        sample_assistant_piece: PromptRequestPiece,
+        sample_user_piece: MessagePiece,
+        sample_assistant_piece: MessagePiece,
         sample_score: Score,
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
@@ -699,7 +699,7 @@ class TestConversationStateUpdate:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_no_scores_for_assistant_message(
-        self, attack_identifier: dict[str, str], sample_assistant_piece: PromptRequestPiece
+        self, attack_identifier: dict[str, str], sample_assistant_piece: MessagePiece
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
@@ -719,7 +719,7 @@ class TestConversationStateUpdate:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_assistant_without_preceding_user_raises_error(
-        self, attack_identifier: dict[str, str], sample_assistant_piece: PromptRequestPiece, sample_score: Score
+        self, attack_identifier: dict[str, str], sample_assistant_piece: MessagePiece, sample_score: Score
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
@@ -748,24 +748,24 @@ class TestConversationStateUpdate:
 class TestPrivateMethods:
     """Tests for private helper methods"""
 
-    def test_should_exclude_piece_from_memory_single_turn_mode(self, sample_system_piece: PromptRequestPiece):
+    def test_should_exclude_piece_from_memory_single_turn_mode(self, sample_system_piece: MessagePiece):
         # System pieces should be excluded in both single-turn and multi-turn modes
         # because set_system_prompt() is called on the target, which internally adds them to memory
         assert ConversationManager._should_exclude_piece_from_memory(piece=sample_system_piece, max_turns=None)
 
-    def test_should_exclude_piece_from_memory_multi_turn_system_piece(self, sample_system_piece: PromptRequestPiece):
+    def test_should_exclude_piece_from_memory_multi_turn_system_piece(self, sample_system_piece: MessagePiece):
         # System pieces should be excluded in both single-turn and multi-turn modes
         assert ConversationManager._should_exclude_piece_from_memory(piece=sample_system_piece, max_turns=5)
 
     def test_should_exclude_piece_from_memory_single_turn_non_system_piece(
-        self, sample_user_piece: PromptRequestPiece, sample_assistant_piece: PromptRequestPiece
+        self, sample_user_piece: MessagePiece, sample_assistant_piece: MessagePiece
     ):
         # In single-turn mode, non-system pieces should not be excluded
         assert not ConversationManager._should_exclude_piece_from_memory(piece=sample_user_piece, max_turns=None)
         assert not ConversationManager._should_exclude_piece_from_memory(piece=sample_assistant_piece, max_turns=None)
 
     def test_should_exclude_piece_from_memory_multi_turn_non_system_piece(
-        self, sample_user_piece: PromptRequestPiece, sample_assistant_piece: PromptRequestPiece
+        self, sample_user_piece: MessagePiece, sample_assistant_piece: MessagePiece
     ):
         # In multi-turn mode, non-system pieces should not be excluded
         assert not ConversationManager._should_exclude_piece_from_memory(piece=sample_user_piece, max_turns=5)
@@ -799,7 +799,7 @@ class TestEdgeCasesAndErrorHandling:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_preserves_piece_metadata(
-        self, attack_identifier: dict[str, str], sample_user_piece: PromptRequestPiece
+        self, attack_identifier: dict[str, str], sample_user_piece: MessagePiece
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())

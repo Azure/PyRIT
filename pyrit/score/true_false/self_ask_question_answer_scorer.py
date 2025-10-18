@@ -11,7 +11,7 @@ from pyrit.models import (
     Score,
     UnvalidatedScore,
 )
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.prompt_request_piece import MessagePiece
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import SelfAskTrueFalseScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -67,13 +67,13 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
         )
 
     async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+        self, request_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """
         Score the request piece using question answering evaluation.
 
         Args:
-            request_piece (PromptRequestPiece): The answer given by the target to be scored.
+            request_piece (MessagePiece): The answer given by the target to be scored.
             objective (Optional[str]): The objective, which usually contains the question and the correct answer.
                 Defaults to None.
 

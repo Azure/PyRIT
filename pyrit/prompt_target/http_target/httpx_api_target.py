@@ -9,7 +9,7 @@ from typing import Any, Callable, Literal, Optional
 import httpx
 
 from pyrit.models import (
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     construct_response_from_request,
 )
@@ -84,7 +84,7 @@ class HTTPXAPITarget(HTTPTarget):
         """
 
         self._validate_request(prompt_request=prompt_request)
-        request_piece: PromptRequestPiece = prompt_request.request_pieces[0]
+        request_piece: MessagePiece = prompt_request.request_pieces[0]
 
         # If user didn't set file_path, see if the PDF path is in converted_value
         if not self.file_path:

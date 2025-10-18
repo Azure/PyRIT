@@ -15,7 +15,7 @@ from pyrit.exceptions import (
 )
 from pyrit.exceptions.exception_classes import RateLimitException
 from pyrit.models import (
-    PromptRequestPiece,
+    MessagePiece,
     Message,
 )
 from pyrit.prompt_target import (
@@ -108,7 +108,7 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
         self._validate_request(prompt_request=prompt_request)
         self.refresh_auth_headers()
 
-        request_piece: PromptRequestPiece = prompt_request.request_pieces[0]
+        request_piece: MessagePiece = prompt_request.request_pieces[0]
 
         is_json_response = self.is_response_format_json(request_piece)
 
@@ -173,7 +173,7 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
         self,
         *,
         open_ai_str_response: str,
-        request_piece: PromptRequestPiece,
+        request_piece: MessagePiece,
     ) -> Message:
         raise NotImplementedError
 

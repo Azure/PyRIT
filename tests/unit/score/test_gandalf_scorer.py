@@ -9,7 +9,7 @@ import pytest
 
 from pyrit.exceptions.exception_classes import PyritException
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece, Message
+from pyrit.models import MessagePiece, Message
 from pyrit.prompt_target import GandalfLevel
 from pyrit.score import GandalfScorer
 
@@ -19,7 +19,7 @@ def generate_password_extraction_response(
 ) -> Message:
     return Message(
         request_pieces=[
-            PromptRequestPiece(
+            MessagePiece(
                 role="assistant",
                 original_value=response_text,
                 original_value_data_type="text",
@@ -34,7 +34,7 @@ def generate_password_extraction_response(
 def generate_request(conversation_id: Optional[str] = None) -> Message:
     return Message(
         request_pieces=[
-            PromptRequestPiece(
+            MessagePiece(
                 role="user",
                 original_value="some request",
                 original_value_data_type="text",

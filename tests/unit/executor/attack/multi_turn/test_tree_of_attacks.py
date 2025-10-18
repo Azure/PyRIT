@@ -26,7 +26,7 @@ from pyrit.models import (
     AttackOutcome,
     ConversationReference,
     ConversationType,
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     Score,
     SeedPrompt,
@@ -877,7 +877,7 @@ class TestTreeOfAttacksNode:
                 # Return JSON response for adversarial chat
                 return Message(
                     request_pieces=[
-                        PromptRequestPiece(
+                        MessagePiece(
                             role="assistant",
                             original_value=json.dumps({"prompt": "test prompt", "improvement": "test"}),
                             converted_value=json.dumps({"prompt": "test prompt", "improvement": "test"}),
@@ -890,7 +890,7 @@ class TestTreeOfAttacksNode:
                 # Return normal response for objective target
                 return Message(
                     request_pieces=[
-                        PromptRequestPiece(
+                        MessagePiece(
                             role="assistant",
                             original_value="Target response",
                             converted_value="Target response",

@@ -13,13 +13,13 @@ import pytest
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.memory import MemoryInterface, PromptMemoryEntry
 from pyrit.models import (
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     Score,
 )
 
 
-def assert_original_value_in_list(original_value: str, prompt_request_pieces: Sequence[PromptRequestPiece]):
+def assert_original_value_in_list(original_value: str, prompt_request_pieces: Sequence[MessagePiece]):
     for piece in prompt_request_pieces:
         if piece.original_value == original_value:
             return True
@@ -34,7 +34,7 @@ def test_conversation_memory_empty_by_default(sqlite_instance: MemoryInterface):
 
 @pytest.mark.parametrize("num_conversations", [1, 2, 3])
 def test_add_request_pieces_to_memory(
-    sqlite_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece], num_conversations: int
+    sqlite_instance: MemoryInterface, sample_conversations: Sequence[MessagePiece], num_conversations: int
 ):
     for c in sample_conversations[:num_conversations]:
         c.conversation_id = sample_conversations[0].conversation_id
@@ -54,19 +54,19 @@ def test_get_prompt_request_pieces_uuid_and_string_ids(sqlite_instance: MemoryIn
     uuid3 = uuid.uuid4()
 
     pieces = [
-        PromptRequestPiece(
+        MessagePiece(
             id=uuid1,
             role="user",
             original_value="Test prompt 1",
             converted_value="Test prompt 1",
         ),
-        PromptRequestPiece(
+        MessagePiece(
             id=uuid2,
             role="assistant",
             original_value="Test prompt 2",
             converted_value="Test prompt 2",
         ),
-        PromptRequestPiece(
+        MessagePiece(
             id=uuid3,
             role="user",
             original_value="Test prompt 3",
@@ -104,7 +104,7 @@ def test_duplicate_memory(sqlite_instance: MemoryInterface):
     conversation_id_2 = "22222"
     conversation_id_3 = "33333"
     pieces = [
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="original prompt text",
             converted_value="Hello, how are you?",
@@ -112,7 +112,7 @@ def test_duplicate_memory(sqlite_instance: MemoryInterface):
             sequence=0,
             attack_identifier=attack1.get_identifier(),
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="assistant",
             original_value="original prompt text",
             converted_value="I'm fine, thank you!",
@@ -120,14 +120,14 @@ def test_duplicate_memory(sqlite_instance: MemoryInterface):
             sequence=0,
             attack_identifier=attack1.get_identifier(),
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="assistant",
             original_value="original prompt text",
             converted_value="I'm fine, thank you!",
             conversation_id=conversation_id_3,
             attack_identifier=attack2.get_identifier(),
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="original prompt text",
             converted_value="Hello, how are you?",
@@ -135,7 +135,7 @@ def test_duplicate_memory(sqlite_instance: MemoryInterface):
             sequence=0,
             attack_identifier=attack1.get_identifier(),
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="assistant",
             original_value="original prompt text",
             converted_value="I'm fine, thank you!",
@@ -175,7 +175,7 @@ def test_duplicate_conversation_pieces_not_score(sqlite_instance: MemoryInterfac
     attack1 = PromptSendingAttack(objective_target=MagicMock())
     memory_labels = {"sample": "label"}
     pieces = [
-        PromptRequestPiece(
+        MessagePiece(
             id=prompt_id_1,
             role="assistant",
             original_value="original prompt text",
@@ -185,7 +185,7 @@ def test_duplicate_conversation_pieces_not_score(sqlite_instance: MemoryInterfac
             attack_identifier=attack1.get_identifier(),
             labels=memory_labels,
         ),
-        PromptRequestPiece(
+        MessagePiece(
             id=prompt_id_2,
             role="assistant",
             original_value="original prompt text",
@@ -250,21 +250,21 @@ def test_duplicate_conversation_excluding_last_turn(sqlite_instance: MemoryInter
     conversation_id_1 = "11111"
     conversation_id_2 = "22222"
     pieces = [
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="original prompt text",
             conversation_id=conversation_id_1,
             sequence=0,
             attack_identifier=attack1.get_identifier(),
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="assistant",
             original_value="original prompt text",
             conversation_id=conversation_id_1,
             sequence=1,
             attack_identifier=attack1.get_identifier(),
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="original prompt text",
             converted_value="I'm fine, thank you!",
@@ -272,7 +272,7 @@ def test_duplicate_conversation_excluding_last_turn(sqlite_instance: MemoryInter
             conversation_id=conversation_id_1,
             attack_identifier=attack2.get_identifier(),
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="original prompt text",
             converted_value="Hello, how are you?",
@@ -280,7 +280,7 @@ def test_duplicate_conversation_excluding_last_turn(sqlite_instance: MemoryInter
             sequence=2,
             attack_identifier=attack2.get_identifier(),
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="assistant",
             original_value="original prompt text",
             converted_value="I'm fine, thank you!",
@@ -315,7 +315,7 @@ def test_duplicate_conversation_excluding_last_turn_not_score(sqlite_instance: M
     attack1 = PromptSendingAttack(objective_target=MagicMock())
     memory_labels = {"sample": "label"}
     pieces = [
-        PromptRequestPiece(
+        MessagePiece(
             id=prompt_id_1,
             role="user",
             original_value="original prompt text",
@@ -325,7 +325,7 @@ def test_duplicate_conversation_excluding_last_turn_not_score(sqlite_instance: M
             attack_identifier=attack1.get_identifier(),
             labels=memory_labels,
         ),
-        PromptRequestPiece(
+        MessagePiece(
             id=prompt_id_2,
             role="assistant",
             original_value="original prompt text",
@@ -335,7 +335,7 @@ def test_duplicate_conversation_excluding_last_turn_not_score(sqlite_instance: M
             attack_identifier=attack1.get_identifier(),
             labels=memory_labels,
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="original prompt text",
             converted_value="That's good.",
@@ -344,7 +344,7 @@ def test_duplicate_conversation_excluding_last_turn_not_score(sqlite_instance: M
             attack_identifier=attack1.get_identifier(),
             labels=memory_labels,
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="assistant",
             original_value="original prompt text",
             converted_value="Thanks.",
@@ -405,28 +405,28 @@ def test_duplicate_conversation_excluding_last_turn_same_attack(sqlite_instance:
     attack1 = PromptSendingAttack(objective_target=MagicMock())
     conversation_id_1 = "11111"
     pieces = [
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="original prompt text",
             conversation_id=conversation_id_1,
             sequence=0,
             attack_identifier=attack1.get_identifier(),
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="assistant",
             original_value="original prompt text",
             conversation_id=conversation_id_1,
             sequence=1,
             attack_identifier=attack1.get_identifier(),
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="original prompt text",
             conversation_id=conversation_id_1,
             sequence=2,
             attack_identifier=attack1.get_identifier(),
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="assistant",
             original_value="original prompt text",
             conversation_id=conversation_id_1,
@@ -455,7 +455,7 @@ def test_duplicate_memory_attack_id_collision(sqlite_instance: MemoryInterface):
     attack1 = PromptSendingAttack(objective_target=MagicMock())
     conversation_id = "11111"
     pieces = [
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="original prompt text",
             converted_value="Hello, how are you?",
@@ -475,7 +475,7 @@ def test_duplicate_memory_attack_id_collision(sqlite_instance: MemoryInterface):
 
 def test_add_request_pieces_to_memory_calls_validate(sqlite_instance: MemoryInterface):
     request_response = MagicMock(Message)
-    request_response.request_pieces = [MagicMock(PromptRequestPiece)]
+    request_response.request_pieces = [MagicMock(MessagePiece)]
     with (
         patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_request_pieces_to_memory"),
         patch("pyrit.memory.memory_interface.MemoryInterface._update_sequence"),
@@ -485,7 +485,7 @@ def test_add_request_pieces_to_memory_calls_validate(sqlite_instance: MemoryInte
 
 
 def test_add_request_pieces_to_memory_updates_sequence(
-    sqlite_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
+    sqlite_instance: MemoryInterface, sample_conversations: Sequence[MessagePiece]
 ):
     for conversation in sample_conversations:
         conversation.conversation_id = sample_conversations[0].conversation_id
@@ -505,7 +505,7 @@ def test_add_request_pieces_to_memory_updates_sequence(
 
 
 def test_add_request_pieces_to_memory_updates_sequence_with_prev_conversation(
-    sqlite_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
+    sqlite_instance: MemoryInterface, sample_conversations: Sequence[MessagePiece]
 ):
 
     for conversation in sample_conversations:
@@ -529,7 +529,7 @@ def test_add_request_pieces_to_memory_updates_sequence_with_prev_conversation(
 
 
 def test_insert_prompt_memories_inserts_embedding(
-    sqlite_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
+    sqlite_instance: MemoryInterface, sample_conversations: Sequence[MessagePiece]
 ):
 
     request = Message(request_pieces=[sample_conversations[0]])
@@ -550,7 +550,7 @@ def test_insert_prompt_memories_inserts_embedding(
 
 
 def test_insert_prompt_memories_not_inserts_embedding(
-    sqlite_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
+    sqlite_instance: MemoryInterface, sample_conversations: Sequence[MessagePiece]
 ):
 
     request = Message(request_pieces=[sample_conversations[0]])
@@ -574,21 +574,21 @@ def test_get_prompt_request_pieces_labels(sqlite_instance: MemoryInterface):
     labels = {"op_name": "op1", "user_name": "name1", "harm_category": "dummy1"}
     entries = [
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 role="user",
                 original_value="Hello 1",
                 labels=labels,
             )
         ),
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 role="assistant",
                 original_value="Hello 2",
                 labels=labels,
             )
         ),
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 role="user",
                 original_value="Hello 3",
             )
@@ -610,21 +610,21 @@ def test_get_prompt_request_pieces_metadata(sqlite_instance: MemoryInterface):
     metadata: dict[str, str | int] = {"key1": "value1", "key2": "value2"}
     entries = [
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 role="user",
                 original_value="Hello 1",
                 prompt_metadata=metadata,
             )
         ),
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 role="assistant",
                 original_value="Hello 2",
                 prompt_metadata={"key2": "value2", "key3": "value3"},
             )
         ),
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 role="user",
                 original_value="Hello 3",
             )
@@ -643,19 +643,19 @@ def test_get_prompt_request_pieces_metadata(sqlite_instance: MemoryInterface):
 def test_get_prompt_request_pieces_id(sqlite_instance: MemoryInterface):
     entries = [
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 role="user",
                 original_value="Hello 1",
             )
         ),
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 role="assistant",
                 original_value="Hello 2",
             )
         ),
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 role="user",
                 original_value="Hello 3",
             )
@@ -683,21 +683,21 @@ def test_get_prompt_request_pieces_attack(sqlite_instance: MemoryInterface):
 
     entries = [
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 role="user",
                 original_value="Hello 1",
                 attack_identifier=attack1.get_identifier(),
             )
         ),
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 role="assistant",
                 original_value="Hello 2",
                 attack_identifier=attack2.get_identifier(),
             )
         ),
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 role="user",
                 original_value="Hello 3",
                 attack_identifier=attack1.get_identifier(),
@@ -717,19 +717,19 @@ def test_get_prompt_request_pieces_attack(sqlite_instance: MemoryInterface):
 def test_get_prompt_request_pieces_sent_after(sqlite_instance: MemoryInterface):
     entries = [
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 role="user",
                 original_value="Hello 1",
             )
         ),
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 role="assistant",
                 original_value="Hello 2",
             )
         ),
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 role="user",
                 original_value="Hello 3",
             )
@@ -750,19 +750,19 @@ def test_get_prompt_request_pieces_sent_after(sqlite_instance: MemoryInterface):
 def test_get_prompt_request_pieces_sent_before(sqlite_instance: MemoryInterface):
     entries = [
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 role="user",
                 original_value="Hello 1",
             )
         ),
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 role="assistant",
                 original_value="Hello 2",
             )
         ),
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 role="user",
                 original_value="Hello 3",
             )
@@ -784,19 +784,19 @@ def test_get_prompt_request_pieces_sent_before(sqlite_instance: MemoryInterface)
 def test_get_prompt_request_pieces_by_value(sqlite_instance: MemoryInterface):
     entries = [
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 role="user",
                 original_value="Hello 1",
             )
         ),
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 role="assistant",
                 original_value="Hello 2",
             )
         ),
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 role="user",
                 original_value="Hello 3",
             )
@@ -813,15 +813,15 @@ def test_get_prompt_request_pieces_by_value(sqlite_instance: MemoryInterface):
 
 def test_get_prompt_request_pieces_by_hash(sqlite_instance: MemoryInterface):
     entries = [
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="Hello 1",
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="assistant",
             original_value="Hello 2",
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="Hello 3",
         ),
@@ -843,7 +843,7 @@ def test_get_prompt_request_pieces_with_non_matching_memory_labels(sqlite_instan
     labels = {"op_name": "op1", "user_name": "name1", "harm_category": "dummy1"}
     entries = [
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 conversation_id="123",
                 role="user",
                 original_value="Hello 1",
@@ -851,7 +851,7 @@ def test_get_prompt_request_pieces_with_non_matching_memory_labels(sqlite_instan
             )
         ),
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 conversation_id="456",
                 role="assistant",
                 original_value="Hello 2",
@@ -859,7 +859,7 @@ def test_get_prompt_request_pieces_with_non_matching_memory_labels(sqlite_instan
             )
         ),
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 conversation_id="789",
                 role="user",
                 original_value="Hello 3",
@@ -877,13 +877,13 @@ def test_get_prompt_request_pieces_with_non_matching_memory_labels(sqlite_instan
 
 
 def test_get_prompt_request_pieces_sorts(
-    sqlite_instance: MemoryInterface, sample_conversations: MutableSequence[PromptRequestPiece]
+    sqlite_instance: MemoryInterface, sample_conversations: MutableSequence[MessagePiece]
 ):
     conversation_id = sample_conversations[0].conversation_id
 
     # This new conversation piece should be grouped with other messages in the conversation
     sample_conversations.append(
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="original prompt text",
             conversation_id=conversation_id,
@@ -907,12 +907,12 @@ def test_prompt_piece_scores_duplicate_piece(sqlite_instance: MemoryInterface):
     duplicate_id = uuid4()
 
     pieces = [
-        PromptRequestPiece(
+        MessagePiece(
             id=original_id,
             role="assistant",
             original_value="prompt text",
         ),
-        PromptRequestPiece(
+        MessagePiece(
             id=duplicate_id,
             role="assistant",
             original_value="prompt text",
@@ -946,11 +946,11 @@ def test_prompt_piece_scores_duplicate_piece(sqlite_instance: MemoryInterface):
 @pytest.mark.asyncio
 async def test_prompt_piece_hash_stored_and_retrieved(sqlite_instance: MemoryInterface):
     entries = [
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="Hello 1",
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="assistant",
             original_value="Hello 2",
         ),

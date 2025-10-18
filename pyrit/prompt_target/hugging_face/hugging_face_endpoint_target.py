@@ -58,8 +58,8 @@ class HuggingFaceEndpointTarget(PromptTarget):
             such as conversation ID and role.
 
         Returns:
-            Message: A response object containing generated text pieces as a list of `PromptRequestPiece`
-                objects. Each `PromptRequestPiece` includes the generated text and relevant information such as
+            Message: A response object containing generated text pieces as a list of `MessagePiece`
+                objects. Each `MessagePiece` includes the generated text and relevant information such as
                 conversation ID, role, and any additional response attributes.
 
         Raises:

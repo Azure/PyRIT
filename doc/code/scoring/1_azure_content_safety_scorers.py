@@ -35,7 +35,7 @@ import os
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestPiece, Message
+from pyrit.models import MessagePiece, Message
 from pyrit.score.float_scale.azure_content_filter_scorer import AzureContentFilterScorer
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
@@ -51,7 +51,7 @@ azure_content_filter = AzureContentFilterScorer(
 
 response = Message(
     request_pieces=[
-        PromptRequestPiece(
+        MessagePiece(
             role="assistant",
             original_value_data_type="text",
             original_value="I hate you.",

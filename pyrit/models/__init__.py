@@ -7,7 +7,7 @@ from pyrit.models.chat_message import (
     ChatMessageListDictContent,
     ChatMessagesDataset,
 )
-from pyrit.models.prompt_request_piece import PromptRequestPiece, sort_request_pieces
+from pyrit.models.prompt_request_piece import MessagePiece, sort_request_pieces
 
 from pyrit.models.conversation_reference import ConversationReference, ConversationType
 
@@ -66,7 +66,7 @@ __all__ = [
     "Identifier",
     "ImagePathDataTypeSerializer",
     "sort_request_pieces",
-    "PromptRequestPiece",
+    "MessagePiece",
     "PromptResponse",
     "PromptResponseError",
     "PromptDataType",

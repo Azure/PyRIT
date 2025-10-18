@@ -33,7 +33,7 @@ from pyrit.memory.memory_models import (
 from pyrit.models import (
     ChatMessage,
     DataTypeSerializer,
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     Score,
     SeedPrompt,
@@ -147,7 +147,7 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
+    def add_request_pieces_to_memory(self, *, request_pieces: Sequence[MessagePiece]) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.
         """
@@ -342,9 +342,9 @@ class MemoryInterface(abc.ABC):
         data_type: Optional[str] = None,
         not_data_type: Optional[str] = None,
         converted_value_sha256: Optional[Sequence[str]] = None,
-    ) -> Sequence[PromptRequestPiece]:
+    ) -> Sequence[MessagePiece]:
         """
-        Retrieves a list of PromptRequestPiece objects based on the specified filters.
+        Retrieves a list of MessagePiece objects based on the specified filters.
 
         Args:
             attack_id (Optional[str | uuid.UUID], optional): The ID of the attack. Defaults to None.
@@ -362,7 +362,7 @@ class MemoryInterface(abc.ABC):
             converted_value_sha256 (Optional[Sequence[str]], optional): A list of SHA256 hashes of converted values.
                 Defaults to None.
         Returns:
-            Sequence[PromptRequestPiece]: A list of PromptRequestPiece objects that match the specified filters.
+            Sequence[MessagePiece]: A list of MessagePiece objects that match the specified filters.
         Raises:
             Exception: If there is an error retrieving the prompts,
                 an exception is logged and an empty list is returned.
@@ -497,7 +497,7 @@ class MemoryInterface(abc.ABC):
         If necessary, generates embedding data for applicable entries
 
         Args:
-            request (PromptRequestPiece): The request piece to add to the memory.
+            request (MessagePiece): The request piece to add to the memory.
 
         Returns:
             None
@@ -518,12 +518,12 @@ class MemoryInterface(abc.ABC):
 
             self._add_embeddings_to_memory(embedding_data=embedding_entries)
 
-    def _update_sequence(self, *, request_pieces: Sequence[PromptRequestPiece]):
+    def _update_sequence(self, *, request_pieces: Sequence[MessagePiece]):
         """
         Updates the sequence number of the request pieces in the conversation.
 
         Args:
-            request_pieces (Sequence[PromptRequestPiece]): The list of request pieces to update.
+            request_pieces (Sequence[MessagePiece]): The list of request pieces to update.
         """
 
         prev_conversations = self.get_prompt_request_pieces(conversation_id=request_pieces[0].conversation_id)

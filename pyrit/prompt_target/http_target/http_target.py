@@ -10,7 +10,7 @@ from typing import Any, Callable, Dict, Optional, Sequence
 import httpx
 
 from pyrit.models import (
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     construct_response_from_request,
 )
@@ -86,7 +86,7 @@ class HTTPTarget(PromptTarget):
         )
         return instance
 
-    def _inject_prompt_into_request(self, request: PromptRequestPiece) -> str:
+    def _inject_prompt_into_request(self, request: MessagePiece) -> str:
         """
         Adds the prompt into the URL if the prompt_regex_string is found in the
         http_request
@@ -229,7 +229,7 @@ class HTTPTarget(PromptTarget):
         return f"{http_protocol}{host}{path}"
 
     def _validate_request(self, *, prompt_request: Message) -> None:
-        request_pieces: Sequence[PromptRequestPiece] = prompt_request.request_pieces
+        request_pieces: Sequence[MessagePiece] = prompt_request.request_pieces
 
         n_pieces = len(request_pieces)
         if n_pieces != 1:

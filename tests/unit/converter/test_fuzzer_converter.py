@@ -8,7 +8,7 @@ import pytest
 from unit.mocks import MockPromptTarget
 
 from pyrit.exceptions.exception_classes import InvalidJsonException
-from pyrit.models import PromptRequestPiece, Message
+from pyrit.models import MessagePiece, Message
 from pyrit.prompt_converter import (
     FuzzerCrossOverConverter,
     FuzzerExpandConverter,
@@ -70,7 +70,7 @@ async def test_converter_send_prompt_async_bad_json_exception_retries(
 
         prompt_req_resp = Message(
             request_pieces=[
-                PromptRequestPiece(
+                MessagePiece(
                     role="user",
                     conversation_id="12345679",
                     original_value="test input",

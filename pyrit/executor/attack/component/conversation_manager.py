@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Union
 
 from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestPiece, Message
+from pyrit.models import MessagePiece, Message
 from pyrit.models.literals import ChatMessageRole
 from pyrit.models.score import Score
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
@@ -71,7 +71,7 @@ class ConversationManager:
 
     def get_last_message(
         self, *, conversation_id: str, role: Optional[ChatMessageRole] = None
-    ) -> Optional[PromptRequestPiece]:
+    ) -> Optional[MessagePiece]:
         """
         Retrieve the most recent message from a conversation.
 
@@ -80,7 +80,7 @@ class ConversationManager:
             role (Optional[ChatMessageRole]): If provided, only return the last message that matches this role.
 
         Returns:
-            Optional[PromptRequestPiece]: The last message piece from the conversation,
+            Optional[MessagePiece]: The last message piece from the conversation,
                 or `None` if no messages exist.
         """
         conversation = self.get_conversation(conversation_id)
@@ -328,7 +328,7 @@ class ConversationManager:
     def _process_piece(
         self,
         *,
-        piece: PromptRequestPiece,
+        piece: MessagePiece,
         conversation_state: ConversationState,
         max_turns: Optional[int] = None,
         target: Optional[Union[PromptTarget, PromptChatTarget]] = None,
@@ -337,7 +337,7 @@ class ConversationManager:
         Process a message piece based on its role and update conversation state.
 
         Args:
-            piece (PromptRequestPiece): The piece to process.
+            piece (MessagePiece): The piece to process.
             conversation_state (ConversationState): The current state of the conversation.
             max_turns (Optional[int]): Maximum allowed turns (for validation).
             target (Optional[Union[PromptTarget, PromptChatTarget]]): The target to set system prompts on.
@@ -381,7 +381,7 @@ class ConversationManager:
                 )
 
     @staticmethod
-    def _should_exclude_piece_from_memory(*, piece: PromptRequestPiece, max_turns: Optional[int] = None) -> bool:
+    def _should_exclude_piece_from_memory(*, piece: MessagePiece, max_turns: Optional[int] = None) -> bool:
         # System pieces should always be excluded from memory because set_system_prompt function
         # is called on the target, which internally adds them to memory
         return piece.role == "system"
@@ -390,7 +390,7 @@ class ConversationManager:
         self,
         *,
         prepended_conversation: List[Message],
-        last_message: PromptRequestPiece,
+        last_message: MessagePiece,
         conversation_state: ConversationState,
     ) -> None:
         """
@@ -402,7 +402,7 @@ class ConversationManager:
 
         Args:
             prepended_conversation (List[Message]): Complete conversation history.
-            last_message (PromptRequestPiece): The last message in the history.
+            last_message (MessagePiece): The last message in the history.
             conversation_state (ConversationState): State object to populate.
 
         Raises:

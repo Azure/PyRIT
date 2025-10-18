@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from typing import IO
 
-from pyrit.models import PromptRequestPiece, Message
+from pyrit.models import MessagePiece, Message
 from pyrit.prompt_target import PromptTarget
 
 
@@ -37,7 +37,7 @@ class TextTarget(PromptTarget):
 
         return None
 
-    def import_scores_from_csv(self, csv_file_path: Path) -> list[PromptRequestPiece]:
+    def import_scores_from_csv(self, csv_file_path: Path) -> list[MessagePiece]:
 
         request_responses = []
 
@@ -49,7 +49,7 @@ class TextTarget(PromptTarget):
                 labels_str = row.get("labels", None)
                 labels = json.loads(labels_str) if labels_str else None
 
-                request_response = PromptRequestPiece(
+                request_response = MessagePiece(
                     role=row["role"],  # type: ignore
                     original_value=row["value"],
                     original_value_data_type=row.get["data_type", None],  # type: ignore

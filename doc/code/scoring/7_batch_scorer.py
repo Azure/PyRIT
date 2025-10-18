@@ -14,7 +14,7 @@
 #
 # The Batch Scorer is built to help with scoring prompts that have been sent using PyRIT. It works by:
 #
-# 1. Getting the `PromptRequestPiece`s into the database. This is done automatically when using any targets (e.g., running any of the demos). Even if you manually entered the prompts outside of PyRIT, you can import them using `TextTarget`s or CSVs as described [here](../memory/4_manually_working_with_memory.md).
+# 1. Getting the `MessagePiece`s into the database. This is done automatically when using any targets (e.g., running any of the demos). Even if you manually entered the prompts outside of PyRIT, you can import them using `TextTarget`s or CSVs as described [here](../memory/4_manually_working_with_memory.md).
 # 2. Scoring all prompts in the database that meet any criteria.
 #
 # The following example demonstrates this by manually entering prompts into the database and then scoring them.

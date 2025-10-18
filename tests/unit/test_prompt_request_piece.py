@@ -14,7 +14,7 @@ from unit.mocks import MockPromptTarget, get_sample_conversations
 
 from pyrit.executor.attack import PromptSendingAttack
 from pyrit.models import (
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     Score,
     construct_response_from_request,
@@ -30,7 +30,7 @@ def sample_conversations() -> MutableSequence[Message]:
 
 
 def test_id_set():
-    entry = PromptRequestPiece(
+    entry = MessagePiece(
         role="user",
         original_value="Hello",
         converted_value="Hello",
@@ -41,7 +41,7 @@ def test_id_set():
 def test_datetime_set():
     now = datetime.now()
     time.sleep(0.1)
-    entry = PromptRequestPiece(
+    entry = MessagePiece(
         role="user",
         original_value="Hello",
         converted_value="Hello",
@@ -51,7 +51,7 @@ def test_datetime_set():
 
 def test_converters_serialize():
     converter_identifiers = [Base64Converter().get_identifier()]
-    entry = PromptRequestPiece(
+    entry = MessagePiece(
         role="user",
         original_value="Hello",
         converted_value="Hello",
@@ -68,7 +68,7 @@ def test_converters_serialize():
 
 def test_prompt_targets_serialize(patch_central_database):
     target = MockPromptTarget()
-    entry = PromptRequestPiece(
+    entry = MessagePiece(
         role="user",
         original_value="Hello",
         converted_value="Hello",
@@ -82,7 +82,7 @@ def test_prompt_targets_serialize(patch_central_database):
 def test_executors_serialize():
     attack = PromptSendingAttack(objective_target=MagicMock())
 
-    entry = PromptRequestPiece(
+    entry = MessagePiece(
         role="user",
         original_value="Hello",
         converted_value="Hello",
@@ -96,7 +96,7 @@ def test_executors_serialize():
 
 @pytest.mark.asyncio
 async def test_hashes_generated():
-    entry = PromptRequestPiece(
+    entry = MessagePiece(
         role="user",
         original_value="Hello1",
         converted_value="Hello2",
@@ -114,7 +114,7 @@ async def test_hashes_generated_files():
         f.write(b"Hello1")
         f.flush()
         f.close()
-        entry = PromptRequestPiece(
+        entry = MessagePiece(
             role="user",
             original_value=filename,
             converted_value=filename,
@@ -136,7 +136,7 @@ async def test_converted_datatype_default():
         f.write(b"Hello1")
         f.flush()
         f.close()
-        entry = PromptRequestPiece(
+        entry = MessagePiece(
             role="user",
             original_value=filename,
             original_value_data_type="image_path",
@@ -149,7 +149,7 @@ async def test_converted_datatype_default():
 
 def test_hashes_generated_files_unknown_type():
     with pytest.raises(ValueError, match="is not a valid data type."):
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="Hello1",
             original_value_data_type="new_unknown_type",  # type: ignore
@@ -158,7 +158,7 @@ def test_hashes_generated_files_unknown_type():
 
 def test_prompt_response_get_value(sample_conversations: MutableSequence[Message]):
     # Create a simple valid response for testing
-    piece = PromptRequestPiece(
+    piece = MessagePiece(
         role="user", conversation_id="test", original_value="Hello, how are you?", converted_value="Hello, how are you?"
     )
     request_response = Message(request_pieces=[piece])
@@ -170,14 +170,14 @@ def test_prompt_response_get_value(sample_conversations: MutableSequence[Message
 
 def test_prompt_response_get_values(sample_conversations: MutableSequence[Message]):
     # Create a valid response with multiple user pieces with same conversation ID and sequence
-    piece1 = PromptRequestPiece(
+    piece1 = MessagePiece(
         role="user",
         conversation_id="test",
         sequence=1,
         original_value="Hello, how are you?",
         converted_value="Hello, how are you?",
     )
-    piece2 = PromptRequestPiece(
+    piece2 = MessagePiece(
         role="user",
         conversation_id="test",
         sequence=1,  # Same sequence for consistent validation
@@ -200,8 +200,8 @@ def test_prompt_response_empty_throws():
 
 def test_prompt_response_validate_conversation_id_throws():
     # Create pieces with different conversation IDs (this should fail validation)
-    piece1 = PromptRequestPiece(role="user", conversation_id="conv1", original_value="test1")
-    piece2 = PromptRequestPiece(role="user", conversation_id="conv2", original_value="test2")
+    piece1 = MessagePiece(role="user", conversation_id="conv1", original_value="test1")
+    piece2 = MessagePiece(role="user", conversation_id="conv2", original_value="test2")
 
     with pytest.raises(ValueError, match="Conversation ID mismatch."):
         Message(request_pieces=[piece1, piece2])
@@ -209,8 +209,8 @@ def test_prompt_response_validate_conversation_id_throws():
 
 def test_prompt_request_response_inconsistent_roles_throws():
     # Create pieces with mixed roles (this should fail validation)
-    piece1 = PromptRequestPiece(role="user", conversation_id="conv1", original_value="test1")
-    piece2 = PromptRequestPiece(role="assistant", conversation_id="conv1", original_value="test2")
+    piece1 = MessagePiece(role="user", conversation_id="conv1", original_value="test1")
+    piece2 = MessagePiece(role="assistant", conversation_id="conv1", original_value="test2")
 
     with pytest.raises(ValueError, match="Inconsistent roles within the same prompt request response entry."):
         Message(request_pieces=[piece1, piece2])
@@ -218,8 +218,8 @@ def test_prompt_request_response_inconsistent_roles_throws():
 
 def test_prompt_request_response_inconsistent_sequence_throws():
     # Create pieces with different sequences (this should fail validation during construction)
-    piece1 = PromptRequestPiece(role="user", conversation_id="conv1", sequence=1, original_value="test1")
-    piece2 = PromptRequestPiece(role="user", conversation_id="conv1", sequence=2, original_value="test2")
+    piece1 = MessagePiece(role="user", conversation_id="conv1", sequence=1, original_value="test1")
+    piece2 = MessagePiece(role="user", conversation_id="conv1", sequence=2, original_value="test2")
 
     with pytest.raises(ValueError, match="Inconsistent sequences within the same prompt request response entry."):
         Message(request_pieces=[piece1, piece2])
@@ -228,8 +228,8 @@ def test_prompt_request_response_inconsistent_sequence_throws():
 def test_group_conversation_request_pieces_throws():
     # Create pieces with different conversation IDs to trigger error
     pieces = [
-        PromptRequestPiece(role="user", conversation_id="conv1", original_value="test1"),
-        PromptRequestPiece(role="user", conversation_id="conv2", original_value="test2"),
+        MessagePiece(role="user", conversation_id="conv1", original_value="test1"),
+        MessagePiece(role="user", conversation_id="conv2", original_value="test2"),
     ]
     with pytest.raises(
         ValueError,
@@ -244,14 +244,14 @@ def test_group_request_pieces_into_conversations_multiple_conversations():
 
     pieces = [
         # Conversation 1 - each sequence/role combination is separate
-        PromptRequestPiece(role="user", conversation_id="conv1", sequence=0, original_value="Conv1 User Seq0"),
-        PromptRequestPiece(role="assistant", conversation_id="conv1", sequence=1, original_value="Conv1 Asst Seq1"),
-        PromptRequestPiece(role="user", conversation_id="conv1", sequence=2, original_value="Conv1 User Seq2"),
+        MessagePiece(role="user", conversation_id="conv1", sequence=0, original_value="Conv1 User Seq0"),
+        MessagePiece(role="assistant", conversation_id="conv1", sequence=1, original_value="Conv1 Asst Seq1"),
+        MessagePiece(role="user", conversation_id="conv1", sequence=2, original_value="Conv1 User Seq2"),
         # Conversation 2
-        PromptRequestPiece(role="user", conversation_id="conv2", sequence=0, original_value="Conv2 User Seq0"),
-        PromptRequestPiece(role="assistant", conversation_id="conv2", sequence=1, original_value="Conv2 Asst Seq1"),
+        MessagePiece(role="user", conversation_id="conv2", sequence=0, original_value="Conv2 User Seq0"),
+        MessagePiece(role="assistant", conversation_id="conv2", sequence=1, original_value="Conv2 Asst Seq1"),
         # Conversation 3
-        PromptRequestPiece(role="user", conversation_id="conv3", sequence=0, original_value="Conv3 User Seq0"),
+        MessagePiece(role="user", conversation_id="conv3", sequence=0, original_value="Conv3 User Seq0"),
     ]
 
     conversations = group_request_pieces_into_conversations(pieces)
@@ -289,9 +289,9 @@ def test_group_request_pieces_into_conversations_single_conversation():
     from pyrit.models import group_request_pieces_into_conversations
 
     pieces = [
-        PromptRequestPiece(role="user", conversation_id="conv1", sequence=0, original_value="User Seq0"),
-        PromptRequestPiece(role="assistant", conversation_id="conv1", sequence=1, original_value="Asst Seq1"),
-        PromptRequestPiece(role="user", conversation_id="conv1", sequence=2, original_value="User Seq2"),
+        MessagePiece(role="user", conversation_id="conv1", sequence=0, original_value="User Seq0"),
+        MessagePiece(role="assistant", conversation_id="conv1", sequence=1, original_value="Asst Seq1"),
+        MessagePiece(role="user", conversation_id="conv1", sequence=2, original_value="User Seq2"),
     ]
 
     conversations = group_request_pieces_into_conversations(pieces)
@@ -310,10 +310,10 @@ def test_group_request_pieces_into_conversations_multiple_pieces_same_sequence_r
 
     pieces = [
         # Two user pieces in sequence 0 (e.g., multimodal with text and image)
-        PromptRequestPiece(role="user", conversation_id="conv1", sequence=0, original_value="Text piece"),
-        PromptRequestPiece(role="user", conversation_id="conv1", sequence=0, original_value="Image piece"),
+        MessagePiece(role="user", conversation_id="conv1", sequence=0, original_value="Text piece"),
+        MessagePiece(role="user", conversation_id="conv1", sequence=0, original_value="Image piece"),
         # One assistant piece in sequence 1
-        PromptRequestPiece(role="assistant", conversation_id="conv1", sequence=1, original_value="Response"),
+        MessagePiece(role="assistant", conversation_id="conv1", sequence=1, original_value="Response"),
     ]
 
     conversations = group_request_pieces_into_conversations(pieces)
@@ -326,7 +326,7 @@ def test_group_request_pieces_into_conversations_multiple_pieces_same_sequence_r
 
 def test_group_conversation_request_pieces(sample_conversations: MutableSequence[Message]):
     # Get pieces from the first conversation
-    all_pieces: list[PromptRequestPiece] = []
+    all_pieces: list[MessagePiece] = []
     for response in sample_conversations:
         if response.request_pieces[0].conversation_id == sample_conversations[0].request_pieces[0].conversation_id:
             pieces = response.flatten_to_prompt_request_pieces([response])
@@ -344,7 +344,7 @@ def test_group_conversation_request_pieces_multiple_groups(
     sample_conversations: MutableSequence[Message],
 ):
     # Get pieces from the first conversation
-    all_pieces: list[PromptRequestPiece] = []
+    all_pieces: list[MessagePiece] = []
     for response in sample_conversations:
         pieces = response.flatten_to_prompt_request_pieces([response])
         all_pieces.extend(pieces)
@@ -353,7 +353,7 @@ def test_group_conversation_request_pieces_multiple_groups(
     if all_pieces:
         convo_group = [entry for entry in all_pieces if entry.conversation_id == all_pieces[0].conversation_id]
         convo_group.append(
-            PromptRequestPiece(
+            MessagePiece(
                 role="assistant",
                 original_value="Hello",
                 conversation_id=convo_group[0].conversation_id,
@@ -369,7 +369,7 @@ def test_prompt_request_piece_no_roles():
     with pytest.raises(ValueError, match="not a valid role."):
         Message(
             request_pieces=[
-                PromptRequestPiece(
+                MessagePiece(
                     role="",  # type: ignore
                     converted_value_data_type="text",
                     original_value="Hello",
@@ -381,7 +381,7 @@ def test_prompt_request_piece_no_roles():
 
 @pytest.mark.asyncio
 async def test_prompt_request_piece_sets_original_sha256():
-    entry = PromptRequestPiece(
+    entry = MessagePiece(
         role="user",
         original_value="Hello",
     )
@@ -393,7 +393,7 @@ async def test_prompt_request_piece_sets_original_sha256():
 
 @pytest.mark.asyncio
 async def test_prompt_request_piece_sets_converted_sha256():
-    entry = PromptRequestPiece(
+    entry = MessagePiece(
         role="user",
         original_value="Hello",
     )
@@ -404,7 +404,7 @@ async def test_prompt_request_piece_sets_converted_sha256():
 
 def test_order_request_pieces_by_conversation_single_conversation():
     pieces = [
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             id="prompt-1",
             original_value="Hello 1",
@@ -412,7 +412,7 @@ def test_order_request_pieces_by_conversation_single_conversation():
             timestamp=datetime.now() - timedelta(seconds=10),
             sequence=2,
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             id="prompt-2",
             original_value="Hello 2",
@@ -420,7 +420,7 @@ def test_order_request_pieces_by_conversation_single_conversation():
             timestamp=datetime.now() - timedelta(seconds=10),
             sequence=1,
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             id="prompt-3",
             original_value="Hello 3",
@@ -431,7 +431,7 @@ def test_order_request_pieces_by_conversation_single_conversation():
     ]
 
     expected = [
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="Hello 2",
             conversation_id="conv1",
@@ -439,7 +439,7 @@ def test_order_request_pieces_by_conversation_single_conversation():
             sequence=1,
             id="prompt-2",
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="Hello 1",
             conversation_id="conv1",
@@ -447,7 +447,7 @@ def test_order_request_pieces_by_conversation_single_conversation():
             sequence=2,
             id="prompt-1",
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="Hello 3",
             conversation_id="conv1",
@@ -463,7 +463,7 @@ def test_order_request_pieces_by_conversation_single_conversation():
 
 def test_order_request_pieces_by_conversation_multiple_conversations():
     pieces = [
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="Hello 4",
             conversation_id="conv2",
@@ -471,7 +471,7 @@ def test_order_request_pieces_by_conversation_multiple_conversations():
             sequence=2,
             id="4",
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="Hello 1",
             conversation_id="conv1",
@@ -479,7 +479,7 @@ def test_order_request_pieces_by_conversation_multiple_conversations():
             sequence=1,
             id="1",
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="Hello 3",
             conversation_id="conv2",
@@ -487,7 +487,7 @@ def test_order_request_pieces_by_conversation_multiple_conversations():
             sequence=1,
             id="3",
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="Hello 2",
             conversation_id="conv1",
@@ -498,7 +498,7 @@ def test_order_request_pieces_by_conversation_multiple_conversations():
     ]
 
     expected = [
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="Hello 1",
             conversation_id="conv1",
@@ -506,7 +506,7 @@ def test_order_request_pieces_by_conversation_multiple_conversations():
             sequence=1,
             id="1",
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="Hello 2",
             conversation_id="conv1",
@@ -514,7 +514,7 @@ def test_order_request_pieces_by_conversation_multiple_conversations():
             sequence=2,
             id="2",
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="Hello 3",
             conversation_id="conv2",
@@ -522,7 +522,7 @@ def test_order_request_pieces_by_conversation_multiple_conversations():
             sequence=1,
             id="3",
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="Hello 4",
             conversation_id="conv2",
@@ -539,7 +539,7 @@ def test_order_request_pieces_by_conversation_same_timestamp():
     timestamp = datetime.now()
 
     pieces = [
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="Hello 4",
             conversation_id="conv2",
@@ -547,7 +547,7 @@ def test_order_request_pieces_by_conversation_same_timestamp():
             sequence=2,
             id="4",
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="Hello 1",
             conversation_id="conv1",
@@ -555,7 +555,7 @@ def test_order_request_pieces_by_conversation_same_timestamp():
             sequence=1,
             id="1",
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="Hello 3",
             conversation_id="conv2",
@@ -563,7 +563,7 @@ def test_order_request_pieces_by_conversation_same_timestamp():
             sequence=1,
             id="3",
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="Hello 2",
             conversation_id="conv1",
@@ -574,7 +574,7 @@ def test_order_request_pieces_by_conversation_same_timestamp():
     ]
 
     expected = [
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="Hello 1",
             conversation_id="conv1",
@@ -582,7 +582,7 @@ def test_order_request_pieces_by_conversation_same_timestamp():
             sequence=1,
             id="1",
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="Hello 2",
             conversation_id="conv1",
@@ -590,7 +590,7 @@ def test_order_request_pieces_by_conversation_same_timestamp():
             sequence=2,
             id="2",
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="Hello 3",
             conversation_id="conv2",
@@ -598,7 +598,7 @@ def test_order_request_pieces_by_conversation_same_timestamp():
             sequence=1,
             id="3",
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="Hello 4",
             conversation_id="conv2",
@@ -619,25 +619,25 @@ def test_order_request_pieces_by_conversation_empty_list():
 
 
 def test_order_request_pieces_by_conversation_single_message():
-    pieces = [PromptRequestPiece(role="user", original_value="Hello 1", conversation_id="conv1", id="1")]
-    expected = [PromptRequestPiece(role="user", original_value="Hello 1", conversation_id="conv1", id="1")]
+    pieces = [MessagePiece(role="user", original_value="Hello 1", conversation_id="conv1", id="1")]
+    expected = [MessagePiece(role="user", original_value="Hello 1", conversation_id="conv1", id="1")]
 
     assert sort_request_pieces(pieces) == expected
 
 
 def test_order_request_pieces_by_conversation_same_timestamp_different_sequences():
     pieces = [
-        PromptRequestPiece(
+        MessagePiece(
             role="user", original_value="Hello 2", conversation_id="conv1", timestamp=datetime.now(), sequence=2, id="2"
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="user", original_value="Hello 1", conversation_id="conv1", timestamp=datetime.now(), sequence=1, id="1"
         ),
     ]
     for i, piece in enumerate(pieces):
         piece.prompt_id = f"prompt-{i}"
     expected = [
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="Hello 1",
             conversation_id="conv1",
@@ -645,7 +645,7 @@ def test_order_request_pieces_by_conversation_same_timestamp_different_sequences
             sequence=1,
             id="1",
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="Hello 2",
             conversation_id="conv1",
@@ -659,7 +659,7 @@ def test_order_request_pieces_by_conversation_same_timestamp_different_sequences
 
 
 def test_prompt_request_piece_to_dict():
-    entry = PromptRequestPiece(
+    entry = MessagePiece(
         role="user",
         original_value="Hello",
         converted_value="Hello",
@@ -757,7 +757,7 @@ def test_prompt_request_piece_to_dict():
 
 def test_construct_response_from_request_combines_metadata():
     # Create a request piece with metadata
-    request = PromptRequestPiece(
+    request = MessagePiece(
         role="user", original_value="test prompt", conversation_id="123", prompt_metadata={"key1": "value1", "key2": 2}
     )
 
@@ -783,7 +783,7 @@ def test_construct_response_from_request_combines_metadata():
 
 
 def test_construct_response_from_request_no_metadata():
-    request = PromptRequestPiece(role="user", original_value="test prompt", conversation_id="123")
+    request = MessagePiece(role="user", original_value="test prompt", conversation_id="123")
 
     response = construct_response_from_request(request=request, response_text_pieces=["test response"])
 
@@ -811,7 +811,7 @@ def test_construct_response_from_request_no_metadata():
     ],
 )
 def test_prompt_request_piece_has_error(response_error, expected_has_error):
-    entry = PromptRequestPiece(
+    entry = MessagePiece(
         role="assistant",
         original_value="Test response",
         response_error=response_error,
@@ -830,7 +830,7 @@ def test_prompt_request_piece_has_error(response_error, expected_has_error):
     ],
 )
 def test_prompt_request_piece_is_blocked(response_error, expected_is_blocked):
-    entry = PromptRequestPiece(
+    entry = MessagePiece(
         role="assistant",
         original_value="Test response",
         response_error=response_error,
@@ -840,7 +840,7 @@ def test_prompt_request_piece_is_blocked(response_error, expected_is_blocked):
 
 def test_prompt_request_piece_has_error_and_is_blocked_consistency():
     # Test that is_blocked implies has_error
-    blocked_entry = PromptRequestPiece(
+    blocked_entry = MessagePiece(
         role="assistant",
         original_value="Blocked response",
         response_error="blocked",
@@ -849,7 +849,7 @@ def test_prompt_request_piece_has_error_and_is_blocked_consistency():
     assert blocked_entry.has_error() is True
 
     # Test that not all errors are blocks
-    error_entry = PromptRequestPiece(
+    error_entry = MessagePiece(
         role="assistant",
         original_value="Error response",
         response_error="unknown",
@@ -858,7 +858,7 @@ def test_prompt_request_piece_has_error_and_is_blocked_consistency():
     assert error_entry.has_error() is True
 
     # Test that no error means not blocked
-    no_error_entry = PromptRequestPiece(
+    no_error_entry = MessagePiece(
         role="assistant",
         original_value="Success response",
         response_error="none",
@@ -869,7 +869,7 @@ def test_prompt_request_piece_has_error_and_is_blocked_consistency():
 
 def test_prompt_request_piece_harm_categories_none():
     """Test that harm_categories defaults to None."""
-    entry = PromptRequestPiece(
+    entry = MessagePiece(
         role="user",
         original_value="Hello",
         converted_value="Hello",
@@ -879,7 +879,7 @@ def test_prompt_request_piece_harm_categories_none():
 
 def test_prompt_request_piece_harm_categories_single():
     """Test that harm_categories can be set to a single category."""
-    entry = PromptRequestPiece(
+    entry = MessagePiece(
         role="user", original_value="Hello", converted_value="Hello", targeted_harm_categories=["violence"]
     )
     assert entry.targeted_harm_categories == ["violence"]
@@ -888,7 +888,7 @@ def test_prompt_request_piece_harm_categories_single():
 def test_prompt_request_piece_harm_categories_multiple():
     """Test that harm_categories can be set to multiple categories."""
     harm_categories = ["violence", "illegal", "hate_speech"]
-    entry = PromptRequestPiece(
+    entry = MessagePiece(
         role="user", original_value="Hello", converted_value="Hello", targeted_harm_categories=harm_categories
     )
     assert entry.targeted_harm_categories == harm_categories
@@ -897,7 +897,7 @@ def test_prompt_request_piece_harm_categories_multiple():
 def test_prompt_request_piece_harm_categories_serialization():
     """Test that harm_categories is properly serialized in to_dict()."""
     harm_categories = ["violence", "illegal"]
-    entry = PromptRequestPiece(
+    entry = MessagePiece(
         role="user", original_value="Hello", converted_value="Hello", targeted_harm_categories=harm_categories
     )
 
@@ -911,7 +911,7 @@ def test_prompt_request_piece_harm_categories_with_labels():
     harm_categories = ["violence", "illegal"]
     labels = {"operation": "test_op", "researcher": "alice"}
 
-    entry = PromptRequestPiece(
+    entry = MessagePiece(
         role="user",
         original_value="Hello",
         converted_value="Hello",

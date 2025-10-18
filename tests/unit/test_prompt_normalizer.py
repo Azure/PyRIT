@@ -11,7 +11,7 @@ from unit.mocks import MockPromptTarget, get_image_request_piece
 
 from pyrit.exceptions import EmptyResponseException
 from pyrit.memory import CentralMemory
-from pyrit.models import PromptDataType, PromptRequestPiece, Message
+from pyrit.models import PromptDataType, MessagePiece, Message
 from pyrit.models.filter_criteria import PromptFilterCriteria
 from pyrit.models.seed_prompt import SeedPrompt
 from pyrit.models.seed_prompt_group import SeedPromptGroup
@@ -36,8 +36,8 @@ def response() -> Message:
     image_request_piece.conversation_id = conversation_id
     return Message(
         request_pieces=[
-            PromptRequestPiece(role="assistant", original_value="Hello", conversation_id=conversation_id),
-            PromptRequestPiece(role="assistant", original_value="part 2", conversation_id=conversation_id),
+            MessagePiece(role="assistant", original_value="Hello", conversation_id=conversation_id),
+            MessagePiece(role="assistant", original_value="part 2", conversation_id=conversation_id),
             image_request_piece,
         ]
     )
@@ -140,7 +140,7 @@ async def test_send_prompt_async_empty_response_exception_handled(mock_memory_in
 async def test_send_prompt_async_request_response_added_to_memory(mock_memory_instance, seed_prompt_group):
     prompt_target = AsyncMock()
 
-    response = PromptRequestPiece(role="assistant", original_value="test_response").to_prompt_request_response()
+    response = MessagePiece(role="assistant", original_value="test_response").to_prompt_request_response()
 
     prompt_target.send_prompt_async = AsyncMock(return_value=response)
 
@@ -436,7 +436,7 @@ async def test_should_skip_based_on_skip_criteria_no_skip_criteria(mock_memory_i
     normalizer = PromptNormalizer()  # By default, _skip_criteria is None
 
     # Make a request with at least one piece
-    request = Message(request_pieces=[PromptRequestPiece(role="user", original_value="hello")])
+    request = Message(request_pieces=[MessagePiece(role="user", original_value="hello")])
 
     result = normalizer._should_skip_based_on_skip_criteria(request)
     assert result is False, "_should_skip_based_on_skip_criteria should return False when skip_criteria is not set"
@@ -451,7 +451,7 @@ async def test_should_skip_based_on_skip_criteria_no_matches(mock_memory_instanc
         conversation_id="test_conversation",
     )
 
-    memory_piece = PromptRequestPiece(
+    memory_piece = MessagePiece(
         role="user",
         original_value="My user prompt",
     )
@@ -463,7 +463,7 @@ async def test_should_skip_based_on_skip_criteria_no_matches(mock_memory_instanc
     normalizer.set_skip_criteria(skip_criteria, skip_value_type="converted")
 
     # Construct a request piece that doesn't match the memory's hash
-    request_piece = PromptRequestPiece(role="user", original_value="My user prompt")
+    request_piece = MessagePiece(role="user", original_value="My user prompt")
     request_piece.original_value_sha256 = "completely_different_hash"
     request_piece.converted_value_sha256 = "completely_different_hash"
 
@@ -490,12 +490,12 @@ async def test_should_skip_based_on_skip_criteria_match_found(mock_memory_instan
     # as our request piece
     matching_sha = "matching_converted_hash"
 
-    piece = PromptRequestPiece(role="user", original_value="prompt")
+    piece = MessagePiece(role="user", original_value="prompt")
     piece.converted_value_sha256 = matching_sha
     mock_memory_instance.get_prompt_request_pieces.return_value = [piece]
 
     # Our request piece also has that same matching sha
-    request_piece = PromptRequestPiece(role="user", original_value="My user prompt")
+    request_piece = MessagePiece(role="user", original_value="My user prompt")
     request_piece.converted_value_sha256 = matching_sha
 
     request = Message(request_pieces=[request_piece])
@@ -515,13 +515,13 @@ async def test_should_skip_based_on_skip_criteria_original_value_match(mock_memo
     matching_sha = "matching_original_hash"
 
     # Build a request piece with the same original_value_sha256
-    request_piece = PromptRequestPiece(role="user", original_value="My user prompt")
+    request_piece = MessagePiece(role="user", original_value="My user prompt")
     request_piece.original_value_sha256 = matching_sha
 
     request = Message(request_pieces=[request_piece])
 
     # Memory returns a piece that has an original_value_sha256 matching our request piece
-    piece = PromptRequestPiece(role="user", original_value="prompt")
+    piece = MessagePiece(role="user", original_value="prompt")
     piece.original_value_sha256 = matching_sha
     mock_memory_instance.get_prompt_request_pieces.return_value = [piece]
 

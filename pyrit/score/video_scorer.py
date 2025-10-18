@@ -9,7 +9,7 @@ import uuid
 from abc import ABC
 from typing import Optional
 
-from pyrit.models import PromptRequestPiece, Score
+from pyrit.models import MessagePiece, Score
 from pyrit.score.scorer import Scorer
 
 logger = logging.getLogger(__name__)
@@ -51,7 +51,7 @@ class _BaseVideoScorer(ABC):
         )
 
     async def _score_frames_async(
-        self, *, request_piece: PromptRequestPiece, objective: Optional[str] = None
+        self, *, request_piece: MessagePiece, objective: Optional[str] = None
     ) -> list[Score]:
         """
         Extract frames from video and score them.
@@ -84,7 +84,7 @@ class _BaseVideoScorer(ABC):
             if isinstance(original_prompt_id, str):
                 original_prompt_id = uuid.UUID(original_prompt_id)
 
-            piece = PromptRequestPiece(
+            piece = MessagePiece(
                 original_value=request_piece.converted_value,
                 role=request_piece.role,
                 original_prompt_id=original_prompt_id,

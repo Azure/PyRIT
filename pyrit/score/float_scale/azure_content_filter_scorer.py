@@ -16,7 +16,7 @@ from pyrit.auth.azure_auth import AzureAuth, get_default_scope
 from pyrit.common import default_values
 from pyrit.models import (
     DataTypeSerializer,
-    PromptRequestPiece,
+    MessagePiece,
     Score,
     data_serializer_factory,
 )
@@ -92,12 +92,12 @@ class AzureContentFilterScorer(FloatScaleScorer):
             raise ValueError("Please provide the Azure Content Safety endpoint")
 
     async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+        self, request_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """Evaluating the input text or image using the Azure Content Filter API
 
         Args:
-            request_piece (PromptRequestPiece): The prompt request piece containing the text to be scored.
+            request_piece (MessagePiece): The prompt request piece containing the text to be scored.
                 Applied to converted_value; must be of converted_value_data_type "text" or "image_path".
                 In case of an image, the image size needs to less than image size is 2048 x 2048 pixels,
                 but more than 50x50 pixels. The data size should not exceed exceed 4 MB. Image must be
@@ -159,7 +159,7 @@ class AzureContentFilterScorer(FloatScaleScorer):
 
         return scores
 
-    async def _get_base64_image_data(self, request_response: PromptRequestPiece):
+    async def _get_base64_image_data(self, request_response: MessagePiece):
         image_path = request_response.converted_value
         ext = DataTypeSerializer.get_extension(image_path)
         image_serializer = data_serializer_factory(

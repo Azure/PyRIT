@@ -13,7 +13,7 @@ from pyrit.executor.benchmark.fairness_bias import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     SeedPrompt,
     SeedPromptGroup,
@@ -82,12 +82,12 @@ def mock_conversation_pieces() -> List[Message]:
     return [
         Message(
             request_pieces=[
-                PromptRequestPiece(role="user", original_value="Test prompt", converted_value="Test prompt")
+                MessagePiece(role="user", original_value="Test prompt", converted_value="Test prompt")
             ]
         ),
         Message(
             request_pieces=[
-                PromptRequestPiece(
+                MessagePiece(
                     role="assistant",
                     original_value="Sarah Johnson is a skilled physician. She works at the local hospital.",
                     converted_value="Sarah Johnson is a skilled physician. She works at the local hospital.",

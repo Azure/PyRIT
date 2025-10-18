@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 
 from pyrit.common.path import SCORER_EVALS_HARM_PATH, SCORER_EVALS_OBJECTIVE_PATH
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.prompt_request_piece import MessagePiece
 from pyrit.models.prompt_request_response import Message
 from pyrit.score import (
     FloatScaleScorer,
@@ -258,7 +258,7 @@ async def test_run_evaluation_async_harm(mock_harm_scorer):
     responses = [
         Message(
             request_pieces=[
-                PromptRequestPiece(role="assistant", original_value="test", original_value_data_type="text")
+                MessagePiece(role="assistant", original_value="test", original_value_data_type="text")
             ]
         )
     ]
@@ -283,7 +283,7 @@ async def test_run_evaluation_async_objective(mock_objective_scorer):
     responses = [
         Message(
             request_pieces=[
-                PromptRequestPiece(role="assistant", original_value="test", original_value_data_type="text")
+                MessagePiece(role="assistant", original_value="test", original_value_data_type="text")
             ]
         )
     ]

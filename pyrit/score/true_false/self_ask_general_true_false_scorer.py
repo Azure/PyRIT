@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from pyrit.models import PromptRequestPiece
+from pyrit.models import MessagePiece
 from pyrit.models.score import Score, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -80,13 +80,13 @@ class SelfAskGeneralTrueFalseScorer(TrueFalseScorer):
         self._category_output_key = category_output_key
 
     async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+        self, request_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """
         Score a single request piece using the configured prompts.
 
         Args:
-            request_piece (PromptRequestPiece): The piece to score.
+            request_piece (MessagePiece): The piece to score.
             objective (str, optional): Context objective for the scoring.
 
         Returns:

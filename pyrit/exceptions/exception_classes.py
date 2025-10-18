@@ -17,7 +17,7 @@ from tenacity import (
 )
 
 from pyrit.exceptions.exceptions_helpers import log_exception
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.prompt_request_piece import MessagePiece
 from pyrit.models.prompt_request_response import (
     Message,
     construct_response_from_request,
@@ -205,7 +205,7 @@ def pyrit_placeholder_retry(func: Callable) -> Callable:
 
 def handle_bad_request_exception(
     response_text: str,
-    request: PromptRequestPiece,
+    request: MessagePiece,
     is_content_filter=False,
     error_code: int = 400,
 ) -> Message:

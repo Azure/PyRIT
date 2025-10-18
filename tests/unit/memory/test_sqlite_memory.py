@@ -15,7 +15,7 @@ from sqlalchemy.sql.sqltypes import NullType
 from unit.mocks import get_sample_conversation_entries
 
 from pyrit.memory.memory_models import EmbeddingDataEntry, PromptMemoryEntry
-from pyrit.models import PromptRequestPiece
+from pyrit.models import MessagePiece
 from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_target.text_target import TextTarget
 
@@ -156,7 +156,7 @@ def test_embedding_data_column_types(sqlite_instance):
 @pytest.mark.asyncio()
 async def test_insert_entry(sqlite_instance):
     session = sqlite_instance.get_session()
-    prompt_request_piece_entry = PromptRequestPiece(
+    prompt_request_piece_entry = MessagePiece(
         id=uuid.uuid4(),
         conversation_id="123",
         role="user",
@@ -191,7 +191,7 @@ def test_insert_entry_violates_constraint(sqlite_instance):
     fixed_uuid = uuid.uuid4()
     # Create two entries with the same UUID
     entry1 = PromptMemoryEntry(
-        entry=PromptRequestPiece(
+        entry=MessagePiece(
             id=fixed_uuid,
             conversation_id="123",
             role="user",
@@ -201,7 +201,7 @@ def test_insert_entry_violates_constraint(sqlite_instance):
     )
 
     entry2 = PromptMemoryEntry(
-        entry=PromptRequestPiece(
+        entry=MessagePiece(
             id=fixed_uuid,
             conversation_id="456",
             role="user",
@@ -225,7 +225,7 @@ def test_insert_entry_violates_constraint(sqlite_instance):
 def test_insert_entries(sqlite_instance):
     entries = [
         PromptMemoryEntry(
-            entry=PromptRequestPiece(
+            entry=MessagePiece(
                 conversation_id=str(i),
                 role="user",
                 original_value=f"Message {i}",
@@ -251,7 +251,7 @@ def test_insert_entries(sqlite_instance):
 def test_insert_embedding_entry(sqlite_instance):
     # Create a ConversationData entry
     conversation_entry = PromptMemoryEntry(
-        entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="abc")
+        entry=MessagePiece(conversation_id="123", role="user", original_value="Hello", converted_value="abc")
     )
 
     # Insert the ConversationData entry using the insert_entry method
@@ -344,7 +344,7 @@ def test_get_memories_with_json_properties(sqlite_instance):
     # Start a session
     with sqlite_instance.get_session() as session:
         # Create a ConversationData entry with all attributes filled
-        piece = PromptRequestPiece(
+        piece = MessagePiece(
             conversation_id=specific_conversation_id,
             role="user",
             sequence=1,
@@ -387,7 +387,7 @@ def test_get_memories_with_json_properties(sqlite_instance):
 def test_update_entries(sqlite_instance):
     # Insert a test entry
     entry = PromptMemoryEntry(
-        entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
+        entry=MessagePiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
     )
 
     sqlite_instance._insert_entry(entry)
@@ -407,7 +407,7 @@ def test_update_entries(sqlite_instance):
 def test_update_entries_empty_update_fields(sqlite_instance):
     # Insert a test entry
     entry = PromptMemoryEntry(
-        entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
+        entry=MessagePiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
     )
 
     sqlite_instance._insert_entry(entry)
@@ -423,7 +423,7 @@ def test_update_entries_empty_update_fields(sqlite_instance):
 def test_update_entries_nonexistent_fields(sqlite_instance):
     # Insert a test entry
     entry = PromptMemoryEntry(
-        entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
+        entry=MessagePiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
     )
 
     sqlite_instance._insert_entry(entry)

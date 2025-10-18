@@ -8,7 +8,7 @@ from typing import Optional, Union
 import yaml
 
 from pyrit.common.path import SCALES_PATH
-from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore
+from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -67,13 +67,13 @@ class SelfAskScaleScorer(FloatScaleScorer):
         self._system_prompt = scoring_instructions_template.render_template_value(**scale_args)
 
     async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+        self, request_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """
         Scores the given request_piece using "self-ask" for the chat target.
 
         Args:
-            request_piece (PromptRequestPiece): The prompt request piece containing the text to be scored.
+            request_piece (MessagePiece): The prompt request piece containing the text to be scored.
             objective (str): The task based on which the text should be scored (the original
                 attacker model's objective).
 

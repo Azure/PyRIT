@@ -10,7 +10,7 @@ import pytest
 from pyrit.executor.attack.printer.markdown_printer import MarkdownAttackResultPrinter
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult, Score
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.prompt_request_piece import MessagePiece
 from pyrit.models.prompt_request_response import Message
 
 
@@ -81,7 +81,7 @@ def sample_attack_result():
 
 @pytest.fixture
 def sample_prompt_piece():
-    return PromptRequestPiece(
+    return MessagePiece(
         role="user", original_value="Original text", converted_value="Converted text", converted_value_data_type="text"
     )
 

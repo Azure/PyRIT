@@ -3,7 +3,7 @@
 
 from typing import Optional, Sequence, get_args
 
-from pyrit.models import PromptRequestPiece, Message
+from pyrit.models import MessagePiece, Message
 from pyrit.models.literals import PromptDataType
 
 
@@ -62,7 +62,7 @@ class ScorerPromptValidator:
         if self._is_objective_required and not objective:
             raise ValueError("Objective is required but not provided.")
 
-    def is_request_piece_supported(self, request_piece: PromptRequestPiece) -> bool:
+    def is_request_piece_supported(self, request_piece: MessagePiece) -> bool:
         if request_piece.converted_value_data_type not in self._supported_data_types:
             return False
 

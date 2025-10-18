@@ -31,7 +31,7 @@ from pyrit.models import (
     AttackResult,
     ConversationReference,
     ConversationType,
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     Score,
     SeedPrompt,
@@ -1695,7 +1695,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
 
         return result
 
-    def _get_last_response_from_conversation(self, conversation_id: Optional[str]) -> Optional[PromptRequestPiece]:
+    def _get_last_response_from_conversation(self, conversation_id: Optional[str]) -> Optional[MessagePiece]:
         """
         Retrieve the last response from a conversation.
 
@@ -1708,7 +1708,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
                 None if no successful conversations were found during the attack.
 
         Returns:
-            Optional[PromptRequestPiece]: The last response piece from the conversation,
+            Optional[MessagePiece]: The last response piece from the conversation,
                 or None if no conversation ID was provided or no responses exist.
         """
         if not conversation_id:

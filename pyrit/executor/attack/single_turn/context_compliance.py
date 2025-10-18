@@ -16,7 +16,7 @@ from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
 )
 from pyrit.models import (
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     SeedPrompt,
     SeedPromptDataset,
@@ -215,7 +215,7 @@ class ContextComplianceAttack(PromptSendingAttack):
         return [
             Message(
                 request_pieces=[
-                    PromptRequestPiece(
+                    MessagePiece(
                         role="user",
                         original_value=objective,
                         converted_value=benign_user_query,
@@ -224,7 +224,7 @@ class ContextComplianceAttack(PromptSendingAttack):
             ),
             Message(
                 request_pieces=[
-                    PromptRequestPiece(
+                    MessagePiece(
                         role="assistant",
                         original_value=assistant_response,
                     ),

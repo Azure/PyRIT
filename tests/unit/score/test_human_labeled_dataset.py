@@ -6,7 +6,7 @@ import logging
 import pytest
 
 from pyrit.common.path import SCORER_EVALS_HARM_PATH
-from pyrit.models import PromptRequestPiece, Message
+from pyrit.models import MessagePiece, Message
 from pyrit.score import (
     HarmHumanLabeledEntry,
     HumanLabeledDataset,
@@ -20,7 +20,7 @@ def sample_responses():
     return [
         Message(
             request_pieces=[
-                PromptRequestPiece(role="assistant", original_value="test response", original_value_data_type="text")
+                MessagePiece(role="assistant", original_value="test response", original_value_data_type="text")
             ]
         )
     ]

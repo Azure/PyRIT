@@ -15,7 +15,7 @@ from pyrit.exceptions import (
 )
 from pyrit.models import (
     PromptDataType,
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     SeedPrompt,
 )
@@ -88,7 +88,7 @@ class VariationConverter(PromptConverter):
 
         request = Message(
             [
-                PromptRequestPiece(
+                MessagePiece(
                     role="user",
                     original_value=prompt,
                     converted_value=prompt,

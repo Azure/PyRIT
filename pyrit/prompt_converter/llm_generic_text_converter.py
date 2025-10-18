@@ -7,7 +7,7 @@ from typing import Optional
 
 from pyrit.models import (
     PromptDataType,
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     SeedPrompt,
 )
@@ -83,7 +83,7 @@ class LLMGenericTextConverter(PromptConverter):
 
         request = Message(
             [
-                PromptRequestPiece(
+                MessagePiece(
                     role="user",
                     original_value=prompt,
                     conversation_id=conversation_id,

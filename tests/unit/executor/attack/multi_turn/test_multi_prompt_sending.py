@@ -17,7 +17,7 @@ from pyrit.executor.attack import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     Score,
     SeedPrompt,
@@ -76,7 +76,7 @@ def sample_response():
     """Create a sample response for testing"""
     return Message(
         request_pieces=[
-            PromptRequestPiece(
+            MessagePiece(
                 role="assistant",
                 original_value="Test response",
                 original_value_data_type="text",
@@ -355,13 +355,13 @@ class TestAttackExecution:
         mock_prompt_normalizer.send_prompt_async.side_effect = [
             Message(
                 request_pieces=[
-                    PromptRequestPiece(role="assistant", original_value="response1", original_value_data_type="text")
+                    MessagePiece(role="assistant", original_value="response1", original_value_data_type="text")
                 ]
             ),
             None,  # Failed prompt
             Message(
                 request_pieces=[
-                    PromptRequestPiece(role="assistant", original_value="response3", original_value_data_type="text")
+                    MessagePiece(role="assistant", original_value="response3", original_value_data_type="text")
                 ]
             ),
         ]

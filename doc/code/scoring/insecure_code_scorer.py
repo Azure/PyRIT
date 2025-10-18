@@ -16,7 +16,7 @@
 
 # %%
 from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.models import PromptRequestPiece
+from pyrit.models import MessagePiece
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import InsecureCodeScorer
 
@@ -35,8 +35,8 @@ def authenticate_user(username, password):
     execute_sql(sql)
 """
 
-# Create a PromptRequestPiece to hold the example prompt as if it were an assistant response
-request = PromptRequestPiece(role="assistant", original_value=example_prompt).to_prompt_request_response()
+# Create a MessagePiece to hold the example prompt as if it were an assistant response
+request = MessagePiece(role="assistant", original_value=example_prompt).to_prompt_request_response()
 
 # Request piece is added to memory first
 scorer._memory.add_request_response_to_memory(request=request)

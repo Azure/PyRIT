@@ -17,7 +17,7 @@ from pyrit.models import (
     construct_response_from_request,
     data_serializer_factory,
 )
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.prompt_request_piece import MessagePiece
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
@@ -132,7 +132,7 @@ class OpenAITTSTarget(OpenAITarget):
 
         return response_entry
 
-    def _construct_request_body(self, request: PromptRequestPiece) -> dict:
+    def _construct_request_body(self, request: MessagePiece) -> dict:
 
         body_parameters: dict[str, object] = {
             "model": self._model_name,

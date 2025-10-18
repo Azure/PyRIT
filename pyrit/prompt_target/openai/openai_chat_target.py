@@ -13,7 +13,7 @@ from pyrit.exceptions import (
 )
 from pyrit.models import (
     ChatMessageListDictContent,
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     construct_response_from_request,
 )
@@ -251,7 +251,7 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         self,
         *,
         open_ai_str_response: str,
-        request_piece: PromptRequestPiece,
+        request_piece: MessagePiece,
     ) -> Message:
 
         try:

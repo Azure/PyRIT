@@ -8,7 +8,7 @@ import pytest
 
 from pyrit.models import PromptResponse
 from pyrit.models.prompt_request_response import (
-    PromptRequestPiece,
+    MessagePiece,
     Message,
 )
 
@@ -30,19 +30,19 @@ def prompt_response_1() -> PromptResponse:
 
 
 @pytest.fixture
-def prompt_request_pieces() -> list[PromptRequestPiece]:
+def prompt_request_pieces() -> list[MessagePiece]:
     return [
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="First piece",
             conversation_id="test-conversation-1",
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="Second piece",
             conversation_id="test-conversation-1",
         ),
-        PromptRequestPiece(
+        MessagePiece(
             role="user",
             original_value="Third piece",
             conversation_id="test-conversation-1",
@@ -97,7 +97,7 @@ def test_get_piece_raises_value_error_for_empty_request() -> None:
         Message(request_pieces=[])
 
 
-def test_get_all_values_returns_all_converted_strings(prompt_request_pieces: list[PromptRequestPiece]) -> None:
+def test_get_all_values_returns_all_converted_strings(prompt_request_pieces: list[MessagePiece]) -> None:
     response_one = Message(request_pieces=prompt_request_pieces[:2])
     response_two = Message(request_pieces=prompt_request_pieces[2:])
 

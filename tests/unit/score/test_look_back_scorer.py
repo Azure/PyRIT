@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestPiece
+from pyrit.models import MessagePiece
 from pyrit.models.chat_message import ChatMessage
 from pyrit.models.score import UnvalidatedScore
 from pyrit.score import LookBackScorer
@@ -19,7 +19,7 @@ async def test_score_async_success(patch_central_database):
     conversation_id = str(uuid.uuid4())
 
     piece_id = uuid.uuid4()
-    request_piece = PromptRequestPiece(
+    request_piece = MessagePiece(
         original_value="User message",
         role="user",
         conversation_id=conversation_id,
@@ -65,7 +65,7 @@ async def test_score_async_conversation_not_found(patch_central_database):
     scorer = LookBackScorer(chat_target=mock_prompt_target, exclude_instruction_prompts=True)
 
     nonexistent_conversation_id = str(uuid.uuid4())
-    request_piece = PromptRequestPiece(
+    request_piece = MessagePiece(
         original_value="User message",
         role="user",
         conversation_id=nonexistent_conversation_id,
@@ -98,7 +98,7 @@ async def test_score_async_handles_persuasion_conversation(patch_central_databas
         ChatMessage(role="assistant", content="Sure, I'll let you know."),
     ]
     request_pieces = [
-        PromptRequestPiece(
+        MessagePiece(
             original_value=message.content,
             role=message.role,
             conversation_id=conversation_id,

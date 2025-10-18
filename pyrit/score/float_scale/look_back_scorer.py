@@ -8,7 +8,7 @@ from typing import Optional
 import yaml
 
 from pyrit.common.path import SCORER_CONFIG_PATH
-from pyrit.models import PromptRequestPiece, SeedPrompt
+from pyrit.models import MessagePiece, SeedPrompt
 from pyrit.models.score import Score, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
@@ -52,13 +52,13 @@ class LookBackScorer(FloatScaleScorer):
         )
 
     async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+        self, request_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """
         Scores the entire conversation based on detected behavior change.
 
         Args:
-            request_piece (PromptRequestPiece): A piece of the conversation to be scored.
+            request_piece (MessagePiece): A piece of the conversation to be scored.
                 The conversation ID is used to retrieve the full conversation from memory.
             objective (Optional[str]): The objective to evaluate against. Defaults to None.
                 Currently not used for this scorer.
@@ -68,7 +68,7 @@ class LookBackScorer(FloatScaleScorer):
                 amount of behavior change throughout the conversation.
         """
 
-        # Retrieve conversation from provided PromptRequestPiece
+        # Retrieve conversation from provided MessagePiece
         conversation = self._memory.get_conversation(conversation_id=request_piece.conversation_id)
 
         if not conversation:

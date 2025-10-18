@@ -14,13 +14,13 @@ from unit.mocks import get_image_request_piece, get_sample_conversations
 from pyrit.common import net_utility
 from pyrit.exceptions import RateLimitException
 from pyrit.memory import MemoryInterface
-from pyrit.models import PromptRequestPiece, Message
+from pyrit.models import MessagePiece, Message
 from pyrit.prompt_target import OpenAITTSTarget
 from pyrit.prompt_target.openai.openai_tts_target import TTSResponseFormat
 
 
 @pytest.fixture
-def sample_conversations() -> MutableSequence[PromptRequestPiece]:
+def sample_conversations() -> MutableSequence[MessagePiece]:
     conversations = get_sample_conversations()
     return Message.flatten_to_prompt_request_pieces(conversations)
 
@@ -53,8 +53,8 @@ def test_tts_initializes_calls_get_required_parameters(patch_central_database):
 async def test_tts_validate_request_length(tts_target: OpenAITTSTarget):
     request = Message(
         request_pieces=[
-            PromptRequestPiece(role="user", conversation_id="123", original_value="test"),
-            PromptRequestPiece(role="user", conversation_id="123", original_value="test2"),
+            MessagePiece(role="user", conversation_id="123", original_value="test"),
+            MessagePiece(role="user", conversation_id="123", original_value="test2"),
         ]
     )
     with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
@@ -70,7 +70,7 @@ async def test_tts_validate_prompt_type(tts_target: OpenAITTSTarget):
 
 @pytest.mark.asyncio
 async def test_tts_validate_previous_conversations(
-    tts_target: OpenAITTSTarget, sample_conversations: MutableSequence[PromptRequestPiece]
+    tts_target: OpenAITTSTarget, sample_conversations: MutableSequence[MessagePiece]
 ):
     request_piece = sample_conversations[0]
 
@@ -92,7 +92,7 @@ async def test_tts_validate_previous_conversations(
 @pytest.mark.asyncio
 async def test_tts_send_prompt_file_save_async(
     patch_central_database,
-    sample_conversations: MutableSequence[PromptRequestPiece],
+    sample_conversations: MutableSequence[MessagePiece],
     response_format: TTSResponseFormat,
 ) -> None:
     tts_target = OpenAITTSTarget(model_name="test", endpoint="test", api_key="test", response_format=response_format)
@@ -124,7 +124,7 @@ testdata = [(400, "Bad Request", HTTPStatusError), (429, "Rate Limit Reached", R
 @pytest.mark.parametrize("status_code, error_text, exception_class", testdata)
 async def test_tts_send_prompt_async_exception_adds_to_memory(
     tts_target: OpenAITTSTarget,
-    sample_conversations: MutableSequence[PromptRequestPiece],
+    sample_conversations: MutableSequence[MessagePiece],
     status_code: int,
     error_text: str,
     exception_class: type[BaseException],
@@ -159,7 +159,7 @@ async def test_tts_send_prompt_async_exception_adds_to_memory(
 
 @pytest.mark.asyncio
 async def test_tts_send_prompt_async_rate_limit_exception_retries(
-    tts_target: OpenAITTSTarget, sample_conversations: MutableSequence[PromptRequestPiece]
+    tts_target: OpenAITTSTarget, sample_conversations: MutableSequence[MessagePiece]
 ):
     response = MagicMock()
     response.status_code = 429
@@ -182,7 +182,7 @@ def test_is_json_response_supported(tts_target: OpenAITTSTarget):
 
 
 @pytest.mark.asyncio
-async def test_tts_target_no_api_version(sample_conversations: MutableSequence[PromptRequestPiece]):
+async def test_tts_target_no_api_version(sample_conversations: MutableSequence[MessagePiece]):
     target = OpenAITTSTarget(
         api_key="test_key", endpoint="https://mock.azure.com", model_name="tts-model", api_version=None
     )
@@ -204,7 +204,7 @@ async def test_tts_target_no_api_version(sample_conversations: MutableSequence[P
 
 
 @pytest.mark.asyncio
-async def test_tts_target_default_api_version(sample_conversations: MutableSequence[PromptRequestPiece]):
+async def test_tts_target_default_api_version(sample_conversations: MutableSequence[MessagePiece]):
     target = OpenAITTSTarget(api_key="test_key", endpoint="https://mock.azure.com", model_name="tts-model")
     request = Message([sample_conversations[0]])
 
@@ -244,7 +244,7 @@ async def test_send_prompt_async_calls_refresh_auth_headers(tts_target):
 
         prompt_request = Message(
             request_pieces=[
-                PromptRequestPiece(
+                MessagePiece(
                     role="user",
                     original_value="test prompt",
                     converted_value="test prompt",

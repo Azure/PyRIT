@@ -3,7 +3,7 @@
 
 import pytest
 
-from pyrit.models import PromptRequestPiece, Message
+from pyrit.models import MessagePiece, Message
 from pyrit.score import ScorerPromptValidator
 
 
@@ -14,11 +14,11 @@ class TestScorerPromptValidatorDataTypes:
         """Test that validator with no supported_data_types supports all types."""
         validator = ScorerPromptValidator()
 
-        text_piece = PromptRequestPiece(role="assistant", original_value="text", converted_value_data_type="text")
-        image_piece = PromptRequestPiece(
+        text_piece = MessagePiece(role="assistant", original_value="text", converted_value_data_type="text")
+        image_piece = MessagePiece(
             role="assistant", original_value="image.png", converted_value_data_type="image_path"
         )
-        audio_piece = PromptRequestPiece(
+        audio_piece = MessagePiece(
             role="assistant", original_value="audio.wav", converted_value_data_type="audio_path"
         )
 
@@ -30,11 +30,11 @@ class TestScorerPromptValidatorDataTypes:
         """Test that validator correctly filters to only text pieces."""
         validator = ScorerPromptValidator(supported_data_types=["text"])
 
-        text_piece = PromptRequestPiece(role="assistant", original_value="text", converted_value_data_type="text")
-        image_piece = PromptRequestPiece(
+        text_piece = MessagePiece(role="assistant", original_value="text", converted_value_data_type="text")
+        image_piece = MessagePiece(
             role="assistant", original_value="image.png", converted_value_data_type="image_path"
         )
-        audio_piece = PromptRequestPiece(
+        audio_piece = MessagePiece(
             role="assistant", original_value="audio.wav", converted_value_data_type="audio_path"
         )
 
@@ -46,11 +46,11 @@ class TestScorerPromptValidatorDataTypes:
         """Test that validator correctly filters to multiple specified types."""
         validator = ScorerPromptValidator(supported_data_types=["text", "image_path"])
 
-        text_piece = PromptRequestPiece(role="assistant", original_value="text", converted_value_data_type="text")
-        image_piece = PromptRequestPiece(
+        text_piece = MessagePiece(role="assistant", original_value="text", converted_value_data_type="text")
+        image_piece = MessagePiece(
             role="assistant", original_value="image.png", converted_value_data_type="image_path"
         )
-        audio_piece = PromptRequestPiece(
+        audio_piece = MessagePiece(
             role="assistant", original_value="audio.wav", converted_value_data_type="audio_path"
         )
 
@@ -62,8 +62,8 @@ class TestScorerPromptValidatorDataTypes:
         """Test that validator correctly filters to only image pieces."""
         validator = ScorerPromptValidator(supported_data_types=["image_path"])
 
-        text_piece = PromptRequestPiece(role="assistant", original_value="text", converted_value_data_type="text")
-        image_piece = PromptRequestPiece(
+        text_piece = MessagePiece(role="assistant", original_value="text", converted_value_data_type="text")
+        image_piece = MessagePiece(
             role="assistant", original_value="image.png", converted_value_data_type="image_path"
         )
 
@@ -78,13 +78,13 @@ class TestScorerPromptValidatorMetadata:
         """Test that validator with no required_metadata accepts all pieces."""
         validator = ScorerPromptValidator()
 
-        piece_with_metadata = PromptRequestPiece(
+        piece_with_metadata = MessagePiece(
             role="assistant",
             original_value="text",
             converted_value_data_type="text",
             prompt_metadata={"key": "value"},
         )
-        piece_without_metadata = PromptRequestPiece(
+        piece_without_metadata = MessagePiece(
             role="assistant", original_value="text", converted_value_data_type="text"
         )
 
@@ -95,13 +95,13 @@ class TestScorerPromptValidatorMetadata:
         """Test that validator correctly filters based on required metadata."""
         validator = ScorerPromptValidator(required_metadata=["category"])
 
-        piece_with_metadata = PromptRequestPiece(
+        piece_with_metadata = MessagePiece(
             role="assistant",
             original_value="text",
             converted_value_data_type="text",
             prompt_metadata={"category": "test"},
         )
-        piece_without_metadata = PromptRequestPiece(
+        piece_without_metadata = MessagePiece(
             role="assistant", original_value="text", converted_value_data_type="text"
         )
 
@@ -112,19 +112,19 @@ class TestScorerPromptValidatorMetadata:
         """Test that all required metadata keys must be present."""
         validator = ScorerPromptValidator(required_metadata=["category", "source"])
 
-        piece_with_all_metadata = PromptRequestPiece(
+        piece_with_all_metadata = MessagePiece(
             role="assistant",
             original_value="text",
             converted_value_data_type="text",
             prompt_metadata={"category": "test", "source": "test"},
         )
-        piece_with_partial_metadata = PromptRequestPiece(
+        piece_with_partial_metadata = MessagePiece(
             role="assistant",
             original_value="text",
             converted_value_data_type="text",
             prompt_metadata={"category": "test"},
         )
-        piece_without_metadata = PromptRequestPiece(
+        piece_without_metadata = MessagePiece(
             role="assistant", original_value="text", converted_value_data_type="text"
         )
 
@@ -140,7 +140,7 @@ class TestScorerPromptValidatorValidate:
         """Test that validate passes when there are valid pieces."""
         validator = ScorerPromptValidator(supported_data_types=["text"])
 
-        text_piece = PromptRequestPiece(
+        text_piece = MessagePiece(
             role="assistant", original_value="text", converted_value_data_type="text", conversation_id="test"
         )
         response = Message(request_pieces=[text_piece])
@@ -152,7 +152,7 @@ class TestScorerPromptValidatorValidate:
         """Test that validate raises error when no pieces are valid."""
         validator = ScorerPromptValidator(supported_data_types=["text"])
 
-        image_piece = PromptRequestPiece(
+        image_piece = MessagePiece(
             role="assistant",
             original_value="image.png",
             converted_value_data_type="image_path",
@@ -167,10 +167,10 @@ class TestScorerPromptValidatorValidate:
         """Test that validate passes with mixed pieces when enforce_all_pieces_valid=False."""
         validator = ScorerPromptValidator(supported_data_types=["text"], enforce_all_pieces_valid=False)
 
-        text_piece = PromptRequestPiece(
+        text_piece = MessagePiece(
             role="assistant", original_value="text", converted_value_data_type="text", conversation_id="test"
         )
-        image_piece = PromptRequestPiece(
+        image_piece = MessagePiece(
             role="assistant",
             original_value="image.png",
             converted_value_data_type="image_path",
@@ -185,14 +185,14 @@ class TestScorerPromptValidatorValidate:
         """Test that validate raises error for unsupported pieces when enforce_all_pieces_valid=True."""
         validator = ScorerPromptValidator(supported_data_types=["text"], enforce_all_pieces_valid=True)
 
-        text_piece = PromptRequestPiece(
+        text_piece = MessagePiece(
             role="assistant",
             original_value="text",
             converted_value_data_type="text",
             conversation_id="test",
             id="text-1",
         )
-        image_piece = PromptRequestPiece(
+        image_piece = MessagePiece(
             role="assistant",
             original_value="image.png",
             converted_value_data_type="image_path",
@@ -209,7 +209,7 @@ class TestScorerPromptValidatorValidate:
         validator = ScorerPromptValidator(max_pieces_in_response=2)
 
         pieces = [
-            PromptRequestPiece(
+            MessagePiece(
                 role="assistant", original_value=f"text{i}", converted_value_data_type="text", conversation_id="test"
             )
             for i in range(3)
@@ -224,7 +224,7 @@ class TestScorerPromptValidatorValidate:
         validator = ScorerPromptValidator(max_pieces_in_response=3)
 
         pieces = [
-            PromptRequestPiece(
+            MessagePiece(
                 role="assistant", original_value=f"text{i}", converted_value_data_type="text", conversation_id="test"
             )
             for i in range(2)
@@ -238,7 +238,7 @@ class TestScorerPromptValidatorValidate:
         """Test that validate raises error when objective is required but not provided."""
         validator = ScorerPromptValidator(is_objective_required=True)
 
-        text_piece = PromptRequestPiece(
+        text_piece = MessagePiece(
             role="assistant", original_value="text", converted_value_data_type="text", conversation_id="test"
         )
         response = Message(request_pieces=[text_piece])
@@ -250,7 +250,7 @@ class TestScorerPromptValidatorValidate:
         """Test that validate passes when objective is required and provided."""
         validator = ScorerPromptValidator(is_objective_required=True)
 
-        text_piece = PromptRequestPiece(
+        text_piece = MessagePiece(
             role="assistant", original_value="text", converted_value_data_type="text", conversation_id="test"
         )
         response = Message(request_pieces=[text_piece])
@@ -267,7 +267,7 @@ class TestScorerPromptValidatorCombined:
         validator = ScorerPromptValidator(supported_data_types=["text"], required_metadata=["category"])
 
         # Valid: correct type and metadata
-        valid_piece = PromptRequestPiece(
+        valid_piece = MessagePiece(
             role="assistant",
             original_value="text",
             converted_value_data_type="text",
@@ -275,7 +275,7 @@ class TestScorerPromptValidatorCombined:
         )
 
         # Invalid: wrong type but has metadata
-        wrong_type_piece = PromptRequestPiece(
+        wrong_type_piece = MessagePiece(
             role="assistant",
             original_value="image.png",
             converted_value_data_type="image_path",
@@ -283,7 +283,7 @@ class TestScorerPromptValidatorCombined:
         )
 
         # Invalid: correct type but missing metadata
-        missing_metadata_piece = PromptRequestPiece(
+        missing_metadata_piece = MessagePiece(
             role="assistant", original_value="text", converted_value_data_type="text"
         )
 
@@ -301,14 +301,14 @@ class TestScorerPromptValidatorCombined:
             is_objective_required=True,
         )
 
-        valid_piece = PromptRequestPiece(
+        valid_piece = MessagePiece(
             role="assistant",
             original_value="text",
             converted_value_data_type="text",
             prompt_metadata={"category": "test"},
             conversation_id="test",
         )
-        invalid_piece = PromptRequestPiece(
+        invalid_piece = MessagePiece(
             role="assistant",
             original_value="image.png",
             converted_value_data_type="image_path",

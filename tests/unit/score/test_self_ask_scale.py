@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from pyrit.models import PromptRequestPiece, Message, UnvalidatedScore
+from pyrit.models import MessagePiece, Message, UnvalidatedScore
 from pyrit.score import ContentClassifierPaths, SelfAskScaleScorer
 
 tree_scale_path = SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value
@@ -34,7 +34,7 @@ def scorer_scale_response() -> Message:
         .replace("\n", " ")
     )
 
-    return Message(request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)])
+    return Message(request_pieces=[MessagePiece(role="assistant", original_value=json_response)])
 
 
 @pytest.fixture

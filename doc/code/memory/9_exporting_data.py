@@ -23,7 +23,7 @@ from uuid import uuid4
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestPiece, Message
+from pyrit.models import MessagePiece, Message
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -32,13 +32,13 @@ conversation_id = str(uuid4())
 print(conversation_id)
 
 message_list = [
-    PromptRequestPiece(
+    MessagePiece(
         role="user", original_value="Hi, chat bot! This is my initial prompt.", conversation_id=conversation_id
     ),
-    PromptRequestPiece(
+    MessagePiece(
         role="assistant", original_value="Nice to meet you! This is my response.", conversation_id=conversation_id
     ),
-    PromptRequestPiece(
+    MessagePiece(
         role="user",
         original_value="Wonderful! This is my second prompt to the chat bot!",
         conversation_id=conversation_id,

@@ -4,7 +4,7 @@
 import asyncio
 from typing import List, Optional
 
-from pyrit.models import PromptRequestPiece, Score
+from pyrit.models import MessagePiece, Score
 from pyrit.models.literals import ChatMessageRole
 from pyrit.models.prompt_request_response import Message
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -104,12 +104,12 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
         return [return_score]
 
     async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+        self, request_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """Composite scorers do not support piecewise scoring.
 
         Args:
-            request_piece (PromptRequestPiece): Unused.
+            request_piece (MessagePiece): Unused.
             objective (Optional[str]): Unused.
 
         Raises:

@@ -15,12 +15,12 @@ from pyrit.models.score import Score
 Originator = Literal["attack", "converter", "undefined", "scorer"]
 
 
-class PromptRequestPiece:
+class MessagePiece:
     """Represents a piece of a prompt request to a target.
 
     This class represents a single piece of a prompt request that will be sent
     to a target. Since some targets can handle multiple pieces (e.g., text and images),
-    requests are composed of lists of PromptRequestPiece objects.
+    requests are composed of lists of MessagePiece objects.
     """
 
     def __init__(
@@ -49,7 +49,7 @@ class PromptRequestPiece:
         scores: Optional[List[Score]] = None,
         targeted_harm_categories: Optional[List[str]] = None,
     ):
-        """Initialize a PromptRequestPiece.
+        """Initialize a MessagePiece.
 
         Args:
             role: The role of the prompt (system, assistant, user).
@@ -237,7 +237,7 @@ class PromptRequestPiece:
         )
 
 
-def sort_request_pieces(prompt_pieces: list[PromptRequestPiece]) -> list[PromptRequestPiece]:
+def sort_request_pieces(prompt_pieces: list[MessagePiece]) -> list[MessagePiece]:
     """
     Group by conversation_id.
     Order conversations by the earliest timestamp within each conversation_id.

@@ -20,7 +20,7 @@ from pyrit.exceptions import (
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import (
     PromptDataType,
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     Score,
     ScoreType,
@@ -147,11 +147,11 @@ class Scorer(abc.ABC):
 
     @abstractmethod
     async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+        self, request_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         raise NotImplementedError()
 
-    def _get_supported_pieces(self, request_response: Message) -> list[PromptRequestPiece]:
+    def _get_supported_pieces(self, request_response: Message) -> list[MessagePiece]:
         """
         Returns a list of supported request pieces for this scorer.
         """
@@ -212,7 +212,7 @@ class Scorer(abc.ABC):
         """
         request = Message(
             request_pieces=[
-                PromptRequestPiece(
+                MessagePiece(
                     role="user",
                     original_value=text,
                 )
@@ -235,7 +235,7 @@ class Scorer(abc.ABC):
         """
         request = Message(
             request_pieces=[
-                PromptRequestPiece(
+                MessagePiece(
                     role="user",
                     original_value=image_path,
                     original_value_data_type="image_path",
@@ -413,7 +413,7 @@ class Scorer(abc.ABC):
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
         scorer_llm_request = Message(
             [
-                PromptRequestPiece(
+                MessagePiece(
                     role="user",
                     original_value=prompt_request_value,
                     original_value_data_type=prompt_request_data_type,

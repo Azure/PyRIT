@@ -33,7 +33,7 @@ from pyrit.executor.attack import (
     RedTeamingAttack,
 )
 from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestPiece, Message, SeedPrompt
+from pyrit.models import MessagePiece, Message, SeedPrompt
 from pyrit.prompt_target import AzureMLChatTarget, OpenAIChatTarget
 from pyrit.score import LookBackScorer, SubStringScorer
 
@@ -57,7 +57,7 @@ adversarial_strategy_path = Path(RED_TEAM_EXECUTOR_PATH, "persuasion_deception/R
 prepended_conversation = [
     Message(
         request_pieces=[
-            PromptRequestPiece(
+            MessagePiece(
                 role="user",
                 original_value=user_prompt_str,
             )
@@ -108,7 +108,7 @@ conversation_history = memory.get_conversation(conversation_id=result.conversati
 # Exclude the instruction prompts from the scoring process by setting exclude_instruction_prompts to True
 score_conversation = LookBackScorer(chat_target=adversarial_chat, exclude_instruction_prompts=True)
 
-# Score requires a PromptRequestPiece
+# Score requires a MessagePiece
 request_response = memory.get_prompt_request_pieces(conversation_id=result.conversation_id)
 request_piece = request_response[0]
 

@@ -8,7 +8,7 @@ from typing import Callable, Optional
 
 import rpyc
 
-from pyrit.models import PromptRequestPiece, Score
+from pyrit.models import MessagePiece, Score
 from pyrit.ui.rpc import RPCAppException
 
 DEFAULT_PORT = 18812
@@ -35,7 +35,7 @@ class RPCClient:
         self._shutdown_event = None  # type: Optional[Event]
         self._prompt_received_sem = None  # type: Optional[Semaphore]
 
-        self._prompt_received = None  # type: Optional[PromptRequestPiece]
+        self._prompt_received = None  # type: Optional[MessagePiece]
         self._callback_disconnected = callback_disconnected
 
     def start(self):
@@ -49,7 +49,7 @@ class RPCClient:
         self._bgsrv_thread = Thread(target=self._bgsrv_lifecycle)
         self._bgsrv_thread.start()
 
-    def wait_for_prompt(self) -> PromptRequestPiece:
+    def wait_for_prompt(self) -> MessagePiece:
         self._prompt_received_sem.acquire()
         if self._is_running:
             return self._prompt_received
@@ -91,7 +91,7 @@ class RPCClient:
         print("Reconnecting to server...")
         self.start()
 
-    def _receive_prompt(self, prompt_request: PromptRequestPiece, task: Optional[str] = None):
+    def _receive_prompt(self, prompt_request: MessagePiece, task: Optional[str] = None):
         print(f"Received prompt: {prompt_request}")
         self._prompt_received = prompt_request
         self._prompt_received_sem.release()

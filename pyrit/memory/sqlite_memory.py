@@ -23,7 +23,7 @@ from pyrit.memory.memory_models import (
     EmbeddingDataEntry,
     PromptMemoryEntry,
 )
-from pyrit.models import DiskStorageIO, PromptRequestPiece
+from pyrit.models import DiskStorageIO, MessagePiece
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +142,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         # Create SQL condition using SQLAlchemy's text() with bindparams
         return text(json_conditions).bindparams(**{key: str(value) for key, value in metadata.items()})
 
-    def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
+    def add_request_pieces_to_memory(self, *, request_pieces: Sequence[MessagePiece]) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.
         """

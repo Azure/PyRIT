@@ -8,7 +8,7 @@ from typing import Dict, Optional, Union
 import yaml
 
 from pyrit.common.path import CONTENT_CLASSIFIERS_PATH
-from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore
+from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
@@ -27,9 +27,9 @@ class SelfAskCategoryScorer(TrueFalseScorer):
     """
     A class that represents a self-ask score for text classification and scoring.
     Given a classifier file, it scores according to these categories and returns the category
-    the PromptRequestPiece fits best.
+    the MessagePiece fits best.
 
-    There is also a false category that is used if the promptrequestpiece does not fit any of the categories.
+    There is also a false category that is used if the MessagePiece does not fit any of the categories.
     """
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator()
@@ -101,13 +101,13 @@ class SelfAskCategoryScorer(TrueFalseScorer):
         return category_descriptions
 
     async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+        self, request_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """
         Scores the given request_response using the chat target.
 
         Args:
-            request_response (PromptRequestPiece): The prompt request piece to score.
+            request_response (MessagePiece): The prompt request piece to score.
             task (str): The task based on which the text should be scored (the original attacker model's objective).
                 Currently not supported for this scorer.
 

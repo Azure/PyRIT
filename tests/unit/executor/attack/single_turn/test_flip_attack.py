@@ -15,7 +15,7 @@ from pyrit.executor.attack import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    PromptRequestPiece,
+    MessagePiece,
     Message,
 )
 from pyrit.prompt_converter import FlipConverter
@@ -241,7 +241,7 @@ class TestAttackLifecycle:
         # Context with prepended conversation
         basic_context.prepended_conversation = [
             Message(
-                request_pieces=[PromptRequestPiece(role="user", original_value="Test prepended conversation")]
+                request_pieces=[MessagePiece(role="user", original_value="Test prepended conversation")]
             )
         ]
         attack._setup_async = AsyncMock()

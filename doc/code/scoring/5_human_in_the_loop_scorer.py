@@ -24,13 +24,13 @@ scorer = HumanInTheLoopScorerGradio()
 
 # %%
 from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestPiece
+from pyrit.models import MessagePiece
 
 memory = CentralMemory.get_memory_instance()
 
 
 # This cell can be run multiple times to simulate multiple scoring requests.
-prompt = PromptRequestPiece(
+prompt = MessagePiece(
     role="assistant",
     original_value="The quick brown fox jumps over the lazy dog.",
 ).to_prompt_request_response()

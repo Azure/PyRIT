@@ -11,7 +11,7 @@ from uuid import uuid4
 from pyrit.exceptions import EmptyResponseException
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import (
-    PromptRequestPiece,
+    MessagePiece,
     Message,
     construct_response_from_request,
 )
@@ -328,7 +328,7 @@ class PromptNormalizer:
         # All prompt request pieces within Message needs to have same conversation ID.
         conversation_id = conversation_id if conversation_id else str(uuid4())
         for seed_prompt in seed_prompt_group.prompts:
-            prompt_request_piece = PromptRequestPiece(
+            prompt_request_piece = MessagePiece(
                 role=seed_prompt.role,
                 original_value=seed_prompt.value,
                 conversation_id=conversation_id,

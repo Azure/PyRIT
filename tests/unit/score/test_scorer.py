@@ -13,7 +13,7 @@ import pytest
 from pyrit.common.path import SCORER_CONFIG_PATH
 from pyrit.exceptions import InvalidJsonException, remove_markdown_json
 from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestPiece, Message, Score
+from pyrit.models import MessagePiece, Message, Score
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer, ScorerPromptValidator, TrueFalseScorer
 
@@ -77,7 +77,7 @@ class MockScorer(TrueFalseScorer):
         ]
 
     async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+        self, request_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         return [
             Score(
@@ -115,7 +115,7 @@ class MockFloatScorer(Scorer):
         self.scored_piece_ids: list[str] = []
 
     async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+        self, request_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         # Track which pieces get scored
         self.scored_piece_ids.append(str(request_piece.id))
@@ -144,7 +144,7 @@ class MockFloatScorer(Scorer):
 async def test_scorer_send_chat_target_async_bad_json_exception_retries(bad_json: str):
     chat_target = MagicMock(PromptChatTarget)
     bad_json_resp = Message(
-        request_pieces=[PromptRequestPiece(role="assistant", original_value=bad_json, conversation_id="test-convo")]
+        request_pieces=[MessagePiece(role="assistant", original_value=bad_json, conversation_id="test-convo")]
     )
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
     scorer = MockScorer()
@@ -186,7 +186,7 @@ async def test_scorer_score_value_with_llm_use_provided_attack_identifier(good_j
     scorer = MockScorer()
 
     prompt_response = Message(
-        request_pieces=[PromptRequestPiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
+        request_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
     )
     chat_target = MagicMock(PromptChatTarget)
     chat_target.send_prompt_async = AsyncMock(return_value=prompt_response)
@@ -221,7 +221,7 @@ async def test_scorer_score_value_with_llm_does_not_add_score_prompt_id_for_empt
     scorer = MockScorer()
 
     prompt_response = Message(
-        request_pieces=[PromptRequestPiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
+        request_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
     )
     chat_target = MagicMock(PromptChatTarget)
     chat_target.send_prompt_async = AsyncMock(return_value=prompt_response)
@@ -253,7 +253,7 @@ async def test_scorer_send_chat_target_async_good_response(good_json):
     chat_target = MagicMock(PromptChatTarget)
 
     good_json_resp = Message(
-        request_pieces=[PromptRequestPiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
+        request_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
     )
     chat_target.send_prompt_async = AsyncMock(return_value=good_json_resp)
 
@@ -277,7 +277,7 @@ async def test_scorer_remove_markdown_json_called(good_json):
 
     chat_target = MagicMock(PromptChatTarget)
     good_json_resp = Message(
-        request_pieces=[PromptRequestPiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
+        request_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
     )
     chat_target.send_prompt_async = AsyncMock(return_value=good_json_resp)
 
@@ -331,11 +331,11 @@ def test_scorer_extract_task_from_response(patch_central_database):
     scorer = MockScorer()
     mock_memory = MagicMock()
 
-    response_piece = PromptRequestPiece(original_value="og prompt", role="assistant", conversation_id="xyz", sequence=2)
+    response_piece = MessagePiece(original_value="og prompt", role="assistant", conversation_id="xyz", sequence=2)
 
     mock_memory.get_prompt_request_pieces.return_value = [
-        PromptRequestPiece(role="user", original_value="Not applicable", original_value_data_type="text", sequence=0),
-        PromptRequestPiece(
+        MessagePiece(role="user", original_value="Not applicable", original_value_data_type="text", sequence=0),
+        MessagePiece(
             role="user",
             original_value="User's question about the universe",
             converted_value="Not the task",
@@ -363,8 +363,8 @@ async def test_scorer_score_responses_batch_async(patch_central_database):
         fake_scores = [MagicMock(), MagicMock()]
         mock_score_async.return_value = fake_scores
 
-        user_req = PromptRequestPiece(role="user", original_value="Hello user", sequence=1).to_prompt_request_response()
-        assistant_resp = PromptRequestPiece(
+        user_req = MessagePiece(role="user", original_value="Hello user", sequence=1).to_prompt_request_response()
+        assistant_resp = MessagePiece(
             role="assistant", original_value="Hello from assistant", sequence=2
         ).to_prompt_request_response()
 
@@ -391,7 +391,7 @@ async def test_scorer_score_responses_batch_async(patch_central_database):
 async def test_score_response_async_empty_scorers():
     """Test that score_response_async returns empty list when no scorers provided."""
     response = Message(
-        request_pieces=[PromptRequestPiece(role="assistant", original_value="test", conversation_id="test-convo")]
+        request_pieces=[MessagePiece(role="assistant", original_value="test", conversation_id="test-convo")]
     )
 
     result = await Scorer.score_response_async(response=response, objective="test task")
@@ -403,8 +403,8 @@ async def test_score_response_async_no_matching_role():
     """Test that score_response_async returns empty list when no pieces match role filter."""
     response = Message(
         request_pieces=[
-            PromptRequestPiece(role="user", original_value="test1", conversation_id="test-convo"),
-            PromptRequestPiece(role="user", original_value="test2", conversation_id="test-convo"),
+            MessagePiece(role="user", original_value="test1", conversation_id="test-convo"),
+            MessagePiece(role="user", original_value="test2", conversation_id="test-convo"),
         ]
     )
 
@@ -425,9 +425,9 @@ async def test_score_response_async_no_matching_role():
 @pytest.mark.asyncio
 async def test_score_response_async_parallel_execution():
     """Test that score_response_async runs all scorers in parallel on all filtered pieces."""
-    piece1 = PromptRequestPiece(role="assistant", original_value="response1", conversation_id="test-convo")
-    piece2 = PromptRequestPiece(role="assistant", original_value="response2", conversation_id="test-convo")
-    piece3 = PromptRequestPiece(role="assistant", original_value="user input", conversation_id="test-convo")
+    piece1 = MessagePiece(role="assistant", original_value="response1", conversation_id="test-convo")
+    piece2 = MessagePiece(role="assistant", original_value="response2", conversation_id="test-convo")
+    piece3 = MessagePiece(role="assistant", original_value="user input", conversation_id="test-convo")
 
     response = Message(request_pieces=[piece1, piece2, piece3])
 
@@ -462,7 +462,7 @@ async def test_score_response_async_parallel_execution():
 async def test_score_response_select_first_success_async_empty_scorers():
     """Test that score_response_select_first_success_async returns None when no scorers provided."""
     response = Message(
-        request_pieces=[PromptRequestPiece(role="assistant", original_value="test", conversation_id="test-convo")]
+        request_pieces=[MessagePiece(role="assistant", original_value="test", conversation_id="test-convo")]
     )
 
     result = await Scorer.score_response_multiple_scorers_async(response=response, scorers=[], objective="test task")
@@ -474,7 +474,7 @@ async def test_score_response_select_first_success_async_empty_scorers():
 async def test_score_async_no_matching_role():
     """Test that score_response_select_first_success_async returns None when no pieces match role filter."""
     response = Message(
-        request_pieces=[PromptRequestPiece(role="user", original_value="test", conversation_id="test-convo")]
+        request_pieces=[MessagePiece(role="user", original_value="test", conversation_id="test-convo")]
     )
     scorer = MockScorer()
     result = await scorer.score_async(request_response=response, role_filter="assistant", objective="test task")
@@ -485,8 +485,8 @@ async def test_score_async_no_matching_role():
 @pytest.mark.asyncio
 async def test_score_response_async_finds_success():
     """Test that score_response_async returns first successful score."""
-    piece1 = PromptRequestPiece(role="assistant", original_value="response1", conversation_id="test-convo")
-    piece2 = PromptRequestPiece(role="assistant", original_value="response2", conversation_id="test-convo")
+    piece1 = MessagePiece(role="assistant", original_value="response1", conversation_id="test-convo")
+    piece2 = MessagePiece(role="assistant", original_value="response2", conversation_id="test-convo")
 
     response = Message(request_pieces=[piece1, piece2])
 
@@ -524,8 +524,8 @@ async def test_score_response_async_finds_success():
 @pytest.mark.asyncio
 async def test_score_response_success_async_no_success_returns_first():
     """Test that score_response_success_async returns first score when no success found."""
-    piece1 = PromptRequestPiece(role="assistant", original_value="response1", conversation_id="test-convo")
-    piece2 = PromptRequestPiece(role="assistant", original_value="response2", conversation_id="test-convo")
+    piece1 = MessagePiece(role="assistant", original_value="response1", conversation_id="test-convo")
+    piece2 = MessagePiece(role="assistant", original_value="response2", conversation_id="test-convo")
 
     response = Message(request_pieces=[piece1, piece2])
 
@@ -563,8 +563,8 @@ async def test_score_response_success_async_no_success_returns_first():
 @pytest.mark.asyncio
 async def test_score_response_success_async_parallel_scoring_per_piece():
     """Test that score_response_success_async runs scorers in parallel for each piece."""
-    piece1 = PromptRequestPiece(role="assistant", original_value="response1", conversation_id="test-convo")
-    piece2 = PromptRequestPiece(role="assistant", original_value="response2", conversation_id="test-convo")
+    piece1 = MessagePiece(role="assistant", original_value="response1", conversation_id="test-convo")
+    piece2 = MessagePiece(role="assistant", original_value="response2", conversation_id="test-convo")
 
     response = Message(request_pieces=[piece1, piece2])
 
@@ -602,7 +602,7 @@ async def test_score_response_success_async_parallel_scoring_per_piece():
 @pytest.mark.asyncio
 async def test_score_response_async_no_scorers():
     """Test score_response_async with no scorers provided."""
-    response = Message(request_pieces=[PromptRequestPiece(role="assistant", original_value="test")])
+    response = Message(request_pieces=[MessagePiece(role="assistant", original_value="test")])
 
     result = await Scorer.score_response_async(
         response=response, auxiliary_scorers=None, objective_scorer=None, objective="test task"
@@ -614,7 +614,7 @@ async def test_score_response_async_no_scorers():
 @pytest.mark.asyncio
 async def test_score_response_async_auxiliary_only():
     """Test score_response_async with only auxiliary scorers."""
-    piece = PromptRequestPiece(role="assistant", original_value="response")
+    piece = MessagePiece(role="assistant", original_value="response")
     response = Message(request_pieces=[piece])
 
     # Create mock auxiliary scores
@@ -642,7 +642,7 @@ async def test_score_response_async_auxiliary_only():
 @pytest.mark.asyncio
 async def test_score_response_async_objective_only():
     """Test score_response_async with only objective scorers."""
-    piece = PromptRequestPiece(role="assistant", original_value="response")
+    piece = MessagePiece(role="assistant", original_value="response")
     response = Message(request_pieces=[piece])
 
     # Create mock objective score
@@ -666,7 +666,7 @@ async def test_score_response_async_objective_only():
 @pytest.mark.asyncio
 async def test_score_response_async_both_types():
     """Test score_response_async with both auxiliary and objective scorers."""
-    piece = PromptRequestPiece(role="assistant", original_value="response")
+    piece = MessagePiece(role="assistant", original_value="response")
     response = Message(request_pieces=[piece])
 
     # Create mock scores
@@ -695,8 +695,8 @@ async def test_score_response_async_both_types():
 @pytest.mark.asyncio
 async def test_score_response_async_multiple_pieces():
     """Test score_response_async with multiple response pieces."""
-    piece1 = PromptRequestPiece(role="assistant", original_value="response1", conversation_id="test-convo")
-    piece2 = PromptRequestPiece(role="assistant", original_value="response2", conversation_id="test-convo")
+    piece1 = MessagePiece(role="assistant", original_value="response1", conversation_id="test-convo")
+    piece2 = MessagePiece(role="assistant", original_value="response2", conversation_id="test-convo")
     response = Message(request_pieces=[piece1, piece2])
 
     # Create mock scores
@@ -739,8 +739,8 @@ async def test_score_response_async_multiple_pieces():
 @pytest.mark.asyncio
 async def test_score_response_async_skip_on_error_true():
     """Test score_response_async skips error pieces when skip_on_error_result=True."""
-    piece1 = PromptRequestPiece(role="assistant", original_value="good response", conversation_id="test-convo")
-    piece2 = PromptRequestPiece(
+    piece1 = MessagePiece(role="assistant", original_value="good response", conversation_id="test-convo")
+    piece2 = MessagePiece(
         role="assistant", original_value="error", response_error="blocked", conversation_id="test-convo"
     )
     response = Message(request_pieces=[piece1, piece2])
@@ -777,8 +777,8 @@ async def test_score_response_async_skip_on_error_true():
 @pytest.mark.asyncio
 async def test_score_response_async_skip_on_error_false():
     """Test score_response_async includes error pieces when skip_on_error_result=False."""
-    piece1 = PromptRequestPiece(role="assistant", original_value="good response", conversation_id="test-convo")
-    piece2 = PromptRequestPiece(
+    piece1 = MessagePiece(role="assistant", original_value="good response", conversation_id="test-convo")
+    piece2 = MessagePiece(
         role="assistant", original_value="error", response_error="blocked", conversation_id="test-convo"
     )
     response = Message(request_pieces=[piece1, piece2])
@@ -819,7 +819,7 @@ async def test_score_response_async_skip_on_error_false():
 @pytest.mark.asyncio
 async def test_score_response_async_objective_failure():
     """Test score_response_async when no objective succeeds."""
-    piece = PromptRequestPiece(role="assistant", original_value="response")
+    piece = MessagePiece(role="assistant", original_value="response")
     response = Message(request_pieces=[piece])
 
     # Create mock scores (all failures)
@@ -849,7 +849,7 @@ async def test_score_response_async_objective_failure():
 @pytest.mark.asyncio
 async def test_score_response_async_concurrent_execution():
     """Test that auxiliary and objective scoring happen concurrently."""
-    piece = PromptRequestPiece(role="assistant", original_value="response")
+    piece = MessagePiece(role="assistant", original_value="response")
     response = Message(request_pieces=[piece])
 
     # Track call order to verify concurrent execution
@@ -889,7 +889,7 @@ async def test_score_response_async_concurrent_execution():
 @pytest.mark.asyncio
 async def test_score_response_async_empty_lists():
     """Test score_response_async with empty scorer lists."""
-    piece = PromptRequestPiece(role="assistant", original_value="response")
+    piece = MessagePiece(role="assistant", original_value="response")
     response = Message(request_pieces=[piece])
 
     result = await Scorer.score_response_async(
@@ -941,21 +941,21 @@ async def test_get_supported_pieces_filters_unsupported_data_types(patch_central
     )
 
     # Create a response with mixed data types
-    text_piece = PromptRequestPiece(
+    text_piece = MessagePiece(
         role="assistant",
         original_value="text response",
         converted_value_data_type="text",
         id="text-1",
         conversation_id="test-convo",
     )
-    image_piece = PromptRequestPiece(
+    image_piece = MessagePiece(
         role="assistant",
         original_value="image.png",
         converted_value_data_type="image_path",
         id="image-1",
         conversation_id="test-convo",
     )
-    audio_piece = PromptRequestPiece(
+    audio_piece = MessagePiece(
         role="assistant",
         original_value="audio.wav",
         converted_value_data_type="audio_path",
@@ -987,14 +987,14 @@ async def test_unsupported_pieces_ignored_when_enforce_all_pieces_valid_false(pa
     scorer = MockFloatScorer(validator=validator)
 
     # Create a response with only unsupported types and one supported
-    text_piece = PromptRequestPiece(
+    text_piece = MessagePiece(
         role="assistant",
         original_value="text response",
         converted_value_data_type="text",
         id="text-1",
         conversation_id="test-convo",
     )
-    image_piece = PromptRequestPiece(
+    image_piece = MessagePiece(
         role="assistant",
         original_value="image.png",
         converted_value_data_type="image_path",
@@ -1019,14 +1019,14 @@ async def test_all_unsupported_pieces_raises_error(patch_central_database):
     scorer = MockFloatScorer(validator=validator)
 
     # Create a response with only unsupported types
-    image_piece = PromptRequestPiece(
+    image_piece = MessagePiece(
         role="assistant",
         original_value="image.png",
         converted_value_data_type="image_path",
         id="image-1",
         conversation_id="test-convo",
     )
-    audio_piece = PromptRequestPiece(
+    audio_piece = MessagePiece(
         role="assistant",
         original_value="audio.wav",
         converted_value_data_type="audio_path",
@@ -1055,7 +1055,7 @@ async def test_true_false_scorer_uses_supported_pieces_only(patch_central_databa
             self.scored_piece_ids = []
 
         async def _score_piece_async(
-            self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
+            self, request_piece: MessagePiece, *, objective: Optional[str] = None
         ) -> list[Score]:
             self.scored_piece_ids.append(request_piece.id)
             return [
@@ -1075,14 +1075,14 @@ async def test_true_false_scorer_uses_supported_pieces_only(patch_central_databa
     scorer = TestTrueFalseScorer()
 
     # Create mixed response
-    text_piece = PromptRequestPiece(
+    text_piece = MessagePiece(
         role="assistant",
         original_value="text",
         converted_value_data_type="text",
         id="text-1",
         conversation_id="test-convo",
     )
-    image_piece = PromptRequestPiece(
+    image_piece = MessagePiece(
         role="assistant",
         original_value="image.png",
         converted_value_data_type="image_path",
@@ -1110,14 +1110,14 @@ async def test_base_scorer_score_async_implementation(patch_central_database):
     scorer = MockFloatScorer(validator=validator)
 
     # Create response with multiple supported pieces
-    text_piece1 = PromptRequestPiece(
+    text_piece1 = MessagePiece(
         role="assistant",
         original_value="text 1",
         converted_value_data_type="text",
         id="text-1",
         conversation_id="test-convo",
     )
-    text_piece2 = PromptRequestPiece(
+    text_piece2 = MessagePiece(
         role="assistant",
         original_value="text 2",
         converted_value_data_type="text",
