@@ -9,7 +9,7 @@ import requests
 from openai import BadRequestError
 
 from pyrit.exceptions import PyritException, pyrit_target_retry
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
+from pyrit.models import PromptRequestPiece, Message, Score
 from pyrit.prompt_target import GandalfLevel, PromptChatTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
@@ -88,7 +88,7 @@ class GandalfScorer(TrueFalseScorer):
             conversation_as_text += request_response.get_value()
             conversation_as_text += "\n"
 
-        request = PromptRequestResponse(
+        request = Message(
             [
                 PromptRequestPiece(
                     role="user",

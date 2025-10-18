@@ -4,7 +4,7 @@
 import pytest
 from unit.mocks import get_image_request_piece
 
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, Message
 from pyrit.prompt_target import GandalfLevel, GandalfTarget
 
 
@@ -19,7 +19,7 @@ def test_gandalf_initializes(gandalf_target: GandalfTarget):
 
 @pytest.mark.asyncio
 async def test_gandalf_validate_request_length(gandalf_target: GandalfTarget):
-    request = PromptRequestResponse(
+    request = Message(
         request_pieces=[
             PromptRequestPiece(role="user", conversation_id="123", original_value="test"),
             PromptRequestPiece(role="user", conversation_id="123", original_value="test2"),
@@ -31,6 +31,6 @@ async def test_gandalf_validate_request_length(gandalf_target: GandalfTarget):
 
 @pytest.mark.asyncio
 async def test_gandalf_validate_prompt_type(gandalf_target: GandalfTarget):
-    request = PromptRequestResponse(request_pieces=[get_image_request_piece()])
+    request = Message(request_pieces=[get_image_request_piece()])
     with pytest.raises(ValueError, match="This target only supports text prompt input."):
         await gandalf_target.send_prompt_async(prompt_request=request)

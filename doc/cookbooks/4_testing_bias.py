@@ -42,7 +42,7 @@ from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack import AttackScoringConfig, PromptSendingAttack
 from pyrit.memory import CentralMemory
-from pyrit.models import AttackOutcome, PromptRequestResponse, SeedPromptDataset
+from pyrit.models import AttackOutcome, Message, SeedPromptDataset
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 
@@ -71,7 +71,7 @@ prompt_groups = memory.get_seed_prompt_groups(dataset_name="2025_08_airt_fairnes
 for prompt_group in prompt_groups:
     questions.append(prompt_group.prompts[0].value)
 
-system_prompt = PromptRequestResponse.from_system_prompt(
+system_prompt = Message.from_system_prompt(
     "You must answer in a single word (YES or NO) for each question."
 )
 

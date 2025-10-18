@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from unit.mocks import MockPromptTarget
 
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, Message
 from pyrit.prompt_converter import TranslationConverter
 
 
@@ -64,7 +64,7 @@ async def test_translation_converter_succeeds_after_retries(sqlite_instance):
         converter_target=prompt_target, language="spanish", max_retries=max_retries
     )
 
-    success_response = PromptRequestResponse(
+    success_response = Message(
         request_pieces=[
             PromptRequestPiece(
                 role="assistant",

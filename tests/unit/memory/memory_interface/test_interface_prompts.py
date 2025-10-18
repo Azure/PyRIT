@@ -14,7 +14,7 @@ from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.memory import MemoryInterface, PromptMemoryEntry
 from pyrit.models import (
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
     Score,
 )
 
@@ -41,7 +41,7 @@ def test_add_request_pieces_to_memory(
         c.role = sample_conversations[0].role
         c.sequence = 0
 
-    request_response = PromptRequestResponse(request_pieces=sample_conversations[:num_conversations])
+    request_response = Message(request_pieces=sample_conversations[:num_conversations])
 
     sqlite_instance.add_request_response_to_memory(request=request_response)
     assert len(sqlite_instance.get_prompt_request_pieces()) == num_conversations
@@ -474,7 +474,7 @@ def test_duplicate_memory_attack_id_collision(sqlite_instance: MemoryInterface):
 
 
 def test_add_request_pieces_to_memory_calls_validate(sqlite_instance: MemoryInterface):
-    request_response = MagicMock(PromptRequestResponse)
+    request_response = MagicMock(Message)
     request_response.request_pieces = [MagicMock(PromptRequestPiece)]
     with (
         patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_request_pieces_to_memory"),
@@ -494,7 +494,7 @@ def test_add_request_pieces_to_memory_updates_sequence(
 
     with patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_request_pieces_to_memory") as mock_add:
         sqlite_instance.add_request_response_to_memory(
-            request=PromptRequestResponse(request_pieces=sample_conversations)
+            request=Message(request_pieces=sample_conversations)
         )
         assert mock_add.called
 
@@ -514,11 +514,11 @@ def test_add_request_pieces_to_memory_updates_sequence_with_prev_conversation(
         conversation.sequence = 17
 
     # insert one of these into memory
-    sqlite_instance.add_request_response_to_memory(request=PromptRequestResponse(request_pieces=sample_conversations))
+    sqlite_instance.add_request_response_to_memory(request=Message(request_pieces=sample_conversations))
 
     with patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_request_pieces_to_memory") as mock_add:
         sqlite_instance.add_request_response_to_memory(
-            request=PromptRequestResponse(request_pieces=sample_conversations)
+            request=Message(request_pieces=sample_conversations)
         )
         assert mock_add.called
 
@@ -532,7 +532,7 @@ def test_insert_prompt_memories_inserts_embedding(
     sqlite_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
 ):
 
-    request = PromptRequestResponse(request_pieces=[sample_conversations[0]])
+    request = Message(request_pieces=[sample_conversations[0]])
 
     embedding_mock = MagicMock()
     embedding_mock.generate_text_embedding.returns = [0, 1, 2]
@@ -553,7 +553,7 @@ def test_insert_prompt_memories_not_inserts_embedding(
     sqlite_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
 ):
 
-    request = PromptRequestResponse(request_pieces=[sample_conversations[0]])
+    request = Message(request_pieces=[sample_conversations[0]])
 
     embedding_mock = MagicMock()
     embedding_mock.generate_text_embedding.returns = [0, 1, 2]

@@ -21,7 +21,7 @@ from pyrit.memory import CentralMemory
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    PromptRequestResponse,
+    Message,
     SeedPrompt,
     SeedPromptGroup,
 )
@@ -48,7 +48,7 @@ class FairnessBiasBenchmarkContext(StrategyContext):
     objective: Optional[str] = None
 
     # Prepended conversation for context
-    prepended_conversation: List[PromptRequestResponse] = field(default_factory=list)
+    prepended_conversation: List[Message] = field(default_factory=list)
 
     # Memory labels for tracking
     memory_labels: Dict[str, str] = field(default_factory=dict)
@@ -413,7 +413,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
         story_type: str,
         num_experiments: int = 1,
         objective: Optional[str] = None,
-        prepended_conversation: Optional[List[PromptRequestResponse]] = None,
+        prepended_conversation: Optional[List[Message]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
         **kwargs,
     ) -> AttackResult: ...
@@ -431,7 +431,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
                 story_type (str): The type of story to generate
                 num_experiments (int, optional): Number of experiments to run (default: 1)
                 objective (str, optional): Custom objective prompt (default: auto-generated)
-                prepended_conversation (List[PromptRequestResponse], optional): Context conversation
+                prepended_conversation (List[Message], optional): Context conversation
                 memory_labels (Dict[str, str], optional): Labels for memory tracking
 
         Returns:

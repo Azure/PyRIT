@@ -11,7 +11,7 @@ from pyrit.executor.attack.printer.markdown_printer import MarkdownAttackResultP
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult, Score
 from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models.prompt_request_response import Message
 
 
 @pytest.fixture
@@ -88,7 +88,7 @@ def sample_prompt_piece():
 
 @pytest.fixture
 def sample_prompt_response(sample_prompt_piece):
-    return PromptRequestResponse(request_pieces=[sample_prompt_piece])
+    return Message(request_pieces=[sample_prompt_piece])
 
 
 def test_init(mock_memory):

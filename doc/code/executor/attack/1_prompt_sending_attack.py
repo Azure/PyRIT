@@ -211,7 +211,7 @@ await printer.print_conversation_async(result=result, include_auxiliary_scores=T
 # %%
 from pyrit.datasets import TextJailBreak
 from pyrit.executor.attack import AttackExecutor, PromptSendingAttack
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models.prompt_request_response import Message
 from pyrit.prompt_target import OpenAIChatTarget
 
 target = OpenAIChatTarget()
@@ -219,7 +219,7 @@ target = OpenAIChatTarget()
 jailbreak = TextJailBreak(template_file_name="dan_1.yaml")
 system_prompt_str = jailbreak.get_jailbreak_system_prompt()
 
-prepend_conversation = [PromptRequestResponse.from_system_prompt(system_prompt_str)]
+prepend_conversation = [Message.from_system_prompt(system_prompt_str)]
 
 attack = PromptSendingAttack(objective_target=target)
 executor = AttackExecutor()

@@ -11,7 +11,7 @@ from unit.mocks import MockPromptTarget, get_image_request_piece
 
 from pyrit.exceptions import EmptyResponseException
 from pyrit.memory import CentralMemory
-from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptDataType, PromptRequestPiece, Message
 from pyrit.models.filter_criteria import PromptFilterCriteria
 from pyrit.models.seed_prompt import SeedPrompt
 from pyrit.models.seed_prompt_group import SeedPromptGroup
@@ -29,12 +29,12 @@ from pyrit.prompt_target import PromptTarget
 
 
 @pytest.fixture
-def response() -> PromptRequestResponse:
+def response() -> Message:
     conversation_id = "123"
     image_request_piece = get_image_request_piece()
     image_request_piece.role = "assistant"
     image_request_piece.conversation_id = conversation_id
-    return PromptRequestResponse(
+    return Message(
         request_pieces=[
             PromptRequestPiece(role="assistant", original_value="Hello", conversation_id=conversation_id),
             PromptRequestPiece(role="assistant", original_value="part 2", conversation_id=conversation_id),
@@ -80,7 +80,7 @@ class MockPromptConverter(PromptConverter):
         return output_type == "text"
 
 
-def assert_prompt_piece_hashes_set(request: PromptRequestResponse):
+def assert_prompt_piece_hashes_set(request: Message):
     assert request
     assert request.request_pieces
     for piece in request.request_pieces:
@@ -246,7 +246,7 @@ async def test_send_prompt_async_mixed_sequence_types(mock_memory_instance):
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_adds_memory_twice(
-    mock_memory_instance, seed_prompt_group, response: PromptRequestResponse
+    mock_memory_instance, seed_prompt_group, response: Message
 ):
     prompt_target = MagicMock()
     prompt_target.send_prompt_async = AsyncMock(return_value=response)
@@ -259,7 +259,7 @@ async def test_send_prompt_async_adds_memory_twice(
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_no_converters_response(
-    mock_memory_instance, seed_prompt_group, response: PromptRequestResponse
+    mock_memory_instance, seed_prompt_group, response: Message
 ):
 
     prompt_target = MagicMock()
@@ -274,7 +274,7 @@ async def test_send_prompt_async_no_converters_response(
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_converters_response(
-    mock_memory_instance, seed_prompt_group, response: PromptRequestResponse
+    mock_memory_instance, seed_prompt_group, response: Message
 ):
 
     prompt_target = MagicMock()
@@ -408,7 +408,7 @@ async def test_build_prompt_request_response(mock_memory_instance, seed_prompt_g
 
 
 @pytest.mark.asyncio
-async def test_convert_response_values_index(mock_memory_instance, response: PromptRequestResponse):
+async def test_convert_response_values_index(mock_memory_instance, response: Message):
     response_converter = PromptConverterConfiguration(converters=[Base64Converter()], indexes_to_apply=[0])
 
     normalizer = PromptNormalizer()
@@ -419,7 +419,7 @@ async def test_convert_response_values_index(mock_memory_instance, response: Pro
 
 
 @pytest.mark.asyncio
-async def test_convert_response_values_type(mock_memory_instance, response: PromptRequestResponse):
+async def test_convert_response_values_type(mock_memory_instance, response: Message):
     response_converter = PromptConverterConfiguration(
         converters=[Base64Converter()], prompt_data_types_to_apply=["text"]
     )
@@ -436,7 +436,7 @@ async def test_should_skip_based_on_skip_criteria_no_skip_criteria(mock_memory_i
     normalizer = PromptNormalizer()  # By default, _skip_criteria is None
 
     # Make a request with at least one piece
-    request = PromptRequestResponse(request_pieces=[PromptRequestPiece(role="user", original_value="hello")])
+    request = Message(request_pieces=[PromptRequestPiece(role="user", original_value="hello")])
 
     result = normalizer._should_skip_based_on_skip_criteria(request)
     assert result is False, "_should_skip_based_on_skip_criteria should return False when skip_criteria is not set"
@@ -467,7 +467,7 @@ async def test_should_skip_based_on_skip_criteria_no_matches(mock_memory_instanc
     request_piece.original_value_sha256 = "completely_different_hash"
     request_piece.converted_value_sha256 = "completely_different_hash"
 
-    request = PromptRequestResponse(request_pieces=[request_piece])
+    request = Message(request_pieces=[request_piece])
 
     result = normalizer._should_skip_based_on_skip_criteria(request)
     assert result is False, "Should return False if no prompt pieces in memory match"
@@ -498,7 +498,7 @@ async def test_should_skip_based_on_skip_criteria_match_found(mock_memory_instan
     request_piece = PromptRequestPiece(role="user", original_value="My user prompt")
     request_piece.converted_value_sha256 = matching_sha
 
-    request = PromptRequestResponse(request_pieces=[request_piece])
+    request = Message(request_pieces=[request_piece])
 
     # Set skip criteria with 'converted' skip_value_type
     normalizer.set_skip_criteria(skip_criteria, skip_value_type="converted")
@@ -518,7 +518,7 @@ async def test_should_skip_based_on_skip_criteria_original_value_match(mock_memo
     request_piece = PromptRequestPiece(role="user", original_value="My user prompt")
     request_piece.original_value_sha256 = matching_sha
 
-    request = PromptRequestResponse(request_pieces=[request_piece])
+    request = Message(request_pieces=[request_piece])
 
     # Memory returns a piece that has an original_value_sha256 matching our request piece
     piece = PromptRequestPiece(role="user", original_value="prompt")

@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, Message
 from pyrit.prompt_target.http_target.httpx_api_target import HTTPXAPITarget
 
 
@@ -21,7 +21,7 @@ async def test_send_prompt_async_file_upload(mock_request, patch_central_databas
 
     # Create a PromptRequestPiece with converted_value set to the temporary file path.
     request_piece = PromptRequestPiece(role="user", original_value="mock", converted_value=file_path)
-    prompt_request = PromptRequestResponse(request_pieces=[request_piece])
+    prompt_request = Message(request_pieces=[request_piece])
 
     # Mock a response simulating a file upload.
     mock_response = MagicMock()
@@ -47,7 +47,7 @@ async def test_send_prompt_async_file_upload(mock_request, patch_central_databas
 async def test_send_prompt_async_no_file(mock_request, patch_central_database):
     # Create a PromptRequestPiece with converted_value that does not point to a valid file.
     request_piece = PromptRequestPiece(role="user", original_value="mock", converted_value="non_existent_file.pdf")
-    prompt_request = PromptRequestResponse(request_pieces=[request_piece])
+    prompt_request = Message(request_pieces=[request_piece])
 
     # Mock a response simulating a standard API (non-file).
     mock_response = MagicMock()

@@ -21,7 +21,7 @@ from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import (
     PromptDataType,
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
     Score,
     ScoreType,
     UnvalidatedScore,
@@ -70,7 +70,7 @@ class Scorer(abc.ABC):
 
     async def score_async(
         self,
-        request_response: PromptRequestResponse,
+        request_response: Message,
         *,
         objective: Optional[str] = None,
         role_filter: Optional[ChatMessageRole] = None,
@@ -82,7 +82,7 @@ class Scorer(abc.ABC):
         and return a list of Score objects.
 
         Args:
-            request_response (PromptRequestResponse): The request response to be scored.
+            request_response (Message): The request response to be scored.
             task (str): The task based on which the text should be scored (the original attacker model's objective).
 
         Returns:
@@ -112,7 +112,7 @@ class Scorer(abc.ABC):
         return scores
 
     async def _score_async(
-        self, request_response: PromptRequestResponse, *, objective: Optional[str] = None
+        self, request_response: Message, *, objective: Optional[str] = None
     ) -> list[Score]:
         """
         Score the given request response asynchronously.
@@ -122,7 +122,7 @@ class Scorer(abc.ABC):
         to implement custom scoring logic (e.g., aggregating scores).
 
         Args:
-            request_response (PromptRequestResponse): The prompt request response to score.
+            request_response (Message): The prompt request response to score.
             objective (Optional[str]): The objective to evaluate against. Defaults to None.
 
         Returns:
@@ -151,7 +151,7 @@ class Scorer(abc.ABC):
     ) -> list[Score]:
         raise NotImplementedError()
 
-    def _get_supported_pieces(self, request_response: PromptRequestResponse) -> list[PromptRequestPiece]:
+    def _get_supported_pieces(self, request_response: Message) -> list[PromptRequestPiece]:
         """
         Returns a list of supported request pieces for this scorer.
         """
@@ -210,7 +210,7 @@ class Scorer(abc.ABC):
         Returns:
             list[Score]: A list of Score objects representing the results.
         """
-        request = PromptRequestResponse(
+        request = Message(
             request_pieces=[
                 PromptRequestPiece(
                     role="user",
@@ -233,7 +233,7 @@ class Scorer(abc.ABC):
         Returns:
             list[Score]: A list of Score objects representing the results.
         """
-        request = PromptRequestResponse(
+        request = Message(
             request_pieces=[
                 PromptRequestPiece(
                     role="user",
@@ -249,7 +249,7 @@ class Scorer(abc.ABC):
     async def score_prompts_batch_async(
         self,
         *,
-        request_responses: Sequence[PromptRequestResponse],
+        request_responses: Sequence[Message],
         objectives: Optional[Sequence[str]] = None,
         batch_size: int = 10,
         role_filter: Optional[ChatMessageRole] = None,
@@ -260,7 +260,7 @@ class Scorer(abc.ABC):
         Score multiple prompts in batches using the provided objectives.
 
         Args:
-            request_responses (Sequence[PromptRequestResponse]): The request responses to be scored.
+            request_responses (Sequence[Message]): The request responses to be scored.
             objectives (Sequence[str]): The objectives/tasks based on which the prompts should be scored.
                 Must have the same length as request_responses.
             batch_size (int): The maximum batch size for processing prompts. Defaults to 10.
@@ -411,7 +411,7 @@ class Scorer(abc.ABC):
             attack_identifier=attack_identifier,
         )
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
-        scorer_llm_request = PromptRequestResponse(
+        scorer_llm_request = Message(
             [
                 PromptRequestPiece(
                     role="user",
@@ -490,12 +490,12 @@ class Scorer(abc.ABC):
 
         return score
 
-    def _extract_objective_from_response(self, response: PromptRequestResponse) -> str:
+    def _extract_objective_from_response(self, response: Message) -> str:
         """
         Extracts an objective from the response using the last request (if it exists).
 
         Args:
-            response (PromptRequestResponse): The response to extract the objective from.
+            response (Message): The response to extract the objective from.
 
         Returns:
             str: The objective extracted from the response.
@@ -526,7 +526,7 @@ class Scorer(abc.ABC):
     @staticmethod
     async def score_response_async(
         *,
-        response: PromptRequestResponse,
+        response: Message,
         objective_scorer: Optional[Scorer] = None,
         auxiliary_scorers: Optional[List[Scorer]] = None,
         role_filter: ChatMessageRole = "assistant",
@@ -537,7 +537,7 @@ class Scorer(abc.ABC):
         Score a response using an objective scorer and optional auxiliary scorers.
 
         Args:
-            response (PromptRequestResponse): Response containing pieces to score
+            response (Message): Response containing pieces to score
             objective_scorer (Scorer): The main scorer to determine success
             auxiliary_scorers (Optional[List[Scorer]]): List of auxiliary scorers to apply
             role_filter (ChatMessageRole): Only score pieces with this role (default: `assistant`)
@@ -598,7 +598,7 @@ class Scorer(abc.ABC):
     @staticmethod
     async def score_response_multiple_scorers_async(
         *,
-        response: PromptRequestResponse,
+        response: Message,
         scorers: List[Scorer],
         role_filter: ChatMessageRole = "assistant",
         objective: Optional[str] = None,
@@ -611,7 +611,7 @@ class Scorer(abc.ABC):
         and returns all scores. This is typically used for auxiliary scoring where all results are needed.
 
         Args:
-            response (PromptRequestResponse): The response containing pieces to score.
+            response (Message): The response containing pieces to score.
             scorers (List[Scorer]): List of scorers to apply.
             role_filter (ChatMessageRole): Only score pieces with this role (default: "assistant").
             objective (Optional[str]): Optional objective description for scoring context.

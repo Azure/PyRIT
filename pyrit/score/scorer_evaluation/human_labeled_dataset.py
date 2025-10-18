@@ -10,7 +10,7 @@ from typing import List, Optional, Union, cast, get_args
 
 import pandas as pd
 
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, Message
 from pyrit.models.literals import PromptDataType
 from pyrit.score import MetricsType
 
@@ -22,18 +22,18 @@ class HumanLabeledEntry:
     """
     A class that represents an entry in a dataset of assistant responses that have been scored by humans. It is used
     to evaluate PyRIT scorer performance as measured by degree of alignment with human labels. This class includes
-    the PromptRequestResponses and a list of human-assigned scores, which are floats between 0.0 and 1.0 inclusive
+    the Messages and a list of human-assigned scores, which are floats between 0.0 and 1.0 inclusive
     (representing degree of severity) for harm datasets, and booleans for objective datasets.
 
     Parameters:
-        conversation (List[PromptRequestResponse]): A list of PromptRequestResponse objects representing the
-            conversation to be scored. This can contain one PromptRequestResponse object if you are just
+        conversation (List[Message]): A list of Message objects representing the
+            conversation to be scored. This can contain one Message object if you are just
             scoring individual assistant responses.
         human_scores (List): A list of human-assigned scores for the responses. Each entry in the list corresponds to
             a different person's score for the same response/conversation.
     """
 
-    conversation: List[PromptRequestResponse]
+    conversation: List[Message]
     human_scores: List
 
 
@@ -41,7 +41,7 @@ class HumanLabeledEntry:
 class HarmHumanLabeledEntry(HumanLabeledEntry):
     """
     A class that represents a human-labeled dataset entry for a specific harm category. This class includes the
-    PromptRequestResponses and a list of human scores, which are floats between 0.0 and 1.0 inclusive,
+    Messages and a list of human scores, which are floats between 0.0 and 1.0 inclusive,
     representing the degree of harm severity where 0.0 is minimal and 1.0 is maximal. The harm category is a
     string that represents the type of harm (e.g., "hate_speech", "misinformation", etc.).
     """
@@ -59,7 +59,7 @@ class HarmHumanLabeledEntry(HumanLabeledEntry):
 class ObjectiveHumanLabeledEntry(HumanLabeledEntry):
     """
     A class that represents a human-labeled dataset entry for a specific objective. This class includes the
-    PromptRequestResponses and a list of human scores, which are booleans indicating whether the response/conversation
+    Messages and a list of human scores, which are booleans indicating whether the response/conversation
     meets the objective (e.g., 0 for not meeting the objective, 1 for meeting the objective). The objective is a
     string that represents the objective (e.g., "how to make a Molotov cocktail?).
     """
@@ -171,7 +171,7 @@ class HumanLabeledDataset:
             # Each list of request_responses consists only of a single assistant response since each row
             # is treated as a single turn conversation.
             request_responses = [
-                PromptRequestResponse(
+                Message(
                     request_pieces=[
                         PromptRequestPiece(
                             role="assistant",
@@ -303,13 +303,13 @@ class HumanLabeledDataset:
             raise ValueError(f"One of the data types is invalid. Valid types are: {get_args(PromptDataType)}.")
 
     @staticmethod
-    def _construct_harm_entry(*, request_responses: List[PromptRequestResponse], harm: str, human_scores: List):
+    def _construct_harm_entry(*, request_responses: List[Message], harm: str, human_scores: List):
         float_scores = [float(score) for score in human_scores]
         return HarmHumanLabeledEntry(request_responses, float_scores, harm)
 
     @staticmethod
     def _construct_objective_entry(
-        *, request_responses: List[PromptRequestResponse], objective: str, human_scores: List
+        *, request_responses: List[Message], objective: str, human_scores: List
     ):
         # Convert scores to int before casting to bool in case the values (0, 1) are parsed as strings
         bool_scores = [bool(int(score)) for score in human_scores]

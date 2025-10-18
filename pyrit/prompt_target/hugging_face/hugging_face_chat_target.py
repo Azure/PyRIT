@@ -16,7 +16,7 @@ from pyrit.common import default_values
 from pyrit.common.download_hf_model import download_specific_files
 from pyrit.exceptions import EmptyResponseException, pyrit_target_retry
 from pyrit.models.prompt_request_response import (
-    PromptRequestResponse,
+    Message,
     construct_response_from_request,
 )
 from pyrit.prompt_target import PromptChatTarget
@@ -216,7 +216,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
             raise
 
     @pyrit_target_retry
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         """
         Sends a normalized prompt asynchronously to the HuggingFace model.
         """
@@ -308,7 +308,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
             logger.error(error_message)
             raise ValueError(error_message)
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: Message) -> None:
         """
         Validates the provided prompt request response.
         """

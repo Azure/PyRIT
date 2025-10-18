@@ -62,7 +62,7 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 
 # %%
 from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, Message
 from pyrit.prompt_target.openai.openai_response_target import OpenAIResponseTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
@@ -112,7 +112,7 @@ prompt_piece = PromptRequestPiece(
     original_value="What is the weather in Boston in celsius? Use the get_current_weather function.",
     original_value_data_type="text",
 )
-prompt_request = PromptRequestResponse(request_pieces=[prompt_piece])
+prompt_request = Message(request_pieces=[prompt_piece])
 
 response = await target.send_prompt_async(prompt_request=prompt_request)  # type: ignore
 
@@ -137,7 +137,7 @@ import os
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.tool_configs import web_search_tool
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, Message
 from pyrit.prompt_target.openai.openai_response_target import OpenAIResponseTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
@@ -157,7 +157,7 @@ target = OpenAIResponseTarget(
 prompt_piece = PromptRequestPiece(
     role="user", original_value="Briefly, what is one positive news story from today?", original_value_data_type="text"
 )
-prompt_request = PromptRequestResponse(request_pieces=[prompt_piece])
+prompt_request = Message(request_pieces=[prompt_piece])
 
 response = await target.send_prompt_async(prompt_request=prompt_request)  # type: ignore
 

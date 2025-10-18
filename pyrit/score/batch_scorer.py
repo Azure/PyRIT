@@ -9,7 +9,7 @@ from typing import Optional, Sequence
 from pyrit.memory import CentralMemory
 from pyrit.models import (
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
     Score,
     group_request_pieces_into_conversations,
 )
@@ -108,7 +108,7 @@ class BatchScorer:
         conversations = group_request_pieces_into_conversations(request_pieces)
 
         # Flatten all conversations into a single list of responses
-        responses: list[PromptRequestResponse] = []
+        responses: list[Message] = []
         for conversation in conversations:
             responses.extend(conversation)
 

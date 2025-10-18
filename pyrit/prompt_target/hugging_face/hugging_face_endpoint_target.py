@@ -5,7 +5,7 @@ import logging
 
 from pyrit.common.net_utility import make_request_and_raise_if_error_async
 from pyrit.models.prompt_request_response import (
-    PromptRequestResponse,
+    Message,
     construct_response_from_request,
 )
 from pyrit.prompt_target import PromptTarget
@@ -49,16 +49,16 @@ class HuggingFaceEndpointTarget(PromptTarget):
         self.temperature = temperature
         self.top_p = top_p
 
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         """
         Sends a normalized prompt asynchronously to a cloud-based HuggingFace model endpoint.
 
         Args:
-            prompt_request (PromptRequestResponse): The prompt request containing the input data and associated details
+            prompt_request (Message): The prompt request containing the input data and associated details
             such as conversation ID and role.
 
         Returns:
-            PromptRequestResponse: A response object containing generated text pieces as a list of `PromptRequestPiece`
+            Message: A response object containing generated text pieces as a list of `PromptRequestPiece`
                 objects. Each `PromptRequestPiece` includes the generated text and relevant information such as
                 conversation ID, role, and any additional response attributes.
 
@@ -110,12 +110,12 @@ class HuggingFaceEndpointTarget(PromptTarget):
             logger.error(f"Error occurred during HTTP request to the Hugging Face endpoint: {e}")
             raise
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: Message) -> None:
         """
         Validates the provided prompt request response.
 
         Args:
-            prompt_request (PromptRequestResponse): The prompt request to validate.
+            prompt_request (Message): The prompt request to validate.
 
         Raises:
             ValueError: If the request is not valid for this target.

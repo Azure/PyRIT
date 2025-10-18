@@ -6,7 +6,7 @@ import logging
 import uuid
 from typing import Optional
 
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score, ScoreType
+from pyrit.models import PromptRequestPiece, Message, Score, ScoreType
 from pyrit.prompt_target import PromptShieldTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
@@ -54,7 +54,7 @@ class PromptShieldScorer(TrueFalseScorer):
 
         body = request_piece.original_value
 
-        request = PromptRequestResponse(
+        request = Message(
             [
                 PromptRequestPiece(
                     role="user",

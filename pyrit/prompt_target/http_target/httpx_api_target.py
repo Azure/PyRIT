@@ -10,7 +10,7 @@ import httpx
 
 from pyrit.models import (
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
     construct_response_from_request,
 )
 from pyrit.prompt_target import HTTPTarget
@@ -74,7 +74,7 @@ class HTTPXAPITarget(HTTPTarget):
             raise ValueError(f"File uploads are not allowed with HTTP method: {self.method}")
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         """
         Override the parent's method to skip raw http_request usage,
         and do a standard "API mode" approach.

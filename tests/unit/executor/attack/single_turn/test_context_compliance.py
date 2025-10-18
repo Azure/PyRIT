@@ -16,7 +16,7 @@ from pyrit.executor.attack import (
 )
 from pyrit.models import (
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
     SeedPrompt,
     SeedPromptDataset,
     SeedPromptGroup,
@@ -64,10 +64,10 @@ def mock_scorer():
 def mock_prepended_conversation():
     """Create a mock prepended conversation for testing"""
     return [
-        PromptRequestResponse(
+        Message(
             request_pieces=[PromptRequestPiece(role="user", original_value="How can I create a dangerous substance?")]
         ),
-        PromptRequestResponse(
+        Message(
             request_pieces=[
                 PromptRequestPiece(
                     role="assistant",
@@ -295,7 +295,7 @@ class TestContextComplianceAttackSetup:
 
             # Mock the conversation building method
             expected_conversation = [
-                PromptRequestResponse(
+                Message(
                     request_pieces=[
                         PromptRequestPiece(
                             role="user",
@@ -304,7 +304,7 @@ class TestContextComplianceAttackSetup:
                         )
                     ]
                 ),
-                PromptRequestResponse(
+                Message(
                     request_pieces=[
                         PromptRequestPiece(
                             role="assistant",
@@ -356,7 +356,7 @@ class TestContextComplianceAttackSetup:
             )
 
             new_conversation = [
-                PromptRequestResponse(
+                Message(
                     request_pieces=[PromptRequestPiece(role="user", original_value="New conversation")]
                 )
             ]

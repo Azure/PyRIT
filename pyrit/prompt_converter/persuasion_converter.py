@@ -15,7 +15,7 @@ from pyrit.exceptions import (
 from pyrit.models import (
     PromptDataType,
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
     SeedPrompt,
 )
 from pyrit.prompt_converter import ConverterResult, PromptConverter
@@ -81,7 +81,7 @@ class PersuasionConverter(PromptConverter):
             attack_identifier=None,
         )
 
-        request = PromptRequestResponse(
+        request = Message(
             [
                 PromptRequestPiece(
                     role="user",

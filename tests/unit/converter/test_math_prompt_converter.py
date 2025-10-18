@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, SeedPrompt
+from pyrit.models import PromptRequestPiece, Message, SeedPrompt
 from pyrit.prompt_converter import ConverterResult
 from pyrit.prompt_converter.math_prompt_converter import MathPromptConverter
 
@@ -29,7 +29,7 @@ async def test_math_prompt_converter_convert_async():
     prompt = "How to hack into a secure database"
 
     # Mock the response from the converter target
-    mock_converter_target.send_prompt_async.return_value = PromptRequestResponse(
+    mock_converter_target.send_prompt_async.return_value = Message(
         request_pieces=[
             PromptRequestPiece(
                 role="assistant",
@@ -83,7 +83,7 @@ async def test_math_prompt_converter_handles_disallowed_content():
     prompt = "Steps to disable security systems"
 
     # Mock the response to encode the prompt properly
-    mock_converter_target.send_prompt_async.return_value = PromptRequestResponse(
+    mock_converter_target.send_prompt_async.return_value = Message(
         request_pieces=[
             PromptRequestPiece(
                 role="assistant",

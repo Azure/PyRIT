@@ -10,14 +10,14 @@ from azure.storage.blob.aio import BlobClient as AsyncBlobClient
 from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
 from unit.mocks import get_image_request_piece, get_sample_conversations
 
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, Message
 from pyrit.prompt_target import AzureBlobStorageTarget
 
 
 @pytest.fixture
 def sample_entries() -> MutableSequence[PromptRequestPiece]:
     conversations = get_sample_conversations()
-    return PromptRequestResponse.flatten_to_prompt_request_pieces(conversations)
+    return Message.flatten_to_prompt_request_pieces(conversations)
 
 
 @pytest.fixture
@@ -63,7 +63,7 @@ async def test_azure_blob_storage_validate_request_length(
     azure_blob_storage_target: AzureBlobStorageTarget,
 ):
     mock_upload_async.return_value = None
-    request = PromptRequestResponse(
+    request = Message(
         request_pieces=[
             PromptRequestPiece(role="user", conversation_id="123", original_value="test1"),
             PromptRequestPiece(role="user", conversation_id="123", original_value="test2"),
@@ -80,7 +80,7 @@ async def test_azure_blob_storage_validate_prompt_type(
     azure_blob_storage_target: AzureBlobStorageTarget,
 ):
     mock_upload_async.return_value = None
-    request = PromptRequestResponse(request_pieces=[get_image_request_piece()])
+    request = Message(request_pieces=[get_image_request_piece()])
     with pytest.raises(ValueError, match="This target only supports text and url prompt input."):
         await azure_blob_storage_target.send_prompt_async(prompt_request=request)
 
@@ -95,9 +95,9 @@ async def test_azure_blob_storage_validate_prev_convs(
     mock_upload_async.return_value = None
     request_piece = sample_entries[0]
     azure_blob_storage_target._memory.add_request_response_to_memory(
-        request=PromptRequestResponse(request_pieces=[request_piece])
+        request=Message(request_pieces=[request_piece])
     )
-    request = PromptRequestResponse(request_pieces=[request_piece])
+    request = Message(request_pieces=[request_piece])
 
     with pytest.raises(ValueError, match="This target only supports a single turn conversation."):
         await azure_blob_storage_target.send_prompt_async(prompt_request=request)
@@ -126,7 +126,7 @@ async def test_send_prompt_async(
 
     request_piece = sample_entries[0]
     request_piece.converted_value = "Test content"
-    request = PromptRequestResponse([request_piece])
+    request = Message([request_piece])
 
     response = await azure_blob_storage_target.send_prompt_async(prompt_request=request)
 

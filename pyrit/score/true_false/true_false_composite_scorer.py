@@ -6,7 +6,7 @@ from typing import List, Optional
 
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.models.literals import ChatMessageRole
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models.prompt_request_response import Message
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import TrueFalseAggregatorFunc
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
@@ -50,7 +50,7 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
 
     async def _score_async(
         self,
-        request_response: PromptRequestResponse,
+        request_response: Message,
         *,
         objective: Optional[str] = None,
         role_filter: Optional[ChatMessageRole] = None,
@@ -58,7 +58,7 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
         """Score a request/response by combining results from all constituent scorers.
 
         Args:
-            request_response (PromptRequestResponse): The request/response to score.
+            request_response (Message): The request/response to score.
             objective (Optional[str]): Scoring objective or context.
 
         Returns:

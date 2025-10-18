@@ -60,7 +60,7 @@ memory.print_schema()  # type: ignore
 # %%
 from uuid import uuid4
 
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, Message
 
 conversation_id = str(uuid4())
 
@@ -78,9 +78,9 @@ message_list = [
     ),
 ]
 
-memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[0]]))
-memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[1]]))
-memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[2]]))
+memory.add_request_response_to_memory(request=Message([message_list[0]]))
+memory.add_request_response_to_memory(request=Message([message_list[1]]))
+memory.add_request_response_to_memory(request=Message([message_list[2]]))
 
 
 entries = memory.get_conversation(conversation_id=conversation_id)

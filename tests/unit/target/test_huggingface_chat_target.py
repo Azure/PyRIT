@@ -8,7 +8,7 @@ import pytest
 
 from pyrit.models.prompt_request_response import (
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
 )
 from pyrit.prompt_target import HuggingFaceChatTarget
 
@@ -159,7 +159,7 @@ async def test_send_prompt_async():
         converted_value="Hello, how are you?",
         converted_value_data_type="text",
     )
-    prompt_request = PromptRequestResponse(request_pieces=[request_piece])
+    prompt_request = Message(request_pieces=[request_piece])
 
     # Use await to handle the asynchronous call
     response = await hf_chat.send_prompt_async(prompt_request=prompt_request)  # type: ignore
@@ -181,7 +181,7 @@ async def test_missing_chat_template_error():
         converted_value="Hello, how are you?",
         converted_value_data_type="text",
     )
-    prompt_request = PromptRequestResponse(request_pieces=[request_piece])
+    prompt_request = Message(request_pieces=[request_piece])
 
     with pytest.raises(ValueError) as excinfo:
         # Use await to handle the asynchronous call
@@ -209,7 +209,7 @@ def test_invalid_prompt_request_validation():
         converted_value_data_type="text",
         conversation_id="123",
     )
-    prompt_request = PromptRequestResponse(request_pieces=[request_piece1, request_piece2])
+    prompt_request = Message(request_pieces=[request_piece1, request_piece2])
 
     with pytest.raises(ValueError) as excinfo:
         hf_chat._validate_request(prompt_request=prompt_request)

@@ -319,7 +319,7 @@ API Reference
     PromptResponse
     PromptResponseError
     PromptDataType
-    PromptRequestResponse
+    Message
     QuestionAnsweringDataset
     QuestionAnsweringEntry
     QuestionChoice

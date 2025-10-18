@@ -17,7 +17,7 @@ from pyrit.models import (
     AttackResult,
     ConversationType,
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
     Score,
     SeedPrompt,
     SeedPromptGroup,
@@ -69,7 +69,7 @@ def basic_context():
 @pytest.fixture
 def sample_response():
     """Create a sample response for testing"""
-    return PromptRequestResponse(
+    return Message(
         request_pieces=[
             PromptRequestPiece(role="assistant", original_value="Test response", original_value_data_type="text")
         ]
@@ -798,7 +798,7 @@ class TestDetermineAttackOutcome:
         attack._objective_scorer = MagicMock()
 
         # Create an empty response
-        empty_response = MagicMock(spec=PromptRequestResponse)
+        empty_response = MagicMock(spec=Message)
         empty_response.request_pieces = []
 
         outcome, reason = attack._determine_attack_outcome(response=empty_response, score=None, context=basic_context)

@@ -9,7 +9,7 @@ import pytest
 
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
+from pyrit.models import PromptRequestPiece, Message, Score
 from pyrit.score import HumanInTheLoopScorerGradio
 
 
@@ -65,7 +65,7 @@ class TestHiTLGradio:
         memory = MagicMock(MemoryInterface)
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
             scorer = HumanInTheLoopScorerGradio()
-            prompt = PromptRequestResponse(
+            prompt = Message(
                 request_pieces=[
                     PromptRequestPiece(role="user", original_value="test", converted_value_data_type="text")
                 ]
@@ -98,7 +98,7 @@ class TestHiTLGradio:
     @pytest.mark.asyncio
     async def test_scorer_score_async_on_cancel_stops_server(self, mock_rpc_server):
         scorer = HumanInTheLoopScorerGradio()
-        prompt = PromptRequestResponse(
+        prompt = Message(
             request_pieces=[PromptRequestPiece(role="user", original_value="test", converted_value_data_type="text")]
         )
 

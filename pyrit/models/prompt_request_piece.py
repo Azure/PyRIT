@@ -166,10 +166,10 @@ class PromptRequestPiece:
     def to_chat_message(self) -> ChatMessage:
         return ChatMessage(role=cast(ChatMessageRole, self.role), content=self.converted_value)
 
-    def to_prompt_request_response(self) -> "PromptRequestResponse":  # type: ignore # noqa F821
-        from pyrit.models.prompt_request_response import PromptRequestResponse
+    def to_prompt_request_response(self) -> "Message":  # type: ignore # noqa F821
+        from pyrit.models.prompt_request_response import Message
 
-        return PromptRequestResponse([self])  # noqa F821
+        return Message([self])  # noqa F821
 
     def has_error(self) -> bool:
         """

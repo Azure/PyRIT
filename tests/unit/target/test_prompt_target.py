@@ -10,14 +10,14 @@ import pytest
 from unit.mocks import get_sample_conversations, openai_chat_response_json_dict
 
 from pyrit.executor.attack.core.attack_strategy import AttackStrategy
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, Message
 from pyrit.prompt_target import OpenAIChatTarget
 
 
 @pytest.fixture
 def sample_entries() -> MutableSequence[PromptRequestPiece]:
     conversations = get_sample_conversations()
-    return PromptRequestResponse.flatten_to_prompt_request_pieces(conversations)
+    return Message.flatten_to_prompt_request_pieces(conversations)
 
 
 @pytest.fixture
@@ -104,7 +104,7 @@ async def test_send_prompt_with_system_calls_chat_complete(
         request.converted_value = "hi, I am a victim chatbot, how can I help?"
         request.conversation_id = "1"
 
-        await azure_openai_target.send_prompt_async(prompt_request=PromptRequestResponse(request_pieces=[request]))
+        await azure_openai_target.send_prompt_async(prompt_request=Message(request_pieces=[request]))
 
         mock_create.assert_called_once()
 
@@ -127,7 +127,7 @@ async def test_send_prompt_async_with_delay(
             request = sample_entries[0]
             request.converted_value = "hi, I am a victim chatbot, how can I help?"
 
-            await azure_openai_target.send_prompt_async(prompt_request=PromptRequestResponse(request_pieces=[request]))
+            await azure_openai_target.send_prompt_async(prompt_request=Message(request_pieces=[request]))
 
             mock_create.assert_called_once()
             mock_sleep.assert_called_once_with(6)  # 60/max_requests_per_minute

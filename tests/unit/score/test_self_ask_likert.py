@@ -9,12 +9,12 @@ import pytest
 
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory import CentralMemory, MemoryInterface
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, Message
 from pyrit.score import ContentClassifierPaths, LikertScalePaths, SelfAskLikertScorer
 
 
 @pytest.fixture
-def scorer_likert_response() -> PromptRequestResponse:
+def scorer_likert_response() -> Message:
 
     json_response = (
         dedent(
@@ -30,11 +30,11 @@ def scorer_likert_response() -> PromptRequestResponse:
         .replace("\n", " ")
     )
 
-    return PromptRequestResponse(request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)])
+    return Message(request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)])
 
 
 @pytest.mark.asyncio
-async def test_likert_scorer_set_system_prompt(scorer_likert_response: PromptRequestResponse):
+async def test_likert_scorer_set_system_prompt(scorer_likert_response: Message):
     memory = MagicMock(MemoryInterface)
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         chat_target = MagicMock()
@@ -68,7 +68,7 @@ async def test_likert_scorer_must_have_category():
 
 
 @pytest.mark.asyncio
-async def test_likert_scorer_adds_to_memory(scorer_likert_response: PromptRequestResponse):
+async def test_likert_scorer_adds_to_memory(scorer_likert_response: Message):
     memory = MagicMock(MemoryInterface)
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_likert_response)
@@ -81,7 +81,7 @@ async def test_likert_scorer_adds_to_memory(scorer_likert_response: PromptReques
 
 
 @pytest.mark.asyncio
-async def test_likert_scorer_score(patch_central_database, scorer_likert_response: PromptRequestResponse):
+async def test_likert_scorer_score(patch_central_database, scorer_likert_response: Message):
 
     chat_target = MagicMock()
 
@@ -107,7 +107,7 @@ async def test_self_ask_scorer_bad_json_exception_retries():
 
     chat_target = MagicMock()
 
-    bad_json_resp = PromptRequestResponse(
+    bad_json_resp = Message(
         request_pieces=[PromptRequestPiece(role="assistant", original_value="this is not a json")]
     )
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
@@ -136,7 +136,7 @@ async def test_self_ask_likert_scorer_json_missing_key_exception_retries():
         .replace("\n", " ")
     )
 
-    bad_json_resp = PromptRequestResponse(
+    bad_json_resp = Message(
         request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)]
     )
 

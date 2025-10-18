@@ -120,12 +120,12 @@ await ConsoleAttackResultPrinter().print_result_async(result=result)  # type: ig
 import os
 
 from pyrit.datasets import TextJailBreak
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, Message
 
 jailbreak = TextJailBreak(template_file_name="dan_1.yaml")
 
 prepended_conversation = [
-    PromptRequestResponse(
+    Message(
         request_pieces=[
             PromptRequestPiece(
                 role="system",
@@ -163,7 +163,7 @@ prepended_conversation = conversation_history
 # To customize the last user message sent to the objective target:
 """
 prepended_conversation.append(
-    PromptRequestResponse(
+    Message(
         request_pieces=[
             PromptRequestPiece(
                 role="user",

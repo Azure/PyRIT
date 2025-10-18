@@ -6,7 +6,7 @@ import logging
 from typing import Optional
 
 from pyrit.memory import CentralMemory, MemoryInterface
-from pyrit.models import Identifier, PromptRequestResponse
+from pyrit.models import Identifier, Message
 
 logger = logging.getLogger(__name__)
 
@@ -29,13 +29,13 @@ class PromptTarget(abc.ABC, Identifier):
             logging.basicConfig(level=logging.INFO)
 
     @abc.abstractmethod
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         """
         Sends a normalized prompt async to the prompt target.
         """
 
     @abc.abstractmethod
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: Message) -> None:
         """
         Validates the provided prompt request response
         """

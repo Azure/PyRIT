@@ -18,7 +18,7 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.models import (
     PromptDataType,
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
     SeedPrompt,
 )
 from pyrit.prompt_converter import ConverterResult, PromptConverter
@@ -106,7 +106,7 @@ class TranslationConverter(PromptConverter):
 
         logger.debug(f"Formatted Prompt: {formatted_prompt}")
 
-        request = PromptRequestResponse(
+        request = Message(
             [
                 PromptRequestPiece(
                     role="user",

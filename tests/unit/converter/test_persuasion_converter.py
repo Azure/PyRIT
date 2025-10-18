@@ -8,7 +8,7 @@ import pytest
 from unit.mocks import MockPromptTarget
 
 from pyrit.exceptions.exception_classes import InvalidJsonException
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, Message
 from pyrit.prompt_converter import PersuasionConverter
 
 
@@ -62,7 +62,7 @@ async def test_persuasion_converter_send_prompt_async_bad_json_exception_retries
 
     with patch("unit.mocks.MockPromptTarget.send_prompt_async", new_callable=AsyncMock) as mock_create:
 
-        prompt_req_resp = PromptRequestResponse(
+        prompt_req_resp = Message(
             request_pieces=[
                 PromptRequestPiece(
                     role="user",

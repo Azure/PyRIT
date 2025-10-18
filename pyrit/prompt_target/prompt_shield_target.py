@@ -9,7 +9,7 @@ from pyrit.auth.azure_auth import AzureAuth, get_default_scope
 from pyrit.common import default_values, net_utility
 from pyrit.models import (
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
     construct_response_from_request,
 )
 from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
@@ -100,7 +100,7 @@ class PromptShieldTarget(PromptTarget):
         self._force_entry_field: PromptShieldEntryField = field
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         """
         Parses the text in prompt_request to separate the userPrompt and documents contents,
         then sends an HTTP request to the endpoint and obtains a response in JSON. For more info, visit
@@ -150,7 +150,7 @@ class PromptShieldTarget(PromptTarget):
 
         return response_entry
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: Message) -> None:
         request_pieces: Sequence[PromptRequestPiece] = prompt_request.request_pieces
 
         n_pieces = len(request_pieces)

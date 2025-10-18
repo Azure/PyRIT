@@ -16,7 +16,7 @@ from pyrit.exceptions import (
 )
 from pyrit.models import (
     ChatMessage,
-    PromptRequestResponse,
+    Message,
     construct_response_from_request,
 )
 from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
@@ -154,7 +154,7 @@ class AzureMLChatTarget(PromptChatTarget):
         self._extra_parameters = param_kwargs
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
 
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
@@ -264,7 +264,7 @@ class AzureMLChatTarget(PromptChatTarget):
 
         return headers
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: Message) -> None:
         n_pieces = len(prompt_request.request_pieces)
         if n_pieces != 1:
             raise ValueError(f"This target only supports a single prompt request piece. Received: {n_pieces} pieces.")

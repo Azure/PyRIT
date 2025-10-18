@@ -28,7 +28,7 @@ from pyrit.models import (
     ChatMessageRole,
     ConversationType,
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
     Score,
     ScoreType,
 )
@@ -88,13 +88,13 @@ def create_score(
     )
 
 
-def create_prompt_response(*, text: str, role: ChatMessageRole = "assistant") -> PromptRequestResponse:
+def create_prompt_response(*, text: str, role: ChatMessageRole = "assistant") -> Message:
     """Create a prompt response with common defaults.
 
     This simulates responses from the target model, which are then evaluated
     by the attack logic to determine next steps.
     """
-    return PromptRequestResponse(
+    return Message(
         request_pieces=[
             PromptRequestPiece(
                 role=role,
@@ -159,7 +159,7 @@ def basic_context() -> CrescendoAttackContext:
 
 
 @pytest.fixture
-def sample_response() -> PromptRequestResponse:
+def sample_response() -> Message:
     return create_prompt_response(text="Test response")
 
 
@@ -639,7 +639,7 @@ class TestPromptGeneration:
         )
 
         # Mock the adversarial response
-        response = PromptRequestResponse(
+        response = Message(
             request_pieces=[
                 PromptRequestPiece(
                     role="assistant",
@@ -690,7 +690,7 @@ class TestPromptGeneration:
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
         basic_context: CrescendoAttackContext,
-        sample_response: PromptRequestResponse,
+        sample_response: Message,
         failure_objective_score: Score,
     ):
         """Test building adversarial prompt with previous objective score."""
@@ -798,7 +798,7 @@ class TestResponseScoring:
         mock_adversarial_chat: MagicMock,
         mock_objective_scorer: MagicMock,
         basic_context: CrescendoAttackContext,
-        sample_response: PromptRequestResponse,
+        sample_response: Message,
         success_objective_score: Score,
     ):
         """Test successful scoring of a response."""
@@ -850,7 +850,7 @@ class TestResponseScoring:
         mock_adversarial_chat: MagicMock,
         mock_refusal_scorer: MagicMock,
         basic_context: CrescendoAttackContext,
-        sample_response: PromptRequestResponse,
+        sample_response: Message,
         refusal_score: Score,
     ):
         """Test that refusal is correctly detected."""
@@ -887,7 +887,7 @@ class TestBacktrackingLogic:
         mock_adversarial_chat: MagicMock,
         mock_refusal_scorer: MagicMock,
         basic_context: CrescendoAttackContext,
-        sample_response: PromptRequestResponse,
+        sample_response: Message,
         refusal_score: Score,
     ):
         """Test that backtracking is performed when response is refused.
@@ -931,7 +931,7 @@ class TestBacktrackingLogic:
         mock_adversarial_chat: MagicMock,
         mock_refusal_scorer: MagicMock,
         basic_context: CrescendoAttackContext,
-        sample_response: PromptRequestResponse,
+        sample_response: Message,
         no_refusal_score: Score,
     ):
         """Test that no backtracking occurs when response is not refused."""
@@ -961,7 +961,7 @@ class TestBacktrackingLogic:
         mock_adversarial_chat: MagicMock,
         mock_refusal_scorer: MagicMock,
         basic_context: CrescendoAttackContext,
-        sample_response: PromptRequestResponse,
+        sample_response: Message,
         refusal_score: Score,
     ):
         """Test that no backtracking occurs when max backtracks is reached.
@@ -1001,7 +1001,7 @@ class TestAttackExecution:
         mock_adversarial_chat: MagicMock,
         mock_prompt_normalizer: MagicMock,
         basic_context: CrescendoAttackContext,
-        sample_response: PromptRequestResponse,
+        sample_response: Message,
         success_objective_score: Score,
         no_refusal_score: Score,
         adversarial_response: str,
@@ -1016,7 +1016,7 @@ class TestAttackExecution:
         )
 
         # Mock adversarial response
-        adv_response = PromptRequestResponse(
+        adv_response = Message(
             request_pieces=[
                 PromptRequestPiece(
                     role="assistant",
@@ -1051,7 +1051,7 @@ class TestAttackExecution:
         mock_adversarial_chat: MagicMock,
         mock_prompt_normalizer: MagicMock,
         basic_context: CrescendoAttackContext,
-        sample_response: PromptRequestResponse,
+        sample_response: Message,
         failure_objective_score: Score,
         no_refusal_score: Score,
         adversarial_response: str,
@@ -1067,7 +1067,7 @@ class TestAttackExecution:
         )
 
         # Mock adversarial response
-        adv_response = PromptRequestResponse(
+        adv_response = Message(
             request_pieces=[
                 PromptRequestPiece(
                     role="assistant",
@@ -1107,7 +1107,7 @@ class TestAttackExecution:
         mock_adversarial_chat: MagicMock,
         mock_prompt_normalizer: MagicMock,
         basic_context: CrescendoAttackContext,
-        sample_response: PromptRequestResponse,
+        sample_response: Message,
         success_objective_score: Score,
         refusal_score: Score,
         no_refusal_score: Score,
@@ -1133,7 +1133,7 @@ class TestAttackExecution:
         )
 
         # Mock adversarial response
-        adv_response = PromptRequestResponse(
+        adv_response = Message(
             request_pieces=[
                 PromptRequestPiece(
                     role="assistant",
@@ -1176,7 +1176,7 @@ class TestAttackExecution:
         mock_adversarial_chat: MagicMock,
         mock_prompt_normalizer: MagicMock,
         basic_context: CrescendoAttackContext,
-        sample_response: PromptRequestResponse,
+        sample_response: Message,
         failure_objective_score: Score,
         refusal_score: Score,
         adversarial_response: str,
@@ -1198,7 +1198,7 @@ class TestAttackExecution:
         )
 
         # Mock adversarial response
-        adv_response = PromptRequestResponse(
+        adv_response = Message(
             request_pieces=[
                 PromptRequestPiece(
                     role="assistant",
@@ -1278,7 +1278,7 @@ class TestContextCreation:
 
     def test_create_context_with_prepended_conversation(
         self,
-        sample_response: PromptRequestResponse,
+        sample_response: Message,
     ):
         """Test context creation with prepended conversation."""
         prepended_conversation = [sample_response]
@@ -1302,7 +1302,7 @@ class TestAttackLifecycle:
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
         basic_context: CrescendoAttackContext,
-        sample_response: PromptRequestResponse,
+        sample_response: Message,
         success_objective_score: Score,
     ):
         """Test successful execution of complete attack lifecycle."""
@@ -1378,7 +1378,7 @@ class TestAttackLifecycle:
         self,
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
-        sample_response: PromptRequestResponse,
+        sample_response: Message,
         success_objective_score: Score,
     ):
         """Test the execute_async method with parameters."""
@@ -1692,7 +1692,7 @@ class TestEdgeCases:
         mock_adversarial_chat: MagicMock,
         mock_prompt_normalizer: MagicMock,
         basic_context: CrescendoAttackContext,
-        sample_response: PromptRequestResponse,
+        sample_response: Message,
     ):
         """Test that scoring errors are handled appropriately."""
         attack = CrescendoTestHelper.create_attack(
@@ -1756,7 +1756,7 @@ class TestEdgeCases:
         mock_objective_target: MagicMock,
         mock_adversarial_chat: MagicMock,
         mock_prompt_normalizer: MagicMock,
-        sample_response: PromptRequestResponse,
+        sample_response: Message,
         success_objective_score: Score,
         no_refusal_score: Score,
         adversarial_response: str,

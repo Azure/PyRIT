@@ -17,7 +17,7 @@ from pyrit.models import (
     AttackOutcome,
     AttackResult,
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
     Score,
     SeedPromptGroup,
 )
@@ -60,7 +60,7 @@ def basic_context():
 @pytest.fixture
 def sample_response():
     """Create a sample response for testing"""
-    return PromptRequestResponse(
+    return Message(
         request_pieces=[
             PromptRequestPiece(role="assistant", original_value="Test response", original_value_data_type="text")
         ]
@@ -70,7 +70,7 @@ def sample_response():
 @pytest.fixture
 def skeleton_key_response():
     """Create a skeleton key response for testing"""
-    return PromptRequestResponse(
+    return Message(
         request_pieces=[
             PromptRequestPiece(
                 role="assistant",

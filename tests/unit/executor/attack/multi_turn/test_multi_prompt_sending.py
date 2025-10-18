@@ -18,7 +18,7 @@ from pyrit.models import (
     AttackOutcome,
     AttackResult,
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
     Score,
     SeedPrompt,
     SeedPromptGroup,
@@ -74,7 +74,7 @@ def basic_context():
 @pytest.fixture
 def sample_response():
     """Create a sample response for testing"""
-    return PromptRequestResponse(
+    return Message(
         request_pieces=[
             PromptRequestPiece(
                 role="assistant",
@@ -353,13 +353,13 @@ class TestAttackExecution:
     async def test_perform_async_stops_on_failed_prompt(self, mock_target, mock_prompt_normalizer, basic_context):
         # First prompt succeeds, second fails
         mock_prompt_normalizer.send_prompt_async.side_effect = [
-            PromptRequestResponse(
+            Message(
                 request_pieces=[
                     PromptRequestPiece(role="assistant", original_value="response1", original_value_data_type="text")
                 ]
             ),
             None,  # Failed prompt
-            PromptRequestResponse(
+            Message(
                 request_pieces=[
                     PromptRequestPiece(role="assistant", original_value="response3", original_value_data_type="text")
                 ]

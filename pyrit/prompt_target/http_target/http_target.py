@@ -11,7 +11,7 @@ import httpx
 
 from pyrit.models import (
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
     construct_response_from_request,
 )
 from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
@@ -99,7 +99,7 @@ class HTTPTarget(PromptTarget):
         return http_request_w_prompt
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
 
@@ -228,7 +228,7 @@ class HTTPTarget(PromptTarget):
         host = headers_dict["host"]
         return f"{http_protocol}{host}{path}"
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: Message) -> None:
         request_pieces: Sequence[PromptRequestPiece] = prompt_request.request_pieces
 
         n_pieces = len(request_pieces)

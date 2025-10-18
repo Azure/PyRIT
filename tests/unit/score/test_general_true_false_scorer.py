@@ -6,12 +6,12 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, Message
 from pyrit.score import SelfAskGeneralTrueFalseScorer
 
 
 @pytest.fixture
-def general_scorer_response() -> PromptRequestResponse:
+def general_scorer_response() -> Message:
     json_response = (
         dedent(
             """
@@ -24,11 +24,11 @@ def general_scorer_response() -> PromptRequestResponse:
         .replace("\n", " ")
     )
 
-    return PromptRequestResponse(request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)])
+    return Message(request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)])
 
 
 @pytest.mark.asyncio
-async def test_general_scorer_score_async(patch_central_database, general_scorer_response: PromptRequestResponse):
+async def test_general_scorer_score_async(patch_central_database, general_scorer_response: Message):
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=general_scorer_response)
 
@@ -51,7 +51,7 @@ async def test_general_scorer_score_async(patch_central_database, general_scorer
 
 @pytest.mark.asyncio
 async def test_general_scorer_score_async_with_prompt_f_string(
-    general_scorer_response: PromptRequestResponse, patch_central_database
+    general_scorer_response: Message, patch_central_database
 ):
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=general_scorer_response)
@@ -93,7 +93,7 @@ async def test_general_scorer_score_async_handles_custom_keys(patch_central_data
         .replace("\n", " ")
     )
     # Simulate a response missing some keys
-    response = PromptRequestResponse(
+    response = Message(
         request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)]
     )
     chat_target.send_prompt_async = AsyncMock(return_value=response)

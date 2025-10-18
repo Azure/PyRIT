@@ -16,7 +16,7 @@ from pyrit.exceptions import (
 from pyrit.exceptions.exception_classes import RateLimitException
 from pyrit.models import (
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
 )
 from pyrit.prompt_target import (
     OpenAITarget,
@@ -95,14 +95,14 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
 
     @limit_requests_per_minute
     @pyrit_target_retry
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         """Asynchronously sends a prompt request and handles the response within a managed conversation context.
 
         Args:
-            prompt_request (PromptRequestResponse): The prompt request response object.
+            prompt_request (Message): The prompt request response object.
 
         Returns:
-            PromptRequestResponse: The updated conversation entry with the response from the prompt target.
+            Message: The updated conversation entry with the response from the prompt target.
         """
 
         self._validate_request(prompt_request=prompt_request)
@@ -158,14 +158,14 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
                 raise
 
         logger.info(f'Received the following response from the prompt target "{str_response.text}"')
-        response: PromptRequestResponse = self._construct_prompt_response_from_openai_json(
+        response: Message = self._construct_prompt_response_from_openai_json(
             open_ai_str_response=str_response.text, request_piece=request_piece
         )
 
         return response
 
     async def _construct_request_body(
-        self, conversation: MutableSequence[PromptRequestResponse], is_json_response: bool
+        self, conversation: MutableSequence[Message], is_json_response: bool
     ) -> dict:
         raise NotImplementedError
 
@@ -174,7 +174,7 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
         *,
         open_ai_str_response: str,
         request_piece: PromptRequestPiece,
-    ) -> PromptRequestResponse:
+    ) -> Message:
         raise NotImplementedError
 
     def is_json_response_supported(self) -> bool:

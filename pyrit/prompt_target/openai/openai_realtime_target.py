@@ -13,7 +13,7 @@ from urllib.parse import urlencode
 import websockets
 
 from pyrit.exceptions.exception_classes import ServerErrorException
-from pyrit.models import PromptRequestResponse
+from pyrit.models import Message
 from pyrit.models.data_type_serializer import data_serializer_factory
 from pyrit.models.prompt_request_response import construct_response_from_request
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
@@ -179,7 +179,7 @@ class RealtimeTarget(OpenAITarget):
         logger.info("Session set up")
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
 
         convo_id = prompt_request.request_pieces[0].conversation_id
         if convo_id not in self._existing_conversation:
@@ -221,7 +221,7 @@ class RealtimeTarget(OpenAITarget):
             request=request, response_text_pieces=[output_audio_path], response_type="audio_path"
         ).request_pieces[0]
 
-        response_entry = PromptRequestResponse(request_pieces=[text_response_piece, audio_response_piece])
+        response_entry = Message(request_pieces=[text_response_piece, audio_response_piece])
         return response_entry
 
     async def save_audio(
@@ -519,11 +519,11 @@ class RealtimeTarget(OpenAITarget):
         output_audio_path = await self.save_audio(result.audio_bytes, num_channels, sample_width, frame_rate)
         return output_audio_path, result
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: Message) -> None:
         """Validates the structure and content of a prompt request for compatibility of this target.
 
         Args:
-            prompt_request (PromptRequestResponse): The prompt request response object.
+            prompt_request (Message): The prompt request response object.
 
         Raises:
             ValueError: If more than two request pieces are provided.

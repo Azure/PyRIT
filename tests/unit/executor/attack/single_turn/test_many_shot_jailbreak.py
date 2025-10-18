@@ -16,7 +16,7 @@ from pyrit.models import (
     AttackOutcome,
     AttackResult,
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
     SeedPrompt,
 )
 from pyrit.prompt_converter import Base64Converter
@@ -367,7 +367,7 @@ class TestManyShotJailbreakAttackLifecycle:
 
         # Context with prepended conversation (not allowed)
         basic_context.prepended_conversation = [
-            PromptRequestResponse(
+            Message(
                 request_pieces=[PromptRequestPiece(role="user", original_value="Test prepended conversation")]
             )
         ]

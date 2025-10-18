@@ -8,7 +8,7 @@ import pytest
 
 from pyrit.models import (
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
     construct_response_from_request,
 )
 from pyrit.prompt_target import PlaywrightTarget
@@ -54,7 +54,7 @@ def test_playwright_initializes(mock_interaction_func, mock_page):
 @pytest.mark.asyncio
 async def test_playwright_validate_request_length(mock_interaction_func, mock_page):
     target = PlaywrightTarget(interaction_func=mock_interaction_func, page=mock_page)
-    request = PromptRequestResponse(
+    request = Message(
         request_pieces=[
             PromptRequestPiece(role="user", conversation_id="123", original_value="test1"),
             PromptRequestPiece(role="user", conversation_id="123", original_value="test2"),
@@ -74,7 +74,7 @@ async def test_playwright_send_prompt_async(mock_interaction_func, mock_page):
         original_value_data_type="text",
         converted_value_data_type="text",
     )
-    request = PromptRequestResponse(request_pieces=[request_piece])
+    request = Message(request_pieces=[request_piece])
 
     response = await target.send_prompt_async(prompt_request=request)
     # Assert that the response contains the assistant's message
@@ -105,7 +105,7 @@ async def test_playwright_interaction_func_exception(mock_page):
         original_value_data_type="text",
         converted_value_data_type="text",
     )
-    request = PromptRequestResponse(request_pieces=[request_piece])
+    request = Message(request_pieces=[request_piece])
 
     with pytest.raises(RuntimeError, match="An error occurred during interaction: Interaction failed"):
         await target.send_prompt_async(prompt_request=request)

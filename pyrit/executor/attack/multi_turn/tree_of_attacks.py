@@ -32,7 +32,7 @@ from pyrit.models import (
     ConversationReference,
     ConversationType,
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
     Score,
     SeedPrompt,
     SeedPromptGroup,
@@ -375,7 +375,7 @@ class _TreeOfAttacksNode:
 
         return False
 
-    async def _send_prompt_to_target_async(self, prompt: str) -> PromptRequestResponse:
+    async def _send_prompt_to_target_async(self, prompt: str) -> Message:
         """
         Send the generated adversarial prompt to the objective target.
 
@@ -392,7 +392,7 @@ class _TreeOfAttacksNode:
             prompt (str): The generated adversarial prompt to send to the target system.
 
         Returns:
-            PromptRequestResponse: The response from the objective target, containing the
+            Message: The response from the objective target, containing the
                 target's reply and associated metadata.
 
         Raises:
@@ -423,7 +423,7 @@ class _TreeOfAttacksNode:
 
         return response
 
-    async def _score_response_async(self, *, response: PromptRequestResponse, objective: str) -> None:
+    async def _score_response_async(self, *, response: Message, objective: str) -> None:
         """
         Score the response from the objective target using the configured scorers.
 
@@ -437,7 +437,7 @@ class _TreeOfAttacksNode:
         to avoid scoring failures from blocking the attack progress.
 
         Args:
-            response (PromptRequestResponse): The response from the objective target to evaluate.
+            response (Message): The response from the objective target to evaluate.
                 This contains the target's reply to the adversarial prompt.
             objective (str): The attack objective describing what the attacker wants to achieve.
                 This is passed to scorers as context for evaluation.

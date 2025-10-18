@@ -10,7 +10,7 @@ from unit.mocks import get_image_request_piece
 
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, Message
 from pyrit.score import QuestionAnswerScorer
 
 
@@ -36,7 +36,7 @@ def text_request_piece(patch_central_database) -> PromptRequestPiece:
 async def test_question_answer_scorer_validate_image(image_request_piece: PromptRequestPiece):
 
     scorer = QuestionAnswerScorer(category=["new_category"])
-    request_response = PromptRequestResponse(request_pieces=[image_request_piece])
+    request_response = Message(request_pieces=[image_request_piece])
     with pytest.raises(ValueError, match="There are no valid pieces to score."):
         await scorer.score_async(request_response)
 
@@ -75,7 +75,7 @@ async def test_question_answer_scorer_score(
 ):
     text_request_piece.converted_value = response
     scorer = QuestionAnswerScorer(category=["new_category"])
-    request_response = PromptRequestResponse(request_pieces=[text_request_piece])
+    request_response = Message(request_pieces=[text_request_piece])
 
     scores = await scorer.score_async(request_response)
 

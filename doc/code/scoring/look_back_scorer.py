@@ -33,7 +33,7 @@ from pyrit.executor.attack import (
     RedTeamingAttack,
 )
 from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, SeedPrompt
+from pyrit.models import PromptRequestPiece, Message, SeedPrompt
 from pyrit.prompt_target import AzureMLChatTarget, OpenAIChatTarget
 from pyrit.score import LookBackScorer, SubStringScorer
 
@@ -55,7 +55,7 @@ adversarial_strategy_path = Path(RED_TEAM_EXECUTOR_PATH, "persuasion_deception/R
 
 # This defines the user prompt for the target LLM with the persuasion_persona.yaml
 prepended_conversation = [
-    PromptRequestResponse(
+    Message(
         request_pieces=[
             PromptRequestPiece(
                 role="user",

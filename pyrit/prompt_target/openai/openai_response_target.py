@@ -23,7 +23,7 @@ from pyrit.exceptions import (
 from pyrit.models import (
     PromptDataType,
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
     PromptResponseError,
 )
 from pyrit.prompt_target.openai.openai_chat_target_base import OpenAIChatTargetBase
@@ -177,7 +177,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         raise ValueError(f"Unsupported piece type for inline content: {piece.converted_value_data_type}")
 
     async def _build_input_for_multi_modal_async(
-        self, conversation: MutableSequence[PromptRequestResponse]
+        self, conversation: MutableSequence[Message]
     ) -> List[Dict[str, Any]]:
         """
         Build the Responses API `input` array.
@@ -276,7 +276,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         return
 
     async def _construct_request_body(
-        self, conversation: MutableSequence[PromptRequestResponse], is_json_response: bool
+        self, conversation: MutableSequence[Message], is_json_response: bool
     ) -> dict:
         """
         Construct the request body to send to the Responses API.
@@ -308,9 +308,9 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         *,
         open_ai_str_response: str,
         request_piece: PromptRequestPiece,
-    ) -> PromptRequestResponse:
+    ) -> Message:
         """
-        Parse the Responses API JSON into internal PromptRequestResponse.
+        Parse the Responses API JSON into internal Message.
         """
         response: dict[str, Any]
         try:
@@ -350,9 +350,9 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         if not extracted_response_pieces:
             raise PyritException(message="No valid response pieces found in the response.")
 
-        return PromptRequestResponse(request_pieces=extracted_response_pieces)
+        return Message(request_pieces=extracted_response_pieces)
 
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         """
         Send prompt, handle agentic tool calls (function_call), return assistant output.
 
@@ -360,13 +360,13 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             prompt_request: The initial prompt from the user.
 
         Returns:
-            The final PromptRequestResponse with the assistant's answer.
+            The final Message with the assistant's answer.
         """
-        conversation: MutableSequence[PromptRequestResponse] = [prompt_request]
+        conversation: MutableSequence[Message] = [prompt_request]
         send_prompt_async = super().send_prompt_async  # bind for inner function
 
         async def _send_prompt_and_find_tool_call_async(
-            prompt_request: PromptRequestResponse,
+            prompt_request: Message,
         ) -> Optional[dict[str, Any]]:
             """Send the prompt and return the last pending tool call, if any."""
             assistant_reply = await send_prompt_async(prompt_request=prompt_request)
@@ -393,7 +393,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
                 merged.extend(msg.request_pieces)
 
             # TODO: There is likely a bug here; there are different roles in a single response??
-            prompt_request = PromptRequestResponse(request_pieces=merged, skip_validation=True)
+            prompt_request = Message(request_pieces=merged, skip_validation=True)
 
             # Send again and check for another tool call
             tool_call_section = await _send_prompt_and_find_tool_call_async(prompt_request=prompt_request)
@@ -459,11 +459,11 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             response_error=error or "none",
         )
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: Message) -> None:
         """Validates the structure and content of a prompt request for compatibility of this target.
 
         Args:
-            prompt_request (PromptRequestResponse): The prompt request response object.
+            prompt_request (Message): The prompt request response object.
 
         Raises:
             ValueError: If any of the request pieces have a data type other than supported set.
@@ -478,7 +478,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
 
     # Agentic helpers (module scope)
 
-    def _find_last_pending_tool_call(self, reply: PromptRequestResponse) -> Optional[dict[str, Any]]:
+    def _find_last_pending_tool_call(self, reply: Message) -> Optional[dict[str, Any]]:
         """
         Return the last tool-call section in assistant messages, or None.
         Looks for a piece whose value parses as JSON with a 'type' key matching function_call.
@@ -543,7 +543,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
 
     def _make_tool_message(
         self, output: dict[str, Any], call_id: str, *, reference_piece: PromptRequestPiece
-    ) -> PromptRequestResponse:
+    ) -> Message:
         """
         Wrap tool output as a top-level function_call_output artifact.
 
@@ -553,7 +553,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             reference_piece: A reference piece to copy conversation context from.
 
         Returns:
-            A PromptRequestResponse containing the function call output.
+            A Message containing the function call output.
         """
         output_str = output if isinstance(output, str) else json.dumps(output, separators=(",", ":"))
         piece = PromptRequestPiece(
@@ -569,4 +569,4 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             attack_identifier=reference_piece.attack_identifier,
         )
 
-        return PromptRequestResponse(request_pieces=[piece])
+        return Message(request_pieces=[piece])

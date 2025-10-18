@@ -6,7 +6,7 @@ import pytest
 from unit.mocks import MockPromptTarget
 
 from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models.prompt_request_response import Message
 from pyrit.models.seed_prompt import SeedPrompt
 from pyrit.prompt_converter.denylist_converter import DenylistConverter
 
@@ -21,7 +21,7 @@ def mock_template():
 @pytest.fixture
 def mock_target() -> MockPromptTarget:
     target = MagicMock()
-    response = PromptRequestResponse(
+    response = Message(
         request_pieces=[
             PromptRequestPiece(
                 role="assistant",

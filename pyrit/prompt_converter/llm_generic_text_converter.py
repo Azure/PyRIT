@@ -8,7 +8,7 @@ from typing import Optional
 from pyrit.models import (
     PromptDataType,
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
     SeedPrompt,
 )
 from pyrit.prompt_converter import ConverterResult, PromptConverter
@@ -81,7 +81,7 @@ class LLMGenericTextConverter(PromptConverter):
         if self._user_prompt_template_with_objective:
             prompt = self._user_prompt_template_with_objective.render_template_value(objective=prompt)
 
-        request = PromptRequestResponse(
+        request = Message(
             [
                 PromptRequestPiece(
                     role="user",

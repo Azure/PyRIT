@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, patch
 from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 
 from pyrit.memory import AzureSQLMemory, CentralMemory, PromptMemoryEntry
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, Message
 from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
 
 
@@ -84,7 +84,7 @@ class MockPromptTarget(PromptChatTarget):
             )
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         self.prompt_sent.append(prompt_request.get_value())
 
         return PromptRequestPiece(
@@ -95,7 +95,7 @@ class MockPromptTarget(PromptChatTarget):
             labels=prompt_request.request_pieces[0].labels,
         ).to_prompt_request_response()
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: Message) -> None:
         """
         Validates the provided prompt request response
         """
@@ -178,7 +178,7 @@ def get_test_request_piece() -> PromptRequestPiece:
     )
 
 
-def get_sample_conversations() -> MutableSequence[PromptRequestResponse]:
+def get_sample_conversations() -> MutableSequence[Message]:
     with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
 
         conversation_1 = str(uuid.uuid4())
@@ -217,7 +217,7 @@ def get_sample_conversations() -> MutableSequence[PromptRequestResponse]:
 
 def get_sample_conversation_entries() -> Sequence[PromptMemoryEntry]:
     conversations = get_sample_conversations()
-    pieces = PromptRequestResponse.flatten_to_prompt_request_pieces(conversations)
+    pieces = Message.flatten_to_prompt_request_pieces(conversations)
     return [PromptMemoryEntry(entry=piece) for piece in pieces]
 
 

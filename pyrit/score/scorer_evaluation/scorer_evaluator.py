@@ -18,7 +18,7 @@ from pyrit.common.path import (
     SCORER_EVALS_HARM_PATH,
     SCORER_EVALS_OBJECTIVE_PATH,
 )
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models.prompt_request_response import Message
 from pyrit.score import Scorer
 from pyrit.score.scorer_evaluation.human_labeled_dataset import (
     HarmHumanLabeledEntry,
@@ -353,7 +353,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
             csv_results_path = self._get_csv_results_path(dataset_name=labeled_dataset.name)
             self._save_model_scores_to_csv(
                 objectives_or_harms=harms,
-                responses=PromptRequestResponse.get_all_values(assistant_responses),
+                responses=Message.get_all_values(assistant_responses),
                 all_model_scores=all_model_scores,
                 file_path=csv_results_path,
             )

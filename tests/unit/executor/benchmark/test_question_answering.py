@@ -14,7 +14,7 @@ from pyrit.models import (
     AttackOutcome,
     AttackResult,
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
     QuestionAnsweringEntry,
     QuestionChoice,
     SeedPrompt,
@@ -356,7 +356,7 @@ class TestQuestionAnsweringBenchmarkExecuteAsync:
         sample_attack_result: AttackResult,
     ) -> None:
         """Test execute_async with optional parameters."""
-        prepended_conversation: List[PromptRequestResponse] = []
+        prepended_conversation: List[Message] = []
         memory_labels: Dict[str, str] = {"test": "label"}
 
         with patch("pyrit.executor.benchmark.question_answering.PromptSendingAttack") as mock_attack_class:
@@ -398,16 +398,16 @@ class TestQuestionAnsweringBenchmarkContextIntegration:
         self, mock_prompt_target: MagicMock, sample_question_entry: QuestionAnsweringEntry
     ) -> None:
         """Test context with prepended conversation."""
-        # Create a proper mock PromptRequestResponse
+        # Create a proper mock Message
         mock_request_piece = MagicMock(spec=PromptRequestPiece)
         mock_request_piece.conversation_id = "test-conversation"
         mock_request_piece.role = "user"
         mock_request_piece.original_value = "Test message"
 
-        mock_response = MagicMock(spec=PromptRequestResponse)
+        mock_response = MagicMock(spec=Message)
         mock_response.request_pieces = [mock_request_piece]
 
-        prepended_conversation: List[PromptRequestResponse] = [mock_response]
+        prepended_conversation: List[Message] = [mock_response]
 
         context = QuestionAnsweringBenchmarkContext(
             question_answering_entry=sample_question_entry, prepended_conversation=prepended_conversation

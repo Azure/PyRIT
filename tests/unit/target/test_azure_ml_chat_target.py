@@ -16,14 +16,14 @@ from pyrit.chat_message_normalizer import (
     GenericSystemSquash,
 )
 from pyrit.exceptions import EmptyResponseException, RateLimitException
-from pyrit.models import ChatMessage, PromptRequestPiece, PromptRequestResponse
+from pyrit.models import ChatMessage, PromptRequestPiece, Message
 from pyrit.prompt_target import AzureMLChatTarget
 
 
 @pytest.fixture
 def sample_conversations() -> MutableSequence[PromptRequestPiece]:
     conversations = get_sample_conversations()
-    return PromptRequestResponse.flatten_to_prompt_request_pieces(conversations)
+    return Message.flatten_to_prompt_request_pieces(conversations)
 
 
 @pytest.fixture
@@ -197,7 +197,7 @@ async def test_complete_chat_async_bad_json_response(aml_online_chat: AzureMLCha
 
 @pytest.mark.asyncio
 async def test_azure_ml_validate_request_length(aml_online_chat: AzureMLChatTarget):
-    request = PromptRequestResponse(
+    request = Message(
         request_pieces=[
             PromptRequestPiece(role="user", conversation_id="123", original_value="test"),
             PromptRequestPiece(role="user", conversation_id="123", original_value="test2"),
@@ -210,7 +210,7 @@ async def test_azure_ml_validate_request_length(aml_online_chat: AzureMLChatTarg
 
 @pytest.mark.asyncio
 async def test_azure_ml_validate_prompt_type(aml_online_chat: AzureMLChatTarget):
-    request = PromptRequestResponse(request_pieces=[get_image_request_piece()])
+    request = Message(request_pieces=[get_image_request_piece()])
     with pytest.raises(ValueError, match="This target only supports text prompt input."):
         await aml_online_chat.send_prompt_async(prompt_request=request)
 
@@ -230,7 +230,7 @@ async def test_send_prompt_async_bad_request_error_adds_to_memory(aml_online_cha
         side_effect=HTTPStatusError(message="Bad Request", request=MagicMock(), response=response)
     )
     setattr(aml_online_chat, "_complete_chat_async", mock_complete_chat_async)
-    prompt_request = PromptRequestResponse(
+    prompt_request = Message(
         request_pieces=[PromptRequestPiece(role="user", conversation_id="123", original_value="Hello")]
     )
 
@@ -256,7 +256,7 @@ async def test_send_prompt_async_rate_limit_exception_adds_to_memory(aml_online_
         side_effect=HTTPStatusError(message="Rate Limit Reached", request=MagicMock(), response=response)
     )
     setattr(aml_online_chat, "_complete_chat_async", mock_complete_chat_async)
-    prompt_request = PromptRequestResponse(
+    prompt_request = Message(
         request_pieces=[PromptRequestPiece(role="user", conversation_id="123", original_value="Hello")]
     )
 
@@ -277,7 +277,7 @@ async def test_send_prompt_async_rate_limit_exception_retries(aml_online_chat: A
         side_effect=RateLimitError("Rate Limit Reached", response=response, body="Rate limit reached")
     )
     setattr(aml_online_chat, "_complete_chat_async", mock_complete_chat_async)
-    prompt_request = PromptRequestResponse(
+    prompt_request = Message(
         request_pieces=[PromptRequestPiece(role="user", conversation_id="12345", original_value="Hello")]
     )
 
@@ -295,7 +295,7 @@ async def test_send_prompt_async_empty_response_retries(aml_online_chat: AzureML
     mock_complete_chat_async.return_value = None
 
     setattr(aml_online_chat, "_complete_chat_async", mock_complete_chat_async)
-    prompt_request = PromptRequestResponse(
+    prompt_request = Message(
         request_pieces=[PromptRequestPiece(role="user", conversation_id="12345", original_value="Hello")]
     )
 

@@ -35,7 +35,7 @@ import os
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, Message
 from pyrit.score.float_scale.azure_content_filter_scorer import AzureContentFilterScorer
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
@@ -49,7 +49,7 @@ azure_content_filter = AzureContentFilterScorer(
     endpoint=os.environ.get("AZURE_CONTENT_SAFETY_API_ENDPOINT"),
 )
 
-response = PromptRequestResponse(
+response = Message(
     request_pieces=[
         PromptRequestPiece(
             role="assistant",

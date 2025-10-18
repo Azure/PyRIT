@@ -27,7 +27,7 @@ from pyrit.models import (
     ConversationReference,
     ConversationType,
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
     Score,
     SeedPrompt,
 )
@@ -875,7 +875,7 @@ class TestTreeOfAttacksNode:
 
             if target == node._adversarial_chat:
                 # Return JSON response for adversarial chat
-                return PromptRequestResponse(
+                return Message(
                     request_pieces=[
                         PromptRequestPiece(
                             role="assistant",
@@ -888,7 +888,7 @@ class TestTreeOfAttacksNode:
                 )
             else:
                 # Return normal response for objective target
-                return PromptRequestResponse(
+                return Message(
                     request_pieces=[
                         PromptRequestPiece(
                             role="assistant",

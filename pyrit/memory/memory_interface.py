@@ -34,7 +34,7 @@ from pyrit.models import (
     ChatMessage,
     DataTypeSerializer,
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
     Score,
     SeedPrompt,
     SeedPromptDataset,
@@ -313,15 +313,15 @@ class MemoryInterface(abc.ABC):
 
         return list(scores)
 
-    def get_conversation(self, *, conversation_id: str) -> MutableSequence[PromptRequestResponse]:
+    def get_conversation(self, *, conversation_id: str) -> MutableSequence[Message]:
         """
-        Retrieves a list of PromptRequestResponse objects that have the specified conversation ID.
+        Retrieves a list of Message objects that have the specified conversation ID.
 
         Args:
             conversation_id (str): The conversation ID to match.
 
         Returns:
-            MutableSequence[PromptRequestResponse]: A list of chat memory entries with the specified conversation ID.
+            MutableSequence[Message]: A list of chat memory entries with the specified conversation ID.
         """
         request_pieces = self.get_prompt_request_pieces(conversation_id=conversation_id)
         return group_conversation_request_pieces_by_sequence(request_pieces=request_pieces)
@@ -489,7 +489,7 @@ class MemoryInterface(abc.ABC):
 
         return new_conversation_id
 
-    def add_request_response_to_memory(self, *, request: PromptRequestResponse) -> None:
+    def add_request_response_to_memory(self, *, request: Message) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.
 

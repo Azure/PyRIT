@@ -14,7 +14,7 @@ from pyrit.exceptions import (
 from pyrit.models import (
     PromptDataType,
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
     SeedPrompt,
 )
 from pyrit.prompt_converter import ConverterResult, PromptConverter
@@ -76,7 +76,7 @@ class FuzzerConverter(PromptConverter):
 
         formatted_prompt = f"===={self.template_label} BEGINS====\n{prompt}\n===={self.template_label} ENDS===="
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
-        request = PromptRequestResponse(
+        request = Message(
             [
                 PromptRequestPiece(
                     role="user",

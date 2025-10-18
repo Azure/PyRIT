@@ -19,7 +19,7 @@ from tenacity import (
 from pyrit.exceptions.exceptions_helpers import log_exception
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import (
-    PromptRequestResponse,
+    Message,
     construct_response_from_request,
 )
 
@@ -208,7 +208,7 @@ def handle_bad_request_exception(
     request: PromptRequestPiece,
     is_content_filter=False,
     error_code: int = 400,
-) -> PromptRequestResponse:
+) -> Message:
 
     if (
         "content_filter" in response_text

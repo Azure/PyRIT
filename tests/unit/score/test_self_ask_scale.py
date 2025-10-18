@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, UnvalidatedScore
+from pyrit.models import PromptRequestPiece, Message, UnvalidatedScore
 from pyrit.score import ContentClassifierPaths, SelfAskScaleScorer
 
 tree_scale_path = SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value
@@ -20,7 +20,7 @@ criteria_system_prompt_path = SelfAskScaleScorer.SystemPaths.CRITERIA_SYSTEM_PRO
 
 
 @pytest.fixture
-def scorer_scale_response() -> PromptRequestResponse:
+def scorer_scale_response() -> Message:
 
     json_response = (
         dedent(
@@ -34,7 +34,7 @@ def scorer_scale_response() -> PromptRequestResponse:
         .replace("\n", " ")
     )
 
-    return PromptRequestResponse(request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)])
+    return Message(request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)])
 
 
 @pytest.fixture
@@ -59,7 +59,7 @@ def scale_scorer(patch_central_database) -> SelfAskScaleScorer:
     ],
 )
 async def test_scale_scorer_set_system_prompt(
-    scorer_scale_response: PromptRequestResponse,
+    scorer_scale_response: Message,
     scale_arguments_path: Path,
     system_prompt_path: Path,
     patch_central_database,
@@ -133,7 +133,7 @@ def test_validate_scale_arguments_missing_args_raises_value_error(scale_args, sc
 
 
 @pytest.mark.asyncio
-async def test_scale_scorer_score(scorer_scale_response: PromptRequestResponse, patch_central_database):
+async def test_scale_scorer_score(scorer_scale_response: Message, patch_central_database):
 
     chat_target = MagicMock()
 
@@ -160,7 +160,7 @@ async def test_scale_scorer_score(scorer_scale_response: PromptRequestResponse, 
 
 
 @pytest.mark.asyncio
-async def test_scale_scorer_score_custom_scale(scorer_scale_response: PromptRequestResponse, patch_central_database):
+async def test_scale_scorer_score_custom_scale(scorer_scale_response: Message, patch_central_database):
 
     chat_target = MagicMock()
 

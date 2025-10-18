@@ -3,7 +3,7 @@
 
 import pytest
 
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, Message
 from pyrit.score import ScorerPromptValidator
 
 
@@ -143,7 +143,7 @@ class TestScorerPromptValidatorValidate:
         text_piece = PromptRequestPiece(
             role="assistant", original_value="text", converted_value_data_type="text", conversation_id="test"
         )
-        response = PromptRequestResponse(request_pieces=[text_piece])
+        response = Message(request_pieces=[text_piece])
 
         # Should not raise
         validator.validate(response, objective=None)
@@ -158,7 +158,7 @@ class TestScorerPromptValidatorValidate:
             converted_value_data_type="image_path",
             conversation_id="test",
         )
-        response = PromptRequestResponse(request_pieces=[image_piece])
+        response = Message(request_pieces=[image_piece])
 
         with pytest.raises(ValueError, match="There are no valid pieces to score"):
             validator.validate(response, objective=None)
@@ -176,7 +176,7 @@ class TestScorerPromptValidatorValidate:
             converted_value_data_type="image_path",
             conversation_id="test",
         )
-        response = PromptRequestResponse(request_pieces=[text_piece, image_piece])
+        response = Message(request_pieces=[text_piece, image_piece])
 
         # Should not raise
         validator.validate(response, objective=None)
@@ -199,7 +199,7 @@ class TestScorerPromptValidatorValidate:
             conversation_id="test",
             id="image-1",
         )
-        response = PromptRequestResponse(request_pieces=[text_piece, image_piece])
+        response = Message(request_pieces=[text_piece, image_piece])
 
         with pytest.raises(ValueError, match="Request piece image-1 with data type image_path is not supported"):
             validator.validate(response, objective=None)
@@ -214,7 +214,7 @@ class TestScorerPromptValidatorValidate:
             )
             for i in range(3)
         ]
-        response = PromptRequestResponse(request_pieces=pieces)
+        response = Message(request_pieces=pieces)
 
         with pytest.raises(ValueError, match="exceeding the limit of 2"):
             validator.validate(response, objective=None)
@@ -229,7 +229,7 @@ class TestScorerPromptValidatorValidate:
             )
             for i in range(2)
         ]
-        response = PromptRequestResponse(request_pieces=pieces)
+        response = Message(request_pieces=pieces)
 
         # Should not raise
         validator.validate(response, objective=None)
@@ -241,7 +241,7 @@ class TestScorerPromptValidatorValidate:
         text_piece = PromptRequestPiece(
             role="assistant", original_value="text", converted_value_data_type="text", conversation_id="test"
         )
-        response = PromptRequestResponse(request_pieces=[text_piece])
+        response = Message(request_pieces=[text_piece])
 
         with pytest.raises(ValueError, match="Objective is required but not provided"):
             validator.validate(response, objective=None)
@@ -253,7 +253,7 @@ class TestScorerPromptValidatorValidate:
         text_piece = PromptRequestPiece(
             role="assistant", original_value="text", converted_value_data_type="text", conversation_id="test"
         )
-        response = PromptRequestResponse(request_pieces=[text_piece])
+        response = Message(request_pieces=[text_piece])
 
         # Should not raise
         validator.validate(response, objective="test objective")
@@ -315,7 +315,7 @@ class TestScorerPromptValidatorCombined:
             conversation_id="test",
         )
 
-        response = PromptRequestResponse(request_pieces=[valid_piece, invalid_piece])
+        response = Message(request_pieces=[valid_piece, invalid_piece])
 
         # Should pass with valid objective and mixed pieces (enforce_all_pieces_valid=False)
         validator.validate(response, objective="test objective")

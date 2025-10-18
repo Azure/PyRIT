@@ -23,7 +23,7 @@ from uuid import uuid4
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, Message
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -46,9 +46,9 @@ message_list = [
 ]
 
 sqlite_memory = CentralMemory.get_memory_instance()
-sqlite_memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[0]]))
-sqlite_memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[1]]))
-sqlite_memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[2]]))
+sqlite_memory.add_request_response_to_memory(request=Message([message_list[0]]))
+sqlite_memory.add_request_response_to_memory(request=Message([message_list[1]]))
+sqlite_memory.add_request_response_to_memory(request=Message([message_list[2]]))
 
 entries = sqlite_memory.get_conversation(conversation_id=conversation_id)
 

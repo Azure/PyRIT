@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from typing import IO
 
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, Message
 from pyrit.prompt_target import PromptTarget
 
 
@@ -28,7 +28,7 @@ class TextTarget(PromptTarget):
         super().__init__()
         self._text_stream = text_stream
 
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
 
         self._validate_request(prompt_request=prompt_request)
 
@@ -65,7 +65,7 @@ class TextTarget(PromptTarget):
         self._memory.add_request_pieces_to_memory(request_pieces=request_responses)
         return request_responses
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: Message) -> None:
         pass
 
     async def cleanup_target(self):

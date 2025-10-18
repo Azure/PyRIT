@@ -12,7 +12,7 @@ from tenacity import RetryError
 from unit.mocks import get_sample_conversations
 
 from pyrit.exceptions.exception_classes import RateLimitException
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, Message
 from pyrit.prompt_target import OpenAISoraTarget
 
 
@@ -132,7 +132,7 @@ def video_generation_response() -> dict:
 @pytest.fixture
 def sample_conversations() -> MutableSequence[PromptRequestPiece]:
     conversations = get_sample_conversations()
-    return PromptRequestResponse.flatten_to_prompt_request_pieces(conversations)
+    return Message.flatten_to_prompt_request_pieces(conversations)
 
 
 def test_initialization_with_required_parameters(sora_target: OpenAISoraTarget):
@@ -214,7 +214,7 @@ async def test_send_prompt_async_succeeded_download(
 
         mock_request.return_value = openai_mock_return
 
-        response = await sora_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+        response = await sora_target.send_prompt_async(prompt_request=Message([request]))
         path = response.get_value()
         assert path
 
@@ -253,7 +253,7 @@ async def test_send_prompt_async_succeeded_download_error(
 
         mock_request.return_value = openai_mock_return
 
-        response = await sora_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+        response = await sora_target.send_prompt_async(prompt_request=Message([request]))
         response_content = response.request_pieces[0]
 
         response_content.original_value = f"Status Code: 400, Message: {sora_target.download_video_content_async}"
@@ -281,7 +281,7 @@ async def test_send_prompt_async_failed_unknown(
 
         mock_request.return_value = openai_mock_return
 
-        response = await sora_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+        response = await sora_target.send_prompt_async(prompt_request=Message([request]))
         response_content = response.request_pieces[0]
         response_content.original_value = "task_03 failed, Reason: other"
         response_content.response_error = "unknown"
@@ -308,7 +308,7 @@ async def test_send_prompt_async_failed_moderation(
 
         mock_request.return_value = openai_mock_return
 
-        response = await sora_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+        response = await sora_target.send_prompt_async(prompt_request=Message([request]))
         response_content = response.request_pieces[0]
         response_content.original_value = "Status Code: 400, Message: task_02 failed, Reason: output_moderation"
         response_content.response_error = "blocked"
@@ -360,7 +360,7 @@ async def test_send_prompt_async_timeout(
 
         mock_request.return_value = openai_mock_return
 
-        response = await sora_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+        response = await sora_target.send_prompt_async(prompt_request=Message([request]))
         response_content = response.request_pieces[0]
 
         job_id = video_generation_response["id"]
@@ -418,7 +418,7 @@ async def test_send_prompt_async_exceptions(
     ) as mock_request:
 
         with pytest.raises(err_class) as e:  # type: ignore
-            await sora_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+            await sora_target.send_prompt_async(prompt_request=Message([request]))
             assert str(e.value) == err_msg
 
             max_attempts = os.getenv("RETRY_MAX_NUM_ATTEMPTS")

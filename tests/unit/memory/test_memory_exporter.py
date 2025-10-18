@@ -11,7 +11,7 @@ from unit.mocks import get_sample_conversation_entries, get_sample_conversations
 
 from pyrit.memory.memory_exporter import MemoryExporter
 from pyrit.memory.memory_models import PromptMemoryEntry
-from pyrit.models import PromptRequestResponse
+from pyrit.models import Message
 
 
 @pytest.fixture
@@ -50,7 +50,7 @@ def test_export_to_json_creates_file(tmp_path, export_type):
     exporter = MemoryExporter()
     file_path = tmp_path / f"conversations.{export_type}"
     conversations = get_sample_conversations()
-    sample_conversation_entries = list(PromptRequestResponse.flatten_to_prompt_request_pieces(conversations))
+    sample_conversation_entries = list(Message.flatten_to_prompt_request_pieces(conversations))
     export(export_type=export_type, exporter=exporter, data=sample_conversation_entries, file_path=file_path)
 
     assert file_path.exists()  # Check that the file was created
@@ -72,7 +72,7 @@ def test_export_to_json_creates_file(tmp_path, export_type):
 def test_export_to_json_data_with_conversations(tmp_path, export_type):
     exporter = MemoryExporter()
     conversations = get_sample_conversations()
-    sample_conversation_entries = list(PromptRequestResponse.flatten_to_prompt_request_pieces(conversations))
+    sample_conversation_entries = list(Message.flatten_to_prompt_request_pieces(conversations))
     conversation_id = sample_conversation_entries[0].conversation_id
 
     # Define the file path using tmp_path
@@ -100,7 +100,7 @@ def test_export_data_creates_file(tmp_path, export_type):
     exporter = MemoryExporter()
     file_path = tmp_path / f"conversations.{export_type}"
     conversations = get_sample_conversations()
-    sample_conversation_entries = list(PromptRequestResponse.flatten_to_prompt_request_pieces(conversations))
+    sample_conversation_entries = list(Message.flatten_to_prompt_request_pieces(conversations))
     exporter.export_data(data=sample_conversation_entries, file_path=file_path, export_type=export_type)
 
     assert file_path.exists()

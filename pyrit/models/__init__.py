@@ -26,7 +26,7 @@ from pyrit.models.embeddings import EmbeddingData, EmbeddingResponse, EmbeddingS
 from pyrit.models.identifiers import Identifier
 from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError
 from pyrit.models.prompt_request_response import (
-    PromptRequestResponse,
+    Message,
     construct_response_from_request,
     group_conversation_request_pieces_by_sequence,
     group_request_pieces_into_conversations,
@@ -70,7 +70,7 @@ __all__ = [
     "PromptResponse",
     "PromptResponseError",
     "PromptDataType",
-    "PromptRequestResponse",
+    "Message",
     "QuestionAnsweringDataset",
     "QuestionAnsweringEntry",
     "QuestionChoice",

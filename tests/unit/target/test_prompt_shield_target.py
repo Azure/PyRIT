@@ -8,7 +8,7 @@ import pytest
 from unit.mocks import get_audio_request_piece, get_sample_conversations
 
 from pyrit.memory.central_memory import CentralMemory
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, Message
 from pyrit.prompt_target import PromptShieldTarget
 
 
@@ -20,7 +20,7 @@ def audio_request_piece() -> PromptRequestPiece:
 @pytest.fixture
 def sample_conversations() -> MutableSequence[PromptRequestPiece]:
     conversations = get_sample_conversations()
-    return PromptRequestResponse.flatten_to_prompt_request_pieces(conversations)
+    return Message.flatten_to_prompt_request_pieces(conversations)
 
 
 @pytest.fixture
@@ -57,7 +57,7 @@ def test_promptshield_init(promptshield_target: PromptShieldTarget):
 
 @pytest.mark.asyncio
 async def test_prompt_shield_validate_request_length(promptshield_target: PromptShieldTarget):
-    request = PromptRequestResponse(
+    request = Message(
         request_pieces=[
             PromptRequestPiece(role="user", conversation_id="123", original_value="test1"),
             PromptRequestPiece(role="user", conversation_id="123", original_value="test2"),
@@ -72,7 +72,7 @@ async def test_prompt_shield_reject_non_text(
     promptshield_target: PromptShieldTarget, audio_request_piece: PromptRequestPiece
 ):
     with pytest.raises(ValueError):
-        await promptshield_target.send_prompt_async(prompt_request=PromptRequestResponse([audio_request_piece]))
+        await promptshield_target.send_prompt_async(prompt_request=Message([audio_request_piece]))
 
 
 @pytest.mark.asyncio

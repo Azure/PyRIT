@@ -12,7 +12,7 @@ from pyrit.exceptions import EmptyResponseException
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import (
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
     construct_response_from_request,
 )
 from pyrit.models.filter_criteria import PromptConverterState, PromptFilterCriteria
@@ -49,7 +49,7 @@ class PromptNormalizer:
         response_converter_configurations: list[PromptConverterConfiguration] = [],
         labels: Optional[dict[str, str]] = None,
         attack_identifier: Optional[dict[str, str]] = None,
-    ) -> PromptRequestResponse:
+    ) -> Message:
         """
         Sends a single request to a target.
 
@@ -70,7 +70,7 @@ class PromptNormalizer:
             ValueError: If the prompts in the SeedPromptGroup are not part of the same sequence.
 
         Returns:
-            PromptRequestResponse: The response received from the target.
+            Message: The response received from the target.
         """
         # Validates that the SeedPrompts in the SeedPromptGroup are part of the same sequence
         if len(set(prompt.sequence for prompt in seed_prompt_group.prompts)) > 1:
@@ -139,7 +139,7 @@ class PromptNormalizer:
         labels: Optional[dict[str, str]] = None,
         attack_identifier: Optional[dict[str, str]] = None,
         batch_size: int = 10,
-    ) -> list[PromptRequestResponse]:
+    ) -> list[Message]:
         """
         Sends a batch of prompts to the target asynchronously.
 
@@ -153,7 +153,7 @@ class PromptNormalizer:
             batch_size (int, optional): The number of prompts to include in each batch. Defaults to 10.
 
         Returns:
-            list[PromptRequestResponse]: A list of PromptRequestResponse objects representing the responses
+            list[Message]: A list of Message objects representing the responses
                 received for each prompt.
         """
 
@@ -188,7 +188,7 @@ class PromptNormalizer:
     async def convert_values(
         self,
         converter_configurations: list[PromptConverterConfiguration],
-        request_response: PromptRequestResponse,
+        request_response: Message,
     ):
 
         for converter_configuration in converter_configurations:
@@ -270,7 +270,7 @@ class PromptNormalizer:
 
         self._skip_value_type = skip_value_type
 
-    def _should_skip_based_on_skip_criteria(self, prompt_request: PromptRequestResponse) -> bool:
+    def _should_skip_based_on_skip_criteria(self, prompt_request: Message) -> bool:
         """
         Filters out prompts from prompt_request_list that match the skip criteria.
 
@@ -288,7 +288,7 @@ class PromptNormalizer:
                     return False
         return True
 
-    async def _calc_hash(self, request: PromptRequestResponse) -> None:
+    async def _calc_hash(self, request: Message) -> None:
         """
         Adds a request to the memory.
         """
@@ -304,7 +304,7 @@ class PromptNormalizer:
         target: PromptTarget,
         labels: dict[str, str],
         attack_identifier: Optional[dict[str, str]] = None,
-    ) -> PromptRequestResponse:
+    ) -> Message:
         """
         Builds a prompt request response based on the given parameters.
 
@@ -320,12 +320,12 @@ class PromptNormalizer:
             attack_identifier (Optional[dict[str, str]]): An optional dictionary for attack identifiers.
 
         Returns:
-            PromptRequestResponse: The prompt request response object.
+            Message: The prompt request response object.
         """
 
         entries = []
 
-        # All prompt request pieces within PromptRequestResponse needs to have same conversation ID.
+        # All prompt request pieces within Message needs to have same conversation ID.
         conversation_id = conversation_id if conversation_id else str(uuid4())
         for seed_prompt in seed_prompt_group.prompts:
             prompt_request_piece = PromptRequestPiece(
@@ -343,7 +343,7 @@ class PromptNormalizer:
 
             entries.append(prompt_request_piece)
 
-        response = PromptRequestResponse(request_pieces=entries)
+        response = Message(request_pieces=entries)
 
         await self.convert_values(converter_configurations=request_converter_configurations, request_response=response)
         return response
@@ -354,8 +354,8 @@ class PromptNormalizer:
         should_convert: bool = True,
         converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
         attack_identifier: Optional[dict[str, str]] = None,
-        prepended_conversation: Optional[list[PromptRequestResponse]] = None,
-    ) -> Optional[list[PromptRequestResponse]]:
+        prepended_conversation: Optional[list[Message]] = None,
+    ) -> Optional[list[Message]]:
         """
         Processes the prepended conversation by converting it if needed and adding it to memory.
 
@@ -365,10 +365,10 @@ class PromptNormalizer:
             converter_configurations (Optional[list[PromptConverterConfiguration]]): Configurations for converting the
                 request
             attack_identifier (Optional[dict[str, str]]): Identifier for the attack
-            prepended_conversation (Optional[list[PromptRequestResponse]]): The conversation to prepend
+            prepended_conversation (Optional[list[Message]]): The conversation to prepend
 
         Returns:
-            Optional[list[PromptRequestResponse]]: The processed prepended conversation
+            Optional[list[Message]]: The processed prepended conversation
         """
         if not prepended_conversation:
             return None

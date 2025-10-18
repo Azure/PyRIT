@@ -3,7 +3,7 @@
 
 from typing import Optional, Sequence, get_args
 
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, Message
 from pyrit.models.literals import PromptDataType
 
 
@@ -29,7 +29,7 @@ class ScorerPromptValidator:
 
         self._is_objective_required = is_objective_required
 
-    def validate(self, request_response: PromptRequestResponse, objective: str | None) -> None:
+    def validate(self, request_response: Message, objective: str | None) -> None:
         valid_pieces_count = 0
         for piece in request_response.request_pieces:
             if self.is_request_piece_supported(piece):

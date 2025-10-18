@@ -25,7 +25,7 @@ from pyrit.executor.promptgen.core.prompt_generator_strategy import (
 )
 from pyrit.memory import CentralMemory
 from pyrit.models import (
-    PromptRequestResponse,
+    Message,
     Score,
     SeedPrompt,
     SeedPromptGroup,
@@ -942,7 +942,7 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
 
     async def _send_prompts_to_target_async(
         self, *, context: FuzzerContext, prompts: List[str]
-    ) -> List[PromptRequestResponse]:
+    ) -> List[Message]:
         """
         Send prompts to the target in batches.
 
@@ -951,7 +951,7 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
             prompts (List[str]): The prompts to send.
 
         Returns:
-            List[PromptRequestResponse]: The responses from the target.
+            List[Message]: The responses from the target.
         """
         requests = self._create_normalizer_requests(prompts)
 
@@ -987,12 +987,12 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
 
         return requests
 
-    async def _score_responses_async(self, *, responses: List[PromptRequestResponse], tasks: List[str]) -> List[Score]:
+    async def _score_responses_async(self, *, responses: List[Message], tasks: List[str]) -> List[Score]:
         """
         Score the responses from the target.
 
         Args:
-            responses (List[PromptRequestResponse]): The responses to score.
+            responses (List[Message]): The responses to score.
             tasks (List[str]): The original tasks/prompts used for generating the responses.
 
         Returns:
@@ -1015,7 +1015,7 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
         *,
         context: FuzzerContext,
         scores: List[Score],
-        responses: List[PromptRequestResponse],
+        responses: List[Message],
         template_node: _PromptNode,
         current_seed: _PromptNode,
     ) -> int:
@@ -1025,7 +1025,7 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
         Args:
             context (FuzzerContext): The generation context.
             scores (List[Score]): The scores for each response.
-            responses (List[PromptRequestResponse]): The responses that were scored.
+            responses (List[Message]): The responses that were scored.
             template_node (_PromptNode): The template node that was tested.
             current_seed (_PromptNode): The seed node that was selected.
 

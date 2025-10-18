@@ -19,7 +19,7 @@ from pyrit.executor.workflow.core import (
 from pyrit.memory import CentralMemory
 from pyrit.models import (
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
     Score,
     SeedPromptGroup,
 )
@@ -326,7 +326,7 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
         """
         processing_response = await context.processing_callback()
         self._memory.add_request_response_to_memory(
-            request=PromptRequestResponse(
+            request=Message(
                 request_pieces=[
                     PromptRequestPiece(
                         conversation_id=context.processing_conversation_id,

@@ -10,7 +10,7 @@ import pytest
 
 from pyrit.common.path import SCORER_EVALS_HARM_PATH, SCORER_EVALS_OBJECTIVE_PATH
 from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models.prompt_request_response import Message
 from pyrit.score import (
     FloatScaleScorer,
     HarmHumanLabeledEntry,
@@ -256,7 +256,7 @@ def test_get_metrics_path_and_csv_path_objective(mock_objective_scorer):
 @pytest.mark.asyncio
 async def test_run_evaluation_async_harm(mock_harm_scorer):
     responses = [
-        PromptRequestResponse(
+        Message(
             request_pieces=[
                 PromptRequestPiece(role="assistant", original_value="test", original_value_data_type="text")
             ]
@@ -281,7 +281,7 @@ async def test_run_evaluation_async_harm(mock_harm_scorer):
 @pytest.mark.asyncio
 async def test_run_evaluation_async_objective(mock_objective_scorer):
     responses = [
-        PromptRequestResponse(
+        Message(
             request_pieces=[
                 PromptRequestPiece(role="assistant", original_value="test", original_value_data_type="text")
             ]

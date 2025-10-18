@@ -2,9 +2,9 @@
 
 There are several types of data you can retrieve from memory at any point in time using the `MemoryInterface`.
 
-## PromptRequestPiece and PromptRequestResponse
+## PromptRequestPiece and Message
 
-One of the most fundamental data structures in PyRIT is [PromptRequestPiece](../../../pyrit/models/prompt_request_piece.py) and [PromptRequestResponse](../../../pyrit/models/prompt_request_response.py). These classes provide the foundation for multi-modal interaction tracking throughout the framework.
+One of the most fundamental data structures in PyRIT is [PromptRequestPiece](../../../pyrit/models/prompt_request_piece.py) and [Message](../../../pyrit/models/prompt_request_response.py). These classes provide the foundation for multi-modal interaction tracking throughout the framework.
 
 ### PromptRequestPiece
 
@@ -34,17 +34,17 @@ One of the most fundamental data structures in PyRIT is [PromptRequestPiece](../
 
 This rich context allows PyRIT to track the full lifecycle of each interaction, including transformations, targeting, scoring, and error handling.
 
-### PromptRequestResponse
+### Message
 
-`PromptRequestResponse` represents a single request or response to a target and can contain multiple `PromptRequestPieces`. This allows for multi-modal interactions where, for example, you send both text and an image in a single request.
+`Message` represents a single request or response to a target and can contain multiple `PromptRequestPieces`. This allows for multi-modal interactions where, for example, you send both text and an image in a single request.
 
 **Examples:**
-- A text-only message: 1 `PromptRequestResponse` containing 1 `PromptRequestPiece`
-- An image with caption: 1 `PromptRequestResponse` containing 2 `PromptRequestPieces` (text + image)
-- A conversation: Multiple `PromptRequestResponses` linked by the same `conversation_id`
+- A text-only message: 1 `Message` containing 1 `PromptRequestPiece`
+- An image with caption: 1 `Message` containing 2 `PromptRequestPieces` (text + image)
+- A conversation: Multiple `Messages` linked by the same `conversation_id`
 
 **Validation Rules:**
-- All `PromptRequestPieces` in a `PromptRequestResponse` must share the same
+- All `PromptRequestPieces` in a `Message` must share the same
    -  `conversation_id`
    - `sequence` number
    - `role`
@@ -52,11 +52,11 @@ This rich context allows PyRIT to track the full lifecycle of each interaction, 
 
 ### Conversation Structure
 
-A conversation is a list of `PromptRequestResponses` that share the same `conversation_id`. The sequence of the `PromptRequestPieces` and their corresponding `PromptRequestResponses` dictates the order of the conversation.
+A conversation is a list of `Messages` that share the same `conversation_id`. The sequence of the `PromptRequestPieces` and their corresponding `Messages` dictates the order of the conversation.
 
-Here is a sample conversation made up of three `PromptRequestResponses` which all share the same conversation ID. The first `PromptRequestResponse` in the image contains two parts—a text `PromptRequestPiece` and an image `PromptRequestPiece`.
+Here is a sample conversation made up of three `Messages` which all share the same conversation ID. The first `Message` in the image contains two parts—a text `PromptRequestPiece` and an image `PromptRequestPiece`.
 
-![PromptRequestPiece and PromptRequestResponse architecture](../../../assets/prompt_request_piece.png)
+![PromptRequestPiece and Message architecture](../../../assets/prompt_request_piece.png)
 
 This architecture is plumbed throughout PyRIT, providing flexibility to interact with various modalities seamlessly. All pieces are stored in the database as individual `PromptRequestPieces` and are reassembled when needed. The `PromptNormalizer` automatically adds these to the database as prompts are sent.
 

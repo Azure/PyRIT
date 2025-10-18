@@ -9,12 +9,12 @@ import pytest
 from unit.mocks import get_sample_conversations
 
 from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, Message
 from pyrit.score import BatchScorer
 
 
 @pytest.fixture
-def sample_conversations() -> MutableSequence[PromptRequestResponse]:
+def sample_conversations() -> MutableSequence[Message]:
     return get_sample_conversations()
 
 
@@ -50,7 +50,7 @@ class TestBatchScorerScoreResponsesByFilters:
 
     @pytest.mark.asyncio
     async def test_score_responses_by_filters_basic_functionality(
-        self, sample_conversations: MutableSequence[PromptRequestResponse]
+        self, sample_conversations: MutableSequence[Message]
     ) -> None:
         """Test basic scoring functionality with filters."""
         memory = MagicMock()
@@ -71,7 +71,7 @@ class TestBatchScorerScoreResponsesByFilters:
 
     @pytest.mark.asyncio
     async def test_score_responses_by_filters_with_all_parameters(
-        self, sample_conversations: MutableSequence[PromptRequestResponse]
+        self, sample_conversations: MutableSequence[Message]
     ) -> None:
         """Test scoring with all filter parameters."""
         memory = MagicMock()
@@ -188,7 +188,7 @@ class TestBatchScorerErrorHandling:
 
     @pytest.mark.asyncio
     async def test_score_responses_by_filters_no_filters_provided(
-        self, sample_conversations: MutableSequence[PromptRequestResponse]
+        self, sample_conversations: MutableSequence[Message]
     ) -> None:
         """Test scoring when no filters are provided."""
         memory = MagicMock()

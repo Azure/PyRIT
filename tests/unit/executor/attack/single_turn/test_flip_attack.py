@@ -16,7 +16,7 @@ from pyrit.models import (
     AttackOutcome,
     AttackResult,
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
 )
 from pyrit.prompt_converter import FlipConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
@@ -240,7 +240,7 @@ class TestAttackLifecycle:
 
         # Context with prepended conversation
         basic_context.prepended_conversation = [
-            PromptRequestResponse(
+            Message(
                 request_pieces=[PromptRequestPiece(role="user", original_value="Test prepended conversation")]
             )
         ]

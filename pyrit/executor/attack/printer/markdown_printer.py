@@ -11,7 +11,7 @@ from pyrit.executor.attack.printer.attack_result_printer import AttackResultPrin
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackResult, Score
 from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models.prompt_request_response import Message
 
 
 class MarkdownAttackResultPrinter(AttackResultPrinter):
@@ -233,7 +233,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
 
         return markdown_lines
 
-    def _format_system_message(self, message: PromptRequestResponse) -> List[str]:
+    def _format_system_message(self, message: Message) -> List[str]:
         """
         Format a system message as markdown.
 
@@ -241,7 +241,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
         containing instructions or context for the conversation.
 
         Args:
-            message (PromptRequestResponse): The system message to format.
+            message (Message): The system message to format.
 
         Returns:
             List[str]: List of markdown strings representing the system message.
@@ -251,7 +251,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
             lines.append(f"{piece.converted_value}\n")
         return lines
 
-    async def _format_user_message_async(self, *, message: PromptRequestResponse, turn_number: int) -> List[str]:
+    async def _format_user_message_async(self, *, message: Message, turn_number: int) -> List[str]:
         """
         Format a user message as markdown with turn numbering.
 
@@ -260,7 +260,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
         values when they differ.
 
         Args:
-            message (PromptRequestResponse): The user message to format.
+            message (Message): The user message to format.
             turn_number (int): The conversation turn number for this message.
 
         Returns:
@@ -273,7 +273,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
 
         return lines
 
-    async def _format_assistant_message_async(self, *, message: PromptRequestResponse) -> List[str]:
+    async def _format_assistant_message_async(self, *, message: Message) -> List[str]:
         """
         Format an assistant or system response message as markdown.
 
@@ -282,7 +282,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
         for display purposes.
 
         Args:
-            message (PromptRequestResponse): The response message to format.
+            message (Message): The response message to format.
 
         Returns:
             List[str]: List of markdown strings representing the response message.
@@ -417,7 +417,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
             else:
                 return self._format_text_content(piece=piece, show_original=show_original)
 
-    def _format_message_scores(self, message: PromptRequestResponse) -> List[str]:
+    def _format_message_scores(self, message: Message) -> List[str]:
         """
         Format scores for all pieces in a message as markdown.
 
@@ -426,7 +426,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
         appropriate markdown formatting.
 
         Args:
-            message (PromptRequestResponse): The message containing pieces
+            message (Message): The message containing pieces
                 to format scores for.
 
         Returns:

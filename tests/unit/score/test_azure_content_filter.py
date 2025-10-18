@@ -16,7 +16,7 @@ from unit.mocks import (
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models.prompt_request_response import Message
 from pyrit.score.float_scale.azure_content_filter_scorer import AzureContentFilterScorer
 
 
@@ -38,7 +38,7 @@ def text_request_piece() -> PromptRequestPiece:
 @pytest.mark.asyncio
 async def test_score_piece_async_invalid_type(patch_central_database, audio_request_piece: PromptRequestPiece):
     scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
-    request = PromptRequestResponse(
+    request = Message(
         request_pieces=[audio_request_piece],
     )
 

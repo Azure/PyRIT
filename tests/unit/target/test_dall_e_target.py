@@ -16,7 +16,7 @@ from pyrit.exceptions.exception_classes import (
     RateLimitException,
 )
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, Message
 from pyrit.prompt_target import OpenAIDALLETarget
 
 
@@ -44,7 +44,7 @@ def dalle_response_json() -> dict:
 @pytest.fixture
 def sample_conversations() -> MutableSequence[PromptRequestPiece]:
     conversations = get_sample_conversations()
-    return PromptRequestResponse.flatten_to_prompt_request_pieces(conversations)
+    return Message.flatten_to_prompt_request_pieces(conversations)
 
 
 def test_initialization_with_required_parameters(dalle_target: OpenAIDALLETarget):
@@ -80,7 +80,7 @@ async def test_send_prompt_async(
 
         mock_request.return_value = openai_mock_return
 
-        resp = await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+        resp = await dalle_target.send_prompt_async(prompt_request=Message([request]))
         assert resp
         path = resp.request_pieces[0].original_value
         assert os.path.isfile(path)
@@ -112,7 +112,7 @@ async def test_send_prompt_async_empty_response(
         mock_request.return_value = openai_mock_return
 
         with pytest.raises(EmptyResponseException) as e:
-            await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+            await dalle_target.send_prompt_async(prompt_request=Message([request]))
             assert str(e.value) == "Status Code: 204, Message: The chat returned an empty response."
             assert mock_request.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
 
@@ -134,7 +134,7 @@ async def test_send_prompt_async_rate_limit_exception(
     ) as mock_request:
 
         with pytest.raises(RateLimitException) as rle:
-            await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+            await dalle_target.send_prompt_async(prompt_request=Message([request]))
             assert mock_request.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
             assert str(rle.value) == "Rate Limit Reached"
 
@@ -156,14 +156,14 @@ async def test_send_prompt_async_bad_request_error(
         "pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect
     ) as mock_request:
         with pytest.raises(httpx.HTTPStatusError) as exc_info:
-            await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+            await dalle_target.send_prompt_async(prompt_request=Message([request]))
         assert mock_request.call_count == 1
         assert str(exc_info.value) == "Bad Request Error"
 
 
 @pytest.mark.asyncio
 async def test_dalle_validate_request_length(dalle_target: OpenAIDALLETarget):
-    request = PromptRequestResponse(
+    request = Message(
         request_pieces=[
             PromptRequestPiece(role="user", conversation_id="123", original_value="test"),
             PromptRequestPiece(role="user", conversation_id="123", original_value="test2"),
@@ -176,7 +176,7 @@ async def test_dalle_validate_request_length(dalle_target: OpenAIDALLETarget):
 
 @pytest.mark.asyncio
 async def test_dalle_validate_prompt_type(dalle_target: OpenAIDALLETarget):
-    request = PromptRequestResponse(request_pieces=[get_image_request_piece()])
+    request = Message(request_pieces=[get_image_request_piece()])
     with pytest.raises(ValueError, match="This target only supports text prompt input."):
         await dalle_target.send_prompt_async(prompt_request=request)
 
@@ -207,7 +207,7 @@ async def test_send_prompt_async_empty_response_adds_memory(
         dalle_target._memory = mock_memory
 
         with pytest.raises(EmptyResponseException):
-            await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+            await dalle_target.send_prompt_async(prompt_request=Message([request]))
             assert mock_memory.add_request_response_to_memory.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
 
 
@@ -233,7 +233,7 @@ async def test_send_prompt_async_rate_limit_adds_memory(
         dalle_target._memory = mock_memory
 
         with pytest.raises(RateLimitException):
-            await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+            await dalle_target.send_prompt_async(prompt_request=Message([request]))
             assert mock_memory.add_request_response_to_memory.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
 
 
@@ -253,10 +253,10 @@ async def test_send_prompt_async_bad_request_content_filter(
     side_effect = httpx.HTTPStatusError("Bad Request Error", response=response, request=MagicMock())
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect):
-        result = await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+        result = await dalle_target.send_prompt_async(prompt_request=Message([request]))
         # For content filter errors, a response should be returned, not an exception raised
         assert result is not None
-        assert isinstance(result, PromptRequestResponse)
+        assert isinstance(result, Message)
         # Check that the response indicates a content filter error
         assert result.request_pieces[0].response_error == "blocked"
         assert result.request_pieces[0].converted_value_data_type == "error"
@@ -280,7 +280,7 @@ async def test_dalle_target_no_api_version(
     target = OpenAIDALLETarget(
         api_key="test_key", endpoint="https://mock.azure.com", model_name="dalle-3", api_version=None
     )
-    request = PromptRequestResponse([sample_conversations[0]])
+    request = Message([sample_conversations[0]])
 
     with patch(
         "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
@@ -302,7 +302,7 @@ async def test_dalle_target_default_api_version(
     dalle_response_json: dict,
 ):
     target = OpenAIDALLETarget(api_key="test_key", endpoint="https://mock.azure.com", model_name="dalle-3")
-    request = PromptRequestResponse([sample_conversations[0]])
+    request = Message([sample_conversations[0]])
 
     with patch(
         "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
@@ -335,7 +335,7 @@ async def test_send_prompt_async_calls_refresh_auth_headers(dalle_target):
         mock_response.text = json.dumps({"data": [{"b64_json": "aGVsbG8="}]})  # Base64 encoded "hello"
         mock_make_request.return_value = mock_response
 
-        prompt_request = PromptRequestResponse(
+        prompt_request = Message(
             request_pieces=[
                 PromptRequestPiece(
                     role="user",

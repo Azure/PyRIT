@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Protocol
 
 from pyrit.models import (
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
     construct_response_from_request,
 )
 from pyrit.prompt_target.common.prompt_target import PromptTarget
@@ -44,7 +44,7 @@ class PlaywrightTarget(PromptTarget):
         self._interaction_func = interaction_func
         self._page = page
 
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         self._validate_request(prompt_request=prompt_request)
         if not self._page:
             raise RuntimeError(
@@ -61,7 +61,7 @@ class PlaywrightTarget(PromptTarget):
         response_entry = construct_response_from_request(request=request_piece, response_text_pieces=[text])
         return response_entry
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: Message) -> None:
         n_pieces = len(prompt_request.request_pieces)
         if n_pieces != 1:
             raise ValueError(f"This target only supports a single prompt request piece. Received: {n_pieces} pieces.")

@@ -17,7 +17,7 @@ from pyrit.exceptions import (
 )
 from pyrit.models import (
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
     construct_response_from_request,
     data_serializer_factory,
 )
@@ -186,14 +186,14 @@ class OpenAISoraTarget(OpenAITarget):
 
     @limit_requests_per_minute
     @pyrit_target_retry
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         """Asynchronously sends a prompt request and handles the response within a managed conversation context.
 
         Args:
-            prompt_request (PromptRequestResponse): The prompt request response object.
+            prompt_request (Message): The prompt request response object.
 
         Returns:
-            PromptRequestResponse: The updated conversation entry with the response from the prompt target.
+            Message: The updated conversation entry with the response from the prompt target.
 
         Raises:
             RateLimitException: If the rate limit is exceeded.
@@ -286,7 +286,7 @@ class OpenAISoraTarget(OpenAITarget):
         job_id: str,
         generation_id: str,
         request: PromptRequestPiece,
-    ) -> PromptRequestResponse:
+    ) -> Message:
         """
         Asynchronously save the video content to storage using a serializer.
 
@@ -299,7 +299,7 @@ class OpenAISoraTarget(OpenAITarget):
             request (PromptRequestPiece): The request piece associated with the prompt.
 
         Returns:
-            PromptRequestResponse: The response entry with the saved video path.
+            Message: The response entry with the saved video path.
         """
         serializer = data_serializer_factory(
             category="prompt-memory-entries",
@@ -317,7 +317,7 @@ class OpenAISoraTarget(OpenAITarget):
 
     async def _handle_response_async(
         self, request: PromptRequestPiece, response: httpx.Response
-    ) -> PromptRequestResponse:
+    ) -> Message:
         """
         Asynchronously handle the response to a video generation request.
 
@@ -328,7 +328,7 @@ class OpenAISoraTarget(OpenAITarget):
             response (httpx.Response): The response from the API.
 
         Returns:
-            PromptRequestResponse: The response entry with the saved video path or error message.
+            Message: The response entry with the saved video path or error message.
         """
         content = json.loads(response.content)
 
@@ -442,12 +442,12 @@ class OpenAISoraTarget(OpenAITarget):
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: Message) -> None:
         """
         Validates the prompt request to ensure it meets the requirements for the Sora target.
 
         Args:
-            prompt_request (PromptRequestResponse): The prompt request response object.
+            prompt_request (Message): The prompt request response object.
 
         Raises:
             ValueError: If the request is invalid.

@@ -14,7 +14,7 @@ from pyrit.exceptions import (
 from pyrit.models import (
     ChatMessageListDictContent,
     PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
     construct_response_from_request,
 )
 from pyrit.models.chat_message import ChatMessage
@@ -120,11 +120,11 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         self.endpoint_environment_variable = "OPENAI_CHAT_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_CHAT_KEY"
 
-    async def _build_chat_messages_async(self, conversation: MutableSequence[PromptRequestResponse]) -> list[dict]:
+    async def _build_chat_messages_async(self, conversation: MutableSequence[Message]) -> list[dict]:
         """Builds chat messages based on prompt request response entries.
 
         Args:
-            conversation (list[PromptRequestResponse]): A list of PromptRequestResponse objects.
+            conversation (list[Message]): A list of Message objects.
 
         Returns:
             list[dict]: The list of constructed chat messages.
@@ -134,11 +134,11 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         else:
             return await self._build_chat_messages_for_multi_modal_async(conversation)
 
-    def _is_text_message_format(self, conversation: MutableSequence[PromptRequestResponse]) -> bool:
+    def _is_text_message_format(self, conversation: MutableSequence[Message]) -> bool:
         """Checks if the request piece is in text message format.
 
         Args:
-            conversation list[PromptRequestResponse]: The conversation
+            conversation list[Message]: The conversation
 
         Returns:
             bool: True if the request piece is in text message format, False otherwise.
@@ -150,13 +150,13 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
                 return False
         return True
 
-    def _build_chat_messages_for_text(self, conversation: MutableSequence[PromptRequestResponse]) -> list[dict]:
+    def _build_chat_messages_for_text(self, conversation: MutableSequence[Message]) -> list[dict]:
         """
         Builds chat messages based on prompt request response entries. This is needed because many
         openai "compatible" models don't support ChatMessageListDictContent format (this is more universally accepted)
 
         Args:
-            conversation (list[PromptRequestResponse]): A list of PromptRequestResponse objects.
+            conversation (list[Message]): A list of Message objects.
 
         Returns:
             list[dict]: The list of constructed chat messages.
@@ -179,13 +179,13 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         return chat_messages
 
     async def _build_chat_messages_for_multi_modal_async(
-        self, conversation: MutableSequence[PromptRequestResponse]
+        self, conversation: MutableSequence[Message]
     ) -> list[dict]:
         """
         Builds chat messages based on prompt request response entries.
 
         Args:
-            conversation (list[PromptRequestResponse]): A list of PromptRequestResponse objects.
+            conversation (list[Message]): A list of Message objects.
 
         Returns:
             list[dict]: The list of constructed chat messages.
@@ -221,7 +221,7 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         return chat_messages
 
     async def _construct_request_body(
-        self, conversation: MutableSequence[PromptRequestResponse], is_json_response: bool
+        self, conversation: MutableSequence[Message], is_json_response: bool
     ) -> dict:
         messages = await self._build_chat_messages_async(conversation)
 
@@ -252,7 +252,7 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         *,
         open_ai_str_response: str,
         request_piece: PromptRequestPiece,
-    ) -> PromptRequestResponse:
+    ) -> Message:
 
         try:
             response = json.loads(open_ai_str_response)
@@ -281,11 +281,11 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
 
         return construct_response_from_request(request=request_piece, response_text_pieces=[extracted_response])
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: Message) -> None:
         """Validates the structure and content of a prompt request for compatibility of this target.
 
         Args:
-            prompt_request (PromptRequestResponse): The prompt request response object.
+            prompt_request (Message): The prompt request response object.
 
         Raises:
             ValueError: If more than two request pieces are provided.

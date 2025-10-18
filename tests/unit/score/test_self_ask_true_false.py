@@ -10,12 +10,12 @@ import pytest
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, Message
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 
 
 @pytest.fixture
-def scorer_true_false_response() -> PromptRequestResponse:
+def scorer_true_false_response() -> Message:
 
     json_response = (
         dedent(
@@ -27,11 +27,11 @@ def scorer_true_false_response() -> PromptRequestResponse:
         .replace("\n", " ")
     )
 
-    return PromptRequestResponse(request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)])
+    return Message(request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)])
 
 
 @pytest.mark.asyncio
-async def test_true_false_scorer_score(patch_central_database, scorer_true_false_response: PromptRequestResponse):
+async def test_true_false_scorer_score(patch_central_database, scorer_true_false_response: Message):
 
     chat_target = MagicMock()
 
@@ -51,7 +51,7 @@ async def test_true_false_scorer_score(patch_central_database, scorer_true_false
 
 @pytest.mark.asyncio
 async def test_true_false_scorer_set_system_prompt(
-    patch_central_database, scorer_true_false_response: PromptRequestResponse
+    patch_central_database, scorer_true_false_response: Message
 ):
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
@@ -70,7 +70,7 @@ async def test_true_false_scorer_set_system_prompt(
 
 
 @pytest.mark.asyncio
-async def test_true_false_scorer_adds_to_memory(scorer_true_false_response: PromptRequestResponse):
+async def test_true_false_scorer_adds_to_memory(scorer_true_false_response: Message):
     memory = MagicMock(MemoryInterface)
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
@@ -89,7 +89,7 @@ async def test_self_ask_scorer_bad_json_exception_retries(patch_central_database
 
     chat_target = MagicMock()
 
-    bad_json_resp = PromptRequestResponse(
+    bad_json_resp = Message(
         request_pieces=[PromptRequestPiece(role="assistant", original_value="this is not a json")]
     )
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
@@ -117,7 +117,7 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries(patch_centra
         .replace("\n", " ")
     )
 
-    bad_json_resp = PromptRequestResponse(
+    bad_json_resp = Message(
         request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)]
     )
 

@@ -4,7 +4,7 @@
 from typing import Optional
 
 from pyrit.models import Score
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models.prompt_request_response import Message
 from pyrit.score.scorer import Scorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
@@ -39,7 +39,7 @@ class TrueFalseScorer(Scorer):
             raise ValueError("TrueFalseScorer score value must be True or False.")
 
     async def _score_async(
-        self, request_response: PromptRequestResponse, *, objective: Optional[str] = None
+        self, request_response: Message, *, objective: Optional[str] = None
     ) -> list[Score]:
         """
         Score the given request response asynchronously.
@@ -47,7 +47,7 @@ class TrueFalseScorer(Scorer):
         For TrueFalseScorer, multiple piece scores are aggregated into a single true/false score.
 
         Args:
-            request_response (PromptRequestResponse): The prompt request response to score.
+            request_response (Message): The prompt request response to score.
             objective (Optional[str]): The objective to evaluate against. Defaults to None.
 
         Returns:

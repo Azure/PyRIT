@@ -6,7 +6,7 @@ from typing import Optional
 
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.models.literals import ChatMessageRole
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models.prompt_request_response import Message
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
@@ -31,7 +31,7 @@ class TrueFalseInverterScorer(TrueFalseScorer):
 
     async def _score_async(
         self,
-        request_response: PromptRequestResponse,
+        request_response: Message,
         *,
         objective: Optional[str] = None,
         role_filter: Optional[ChatMessageRole] = None,
@@ -39,7 +39,7 @@ class TrueFalseInverterScorer(TrueFalseScorer):
         """Scores the piece using the underlying true-false scorer and returns the inverted score.
 
         Args:
-            request_response (PromptRequestResponse): The prompt request response to score.
+            request_response (Message): The prompt request response to score.
             objective (Optional[str]): The objective to evaluate against (the original attacker model's objective).
                 Defaults to None.
             role_filter (Optional[ChatMessageRole]): Optional filter for message roles. Defaults to None.

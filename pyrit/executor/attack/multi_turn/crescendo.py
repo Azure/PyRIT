@@ -33,7 +33,7 @@ from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    PromptRequestResponse,
+    Message,
     Score,
     SeedPrompt,
     SeedPromptGroup,
@@ -541,7 +541,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         *,
         attack_prompt: str,
         context: CrescendoAttackContext,
-    ) -> PromptRequestResponse:
+    ) -> Message:
         """
         Send the attack prompt to the objective target.
 
@@ -550,7 +550,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             context (CrescendoAttackContext): The attack context.
 
         Returns:
-            PromptRequestResponse: The response from the objective target.
+            Message: The response from the objective target.
 
         Raises:
             ValueError: If no response is received from the objective target.
