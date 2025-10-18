@@ -8,6 +8,7 @@ This module provides the Scenario class that orchestrates the execution of multi
 AttackRun instances sequentially, enabling comprehensive security testing campaigns.
 """
 
+from enum import Enum
 import logging
 from typing import Dict, List, Optional
 
@@ -33,9 +34,16 @@ class ScenarioIdentifier:
 
 
 class ScenarioResult:
-    def __init__(self, *, scenario_identifier: ScenarioIdentifier, attack_results: List[AttackResult]) -> None:
+    def __init__(
+        self,
+        *,
+        scenario_identifier: ScenarioIdentifier,
+        attack_strategies: List[str],
+        attack_results: List[AttackResult]
+    ) -> None:
 
         self.scenario_identifier = scenario_identifier
+        self.attack_strategies = attack_strategies
         self.attack_results = attack_results
 
     @property
@@ -100,6 +108,7 @@ class Scenario:
         *,
         name: str,
         version: int,
+        attack_strategies: List[str],
         attack_runs: List[AttackRun],
         memory_labels: Optional[Dict[str, str]] = None,
     ) -> None:
@@ -125,6 +134,7 @@ class Scenario:
 
         self._name = name
         self._attack_runs = attack_runs
+        self._attack_strategies = attack_strategies
         self._memory_labels = memory_labels or {}
 
         logger.info(f"Initialized scenario '{name}' with {len(attack_runs)} attack runs")
