@@ -24,6 +24,7 @@ from pyrit.executor.attack.multi_turn.crescendo import CrescendoAttack
 from pyrit.executor.attack.multi_turn.red_teaming import RedTeamingAttack
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.prompt_converter import (
+    AsciiSmugglerConverter,
     AnsiAttackConverter,
     AsciiArtConverter,
     AtbashConverter,
@@ -44,11 +45,13 @@ from pyrit.prompt_converter import (
     UnicodeConfusableConverter,
     UnicodeSubstitutionConverter,
     UrlConverter,
+    VariationSelectorSmugglerConverter,
+    SneakyBitsSmugglerConverter,
+    BinaryConverter,
+    AskToDecodeConverter
 )
-from pyrit.prompt_converter.binary_converter import BinaryConverter
-from pyrit.prompt_converter.token_smuggling.ascii_smuggler_converter import (
-    AsciiSmugglerConverter,
-)
+
+
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
 )
@@ -148,23 +151,18 @@ class EncodingScenario(Scenario):
             strategy (FoundryAttackStrategy): The attack strategy to create.
         """
         return [
-            self._get_attack(attack_type=PromptSendingAttack, converters=[AnsiAttackConverter()]),
-            self._get_attack(attack_type=PromptSendingAttack, converters=[AsciiArtConverter()]),
-            self._get_attack(attack_type=PromptSendingAttack, converters=[AsciiSmugglerConverter()]),
-            self._get_attack(attack_type=PromptSendingAttack, converters=[AtbashConverter()]),
-            self._get_attack(attack_type=PromptSendingAttack, converters=[Base64Converter()]),
-            self._get_attack(attack_type=PromptSendingAttack, converters=[BinaryConverter()]),
-            self._get_attack(attack_type=PromptSendingAttack, converters=[CaesarConverter(caesar_offset=3)]),
-            self._get_attack(attack_type=PromptSendingAttack, converters=[CharacterSpaceConverter()]),
-            self._get_attack(attack_type=PromptSendingAttack, converters=[CharSwapConverter()]),
-            self._get_attack(attack_type=PromptSendingAttack, converters=[DiacriticConverter()]),
-            self._get_attack(attack_type=PromptSendingAttack, converters=[FlipConverter()]),
-            self._get_attack(attack_type=PromptSendingAttack, converters=[LeetspeakConverter()]),
-            self._get_attack(attack_type=PromptSendingAttack, converters=[MorseConverter()]),
-            self._get_attack(attack_type=PromptSendingAttack, converters=[ROT13Converter()]),
-            self._get_attack(attack_type=PromptSendingAttack, converters=[SuffixAppendConverter(suffix="!!!")]),
-            self._get_attack(attack_type=PromptSendingAttack, converters=[StringJoinConverter()]),
-            self._get_attack(attack_type=PromptSendingAttack, converters=[TenseConverter()]),
+            self._get_prompt_attack(converters=[AsciiArtConverter()]),
+            self._get_prompt_attack(converters=[AsciiArtConverter(), AskToDecodeConverter()]),
+            self._get_prompt_attack(converters=[AsciiSmugglerConverter()]),
+            self._get_prompt_attack(converters=[AtbashConverter(append_description=True)]),
+            self._get_prompt_attack(converters=[BinaryConverter()]),
+            self._get_prompt_attack(converters=[AsciiArtConverter(), AskToDecodeConverter(encoding_name="binary")]),
+            self._get_prompt_attack(converters=[AsciiArtConverter(), AskToDecodeConverter(encoding_name="binary")]), # selects a random template
+
+            self._get_prompt_attack(converters=[Base64Converter()]),
+            self._get_prompt_attack(converters=[SneakyBitsSmugglerConverter()]),
+            self._get_prompt_attack(converters=[VariationSelectorSmugglerConverter()]),
+
         ]
 
     def _get_prompt_attack(
@@ -177,18 +175,13 @@ class EncodingScenario(Scenario):
             request_converters=PromptConverterConfiguration.from_converters(converters=converters)
         )
 
-        # Build kwargs with required parameters
-        kwargs = {
-            "objective_target": self._objective_target,
-            "attack_converter_config": attack_converter_config,
-            "attack_scoring_config": AttackScoringConfig(objective_scorer=self._objective_scorer),
-        }
-
         attack = PromptSendingAttack(
             objective_target=self._objective_target,
             attack_converter_config=attack_converter_config,
         )
 
         return AttackRun(
-
+            attack=attack,
+            scoring_config=self._scorer_config,
+            objectives=self._objectives,
         )
