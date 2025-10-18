@@ -13,7 +13,6 @@ from pyrit.prompt_target import (
     OpenAIDALLETarget,
     OpenAIResponseTarget,
     OpenAISoraTarget,
-    OpenAISora2Target,
     OpenAITTSTarget,
     RealtimeTarget,
 )
@@ -49,6 +48,17 @@ explanation, or additional text. Output only the word "test" and nothing else.
         attempt += 1
 
     raise AssertionError(f"LLM did not return exactly 'test' after {max_retries} attempts.")
+
+
+async def _assert_can_send_video_prompt(target):
+    """Helper function to test video generation targets."""
+    video_prompt = "A raccoon sailing a pirate ship"
+    attack = PromptSendingAttack(objective_target=target)
+    result = await attack.execute_async(objective=video_prompt)
+
+    # For video generation, just verify we got a response (video file path)
+    assert result.last_response is not None
+    assert result.last_response.converted_value is not None
 
 
 @pytest.mark.asyncio
@@ -201,28 +211,32 @@ async def test_connect_tts(sqlite_instance, endpoint, api_key):
 
 
 @pytest.mark.asyncio
-async def test_connect_sora(sqlite_instance):
+async def test_connect_sora1(sqlite_instance):
+    """Test OpenAISoraTarget with Sora-1 API (auto-detected via endpoint)."""
     target = OpenAISoraTarget(
-        endpoint=os.getenv("OPENAI_SORA_ENDPOINT"),
-        api_key=os.getenv("OPENAI_SORA_KEY"),
-        model_name=os.getenv("OPENAI_SORA_MODEL"),
+        endpoint=os.getenv("OPENAI_SORA1_ENDPOINT"),
+        api_key=os.getenv("OPENAI_SORA1_KEY"),
+        model_name=os.getenv("OPENAI_SORA1_MODEL"),
+        resolution_dimensions="1280x720",
+        n_seconds=8,  # v1 supports flexible durations (up to 20s)
+        n_variants=1,
     )
 
-    await _assert_can_send_prompt(target, check_if_llm_interpreted_request=False)
+    await _assert_can_send_video_prompt(target)
 
 
 @pytest.mark.asyncio
 async def test_connect_sora2(sqlite_instance):
-    """Test OpenAISora2Target with both OpenAI and Azure OpenAI configurations."""
-    target = OpenAISora2Target(
+    """Test OpenAISoraTarget with Sora-2 API (auto-detected via endpoint)."""
+    target = OpenAISoraTarget(
         endpoint=os.getenv("OPENAI_SORA2_ENDPOINT"),
         api_key=os.getenv("OPENAI_SORA2_KEY"),
         model_name=os.getenv("OPENAI_SORA2_MODEL"),
         resolution_dimensions="1280x720",
-        n_seconds=4,
+        n_seconds=4,  # v2 only supports 4, 8, or 12 seconds
     )
 
-    await _assert_can_send_prompt(target, check_if_llm_interpreted_request=False)
+    await _assert_can_send_video_prompt(target)
 
 
 ##################################################
