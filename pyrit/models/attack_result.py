@@ -8,7 +8,7 @@ from enum import Enum
 from typing import Any, Dict, Optional, TypeVar
 
 from pyrit.models.conversation_reference import ConversationReference, ConversationType
-from pyrit.models.prompt_request_piece import MessagePiece
+from pyrit.models.message_piece import MessagePiece
 from pyrit.models.score import Score
 from pyrit.models.strategy_result import StrategyResult
 

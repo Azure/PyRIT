@@ -17,8 +17,8 @@ from tenacity import (
 )
 
 from pyrit.exceptions.exceptions_helpers import log_exception
-from pyrit.models.prompt_request_piece import MessagePiece
-from pyrit.models.prompt_request_response import (
+from pyrit.models.message_piece import MessagePiece
+from pyrit.models.message import (
     Message,
     construct_response_from_request,
 )

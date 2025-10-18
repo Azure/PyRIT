@@ -6,7 +6,7 @@ from typing import Optional
 
 from pyrit.models import MessagePiece, Score
 from pyrit.models.literals import ChatMessageRole
-from pyrit.models.prompt_request_response import Message
+from pyrit.models.message import Message
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 

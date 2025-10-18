@@ -167,7 +167,7 @@ class MessagePiece:
         return ChatMessage(role=cast(ChatMessageRole, self.role), content=self.converted_value)
 
     def to_prompt_request_response(self) -> "Message":  # type: ignore # noqa F821
-        from pyrit.models.prompt_request_response import Message
+        from pyrit.models.message import Message
 
         return Message([self])  # noqa F821
 

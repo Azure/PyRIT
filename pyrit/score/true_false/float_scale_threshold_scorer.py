@@ -6,7 +6,7 @@ from typing import Optional
 
 from pyrit.models import MessagePiece, Score
 from pyrit.models.literals import ChatMessageRole
-from pyrit.models.prompt_request_response import Message
+from pyrit.models.message import Message
 from pyrit.score.float_scale.float_scale_score_aggregator import (
     FloatScaleAggregatorFunc,
     FloatScaleScoreAggregator,

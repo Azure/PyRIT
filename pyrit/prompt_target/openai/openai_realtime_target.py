@@ -15,7 +15,7 @@ import websockets
 from pyrit.exceptions.exception_classes import ServerErrorException
 from pyrit.models import Message
 from pyrit.models.data_type_serializer import data_serializer_factory
-from pyrit.models.prompt_request_response import construct_response_from_request
+from pyrit.models.message import construct_response_from_request
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)

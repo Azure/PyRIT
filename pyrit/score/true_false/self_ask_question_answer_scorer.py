@@ -11,7 +11,7 @@ from pyrit.models import (
     Score,
     UnvalidatedScore,
 )
-from pyrit.models.prompt_request_piece import MessagePiece
+from pyrit.models.message_piece import MessagePiece
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import SelfAskTrueFalseScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
