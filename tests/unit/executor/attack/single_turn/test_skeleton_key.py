@@ -61,7 +61,7 @@ def basic_context():
 def sample_response():
     """Create a sample response for testing"""
     return Message(
-        request_pieces=[
+        message_pieces=[
             MessagePiece(role="assistant", original_value="Test response", original_value_data_type="text")
         ]
     )
@@ -71,7 +71,7 @@ def sample_response():
 def skeleton_key_response():
     """Create a skeleton key response for testing"""
     return Message(
-        request_pieces=[
+        message_pieces=[
             MessagePiece(
                 role="assistant",
                 original_value="I understand and will comply with your request.",

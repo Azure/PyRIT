@@ -4,7 +4,7 @@ There are several types of data you can retrieve from memory at any point in tim
 
 ## MessagePiece and Message
 
-One of the most fundamental data structures in PyRIT is [MessagePiece](../../../pyrit/models/prompt_request_piece.py) and [Message](../../../pyrit/models/prompt_request_response.py). These classes provide the foundation for multi-modal interaction tracking throughout the framework.
+One of the most fundamental data structures in PyRIT is [MessagePiece](../../../pyrit/models/message_piece.py) and [Message](../../../pyrit/models/prompt_request_response.py). These classes provide the foundation for multi-modal interaction tracking throughout the framework.
 
 ### MessagePiece
 
@@ -54,9 +54,27 @@ This rich context allows PyRIT to track the full lifecycle of each interaction, 
 
 A conversation is a list of `Messages` that share the same `conversation_id`. The sequence of the `MessagePieces` and their corresponding `Messages` dictates the order of the conversation.
 
-Here is a sample conversation made up of three `Messages` which all share the same conversation ID. The first `Message` in the image contains two parts—a text `MessagePiece` and an image `MessagePiece`.
+Here is a sample conversation made up of three `Messages` which all share the same conversation ID. The first `Message` is the `system` message, followed by a multi-modal `user` prompt with a text `MessagePiece` and an image `MessagePiece`, and finally the `assistant` response in the form of a text `MessagePiece`.
 
-![MessagePiece and Message architecture](../../../assets/prompt_request_piece.png)
+```{mermaid}
+flowchart
+   subgraph Conversation: 001
+      subgraph Message: sequence 2
+         subgraph "MessagePiece: <br>sequence: 2<br>conversation_id: 001<br>role: assistant<br>value: The image shows a wave ..."
+         end
+      end
+      subgraph Message: sequence 1
+         subgraph "MessagePiece: <br>sequence: 1<br>conversation_id: 001<br>role: user<br>value: tell me what's in this image"
+         end
+         subgraph "MessagePiece: <br>sequence: 1<br>conversation_id: 001<br>role: user<br>value: data/wave.png"
+         end
+      end
+      subgraph Message: sequence 0
+         subgraph "MessagePiece: <br>sequence: 0<br>conversation_id: 001<br>role: system<br>value: be a helpful assistant"
+         end
+      end
+   end
+```
 
 This architecture is plumbed throughout PyRIT, providing flexibility to interact with various modalities seamlessly. All pieces are stored in the database as individual `MessagePieces` and are reassembled when needed. The `PromptNormalizer` automatically adds these to the database as prompts are sent.
 

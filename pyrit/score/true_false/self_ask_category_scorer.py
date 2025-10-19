@@ -101,7 +101,7 @@ class SelfAskCategoryScorer(TrueFalseScorer):
         return category_descriptions
 
     async def _score_piece_async(
-        self, request_piece: MessagePiece, *, objective: Optional[str] = None
+        self, message_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """
         Scores the given request_response using the chat target.
@@ -120,11 +120,11 @@ class SelfAskCategoryScorer(TrueFalseScorer):
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=self._system_prompt,
-            prompt_request_value=request_piece.converted_value,
-            prompt_request_data_type=request_piece.converted_value_data_type,
-            scored_prompt_id=request_piece.id,
+            prompt_request_value=message_piece.converted_value,
+            prompt_request_data_type=message_piece.converted_value_data_type,
+            scored_prompt_id=message_piece.id,
             objective=objective,
-            attack_identifier=request_piece.attack_identifier,
+            attack_identifier=message_piece.attack_identifier,
         )
 
         score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value, score_type="true_false")

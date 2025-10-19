@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from pyrit.models import PromptResponse
-from pyrit.models.prompt_request_response import (
+from pyrit.models import (
     MessagePiece,
     Message,
 )
@@ -30,7 +30,7 @@ def prompt_response_1() -> PromptResponse:
 
 
 @pytest.fixture
-def prompt_request_pieces() -> list[MessagePiece]:
+def message_pieces() -> list[MessagePiece]:
     return [
         MessagePiece(
             role="user",
@@ -51,8 +51,8 @@ def prompt_request_pieces() -> list[MessagePiece]:
 
 
 @pytest.fixture
-def prompt_request_response(prompt_request_pieces) -> Message:
-    return Message(request_pieces=prompt_request_pieces)
+def message(message_pieces) -> Message:
+    return Message(message_pieces=message_pieces)
 
 
 def test_saving_of_prompt_response(prompt_response_1: PromptResponse) -> None:
@@ -71,35 +71,35 @@ def test_save_and_load_of_prompt_response(prompt_response_1: PromptResponse) -> 
         assert loaded_prompt_response == prompt_response_1
 
 
-def test_get_piece_returns_correct_piece(prompt_request_response: Message) -> None:
+def test_get_piece_returns_correct_piece(message: Message) -> None:
     # Test getting first piece (default)
-    first_piece = prompt_request_response.get_piece()
+    first_piece = message.get_piece()
     assert first_piece.original_value == "First piece"
     assert first_piece.role == "user"
 
     # Test getting specific pieces by index
-    second_piece = prompt_request_response.get_piece(1)
+    second_piece = message.get_piece(1)
     assert second_piece.original_value == "Second piece"
     assert second_piece.role == "user"
 
-    third_piece = prompt_request_response.get_piece(2)
+    third_piece = message.get_piece(2)
     assert third_piece.original_value == "Third piece"
     assert third_piece.role == "user"
 
 
-def test_get_piece_raises_index_error_for_invalid_index(prompt_request_response: Message) -> None:
+def test_get_piece_raises_index_error_for_invalid_index(message: Message) -> None:
     with pytest.raises(IndexError, match="No request piece at index 3"):
-        prompt_request_response.get_piece(3)
+        message.get_piece(3)
 
 
 def test_get_piece_raises_value_error_for_empty_request() -> None:
     with pytest.raises(ValueError, match="at least one request piece"):
-        Message(request_pieces=[])
+        Message(message_pieces=[])
 
 
-def test_get_all_values_returns_all_converted_strings(prompt_request_pieces: list[MessagePiece]) -> None:
-    response_one = Message(request_pieces=prompt_request_pieces[:2])
-    response_two = Message(request_pieces=prompt_request_pieces[2:])
+def test_get_all_values_returns_all_converted_strings(message_pieces: list[MessagePiece]) -> None:
+    response_one = Message(message_pieces=message_pieces[:2])
+    response_two = Message(message_pieces=message_pieces[2:])
 
     flattened = Message.get_all_values([response_one, response_two])
 

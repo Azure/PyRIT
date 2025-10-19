@@ -156,7 +156,7 @@ def test_embedding_data_column_types(sqlite_instance):
 @pytest.mark.asyncio()
 async def test_insert_entry(sqlite_instance):
     session = sqlite_instance.get_session()
-    prompt_request_piece_entry = MessagePiece(
+    message_piece_entry = MessagePiece(
         id=uuid.uuid4(),
         conversation_id="123",
         role="user",
@@ -164,12 +164,12 @@ async def test_insert_entry(sqlite_instance):
         original_value="Hello",
         converted_value="Hello after conversion",
     )
-    await prompt_request_piece_entry.set_sha256_values_async()
+    await message_piece_entry.set_sha256_values_async()
 
-    prompt_request_piece_entry.original_value = "Hello"
-    prompt_request_piece_entry.converted_value = "Hello after conversion"
+    message_piece_entry.original_value = "Hello"
+    message_piece_entry.converted_value = "Hello after conversion"
 
-    entry = PromptMemoryEntry(entry=prompt_request_piece_entry)
+    entry = PromptMemoryEntry(entry=message_piece_entry)
     # Use the insert_entry method to insert the entry into the database
     sqlite_instance._insert_entry(entry)
 
@@ -330,7 +330,7 @@ def test_get_all_memory(sqlite_instance, sample_conversation_entries):
     sqlite_instance._insert_entries(entries=sample_conversation_entries)
 
     # Fetch all entries
-    all_entries = sqlite_instance.get_prompt_request_pieces()
+    all_entries = sqlite_instance.get_message_pieces()
     assert len(all_entries) == 3
 
 
@@ -365,7 +365,7 @@ def test_get_memories_with_json_properties(sqlite_instance):
 
         # Verify that the retrieved entry matches the inserted entry
         assert len(retrieved_entries) == 1
-        retrieved_entry = retrieved_entries[0].request_pieces[0]
+        retrieved_entry = retrieved_entries[0].message_pieces[0]
         assert retrieved_entry.conversation_id == specific_conversation_id
         assert retrieved_entry.role == "user"
         assert retrieved_entry.original_value == "Test content"

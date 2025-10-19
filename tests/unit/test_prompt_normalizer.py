@@ -7,7 +7,7 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from unit.mocks import MockPromptTarget, get_image_request_piece
+from unit.mocks import MockPromptTarget, get_image_message_piece
 
 from pyrit.exceptions import EmptyResponseException
 from pyrit.memory import CentralMemory
@@ -31,14 +31,14 @@ from pyrit.prompt_target import PromptTarget
 @pytest.fixture
 def response() -> Message:
     conversation_id = "123"
-    image_request_piece = get_image_request_piece()
-    image_request_piece.role = "assistant"
-    image_request_piece.conversation_id = conversation_id
+    image_message_piece = get_image_message_piece()
+    image_message_piece.role = "assistant"
+    image_message_piece.conversation_id = conversation_id
     return Message(
-        request_pieces=[
+        message_pieces=[
             MessagePiece(role="assistant", original_value="Hello", conversation_id=conversation_id),
             MessagePiece(role="assistant", original_value="part 2", conversation_id=conversation_id),
-            image_request_piece,
+            image_message_piece,
         ]
     )
 
@@ -82,8 +82,8 @@ class MockPromptConverter(PromptConverter):
 
 def assert_prompt_piece_hashes_set(request: Message):
     assert request
-    assert request.request_pieces
-    for piece in request.request_pieces:
+    assert request.message_pieces
+    for piece in request.message_pieces:
         assert piece.original_value_sha256
         assert piece.converted_value_sha256
 
@@ -129,9 +129,9 @@ async def test_send_prompt_async_empty_response_exception_handled(mock_memory_in
 
     assert mock_memory_instance.add_request_response_to_memory.call_count == 2
 
-    assert response.request_pieces[0].response_error == "empty"
-    assert response.request_pieces[0].original_value == ""
-    assert response.request_pieces[0].original_value_data_type == "text"
+    assert response.message_pieces[0].response_error == "empty"
+    assert response.message_pieces[0].original_value == ""
+    assert response.message_pieces[0].original_value_data_type == "text"
 
     assert_prompt_piece_hashes_set(response)
 
@@ -140,7 +140,7 @@ async def test_send_prompt_async_empty_response_exception_handled(mock_memory_in
 async def test_send_prompt_async_request_response_added_to_memory(mock_memory_instance, seed_prompt_group):
     prompt_target = AsyncMock()
 
-    response = MessagePiece(role="assistant", original_value="test_response").to_prompt_request_response()
+    response = MessagePiece(role="assistant", original_value="test_response").to_message()
 
     prompt_target.send_prompt_async = AsyncMock(return_value=response)
 
@@ -155,13 +155,13 @@ async def test_send_prompt_async_request_response_added_to_memory(mock_memory_in
     assert (
         seed_prompt_value
         == mock_memory_instance.add_request_response_to_memory.call_args_list[0][1]["request"]
-        .request_pieces[0]
+        .message_pieces[0]
         .original_value
     )
     assert (
         "test_response"
         == mock_memory_instance.add_request_response_to_memory.call_args_list[1][1]["request"]
-        .request_pieces[0]
+        .message_pieces[0]
         .original_value
     )
 
@@ -190,13 +190,13 @@ async def test_send_prompt_async_exception(mock_memory_instance, seed_prompt_gro
             assert (
                 seed_prompt_value
                 == mock_memory_instance.add_request_response_to_memory.call_args_list[0][1]["request"]
-                .request_pieces[0]
+                .message_pieces[0]
                 .original_value
             )
             assert (
                 "test_exception"
                 == mock_memory_instance.add_request_response_to_memory.call_args_list[1][1]["request"]
-                .request_pieces[0]
+                .message_pieces[0]
                 .original_value
             )
 
@@ -327,7 +327,7 @@ async def test_send_prompt_async_image_converter(mock_memory_instance):
         )
 
         # verify the prompt target received the correct arguments from the normalizer
-        sent_request = prompt_target.send_prompt_async.call_args.kwargs["prompt_request"].request_pieces[0]
+        sent_request = prompt_target.send_prompt_async.call_args.kwargs["prompt_request"].message_pieces[0]
         assert sent_request.converted_value == filename
         assert sent_request.converted_value_data_type == "image_path"
 
@@ -373,7 +373,7 @@ async def test_prompt_normalizer_send_prompt_batch_async_throws(
 
 
 @pytest.mark.asyncio
-async def test_build_prompt_request_response(mock_memory_instance, seed_prompt_group):
+async def test_build_message(mock_memory_instance, seed_prompt_group):
 
     labels = {"label1": "value1", "label2": "value2"}
 
@@ -386,7 +386,7 @@ async def test_build_prompt_request_response(mock_memory_instance, seed_prompt_g
 
     normalizer = PromptNormalizer()
 
-    response = await normalizer._build_prompt_request_response(
+    response = await normalizer._build_message(
         seed_prompt_group=seed_prompt_group,
         conversation_id=conversation_id,
         request_converter_configurations=request_converters,
@@ -395,16 +395,16 @@ async def test_build_prompt_request_response(mock_memory_instance, seed_prompt_g
     )
 
     # Check all prompt pieces in the response have the same conversation ID
-    assert len(set(prompt_piece.conversation_id for prompt_piece in response.request_pieces)) == 1
+    assert len(set(prompt_piece.conversation_id for prompt_piece in response.message_pieces)) == 1
 
-    assert response.request_pieces[0].sequence == 1
-    assert len(set(prompt_piece.sequence for prompt_piece in response.request_pieces)) == 1
+    assert response.message_pieces[0].sequence == 1
+    assert len(set(prompt_piece.sequence for prompt_piece in response.message_pieces)) == 1
 
-    assert response.request_pieces[0].role == "system"
-    assert len(set(prompt_piece.role for prompt_piece in response.request_pieces)) == 1
+    assert response.message_pieces[0].role == "system"
+    assert len(set(prompt_piece.role for prompt_piece in response.message_pieces)) == 1
 
     # Check sequence is set correctly
-    assert len(set(prompt_piece.sequence for prompt_piece in response.request_pieces)) == 1
+    assert len(set(prompt_piece.sequence for prompt_piece in response.message_pieces)) == 1
 
 
 @pytest.mark.asyncio
@@ -436,7 +436,7 @@ async def test_should_skip_based_on_skip_criteria_no_skip_criteria(mock_memory_i
     normalizer = PromptNormalizer()  # By default, _skip_criteria is None
 
     # Make a request with at least one piece
-    request = Message(request_pieces=[MessagePiece(role="user", original_value="hello")])
+    request = Message(message_pieces=[MessagePiece(role="user", original_value="hello")])
 
     result = normalizer._should_skip_based_on_skip_criteria(request)
     assert result is False, "_should_skip_based_on_skip_criteria should return False when skip_criteria is not set"
@@ -458,16 +458,16 @@ async def test_should_skip_based_on_skip_criteria_no_matches(mock_memory_instanc
     memory_piece.original_value_sha256 = "some_random_hash"
     memory_piece.converted_value_sha256 = "some random hash"
 
-    mock_memory_instance.get_prompt_request_pieces.return_value = [memory_piece]
+    mock_memory_instance.get_message_pieces.return_value = [memory_piece]
 
     normalizer.set_skip_criteria(skip_criteria, skip_value_type="converted")
 
     # Construct a request piece that doesn't match the memory's hash
-    request_piece = MessagePiece(role="user", original_value="My user prompt")
-    request_piece.original_value_sha256 = "completely_different_hash"
-    request_piece.converted_value_sha256 = "completely_different_hash"
+    message_piece = MessagePiece(role="user", original_value="My user prompt")
+    message_piece.original_value_sha256 = "completely_different_hash"
+    message_piece.converted_value_sha256 = "completely_different_hash"
 
-    request = Message(request_pieces=[request_piece])
+    request = Message(message_pieces=[message_piece])
 
     result = normalizer._should_skip_based_on_skip_criteria(request)
     assert result is False, "Should return False if no prompt pieces in memory match"
@@ -492,13 +492,13 @@ async def test_should_skip_based_on_skip_criteria_match_found(mock_memory_instan
 
     piece = MessagePiece(role="user", original_value="prompt")
     piece.converted_value_sha256 = matching_sha
-    mock_memory_instance.get_prompt_request_pieces.return_value = [piece]
+    mock_memory_instance.get_message_pieces.return_value = [piece]
 
     # Our request piece also has that same matching sha
-    request_piece = MessagePiece(role="user", original_value="My user prompt")
-    request_piece.converted_value_sha256 = matching_sha
+    message_piece = MessagePiece(role="user", original_value="My user prompt")
+    message_piece.converted_value_sha256 = matching_sha
 
-    request = Message(request_pieces=[request_piece])
+    request = Message(message_pieces=[message_piece])
 
     # Set skip criteria with 'converted' skip_value_type
     normalizer.set_skip_criteria(skip_criteria, skip_value_type="converted")
@@ -515,15 +515,15 @@ async def test_should_skip_based_on_skip_criteria_original_value_match(mock_memo
     matching_sha = "matching_original_hash"
 
     # Build a request piece with the same original_value_sha256
-    request_piece = MessagePiece(role="user", original_value="My user prompt")
-    request_piece.original_value_sha256 = matching_sha
+    message_piece = MessagePiece(role="user", original_value="My user prompt")
+    message_piece.original_value_sha256 = matching_sha
 
-    request = Message(request_pieces=[request_piece])
+    request = Message(message_pieces=[message_piece])
 
     # Memory returns a piece that has an original_value_sha256 matching our request piece
     piece = MessagePiece(role="user", original_value="prompt")
     piece.original_value_sha256 = matching_sha
-    mock_memory_instance.get_prompt_request_pieces.return_value = [piece]
+    mock_memory_instance.get_message_pieces.return_value = [piece]
 
     normalizer = PromptNormalizer()
 
@@ -555,19 +555,19 @@ async def test_send_prompt_async_exception_conv_id(mock_memory_instance, seed_pr
     assert (
         seed_prompt_group.prompts[0].value
         == mock_memory_instance.add_request_response_to_memory.call_args_list[0][1]["request"]
-        .request_pieces[0]
+        .message_pieces[0]
         .original_value
     )
     assert (
         "Test Exception"
         in mock_memory_instance.add_request_response_to_memory.call_args_list[1][1]["request"]
-        .request_pieces[0]
+        .message_pieces[0]
         .original_value
     )
 
 
 @pytest.mark.asyncio
-async def test_build_prompt_request_response_harm_categories(mock_memory_instance):
+async def test_build_message_harm_categories(mock_memory_instance):
     """Test that harm_categories from seed prompts are propagated to request pieces."""
 
     harm_categories = ["violence", "illegal"]
@@ -599,7 +599,7 @@ async def test_build_prompt_request_response_harm_categories(mock_memory_instanc
 
     normalizer = PromptNormalizer()
 
-    response = await normalizer._build_prompt_request_response(
+    response = await normalizer._build_message(
         seed_prompt_group=seed_prompt_group,
         conversation_id=conversation_id,
         request_converter_configurations=request_converters,
@@ -607,16 +607,16 @@ async def test_build_prompt_request_response_harm_categories(mock_memory_instanc
         labels=labels,
     )
 
-    assert len(response.request_pieces) == 2
+    assert len(response.message_pieces) == 2
 
     # First prompt should have harm categories
-    first_piece = response.request_pieces[0]
+    first_piece = response.message_pieces[0]
     assert first_piece.targeted_harm_categories == harm_categories
     assert first_piece.original_value == "Test harmful prompt"
     assert first_piece.role == "user"
 
     # Second prompt should have empty harm categories (default)
-    second_piece = response.request_pieces[1]
+    second_piece = response.message_pieces[1]
     assert second_piece.targeted_harm_categories == []
     assert second_piece.original_value == "Another prompt"
     assert second_piece.role == "user"

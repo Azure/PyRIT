@@ -45,15 +45,15 @@ def video_converter_sample_video(patch_central_database):
 
         output_video.release()
 
-    request_piece = MessagePiece(
+    message_piece = MessagePiece(
         role="user",
         original_value=video_path,
         converted_value=video_path,
         original_value_data_type="video_path",
         converted_value_data_type="video_path",
     )
-    request_piece.id = uuid.uuid4()
-    yield request_piece
+    message_piece.id = uuid.uuid4()
+    yield message_piece
     # Cleanup the sample video file
     if os.path.exists(video_path):
         os.remove(video_path)
@@ -68,17 +68,17 @@ class MockTrueFalseScorer(TrueFalseScorer):
         self.return_value = return_value
 
     async def _score_piece_async(
-        self, request_piece: MessagePiece, *, objective: Optional[str] = None
+        self, message_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         return [
             Score(
                 score_type="true_false",
                 score_value=str(self.return_value).lower(),
-                score_rationale=f"Test rationale for {request_piece.converted_value}",
+                score_rationale=f"Test rationale for {message_piece.converted_value}",
                 score_category=["test_category"],
                 score_metadata={},
                 score_value_description="test_description",
-                prompt_request_response_id=request_piece.id or uuid.uuid4(),
+                prompt_request_response_id=message_piece.id or uuid.uuid4(),
                 objective=objective,
             )
         ]
@@ -93,17 +93,17 @@ class MockFloatScaleScorer(FloatScaleScorer):
         self.return_value = return_value
 
     async def _score_piece_async(
-        self, request_piece: MessagePiece, *, objective: Optional[str] = None
+        self, message_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         return [
             Score(
                 score_type="float_scale",
                 score_value=str(self.return_value),
-                score_rationale=f"Test rationale for {request_piece.converted_value}",
+                score_rationale=f"Test rationale for {message_piece.converted_value}",
                 score_category=["test_category"],
                 score_metadata={},
                 score_value_description="test_description",
-                prompt_request_response_id=request_piece.id or uuid.uuid4(),
+                prompt_request_response_id=message_piece.id or uuid.uuid4(),
                 objective=objective,
             )
         ]

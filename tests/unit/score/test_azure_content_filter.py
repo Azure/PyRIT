@@ -8,9 +8,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from azure.ai.contentsafety.models import TextCategory
 from unit.mocks import (
-    get_audio_request_piece,
-    get_image_request_piece,
-    get_test_request_piece,
+    get_audio_message_piece,
+    get_image_message_piece,
+    get_test_message_piece,
 )
 
 from pyrit.memory import CentralMemory
@@ -21,40 +21,40 @@ from pyrit.score.float_scale.azure_content_filter_scorer import AzureContentFilt
 
 
 @pytest.fixture
-def audio_request_piece() -> MessagePiece:
-    return get_audio_request_piece()
+def audio_message_piece() -> MessagePiece:
+    return get_audio_message_piece()
 
 
 @pytest.fixture
-def image_request_piece() -> MessagePiece:
-    return get_image_request_piece()
+def image_message_piece() -> MessagePiece:
+    return get_image_message_piece()
 
 
 @pytest.fixture
-def text_request_piece() -> MessagePiece:
-    return get_test_request_piece()
+def text_message_piece() -> MessagePiece:
+    return get_test_message_piece()
 
 
 @pytest.mark.asyncio
-async def test_score_piece_async_invalid_type(patch_central_database, audio_request_piece: MessagePiece):
+async def test_score_piece_async_invalid_type(patch_central_database, audio_message_piece: MessagePiece):
     scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
     request = Message(
-        request_pieces=[audio_request_piece],
+        message_pieces=[audio_message_piece],
     )
 
     # Should raise ValueError for unsupported data type
     with pytest.raises(ValueError, match="There are no valid pieces to score"):
         await scorer.score_async(request_response=request)
-    os.remove(audio_request_piece.converted_value)
+    os.remove(audio_message_piece.converted_value)
 
 
 @pytest.mark.asyncio
-async def test_score_piece_async_text(patch_central_database, text_request_piece: MessagePiece):
+async def test_score_piece_async_text(patch_central_database, text_message_piece: MessagePiece):
     scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
     mock_client = MagicMock()
     mock_client.analyze_text.return_value = {"categoriesAnalysis": [{"severity": "2", "category": "Hate"}]}
     scorer._azure_cf_client = mock_client
-    scores = await scorer._score_piece_async(text_request_piece)
+    scores = await scorer._score_piece_async(text_message_piece)
     assert len(scores) == 1
     score = scores[0]
     assert score.score_type == "float_scale"
@@ -66,14 +66,14 @@ async def test_score_piece_async_text(patch_central_database, text_request_piece
 
 
 @pytest.mark.asyncio
-async def test_score_piece_async_image(patch_central_database, image_request_piece: MessagePiece):
+async def test_score_piece_async_image(patch_central_database, image_message_piece: MessagePiece):
     scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
     mock_client = MagicMock()
     mock_client.analyze_image.return_value = {"categoriesAnalysis": [{"severity": "3", "category": "Hate"}]}
     scorer._azure_cf_client = mock_client
     # Patch _get_base64_image_data to avoid actual file IO
     with patch.object(scorer, "_get_base64_image_data", AsyncMock(return_value="base64data")):
-        scores = await scorer._score_piece_async(image_request_piece)
+        scores = await scorer._score_piece_async(image_message_piece)
     assert len(scores) == 1
     score = scores[0]
     assert score.score_type == "float_scale"
@@ -83,7 +83,7 @@ async def test_score_piece_async_image(patch_central_database, image_request_pie
     assert score.score_metadata["azure_severity"] == 3
     assert "AzureContentFilterScorer" in str(score.scorer_class_identifier)
     assert "AzureContentFilterScorer" in str(score.scorer_class_identifier)
-    os.remove(image_request_piece.converted_value)
+    os.remove(image_message_piece.converted_value)
 
 
 def test_default_category():

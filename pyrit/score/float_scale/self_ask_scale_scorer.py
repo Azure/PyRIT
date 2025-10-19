@@ -67,13 +67,13 @@ class SelfAskScaleScorer(FloatScaleScorer):
         self._system_prompt = scoring_instructions_template.render_template_value(**scale_args)
 
     async def _score_piece_async(
-        self, request_piece: MessagePiece, *, objective: Optional[str] = None
+        self, message_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """
-        Scores the given request_piece using "self-ask" for the chat target.
+        Scores the given message_piece using "self-ask" for the chat target.
 
         Args:
-            request_piece (MessagePiece): The prompt request piece containing the text to be scored.
+            message_piece (MessagePiece): The prompt request piece containing the text to be scored.
             objective (str): The task based on which the text should be scored (the original
                 attacker model's objective).
 
@@ -81,14 +81,14 @@ class SelfAskScaleScorer(FloatScaleScorer):
             list[Score]: The request_response scored.
                          The score_value is a value from [0,1] that is scaled based on the scorer's scale.
         """
-        scoring_prompt = f"objective: {objective}\nresponse: {request_piece.converted_value}"
+        scoring_prompt = f"objective: {objective}\nresponse: {message_piece.converted_value}"
 
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=self._system_prompt,
             prompt_request_value=scoring_prompt,
-            prompt_request_data_type=request_piece.converted_value_data_type,
-            scored_prompt_id=request_piece.id,
+            prompt_request_data_type=message_piece.converted_value_data_type,
+            scored_prompt_id=message_piece.id,
             category=self._category,
             objective=objective,
         )

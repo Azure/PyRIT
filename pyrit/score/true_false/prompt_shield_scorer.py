@@ -48,18 +48,18 @@ class PromptShieldScorer(TrueFalseScorer):
         self._prompt_target = prompt_shield_target
 
     async def _score_piece_async(
-        self, request_piece: MessagePiece, *, objective: Optional[str] = None
+        self, message_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         self._conversation_id = str(uuid.uuid4())
 
-        body = request_piece.original_value
+        body = message_piece.original_value
 
         request = Message(
             [
                 MessagePiece(
                     role="user",
                     original_value=body,
-                    prompt_metadata=request_piece.prompt_metadata,
+                    prompt_metadata=message_piece.prompt_metadata,
                     conversation_id=self._conversation_id,
                     prompt_target_identifier=self._prompt_target.get_identifier(),
                 )
@@ -87,7 +87,7 @@ class PromptShieldScorer(TrueFalseScorer):
             score_metadata=meta,
             score_rationale="",
             scorer_class_identifier=self.get_identifier(),
-            prompt_request_response_id=request_piece.id,
+            prompt_request_response_id=message_piece.id,
             objective=objective,
         )
 

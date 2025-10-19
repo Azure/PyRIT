@@ -323,7 +323,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
                     " but the HumanLabeledDataset type is HARM."
                 )
             for request_response in entry.conversation:
-                self.scorer._memory.add_request_response_to_memory(request=request_response)
+                self.scorer._memory.add_message_to_memory(request=request_response)
                 # Logic may need to change for multi-turn scoring
                 assistant_responses.append(request_response)
             human_scores_list.append(entry.human_scores)
@@ -491,9 +491,9 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
                     " but the HumanLabeledDataset type is OBJECTIVE."
                 )
             for request_response in entry.conversation:
-                self.scorer._memory.add_request_response_to_memory(request=request_response)
+                self.scorer._memory.add_message_to_memory(request=request_response)
                 # Logic may need to change for multi-turn scoring
-                assistant_responses.append(request_response.request_pieces[0])
+                assistant_responses.append(request_response.message_pieces[0])
             human_scores_list.append(entry.human_scores)
             objectives.append(entry.objective)
 
@@ -504,7 +504,7 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
         all_model_scores_list = []
         for _ in range(num_scorer_trials):
             scores = await self.scorer.score_prompts_batch_async(
-                request_responses=[piece.to_prompt_request_response() for piece in assistant_responses],
+                request_responses=[piece.to_message() for piece in assistant_responses],
                 objectives=objectives,
             )
 

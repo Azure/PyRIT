@@ -132,7 +132,7 @@ def video_generation_response() -> dict:
 @pytest.fixture
 def sample_conversations() -> MutableSequence[MessagePiece]:
     conversations = get_sample_conversations()
-    return Message.flatten_to_prompt_request_pieces(conversations)
+    return Message.flatten_to_message_pieces(conversations)
 
 
 def test_initialization_with_required_parameters(sora_target: OpenAISoraTarget):
@@ -254,7 +254,7 @@ async def test_send_prompt_async_succeeded_download_error(
         mock_request.return_value = openai_mock_return
 
         response = await sora_target.send_prompt_async(prompt_request=Message([request]))
-        response_content = response.request_pieces[0]
+        response_content = response.message_pieces[0]
 
         response_content.original_value = f"Status Code: 400, Message: {sora_target.download_video_content_async}"
         response_content.response_error = "unknown"
@@ -282,7 +282,7 @@ async def test_send_prompt_async_failed_unknown(
         mock_request.return_value = openai_mock_return
 
         response = await sora_target.send_prompt_async(prompt_request=Message([request]))
-        response_content = response.request_pieces[0]
+        response_content = response.message_pieces[0]
         response_content.original_value = "task_03 failed, Reason: other"
         response_content.response_error = "unknown"
         response_content.original_value_data_type = "error"
@@ -309,7 +309,7 @@ async def test_send_prompt_async_failed_moderation(
         mock_request.return_value = openai_mock_return
 
         response = await sora_target.send_prompt_async(prompt_request=Message([request]))
-        response_content = response.request_pieces[0]
+        response_content = response.message_pieces[0]
         response_content.original_value = "Status Code: 400, Message: task_02 failed, Reason: output_moderation"
         response_content.response_error = "blocked"
         response_content.original_value_data_type = "error"
@@ -361,7 +361,7 @@ async def test_send_prompt_async_timeout(
         mock_request.return_value = openai_mock_return
 
         response = await sora_target.send_prompt_async(prompt_request=Message([request]))
-        response_content = response.request_pieces[0]
+        response_content = response.message_pieces[0]
 
         job_id = video_generation_response["id"]
         task_status = video_generation_response["status"]

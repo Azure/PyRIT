@@ -72,7 +72,7 @@ class MockPromptTarget(PromptChatTarget):
     ) -> None:
         self.system_prompt = system_prompt
         if self._memory:
-            self._memory.add_request_response_to_memory(
+            self._memory.add_message_to_memory(
                 request=MessagePiece(
                     role="system",
                     original_value=system_prompt,
@@ -80,7 +80,7 @@ class MockPromptTarget(PromptChatTarget):
                     conversation_id=conversation_id,
                     attack_identifier=attack_identifier,
                     labels=labels,
-                ).to_prompt_request_response()
+                ).to_message()
             )
 
     @limit_requests_per_minute
@@ -90,10 +90,10 @@ class MockPromptTarget(PromptChatTarget):
         return MessagePiece(
             role="assistant",
             original_value="default",
-            conversation_id=prompt_request.request_pieces[0].conversation_id,
-            attack_identifier=prompt_request.request_pieces[0].attack_identifier,
-            labels=prompt_request.request_pieces[0].labels,
-        ).to_prompt_request_response()
+            conversation_id=prompt_request.message_pieces[0].conversation_id,
+            attack_identifier=prompt_request.message_pieces[0].attack_identifier,
+            labels=prompt_request.message_pieces[0].labels,
+        ).to_message()
 
     def _validate_request(self, *, prompt_request: Message) -> None:
         """
@@ -137,7 +137,7 @@ def get_azure_sql_memory() -> Generator[AzureSQLMemory, None, None]:
     azure_sql_memory.dispose_engine()
 
 
-def get_image_request_piece() -> MessagePiece:
+def get_image_message_piece() -> MessagePiece:
     file_name: str
     with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp_file:
         file_name = temp_file.name
@@ -152,7 +152,7 @@ def get_image_request_piece() -> MessagePiece:
         )
 
 
-def get_audio_request_piece() -> MessagePiece:
+def get_audio_message_piece() -> MessagePiece:
     file_name: str
     with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as temp_file:
         file_name = temp_file.name
@@ -167,7 +167,7 @@ def get_audio_request_piece() -> MessagePiece:
         )
 
 
-def get_test_request_piece() -> MessagePiece:
+def get_test_message_piece() -> MessagePiece:
 
     return MessagePiece(
         role="user",
@@ -196,7 +196,7 @@ def get_sample_conversations() -> MutableSequence[Message]:
                 conversation_id=conversation_1,
                 sequence=0,
                 attack_identifier=attack_identifier,
-            ).to_prompt_request_response(),
+            ).to_message(),
             MessagePiece(
                 role="assistant",
                 original_value="original prompt text",
@@ -204,20 +204,20 @@ def get_sample_conversations() -> MutableSequence[Message]:
                 conversation_id=conversation_1,
                 sequence=1,
                 attack_identifier=attack_identifier,
-            ).to_prompt_request_response(),
+            ).to_message(),
             MessagePiece(
                 role="assistant",
                 original_value="original prompt text",
                 converted_value="I'm fine, thank you!",
                 conversation_id=str(uuid.uuid4()),
                 attack_identifier=attack_identifier,
-            ).to_prompt_request_response(),
+            ).to_message(),
         ]
 
 
 def get_sample_conversation_entries() -> Sequence[PromptMemoryEntry]:
     conversations = get_sample_conversations()
-    pieces = Message.flatten_to_prompt_request_pieces(conversations)
+    pieces = Message.flatten_to_message_pieces(conversations)
     return [PromptMemoryEntry(entry=piece) for piece in pieces]
 
 

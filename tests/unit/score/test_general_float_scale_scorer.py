@@ -25,7 +25,7 @@ def general_float_scorer_response() -> Message:
         .strip()
         .replace("\n", " ")
     )
-    return Message(request_pieces=[MessagePiece(role="assistant", original_value=json_response)])
+    return Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
 
 
 @pytest.mark.asyncio
@@ -72,7 +72,7 @@ async def test_general_float_scorer_score_async_with_prompt_f_string(
     assert "This is the rationale." in score[0].score_rationale
     assert "This is the description." in score[0].score_value_description
     args = chat_target.send_prompt_async.call_args
-    prompt = args[1]["prompt_request"].request_pieces[0].converted_value
+    prompt = args[1]["prompt_request"].message_pieces[0].converted_value
     assert prompt == "Rate this: this is a test prompt"
 
 
@@ -93,7 +93,7 @@ async def test_general_float_scorer_score_async_handles_custom_keys(patch_centra
         .replace("\n", " ")
     )
     response = Message(
-        request_pieces=[MessagePiece(role="assistant", original_value=json_response)]
+        message_pieces=[MessagePiece(role="assistant", original_value=json_response)]
     )
     chat_target.send_prompt_async = AsyncMock(return_value=response)
 
@@ -130,7 +130,7 @@ async def test_general_float_scorer_score_async_min_max_scale(patch_central_data
         .replace("\n", " ")
     )
     response = Message(
-        request_pieces=[MessagePiece(role="assistant", original_value=json_response)]
+        message_pieces=[MessagePiece(role="assistant", original_value=json_response)]
     )
     chat_target.send_prompt_async = AsyncMock(return_value=response)
 

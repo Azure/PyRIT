@@ -164,7 +164,7 @@ new_attack = CrescendoAttack(
 # (in this case, we have results in a variable, but you can assume it's from an old session)
 
 memory = CentralMemory.get_memory_instance()
-pieces = memory.get_prompt_request_pieces(labels=memory_labels)
+pieces = memory.get_message_pieces(labels=memory_labels)
 conversation_ids = set(piece.conversation_id for piece in pieces)
 
 attack_results: List[AttackResult] = [

@@ -128,13 +128,13 @@ class Scorer(abc.ABC):
         Returns:
             list[Score]: A list of Score objects.
         """
-        if not request_response.request_pieces:
+        if not request_response.message_pieces:
             return []
 
         # Score only the supported pieces
         supported_pieces = self._get_supported_pieces(request_response)
 
-        tasks = [self._score_piece_async(request_piece=piece, objective=objective) for piece in supported_pieces]
+        tasks = [self._score_piece_async(message_piece=piece, objective=objective) for piece in supported_pieces]
 
         if not tasks:
             return []
@@ -147,7 +147,7 @@ class Scorer(abc.ABC):
 
     @abstractmethod
     async def _score_piece_async(
-        self, request_piece: MessagePiece, *, objective: Optional[str] = None
+        self, message_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         raise NotImplementedError()
 
@@ -157,8 +157,8 @@ class Scorer(abc.ABC):
         """
         return [
             piece
-            for piece in request_response.request_pieces
-            if self._validator.is_request_piece_supported(request_piece=piece)
+            for piece in request_response.message_pieces
+            if self._validator.is_message_piece_supported(message_piece=piece)
         ]
 
     @abstractmethod
@@ -211,7 +211,7 @@ class Scorer(abc.ABC):
             list[Score]: A list of Score objects representing the results.
         """
         request = Message(
-            request_pieces=[
+            message_pieces=[
                 MessagePiece(
                     role="user",
                     original_value=text,
@@ -219,7 +219,7 @@ class Scorer(abc.ABC):
             ]
         )
 
-        request.request_pieces[0].id = None
+        request.message_pieces[0].id = None
         return await self.score_async(request, objective=objective)
 
     async def score_image_async(self, image_path: str, *, objective: Optional[str] = None) -> list[Score]:
@@ -234,7 +234,7 @@ class Scorer(abc.ABC):
             list[Score]: A list of Score objects representing the results.
         """
         request = Message(
-            request_pieces=[
+            message_pieces=[
                 MessagePiece(
                     role="user",
                     original_value=image_path,
@@ -243,7 +243,7 @@ class Scorer(abc.ABC):
             ]
         )
 
-        request.request_pieces[0].id = None
+        request.message_pieces[0].id = None
         return await self.score_async(request, objective=objective)
 
     async def score_prompts_batch_async(
@@ -501,7 +501,7 @@ class Scorer(abc.ABC):
             str: The objective extracted from the response.
         """
 
-        if not response.request_pieces:
+        if not response.message_pieces:
             return ""
 
         piece = response.get_piece()
@@ -509,7 +509,7 @@ class Scorer(abc.ABC):
         if piece.role != "assistant":
             return ""
 
-        conversation = self._memory.get_prompt_request_pieces(conversation_id=piece.conversation_id)
+        conversation = self._memory.get_message_pieces(conversation_id=piece.conversation_id)
         last_prompt = max(conversation, key=lambda x: x.sequence)
 
         # Every text request piece from the last turn

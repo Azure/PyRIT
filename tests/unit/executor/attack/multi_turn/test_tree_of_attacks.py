@@ -554,7 +554,7 @@ class TestExecutionPhase:
         )
 
         with patch.object(attack, "_create_attack_node", return_value=success_node):
-            with patch.object(attack._memory, "get_prompt_request_pieces", return_value=[]):
+            with patch.object(attack._memory, "get_message_pieces", return_value=[]):
                 result = await attack._perform_async(context=context)
 
         assert result.outcome == AttackOutcome.SUCCESS
@@ -582,7 +582,7 @@ class TestExecutionPhase:
         )
 
         with patch.object(attack, "_create_attack_node", return_value=success_node):
-            with patch.object(attack._memory, "get_prompt_request_pieces", return_value=[]):
+            with patch.object(attack._memory, "get_message_pieces", return_value=[]):
                 result = await attack._perform_async(context=context)
 
         # Should succeed after first iteration
@@ -696,7 +696,7 @@ class TestEndToEndExecution:
 
         with patch.object(attack, "_perform_async", return_value=mock_result):
             with patch.object(attack._memory, "get_conversation", return_value=[]):
-                with patch.object(attack._memory, "get_prompt_request_pieces", return_value=[]):
+                with patch.object(attack._memory, "get_message_pieces", return_value=[]):
                     with patch.object(attack._memory, "add_attack_results_to_memory", return_value=None):
                         result = await attack.execute_async(objective="Test objective", memory_labels={"test": "label"})
 
@@ -876,7 +876,7 @@ class TestTreeOfAttacksNode:
             if target == node._adversarial_chat:
                 # Return JSON response for adversarial chat
                 return Message(
-                    request_pieces=[
+                    message_pieces=[
                         MessagePiece(
                             role="assistant",
                             original_value=json.dumps({"prompt": "test prompt", "improvement": "test"}),
@@ -889,7 +889,7 @@ class TestTreeOfAttacksNode:
             else:
                 # Return normal response for objective target
                 return Message(
-                    request_pieces=[
+                    message_pieces=[
                         MessagePiece(
                             role="assistant",
                             original_value="Target response",
@@ -971,7 +971,7 @@ class TestTreeOfAttacksErrorHandling:
         node_iterator = iter(failing_nodes)
 
         with patch.object(attack, "_create_attack_node", side_effect=lambda **kwargs: next(node_iterator)):
-            with patch.object(attack._memory, "get_prompt_request_pieces", return_value=[]):
+            with patch.object(attack._memory, "get_message_pieces", return_value=[]):
                 result = await attack._perform_async(context=context)
 
         # Should return failure when all nodes fail
@@ -1017,7 +1017,7 @@ class TestTreeOfAttacksErrorHandling:
         # Create all nodes at once
         node_iter = iter(nodes)
         with patch.object(attack, "_create_attack_node", side_effect=lambda **kwargs: next(node_iter, nodes[0])):
-            with patch.object(attack._memory, "get_prompt_request_pieces", return_value=[]):
+            with patch.object(attack._memory, "get_message_pieces", return_value=[]):
                 result = await attack._perform_async(context=context)
 
         # Attack should continue despite some nodes failing

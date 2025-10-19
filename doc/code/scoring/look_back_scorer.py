@@ -56,7 +56,7 @@ adversarial_strategy_path = Path(RED_TEAM_EXECUTOR_PATH, "persuasion_deception/R
 # This defines the user prompt for the target LLM with the persuasion_persona.yaml
 prepended_conversation = [
     Message(
-        request_pieces=[
+        message_pieces=[
             MessagePiece(
                 role="user",
                 original_value=user_prompt_str,
@@ -109,8 +109,8 @@ conversation_history = memory.get_conversation(conversation_id=result.conversati
 score_conversation = LookBackScorer(chat_target=adversarial_chat, exclude_instruction_prompts=True)
 
 # Score requires a MessagePiece
-request_response = memory.get_prompt_request_pieces(conversation_id=result.conversation_id)
-request_piece = request_response[0]
+request_response = memory.get_message_pieces(conversation_id=result.conversation_id)
+message_piece = request_response[0]
 
 # Returns a score using entire conversation as context
 score = (await score_conversation.score_async(request))[0]  # type: ignore

@@ -61,8 +61,8 @@ class TextTarget(PromptTarget):
                 )
                 request_responses.append(request_response)
 
-        # This is post validation, so the prompt_request_pieces should be okay and normalized
-        self._memory.add_request_pieces_to_memory(request_pieces=request_responses)
+        # This is post validation, so the message_pieces should be okay and normalized
+        self._memory.add_message_pieces_to_memory(message_pieces=request_responses)
         return request_responses
 
     def _validate_request(self, *, prompt_request: Message) -> None:

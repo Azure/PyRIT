@@ -19,8 +19,8 @@ from pyrit.models import (
 )
 
 
-def assert_original_value_in_list(original_value: str, prompt_request_pieces: Sequence[MessagePiece]):
-    for piece in prompt_request_pieces:
+def assert_original_value_in_list(original_value: str, message_pieces: Sequence[MessagePiece]):
+    for piece in message_pieces:
         if piece.original_value == original_value:
             return True
     raise AssertionError(f"Original value {original_value} not found in list")
@@ -28,12 +28,12 @@ def assert_original_value_in_list(original_value: str, prompt_request_pieces: Se
 
 def test_conversation_memory_empty_by_default(sqlite_instance: MemoryInterface):
     expected_count = 0
-    c = sqlite_instance.get_prompt_request_pieces()
+    c = sqlite_instance.get_message_pieces()
     assert len(c) == expected_count
 
 
 @pytest.mark.parametrize("num_conversations", [1, 2, 3])
-def test_add_request_pieces_to_memory(
+def test_add_message_pieces_to_memory(
     sqlite_instance: MemoryInterface, sample_conversations: Sequence[MessagePiece], num_conversations: int
 ):
     for c in sample_conversations[:num_conversations]:
@@ -41,14 +41,14 @@ def test_add_request_pieces_to_memory(
         c.role = sample_conversations[0].role
         c.sequence = 0
 
-    request_response = Message(request_pieces=sample_conversations[:num_conversations])
+    request_response = Message(message_pieces=sample_conversations[:num_conversations])
 
-    sqlite_instance.add_request_response_to_memory(request=request_response)
-    assert len(sqlite_instance.get_prompt_request_pieces()) == num_conversations
+    sqlite_instance.add_message_to_memory(request=request_response)
+    assert len(sqlite_instance.get_message_pieces()) == num_conversations
 
 
-def test_get_prompt_request_pieces_uuid_and_string_ids(sqlite_instance: MemoryInterface):
-    """Test that get_prompt_request_pieces handles both UUID objects and string representations."""
+def test_get_message_pieces_uuid_and_string_ids(sqlite_instance: MemoryInterface):
+    """Test that get_message_pieces handles both UUID objects and string representations."""
     uuid1 = uuid.uuid4()
     uuid2 = uuid.uuid4()
     uuid3 = uuid.uuid4()
@@ -73,26 +73,26 @@ def test_get_prompt_request_pieces_uuid_and_string_ids(sqlite_instance: MemoryIn
             converted_value="Test prompt 3",
         ),
     ]
-    sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=pieces)
 
-    uuid_results = sqlite_instance.get_prompt_request_pieces(prompt_ids=[uuid1, uuid2])
+    uuid_results = sqlite_instance.get_message_pieces(prompt_ids=[uuid1, uuid2])
     assert len(uuid_results) == 2
     assert {str(uuid1), str(uuid2)} == {str(piece.id) for piece in uuid_results}
 
-    str_results = sqlite_instance.get_prompt_request_pieces(prompt_ids=[str(uuid1), str(uuid2)])
+    str_results = sqlite_instance.get_message_pieces(prompt_ids=[str(uuid1), str(uuid2)])
     assert len(str_results) == 2
     assert {str(uuid1), str(uuid2)} == {str(piece.id) for piece in str_results}
 
     mixed_types: Sequence[str | uuid.UUID] = [uuid1, str(uuid2)]
-    mixed_results = sqlite_instance.get_prompt_request_pieces(prompt_ids=mixed_types)
+    mixed_results = sqlite_instance.get_message_pieces(prompt_ids=mixed_types)
     assert len(mixed_results) == 2
     assert {str(uuid1), str(uuid2)} == {str(piece.id) for piece in mixed_results}
 
-    single_uuid_result = sqlite_instance.get_prompt_request_pieces(prompt_ids=[uuid3])
+    single_uuid_result = sqlite_instance.get_message_pieces(prompt_ids=[uuid3])
     assert len(single_uuid_result) == 1
     assert str(single_uuid_result[0].id) == str(uuid3)
 
-    single_str_result = sqlite_instance.get_prompt_request_pieces(prompt_ids=[str(uuid3)])
+    single_str_result = sqlite_instance.get_message_pieces(prompt_ids=[str(uuid3)])
     assert len(single_str_result) == 1
     assert str(single_str_result[0].id) == str(uuid3)
 
@@ -144,8 +144,8 @@ def test_duplicate_memory(sqlite_instance: MemoryInterface):
             attack_identifier=attack1.get_identifier(),
         ),
     ]
-    sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
-    assert len(sqlite_instance.get_prompt_request_pieces()) == 5
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=pieces)
+    assert len(sqlite_instance.get_message_pieces()) == 5
     attack3 = PromptSendingAttack(objective_target=MagicMock())
     new_conversation_id1 = sqlite_instance.duplicate_conversation(
         new_attack_id=attack3.get_identifier()["id"],
@@ -155,7 +155,7 @@ def test_duplicate_memory(sqlite_instance: MemoryInterface):
         new_attack_id=attack3.get_identifier()["id"],
         conversation_id=conversation_id_2,
     )
-    all_pieces = sqlite_instance.get_prompt_request_pieces()
+    all_pieces = sqlite_instance.get_message_pieces()
     assert len(all_pieces) == 9
     assert len([p for p in all_pieces if p.attack_identifier["id"] == attack1.get_identifier()["id"]]) == 4
     assert len([p for p in all_pieces if p.attack_identifier["id"] == attack2.get_identifier()["id"]]) == 1
@@ -221,14 +221,14 @@ def test_duplicate_conversation_pieces_not_score(sqlite_instance: MemoryInterfac
             prompt_request_response_id=prompt_id_2,
         ),
     ]
-    sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=pieces)
     sqlite_instance.add_scores_to_memory(scores=scores)
     attack2 = PromptSendingAttack(objective_target=MagicMock())
     new_conversation_id = sqlite_instance.duplicate_conversation(
         new_attack_id=attack2.get_identifier()["id"],
         conversation_id=conversation_id,
     )
-    new_pieces = sqlite_instance.get_prompt_request_pieces(conversation_id=new_conversation_id)
+    new_pieces = sqlite_instance.get_message_pieces(conversation_id=new_conversation_id)
     new_pieces_ids = [str(p.id) for p in new_pieces]
     assert len(new_pieces) == 2
     original_ids = {piece.original_prompt_id for piece in new_pieces}
@@ -289,8 +289,8 @@ def test_duplicate_conversation_excluding_last_turn(sqlite_instance: MemoryInter
             attack_identifier=attack1.get_identifier(),
         ),
     ]
-    sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
-    assert len(sqlite_instance.get_prompt_request_pieces()) == 5
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=pieces)
+    assert len(sqlite_instance.get_message_pieces()) == 5
     attack3 = PromptSendingAttack(objective_target=MagicMock())
 
     new_conversation_id1 = sqlite_instance.duplicate_conversation_excluding_last_turn(
@@ -298,10 +298,10 @@ def test_duplicate_conversation_excluding_last_turn(sqlite_instance: MemoryInter
         conversation_id=conversation_id_1,
     )
 
-    all_memory = sqlite_instance.get_prompt_request_pieces()
+    all_memory = sqlite_instance.get_message_pieces()
     assert len(all_memory) == 7
 
-    duplicate_conversation = sqlite_instance.get_prompt_request_pieces(conversation_id=new_conversation_id1)
+    duplicate_conversation = sqlite_instance.get_message_pieces(conversation_id=new_conversation_id1)
     assert len(duplicate_conversation) == 2
 
     for piece in duplicate_conversation:
@@ -379,7 +379,7 @@ def test_duplicate_conversation_excluding_last_turn_not_score(sqlite_instance: M
             prompt_request_response_id=prompt_id_2,
         ),
     ]
-    sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=pieces)
     sqlite_instance.add_scores_to_memory(scores=scores)
     attack2 = PromptSendingAttack(objective_target=MagicMock())
 
@@ -387,7 +387,7 @@ def test_duplicate_conversation_excluding_last_turn_not_score(sqlite_instance: M
         new_attack_id=attack2.get_identifier()["id"],
         conversation_id=conversation_id,
     )
-    new_pieces = sqlite_instance.get_prompt_request_pieces(conversation_id=new_conversation_id)
+    new_pieces = sqlite_instance.get_message_pieces(conversation_id=new_conversation_id)
     new_pieces_ids = [str(p.id) for p in new_pieces]
     assert len(new_pieces) == 2
     assert new_pieces[0].original_prompt_id == prompt_id_1
@@ -434,17 +434,17 @@ def test_duplicate_conversation_excluding_last_turn_same_attack(sqlite_instance:
             attack_identifier=attack1.get_identifier(),
         ),
     ]
-    sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
-    assert len(sqlite_instance.get_prompt_request_pieces()) == 4
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=pieces)
+    assert len(sqlite_instance.get_message_pieces()) == 4
 
     new_conversation_id1 = sqlite_instance.duplicate_conversation_excluding_last_turn(
         conversation_id=conversation_id_1,
     )
 
-    all_memory = sqlite_instance.get_prompt_request_pieces()
+    all_memory = sqlite_instance.get_message_pieces()
     assert len(all_memory) == 6
 
-    duplicate_conversation = sqlite_instance.get_prompt_request_pieces(conversation_id=new_conversation_id1)
+    duplicate_conversation = sqlite_instance.get_message_pieces(conversation_id=new_conversation_id1)
     assert len(duplicate_conversation) == 2
 
     for piece in duplicate_conversation:
@@ -464,8 +464,8 @@ def test_duplicate_memory_attack_id_collision(sqlite_instance: MemoryInterface):
             attack_identifier=attack1.get_identifier(),
         ),
     ]
-    sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
-    assert len(sqlite_instance.get_prompt_request_pieces()) == 1
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=pieces)
+    assert len(sqlite_instance.get_message_pieces()) == 1
     with pytest.raises(ValueError):
         sqlite_instance.duplicate_conversation(
             new_attack_id=str(attack1.get_identifier()["id"]),
@@ -473,18 +473,18 @@ def test_duplicate_memory_attack_id_collision(sqlite_instance: MemoryInterface):
         )
 
 
-def test_add_request_pieces_to_memory_calls_validate(sqlite_instance: MemoryInterface):
+def test_add_message_pieces_to_memory_calls_validate(sqlite_instance: MemoryInterface):
     request_response = MagicMock(Message)
-    request_response.request_pieces = [MagicMock(MessagePiece)]
+    request_response.message_pieces = [MagicMock(MessagePiece)]
     with (
-        patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_request_pieces_to_memory"),
+        patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_message_pieces_to_memory"),
         patch("pyrit.memory.memory_interface.MemoryInterface._update_sequence"),
     ):
-        sqlite_instance.add_request_response_to_memory(request=request_response)
+        sqlite_instance.add_message_to_memory(request=request_response)
     assert request_response.validate.called
 
 
-def test_add_request_pieces_to_memory_updates_sequence(
+def test_add_message_pieces_to_memory_updates_sequence(
     sqlite_instance: MemoryInterface, sample_conversations: Sequence[MessagePiece]
 ):
     for conversation in sample_conversations:
@@ -492,19 +492,19 @@ def test_add_request_pieces_to_memory_updates_sequence(
         conversation.role = sample_conversations[0].role
         conversation.sequence = 17
 
-    with patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_request_pieces_to_memory") as mock_add:
-        sqlite_instance.add_request_response_to_memory(
-            request=Message(request_pieces=sample_conversations)
+    with patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_message_pieces_to_memory") as mock_add:
+        sqlite_instance.add_message_to_memory(
+            request=Message(message_pieces=sample_conversations)
         )
         assert mock_add.called
 
         args, kwargs = mock_add.call_args
-        assert kwargs["request_pieces"][0].sequence == 0, "Sequence should be reset to 0"
-        assert kwargs["request_pieces"][1].sequence == 0, "Sequence should be reset to 0"
-        assert kwargs["request_pieces"][2].sequence == 0, "Sequence should be reset to 0"
+        assert kwargs["message_pieces"][0].sequence == 0, "Sequence should be reset to 0"
+        assert kwargs["message_pieces"][1].sequence == 0, "Sequence should be reset to 0"
+        assert kwargs["message_pieces"][2].sequence == 0, "Sequence should be reset to 0"
 
 
-def test_add_request_pieces_to_memory_updates_sequence_with_prev_conversation(
+def test_add_message_pieces_to_memory_updates_sequence_with_prev_conversation(
     sqlite_instance: MemoryInterface, sample_conversations: Sequence[MessagePiece]
 ):
 
@@ -514,36 +514,36 @@ def test_add_request_pieces_to_memory_updates_sequence_with_prev_conversation(
         conversation.sequence = 17
 
     # insert one of these into memory
-    sqlite_instance.add_request_response_to_memory(request=Message(request_pieces=sample_conversations))
+    sqlite_instance.add_message_to_memory(request=Message(message_pieces=sample_conversations))
 
-    with patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_request_pieces_to_memory") as mock_add:
-        sqlite_instance.add_request_response_to_memory(
-            request=Message(request_pieces=sample_conversations)
+    with patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_message_pieces_to_memory") as mock_add:
+        sqlite_instance.add_message_to_memory(
+            request=Message(message_pieces=sample_conversations)
         )
         assert mock_add.called
 
         args, kwargs = mock_add.call_args
-        assert kwargs["request_pieces"][0].sequence == 1, "Sequence should increment previous conversation by 1"
-        assert kwargs["request_pieces"][1].sequence == 1
-        assert kwargs["request_pieces"][2].sequence == 1
+        assert kwargs["message_pieces"][0].sequence == 1, "Sequence should increment previous conversation by 1"
+        assert kwargs["message_pieces"][1].sequence == 1
+        assert kwargs["message_pieces"][2].sequence == 1
 
 
 def test_insert_prompt_memories_inserts_embedding(
     sqlite_instance: MemoryInterface, sample_conversations: Sequence[MessagePiece]
 ):
 
-    request = Message(request_pieces=[sample_conversations[0]])
+    request = Message(message_pieces=[sample_conversations[0]])
 
     embedding_mock = MagicMock()
     embedding_mock.generate_text_embedding.returns = [0, 1, 2]
     sqlite_instance.enable_embedding(embedding_model=embedding_mock)
 
     with (
-        patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_request_pieces_to_memory"),
+        patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_message_pieces_to_memory"),
         patch("pyrit.memory.sqlite_memory.SQLiteMemory._add_embeddings_to_memory") as mock_embedding,
     ):
 
-        sqlite_instance.add_request_response_to_memory(request=request)
+        sqlite_instance.add_message_to_memory(request=request)
 
         assert mock_embedding.called
         assert embedding_mock.generate_text_embedding.called
@@ -553,7 +553,7 @@ def test_insert_prompt_memories_not_inserts_embedding(
     sqlite_instance: MemoryInterface, sample_conversations: Sequence[MessagePiece]
 ):
 
-    request = Message(request_pieces=[sample_conversations[0]])
+    request = Message(message_pieces=[sample_conversations[0]])
 
     embedding_mock = MagicMock()
     embedding_mock.generate_text_embedding.returns = [0, 1, 2]
@@ -561,16 +561,16 @@ def test_insert_prompt_memories_not_inserts_embedding(
     sqlite_instance.disable_embedding()
 
     with (
-        patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_request_pieces_to_memory"),
+        patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_message_pieces_to_memory"),
         patch("pyrit.memory.sqlite_memory.SQLiteMemory._add_embeddings_to_memory") as mock_embedding,
     ):
 
-        sqlite_instance.add_request_response_to_memory(request=request)
+        sqlite_instance.add_message_to_memory(request=request)
 
         assert mock_embedding.assert_not_called
 
 
-def test_get_prompt_request_pieces_labels(sqlite_instance: MemoryInterface):
+def test_get_message_pieces_labels(sqlite_instance: MemoryInterface):
     labels = {"op_name": "op1", "user_name": "name1", "harm_category": "dummy1"}
     entries = [
         PromptMemoryEntry(
@@ -597,7 +597,7 @@ def test_get_prompt_request_pieces_labels(sqlite_instance: MemoryInterface):
 
     sqlite_instance._insert_entries(entries=entries)
 
-    retrieved_entries = sqlite_instance.get_prompt_request_pieces(labels=labels)
+    retrieved_entries = sqlite_instance.get_message_pieces(labels=labels)
 
     assert len(retrieved_entries) == 2  # Two entries should have the specific memory labels
     for retrieved_entry in retrieved_entries:
@@ -606,7 +606,7 @@ def test_get_prompt_request_pieces_labels(sqlite_instance: MemoryInterface):
         assert "harm_category" in retrieved_entry.labels
 
 
-def test_get_prompt_request_pieces_metadata(sqlite_instance: MemoryInterface):
+def test_get_message_pieces_metadata(sqlite_instance: MemoryInterface):
     metadata: dict[str, str | int] = {"key1": "value1", "key2": "value2"}
     entries = [
         PromptMemoryEntry(
@@ -633,14 +633,14 @@ def test_get_prompt_request_pieces_metadata(sqlite_instance: MemoryInterface):
 
     sqlite_instance._insert_entries(entries=entries)
 
-    retrieved_entries = sqlite_instance.get_prompt_request_pieces(prompt_metadata={"key2": "value2"})
+    retrieved_entries = sqlite_instance.get_message_pieces(prompt_metadata={"key2": "value2"})
 
     assert len(retrieved_entries) == 2  # Two entries should have the specific memory labels
     for retrieved_entry in retrieved_entries:
         assert "key2" in retrieved_entry.prompt_metadata
 
 
-def test_get_prompt_request_pieces_id(sqlite_instance: MemoryInterface):
+def test_get_message_pieces_id(sqlite_instance: MemoryInterface):
     entries = [
         PromptMemoryEntry(
             entry=MessagePiece(
@@ -669,14 +669,14 @@ def test_get_prompt_request_pieces_id(sqlite_instance: MemoryInterface):
 
     sqlite_instance._insert_entries(entries=entries)
 
-    retrieved_entries = sqlite_instance.get_prompt_request_pieces(prompt_ids=[id_1, id_2])
+    retrieved_entries = sqlite_instance.get_message_pieces(prompt_ids=[id_1, id_2])
 
     assert len(retrieved_entries) == 2
     assert_original_value_in_list("Hello 1", retrieved_entries)
     assert_original_value_in_list("Hello 2", retrieved_entries)
 
 
-def test_get_prompt_request_pieces_attack(sqlite_instance: MemoryInterface):
+def test_get_message_pieces_attack(sqlite_instance: MemoryInterface):
 
     attack1 = PromptSendingAttack(objective_target=MagicMock())
     attack2 = PromptSendingAttack(objective_target=MagicMock())
@@ -707,14 +707,14 @@ def test_get_prompt_request_pieces_attack(sqlite_instance: MemoryInterface):
 
     sqlite_instance._insert_entries(entries=entries)
 
-    attack1_entries = sqlite_instance.get_prompt_request_pieces(attack_id=attack1.get_identifier()["id"])
+    attack1_entries = sqlite_instance.get_message_pieces(attack_id=attack1.get_identifier()["id"])
 
     assert len(attack1_entries) == 2
     assert_original_value_in_list("Hello 1", attack1_entries)
     assert_original_value_in_list("Hello 3", attack1_entries)
 
 
-def test_get_prompt_request_pieces_sent_after(sqlite_instance: MemoryInterface):
+def test_get_message_pieces_sent_after(sqlite_instance: MemoryInterface):
     entries = [
         PromptMemoryEntry(
             entry=MessagePiece(
@@ -741,13 +741,13 @@ def test_get_prompt_request_pieces_sent_after(sqlite_instance: MemoryInterface):
 
     sqlite_instance._insert_entries(entries=entries)
 
-    retrieved_entries = sqlite_instance.get_prompt_request_pieces(sent_after=datetime(2024, 1, 1))
+    retrieved_entries = sqlite_instance.get_message_pieces(sent_after=datetime(2024, 1, 1))
 
     assert len(retrieved_entries) == 1
     assert "Hello 3" in retrieved_entries[0].original_value
 
 
-def test_get_prompt_request_pieces_sent_before(sqlite_instance: MemoryInterface):
+def test_get_message_pieces_sent_before(sqlite_instance: MemoryInterface):
     entries = [
         PromptMemoryEntry(
             entry=MessagePiece(
@@ -774,14 +774,14 @@ def test_get_prompt_request_pieces_sent_before(sqlite_instance: MemoryInterface)
 
     sqlite_instance._insert_entries(entries=entries)
 
-    retrieved_entries = sqlite_instance.get_prompt_request_pieces(sent_before=datetime(2024, 1, 1))
+    retrieved_entries = sqlite_instance.get_message_pieces(sent_before=datetime(2024, 1, 1))
 
     assert len(retrieved_entries) == 2
     assert_original_value_in_list("Hello 1", retrieved_entries)
     assert_original_value_in_list("Hello 2", retrieved_entries)
 
 
-def test_get_prompt_request_pieces_by_value(sqlite_instance: MemoryInterface):
+def test_get_message_pieces_by_value(sqlite_instance: MemoryInterface):
     entries = [
         PromptMemoryEntry(
             entry=MessagePiece(
@@ -804,14 +804,14 @@ def test_get_prompt_request_pieces_by_value(sqlite_instance: MemoryInterface):
     ]
 
     sqlite_instance._insert_entries(entries=entries)
-    retrieved_entries = sqlite_instance.get_prompt_request_pieces(converted_values=["Hello 2", "Hello 3"])
+    retrieved_entries = sqlite_instance.get_message_pieces(converted_values=["Hello 2", "Hello 3"])
 
     assert len(retrieved_entries) == 2
     assert_original_value_in_list("Hello 2", retrieved_entries)
     assert_original_value_in_list("Hello 3", retrieved_entries)
 
 
-def test_get_prompt_request_pieces_by_hash(sqlite_instance: MemoryInterface):
+def test_get_message_pieces_by_hash(sqlite_instance: MemoryInterface):
     entries = [
         MessagePiece(
             role="user",
@@ -830,15 +830,15 @@ def test_get_prompt_request_pieces_by_hash(sqlite_instance: MemoryInterface):
     entries[0].converted_value_sha256 = "hash1"
     entries[1].converted_value_sha256 = "hash1"
 
-    sqlite_instance.add_request_pieces_to_memory(request_pieces=entries)
-    retrieved_entries = sqlite_instance.get_prompt_request_pieces(converted_value_sha256=["hash1"])
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=entries)
+    retrieved_entries = sqlite_instance.get_message_pieces(converted_value_sha256=["hash1"])
 
     assert len(retrieved_entries) == 2
     assert_original_value_in_list("Hello 1", retrieved_entries)
     assert_original_value_in_list("Hello 2", retrieved_entries)
 
 
-def test_get_prompt_request_pieces_with_non_matching_memory_labels(sqlite_instance: MemoryInterface):
+def test_get_message_pieces_with_non_matching_memory_labels(sqlite_instance: MemoryInterface):
     attack = PromptSendingAttack(objective_target=MagicMock())
     labels = {"op_name": "op1", "user_name": "name1", "harm_category": "dummy1"}
     entries = [
@@ -871,12 +871,12 @@ def test_get_prompt_request_pieces_with_non_matching_memory_labels(sqlite_instan
 
     sqlite_instance._insert_entries(entries=entries)
     labels = {"nonexistent_key": "nonexiststent_value"}
-    retrieved_entries = sqlite_instance.get_prompt_request_pieces(labels=labels)
+    retrieved_entries = sqlite_instance.get_message_pieces(labels=labels)
 
     assert len(retrieved_entries) == 0  # zero entries found since invalid memory labels passed
 
 
-def test_get_prompt_request_pieces_sorts(
+def test_get_message_pieces_sorts(
     sqlite_instance: MemoryInterface, sample_conversations: MutableSequence[MessagePiece]
 ):
     conversation_id = sample_conversations[0].conversation_id
@@ -890,9 +890,9 @@ def test_get_prompt_request_pieces_sorts(
         )
     )
 
-    sqlite_instance.add_request_pieces_to_memory(request_pieces=sample_conversations)
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=sample_conversations)
 
-    response = sqlite_instance.get_prompt_request_pieces()
+    response = sqlite_instance.get_message_pieces()
 
     current_value = response[0].conversation_id
     for obj in response[1:]:
@@ -920,7 +920,7 @@ def test_prompt_piece_scores_duplicate_piece(sqlite_instance: MemoryInterface):
         ),
     ]
 
-    sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=pieces)
 
     score = Score(
         score_value=str(0.8),
@@ -933,7 +933,7 @@ def test_prompt_piece_scores_duplicate_piece(sqlite_instance: MemoryInterface):
     )
     sqlite_instance.add_scores_to_memory(scores=[score])
 
-    retrieved_pieces = sqlite_instance.get_prompt_request_pieces()
+    retrieved_pieces = sqlite_instance.get_message_pieces()
 
     assert len(retrieved_pieces[0].scores) == 1
     assert retrieved_pieces[0].scores[0].score_value == "0.8"
@@ -959,8 +959,8 @@ async def test_prompt_piece_hash_stored_and_retrieved(sqlite_instance: MemoryInt
     for entry in entries:
         await entry.set_sha256_values_async()
 
-    sqlite_instance.add_request_pieces_to_memory(request_pieces=entries)
-    retrieved_entries = sqlite_instance.get_prompt_request_pieces()
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=entries)
+    retrieved_entries = sqlite_instance.get_message_pieces()
 
     assert len(retrieved_entries) == 2
     for prompt in retrieved_entries:

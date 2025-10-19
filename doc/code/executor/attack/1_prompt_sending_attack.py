@@ -211,7 +211,7 @@ await printer.print_conversation_async(result=result, include_auxiliary_scores=T
 # %%
 from pyrit.datasets import TextJailBreak
 from pyrit.executor.attack import AttackExecutor, PromptSendingAttack
-from pyrit.models.prompt_request_response import Message
+from pyrit.models import Message
 from pyrit.prompt_target import OpenAIChatTarget
 
 target = OpenAIChatTarget()

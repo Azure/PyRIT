@@ -31,7 +31,7 @@ class MockScorer(TrueFalseScorer):
         self.aggregator = aggregator
 
     async def _score_piece_async(
-        self, request_piece: MessagePiece, *, objective: Optional[str] = None
+        self, message_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         return [
             Score(
@@ -42,7 +42,7 @@ class MockScorer(TrueFalseScorer):
                 score_metadata=None,
                 score_rationale=self._score_rationale,
                 scorer_class_identifier={"name": "MockScorer"},
-                prompt_request_response_id=str(request_piece.id),
+                prompt_request_response_id=str(message_piece.id),
                 objective=str(objective),
             )
         ]
@@ -52,8 +52,8 @@ class MockScorer(TrueFalseScorer):
 def mock_request(patch_central_database):
     memory = CentralMemory.get_memory_instance()
     request = MessagePiece(role="user", original_value="test content", conversation_id="test-conv", sequence=1)
-    memory.add_request_pieces_to_memory(request_pieces=[request])
-    return request.to_prompt_request_response()
+    memory.add_message_pieces_to_memory(message_pieces=[request])
+    return request.to_message()
 
 
 @pytest.fixture
@@ -145,7 +145,7 @@ def test_composite_scorer_invalid_scorer_type():
             self._validator = MagicMock()
 
         async def _score_piece_async(
-            self, request_piece: MessagePiece, *, objective: Optional[str] = None
+            self, message_piece: MessagePiece, *, objective: Optional[str] = None
         ) -> list[Score]:
             return []
 

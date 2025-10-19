@@ -131,18 +131,18 @@ class PlagiarismScorer(FloatScaleScorer):
             raise ValueError("metric must be 'lcs', 'levenshtein', or 'jaccard'")
 
     async def _score_piece_async(
-        self, request_piece: MessagePiece, *, objective: Optional[str] = None
+        self, message_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """Scores the AI response against the reference text using the specified metric.
 
         Args:
-            request_piece (MessagePiece): The piece to score.
+            message_piece (MessagePiece): The piece to score.
             objective (Optional[str]): Not applicable for this scorer.
 
         Returns:
             list[Score]: A list containing the computed score.
         """
-        response_to_evaluate = request_piece.converted_value
+        response_to_evaluate = message_piece.converted_value
         score_value = self._plagiarism_score(response_to_evaluate, self.reference_text, metric=self.metric, n=self.n)
 
         return [
@@ -152,6 +152,6 @@ class PlagiarismScorer(FloatScaleScorer):
                 score_metadata=None,
                 score_type="float_scale",
                 score_rationale="Score is deterministic.",
-                prompt_request_response_id=request_piece.id,
+                prompt_request_response_id=message_piece.id,
             )
         ]

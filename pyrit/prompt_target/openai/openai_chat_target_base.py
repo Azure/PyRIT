@@ -108,11 +108,11 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
         self._validate_request(prompt_request=prompt_request)
         self.refresh_auth_headers()
 
-        request_piece: MessagePiece = prompt_request.request_pieces[0]
+        message_piece: MessagePiece = prompt_request.message_pieces[0]
 
-        is_json_response = self.is_response_format_json(request_piece)
+        is_json_response = self.is_response_format_json(message_piece)
 
-        conversation = self._memory.get_conversation(conversation_id=request_piece.conversation_id)
+        conversation = self._memory.get_conversation(conversation_id=message_piece.conversation_id)
         conversation.append(prompt_request)
 
         logger.info(f"Sending the following prompt to the prompt target: {prompt_request}")
@@ -148,7 +148,7 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
 
                 return handle_bad_request_exception(
                     response_text=error_response_text,
-                    request=request_piece,
+                    request=message_piece,
                     error_code=StatusError.response.status_code,
                     is_content_filter=is_content_filter,
                 )
@@ -158,8 +158,8 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
                 raise
 
         logger.info(f'Received the following response from the prompt target "{str_response.text}"')
-        response: Message = self._construct_prompt_response_from_openai_json(
-            open_ai_str_response=str_response.text, request_piece=request_piece
+        response: Message = self._construct_message_from_openai_json(
+            open_ai_str_response=str_response.text, message_piece=message_piece
         )
 
         return response
@@ -169,11 +169,11 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
     ) -> dict:
         raise NotImplementedError
 
-    def _construct_prompt_response_from_openai_json(
+    def _construct_message_from_openai_json(
         self,
         *,
         open_ai_str_response: str,
-        request_piece: MessagePiece,
+        message_piece: MessagePiece,
     ) -> Message:
         raise NotImplementedError
 

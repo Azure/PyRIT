@@ -38,9 +38,9 @@ message_list = [
 
 memory = SQLiteMemory(db_path=":memory:")
 
-memory.add_request_response_to_memory(request=message_list[0].to_prompt_request_response())
-memory.add_request_response_to_memory(request=message_list[1].to_prompt_request_response())
-memory.add_request_response_to_memory(request=message_list[2].to_prompt_request_response())
+memory.add_message_to_memory(request=message_list[0].to_message())
+memory.add_message_to_memory(request=message_list[1].to_message())
+memory.add_message_to_memory(request=message_list[2].to_message())
 
 entries = memory.get_conversation(conversation_id=conversation_id)
 

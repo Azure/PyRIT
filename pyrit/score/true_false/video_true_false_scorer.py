@@ -49,13 +49,13 @@ class VideoTrueFalseScorer(TrueFalseScorer, _BaseVideoScorer):
         )
 
     async def _score_piece_async(
-        self, request_piece: MessagePiece, *, objective: Optional[str] = None
+        self, message_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """
         Score a single video piece by extracting frames and aggregating their scores.
 
         Args:
-            request_piece: The prompt request piece containing the video.
+            message_piece: The prompt request piece containing the video.
             objective: Optional objective description for scoring.
 
         Returns:
@@ -63,13 +63,13 @@ class VideoTrueFalseScorer(TrueFalseScorer, _BaseVideoScorer):
         """
 
         # Get scores for all frames
-        frame_scores = await self._score_frames_async(request_piece=request_piece, objective=objective)
+        frame_scores = await self._score_frames_async(message_piece=message_piece, objective=objective)
 
         # Use the TrueFalseAggregatorFunc to combine frame scores
         result = self._score_aggregator(frame_scores)
 
         # Get the ID from the request piece
-        piece_id = request_piece.id if request_piece.id is not None else request_piece.original_prompt_id
+        piece_id = message_piece.id if message_piece.id is not None else message_piece.original_prompt_id
 
         # Create the aggregated score using the aggregator result
         aggregate_score = Score(

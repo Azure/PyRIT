@@ -27,7 +27,7 @@ class SelfAskGeneralFloatScaleScorer(FloatScaleScorer):
     Args:
         chat_target (PromptChatTarget): The chat target used to score.
         system_prompt_format_string (str): System prompt template with placeholders for
-            objective, prompt, and request_piece.
+            objective, prompt, and message_piece.
         prompt_format_string (Optional[str]): User prompt template with the same placeholders.
         category (Optional[str]): Category for the score.
         min_value (int): Minimum of the model's native scale. Defaults to 0.
@@ -82,25 +82,25 @@ class SelfAskGeneralFloatScaleScorer(FloatScaleScorer):
         self._category_output_key = category_output_key
 
     async def _score_piece_async(
-        self, request_piece: MessagePiece, *, objective: Optional[str] = None
+        self, message_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """
         Score a single request piece using the configured prompts and scale to [0, 1].
 
         Args:
-            request_piece (MessagePiece): The piece to score.
+            message_piece (MessagePiece): The piece to score.
             objective (str, optional): Context objective for the scoring.
 
         Returns:
             list[Score]: A list with a single float-scale score in [0, 1].
         """
-        original_prompt = request_piece.converted_value
+        original_prompt = message_piece.converted_value
 
         # Render system prompt and user prompt
         system_prompt = self._system_prompt_format_string.format(
             objective=objective,
             prompt=original_prompt,
-            request_piece=request_piece,
+            message_piece=message_piece,
         )
 
         user_prompt = original_prompt
@@ -108,18 +108,18 @@ class SelfAskGeneralFloatScaleScorer(FloatScaleScorer):
             user_prompt = self._prompt_format_string.format(
                 objective=objective,
                 prompt=original_prompt,
-                request_piece=request_piece,
+                message_piece=message_piece,
             )
 
         unvalidated: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=system_prompt,
             prompt_request_value=user_prompt,
-            prompt_request_data_type=request_piece.converted_value_data_type,
-            scored_prompt_id=request_piece.id,
+            prompt_request_data_type=message_piece.converted_value_data_type,
+            scored_prompt_id=message_piece.id,
             category=self._score_category,
             objective=objective,
-            attack_identifier=request_piece.attack_identifier,
+            attack_identifier=message_piece.attack_identifier,
             score_value_output_key=self._score_value_output_key,
             rationale_output_key=self._rationale_output_key,
             description_output_key=self._description_output_key,

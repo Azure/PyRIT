@@ -163,8 +163,8 @@ class PromptMemoryEntry(Base):
 
         self.original_prompt_id = entry.original_prompt_id
 
-    def get_prompt_request_piece(self) -> MessagePiece:
-        prompt_request_piece = MessagePiece(
+    def get_message_piece(self) -> MessagePiece:
+        message_piece = MessagePiece(
             role=self.role,
             original_value=self.original_value,
             original_value_sha256=self.original_value_sha256,
@@ -185,8 +185,8 @@ class PromptMemoryEntry(Base):
             original_prompt_id=self.original_prompt_id,
             timestamp=self.timestamp,
         )
-        prompt_request_piece.scores = [score.get_score() for score in self.scores]
-        return prompt_request_piece
+        message_piece.scores = [score.get_score() for score in self.scores]
+        return message_piece
 
     def __str__(self):
         if self.prompt_target_identifier:
@@ -565,7 +565,7 @@ class AttackResultEntry(Base):
             conversation_id=self.conversation_id,
             objective=self.objective,
             attack_identifier=self.attack_identifier,
-            last_response=self.last_response.get_prompt_request_piece() if self.last_response else None,
+            last_response=self.last_response.get_message_piece() if self.last_response else None,
             last_score=self.last_score.get_score() if self.last_score else None,
             executed_turns=self.executed_turns,
             execution_time_ms=self.execution_time_ms,

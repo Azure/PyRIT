@@ -95,7 +95,7 @@ def create_prompt_response(*, text: str, role: ChatMessageRole = "assistant") ->
     by the attack logic to determine next steps.
     """
     return Message(
-        request_pieces=[
+        message_pieces=[
             MessagePiece(
                 role=role,
                 original_value=text,
@@ -640,7 +640,7 @@ class TestPromptGeneration:
 
         # Mock the adversarial response
         response = Message(
-            request_pieces=[
+            message_pieces=[
                 MessagePiece(
                     role="assistant",
                     original_value=adversarial_response,
@@ -1017,7 +1017,7 @@ class TestAttackExecution:
 
         # Mock adversarial response
         adv_response = Message(
-            request_pieces=[
+            message_pieces=[
                 MessagePiece(
                     role="assistant",
                     original_value=adversarial_response,
@@ -1068,7 +1068,7 @@ class TestAttackExecution:
 
         # Mock adversarial response
         adv_response = Message(
-            request_pieces=[
+            message_pieces=[
                 MessagePiece(
                     role="assistant",
                     original_value=adversarial_response,
@@ -1134,7 +1134,7 @@ class TestAttackExecution:
 
         # Mock adversarial response
         adv_response = Message(
-            request_pieces=[
+            message_pieces=[
                 MessagePiece(
                     role="assistant",
                     original_value=adversarial_response,
@@ -1199,7 +1199,7 @@ class TestAttackExecution:
 
         # Mock adversarial response
         adv_response = Message(
-            request_pieces=[
+            message_pieces=[
                 MessagePiece(
                     role="assistant",
                     original_value=adversarial_response,

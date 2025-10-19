@@ -20,7 +20,7 @@ from pyrit.prompt_target.common.prompt_target import PromptTarget
 def mock_target() -> PromptTarget:
     target = MagicMock()
     response = Message(
-        request_pieces=[
+        message_pieces=[
             MessagePiece(
                 role="assistant",
                 original_value="prompt value",

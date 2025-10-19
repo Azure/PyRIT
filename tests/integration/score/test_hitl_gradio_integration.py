@@ -9,10 +9,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from pyrit.memory.central_memory import CentralMemory
-from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models.prompt_request_piece import MessagePiece
-from pyrit.models.score import Score
+from pyrit.memory import CentralMemory, MemoryInterface
+from pyrit.models import MessagePiece, Score
 from pyrit.score import HumanInTheLoopScorerGradio
 from pyrit.ui.rpc import RPCAlreadyRunningException
 from pyrit.ui.rpc_client import RPCClient, RPCClientStoppedException
@@ -63,7 +61,7 @@ class IntegrationRpcClient:
             while self._is_running:
                 prompt = self.rpc_client.wait_for_prompt()
                 response = self._score_callback(prompt)
-                self.rpc_client.send_prompt_response(response)
+                self.rpc_client.send_message(response)
         except RPCClientStoppedException as e:
             if self._is_running:
                 self._thread_exception = e
@@ -109,7 +107,7 @@ class TestHiTLGradioIntegration:
             scorer = HumanInTheLoopScorerGradio()
 
             rpc_client.start()
-            score_result = await scorer.score_async(request_response=promptOriginal.to_prompt_request_response())
+            score_result = await scorer.score_async(request_response=promptOriginal.to_message())
 
             assert score_result[0].score_value == "true"
             rpc_client.stop()
@@ -152,14 +150,14 @@ class TestHiTLGradioIntegration:
 
             rpc_client.start()
 
-            score_result = await scorer.score_async(request_response=promptOriginal.to_prompt_request_response())
+            score_result = await scorer.score_async(request_response=promptOriginal.to_message())
             assert score_result[0].score_value == "true"
 
             # Next prompt
-            score_result = await scorer.score_async(request_response=promptOriginal.to_prompt_request_response())
+            score_result = await scorer.score_async(request_response=promptOriginal.to_message())
             assert score_result[0].score_value == "false"
 
-            score_result = await scorer.score_async(request_response=promptOriginal.to_prompt_request_response())
+            score_result = await scorer.score_async(request_response=promptOriginal.to_message())
             assert score_result[0].score_value == "true"
 
             rpc_client.stop()

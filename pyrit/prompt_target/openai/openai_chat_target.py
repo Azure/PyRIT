@@ -144,9 +144,9 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
             bool: True if the request piece is in text message format, False otherwise.
         """
         for turn in conversation:
-            if len(turn.request_pieces) != 1:
+            if len(turn.message_pieces) != 1:
                 return False
-            if turn.request_pieces[0].converted_value_data_type != "text":
+            if turn.message_pieces[0].converted_value_data_type != "text":
                 return False
         return True
 
@@ -162,18 +162,18 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
             list[dict]: The list of constructed chat messages.
         """
         chat_messages: list[dict] = []
-        for prompt_req_resp_entry in conversation:
+        for message in conversation:
             # validated to only have one text entry
 
-            if len(prompt_req_resp_entry.request_pieces) != 1:
+            if len(message.message_pieces) != 1:
                 raise ValueError("_build_chat_messages_for_text only supports a single prompt request piece.")
 
-            prompt_request_piece = prompt_req_resp_entry.request_pieces[0]
+            message_piece = message.message_pieces[0]
 
-            if prompt_request_piece.converted_value_data_type != "text":
+            if message_piece.converted_value_data_type != "text":
                 raise ValueError("_build_chat_messages_for_text only supports text.")
 
-            message = ChatMessage(role=prompt_request_piece.role, content=prompt_request_piece.converted_value)
+            message = ChatMessage(role=message_piece.role, content=message_piece.converted_value)
             chat_messages.append(message.model_dump(exclude_none=True))
 
         return chat_messages
@@ -191,26 +191,26 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
             list[dict]: The list of constructed chat messages.
         """
         chat_messages: list[dict] = []
-        for prompt_req_resp_entry in conversation:
-            prompt_request_pieces = prompt_req_resp_entry.request_pieces
+        for message in conversation:
+            message_pieces = message.message_pieces
 
             content = []
             role = None
-            for prompt_request_piece in prompt_request_pieces:
-                role = prompt_request_piece.role
-                if prompt_request_piece.converted_value_data_type == "text":
-                    entry = {"type": "text", "text": prompt_request_piece.converted_value}
+            for message_piece in message_pieces:
+                role = message_piece.role
+                if message_piece.converted_value_data_type == "text":
+                    entry = {"type": "text", "text": message_piece.converted_value}
                     content.append(entry)
-                elif prompt_request_piece.converted_value_data_type == "image_path":
+                elif message_piece.converted_value_data_type == "image_path":
                     data_base64_encoded_url = await convert_local_image_to_data_url(
-                        prompt_request_piece.converted_value
+                        message_piece.converted_value
                     )
                     image_url_entry = {"url": data_base64_encoded_url}
                     entry = {"type": "image_url", "image_url": image_url_entry}  # type: ignore
                     content.append(entry)
                 else:
                     raise ValueError(
-                        f"Multimodal data type {prompt_request_piece.converted_value_data_type} is not yet supported."
+                        f"Multimodal data type {message_piece.converted_value_data_type} is not yet supported."
                     )
 
             if not role:
@@ -247,11 +247,11 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
 
-    def _construct_prompt_response_from_openai_json(
+    def _construct_message_from_openai_json(
         self,
         *,
         open_ai_str_response: str,
-        request_piece: MessagePiece,
+        message_piece: MessagePiece,
     ) -> Message:
 
         try:
@@ -274,12 +274,12 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
             # Content filter with status 200 indicates that the model output was filtered
             # https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/content-filter
             return handle_bad_request_exception(
-                response_text=open_ai_str_response, request=request_piece, error_code=200, is_content_filter=True
+                response_text=open_ai_str_response, request=message_piece, error_code=200, is_content_filter=True
             )
         else:
             raise PyritException(message=f"Unknown finish_reason {finish_reason} from response: {response}")
 
-        return construct_response_from_request(request=request_piece, response_text_pieces=[extracted_response])
+        return construct_response_from_request(request=message_piece, response_text_pieces=[extracted_response])
 
     def _validate_request(self, *, prompt_request: Message) -> None:
         """Validates the structure and content of a prompt request for compatibility of this target.
@@ -293,7 +293,7 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         """
 
         converted_prompt_data_types = [
-            request_piece.converted_value_data_type for request_piece in prompt_request.request_pieces
+            message_piece.converted_value_data_type for message_piece in prompt_request.message_pieces
         ]
 
         # Some models may not support all of these

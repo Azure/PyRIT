@@ -176,13 +176,13 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
             prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=prompt_text, data_type="text")])
 
             # Send the prompt
-            prompt_response = await self._send_prompt_to_objective_target_async(
+            message = await self._send_prompt_to_objective_target_async(
                 prompt_group=prompt_group, context=context
             )
 
             # Update context with latest response (may be None if sending failed)
-            if prompt_response:
-                response = prompt_response
+            if message:
+                response = message
                 context.last_response = response
                 context.executed_turns += 1
                 self._logger.debug(f"Successfully sent prompt {prompt_index + 1}")

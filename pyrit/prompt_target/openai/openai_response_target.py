@@ -201,7 +201,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         input_items: List[Dict[str, Any]] = []
 
         for msg_idx, message in enumerate(conversation):
-            pieces = message.request_pieces
+            pieces = message.message_pieces
             if not pieces:
                 raise ValueError(
                     f"Failed to process conversation message at index {msg_idx}: Message contains no request pieces"
@@ -303,11 +303,11 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
 
-    def _construct_prompt_response_from_openai_json(
+    def _construct_message_from_openai_json(
         self,
         *,
         open_ai_str_response: str,
-        request_piece: MessagePiece,
+        message_piece: MessagePiece,
     ) -> Message:
         """
         Parse the Responses API JSON into internal Message.
@@ -332,7 +332,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
                 # Content filter with status 200 indicates that the model output was filtered
                 # https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/content-filter
                 return handle_bad_request_exception(
-                    response_text=open_ai_str_response, request=request_piece, error_code=200, is_content_filter=True
+                    response_text=open_ai_str_response, request=message_piece, error_code=200, is_content_filter=True
                 )
             else:
                 raise PyritException(message=f"Unexpected response format: {response}. Expected 'status' key.")
@@ -342,7 +342,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         # Extract response pieces from the response object
         extracted_response_pieces: List[MessagePiece] = []
         for section in response.get("output", []):
-            piece = self._parse_response_output_section(section=section, request_piece=request_piece, error=error)
+            piece = self._parse_response_output_section(section=section, message_piece=message_piece, error=error)
             if piece is None:
                 continue
             extracted_response_pieces.append(piece)
@@ -350,7 +350,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         if not extracted_response_pieces:
             raise PyritException(message="No valid response pieces found in the response.")
 
-        return Message(request_pieces=extracted_response_pieces)
+        return Message(message_pieces=extracted_response_pieces)
 
     async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         """
@@ -381,7 +381,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             # Add the tool result as a tool message to the conversation
             # NOTE: Responses API expects a top-level {type:function_call_output, call_id, output}
             # Use the first piece from the original prompt_request as reference for conversation context
-            reference_piece = prompt_request.request_pieces[0]
+            reference_piece = prompt_request.message_pieces[0]
             tool_message = self._make_tool_message(
                 tool_output, tool_call_section["call_id"], reference_piece=reference_piece
             )
@@ -390,10 +390,10 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             # Re-ask with combined history (user + function_call + function_call_output)
             merged: List[MessagePiece] = []
             for msg in conversation:
-                merged.extend(msg.request_pieces)
+                merged.extend(msg.message_pieces)
 
             # TODO: There is likely a bug here; there are different roles in a single response??
-            prompt_request = Message(request_pieces=merged, skip_validation=True)
+            prompt_request = Message(message_pieces=merged, skip_validation=True)
 
             # Send again and check for another tool call
             tool_call_section = await _send_prompt_and_find_tool_call_async(prompt_request=prompt_request)
@@ -402,14 +402,14 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         return conversation[-1]
 
     def _parse_response_output_section(
-        self, *, section: dict, request_piece: MessagePiece, error: Optional[PromptResponseError]
+        self, *, section: dict, message_piece: MessagePiece, error: Optional[PromptResponseError]
     ) -> MessagePiece | None:
         """
         Parse model output sections, forwarding tool-calls for the agentic loop.
 
         Args:
             section: The section dict from OpenAI output.
-            request_piece: The original request piece.
+            message_piece: The original request piece.
             error: Any error information from OpenAI.
 
         Returns:
@@ -451,10 +451,10 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         return MessagePiece(
             role="assistant",
             original_value=piece_value,
-            conversation_id=request_piece.conversation_id,
-            labels=request_piece.labels,
-            prompt_target_identifier=request_piece.prompt_target_identifier,
-            attack_identifier=request_piece.attack_identifier,
+            conversation_id=message_piece.conversation_id,
+            labels=message_piece.labels,
+            prompt_target_identifier=message_piece.prompt_target_identifier,
+            attack_identifier=message_piece.attack_identifier,
             original_value_data_type=piece_type,
             response_error=error or "none",
         )
@@ -471,9 +471,9 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         # Some models may not support all of these; we accept them at the transport layer
         # so the Responses API can decide. We include reasoning and function_call_output now.
         allowed_types = {"text", "image_path", "function_call", "tool_call", "function_call_output", "reasoning"}
-        for request_piece in prompt_request.request_pieces:
-            if request_piece.converted_value_data_type not in allowed_types:
-                raise ValueError(f"Unsupported data type: {request_piece.converted_value_data_type}")
+        for message_piece in prompt_request.message_pieces:
+            if message_piece.converted_value_data_type not in allowed_types:
+                raise ValueError(f"Unsupported data type: {message_piece.converted_value_data_type}")
         return
 
     # Agentic helpers (module scope)
@@ -483,7 +483,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         Return the last tool-call section in assistant messages, or None.
         Looks for a piece whose value parses as JSON with a 'type' key matching function_call.
         """
-        for piece in reversed(reply.request_pieces):
+        for piece in reversed(reply.message_pieces):
             if piece.role == "assistant":
                 try:
                     section = json.loads(piece.original_value)
@@ -569,4 +569,4 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             attack_identifier=reference_piece.attack_identifier,
         )
 
-        return Message(request_pieces=[piece])
+        return Message(message_pieces=[piece])

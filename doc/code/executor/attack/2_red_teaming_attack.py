@@ -126,7 +126,7 @@ jailbreak = TextJailBreak(template_file_name="dan_1.yaml")
 
 prepended_conversation = [
     Message(
-        request_pieces=[
+        message_pieces=[
             MessagePiece(
                 role="system",
                 original_value=jailbreak.get_jailbreak_system_prompt(),
@@ -164,7 +164,7 @@ prepended_conversation = conversation_history
 """
 prepended_conversation.append(
     Message(
-        request_pieces=[
+        message_pieces=[
             MessagePiece(
                 role="user",
                 original_value="Custom message to continue the conversation with the objective target",

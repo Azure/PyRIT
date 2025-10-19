@@ -18,7 +18,7 @@ def generate_password_extraction_response(
     response_text: str, conversation_id: Optional[str] = None
 ) -> Message:
     return Message(
-        request_pieces=[
+        message_pieces=[
             MessagePiece(
                 role="assistant",
                 original_value=response_text,
@@ -33,7 +33,7 @@ def generate_password_extraction_response(
 
 def generate_request(conversation_id: Optional[str] = None) -> Message:
     return Message(
-        request_pieces=[
+        message_pieces=[
             MessagePiece(
                 role="user",
                 original_value="some request",
@@ -56,9 +56,9 @@ async def test_gandalf_scorer_score(
     chat_target = MagicMock()
 
     conversation_id = str(uuid.uuid4())
-    sqlite_instance.add_request_response_to_memory(request=generate_request(conversation_id=conversation_id))
+    sqlite_instance.add_message_to_memory(request=generate_request(conversation_id=conversation_id))
     response = generate_password_extraction_response("SUNSHINE", conversation_id=conversation_id)
-    sqlite_instance.add_request_response_to_memory(request=response)
+    sqlite_instance.add_message_to_memory(request=response)
 
     chat_target.send_prompt_async = AsyncMock(return_value=response)
 
@@ -92,9 +92,9 @@ async def test_gandalf_scorer_set_system_prompt(
     level: GandalfLevel,
 ):
     conversation_id = str(uuid.uuid4())
-    sqlite_instance.add_request_response_to_memory(request=generate_request(conversation_id=conversation_id))
+    sqlite_instance.add_message_to_memory(request=generate_request(conversation_id=conversation_id))
     response = generate_password_extraction_response("SUNSHINE", conversation_id=conversation_id)
-    sqlite_instance.add_request_response_to_memory(request=response)
+    sqlite_instance.add_message_to_memory(request=response)
 
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=response)
@@ -116,9 +116,9 @@ async def test_gandalf_scorer_set_system_prompt(
 async def test_gandalf_scorer_adds_to_memory(mocked_post, level: GandalfLevel, sqlite_instance: MemoryInterface):
     conversation_id = str(uuid.uuid4())
     generated_request = generate_request(conversation_id=conversation_id)
-    sqlite_instance.add_request_response_to_memory(request=generated_request)
+    sqlite_instance.add_message_to_memory(request=generated_request)
     response = generate_password_extraction_response("SUNSHINE", conversation_id=conversation_id)
-    sqlite_instance.add_request_response_to_memory(request=response)
+    sqlite_instance.add_message_to_memory(request=response)
 
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=response)
@@ -126,7 +126,7 @@ async def test_gandalf_scorer_adds_to_memory(mocked_post, level: GandalfLevel, s
     # Mock the requests.post call to return a successful response
     mocked_post.return_value = MagicMock(status_code=200, json=lambda: {"success": True, "message": "Message"})
 
-    with patch.object(sqlite_instance, "get_prompt_request_pieces", return_value=[generated_request.request_pieces[0]]):
+    with patch.object(sqlite_instance, "get_message_pieces", return_value=[generated_request.message_pieces[0]]):
         scorer = GandalfScorer(level=level, chat_target=chat_target)
 
         await scorer.score_async(response)
@@ -137,9 +137,9 @@ async def test_gandalf_scorer_adds_to_memory(mocked_post, level: GandalfLevel, s
 async def test_gandalf_scorer_runtime_error_retries(level: GandalfLevel, sqlite_instance: MemoryInterface):
 
     conversation_id = str(uuid.uuid4())
-    sqlite_instance.add_request_response_to_memory(request=generate_request(conversation_id=conversation_id))
+    sqlite_instance.add_message_to_memory(request=generate_request(conversation_id=conversation_id))
     response = generate_password_extraction_response("SUNSHINE", conversation_id=conversation_id)
-    sqlite_instance.add_request_response_to_memory(request=response)
+    sqlite_instance.add_message_to_memory(request=response)
 
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(side_effect=[RuntimeError("Error"), response])

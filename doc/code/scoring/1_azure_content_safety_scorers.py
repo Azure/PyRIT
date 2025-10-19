@@ -50,7 +50,7 @@ azure_content_filter = AzureContentFilterScorer(
 )
 
 response = Message(
-    request_pieces=[
+    message_pieces=[
         MessagePiece(
             role="assistant",
             original_value_data_type="text",
@@ -60,7 +60,7 @@ response = Message(
 )
 memory = CentralMemory.get_memory_instance()
 # need to write it manually to memory as score table has a foreign key constraint
-memory.add_request_response_to_memory(request=response)
+memory.add_message_to_memory(request=response)
 
 # Run the request
 scores = await azure_content_filter.score_async(response)  # type: ignore

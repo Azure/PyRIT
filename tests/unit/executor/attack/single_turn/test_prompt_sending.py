@@ -70,7 +70,7 @@ def basic_context():
 def sample_response():
     """Create a sample response for testing"""
     return Message(
-        request_pieces=[
+        message_pieces=[
             MessagePiece(role="assistant", original_value="Test response", original_value_data_type="text")
         ]
     )
@@ -799,7 +799,7 @@ class TestDetermineAttackOutcome:
 
         # Create an empty response
         empty_response = MagicMock(spec=Message)
-        empty_response.request_pieces = []
+        empty_response.message_pieces = []
 
         outcome, reason = attack._determine_attack_outcome(response=empty_response, score=None, context=basic_context)
 

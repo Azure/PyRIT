@@ -44,12 +44,12 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
         self._rpc_server.start()
 
     async def _score_piece_async(
-        self, request_piece: MessagePiece, *, objective: Optional[str] = None
+        self, message_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """Score a prompt request piece using human input through Gradio interface.
 
         Args:
-            request_piece (MessagePiece): The prompt request piece to be scored by a human.
+            message_piece (MessagePiece): The prompt request piece to be scored by a human.
             objective (Optional[str]): The objective to evaluate against. Defaults to None.
 
         Returns:
@@ -57,7 +57,7 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
         """
 
         try:
-            score = await asyncio.to_thread(self.retrieve_score, request_piece, objective=objective)
+            score = await asyncio.to_thread(self.retrieve_score, message_piece, objective=objective)
             return score
         except asyncio.CancelledError:
             self._rpc_server.stop()

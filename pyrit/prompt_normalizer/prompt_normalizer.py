@@ -76,7 +76,7 @@ class PromptNormalizer:
         if len(set(prompt.sequence for prompt in seed_prompt_group.prompts)) > 1:
             raise ValueError("All SeedPrompts in the SeedPromptGroup must have the same sequence.")
 
-        request = await self._build_prompt_request_response(
+        request = await self._build_message(
             seed_prompt_group=seed_prompt_group,
             conversation_id=conversation_id,
             request_converter_configurations=request_converter_configurations,
@@ -94,13 +94,13 @@ class PromptNormalizer:
 
         try:
             response = await target.send_prompt_async(prompt_request=request)
-            self._memory.add_request_response_to_memory(request=request)
+            self._memory.add_message_to_memory(request=request)
         except EmptyResponseException:
             # Empty responses are retried, but we don't want them to stop execution
-            self._memory.add_request_response_to_memory(request=request)
+            self._memory.add_message_to_memory(request=request)
 
             response = construct_response_from_request(
-                request=request.request_pieces[0],
+                request=request.message_pieces[0],
                 response_text_pieces=[""],
                 response_type="text",
                 error="empty",
@@ -108,18 +108,18 @@ class PromptNormalizer:
 
         except Exception as ex:
             # Ensure request to memory before processing exception
-            self._memory.add_request_response_to_memory(request=request)
+            self._memory.add_message_to_memory(request=request)
 
             error_response = construct_response_from_request(
-                request=request.request_pieces[0],
+                request=request.message_pieces[0],
                 response_text_pieces=[f"{ex}\n{repr(ex)}\n{traceback.format_exc()}"],
                 response_type="error",
                 error="processing",
             )
 
             await self._calc_hash(request=error_response)
-            self._memory.add_request_response_to_memory(request=error_response)
-            cid = request.request_pieces[0].conversation_id if request and request.request_pieces else None
+            self._memory.add_message_to_memory(request=error_response)
+            cid = request.message_pieces[0].conversation_id if request and request.message_pieces else None
             raise Exception(f"Error sending prompt with conversation ID: {cid}") from ex
 
         if response is None:
@@ -128,7 +128,7 @@ class PromptNormalizer:
         await self.convert_values(converter_configurations=response_converter_configurations, request_response=response)
 
         await self._calc_hash(request=response)
-        self._memory.add_request_response_to_memory(request=response)
+        self._memory.add_message_to_memory(request=response)
         return response
 
     async def send_prompt_batch_to_target_async(
@@ -192,7 +192,7 @@ class PromptNormalizer:
     ):
 
         for converter_configuration in converter_configurations:
-            for piece_index, piece in enumerate(request_response.request_pieces):
+            for piece_index, piece in enumerate(request_response.message_pieces):
                 indexes = converter_configuration.indexes_to_apply
                 data_types = converter_configuration.prompt_data_types_to_apply
 
@@ -247,12 +247,12 @@ class PromptNormalizer:
             "converted_value_sha256": self._skip_criteria.converted_value_sha256,
         }
 
-        prompts_to_skip = self._memory.get_prompt_request_pieces(role="user", **skip_args)
+        prompts_to_skip = self._memory.get_message_pieces(role="user", **skip_args)
 
         if ensure_response:
             # If a request was sent but we don't have a response we need to retry
             # so remove such requests from the prompts to skip list.
-            responses = self._memory.get_prompt_request_pieces(role="assistant", **skip_args)
+            responses = self._memory.get_message_pieces(role="assistant", **skip_args)
             response_conversation_ids = {response.conversation_id for response in responses}
             prompt_conversation_ids = {prompt.conversation_id for prompt in prompts_to_skip}
             missing_response_conversation_ids = prompt_conversation_ids - response_conversation_ids
@@ -274,12 +274,12 @@ class PromptNormalizer:
         """
         Filters out prompts from prompt_request_list that match the skip criteria.
 
-        Every request_piece of the prompt_request needs to have matching sha256 to skip.
+        Every message_piece of the prompt_request needs to have matching sha256 to skip.
         """
         if not self._skip_criteria:
             return False
 
-        for user_prompt in prompt_request.request_pieces:
+        for user_prompt in prompt_request.message_pieces:
             if self._skip_value_type == "converted":
                 if user_prompt.converted_value_sha256 not in self._converted_sha256_prompts_to_skip:
                     return False
@@ -292,10 +292,10 @@ class PromptNormalizer:
         """
         Adds a request to the memory.
         """
-        tasks = [asyncio.create_task(piece.set_sha256_values_async()) for piece in request.request_pieces]
+        tasks = [asyncio.create_task(piece.set_sha256_values_async()) for piece in request.message_pieces]
         await asyncio.gather(*tasks)
 
-    async def _build_prompt_request_response(
+    async def _build_message(
         self,
         *,
         seed_prompt_group: SeedPromptGroup,
@@ -328,7 +328,7 @@ class PromptNormalizer:
         # All prompt request pieces within Message needs to have same conversation ID.
         conversation_id = conversation_id if conversation_id else str(uuid4())
         for seed_prompt in seed_prompt_group.prompts:
-            prompt_request_piece = MessagePiece(
+            message_piece = MessagePiece(
                 role=seed_prompt.role,
                 original_value=seed_prompt.value,
                 conversation_id=conversation_id,
@@ -341,9 +341,9 @@ class PromptNormalizer:
                 targeted_harm_categories=list(seed_prompt.harm_categories) if seed_prompt.harm_categories else None,
             )
 
-            entries.append(prompt_request_piece)
+            entries.append(message_piece)
 
-        response = Message(request_pieces=entries)
+        response = Message(message_pieces=entries)
 
         await self.convert_values(converter_configurations=request_converter_configurations, request_response=response)
         return response
@@ -379,7 +379,7 @@ class PromptNormalizer:
         for request in prepended_conversation:
             if should_convert and converter_configurations:
                 await self.convert_values(request_response=request, converter_configurations=converter_configurations)
-            for piece in request.request_pieces:
+            for piece in request.message_pieces:
                 piece.conversation_id = conversation_id
                 if attack_identifier:
                     piece.attack_identifier = attack_identifier
@@ -388,6 +388,6 @@ class PromptNormalizer:
                 # and if not, this won't hurt anything
                 piece.id = uuid4()
 
-            self._memory.add_request_response_to_memory(request=request)
+            self._memory.add_message_to_memory(request=request)
 
         return prepended_conversation

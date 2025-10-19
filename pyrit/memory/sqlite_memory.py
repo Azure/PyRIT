@@ -142,11 +142,11 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         # Create SQL condition using SQLAlchemy's text() with bindparams
         return text(json_conditions).bindparams(**{key: str(value) for key, value in metadata.items()})
 
-    def add_request_pieces_to_memory(self, *, request_pieces: Sequence[MessagePiece]) -> None:
+    def add_message_pieces_to_memory(self, *, message_pieces: Sequence[MessagePiece]) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.
         """
-        self._insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in request_pieces])
+        self._insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in message_pieces])
 
     def _add_embeddings_to_memory(self, *, embedding_data: Sequence[EmbeddingDataEntry]) -> None:
         """
@@ -312,7 +312,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
             self.exporter = MemoryExporter()
 
         # Get prompt pieces using the parent class method with appropriate filters
-        prompt_pieces = self.get_prompt_request_pieces(
+        message_pieces = self.get_message_pieces(
             attack_id=attack_id,
             conversation_id=conversation_id,
             prompt_ids=prompt_ids,
@@ -337,15 +337,15 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
             file_path = Path(DB_DATA_PATH, file_name)
 
         # Get scores for the prompt pieces
-        if prompt_pieces:
-            prompt_request_response_ids = [str(piece.id) for piece in prompt_pieces]
-            scores = self.get_prompt_scores(prompt_ids=prompt_request_response_ids)
+        if message_pieces:
+            message_piece_ids = [str(piece.id) for piece in message_pieces]
+            scores = self.get_prompt_scores(prompt_ids=message_piece_ids)
         else:
             scores = []
 
         # Merge conversations and scores - create the data structure manually
         merged_data = []
-        for piece in prompt_pieces:
+        for piece in message_pieces:
             piece_data = piece.to_dict()
             # Find associated scores
             piece_scores = [score for score in scores if score.prompt_request_response_id == piece.id]

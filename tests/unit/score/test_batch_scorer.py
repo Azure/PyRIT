@@ -54,7 +54,7 @@ class TestBatchScorerScoreResponsesByFilters:
     ) -> None:
         """Test basic scoring functionality with filters."""
         memory = MagicMock()
-        memory.get_prompt_request_pieces.return_value = [sample_conversations[1].request_pieces[0]]
+        memory.get_message_pieces.return_value = [sample_conversations[1].message_pieces[0]]
 
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
             scorer = MagicMock()
@@ -65,7 +65,7 @@ class TestBatchScorerScoreResponsesByFilters:
 
             scores = await batch_scorer.score_responses_by_filters_async(scorer=scorer, attack_id=str(uuid.uuid4()))
 
-            memory.get_prompt_request_pieces.assert_called_once()
+            memory.get_message_pieces.assert_called_once()
             scorer.score_prompts_batch_async.assert_called_once()
             assert scores[0] == test_score
 
@@ -75,7 +75,7 @@ class TestBatchScorerScoreResponsesByFilters:
     ) -> None:
         """Test scoring with all filter parameters."""
         memory = MagicMock()
-        memory.get_prompt_request_pieces.return_value = [sample_conversations[1].request_pieces[0]]
+        memory.get_message_pieces.return_value = [sample_conversations[1].message_pieces[0]]
 
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
             scorer = MagicMock()
@@ -101,7 +101,7 @@ class TestBatchScorerScoreResponsesByFilters:
             )
 
             # Should call memory with all parameters including None for unspecified ones
-            memory.get_prompt_request_pieces.assert_called_once_with(
+            memory.get_message_pieces.assert_called_once_with(
                 attack_id=test_attack_id,
                 conversation_id=test_conversation_id,
                 prompt_ids=test_prompt_ids,
@@ -119,7 +119,7 @@ class TestBatchScorerScoreResponsesByFilters:
     async def test_score_responses_by_filters_raises_error_no_matching_filters(self) -> None:
         """Test that ValueError is raised when no entries match filters."""
         memory = MagicMock()
-        memory.get_prompt_request_pieces.return_value = []
+        memory.get_message_pieces.return_value = []
 
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
             batch_scorer = BatchScorer()
@@ -192,7 +192,7 @@ class TestBatchScorerErrorHandling:
     ) -> None:
         """Test scoring when no filters are provided."""
         memory = MagicMock()
-        memory.get_prompt_request_pieces.return_value = [sample_conversations[1].request_pieces[0]]
+        memory.get_message_pieces.return_value = [sample_conversations[1].message_pieces[0]]
 
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
             scorer = MagicMock()
@@ -203,7 +203,7 @@ class TestBatchScorerErrorHandling:
             await batch_scorer.score_responses_by_filters_async(scorer=scorer)
 
             # Should call memory with all None parameters
-            memory.get_prompt_request_pieces.assert_called_once_with(
+            memory.get_message_pieces.assert_called_once_with(
                 attack_id=None,
                 conversation_id=None,
                 prompt_ids=None,
@@ -250,7 +250,7 @@ class TestBatchScorerErrorHandling:
             ),
         ]
 
-        memory.get_prompt_request_pieces.return_value = pieces
+        memory.get_message_pieces.return_value = pieces
 
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
             scorer = MagicMock()
@@ -306,7 +306,7 @@ class TestBatchScorerErrorHandling:
             ),
         ]
 
-        memory.get_prompt_request_pieces.return_value = pieces
+        memory.get_message_pieces.return_value = pieces
 
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
             scorer = MagicMock()
@@ -322,6 +322,6 @@ class TestBatchScorerErrorHandling:
 
             # Should have 3 groups: sequence 0 (with 1 pieces) and sequence 1 (with 2 pieces)
             assert len(request_responses) == 3
-            assert len(request_responses[0].request_pieces) == 1
-            assert len(request_responses[1].request_pieces) == 2
-            assert len(request_responses[2].request_pieces) == 1
+            assert len(request_responses[0].message_pieces) == 1
+            assert len(request_responses[1].message_pieces) == 2
+            assert len(request_responses[2].message_pieces) == 1

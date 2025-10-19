@@ -96,7 +96,7 @@ initialize_pyrit(memory_db_type=IN_MEMORY)
 
 
 # Define the interaction function
-async def interact_with_my_app(page: Page, request_piece: MessagePiece) -> str:
+async def interact_with_my_app(page: Page, message_piece: MessagePiece) -> str:
     # Define selectors
     input_selector = "#message-input"
     send_button_selector = "#send-button"
@@ -110,7 +110,7 @@ async def interact_with_my_app(page: Page, request_piece: MessagePiece) -> str:
     await page.wait_for_selector(input_selector)
 
     # Send the prompt text
-    prompt_text = request_piece.converted_value
+    prompt_text = message_piece.converted_value
     await page.fill(input_selector, prompt_text)
     await page.click(send_button_selector)
 

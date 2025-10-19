@@ -7,7 +7,7 @@ from typing import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from unit.mocks import get_image_request_piece, get_sample_conversations
+from unit.mocks import get_image_message_piece, get_sample_conversations
 
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
@@ -45,13 +45,13 @@ def azure_completion_target(patch_central_database) -> OpenAICompletionTarget:
 @pytest.fixture
 def sample_conversations() -> MutableSequence[MessagePiece]:
     conversations = get_sample_conversations()
-    return Message.flatten_to_prompt_request_pieces(conversations)
+    return Message.flatten_to_message_pieces(conversations)
 
 
 @pytest.mark.asyncio
 async def test_azure_completion_validate_request_length(azure_completion_target: OpenAICompletionTarget):
     request = Message(
-        request_pieces=[
+        message_pieces=[
             MessagePiece(role="user", conversation_id="123", original_value="test"),
             MessagePiece(role="user", conversation_id="123", original_value="test2"),
         ]
@@ -62,7 +62,7 @@ async def test_azure_completion_validate_request_length(azure_completion_target:
 
 @pytest.mark.asyncio
 async def test_azure_completion_validate_prompt_type(azure_completion_target: OpenAICompletionTarget):
-    request = Message(request_pieces=[get_image_request_piece()])
+    request = Message(message_pieces=[get_image_message_piece()])
     with pytest.raises(ValueError, match="This target only supports text prompt input."):
         await azure_completion_target.send_prompt_async(prompt_request=request)
 
@@ -73,8 +73,8 @@ async def test_azure_complete_async_return(
     azure_completion_target: OpenAICompletionTarget,
     sample_conversations: MutableSequence[MessagePiece],
 ):
-    request_piece = sample_conversations[0]
-    request = Message(request_pieces=[request_piece])
+    message_piece = sample_conversations[0]
+    request = Message(message_pieces=[message_piece])
 
     openai_mock_return = MagicMock()
     openai_mock_return.text = json.dumps(completions_response_json)
@@ -84,7 +84,7 @@ async def test_azure_complete_async_return(
     ) as mock_request:
         mock_request.return_value = openai_mock_return
         response: Message = await azure_completion_target.send_prompt_async(prompt_request=request)
-        assert len(response.request_pieces) == 1
+        assert len(response.message_pieces) == 1
         assert response.get_value() == "hi"
 
 
@@ -112,8 +112,8 @@ async def test_openai_completion_target_no_api_version(sample_conversations: Mut
     target = OpenAICompletionTarget(
         api_key="test_key", endpoint="https://mock.azure.com", model_name="gpt-35-turbo", api_version=None
     )
-    request_piece = sample_conversations[0]
-    request = Message(request_pieces=[request_piece])
+    message_piece = sample_conversations[0]
+    request = Message(message_pieces=[message_piece])
 
     with patch("httpx.AsyncClient.request", new_callable=AsyncMock) as mock_request:
         mock_request.return_value = MagicMock()
@@ -129,8 +129,8 @@ async def test_openai_completion_target_no_api_version(sample_conversations: Mut
 @pytest.mark.asyncio
 async def test_openai_completion_target_default_api_version(sample_conversations: MutableSequence[MessagePiece]):
     target = OpenAICompletionTarget(api_key="test_key", endpoint="https://mock.azure.com", model_name="gpt-35-turbo")
-    request_piece = sample_conversations[0]
-    request = Message(request_pieces=[request_piece])
+    message_piece = sample_conversations[0]
+    request = Message(message_pieces=[message_piece])
 
     with patch("httpx.AsyncClient.request", new_callable=AsyncMock) as mock_request:
         mock_request.return_value = MagicMock()
@@ -164,7 +164,7 @@ async def test_send_prompt_async_calls_refresh_auth_headers(azure_completion_tar
             mock_make_request.return_value = MagicMock(text='{"choices": [{"text": "test response"}]}')
 
             prompt_request = Message(
-                request_pieces=[
+                message_pieces=[
                     MessagePiece(
                         role="user",
                         original_value="test prompt",

@@ -65,7 +65,7 @@ async def test_translation_converter_succeeds_after_retries(sqlite_instance):
     )
 
     success_response = Message(
-        request_pieces=[
+        message_pieces=[
             MessagePiece(
                 role="assistant",
                 conversation_id="test-id",

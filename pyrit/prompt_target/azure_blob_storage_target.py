@@ -149,7 +149,7 @@ class AzureBlobStorageTarget(PromptTarget):
             blob_url (str): The Blob URL of the created blob within the provided storage container.
         """
         self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.request_pieces[0]
+        request = prompt_request.message_pieces[0]
 
         # default file name is <conversation_id>.txt, but can be overridden by prompt metadata
         file_name = f"{request.conversation_id}.txt"
@@ -168,15 +168,15 @@ class AzureBlobStorageTarget(PromptTarget):
         return response
 
     def _validate_request(self, *, prompt_request: Message) -> None:
-        n_pieces = len(prompt_request.request_pieces)
+        n_pieces = len(prompt_request.message_pieces)
         if n_pieces != 1:
             raise ValueError(f"This target only supports a single prompt request piece. Received {n_pieces} pieces")
 
-        piece_type = prompt_request.request_pieces[0].converted_value_data_type
+        piece_type = prompt_request.message_pieces[0].converted_value_data_type
         if piece_type not in ["text", "url"]:
             raise ValueError(f"This target only supports text and url prompt input. Received: {piece_type}.")
 
-        request = prompt_request.request_pieces[0]
+        request = prompt_request.message_pieces[0]
         messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
 
         if len(messages) > 0:

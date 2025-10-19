@@ -11,7 +11,7 @@ from pyrit.models import (
     MessagePiece,
     Message,
     Score,
-    group_request_pieces_into_conversations,
+    group_message_pieces_into_conversations,
 )
 from pyrit.score.scorer import Scorer
 
@@ -86,8 +86,8 @@ class BatchScorer:
         Raises:
             ValueError: If no entries match the provided filters.
         """
-        request_pieces: Sequence[MessagePiece] = []
-        request_pieces = self._memory.get_prompt_request_pieces(
+        message_pieces: Sequence[MessagePiece] = []
+        message_pieces = self._memory.get_message_pieces(
             attack_id=attack_id,
             conversation_id=conversation_id,
             prompt_ids=prompt_ids,
@@ -101,11 +101,11 @@ class BatchScorer:
             converted_value_sha256=converted_value_sha256,
         )
 
-        if not request_pieces:
+        if not message_pieces:
             raise ValueError("No entries match the provided filters. Please check your filters.")
 
         # Group pieces by conversation
-        conversations = group_request_pieces_into_conversations(request_pieces)
+        conversations = group_message_pieces_into_conversations(message_pieces)
 
         # Flatten all conversations into a single list of responses
         responses: list[Message] = []

@@ -172,7 +172,7 @@ class HumanLabeledDataset:
             # is treated as a single turn conversation.
             request_responses = [
                 Message(
-                    request_pieces=[
+                    message_pieces=[
                         MessagePiece(
                             role="assistant",
                             original_value=response_to_score,

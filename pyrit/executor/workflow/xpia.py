@@ -325,9 +325,9 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
             str: The response from the processing target.
         """
         processing_response = await context.processing_callback()
-        self._memory.add_request_response_to_memory(
+        self._memory.add_message_to_memory(
             request=Message(
-                request_pieces=[
+                message_pieces=[
                     MessagePiece(
                         conversation_id=context.processing_conversation_id,
                         original_value=processing_response,

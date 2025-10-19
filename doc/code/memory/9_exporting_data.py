@@ -46,9 +46,9 @@ message_list = [
 ]
 
 sqlite_memory = CentralMemory.get_memory_instance()
-sqlite_memory.add_request_response_to_memory(request=Message([message_list[0]]))
-sqlite_memory.add_request_response_to_memory(request=Message([message_list[1]]))
-sqlite_memory.add_request_response_to_memory(request=Message([message_list[2]]))
+sqlite_memory.add_message_to_memory(request=Message([message_list[0]]))
+sqlite_memory.add_message_to_memory(request=Message([message_list[1]]))
+sqlite_memory.add_message_to_memory(request=Message([message_list[2]]))
 
 entries = sqlite_memory.get_conversation(conversation_id=conversation_id)
 

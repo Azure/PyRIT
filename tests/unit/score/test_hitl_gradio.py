@@ -66,7 +66,7 @@ class TestHiTLGradio:
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
             scorer = HumanInTheLoopScorerGradio()
             prompt = Message(
-                request_pieces=[
+                message_pieces=[
                     MessagePiece(role="user", original_value="test", converted_value_data_type="text")
                 ]
             )
@@ -80,7 +80,7 @@ class TestHiTLGradio:
             assert score_result[0].score_value == score.score_value
 
             rpc_mocked.wait_for_client.assert_called_once()
-            rpc_mocked.send_score_prompt.assert_called_once_with(prompt.request_pieces[0])
+            rpc_mocked.send_score_prompt.assert_called_once_with(prompt.message_pieces[0])
             rpc_mocked.wait_for_score.assert_called_once()
 
             memory.add_scores_to_memory.assert_called_once()
@@ -99,7 +99,7 @@ class TestHiTLGradio:
     async def test_scorer_score_async_on_cancel_stops_server(self, mock_rpc_server):
         scorer = HumanInTheLoopScorerGradio()
         prompt = Message(
-            request_pieces=[MessagePiece(role="user", original_value="test", converted_value_data_type="text")]
+            message_pieces=[MessagePiece(role="user", original_value="test", converted_value_data_type="text")]
         )
 
         rpc_mocked = mock_rpc_server.return_value

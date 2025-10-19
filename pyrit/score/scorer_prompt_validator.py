@@ -31,8 +31,8 @@ class ScorerPromptValidator:
 
     def validate(self, request_response: Message, objective: str | None) -> None:
         valid_pieces_count = 0
-        for piece in request_response.request_pieces:
-            if self.is_request_piece_supported(piece):
+        for piece in request_response.message_pieces:
+            if self.is_message_piece_supported(piece):
                 valid_pieces_count += 1
             elif self._enforce_all_pieces_valid:
                 raise ValueError(
@@ -40,34 +40,34 @@ class ScorerPromptValidator:
                 )
 
         if valid_pieces_count < 1:
-            attempted_metadata = [getattr(piece, "prompt_metadata", None) for piece in request_response.request_pieces]
+            attempted_metadata = [getattr(piece, "prompt_metadata", None) for piece in request_response.message_pieces]
             raise ValueError(
                 "There are no valid pieces to score. \n\n"
                 f"Required types: {self._supported_data_types}. "
                 f"Required metadata: {self._required_metadata}. "
                 f"Length limit: {self._max_pieces_in_response}. "
                 f"Objective required: {self._is_objective_required}. "
-                f"Prompt pieces: {request_response.request_pieces}. "
+                f"Prompt pieces: {request_response.message_pieces}. "
                 f"Prompt metadata: {attempted_metadata}. "
                 f"Objective included: {objective}. "
             )
 
         if self._max_pieces_in_response is not None:
-            if len(request_response.request_pieces) > self._max_pieces_in_response:
+            if len(request_response.message_pieces) > self._max_pieces_in_response:
                 raise ValueError(
-                    f"Request response has {len(request_response.request_pieces)} pieces, "
+                    f"Request response has {len(request_response.message_pieces)} pieces, "
                     f"exceeding the limit of {self._max_pieces_in_response}."
                 )
 
         if self._is_objective_required and not objective:
             raise ValueError("Objective is required but not provided.")
 
-    def is_request_piece_supported(self, request_piece: MessagePiece) -> bool:
-        if request_piece.converted_value_data_type not in self._supported_data_types:
+    def is_message_piece_supported(self, message_piece: MessagePiece) -> bool:
+        if message_piece.converted_value_data_type not in self._supported_data_types:
             return False
 
         for metadata in self._required_metadata:
-            if metadata not in request_piece.prompt_metadata:
+            if metadata not in message_piece.prompt_metadata:
                 return False
 
         return True

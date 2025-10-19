@@ -10,7 +10,7 @@ from pyrit.models import Message
 @pytest.fixture
 def sample_conversations():
     conversations = get_sample_conversations()
-    return Message.flatten_to_prompt_request_pieces(conversations)
+    return Message.flatten_to_message_pieces(conversations)
 
 
 @pytest.fixture

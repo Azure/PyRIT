@@ -87,8 +87,8 @@ def sample_system_piece():
 def sample_conversation(sample_user_piece: MessagePiece, sample_assistant_piece: MessagePiece):
     """Create a sample conversation with user and assistant messages"""
     return [
-        Message(request_pieces=[sample_user_piece]),
-        Message(request_pieces=[sample_assistant_piece]),
+        Message(message_pieces=[sample_user_piece]),
+        Message(message_pieces=[sample_assistant_piece]),
     ]
 
 
@@ -145,15 +145,15 @@ class TestConversationRetrieval:
 
         # Add messages to the database
         for response in sample_conversation:
-            for piece in response.request_pieces:
+            for piece in response.message_pieces:
                 piece.conversation_id = conversation_id
-            manager._memory.add_request_response_to_memory(request=response)
+            manager._memory.add_message_to_memory(request=response)
 
         result = manager.get_conversation(conversation_id)
 
         assert len(result) == 2
-        assert result[0].request_pieces[0].role == "user"
-        assert result[1].request_pieces[0].role == "assistant"
+        assert result[0].message_pieces[0].role == "user"
+        assert result[1].message_pieces[0].role == "assistant"
 
     def test_get_last_message_returns_none_for_empty_conversation(self, attack_identifier: dict[str, str]):
         manager = ConversationManager(attack_identifier=attack_identifier)
@@ -171,9 +171,9 @@ class TestConversationRetrieval:
 
         # Add messages to the database
         for response in sample_conversation:
-            for piece in response.request_pieces:
+            for piece in response.message_pieces:
                 piece.conversation_id = conversation_id
-            manager._memory.add_request_response_to_memory(request=response)
+            manager._memory.add_message_to_memory(request=response)
 
         result = manager.get_last_message(conversation_id=conversation_id)
 
@@ -188,9 +188,9 @@ class TestConversationRetrieval:
 
         # Add messages to the database
         for response in sample_conversation:
-            for piece in response.request_pieces:
+            for piece in response.message_pieces:
                 piece.conversation_id = conversation_id
-            manager._memory.add_request_response_to_memory(request=response)
+            manager._memory.add_message_to_memory(request=response)
 
         # Get last user message
         result = manager.get_last_message(conversation_id=conversation_id, role="user")
@@ -206,9 +206,9 @@ class TestConversationRetrieval:
 
         # Add messages to the database
         for response in sample_conversation:
-            for piece in response.request_pieces:
+            for piece in response.message_pieces:
                 piece.conversation_id = conversation_id
-            manager._memory.add_request_response_to_memory(request=response)
+            manager._memory.add_message_to_memory(request=response)
 
         # Try to get system message when none exists
         result = manager.get_last_message(conversation_id=conversation_id, role="system")
@@ -317,7 +317,7 @@ class TestConversationStateUpdate:
         conversation_id = str(uuid.uuid4())
 
         # Create conversation ending with user message
-        conversation = [Message(request_pieces=[sample_user_piece])]
+        conversation = [Message(message_pieces=[sample_user_piece])]
 
         state = await manager.update_conversation_state_async(
             conversation_id=conversation_id, prepended_conversation=conversation, max_turns=5
@@ -383,7 +383,7 @@ class TestConversationStateUpdate:
         conversation_id = str(uuid.uuid4())
 
         # Create conversation with just a system message
-        conversation = [Message(request_pieces=[sample_system_piece])]
+        conversation = [Message(message_pieces=[sample_system_piece])]
 
         request_converter_config = [PromptConverterConfiguration(converters=[])]
         response_converter_config = [PromptConverterConfiguration(converters=[])]
@@ -408,7 +408,7 @@ class TestConversationStateUpdate:
         conversation_id = str(uuid.uuid4())
 
         # Create conversation with system message
-        conversation = [Message(request_pieces=[sample_system_piece])]
+        conversation = [Message(message_pieces=[sample_system_piece])]
 
         await manager.update_conversation_state_async(
             conversation_id=conversation_id,
@@ -433,7 +433,7 @@ class TestConversationStateUpdate:
         conversation_id = str(uuid.uuid4())
 
         # Create conversation with system message
-        conversation = [Message(request_pieces=[sample_system_piece])]
+        conversation = [Message(message_pieces=[sample_system_piece])]
 
         await manager.update_conversation_state_async(
             conversation_id=conversation_id,
@@ -460,9 +460,9 @@ class TestConversationStateUpdate:
 
         # Create conversation with all types of messages
         conversation = [
-            Message(request_pieces=[sample_system_piece]),
-            Message(request_pieces=[sample_user_piece]),
-            Message(request_pieces=[sample_assistant_piece]),
+            Message(message_pieces=[sample_system_piece]),
+            Message(message_pieces=[sample_user_piece]),
+            Message(message_pieces=[sample_assistant_piece]),
         ]
 
         # Store original IDs to verify they get updated
@@ -482,7 +482,7 @@ class TestConversationStateUpdate:
 
         # Verify that user and assistant pieces have the correct conversation_id and attack_identifier
         for stored_response in stored_conversation:
-            for piece in stored_response.request_pieces:
+            for piece in stored_response.message_pieces:
                 assert piece.conversation_id == conversation_id
                 assert piece.attack_identifier == attack_identifier
                 # Verify that IDs were regenerated
@@ -506,7 +506,7 @@ class TestConversationStateUpdate:
         conversation_id = str(uuid.uuid4())
 
         # Create conversation with system message
-        conversation = [Message(request_pieces=[sample_system_piece])]
+        conversation = [Message(message_pieces=[sample_system_piece])]
 
         with pytest.raises(ValueError, match="Target must be provided to handle system prompts"):
             await manager.update_conversation_state_async(
@@ -524,7 +524,7 @@ class TestConversationStateUpdate:
         conversation_id = str(uuid.uuid4())
 
         # Create conversation with system message
-        conversation = [Message(request_pieces=[sample_system_piece])]
+        conversation = [Message(message_pieces=[sample_system_piece])]
 
         with pytest.raises(ValueError, match="Target must be a PromptChatTarget to set system prompts"):
             await manager.update_conversation_state_async(
@@ -548,9 +548,9 @@ class TestConversationStateUpdate:
 
         # Create conversation with mixed message types
         conversation = [
-            Message(request_pieces=[sample_system_piece]),
-            Message(request_pieces=[sample_user_piece]),
-            Message(request_pieces=[sample_assistant_piece]),
+            Message(message_pieces=[sample_system_piece]),
+            Message(message_pieces=[sample_user_piece]),
+            Message(message_pieces=[sample_assistant_piece]),
         ]
 
         await manager.update_conversation_state_async(
@@ -586,7 +586,7 @@ class TestConversationStateUpdate:
         sample_user_piece.labels = {"test": "label", "category": "user"}
         sample_user_piece.prompt_metadata = {"timestamp": "2023-01-01", "version": 1}
 
-        conversation = [Message(request_pieces=[sample_user_piece])]
+        conversation = [Message(message_pieces=[sample_user_piece])]
 
         await manager.update_conversation_state_async(
             conversation_id=conversation_id,
@@ -618,10 +618,10 @@ class TestConversationStateUpdate:
 
         # Create multi-turn conversation
         conversation = [
-            Message(request_pieces=[sample_user_piece]),
-            Message(request_pieces=[sample_assistant_piece]),
-            Message(request_pieces=[sample_user_piece]),
-            Message(request_pieces=[sample_assistant_piece]),
+            Message(message_pieces=[sample_user_piece]),
+            Message(message_pieces=[sample_assistant_piece]),
+            Message(message_pieces=[sample_user_piece]),
+            Message(message_pieces=[sample_assistant_piece]),
         ]
 
         state = await manager.update_conversation_state_async(
@@ -642,10 +642,10 @@ class TestConversationStateUpdate:
 
         # Create conversation that exceeds max turns
         conversation = [
-            Message(request_pieces=[sample_user_piece]),
-            Message(request_pieces=[sample_assistant_piece]),
-            Message(request_pieces=[sample_user_piece]),
-            Message(request_pieces=[sample_assistant_piece]),
+            Message(message_pieces=[sample_user_piece]),
+            Message(message_pieces=[sample_assistant_piece]),
+            Message(message_pieces=[sample_user_piece]),
+            Message(message_pieces=[sample_assistant_piece]),
         ]
 
         with pytest.raises(ValueError, match="exceeds the maximum number of turns"):
@@ -667,17 +667,17 @@ class TestConversationStateUpdate:
         conversation_id = str(uuid.uuid4())
 
         # First add the conversation to memory
-        user_response = Message(request_pieces=[sample_user_piece])
-        assistant_response = Message(request_pieces=[sample_assistant_piece])
+        user_response = Message(message_pieces=[sample_user_piece])
+        assistant_response = Message(message_pieces=[sample_assistant_piece])
 
         # Manually add to memory to establish the original_prompt_id
-        for piece in user_response.request_pieces:
+        for piece in user_response.message_pieces:
             piece.conversation_id = conversation_id
-        for piece in assistant_response.request_pieces:
+        for piece in assistant_response.message_pieces:
             piece.conversation_id = conversation_id
 
-        manager._memory.add_request_response_to_memory(request=user_response)
-        manager._memory.add_request_response_to_memory(request=assistant_response)
+        manager._memory.add_message_to_memory(request=user_response)
+        manager._memory.add_message_to_memory(request=assistant_response)
 
         # Add score to memory
         sample_score.prompt_request_response_id = str(sample_assistant_piece.original_prompt_id)
@@ -685,8 +685,8 @@ class TestConversationStateUpdate:
 
         # Create conversation ending with assistant message
         conversation = [
-            Message(request_pieces=[sample_user_piece]),
-            Message(request_pieces=[sample_assistant_piece]),
+            Message(message_pieces=[sample_user_piece]),
+            Message(message_pieces=[sample_assistant_piece]),
         ]
 
         state = await manager.update_conversation_state_async(
@@ -706,7 +706,7 @@ class TestConversationStateUpdate:
 
         # Create conversation with only assistant message
         conversation = [
-            Message(request_pieces=[sample_assistant_piece]),
+            Message(message_pieces=[sample_assistant_piece]),
         ]
 
         state = await manager.update_conversation_state_async(
@@ -725,18 +725,18 @@ class TestConversationStateUpdate:
         conversation_id = str(uuid.uuid4())
 
         # Add assistant message to memory and add score
-        assistant_response = Message(request_pieces=[sample_assistant_piece])
-        for piece in assistant_response.request_pieces:
+        assistant_response = Message(message_pieces=[sample_assistant_piece])
+        for piece in assistant_response.message_pieces:
             piece.conversation_id = conversation_id
-        manager._memory.add_request_response_to_memory(request=assistant_response)
+        manager._memory.add_message_to_memory(request=assistant_response)
 
         sample_score.prompt_request_response_id = str(sample_assistant_piece.original_prompt_id)
         manager._memory.add_scores_to_memory(scores=[sample_score])
 
         # Create conversation with assistant messages only
         conversation = [
-            Message(request_pieces=[sample_assistant_piece]),
-            Message(request_pieces=[sample_assistant_piece]),
+            Message(message_pieces=[sample_assistant_piece]),
+            Message(message_pieces=[sample_assistant_piece]),
         ]
 
         with pytest.raises(ValueError, match="There must be a user message preceding"):
@@ -777,10 +777,10 @@ class TestEdgeCasesAndErrorHandling:
     """Tests for edge cases and error handling"""
 
     @pytest.mark.asyncio
-    async def test_update_conversation_state_with_empty_request_pieces(self, attack_identifier: dict[str, str]):
+    async def test_update_conversation_state_with_empty_message_pieces(self, attack_identifier: dict[str, str]):
         # Create request with empty pieces list should raise ValueError
         with pytest.raises(ValueError, match="Message must have at least one request piece"):
-            Message(request_pieces=[])
+            Message(message_pieces=[])
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_with_none_request(self, attack_identifier: dict[str, str]):
@@ -808,7 +808,7 @@ class TestEdgeCasesAndErrorHandling:
         sample_user_piece.labels = {"test": "label"}
         sample_user_piece.prompt_metadata = {"key": "value", "count": 1}
 
-        conversation = [Message(request_pieces=[sample_user_piece])]
+        conversation = [Message(message_pieces=[sample_user_piece])]
 
         await manager.update_conversation_state_async(
             conversation_id=conversation_id, prepended_conversation=conversation
@@ -817,7 +817,7 @@ class TestEdgeCasesAndErrorHandling:
         # Verify piece was processed with metadata intact
         stored_conversation = manager.get_conversation(conversation_id)
         assert len(stored_conversation) == 1
-        processed_piece = stored_conversation[0].request_pieces[0]
+        processed_piece = stored_conversation[0].message_pieces[0]
         assert processed_piece.labels == {"test": "label"}
         assert processed_piece.prompt_metadata == {"key": "value", "count": 1}
 

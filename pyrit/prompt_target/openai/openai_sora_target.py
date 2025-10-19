@@ -200,7 +200,7 @@ class OpenAISoraTarget(OpenAITarget):
             httpx.HTTPStatusError: If the request fails.
         """
         self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.request_pieces[0]
+        request = prompt_request.message_pieces[0]
         prompt = request.converted_value
 
         logger.info(f"Sending the following prompt to the prompt target: {prompt}")
@@ -452,13 +452,13 @@ class OpenAISoraTarget(OpenAITarget):
         Raises:
             ValueError: If the request is invalid.
         """
-        request_piece = prompt_request.get_piece()
+        message_piece = prompt_request.get_piece()
 
-        n_pieces = len(prompt_request.request_pieces)
+        n_pieces = len(prompt_request.message_pieces)
         if n_pieces != 1:
             raise ValueError(f"This target only supports a single prompt request piece. Received: {n_pieces} pieces.")
 
-        piece_type = request_piece.converted_value_data_type
+        piece_type = message_piece.converted_value_data_type
         if piece_type != "text":
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 

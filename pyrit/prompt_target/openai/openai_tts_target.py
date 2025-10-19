@@ -85,7 +85,7 @@ class OpenAITTSTarget(OpenAITarget):
     @pyrit_target_retry
     async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.request_pieces[0]
+        request = prompt_request.message_pieces[0]
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
@@ -147,17 +147,17 @@ class OpenAITTSTarget(OpenAITarget):
         return {k: v for k, v in body_parameters.items() if v is not None}
 
     def _validate_request(self, *, prompt_request: Message) -> None:
-        n_pieces = len(prompt_request.request_pieces)
+        n_pieces = len(prompt_request.message_pieces)
         if n_pieces != 1:
             raise ValueError(
                 "This target only supports a single prompt request piece. " f"Received: {n_pieces} pieces."
             )
 
-        piece_type = prompt_request.request_pieces[0].converted_value_data_type
+        piece_type = prompt_request.message_pieces[0].converted_value_data_type
         if piece_type != "text":
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
-        request = prompt_request.request_pieces[0]
+        request = prompt_request.message_pieces[0]
         messages = self._memory.get_conversation(conversation_id=request.conversation_id)
 
         n_messages = len(messages)

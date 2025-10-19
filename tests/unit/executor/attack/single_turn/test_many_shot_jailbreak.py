@@ -368,7 +368,7 @@ class TestManyShotJailbreakAttackLifecycle:
         # Context with prepended conversation (not allowed)
         basic_context.prepended_conversation = [
             Message(
-                request_pieces=[MessagePiece(role="user", original_value="Test prepended conversation")]
+                message_pieces=[MessagePiece(role="user", original_value="Test prepended conversation")]
             )
         ]
 

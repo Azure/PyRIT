@@ -30,7 +30,7 @@ async def test_math_prompt_converter_convert_async():
 
     # Mock the response from the converter target
     mock_converter_target.send_prompt_async.return_value = Message(
-        request_pieces=[
+        message_pieces=[
             MessagePiece(
                 role="assistant",
                 original_value="mocked",
@@ -84,7 +84,7 @@ async def test_math_prompt_converter_handles_disallowed_content():
 
     # Mock the response to encode the prompt properly
     mock_converter_target.send_prompt_async.return_value = Message(
-        request_pieces=[
+        message_pieces=[
             MessagePiece(
                 role="assistant",
                 original_value="mocked",

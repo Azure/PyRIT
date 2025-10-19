@@ -41,7 +41,7 @@ async def test_insecure_code_scorer_valid_response(mock_chat_target):
             # Create a request_response object
             request_response = MessagePiece(
                 role="user", original_value="sample code"
-            ).to_prompt_request_response()
+            ).to_message()
 
             # Call the score_async method
             scores = await scorer.score_async(request_response)
@@ -68,7 +68,7 @@ async def test_insecure_code_scorer_invalid_json(mock_chat_target):
         ):
             request_response = MessagePiece(
                 role="user", original_value="sample code"
-            ).to_prompt_request_response()
+            ).to_message()
 
             with pytest.raises(InvalidJsonException, match="Invalid JSON"):
                 await scorer.score_async(request_response)
@@ -88,7 +88,7 @@ async def test_insecure_code_scorer_validate(mock_chat_target):
         original_value="image_data",
         converted_value="image_data",
         converted_value_data_type="image_path",
-    ).to_prompt_request_response()
+    ).to_message()
 
     with pytest.raises(ValueError, match="There are no valid pieces to score"):
         await scorer.score_async(request)

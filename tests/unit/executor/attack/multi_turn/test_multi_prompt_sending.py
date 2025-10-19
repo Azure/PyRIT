@@ -75,7 +75,7 @@ def basic_context():
 def sample_response():
     """Create a sample response for testing"""
     return Message(
-        request_pieces=[
+        message_pieces=[
             MessagePiece(
                 role="assistant",
                 original_value="Test response",
@@ -354,13 +354,13 @@ class TestAttackExecution:
         # First prompt succeeds, second fails
         mock_prompt_normalizer.send_prompt_async.side_effect = [
             Message(
-                request_pieces=[
+                message_pieces=[
                     MessagePiece(role="assistant", original_value="response1", original_value_data_type="text")
                 ]
             ),
             None,  # Failed prompt
             Message(
-                request_pieces=[
+                message_pieces=[
                     MessagePiece(role="assistant", original_value="response3", original_value_data_type="text")
                 ]
             ),
@@ -560,7 +560,7 @@ class TestEdgeCasesAndErrorHandling:
     """Tests for edge cases and error handling scenarios"""
 
     @pytest.mark.asyncio
-    async def test_perform_attack_with_empty_prompt_responses(
+    async def test_perform_attack_with_empty_messages(
         self, mock_target, mock_prompt_normalizer, mock_true_false_scorer, basic_context
     ):
         mock_prompt_normalizer.send_prompt_async.return_value = None

@@ -214,7 +214,7 @@ class ContextComplianceAttack(PromptSendingAttack):
         # Create the conversation pieces
         return [
             Message(
-                request_pieces=[
+                message_pieces=[
                     MessagePiece(
                         role="user",
                         original_value=objective,
@@ -223,7 +223,7 @@ class ContextComplianceAttack(PromptSendingAttack):
                 ],
             ),
             Message(
-                request_pieces=[
+                message_pieces=[
                     MessagePiece(
                         role="assistant",
                         original_value=assistant_response,

@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
-from unit.mocks import get_image_request_piece, get_sample_conversations
+from unit.mocks import get_image_message_piece, get_sample_conversations
 
 from pyrit.exceptions.exception_classes import (
     EmptyResponseException,
@@ -44,7 +44,7 @@ def dalle_response_json() -> dict:
 @pytest.fixture
 def sample_conversations() -> MutableSequence[MessagePiece]:
     conversations = get_sample_conversations()
-    return Message.flatten_to_prompt_request_pieces(conversations)
+    return Message.flatten_to_message_pieces(conversations)
 
 
 def test_initialization_with_required_parameters(dalle_target: OpenAIDALLETarget):
@@ -82,7 +82,7 @@ async def test_send_prompt_async(
 
         resp = await dalle_target.send_prompt_async(prompt_request=Message([request]))
         assert resp
-        path = resp.request_pieces[0].original_value
+        path = resp.message_pieces[0].original_value
         assert os.path.isfile(path)
 
         with open(path, "r") as file:
@@ -164,7 +164,7 @@ async def test_send_prompt_async_bad_request_error(
 @pytest.mark.asyncio
 async def test_dalle_validate_request_length(dalle_target: OpenAIDALLETarget):
     request = Message(
-        request_pieces=[
+        message_pieces=[
             MessagePiece(role="user", conversation_id="123", original_value="test"),
             MessagePiece(role="user", conversation_id="123", original_value="test2"),
         ]
@@ -176,7 +176,7 @@ async def test_dalle_validate_request_length(dalle_target: OpenAIDALLETarget):
 
 @pytest.mark.asyncio
 async def test_dalle_validate_prompt_type(dalle_target: OpenAIDALLETarget):
-    request = Message(request_pieces=[get_image_request_piece()])
+    request = Message(message_pieces=[get_image_message_piece()])
     with pytest.raises(ValueError, match="This target only supports text prompt input."):
         await dalle_target.send_prompt_async(prompt_request=request)
 
@@ -258,8 +258,8 @@ async def test_send_prompt_async_bad_request_content_filter(
         assert result is not None
         assert isinstance(result, Message)
         # Check that the response indicates a content filter error
-        assert result.request_pieces[0].response_error == "blocked"
-        assert result.request_pieces[0].converted_value_data_type == "error"
+        assert result.message_pieces[0].response_error == "blocked"
+        assert result.message_pieces[0].converted_value_data_type == "error"
 
 
 def test_is_json_response_supported(patch_central_database):
@@ -336,7 +336,7 @@ async def test_send_prompt_async_calls_refresh_auth_headers(dalle_target):
         mock_make_request.return_value = mock_response
 
         prompt_request = Message(
-            request_pieces=[
+            message_pieces=[
                 MessagePiece(
                     role="user",
                     original_value="test prompt",

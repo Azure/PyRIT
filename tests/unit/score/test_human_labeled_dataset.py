@@ -19,7 +19,7 @@ from pyrit.score import (
 def sample_responses():
     return [
         Message(
-            request_pieces=[
+            message_pieces=[
                 MessagePiece(role="assistant", original_value="test response", original_value_data_type="text")
             ]
         )
@@ -245,4 +245,4 @@ def test_human_labeled_dataset_from_csv_with_data_type_col(tmp_path):
         assistant_response_data_type_col_name="data_type",
     )
     assert isinstance(dataset, HumanLabeledDataset)
-    assert dataset.entries[0].conversation[0].request_pieces[0].original_value_data_type == "text"
+    assert dataset.entries[0].conversation[0].message_pieces[0].original_value_data_type == "text"

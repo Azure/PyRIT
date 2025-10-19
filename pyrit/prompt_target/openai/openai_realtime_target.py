@@ -181,7 +181,7 @@ class RealtimeTarget(OpenAITarget):
     @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: Message) -> Message:
 
-        convo_id = prompt_request.request_pieces[0].conversation_id
+        convo_id = prompt_request.message_pieces[0].conversation_id
         if convo_id not in self._existing_conversation:
             websocket = await self.connect()
             self._existing_conversation[convo_id] = websocket
@@ -197,7 +197,7 @@ class RealtimeTarget(OpenAITarget):
         self._validate_request(prompt_request=prompt_request)
 
         await self.send_config(conversation_id=convo_id)
-        request = prompt_request.request_pieces[0]
+        request = prompt_request.message_pieces[0]
         response_type = request.converted_value_data_type
 
         # Order of messages sent varies based on the data format of the prompt
@@ -215,13 +215,13 @@ class RealtimeTarget(OpenAITarget):
 
         text_response_piece = construct_response_from_request(
             request=request, response_text_pieces=[result.flatten_transcripts()], response_type="text"
-        ).request_pieces[0]
+        ).message_pieces[0]
 
         audio_response_piece = construct_response_from_request(
             request=request, response_text_pieces=[output_audio_path], response_type="audio_path"
-        ).request_pieces[0]
+        ).message_pieces[0]
 
-        response_entry = Message(request_pieces=[text_response_piece, audio_response_piece])
+        response_entry = Message(message_pieces=[text_response_piece, audio_response_piece])
         return response_entry
 
     async def save_audio(
@@ -531,11 +531,11 @@ class RealtimeTarget(OpenAITarget):
         """
 
         # Check the number of request pieces
-        n_pieces = len(prompt_request.request_pieces)
+        n_pieces = len(prompt_request.message_pieces)
         if n_pieces != 1:
             raise ValueError(f"This target only supports one request piece. Received: {n_pieces} pieces.")
 
-        piece_type = prompt_request.request_pieces[0].converted_value_data_type
+        piece_type = prompt_request.message_pieces[0].converted_value_data_type
         if piece_type not in ["text", "audio_path"]:
             raise ValueError(f"This target only supports text and audio_path prompt input. Received: {piece_type}.")
 

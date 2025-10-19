@@ -22,23 +22,23 @@ class MemoryEmbedding:
             raise ValueError("embedding_model must be set.")
         self.embedding_model = embedding_model
 
-    def generate_embedding_memory_data(self, *, prompt_request_piece: MessagePiece) -> EmbeddingDataEntry:
+    def generate_embedding_memory_data(self, *, message_piece: MessagePiece) -> EmbeddingDataEntry:
         """
-        Generates metadata for a chat memory entry.
+        Generates metadata for a message piece.
 
         Args:
-            chat_memory (ConversationData): The chat memory entry.
+            message_piece (MessagePiece): the message piece for which to generate a text embedding
 
         Returns:
-            ConversationMemoryEntryMetadata: The generated metadata.
+            EmbeddingDataEntry: The generated metadata.
         """
-        if prompt_request_piece.converted_value_data_type == "text":
+        if message_piece.converted_value_data_type == "text":
             embedding_data = EmbeddingDataEntry(
-                embedding=self.embedding_model.generate_text_embedding(text=prompt_request_piece.converted_value)
+                embedding=self.embedding_model.generate_text_embedding(text=message_piece.converted_value)
                 .data[0]
                 .embedding,
                 embedding_type_name=self.embedding_model.__class__.__name__,
-                id=prompt_request_piece.id,
+                id=message_piece.id,
             )
             return embedding_data
 

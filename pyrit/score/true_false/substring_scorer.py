@@ -44,12 +44,12 @@ class SubStringScorer(TrueFalseScorer):
         self._score_categories = categories if categories else []
 
     async def _score_piece_async(
-        self, request_piece: MessagePiece, *, objective: Optional[str] = None
+        self, message_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """Score the given request piece based on presence of the substring.
 
         Args:
-            request_piece (MessagePiece): The prompt request piece to score.
+            message_piece (MessagePiece): The prompt request piece to score.
             objective (Optional[str]): The objective to evaluate against. Defaults to None.
                 Currently not used for this scorer.
 
@@ -57,7 +57,7 @@ class SubStringScorer(TrueFalseScorer):
             list[Score]: A list containing a single Score object with a boolean value indicating
                 whether the substring is present in the text.
         """
-        expected_output_substring_present = self._substring in request_piece.converted_value
+        expected_output_substring_present = self._substring in message_piece.converted_value
 
         score = [
             Score(
@@ -68,7 +68,7 @@ class SubStringScorer(TrueFalseScorer):
                 score_category=self._score_categories,
                 score_rationale="",
                 scorer_class_identifier=self.get_identifier(),
-                prompt_request_response_id=request_piece.id,
+                prompt_request_response_id=message_piece.id,
                 objective=objective,
             )
         ]

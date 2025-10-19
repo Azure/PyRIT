@@ -312,7 +312,7 @@ API Reference
     EmbeddingSupport
     EmbeddingUsageInformation
     ErrorDataTypeSerializer
-    group_conversation_request_pieces_by_sequence
+    group_conversation_message_pieces_by_sequence
     Identifier
     ImagePathDataTypeSerializer
     MessagePiece

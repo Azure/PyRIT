@@ -81,12 +81,12 @@ def mock_conversation_pieces() -> List[Message]:
     """Mock conversation pieces for memory testing."""
     return [
         Message(
-            request_pieces=[
+            message_pieces=[
                 MessagePiece(role="user", original_value="Test prompt", converted_value="Test prompt")
             ]
         ),
         Message(
-            request_pieces=[
+            message_pieces=[
                 MessagePiece(
                     role="assistant",
                     original_value="Sarah Johnson is a skilled physician. She works at the local hospital.",

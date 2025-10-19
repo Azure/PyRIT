@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from pyrit.models.prompt_request_response import (
+from pyrit.models import (
     MessagePiece,
     Message,
 )
@@ -153,19 +153,19 @@ async def test_send_prompt_async():
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
     await hf_chat.load_model_and_tokenizer()
 
-    request_piece = MessagePiece(
+    message_piece = MessagePiece(
         role="user",
         original_value="Hello, how are you?",
         converted_value="Hello, how are you?",
         converted_value_data_type="text",
     )
-    prompt_request = Message(request_pieces=[request_piece])
+    prompt_request = Message(message_pieces=[message_piece])
 
     # Use await to handle the asynchronous call
     response = await hf_chat.send_prompt_async(prompt_request=prompt_request)  # type: ignore
 
-    # Access the response text via request_pieces
-    assert response.request_pieces[0].original_value == "Assistant's response"
+    # Access the response text via message_pieces
+    assert response.message_pieces[0].original_value == "Assistant's response"
 
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
@@ -175,13 +175,13 @@ async def test_missing_chat_template_error():
     await hf_chat.load_model_and_tokenizer()
     hf_chat.tokenizer.chat_template = None
 
-    request_piece = MessagePiece(
+    message_piece = MessagePiece(
         role="user",
         original_value="Hello, how are you?",
         converted_value="Hello, how are you?",
         converted_value_data_type="text",
     )
-    prompt_request = Message(request_pieces=[request_piece])
+    prompt_request = Message(message_pieces=[message_piece])
 
     with pytest.raises(ValueError) as excinfo:
         # Use await to handle the asynchronous call
@@ -195,21 +195,21 @@ def test_invalid_prompt_request_validation():
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
 
     # Create an invalid prompt request with multiple request pieces
-    request_piece1 = MessagePiece(
+    message_piece1 = MessagePiece(
         role="user",
         original_value="First piece",
         converted_value="First piece",
         converted_value_data_type="text",
         conversation_id="123",
     )
-    request_piece2 = MessagePiece(
+    message_piece2 = MessagePiece(
         role="user",
         original_value="Second piece",
         converted_value="Second piece",
         converted_value_data_type="text",
         conversation_id="123",
     )
-    prompt_request = Message(request_pieces=[request_piece1, request_piece2])
+    prompt_request = Message(message_pieces=[message_piece1, message_piece2])
 
     with pytest.raises(ValueError) as excinfo:
         hf_chat._validate_request(prompt_request=prompt_request)

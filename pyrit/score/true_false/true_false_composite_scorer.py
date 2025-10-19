@@ -86,7 +86,7 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
         result = self._score_aggregator(score_list)
 
         # Ensure the request piece has an ID
-        piece_id = request_response.request_pieces[0].id
+        piece_id = request_response.message_pieces[0].id
         assert piece_id is not None, "Request piece must have an ID"
 
         return_score = Score(
@@ -104,12 +104,12 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
         return [return_score]
 
     async def _score_piece_async(
-        self, request_piece: MessagePiece, *, objective: Optional[str] = None
+        self, message_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """Composite scorers do not support piecewise scoring.
 
         Args:
-            request_piece (MessagePiece): Unused.
+            message_piece (MessagePiece): Unused.
             objective (Optional[str]): Unused.
 
         Raises:

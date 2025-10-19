@@ -23,7 +23,7 @@ def test_export_conversation_by_attack_id_file_created(
 
     sqlite_instance.exporter = MemoryExporter()
 
-    with patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_prompt_request_pieces") as mock_get:
+    with patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_message_pieces") as mock_get:
         mock_get.return_value = sample_conversations
         sqlite_instance.export_conversations(attack_id=attack1_id, file_path=file_path)
 
@@ -36,7 +36,7 @@ def test_export_all_conversations_file_created(sqlite_instance: MemoryInterface)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as temp_file:
         with (
-            patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_prompt_request_pieces") as mock_get_pieces,
+            patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_message_pieces") as mock_get_pieces,
             patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_prompt_scores") as mock_get_scores,
         ):
             file_path = Path(temp_file.name)
@@ -73,7 +73,7 @@ def test_export_all_conversations_with_scores_correct_data(sqlite_instance: Memo
 
     try:
         with (
-            patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_prompt_request_pieces") as mock_get_pieces,
+            patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_message_pieces") as mock_get_pieces,
             patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_prompt_scores") as mock_get_scores,
         ):
             # Create a mock piece that returns serializable data
@@ -128,7 +128,7 @@ def test_export_all_conversations_with_scores_empty_data(sqlite_instance: Memory
 
     try:
         with (
-            patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_prompt_request_pieces") as mock_get_pieces,
+            patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_message_pieces") as mock_get_pieces,
             patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_prompt_scores") as mock_get_scores,
         ):
             mock_get_pieces.return_value = []

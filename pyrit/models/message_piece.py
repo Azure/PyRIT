@@ -166,7 +166,7 @@ class MessagePiece:
     def to_chat_message(self) -> ChatMessage:
         return ChatMessage(role=cast(ChatMessageRole, self.role), content=self.converted_value)
 
-    def to_prompt_request_response(self) -> "Message":  # type: ignore # noqa F821
+    def to_message(self) -> "Message":  # type: ignore # noqa F821
         from pyrit.models.message import Message
 
         return Message([self])  # noqa F821
@@ -237,16 +237,16 @@ class MessagePiece:
         )
 
 
-def sort_request_pieces(prompt_pieces: list[MessagePiece]) -> list[MessagePiece]:
+def sort_message_pieces(message_pieces: list[MessagePiece]) -> list[MessagePiece]:
     """
     Group by conversation_id.
     Order conversations by the earliest timestamp within each conversation_id.
     Within each conversation, order messages by sequence.
     """
     earliest_timestamps = {
-        convo_id: min(x.timestamp for x in prompt_pieces if x.conversation_id == convo_id)
-        for convo_id in {x.conversation_id for x in prompt_pieces}
+        convo_id: min(x.timestamp for x in message_pieces if x.conversation_id == convo_id)
+        for convo_id in {x.conversation_id for x in message_pieces}
     }
 
     # Sort using the precomputed timestamp values, then by sequence
-    return sorted(prompt_pieces, key=lambda x: (earliest_timestamps[x.conversation_id], x.conversation_id, x.sequence))
+    return sorted(message_pieces, key=lambda x: (earliest_timestamps[x.conversation_id], x.conversation_id, x.sequence))

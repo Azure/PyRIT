@@ -5,10 +5,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from unit.mocks import MockPromptTarget
 
-from pyrit.models.prompt_request_piece import MessagePiece
-from pyrit.models.prompt_request_response import Message
-from pyrit.models.seed_prompt import SeedPrompt
-from pyrit.prompt_converter.denylist_converter import DenylistConverter
+from pyrit.models import MessagePiece, Message, SeedPrompt
+from pyrit.prompt_converter import DenylistConverter
 
 
 @pytest.fixture
@@ -22,7 +20,7 @@ def mock_template():
 def mock_target() -> MockPromptTarget:
     target = MagicMock()
     response = Message(
-        request_pieces=[
+        message_pieces=[
             MessagePiece(
                 role="assistant",
                 original_value="prompt value",

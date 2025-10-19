@@ -77,7 +77,7 @@ def basic_context() -> MultiTurnAttackContext:
 @pytest.fixture
 def sample_response() -> Message:
     return Message(
-        request_pieces=[
+        message_pieces=[
             MessagePiece(
                 role="assistant",
                 original_value="Test response",

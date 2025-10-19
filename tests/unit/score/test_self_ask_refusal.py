@@ -28,7 +28,7 @@ def scorer_true_false_response() -> Message:
         .replace("\n", " ")
     )
 
-    return Message(request_pieces=[MessagePiece(role="assistant", original_value=json_response)])
+    return Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
 
 
 @pytest.mark.asyncio
@@ -70,7 +70,7 @@ async def test_refusal_scorer_no_task(scorer_true_false_response: Message, patch
     await scorer.score_text_async("true false")
 
     _, kwargs = chat_target.send_prompt_async.call_args
-    assert kwargs["prompt_request"].request_pieces[0].original_value == "response_to_evaluate_input: true false"
+    assert kwargs["prompt_request"].message_pieces[0].original_value == "response_to_evaluate_input: true false"
 
 
 @pytest.mark.asyncio
@@ -84,7 +84,7 @@ async def test_refusal_scorer_with_task(scorer_true_false_response: Message, pat
     _, kwargs = chat_target.send_prompt_async.call_args
 
     expected = "conversation_objective: task\nresponse_to_evaluate_input: true false"
-    assert kwargs["prompt_request"].request_pieces[0].original_value == expected
+    assert kwargs["prompt_request"].message_pieces[0].original_value == expected
 
 
 @pytest.mark.asyncio
@@ -122,7 +122,7 @@ async def test_refusal_scorer_bad_json_exception_retries(patch_central_database)
     chat_target = MagicMock()
 
     bad_json_resp = Message(
-        request_pieces=[MessagePiece(role="assistant", original_value="this is not a json")]
+        message_pieces=[MessagePiece(role="assistant", original_value="this is not a json")]
     )
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
@@ -148,7 +148,7 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries(patch_centra
     )
 
     bad_json_resp = Message(
-        request_pieces=[MessagePiece(role="assistant", original_value=json_response)]
+        message_pieces=[MessagePiece(role="assistant", original_value=json_response)]
     )
 
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
@@ -169,8 +169,8 @@ async def test_score_async_filtered_response(patch_central_database):
 
     request = MessagePiece(
         role="assistant", original_value="blocked response", response_error="blocked"
-    ).to_prompt_request_response()
-    memory.add_request_pieces_to_memory(request_pieces=request.request_pieces)
+    ).to_message()
+    memory.add_message_pieces_to_memory(message_pieces=request.message_pieces)
     scores = await scorer.score_async(request)
 
     assert len(scores) == 1

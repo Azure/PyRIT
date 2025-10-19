@@ -399,13 +399,13 @@ class TestQuestionAnsweringBenchmarkContextIntegration:
     ) -> None:
         """Test context with prepended conversation."""
         # Create a proper mock Message
-        mock_request_piece = MagicMock(spec=MessagePiece)
-        mock_request_piece.conversation_id = "test-conversation"
-        mock_request_piece.role = "user"
-        mock_request_piece.original_value = "Test message"
+        mock_message_piece = MagicMock(spec=MessagePiece)
+        mock_message_piece.conversation_id = "test-conversation"
+        mock_message_piece.role = "user"
+        mock_message_piece.original_value = "Test message"
 
         mock_response = MagicMock(spec=Message)
-        mock_response.request_pieces = [mock_request_piece]
+        mock_response.message_pieces = [mock_message_piece]
 
         prepended_conversation: List[Message] = [mock_response]
 

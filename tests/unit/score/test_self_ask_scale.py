@@ -34,7 +34,7 @@ def scorer_scale_response() -> Message:
         .replace("\n", " ")
     )
 
-    return Message(request_pieces=[MessagePiece(role="assistant", original_value=json_response)])
+    return Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
 
 
 @pytest.fixture
@@ -165,10 +165,10 @@ async def test_scale_scorer_score_custom_scale(scorer_scale_response: Message, p
     chat_target = MagicMock()
 
     # set a higher score to test the scaling
-    scorer_scale_response.request_pieces[0].original_value = scorer_scale_response.request_pieces[
+    scorer_scale_response.message_pieces[0].original_value = scorer_scale_response.message_pieces[
         0
     ].original_value.replace("1", "53")
-    scorer_scale_response.request_pieces[0].converted_value = scorer_scale_response.request_pieces[0].original_value
+    scorer_scale_response.message_pieces[0].converted_value = scorer_scale_response.message_pieces[0].original_value
 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_scale_response)
 

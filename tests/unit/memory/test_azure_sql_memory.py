@@ -31,7 +31,7 @@ def sample_conversation_entries() -> Sequence[PromptMemoryEntry]:
 
 @pytest.mark.asyncio
 async def test_insert_entry(memory_interface):
-    prompt_request_piece = MessagePiece(
+    message_piece = MessagePiece(
         id=uuid.uuid4(),
         conversation_id="123",
         role="user",
@@ -39,8 +39,8 @@ async def test_insert_entry(memory_interface):
         original_value="Hello",
         converted_value="Hello",
     )
-    await prompt_request_piece.set_sha256_values_async()
-    entry = PromptMemoryEntry(entry=prompt_request_piece)
+    await message_piece.set_sha256_values_async()
+    entry = PromptMemoryEntry(entry=message_piece)
 
     # Now, get a new session to query the database and verify the entry was inserted
     with memory_interface.get_session() as session:
@@ -166,7 +166,7 @@ def test_get_all_memory(
     memory_interface._insert_entries(entries=sample_conversation_entries)
 
     # Fetch all entries
-    all_entries = memory_interface.get_prompt_request_pieces()
+    all_entries = memory_interface.get_message_pieces()
     assert len(all_entries) == 3
 
 
@@ -202,7 +202,7 @@ def test_get_memories_with_json_properties(memory_interface: AzureSQLMemory):
 
         # Verify that the retrieved entry matches the inserted entry
         assert len(retrieved_entries) == 1
-        retrieved_entry = retrieved_entries[0].request_pieces[0]
+        retrieved_entry = retrieved_entries[0].message_pieces[0]
         assert retrieved_entry.conversation_id == specific_conversation_id
         assert retrieved_entry.role == "user"
         assert retrieved_entry.original_value == "Test content"
@@ -265,7 +265,7 @@ def test_get_memories_with_attack_id(memory_interface: AzureSQLMemory):
     ):
         # Call the method under test
         memory_interface._insert_entries(entries=entries)
-        retrieved_entries = memory_interface.get_prompt_request_pieces(attack_id=attack1_id)
+        retrieved_entries = memory_interface.get_message_pieces(attack_id=attack1_id)
 
         # Verify the returned entries
         assert len(retrieved_entries) == 2

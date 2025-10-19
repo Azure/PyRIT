@@ -55,7 +55,7 @@ class RPCClient:
             return self._prompt_received
         raise RPCClientStoppedException()
 
-    def send_prompt_response(self, response: bool):
+    def send_message(self, response: bool):
         score = Score(
             score_value=str(response),
             score_type="true_false",

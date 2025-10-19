@@ -1714,7 +1714,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         if not conversation_id:
             return None
 
-        responses = self._memory.get_prompt_request_pieces(conversation_id=conversation_id)
+        responses = self._memory.get_message_pieces(conversation_id=conversation_id)
         return responses[-1] if responses else None
 
     def _get_auxiliary_scores_summary(self, nodes: List[_TreeOfAttacksNode]) -> Dict[str, float]:

@@ -439,7 +439,7 @@ def test_attack_result_with_last_response_and_score(sqlite_instance: MemoryInter
     )
 
     # Add prompt piece and score to memory
-    sqlite_instance.add_request_pieces_to_memory(request_pieces=[prompt_piece])
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=[prompt_piece])
     sqlite_instance.add_scores_to_memory(scores=[score])
 
     # Create attack result with last_response and last_score
@@ -620,7 +620,7 @@ def test_get_attack_results_by_harm_category_single(sqlite_instance: MemoryInter
     prompt_piece3 = create_prompt_piece("conv_3", 3, targeted_harm_categories=["violence"])
 
     # Add prompt pieces to memory
-    sqlite_instance.add_request_pieces_to_memory(request_pieces=[prompt_piece1, prompt_piece2, prompt_piece3])
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=[prompt_piece1, prompt_piece2, prompt_piece3])
 
     # Create attack results using helper function
     attack_result1 = create_attack_result("conv_1", 1, AttackOutcome.SUCCESS)
@@ -648,7 +648,7 @@ def test_get_attack_results_by_harm_category_multiple(sqlite_instance: MemoryInt
     prompt_piece2 = create_prompt_piece("conv_2", 2, targeted_harm_categories=["violence", "illegal"])
     prompt_piece3 = create_prompt_piece("conv_3", 3, targeted_harm_categories=["violence"])
 
-    sqlite_instance.add_request_pieces_to_memory(request_pieces=[prompt_piece1, prompt_piece2, prompt_piece3])
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=[prompt_piece1, prompt_piece2, prompt_piece3])
 
     # Create attack results
     attack_result1 = create_attack_result("conv_1", 1, AttackOutcome.SUCCESS)
@@ -675,7 +675,7 @@ def test_get_attack_results_by_labels_single(sqlite_instance: MemoryInterface):
     prompt_piece2 = create_prompt_piece("conv_2", 2, labels={"operation": "test_op"})
     prompt_piece3 = create_prompt_piece("conv_3", 3, labels={"operation": "other_op", "operator": "roakey"})
 
-    sqlite_instance.add_request_pieces_to_memory(request_pieces=[prompt_piece1, prompt_piece2, prompt_piece3])
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=[prompt_piece1, prompt_piece2, prompt_piece3])
 
     # Create attack results
     attack_result1 = create_attack_result("conv_1", 1, AttackOutcome.SUCCESS)
@@ -707,7 +707,7 @@ def test_get_attack_results_by_labels_multiple(sqlite_instance: MemoryInterface)
     )
     prompt_piece3 = create_prompt_piece("conv_3", 3, labels={"operation": "test_op", "phase": "initial"})
 
-    sqlite_instance.add_request_pieces_to_memory(request_pieces=[prompt_piece1, prompt_piece2, prompt_piece3])
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=[prompt_piece1, prompt_piece2, prompt_piece3])
 
     # Create attack results
     attack_results = [
@@ -749,7 +749,7 @@ def test_get_attack_results_by_harm_category_and_labels(sqlite_instance: MemoryI
         labels={"operation": "other_op", "operator": "bob"},
     )
 
-    sqlite_instance.add_request_pieces_to_memory(request_pieces=[prompt_piece1, prompt_piece2, prompt_piece3])
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=[prompt_piece1, prompt_piece2, prompt_piece3])
 
     # Create attack results
     attack_results = [
@@ -781,7 +781,7 @@ def test_get_attack_results_harm_category_no_matches(sqlite_instance: MemoryInte
 
     # Create attack result without the harm category we'll search for
     prompt_piece = create_prompt_piece("conv_1", 1, targeted_harm_categories=["violence"])
-    sqlite_instance.add_request_pieces_to_memory(request_pieces=[prompt_piece])
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=[prompt_piece])
 
     attack_result = create_attack_result("conv_1", 1, AttackOutcome.SUCCESS)
     sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result])
@@ -796,7 +796,7 @@ def test_get_attack_results_labels_no_matches(sqlite_instance: MemoryInterface):
 
     # Create attack result without the labels we'll search for
     prompt_piece = create_prompt_piece("conv_1", 1, labels={"operation": "test_op"})
-    sqlite_instance.add_request_pieces_to_memory(request_pieces=[prompt_piece])
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=[prompt_piece])
 
     attack_result = create_attack_result("conv_1", 1, AttackOutcome.SUCCESS)
     sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result])
@@ -813,7 +813,7 @@ def test_get_attack_results_labels_query_on_empty_labels(sqlite_instance: Memory
     prompt_piece1 = create_prompt_piece("conv_1", 1)
     prompt_piece2 = create_prompt_piece("conv_2", 1)
 
-    sqlite_instance.add_request_pieces_to_memory(request_pieces=[prompt_piece1, prompt_piece2])
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=[prompt_piece1, prompt_piece2])
 
     attack_result1 = create_attack_result("conv_1", 1, AttackOutcome.SUCCESS)
     attack_result2 = create_attack_result("conv_2", 2, AttackOutcome.FAILURE)
@@ -838,7 +838,7 @@ def test_get_attack_results_labels_key_exists_value_mismatch(sqlite_instance: Me
     prompt_piece2 = create_prompt_piece("conv_2", 1, labels={"op_name": "another_op", "researcher": "roakey"})
     prompt_piece3 = create_prompt_piece("conv_3", 1, labels={"operation": "test_op"})
 
-    sqlite_instance.add_request_pieces_to_memory(request_pieces=[prompt_piece1, prompt_piece2, prompt_piece3])
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=[prompt_piece1, prompt_piece2, prompt_piece3])
 
     attack_results = [
         create_attack_result("conv_1", 1, AttackOutcome.SUCCESS),

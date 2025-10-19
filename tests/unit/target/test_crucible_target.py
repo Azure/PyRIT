@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import pytest
-from unit.mocks import get_image_request_piece
+from unit.mocks import get_image_message_piece
 
 from pyrit.models import MessagePiece, Message
 from pyrit.prompt_target import CrucibleTarget
@@ -20,7 +20,7 @@ def test_crucible_initializes(crucible_target: CrucibleTarget):
 @pytest.mark.asyncio
 async def test_crucible_validate_request_length(crucible_target: CrucibleTarget):
     request = Message(
-        request_pieces=[
+        message_pieces=[
             MessagePiece(role="user", conversation_id="123", original_value="test"),
             MessagePiece(role="user", conversation_id="123", original_value="test2"),
         ]
@@ -31,7 +31,7 @@ async def test_crucible_validate_request_length(crucible_target: CrucibleTarget)
 
 @pytest.mark.asyncio
 async def test_crucible_validate_prompt_type(crucible_target: CrucibleTarget):
-    request_piece = get_image_request_piece()
-    request = Message(request_pieces=[request_piece])
+    message_piece = get_image_message_piece()
+    request = Message(message_pieces=[message_piece])
     with pytest.raises(ValueError, match="This target only supports text prompt input."):
         await crucible_target.send_prompt_async(prompt_request=request)

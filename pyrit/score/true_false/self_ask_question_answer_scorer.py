@@ -67,13 +67,13 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
         )
 
     async def _score_piece_async(
-        self, request_piece: MessagePiece, *, objective: Optional[str] = None
+        self, message_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """
         Score the request piece using question answering evaluation.
 
         Args:
-            request_piece (MessagePiece): The answer given by the target to be scored.
+            message_piece (MessagePiece): The answer given by the target to be scored.
             objective (Optional[str]): The objective, which usually contains the question and the correct answer.
                 Defaults to None.
 
@@ -83,7 +83,7 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
 
         prompt = (
             f"{objective}\n\nThe target response is as follows. "
-            f"Evaluate if the response is correct:\n{request_piece.converted_value}"
+            f"Evaluate if the response is correct:\n{message_piece.converted_value}"
         )
 
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
@@ -91,10 +91,10 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
             system_prompt=self._system_prompt,
             prompt_request_value=prompt,
             prompt_request_data_type="text",
-            scored_prompt_id=request_piece.id,
+            scored_prompt_id=message_piece.id,
             category=self._score_category,
             objective=objective,
-            attack_identifier=request_piece.attack_identifier,
+            attack_identifier=message_piece.attack_identifier,
         )
 
         score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value, score_type="true_false")

@@ -49,7 +49,7 @@ async def test_send_prompt_async(target):
     target.set_system_prompt = MagicMock()
 
     # Create a mock Message with a valid data type
-    request_piece = MessagePiece(
+    message_piece = MessagePiece(
         original_value="Hello",
         original_value_data_type="text",
         converted_value="Hello",
@@ -57,7 +57,7 @@ async def test_send_prompt_async(target):
         role="user",
         conversation_id="test_conversation_id",
     )
-    prompt_request = Message(request_pieces=[request_piece])
+    prompt_request = Message(message_pieces=[message_piece])
 
     # Call the send_prompt_async method
     response = await target.send_prompt_async(prompt_request=prompt_request)
@@ -86,7 +86,7 @@ async def test_send_prompt_async_adds_system_prompt_to_memory(target):
     target.set_system_prompt = MagicMock()
 
     # Create a mock Message with a valid data type
-    request_piece = MessagePiece(
+    message_piece = MessagePiece(
         original_value="Hello",
         original_value_data_type="text",
         converted_value="Hello",
@@ -94,7 +94,7 @@ async def test_send_prompt_async_adds_system_prompt_to_memory(target):
         role="user",
         conversation_id="new_conversation_id",
     )
-    prompt_request = Message(request_pieces=[request_piece])
+    prompt_request = Message(message_pieces=[message_piece])
 
     # Call the send_prompt_async method
     await target.send_prompt_async(prompt_request=prompt_request)
@@ -122,7 +122,7 @@ async def test_multiple_websockets_created_for_multiple_conversations(target):
     target.set_system_prompt = MagicMock()
 
     # Create mock Messages for two different conversations
-    request_piece_1 = MessagePiece(
+    message_piece_1 = MessagePiece(
         original_value="Hello",
         original_value_data_type="text",
         converted_value="Hello",
@@ -130,9 +130,9 @@ async def test_multiple_websockets_created_for_multiple_conversations(target):
         role="user",
         conversation_id="conversation_1",
     )
-    prompt_request_1 = Message(request_pieces=[request_piece_1])
+    prompt_request_1 = Message(message_pieces=[message_piece_1])
 
-    request_piece_2 = MessagePiece(
+    message_piece_2 = MessagePiece(
         original_value="Hi",
         original_value_data_type="text",
         converted_value="Hi",
@@ -140,7 +140,7 @@ async def test_multiple_websockets_created_for_multiple_conversations(target):
         role="user",
         conversation_id="conversation_2",
     )
-    prompt_request_2 = Message(request_pieces=[request_piece_2])
+    prompt_request_2 = Message(message_pieces=[message_piece_2])
 
     # Call the send_prompt_async method for both conversations
     await target.send_prompt_async(prompt_request=prompt_request_1)
@@ -159,14 +159,14 @@ async def test_multiple_websockets_created_for_multiple_conversations(target):
 async def test_send_prompt_async_invalid_request(target):
 
     # Create a mock Message with an invalid data type
-    request_piece = MessagePiece(
+    message_piece = MessagePiece(
         original_value="Invalid",
         original_value_data_type="image_path",
         converted_value="Invalid",
         converted_value_data_type="image_path",
         role="user",
     )
-    prompt_request = Message(request_pieces=[request_piece])
+    prompt_request = Message(message_pieces=[message_piece])
     with pytest.raises(ValueError) as excinfo:
         target._validate_request(prompt_request=prompt_request)
 
@@ -189,7 +189,7 @@ async def test_realtime_target_no_api_version(target):
         mock_websocket_connect.return_value = mock_websocket
 
         # Create a mock request
-        request_piece = MessagePiece(
+        message_piece = MessagePiece(
             original_value="Hello",
             original_value_data_type="text",
             converted_value="Hello",
@@ -197,7 +197,7 @@ async def test_realtime_target_no_api_version(target):
             role="user",
             conversation_id="test_conversation_id",
         )
-        prompt_request = Message(request_pieces=[request_piece])
+        prompt_request = Message(message_pieces=[message_piece])
 
         # Call the method
         response = await target.send_prompt_async(prompt_request=prompt_request)
@@ -236,7 +236,7 @@ async def test_realtime_target_default_api_version(target):
         mock_websocket_connect.return_value = mock_websocket
 
         # Create a mock request
-        request_piece = MessagePiece(
+        message_piece = MessagePiece(
             original_value="Hello",
             original_value_data_type="text",
             converted_value="Hello",
@@ -244,7 +244,7 @@ async def test_realtime_target_default_api_version(target):
             role="user",
             conversation_id="test_conversation_id",
         )
-        prompt_request = Message(request_pieces=[request_piece])
+        prompt_request = Message(message_pieces=[message_piece])
 
         # Call the method
         response = await target.send_prompt_async(prompt_request=prompt_request)

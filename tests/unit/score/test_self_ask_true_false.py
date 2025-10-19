@@ -27,7 +27,7 @@ def scorer_true_false_response() -> Message:
         .replace("\n", " ")
     )
 
-    return Message(request_pieces=[MessagePiece(role="assistant", original_value=json_response)])
+    return Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
 
 
 @pytest.mark.asyncio
@@ -90,7 +90,7 @@ async def test_self_ask_scorer_bad_json_exception_retries(patch_central_database
     chat_target = MagicMock()
 
     bad_json_resp = Message(
-        request_pieces=[MessagePiece(role="assistant", original_value="this is not a json")]
+        message_pieces=[MessagePiece(role="assistant", original_value="this is not a json")]
     )
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
     scorer = SelfAskTrueFalseScorer(
@@ -118,7 +118,7 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries(patch_centra
     )
 
     bad_json_resp = Message(
-        request_pieces=[MessagePiece(role="assistant", original_value=json_response)]
+        message_pieces=[MessagePiece(role="assistant", original_value=json_response)]
     )
 
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)

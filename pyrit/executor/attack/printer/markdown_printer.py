@@ -214,7 +214,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
         turn_number = 0
 
         for message in messages:
-            if not message.request_pieces:
+            if not message.message_pieces:
                 continue
 
             message_role = message.get_piece().role
@@ -247,7 +247,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
             List[str]: List of markdown strings representing the system message.
         """
         lines = ["\n### System Message\n"]
-        for piece in message.request_pieces:
+        for piece in message.message_pieces:
             lines.append(f"{piece.converted_value}\n")
         return lines
 
@@ -268,7 +268,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
         """
         lines = [f"\n### Turn {turn_number}\n", "#### User\n"]
 
-        for piece in message.request_pieces:
+        for piece in message.message_pieces:
             lines.extend(await self._format_piece_content_async(piece=piece, show_original=True))
 
         return lines
@@ -288,11 +288,11 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
             List[str]: List of markdown strings representing the response message.
         """
         lines = []
-        role_name = message.request_pieces[0].role.capitalize()
+        role_name = message.message_pieces[0].role.capitalize()
 
         lines.append(f"\n#### {role_name}\n")
 
-        for piece in message.request_pieces:
+        for piece in message.message_pieces:
             lines.extend(await self._format_piece_content_async(piece=piece, show_original=False))
 
         return lines
@@ -433,7 +433,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
             List[str]: List of markdown strings representing the scores.
         """
         lines = []
-        for piece in message.request_pieces:
+        for piece in message.message_pieces:
             scores = self._memory.get_prompt_scores(prompt_ids=[str(piece.id)])
             if scores:
                 lines.append("\n##### Scores\n")

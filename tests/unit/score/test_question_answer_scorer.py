@@ -6,7 +6,7 @@ import uuid
 from unittest.mock import MagicMock, patch
 
 import pytest
-from unit.mocks import get_image_request_piece
+from unit.mocks import get_image_message_piece
 
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
@@ -15,12 +15,12 @@ from pyrit.score import QuestionAnswerScorer
 
 
 @pytest.fixture
-def image_request_piece() -> MessagePiece:
-    return get_image_request_piece()
+def image_message_piece() -> MessagePiece:
+    return get_image_message_piece()
 
 
 @pytest.fixture
-def text_request_piece(patch_central_database) -> MessagePiece:
+def text_message_piece(patch_central_database) -> MessagePiece:
     piece = MessagePiece(
         id=uuid.uuid4(),
         role="user",
@@ -33,14 +33,14 @@ def text_request_piece(patch_central_database) -> MessagePiece:
 
 
 @pytest.mark.asyncio
-async def test_question_answer_scorer_validate_image(image_request_piece: MessagePiece):
+async def test_question_answer_scorer_validate_image(image_message_piece: MessagePiece):
 
     scorer = QuestionAnswerScorer(category=["new_category"])
-    request_response = Message(request_pieces=[image_request_piece])
+    request_response = Message(message_pieces=[image_message_piece])
     with pytest.raises(ValueError, match="There are no valid pieces to score."):
         await scorer.score_async(request_response)
 
-    os.remove(image_request_piece.converted_value)
+    os.remove(image_message_piece.converted_value)
 
 
 @pytest.mark.asyncio
@@ -52,7 +52,7 @@ async def test_question_answer_scorer_validate_missing_metadata():
         converted_value="test response",
         converted_value_data_type="text",
         prompt_metadata={},
-    ).to_prompt_request_response()
+    ).to_message()
     scorer = QuestionAnswerScorer(category=["new_category"])
     with pytest.raises(ValueError, match="There are no valid pieces to score."):
         await scorer.score_async(request)
@@ -71,11 +71,11 @@ async def test_question_answer_scorer_validate_missing_metadata():
     ],
 )
 async def test_question_answer_scorer_score(
-    response: str, expected_score: bool, text_request_piece: MessagePiece
+    response: str, expected_score: bool, text_message_piece: MessagePiece
 ):
-    text_request_piece.converted_value = response
+    text_message_piece.converted_value = response
     scorer = QuestionAnswerScorer(category=["new_category"])
-    request_response = Message(request_pieces=[text_request_piece])
+    request_response = Message(message_pieces=[text_message_piece])
 
     scores = await scorer.score_async(request_response)
 
@@ -98,7 +98,7 @@ async def test_question_answer_scorer_adds_to_memory():
             converted_value="0: Paris",
             converted_value_data_type="text",
             prompt_metadata={"correct_answer_index": "0", "correct_answer": "Paris"},
-        ).to_prompt_request_response()
+        ).to_message()
 
         await scorer.score_async(request_response)
 
@@ -117,7 +117,7 @@ async def test_question_answer_scorer_no_category():
             converted_value="0: Paris",
             converted_value_data_type="text",
             prompt_metadata={"correct_answer_index": "0", "correct_answer": "Paris"},
-        ).to_prompt_request_response()
+        ).to_message()
         await scorer.score_async(request_response)
 
         memory.add_scores_to_memory.assert_called_once()

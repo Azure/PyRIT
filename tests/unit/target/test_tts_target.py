@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from httpx import HTTPStatusError
 from openai import RateLimitError
-from unit.mocks import get_image_request_piece, get_sample_conversations
+from unit.mocks import get_image_message_piece, get_sample_conversations
 
 from pyrit.common import net_utility
 from pyrit.exceptions import RateLimitException
@@ -22,7 +22,7 @@ from pyrit.prompt_target.openai.openai_tts_target import TTSResponseFormat
 @pytest.fixture
 def sample_conversations() -> MutableSequence[MessagePiece]:
     conversations = get_sample_conversations()
-    return Message.flatten_to_prompt_request_pieces(conversations)
+    return Message.flatten_to_message_pieces(conversations)
 
 
 @pytest.fixture
@@ -52,7 +52,7 @@ def test_tts_initializes_calls_get_required_parameters(patch_central_database):
 @pytest.mark.asyncio
 async def test_tts_validate_request_length(tts_target: OpenAITTSTarget):
     request = Message(
-        request_pieces=[
+        message_pieces=[
             MessagePiece(role="user", conversation_id="123", original_value="test"),
             MessagePiece(role="user", conversation_id="123", original_value="test2"),
         ]
@@ -63,7 +63,7 @@ async def test_tts_validate_request_length(tts_target: OpenAITTSTarget):
 
 @pytest.mark.asyncio
 async def test_tts_validate_prompt_type(tts_target: OpenAITTSTarget):
-    request = Message(request_pieces=[get_image_request_piece()])
+    request = Message(message_pieces=[get_image_message_piece()])
     with pytest.raises(ValueError, match="This target only supports text prompt input."):
         await tts_target.send_prompt_async(prompt_request=request)
 
@@ -72,7 +72,7 @@ async def test_tts_validate_prompt_type(tts_target: OpenAITTSTarget):
 async def test_tts_validate_previous_conversations(
     tts_target: OpenAITTSTarget, sample_conversations: MutableSequence[MessagePiece]
 ):
-    request_piece = sample_conversations[0]
+    message_piece = sample_conversations[0]
 
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = sample_conversations
@@ -80,7 +80,7 @@ async def test_tts_validate_previous_conversations(
 
     tts_target._memory = mock_memory
 
-    request = Message(request_pieces=[request_piece])
+    request = Message(message_pieces=[message_piece])
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock_request:
         mock_request.return_value = MagicMock(content=b"audio data")
@@ -97,9 +97,9 @@ async def test_tts_send_prompt_file_save_async(
 ) -> None:
     tts_target = OpenAITTSTarget(model_name="test", endpoint="test", api_key="test", response_format=response_format)
 
-    request_piece = sample_conversations[0]
-    request_piece.conversation_id = str(uuid.uuid4())
-    request = Message(request_pieces=[request_piece])
+    message_piece = sample_conversations[0]
+    message_piece.conversation_id = str(uuid.uuid4())
+    request = Message(message_pieces=[message_piece])
     with patch(
         "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
     ) as mock_request:
@@ -144,13 +144,13 @@ async def test_tts_send_prompt_async_exception_adds_to_memory(
 
     setattr(net_utility, "make_request_and_raise_if_error_async", mock_response_async)
 
-    request_piece = sample_conversations[0]
-    request_piece.conversation_id = str(uuid.uuid4())
-    request = Message(request_pieces=[request_piece])
+    message_piece = sample_conversations[0]
+    message_piece.conversation_id = str(uuid.uuid4())
+    request = Message(message_pieces=[message_piece])
 
     with pytest.raises((exception_class)) as exc:
         await tts_target.send_prompt_async(prompt_request=request)
-        tts_target._memory.get_conversation.assert_called_once_with(conversation_id=request_piece.conversation_id)
+        tts_target._memory.get_conversation.assert_called_once_with(conversation_id=message_piece.conversation_id)
 
         tts_target._memory.add_request_response_to_memory.assert_called_once_with(request=request)
 
@@ -169,8 +169,8 @@ async def test_tts_send_prompt_async_rate_limit_exception_retries(
     )
 
     setattr(net_utility, "make_request_and_raise_if_error_async", mock_response_async)
-    request_piece = sample_conversations[0]
-    request = Message(request_pieces=[request_piece])
+    message_piece = sample_conversations[0]
+    request = Message(message_pieces=[message_piece])
 
     with pytest.raises(RateLimitError):
         await tts_target.send_prompt_async(prompt_request=request)
@@ -243,7 +243,7 @@ async def test_send_prompt_async_calls_refresh_auth_headers(tts_target):
         mock_make_request.return_value = mock_response
 
         prompt_request = Message(
-            request_pieces=[
+            message_pieces=[
                 MessagePiece(
                     role="user",
                     original_value="test prompt",

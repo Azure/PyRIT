@@ -445,7 +445,7 @@ class FuzzerResultPrinter:
             self._print_colored(f"{self._indent}Conversation {i} (ID: {conversation_id}):", Style.BRIGHT, Fore.MAGENTA)
             self._print_colored("─" * (self._width - len(self._indent)), Fore.MAGENTA)
 
-            target_messages = self._memory.get_prompt_request_pieces(conversation_id=str(conversation_id))
+            target_messages = self._memory.get_message_pieces(conversation_id=str(conversation_id))
 
             if not target_messages:
                 self._print_colored(f"{self._indent * 2}No conversation data found", Fore.YELLOW)
@@ -1001,11 +1001,11 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
         if not responses:
             return []
 
-        response_pieces = [response.request_pieces[0] for response in responses]
+        response_pieces = [response.message_pieces[0] for response in responses]
 
         # Score with objective scorer
         scores = await self._scorer.score_prompts_batch_async(
-            request_responses=[piece.to_prompt_request_response() for piece in response_pieces], objectives=tasks
+            request_responses=[piece.to_message() for piece in response_pieces], objectives=tasks
         )
 
         return scores
@@ -1033,7 +1033,7 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
             int: The number of jailbreaks found.
         """
         jailbreak_count = 0
-        response_pieces = [response.request_pieces[0] for response in responses]
+        response_pieces = [response.message_pieces[0] for response in responses]
 
         for index, score in enumerate(scores):
             if self._is_jailbreak(score):

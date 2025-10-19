@@ -22,9 +22,9 @@ class TestScorerPromptValidatorDataTypes:
             role="assistant", original_value="audio.wav", converted_value_data_type="audio_path"
         )
 
-        assert validator.is_request_piece_supported(text_piece) is True
-        assert validator.is_request_piece_supported(image_piece) is True
-        assert validator.is_request_piece_supported(audio_piece) is True
+        assert validator.is_message_piece_supported(text_piece) is True
+        assert validator.is_message_piece_supported(image_piece) is True
+        assert validator.is_message_piece_supported(audio_piece) is True
 
     def test_filters_to_text_only(self):
         """Test that validator correctly filters to only text pieces."""
@@ -38,9 +38,9 @@ class TestScorerPromptValidatorDataTypes:
             role="assistant", original_value="audio.wav", converted_value_data_type="audio_path"
         )
 
-        assert validator.is_request_piece_supported(text_piece) is True
-        assert validator.is_request_piece_supported(image_piece) is False
-        assert validator.is_request_piece_supported(audio_piece) is False
+        assert validator.is_message_piece_supported(text_piece) is True
+        assert validator.is_message_piece_supported(image_piece) is False
+        assert validator.is_message_piece_supported(audio_piece) is False
 
     def test_filters_to_multiple_types(self):
         """Test that validator correctly filters to multiple specified types."""
@@ -54,9 +54,9 @@ class TestScorerPromptValidatorDataTypes:
             role="assistant", original_value="audio.wav", converted_value_data_type="audio_path"
         )
 
-        assert validator.is_request_piece_supported(text_piece) is True
-        assert validator.is_request_piece_supported(image_piece) is True
-        assert validator.is_request_piece_supported(audio_piece) is False
+        assert validator.is_message_piece_supported(text_piece) is True
+        assert validator.is_message_piece_supported(image_piece) is True
+        assert validator.is_message_piece_supported(audio_piece) is False
 
     def test_filters_to_image_only(self):
         """Test that validator correctly filters to only image pieces."""
@@ -67,8 +67,8 @@ class TestScorerPromptValidatorDataTypes:
             role="assistant", original_value="image.png", converted_value_data_type="image_path"
         )
 
-        assert validator.is_request_piece_supported(text_piece) is False
-        assert validator.is_request_piece_supported(image_piece) is True
+        assert validator.is_message_piece_supported(text_piece) is False
+        assert validator.is_message_piece_supported(image_piece) is True
 
 
 class TestScorerPromptValidatorMetadata:
@@ -88,8 +88,8 @@ class TestScorerPromptValidatorMetadata:
             role="assistant", original_value="text", converted_value_data_type="text"
         )
 
-        assert validator.is_request_piece_supported(piece_with_metadata) is True
-        assert validator.is_request_piece_supported(piece_without_metadata) is True
+        assert validator.is_message_piece_supported(piece_with_metadata) is True
+        assert validator.is_message_piece_supported(piece_without_metadata) is True
 
     def test_required_metadata_filters_correctly(self):
         """Test that validator correctly filters based on required metadata."""
@@ -105,8 +105,8 @@ class TestScorerPromptValidatorMetadata:
             role="assistant", original_value="text", converted_value_data_type="text"
         )
 
-        assert validator.is_request_piece_supported(piece_with_metadata) is True
-        assert validator.is_request_piece_supported(piece_without_metadata) is False
+        assert validator.is_message_piece_supported(piece_with_metadata) is True
+        assert validator.is_message_piece_supported(piece_without_metadata) is False
 
     def test_multiple_required_metadata_all_must_be_present(self):
         """Test that all required metadata keys must be present."""
@@ -128,9 +128,9 @@ class TestScorerPromptValidatorMetadata:
             role="assistant", original_value="text", converted_value_data_type="text"
         )
 
-        assert validator.is_request_piece_supported(piece_with_all_metadata) is True
-        assert validator.is_request_piece_supported(piece_with_partial_metadata) is False
-        assert validator.is_request_piece_supported(piece_without_metadata) is False
+        assert validator.is_message_piece_supported(piece_with_all_metadata) is True
+        assert validator.is_message_piece_supported(piece_with_partial_metadata) is False
+        assert validator.is_message_piece_supported(piece_without_metadata) is False
 
 
 class TestScorerPromptValidatorValidate:
@@ -143,7 +143,7 @@ class TestScorerPromptValidatorValidate:
         text_piece = MessagePiece(
             role="assistant", original_value="text", converted_value_data_type="text", conversation_id="test"
         )
-        response = Message(request_pieces=[text_piece])
+        response = Message(message_pieces=[text_piece])
 
         # Should not raise
         validator.validate(response, objective=None)
@@ -158,7 +158,7 @@ class TestScorerPromptValidatorValidate:
             converted_value_data_type="image_path",
             conversation_id="test",
         )
-        response = Message(request_pieces=[image_piece])
+        response = Message(message_pieces=[image_piece])
 
         with pytest.raises(ValueError, match="There are no valid pieces to score"):
             validator.validate(response, objective=None)
@@ -176,7 +176,7 @@ class TestScorerPromptValidatorValidate:
             converted_value_data_type="image_path",
             conversation_id="test",
         )
-        response = Message(request_pieces=[text_piece, image_piece])
+        response = Message(message_pieces=[text_piece, image_piece])
 
         # Should not raise
         validator.validate(response, objective=None)
@@ -199,7 +199,7 @@ class TestScorerPromptValidatorValidate:
             conversation_id="test",
             id="image-1",
         )
-        response = Message(request_pieces=[text_piece, image_piece])
+        response = Message(message_pieces=[text_piece, image_piece])
 
         with pytest.raises(ValueError, match="Request piece image-1 with data type image_path is not supported"):
             validator.validate(response, objective=None)
@@ -214,7 +214,7 @@ class TestScorerPromptValidatorValidate:
             )
             for i in range(3)
         ]
-        response = Message(request_pieces=pieces)
+        response = Message(message_pieces=pieces)
 
         with pytest.raises(ValueError, match="exceeding the limit of 2"):
             validator.validate(response, objective=None)
@@ -229,7 +229,7 @@ class TestScorerPromptValidatorValidate:
             )
             for i in range(2)
         ]
-        response = Message(request_pieces=pieces)
+        response = Message(message_pieces=pieces)
 
         # Should not raise
         validator.validate(response, objective=None)
@@ -241,7 +241,7 @@ class TestScorerPromptValidatorValidate:
         text_piece = MessagePiece(
             role="assistant", original_value="text", converted_value_data_type="text", conversation_id="test"
         )
-        response = Message(request_pieces=[text_piece])
+        response = Message(message_pieces=[text_piece])
 
         with pytest.raises(ValueError, match="Objective is required but not provided"):
             validator.validate(response, objective=None)
@@ -253,7 +253,7 @@ class TestScorerPromptValidatorValidate:
         text_piece = MessagePiece(
             role="assistant", original_value="text", converted_value_data_type="text", conversation_id="test"
         )
-        response = Message(request_pieces=[text_piece])
+        response = Message(message_pieces=[text_piece])
 
         # Should not raise
         validator.validate(response, objective="test objective")
@@ -287,9 +287,9 @@ class TestScorerPromptValidatorCombined:
             role="assistant", original_value="text", converted_value_data_type="text"
         )
 
-        assert validator.is_request_piece_supported(valid_piece) is True
-        assert validator.is_request_piece_supported(wrong_type_piece) is False
-        assert validator.is_request_piece_supported(missing_metadata_piece) is False
+        assert validator.is_message_piece_supported(valid_piece) is True
+        assert validator.is_message_piece_supported(wrong_type_piece) is False
+        assert validator.is_message_piece_supported(missing_metadata_piece) is False
 
     def test_all_validator_options_combined(self):
         """Test validator with all options configured."""
@@ -315,7 +315,7 @@ class TestScorerPromptValidatorCombined:
             conversation_id="test",
         )
 
-        response = Message(request_pieces=[valid_piece, invalid_piece])
+        response = Message(message_pieces=[valid_piece, invalid_piece])
 
         # Should pass with valid objective and mixed pieces (enforce_all_pieces_valid=False)
         validator.validate(response, objective="test objective")

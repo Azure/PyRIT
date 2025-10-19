@@ -84,11 +84,11 @@ class HTTPXAPITarget(HTTPTarget):
         """
 
         self._validate_request(prompt_request=prompt_request)
-        request_piece: MessagePiece = prompt_request.request_pieces[0]
+        message_piece: MessagePiece = prompt_request.message_pieces[0]
 
         # If user didn't set file_path, see if the PDF path is in converted_value
         if not self.file_path:
-            possible_path = request_piece.converted_value
+            possible_path = message_piece.converted_value
             if isinstance(possible_path, str) and os.path.exists(possible_path):
                 logger.info(f"HTTPXApiTarget: auto-using file_path from {possible_path}")
                 self.file_path = possible_path
@@ -150,7 +150,7 @@ class HTTPXAPITarget(HTTPTarget):
 
         # Reuse parent's response object construction
         response_entry = construct_response_from_request(
-            request=request_piece, response_text_pieces=[str(response_content)]
+            request=message_piece, response_text_pieces=[str(response_content)]
         )
 
         return response_entry

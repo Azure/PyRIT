@@ -185,14 +185,14 @@ class ConversationManager:
             return state
 
         # Filter out None values and empty requests
-        valid_requests = [req for req in prepended_conversation if req is not None and req.request_pieces]
+        valid_requests = [req for req in prepended_conversation if req is not None and req.message_pieces]
 
         if not valid_requests:
             logger.debug(f"No valid requests in prepended conversation for: {conversation_id}")
             return state
 
         # Determine if we should exclude the last message (if it's a user message in multi-turn context)
-        last_message = valid_requests[-1].request_pieces[0]
+        last_message = valid_requests[-1].message_pieces[0]
         is_multi_turn = max_turns is not None
         should_exclude_last = is_multi_turn and last_message.role == "user"
 
@@ -255,7 +255,7 @@ class ConversationManager:
                 Converter configurations to apply to 'assistant' role messages.
         """
         # Determine which converters to apply based on message roles
-        for piece in request.request_pieces:
+        for piece in request.message_pieces:
             applicable_converters: Optional[List[PromptConverterConfiguration]] = None
 
             if piece.role == "user" and request_converters:
@@ -267,7 +267,7 @@ class ConversationManager:
             # Apply the determined converters
             if applicable_converters:
                 # Create a temporary request with just this piece for conversion
-                temp_request = Message(request_pieces=[piece])
+                temp_request = Message(message_pieces=[piece])
                 await self._prompt_normalizer.convert_values(
                     request_response=temp_request,
                     converter_configurations=applicable_converters,
@@ -299,12 +299,12 @@ class ConversationManager:
             ValueError: If the request is invalid or if a system prompt is provided but target doesn't support it.
         """
         # Validate the request before processing
-        if not request or not request.request_pieces:
+        if not request or not request.message_pieces:
             return
 
         # Set the conversation ID and attack ID for each piece in the request
         save_to_memory = True
-        for piece in request.request_pieces:
+        for piece in request.message_pieces:
             piece.conversation_id = conversation_id
             piece.attack_identifier = self._attack_identifier
             piece.id = uuid.uuid4()
@@ -323,7 +323,7 @@ class ConversationManager:
 
         # Add the request to memory if it was not a system piece
         if save_to_memory:
-            self._memory.add_request_response_to_memory(request=request)
+            self._memory.add_message_to_memory(request=request)
 
     def _process_piece(
         self,
