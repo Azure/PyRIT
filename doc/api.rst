@@ -12,6 +12,8 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
+    analyze_results
+    AttackStats
     ConversationAnalytics
 
 :py:mod:`pyrit.auth`
@@ -315,10 +317,10 @@ API Reference
     group_conversation_message_pieces_by_sequence
     Identifier
     ImagePathDataTypeSerializer
-    MessagePiece
-    PromptResponseError
-    PromptDataType
     Message
+    MessagePiece
+    PromptDataType
+    PromptResponseError
     QuestionAnsweringDataset
     QuestionAnsweringEntry
     QuestionChoice
