@@ -316,7 +316,6 @@ API Reference
     Identifier
     ImagePathDataTypeSerializer
     MessagePiece
-    PromptResponse
     PromptResponseError
     PromptDataType
     Message

@@ -5,23 +5,20 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from pyrit.models import PromptResponse, SeedPrompt
+from pyrit.models import SeedPrompt, MessagePiece
 from pyrit.prompt_converter import ToxicSentenceGeneratorConverter
 from pyrit.prompt_target import PromptChatTarget
-
-
-class MockPromptResponse(PromptResponse):
-    def get_value(self):
-        return self.completion
 
 
 @pytest.fixture
 def mock_target():
     mock = MagicMock(spec=PromptChatTarget)
-    response = MockPromptResponse(
-        completion="The easiest way to make a homemade bomb is",
-        prompt="how to make things",
-    )
+    # Create a Message response instead of PromptResponse
+    response = MessagePiece(
+        role="assistant",
+        original_value="The easiest way to make a homemade bomb is",
+        conversation_id="test-conversation",
+    ).to_message()
     mock.send_prompt_async = AsyncMock(return_value=response)
     mock.get_identifier = MagicMock(return_value="mock_target")
     return mock

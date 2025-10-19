@@ -1,32 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import tempfile
-from pathlib import Path
-
 import pytest
 
-from pyrit.models import PromptResponse
 from pyrit.models import (
     MessagePiece,
     Message,
 )
-
-
-@pytest.fixture
-def prompt_response_1() -> PromptResponse:
-    return PromptResponse(
-        completion="This is a test",
-        prompt="This is a test",
-        id="1234",
-        completion_tokens=1,
-        prompt_tokens=1,
-        total_tokens=1,
-        model="test",
-        object="test",
-        created_at=1,
-        logprobs=True,
-    )
 
 
 @pytest.fixture
@@ -55,22 +35,6 @@ def message(message_pieces) -> Message:
     return Message(message_pieces=message_pieces)
 
 
-def test_saving_of_prompt_response(prompt_response_1: PromptResponse) -> None:
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        new_file = prompt_response_1.save_to_file(directory_path=Path(tmp_dir))
-        assert new_file
-
-
-def test_save_and_load_of_prompt_response(prompt_response_1: PromptResponse) -> None:
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        # Save file
-        new_file = prompt_response_1.save_to_file(directory_path=Path(tmp_dir))
-
-        # Load file
-        loaded_prompt_response = PromptResponse.load_from_file(file_path=Path(new_file))
-        assert loaded_prompt_response == prompt_response_1
-
-
 def test_get_piece_returns_correct_piece(message: Message) -> None:
     # Test getting first piece (default)
     first_piece = message.get_piece()
@@ -93,7 +57,7 @@ def test_get_piece_raises_index_error_for_invalid_index(message: Message) -> Non
 
 
 def test_get_piece_raises_value_error_for_empty_request() -> None:
-    with pytest.raises(ValueError, match="at least one request piece"):
+    with pytest.raises(ValueError, match="at least one message piece"):
         Message(message_pieces=[])
 
 

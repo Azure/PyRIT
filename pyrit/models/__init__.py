@@ -31,7 +31,6 @@ from pyrit.models.message import (
     group_conversation_message_pieces_by_sequence,
     group_message_pieces_into_conversations,
 )
-from pyrit.models.prompt_response import PromptResponse
 from pyrit.models.question_answering import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
 from pyrit.models.score import Score, ScoreType, UnvalidatedScore
 from pyrit.models.seed_prompt import SeedPrompt
@@ -67,7 +66,6 @@ __all__ = [
     "ImagePathDataTypeSerializer",
     "sort_message_pieces",
     "MessagePiece",
-    "PromptResponse",
     "PromptResponseError",
     "PromptDataType",
     "Message",
