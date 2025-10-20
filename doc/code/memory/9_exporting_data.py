@@ -6,10 +6,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.3
-#   kernelspec:
-#     display_name: pyrit-312
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -66,7 +62,6 @@ print(f"Exported conversation with scores to JSON: {json_file_path}")
 # Export the data to a CSV file
 # conversation_with_scores = sqlite_memory.export_conversations(file_path=csv_file_path, export_type="csv")
 # print(f"Exported conversation with scores to CSV: {csv_file_path}")
-
 
 # %% [markdown]
 # You can also use the exported JSON or CSV files to import the data as a NumPy DataFrame. This can be useful for various data manipulation and analysis tasks.
