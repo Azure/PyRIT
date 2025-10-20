@@ -30,10 +30,7 @@ class Base2048Converter(PromptConverter):
         try:
             import base2048  # noqa: F401
         except ModuleNotFoundError as e:
-            logger.error(
-                "Could not import base2048. "
-                "You may need to install it via 'pip install pyrit[all]'"
-            )
+            logger.error("Could not import base2048. " "You may need to install it via 'pip install pyrit[all]'")
             raise e
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
