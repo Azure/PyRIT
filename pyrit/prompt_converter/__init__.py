@@ -25,6 +25,7 @@ from pyrit.prompt_converter.charswap_attack_converter import CharSwapConverter
 from pyrit.prompt_converter.codechameleon_converter import CodeChameleonConverter
 from pyrit.prompt_converter.colloquial_wordswap_converter import ColloquialWordswapConverter
 from pyrit.prompt_converter.diacritic_converter import DiacriticConverter
+from pyrit.prompt_converter.ecoji_converter import EcojiConverter
 from pyrit.prompt_converter.emoji_converter import EmojiConverter
 from pyrit.prompt_converter.first_letter_converter import FirstLetterConverter
 from pyrit.prompt_converter.flip_converter import FlipConverter
@@ -100,6 +101,7 @@ __all__ = [
     "DenylistConverter",
     "DiacriticConverter",
     "ConverterResult",
+    "EcojiConverter",
     "EmojiConverter",
     "FirstLetterConverter",
     "FlipConverter",
