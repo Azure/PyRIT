@@ -100,7 +100,7 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _get_prompt_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> list:
+    def _get_message_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> list:
         """
         Returns a list of conditions for filtering memory entries based on memory labels.
 
@@ -115,7 +115,7 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _get_prompt_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list:
+    def _get_message_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list:
         """
         Returns a list of conditions for filtering memory entries based on prompt metadata.
 
@@ -128,7 +128,7 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _get_prompt_pieces_attack_conditions(self, *, attack_id: str) -> Any:
+    def _get_message_pieces_attack_conditions(self, *, attack_id: str) -> Any:
         """
         Returns a condition to retrieve based on attack ID.
         """
@@ -281,7 +281,7 @@ class MemoryInterface(abc.ABC):
         Returns:
             Sequence[Score]: A list of scores extracted from the message pieces.
         """
-        prompt_pieces = self.get_message_pieces(
+        message_pieces = self.get_message_pieces(
             attack_id=attack_id,
             role=role,
             conversation_id=conversation_id,
@@ -301,7 +301,7 @@ class MemoryInterface(abc.ABC):
         # since duplicated pieces share scores with their originals
         seen_original_ids = set()
         unique_pieces = []
-        for piece in prompt_pieces:
+        for piece in message_pieces:
             if piece.original_prompt_id not in seen_original_ids:
                 seen_original_ids.add(piece.original_prompt_id)
                 unique_pieces.append(piece)
@@ -370,7 +370,7 @@ class MemoryInterface(abc.ABC):
 
         conditions = []
         if attack_id:
-            conditions.append(self._get_prompt_pieces_attack_conditions(attack_id=str(attack_id)))
+            conditions.append(self._get_message_pieces_attack_conditions(attack_id=str(attack_id)))
         if role:
             conditions.append(PromptMemoryEntry.role == role)
         if conversation_id:
@@ -379,9 +379,9 @@ class MemoryInterface(abc.ABC):
             prompt_ids = [str(pi) for pi in prompt_ids]
             conditions.append(PromptMemoryEntry.id.in_(prompt_ids))
         if labels:
-            conditions.extend(self._get_prompt_pieces_memory_label_conditions(memory_labels=labels))
+            conditions.extend(self._get_message_pieces_memory_label_conditions(memory_labels=labels))
         if prompt_metadata:
-            conditions.extend(self._get_prompt_pieces_prompt_metadata_conditions(prompt_metadata=prompt_metadata))
+            conditions.extend(self._get_message_pieces_prompt_metadata_conditions(prompt_metadata=prompt_metadata))
         if sent_after:
             conditions.append(PromptMemoryEntry.timestamp >= sent_after)
         if sent_before:
@@ -401,8 +401,8 @@ class MemoryInterface(abc.ABC):
             memory_entries: Sequence[PromptMemoryEntry] = self._query_entries(
                 PromptMemoryEntry, conditions=and_(*conditions) if conditions else None, join_scores=True
             )  # type: ignore
-            prompt_pieces = [memory_entry.get_message_piece() for memory_entry in memory_entries]
-            return sort_message_pieces(message_pieces=prompt_pieces)
+            message_pieces = [memory_entry.get_message_piece() for memory_entry in memory_entries]
+            return sort_message_pieces(message_pieces=message_pieces)
         except Exception as e:
             logger.exception(f"Failed to retrieve prompts with error {e}")
             return []
@@ -424,8 +424,8 @@ class MemoryInterface(abc.ABC):
         """
         new_conversation_id = str(uuid.uuid4())
         # Deep copy objects to prevent any mutability-related issues that could arise due to in-memory databases.
-        prompt_pieces = copy.deepcopy(self.get_message_pieces(conversation_id=conversation_id))
-        for piece in prompt_pieces:
+        message_pieces = copy.deepcopy(self.get_message_pieces(conversation_id=conversation_id))
+        for piece in message_pieces:
             # Assign duplicated piece a new ID, but note that the `original_prompt_id` remains the same.
             piece.id = uuid.uuid4()
             if piece.attack_identifier["id"] == new_attack_id:
@@ -436,7 +436,7 @@ class MemoryInterface(abc.ABC):
 
             piece.conversation_id = new_conversation_id
 
-        self.add_message_pieces_to_memory(message_pieces=prompt_pieces)
+        self.add_message_pieces_to_memory(message_pieces=message_pieces)
         return new_conversation_id
 
     def duplicate_conversation_excluding_last_turn(
@@ -457,13 +457,13 @@ class MemoryInterface(abc.ABC):
         """
         new_conversation_id = str(uuid.uuid4())
         # Deep copy objects to prevent any mutability-related issues that could arise due to in-memory databases.
-        prompt_pieces = copy.deepcopy(self.get_message_pieces(conversation_id=conversation_id))
+        message_pieces = copy.deepcopy(self.get_message_pieces(conversation_id=conversation_id))
 
         # remove the final turn from the conversation
-        if len(prompt_pieces) == 0:
+        if len(message_pieces) == 0:
             return new_conversation_id
 
-        last_prompt = max(prompt_pieces, key=lambda x: x.sequence)
+        last_prompt = max(message_pieces, key=lambda x: x.sequence)
 
         length_of_sequence_to_remove = 0
 
@@ -472,20 +472,20 @@ class MemoryInterface(abc.ABC):
         else:
             length_of_sequence_to_remove = 2
 
-        prompt_pieces = [
-            prompt_piece
-            for prompt_piece in prompt_pieces
-            if prompt_piece.sequence <= last_prompt.sequence - length_of_sequence_to_remove
+        message_pieces = [
+            message_piece
+            for message_piece in message_pieces
+            if message_piece.sequence <= last_prompt.sequence - length_of_sequence_to_remove
         ]
 
-        for piece in prompt_pieces:
+        for piece in message_pieces:
             # Assign duplicated piece a new ID, but note that the `original_prompt_id` remains the same.
             piece.id = uuid.uuid4()
             if new_attack_id:
                 piece.attack_identifier["id"] = new_attack_id
             piece.conversation_id = new_conversation_id
 
-        self.add_message_pieces_to_memory(message_pieces=prompt_pieces)
+        self.add_message_pieces_to_memory(message_pieces=message_pieces)
 
         return new_conversation_id
 

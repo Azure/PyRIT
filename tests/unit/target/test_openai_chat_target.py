@@ -709,7 +709,7 @@ async def test_send_prompt_async_content_filter_400(target: OpenAIChatTarget):
         response.text = json.dumps(error_json)
         status_error = httpx.HTTPStatusError("Bad Request", request=MagicMock(), response=response)
 
-        prompt_piece = MessagePiece(
+        message_piece = MessagePiece(
             role="user",
             conversation_id="cid",
             original_value="hello",
@@ -717,7 +717,7 @@ async def test_send_prompt_async_content_filter_400(target: OpenAIChatTarget):
             original_value_data_type="text",
             converted_value_data_type="text",
         )
-        prompt_request = Message(message_pieces=[prompt_piece])
+        prompt_request = Message(message_pieces=[message_piece])
 
         with patch(
             "pyrit.common.net_utility.make_request_and_raise_if_error_async", AsyncMock(side_effect=status_error)
@@ -737,7 +737,7 @@ async def test_send_prompt_async_other_http_error(monkeypatch):
         api_key="mock-api-key",
         api_version="2024-06-01",
     )
-    prompt_piece = MessagePiece(
+    message_piece = MessagePiece(
         role="user",
         conversation_id="cid",
         original_value="hello",
@@ -745,7 +745,7 @@ async def test_send_prompt_async_other_http_error(monkeypatch):
         original_value_data_type="text",
         converted_value_data_type="text",
     )
-    prompt_request = Message(message_pieces=[prompt_piece])
+    prompt_request = Message(message_pieces=[message_piece])
     target._memory = MagicMock()
     target._memory.get_conversation.return_value = []
     target.refresh_auth_headers = MagicMock()

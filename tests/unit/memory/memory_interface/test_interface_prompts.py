@@ -898,7 +898,7 @@ def test_get_message_pieces_sorts(
                 assert False, "Conversation IDs are not grouped together"
 
 
-def test_prompt_piece_scores_duplicate_piece(sqlite_instance: MemoryInterface):
+def test_message_piece_scores_duplicate_piece(sqlite_instance: MemoryInterface):
     original_id = uuid4()
     duplicate_id = uuid4()
 
@@ -940,7 +940,7 @@ def test_prompt_piece_scores_duplicate_piece(sqlite_instance: MemoryInterface):
 
 
 @pytest.mark.asyncio
-async def test_prompt_piece_hash_stored_and_retrieved(sqlite_instance: MemoryInterface):
+async def test_message_piece_hash_stored_and_retrieved(sqlite_instance: MemoryInterface):
     entries = [
         MessagePiece(
             role="user",

@@ -201,7 +201,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         self._insert_entries(entries=embedding_data)
 
-    def _get_prompt_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> list:
+    def _get_message_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> list:
         json_validation = "ISJSON(labels) = 1"
         json_conditions = " AND ".join([f"JSON_VALUE(labels, '$.{key}') = :{key}" for key in memory_labels])
         # Combine both conditions
@@ -212,7 +212,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         condition = text(conditions).bindparams(**{key: str(value) for key, value in memory_labels.items()})
         return [condition]
 
-    def _get_prompt_pieces_attack_conditions(self, *, attack_id: str) -> Any:
+    def _get_message_pieces_attack_conditions(self, *, attack_id: str) -> Any:
         return text("ISJSON(attack_identifier) = 1 AND JSON_VALUE(attack_identifier, '$.id') = :json_id").bindparams(
             json_id=str(attack_id)
         )
@@ -228,7 +228,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         condition = text(conditions).bindparams(**{key: str(value) for key, value in prompt_metadata.items()})
         return [condition]
 
-    def _get_prompt_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list:
+    def _get_message_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list:
         return self._get_metadata_conditions(prompt_metadata=prompt_metadata)
 
     def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> Any:

@@ -103,12 +103,12 @@ target = OpenAIResponseTarget(
 )
 
 # Build the user prompt
-prompt_piece = MessagePiece(
+message_piece = MessagePiece(
     role="user",
     original_value="What is the weather in Boston in celsius? Use the get_current_weather function.",
     original_value_data_type="text",
 )
-prompt_request = Message(message_pieces=[prompt_piece])
+prompt_request = Message(message_pieces=[message_piece])
 
 response = await target.send_prompt_async(prompt_request=prompt_request)  # type: ignore
 
@@ -150,10 +150,10 @@ target = OpenAIResponseTarget(
     httpx_client_kwargs={"timeout": 60},
 )
 
-prompt_piece = MessagePiece(
+message_piece = MessagePiece(
     role="user", original_value="Briefly, what is one positive news story from today?", original_value_data_type="text"
 )
-prompt_request = Message(message_pieces=[prompt_piece])
+prompt_request = Message(message_pieces=[message_piece])
 
 response = await target.send_prompt_async(prompt_request=prompt_request)  # type: ignore
 

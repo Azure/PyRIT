@@ -260,12 +260,12 @@ memory.export_conversations(labels=memory_labels)
 # Some operators also like to work locally and then upload to a central DB. You can upload your prompts like this.
 
 # %%
-all_prompt_pieces = memory.get_message_pieces(labels=memory_labels)
+all_message_pieces = memory.get_message_pieces(labels=memory_labels)
 
 # These last piece is commented out because we run this automatically and we don't want to upload this to our central DB.
 # initialize_pyrit(memory_db_type="AzureSQL")
 # central_memory = CentralMemory.get_memory_instance()
-# central_memory.add_message_pieces_to_memory(message_pieces=all_prompt_pieces)
+# central_memory.add_message_pieces_to_memory(message_pieces=all_message_pieces)
 
 # %% [markdown]
 # ## Querying Attack Results by Labels and Harm Categories

@@ -102,7 +102,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         result: Sequence[EmbeddingDataEntry] = self._query_entries(EmbeddingDataEntry)
         return result
 
-    def _get_prompt_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> list:
+    def _get_message_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> list:
         """
         Generates SQLAlchemy filter conditions for filtering conversation pieces by memory labels.
         For SQLite, we use JSON_EXTRACT function to handle JSON fields.
@@ -115,7 +115,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         condition = text(json_conditions).bindparams(**{key: str(value) for key, value in memory_labels.items()})
         return [condition]
 
-    def _get_prompt_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list:
+    def _get_message_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list:
         """
         Generates SQLAlchemy filter conditions for filtering conversation pieces by prompt metadata.
         """
@@ -127,7 +127,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         condition = text(json_conditions).bindparams(**{key: str(value) for key, value in prompt_metadata.items()})
         return [condition]
 
-    def _get_prompt_pieces_attack_conditions(self, *, attack_id: str) -> Any:
+    def _get_message_pieces_attack_conditions(self, *, attack_id: str) -> Any:
         """
         Generates SQLAlchemy filter conditions for filtering by attack ID.
         """

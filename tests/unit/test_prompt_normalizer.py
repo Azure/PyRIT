@@ -80,7 +80,7 @@ class MockPromptConverter(PromptConverter):
         return output_type == "text"
 
 
-def assert_prompt_piece_hashes_set(request: Message):
+def assert_message_piece_hashes_set(request: Message):
     assert request
     assert request.message_pieces
     for piece in request.message_pieces:
@@ -115,7 +115,7 @@ async def test_send_prompt_async_no_response_adds_memory(mock_memory_instance, s
     assert mock_memory_instance.add_message_to_memory.call_count == 1
 
     request = mock_memory_instance.add_message_to_memory.call_args[1]["request"]
-    assert_prompt_piece_hashes_set(request)
+    assert_message_piece_hashes_set(request)
 
 
 @pytest.mark.asyncio
@@ -133,7 +133,7 @@ async def test_send_prompt_async_empty_response_exception_handled(mock_memory_in
     assert response.message_pieces[0].original_value == ""
     assert response.message_pieces[0].original_value_data_type == "text"
 
-    assert_prompt_piece_hashes_set(response)
+    assert_message_piece_hashes_set(response)
 
 
 @pytest.mark.asyncio
@@ -319,7 +319,7 @@ async def test_send_prompt_async_image_converter(mock_memory_instance):
         assert sent_request.converted_value == filename
         assert sent_request.converted_value_data_type == "image_path"
 
-        assert_prompt_piece_hashes_set(response)
+        assert_message_piece_hashes_set(response)
     os.remove(filename)
 
 
@@ -383,16 +383,16 @@ async def test_build_message(mock_memory_instance, seed_prompt_group):
     )
 
     # Check all prompt pieces in the response have the same conversation ID
-    assert len(set(prompt_piece.conversation_id for prompt_piece in response.message_pieces)) == 1
+    assert len(set(message_piece.conversation_id for message_piece in response.message_pieces)) == 1
 
     assert response.message_pieces[0].sequence == 1
-    assert len(set(prompt_piece.sequence for prompt_piece in response.message_pieces)) == 1
+    assert len(set(message_piece.sequence for message_piece in response.message_pieces)) == 1
 
     assert response.message_pieces[0].role == "system"
-    assert len(set(prompt_piece.role for prompt_piece in response.message_pieces)) == 1
+    assert len(set(message_piece.role for message_piece in response.message_pieces)) == 1
 
     # Check sequence is set correctly
-    assert len(set(prompt_piece.sequence for prompt_piece in response.message_pieces)) == 1
+    assert len(set(message_piece.sequence for message_piece in response.message_pieces)) == 1
 
 
 @pytest.mark.asyncio
