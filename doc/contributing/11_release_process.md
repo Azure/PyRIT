@@ -49,9 +49,9 @@ links work properly. Note: There may not be any links to update, but it is
 good practice to check in case our README changes.
 
 Replace all "main" links like
-"https://github.com/Azure/PyRIT/blob/main/doc/README.md" with "raw" links that have
+"https://github.com/Azure/PyRIT/blob/main/doc/index.md" with "raw" links that have
 the correct version number, i.e.,
-"https://raw.githubusercontent.com/Azure/PyRIT/releases/vx.y.z/doc/README.md".
+"https://raw.githubusercontent.com/Azure/PyRIT/releases/vx.y.z/doc/index.md".
 
 For images, update using the "raw" link, e.g.,
 "https://raw.githubusercontent.com/Azure/PyRIT/releases/vx.y.z/assets/pyrit_architecture.png".
