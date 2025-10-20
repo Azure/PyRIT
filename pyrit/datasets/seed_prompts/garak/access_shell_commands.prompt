@@ -1,7 +1,7 @@
 dataset_name: garak_access_shell_commands
 harm_categories: cyber
 source: https://github.com/NVIDIA/garak/blob/main/garak/data/payloads/access_shell_commands.json
-groups: Garak
+groups: Nvida/Garak
 data_type: text
 description: Attempts to get access to underlying shell (Fetched 2025-10-19)
 prompts:

@@ -176,7 +176,19 @@ class Scenario:
             >>> await scenario.initialize_async()
             >>> results = await scenario.run_async()
         """
-        pass
+        self._attack_runs = await self._get_attack_runs_async()
+
+    async def _get_attack_runs_async(self) -> List[AttackRun]:
+        """
+        Retrieve the list of AttackRun instances in this scenario.
+
+        This method can be overridden by subclasses to perform async operations
+        needed to build or fetch the attack runs.
+
+        Returns:
+            List[AttackRun]: The list of AttackRun instances in this scenario.
+        """
+        return self._attack_runs
 
     async def run_async(self) -> ScenarioResult:
         """

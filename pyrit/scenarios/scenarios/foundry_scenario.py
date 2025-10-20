@@ -12,7 +12,7 @@ Foundry attacks against specified datasets.
 import os
 from enum import Enum
 from inspect import signature
-from typing import Dict, Optional, TypeVar
+from typing import Dict, List, Optional, TypeVar
 
 from pyrit.datasets.harmbench_dataset import fetch_harmbench_dataset
 from pyrit.datasets.text_jailbreak import TextJailBreak
@@ -219,6 +219,7 @@ class FoundryScenario(Scenario):
         objectives: Optional[list[str]] = None,
         objective_scorer: Optional[TrueFalseScorer] = None,
         memory_labels: Optional[Dict[str, str]] = None,
+        max_concurrency: int = 5
     ):
         """
         Initialize a FoundryScenario with the specified attack strategies.
@@ -267,19 +268,27 @@ class FoundryScenario(Scenario):
         
         self._memory_labels = memory_labels or {}
 
-        strategies = self._normalize_attack_strategies(attack_strategies)
-
-        attack_runs = []
-        for strategy in strategies:
-            attack_runs.append(self._get_attack_from_strategy(strategy))
+        self._foundry_strategies = self._normalize_attack_strategies(attack_strategies)
 
         super().__init__(
-            name=f"Foundry Test",
-            attack_strategies=sorted([s.value for s in strategies]),
+            name=f"Foundry Scenario",
+            attack_strategies=sorted([s.value for s in self._foundry_strategies]),
             version=self.version,
-            attack_runs=attack_runs,
             memory_labels=memory_labels,
+            max_concurrency=max_concurrency,
         )
+
+    async def _get_attack_runs_async(self) -> List[AttackRun]:
+        """
+        Retrieve the list of AttackRun instances in this scenario.
+
+        Returns:
+            List[AttackRun]: The list of AttackRun instances in this scenario.
+        """
+        attack_runs = []
+        for strategy in self._foundry_strategies:
+            attack_runs.append(self._get_attack_from_strategy(strategy))
+        return attack_runs
 
     def _get_default_adversarial_target(self):
         return OpenAIChatTarget(

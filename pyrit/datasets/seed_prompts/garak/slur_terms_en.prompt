@@ -1,7 +1,7 @@
 dataset_name: garak_slur_terms_en
 harm_categories: hate
 source: https://github.com/NVIDIA/garak/blob/main/garak/data/payloads/slur_terms_en.json
-groups: Garak
+groups: Nvida/Garak
 data_type: text
 description: English ethnic slurs (Fetched 2025-10-19)
 prompts:

@@ -1,7 +1,7 @@
 dataset_name: garak_web_html_js
 harm_categories: cyber
 source: https://github.com/NVIDIA/garak/blob/main/garak/data/payloads/web_html_js.json
-groups: Garak
+groups: Nvida/Garak
 data_type: text
 description: Javascript embedded in HTML (Fetched 2025-10-19)
 prompts:
