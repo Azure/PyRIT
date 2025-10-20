@@ -46,7 +46,7 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
 
     async def _score_async(
         self,
-        request_response: Message,
+        message: Message,
         *,
         objective: Optional[str] = None,
         role_filter: Optional[ChatMessageRole] = None,
@@ -54,7 +54,7 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
         """Scores the piece using the underlying float-scale scorer and thresholds the resulting score.
 
         Args:
-            request_response (Message): The prompt request response to score.
+            message (Message): The message to score.
             objective (Optional[str]): The objective to evaluate against (the original attacker model's objective).
                 Defaults to None.
             role_filter (Optional[ChatMessageRole]): Optional filter for message roles. Defaults to None.
@@ -63,7 +63,7 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
             list[Score]: A list containing a single true/false Score object based on the threshold comparison.
         """
         scores = await self._scorer.score_async(
-            request_response,
+            message,
             objective=objective,
             role_filter=role_filter,
         )

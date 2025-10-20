@@ -214,7 +214,7 @@ def test_invalid_prompt_request_validation():
     with pytest.raises(ValueError) as excinfo:
         hf_chat._validate_request(prompt_request=prompt_request)
 
-    assert "This target only supports a single prompt request piece." in str(excinfo.value)
+    assert "This target only supports a single message piece." in str(excinfo.value)
 
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")

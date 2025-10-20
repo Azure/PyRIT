@@ -190,7 +190,7 @@ class OpenAISoraTarget(OpenAITarget):
         """Asynchronously sends a prompt request and handles the response within a managed conversation context.
 
         Args:
-            prompt_request (Message): The prompt request response object.
+            prompt_request (Message): The message object.
 
         Returns:
             Message: The updated conversation entry with the response from the prompt target.
@@ -447,7 +447,7 @@ class OpenAISoraTarget(OpenAITarget):
         Validates the prompt request to ensure it meets the requirements for the Sora target.
 
         Args:
-            prompt_request (Message): The prompt request response object.
+            prompt_request (Message): The message object.
 
         Raises:
             ValueError: If the request is invalid.
@@ -456,7 +456,7 @@ class OpenAISoraTarget(OpenAITarget):
 
         n_pieces = len(prompt_request.message_pieces)
         if n_pieces != 1:
-            raise ValueError(f"This target only supports a single prompt request piece. Received: {n_pieces} pieces.")
+            raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
 
         piece_type = message_piece.converted_value_data_type
         if piece_type != "text":

@@ -168,9 +168,9 @@ class HumanLabeledDataset:
             objective_or_harm = str(objective_or_harm).strip()
             data_type = str(data_type).strip()
 
-            # Each list of request_responses consists only of a single assistant response since each row
+            # Each list of messages consists only of a single assistant response since each row
             # is treated as a single turn conversation.
-            request_responses = [
+            messages = [
                 Message(
                     message_pieces=[
                         MessagePiece(
@@ -183,13 +183,13 @@ class HumanLabeledDataset:
             ]
             if metrics_type == MetricsType.HARM:
                 entry = cls._construct_harm_entry(
-                    request_responses=request_responses,
+                    messages=messages,
                     harm=objective_or_harm,
                     human_scores=human_scores,
                 )
             else:
                 entry = cls._construct_objective_entry(
-                    request_responses=request_responses,
+                    messages=messages,
                     objective=objective_or_harm,
                     human_scores=human_scores,
                 )
@@ -303,14 +303,14 @@ class HumanLabeledDataset:
             raise ValueError(f"One of the data types is invalid. Valid types are: {get_args(PromptDataType)}.")
 
     @staticmethod
-    def _construct_harm_entry(*, request_responses: List[Message], harm: str, human_scores: List):
+    def _construct_harm_entry(*, messages: List[Message], harm: str, human_scores: List):
         float_scores = [float(score) for score in human_scores]
-        return HarmHumanLabeledEntry(request_responses, float_scores, harm)
+        return HarmHumanLabeledEntry(messages, float_scores, harm)
 
     @staticmethod
     def _construct_objective_entry(
-        *, request_responses: List[Message], objective: str, human_scores: List
+        *, messages: List[Message], objective: str, human_scores: List
     ):
         # Convert scores to int before casting to bool in case the values (0, 1) are parsed as strings
         bool_scores = [bool(int(score)) for score in human_scores]
-        return ObjectiveHumanLabeledEntry(request_responses, bool_scores, objective)
+        return ObjectiveHumanLabeledEntry(messages, bool_scores, objective)

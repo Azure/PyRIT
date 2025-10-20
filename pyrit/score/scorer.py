@@ -70,7 +70,7 @@ class Scorer(abc.ABC):
 
     async def score_async(
         self,
-        request_response: Message,
+        message: Message,
         *,
         objective: Optional[str] = None,
         role_filter: Optional[ChatMessageRole] = None,
@@ -78,31 +78,31 @@ class Scorer(abc.ABC):
         infer_objective_from_request: bool = False,
     ) -> list[Score]:
         """
-        Score the request_response, add the results to the database
+        Score the message, add the results to the database
         and return a list of Score objects.
 
         Args:
-            request_response (Message): The request response to be scored.
+            message (Message): The request response to be scored.
             task (str): The task based on which the text should be scored (the original attacker model's objective).
 
         Returns:
             list[Score]: A list of Score objects representing the results.
         """
-        self._validator.validate(request_response, objective=objective)
+        self._validator.validate(message, objective=objective)
 
-        if role_filter is not None and request_response.get_role() != role_filter:
+        if role_filter is not None and message.get_role() != role_filter:
             logger.debug("Skipping scoring due to role filter mismatch.")
             return []
 
-        if skip_on_error_result and request_response.is_error():
-            logger.debug("Skipping scoring due to error in request_response and skip_on_error=True.")
+        if skip_on_error_result and message.is_error():
+            logger.debug("Skipping scoring due to error in message and skip_on_error=True.")
             return []
 
         if infer_objective_from_request and (not objective):
-            objective = self._extract_objective_from_response(request_response)
+            objective = self._extract_objective_from_response(message)
 
         scores = await self._score_async(
-            request_response,
+            message,
             objective=objective,
         )
 
@@ -112,27 +112,27 @@ class Scorer(abc.ABC):
         return scores
 
     async def _score_async(
-        self, request_response: Message, *, objective: Optional[str] = None
+        self, message: Message, *, objective: Optional[str] = None
     ) -> list[Score]:
         """
         Score the given request response asynchronously.
 
-        This default implementation scores all supported pieces in the request_response
+        This default implementation scores all supported pieces in the message
         and returns a flattened list of scores. Subclasses can override this method
         to implement custom scoring logic (e.g., aggregating scores).
 
         Args:
-            request_response (Message): The prompt request response to score.
+            message (Message): The message to score.
             objective (Optional[str]): The objective to evaluate against. Defaults to None.
 
         Returns:
             list[Score]: A list of Score objects.
         """
-        if not request_response.message_pieces:
+        if not message.message_pieces:
             return []
 
         # Score only the supported pieces
-        supported_pieces = self._get_supported_pieces(request_response)
+        supported_pieces = self._get_supported_pieces(message)
 
         tasks = [self._score_piece_async(message_piece=piece, objective=objective) for piece in supported_pieces]
 
@@ -151,13 +151,13 @@ class Scorer(abc.ABC):
     ) -> list[Score]:
         raise NotImplementedError()
 
-    def _get_supported_pieces(self, request_response: Message) -> list[MessagePiece]:
+    def _get_supported_pieces(self, message: Message) -> list[MessagePiece]:
         """
         Returns a list of supported request pieces for this scorer.
         """
         return [
             piece
-            for piece in request_response.message_pieces
+            for piece in message.message_pieces
             if self._validator.is_message_piece_supported(message_piece=piece)
         ]
 
@@ -249,7 +249,7 @@ class Scorer(abc.ABC):
     async def score_prompts_batch_async(
         self,
         *,
-        request_responses: Sequence[Message],
+        messages: Sequence[Message],
         objectives: Optional[Sequence[str]] = None,
         batch_size: int = 10,
         role_filter: Optional[ChatMessageRole] = None,
@@ -260,9 +260,9 @@ class Scorer(abc.ABC):
         Score multiple prompts in batches using the provided objectives.
 
         Args:
-            request_responses (Sequence[Message]): The request responses to be scored.
+            messages (Sequence[Message]): The messages to be scored.
             objectives (Sequence[str]): The objectives/tasks based on which the prompts should be scored.
-                Must have the same length as request_responses.
+                Must have the same length as messages.
             batch_size (int): The maximum batch size for processing prompts. Defaults to 10.
             role_filter (Optional[ChatMessageRole]): If provided, only score pieces with this role.
                 Defaults to None (no filtering).
@@ -275,25 +275,25 @@ class Scorer(abc.ABC):
 
         Raises:
             ValueError: If objectives is empty or if the number of objectives doesn't match
-                the number of request_responses.
+                the number of messages.
         """
         if not objectives:
-            objectives = [""] * len(request_responses)
+            objectives = [""] * len(messages)
 
-        elif len(objectives) != len(request_responses):
-            raise ValueError("The number of tasks must match the number of request_responses.")
+        elif len(objectives) != len(messages):
+            raise ValueError("The number of tasks must match the number of messages.")
 
-        if len(request_responses) == 0:
+        if len(messages) == 0:
             return []
 
         # Some scorers do not have an associated prompt target; batch helper validates RPM only when present
         prompt_target = getattr(self, "_prompt_target", None)
         results = await batch_task_async(
             task_func=self.score_async,
-            task_arguments=["request_response", "objective"],
+            task_arguments=["message", "objective"],
             prompt_target=cast(PromptTarget, prompt_target),
             batch_size=batch_size,
-            items_to_batch=[request_responses, objectives],
+            items_to_batch=[messages, objectives],
             role_filter=role_filter,
             skip_on_error_result=skip_on_error_result,
             infer_objective_from_request=infer_objective_from_request,
@@ -577,7 +577,7 @@ class Scorer(abc.ABC):
                 skip_on_error_result=skip_on_error_result,
             )
             obj_task = objective_scorer.score_async(
-                request_response=response,
+                message=response,
                 objective=objective,
                 skip_on_error_result=skip_on_error_result,
                 role_filter=role_filter,
@@ -587,7 +587,7 @@ class Scorer(abc.ABC):
             result["objective_scores"] = obj_scores
         else:
             obj_scores = await objective_scorer.score_async(
-                request_response=response,
+                message=response,
                 objective=objective,
                 skip_on_error_result=skip_on_error_result,
                 role_filter=role_filter,
@@ -629,7 +629,7 @@ class Scorer(abc.ABC):
         for scorer in scorers:
             tasks.append(
                 scorer.score_async(
-                    request_response=response,
+                    message=response,
                     objective=objective,
                     role_filter=role_filter,
                     skip_on_error_result=skip_on_error_result,

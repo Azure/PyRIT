@@ -107,7 +107,7 @@ class TestHiTLGradioIntegration:
             scorer = HumanInTheLoopScorerGradio()
 
             rpc_client.start()
-            score_result = await scorer.score_async(request_response=promptOriginal.to_message())
+            score_result = await scorer.score_async(message=promptOriginal.to_message())
 
             assert score_result[0].score_value == "true"
             rpc_client.stop()
@@ -150,14 +150,14 @@ class TestHiTLGradioIntegration:
 
             rpc_client.start()
 
-            score_result = await scorer.score_async(request_response=promptOriginal.to_message())
+            score_result = await scorer.score_async(message=promptOriginal.to_message())
             assert score_result[0].score_value == "true"
 
             # Next prompt
-            score_result = await scorer.score_async(request_response=promptOriginal.to_message())
+            score_result = await scorer.score_async(message=promptOriginal.to_message())
             assert score_result[0].score_value == "false"
 
-            score_result = await scorer.score_async(request_response=promptOriginal.to_message())
+            score_result = await scorer.score_async(message=promptOriginal.to_message())
             assert score_result[0].score_value == "true"
 
             rpc_client.stop()

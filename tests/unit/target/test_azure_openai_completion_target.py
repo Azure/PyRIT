@@ -56,7 +56,7 @@ async def test_azure_completion_validate_request_length(azure_completion_target:
             MessagePiece(role="user", conversation_id="123", original_value="test2"),
         ]
     )
-    with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
+    with pytest.raises(ValueError, match="This target only supports a single message piece."):
         await azure_completion_target.send_prompt_async(prompt_request=request)
 
 
@@ -148,7 +148,7 @@ async def test_openai_completion_target_default_api_version(sample_conversations
 async def test_send_prompt_async_calls_refresh_auth_headers(azure_completion_target: OpenAICompletionTarget):
     mock_memory = MagicMock(spec=MemoryInterface)
     mock_memory.get_conversation.return_value = []
-    mock_memory.add_request_response_to_memory = AsyncMock()
+    mock_memory.add_message_to_memory = AsyncMock()
 
     azure_completion_target._memory = mock_memory
 

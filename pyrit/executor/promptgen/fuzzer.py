@@ -1005,7 +1005,7 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
 
         # Score with objective scorer
         scores = await self._scorer.score_prompts_batch_async(
-            request_responses=[piece.to_message() for piece in response_pieces], objectives=tasks
+            messages=[piece.to_message() for piece in response_pieces], objectives=tasks
         )
 
         return scores

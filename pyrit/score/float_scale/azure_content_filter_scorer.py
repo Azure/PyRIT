@@ -97,7 +97,7 @@ class AzureContentFilterScorer(FloatScaleScorer):
         """Evaluating the input text or image using the Azure Content Filter API
 
         Args:
-            message_piece (MessagePiece): The prompt request piece containing the text to be scored.
+            message_piece (MessagePiece): The message piece containing the text to be scored.
                 Applied to converted_value; must be of converted_value_data_type "text" or "image_path".
                 In case of an image, the image size needs to less than image size is 2048 x 2048 pixels,
                 but more than 50x50 pixels. The data size should not exceed exceed 4 MB. Image must be
@@ -159,8 +159,8 @@ class AzureContentFilterScorer(FloatScaleScorer):
 
         return scores
 
-    async def _get_base64_image_data(self, request_response: MessagePiece):
-        image_path = request_response.converted_value
+    async def _get_base64_image_data(self, message_piece: MessagePiece):
+        image_path = message_piece.converted_value
         ext = DataTypeSerializer.get_extension(image_path)
         image_serializer = data_serializer_factory(
             category="prompt-memory-entries", value=image_path, data_type="image_path", extension=ext

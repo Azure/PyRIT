@@ -523,7 +523,7 @@ class RealtimeTarget(OpenAITarget):
         """Validates the structure and content of a prompt request for compatibility of this target.
 
         Args:
-            prompt_request (Message): The prompt request response object.
+            prompt_request (Message): The message object.
 
         Raises:
             ValueError: If more than two request pieces are provided.

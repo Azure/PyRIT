@@ -25,7 +25,7 @@ async def test_gandalf_validate_request_length(gandalf_target: GandalfTarget):
             MessagePiece(role="user", conversation_id="123", original_value="test2"),
         ]
     )
-    with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
+    with pytest.raises(ValueError, match="This target only supports a single message piece."):
         await gandalf_target.send_prompt_async(prompt_request=request)
 
 

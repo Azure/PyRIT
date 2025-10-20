@@ -4,7 +4,7 @@ There are several types of data you can retrieve from memory at any point in tim
 
 ## MessagePiece and Message
 
-One of the most fundamental data structures in PyRIT is [MessagePiece](../../../pyrit/models/message_piece.py) and [Message](../../../pyrit/models/prompt_request_response.py). These classes provide the foundation for multi-modal interaction tracking throughout the framework.
+One of the most fundamental data structures in PyRIT is [MessagePiece](../../../pyrit/models/message_piece.py) and [Message](../../../pyrit/models/message.py). These classes provide the foundation for multi-modal interaction tracking throughout the framework.
 
 ### MessagePiece
 

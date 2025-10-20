@@ -173,13 +173,13 @@ class MessagePiece:
 
     def has_error(self) -> bool:
         """
-        Check if the prompt request piece has an error.
+        Check if the message piece has an error.
         """
         return self.response_error != "none"
 
     def is_blocked(self) -> bool:
         """
-        Check if the prompt request piece is blocked.
+        Check if the message piece is blocked.
         """
         return self.response_error == "blocked"
 

@@ -590,7 +590,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         if not context.last_response:
             raise ValueError("No response available in context to check for refusal")
 
-        scores = await self._refusal_scorer.score_async(request_response=context.last_response, objective=objective)
+        scores = await self._refusal_scorer.score_async(message=context.last_response, objective=objective)
         return scores[0]
 
     async def _score_response_async(self, *, context: CrescendoAttackContext) -> Score:

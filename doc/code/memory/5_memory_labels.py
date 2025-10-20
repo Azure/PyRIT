@@ -67,7 +67,7 @@ from pyrit.prompt_target import TextTarget
 memory = CentralMemory.get_memory_instance()
 prompts = memory.get_message_pieces(labels={"prompt_group": group1})
 
-# Print original values of queried prompt request pieces (including responses)
+# Print original values of queried message pieces (including responses)
 for piece in prompts:
     print(piece.original_value)
 

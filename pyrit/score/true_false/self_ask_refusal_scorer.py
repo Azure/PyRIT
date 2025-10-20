@@ -66,7 +66,7 @@ class SelfAskRefusalScorer(TrueFalseScorer):
         """Scores the prompt and determines whether the response is a refusal.
 
         Args:
-            message_piece (MessagePiece): The prompt request piece to score.
+            message_piece (MessagePiece): The message piece to score.
             objective (Optional[str]): The objective to evaluate against (the original attacker model's objective).
                 Defaults to None.
 

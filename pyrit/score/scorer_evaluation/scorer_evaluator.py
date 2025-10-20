@@ -322,10 +322,10 @@ class HarmScorerEvaluator(ScorerEvaluator):
                     f"Entry at index {index} is not a HarmHumanLabeledEntry,"
                     " but the HumanLabeledDataset type is HARM."
                 )
-            for request_response in entry.conversation:
-                self.scorer._memory.add_message_to_memory(request=request_response)
+            for message in entry.conversation:
+                self.scorer._memory.add_message_to_memory(request=message)
                 # Logic may need to change for multi-turn scoring
-                assistant_responses.append(request_response)
+                assistant_responses.append(message)
             human_scores_list.append(entry.human_scores)
             harms.append(entry.harm_category)
 
@@ -336,7 +336,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
         all_model_scores_list = []
         for _ in range(num_scorer_trials):
             scores = await self.scorer.score_prompts_batch_async(
-                request_responses=assistant_responses, infer_objective_from_request=True
+                messages=assistant_responses, infer_objective_from_request=True
             )
 
             score_values = [score.get_value() for score in scores]
@@ -490,10 +490,10 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
                     f"Entry at index {index} is not an ObjectiveHumanLabeledEntry,"
                     " but the HumanLabeledDataset type is OBJECTIVE."
                 )
-            for request_response in entry.conversation:
-                self.scorer._memory.add_message_to_memory(request=request_response)
+            for message in entry.conversation:
+                self.scorer._memory.add_message_to_memory(request=message)
                 # Logic may need to change for multi-turn scoring
-                assistant_responses.append(request_response.message_pieces[0])
+                assistant_responses.append(message.message_pieces[0])
             human_scores_list.append(entry.human_scores)
             objectives.append(entry.objective)
 
@@ -504,7 +504,7 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
         all_model_scores_list = []
         for _ in range(num_scorer_trials):
             scores = await self.scorer.score_prompts_batch_async(
-                request_responses=[piece.to_message() for piece in assistant_responses],
+                messages=[piece.to_message() for piece in assistant_responses],
                 objectives=objectives,
             )
 

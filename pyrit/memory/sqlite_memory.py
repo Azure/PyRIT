@@ -144,7 +144,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
 
     def add_message_pieces_to_memory(self, *, message_pieces: Sequence[MessagePiece]) -> None:
         """
-        Inserts a list of prompt request pieces into the memory storage.
+        Inserts a list of message pieces into the memory storage.
         """
         self._insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in message_pieces])
 

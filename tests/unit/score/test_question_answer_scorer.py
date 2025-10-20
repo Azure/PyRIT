@@ -36,9 +36,9 @@ def text_message_piece(patch_central_database) -> MessagePiece:
 async def test_question_answer_scorer_validate_image(image_message_piece: MessagePiece):
 
     scorer = QuestionAnswerScorer(category=["new_category"])
-    request_response = Message(message_pieces=[image_message_piece])
+    message = Message(message_pieces=[image_message_piece])
     with pytest.raises(ValueError, match="There are no valid pieces to score."):
-        await scorer.score_async(request_response)
+        await scorer.score_async(message)
 
     os.remove(image_message_piece.converted_value)
 
@@ -75,9 +75,9 @@ async def test_question_answer_scorer_score(
 ):
     text_message_piece.converted_value = response
     scorer = QuestionAnswerScorer(category=["new_category"])
-    request_response = Message(message_pieces=[text_message_piece])
+    message = Message(message_pieces=[text_message_piece])
 
-    scores = await scorer.score_async(request_response)
+    scores = await scorer.score_async(message)
 
     assert len(scores) == 1
     result_score = scores[0]
@@ -91,7 +91,7 @@ async def test_question_answer_scorer_adds_to_memory():
     memory = MagicMock(MemoryInterface)
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = QuestionAnswerScorer(category=["new_category"])
-        request_response = MessagePiece(
+        message = MessagePiece(
             id="test_id",
             role="user",
             original_value="test content",
@@ -100,7 +100,7 @@ async def test_question_answer_scorer_adds_to_memory():
             prompt_metadata={"correct_answer_index": "0", "correct_answer": "Paris"},
         ).to_message()
 
-        await scorer.score_async(request_response)
+        await scorer.score_async(message)
 
         memory.add_scores_to_memory.assert_called_once()
 
@@ -110,7 +110,7 @@ async def test_question_answer_scorer_no_category():
     memory = MagicMock(MemoryInterface)
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = QuestionAnswerScorer()
-        request_response = MessagePiece(
+        message = MessagePiece(
             id="test_id",
             role="user",
             original_value="test content",
@@ -118,6 +118,6 @@ async def test_question_answer_scorer_no_category():
             converted_value_data_type="text",
             prompt_metadata={"correct_answer_index": "0", "correct_answer": "Paris"},
         ).to_message()
-        await scorer.score_async(request_response)
+        await scorer.score_async(message)
 
         memory.add_scores_to_memory.assert_called_once()

@@ -99,7 +99,7 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
         """Asynchronously sends a prompt request and handles the response within a managed conversation context.
 
         Args:
-            prompt_request (Message): The prompt request response object.
+            prompt_request (Message): The message object.
 
         Returns:
             Message: The updated conversation entry with the response from the prompt target.

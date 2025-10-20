@@ -271,7 +271,7 @@ async def test_run_evaluation_async_harm(mock_harm_scorer):
     metrics = await evaluator.run_evaluation_async(
         labeled_dataset=mock_dataset, num_scorer_trials=2, save_results=False
     )
-    assert mock_harm_scorer._memory.add_request_response_to_memory.call_count == 2
+    assert mock_harm_scorer._memory.add_message_to_memory.call_count == 2
     assert isinstance(metrics, HarmScorerMetrics)
     assert metrics.mean_absolute_error == 0.0
     assert metrics.mae_standard_error == 0.0
@@ -296,7 +296,7 @@ async def test_run_evaluation_async_objective(mock_objective_scorer):
     metrics = await evaluator.run_evaluation_async(
         labeled_dataset=mock_dataset, num_scorer_trials=2, save_results=False
     )
-    assert mock_objective_scorer._memory.add_request_response_to_memory.call_count == 1
+    assert mock_objective_scorer._memory.add_message_to_memory.call_count == 1
     assert isinstance(metrics, ObjectiveScorerMetrics)
     assert metrics.accuracy == 0.0
     assert metrics.accuracy_standard_error == 0.0

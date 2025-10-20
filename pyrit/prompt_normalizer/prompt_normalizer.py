@@ -125,7 +125,7 @@ class PromptNormalizer:
         if response is None:
             return None
 
-        await self.convert_values(converter_configurations=response_converter_configurations, request_response=response)
+        await self.convert_values(converter_configurations=response_converter_configurations, message=response)
 
         await self._calc_hash(request=response)
         self._memory.add_message_to_memory(request=response)
@@ -188,11 +188,11 @@ class PromptNormalizer:
     async def convert_values(
         self,
         converter_configurations: list[PromptConverterConfiguration],
-        request_response: Message,
+        message: Message,
     ):
 
         for converter_configuration in converter_configurations:
-            for piece_index, piece in enumerate(request_response.message_pieces):
+            for piece_index, piece in enumerate(message.message_pieces):
                 indexes = converter_configuration.indexes_to_apply
                 data_types = converter_configuration.prompt_data_types_to_apply
 
@@ -306,7 +306,7 @@ class PromptNormalizer:
         attack_identifier: Optional[dict[str, str]] = None,
     ) -> Message:
         """
-        Builds a prompt request response based on the given parameters.
+        Builds a message based on the given parameters.
 
         Applies parameters and converters to the prompt text and puts all the pieces together.
 
@@ -320,12 +320,12 @@ class PromptNormalizer:
             attack_identifier (Optional[dict[str, str]]): An optional dictionary for attack identifiers.
 
         Returns:
-            Message: The prompt request response object.
+            Message: The message object.
         """
 
         entries = []
 
-        # All prompt request pieces within Message needs to have same conversation ID.
+        # All message pieces within Message needs to have same conversation ID.
         conversation_id = conversation_id if conversation_id else str(uuid4())
         for seed_prompt in seed_prompt_group.prompts:
             message_piece = MessagePiece(
@@ -345,7 +345,7 @@ class PromptNormalizer:
 
         response = Message(message_pieces=entries)
 
-        await self.convert_values(converter_configurations=request_converter_configurations, request_response=response)
+        await self.convert_values(converter_configurations=request_converter_configurations, message=response)
         return response
 
     async def add_prepended_conversation_to_memory(
@@ -378,7 +378,7 @@ class PromptNormalizer:
 
         for request in prepended_conversation:
             if should_convert and converter_configurations:
-                await self.convert_values(request_response=request, converter_configurations=converter_configurations)
+                await self.convert_values(message=request, converter_configurations=converter_configurations)
             for piece in request.message_pieces:
                 piece.conversation_id = conversation_id
                 if attack_identifier:

@@ -86,13 +86,13 @@ class Message:
                 raise ValueError("Conversation ID mismatch.")
 
             if message_piece.sequence != sequence:
-                raise ValueError("Inconsistent sequences within the same prompt request response entry.")
+                raise ValueError("Inconsistent sequences within the same message entry.")
 
             if message_piece.converted_value is None:
                 raise ValueError("Converted prompt text is None.")
 
             if message_piece.role != role:
-                raise ValueError("Inconsistent roles within the same prompt request response entry.")
+                raise ValueError("Inconsistent roles within the same message entry.")
 
     def __str__(self):
         ret = ""
@@ -101,22 +101,22 @@ class Message:
         return "\n".join([str(message_piece) for message_piece in self.message_pieces])
 
     @staticmethod
-    def get_all_values(request_responses: Sequence["Message"]) -> list[str]:
+    def get_all_values(messages: Sequence["Message"]) -> list[str]:
         """Return all converted values across the provided request responses."""
         values: list[str] = []
-        for request_response in request_responses:
-            values.extend(request_response.get_values())
+        for message in messages:
+            values.extend(message.get_values())
         return values
 
     @staticmethod
-    def flatten_to_prompt_message_pieces(
-        request_responses: Sequence["Message"],
+    def flatten_to_message_pieces(
+        messages: Sequence["Message"],
     ) -> MutableSequence[MessagePiece]:
-        if not request_responses:
+        if not messages:
             return []
         response_pieces: MutableSequence[MessagePiece] = []
 
-        for response in request_responses:
+        for response in messages:
             response_pieces.extend(response.message_pieces)
 
         return response_pieces
@@ -135,7 +135,7 @@ def group_conversation_message_pieces_by_sequence(
     message_pieces: Sequence[MessagePiece],
 ) -> MutableSequence[Message]:
     """
-    Groups prompt request pieces from the same conversation into Messages.
+    Groups message pieces from the same conversation into Messages.
 
     This is done using the sequence number and conversation ID.
 
@@ -200,7 +200,7 @@ def group_message_pieces_into_conversations(
     message_pieces: Sequence[MessagePiece],
 ) -> list[list[Message]]:
     """
-    Groups prompt request pieces from multiple conversations into separate conversation groups.
+    Groups message pieces from multiple conversations into separate conversation groups.
 
     This function first groups pieces by conversation ID, then groups each conversation's
     pieces by sequence number. Each conversation is returned as a separate list of

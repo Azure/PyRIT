@@ -1699,7 +1699,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         """
         Retrieve the last response from a conversation.
 
-        Fetches all prompt request pieces from memory for the given conversation ID
+        Fetches all message pieces from memory for the given conversation ID
         and returns the most recent one. This is typically used to extract the final
         response from the best performing conversation for inclusion in the attack result.
 

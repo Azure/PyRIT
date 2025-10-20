@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -62,9 +62,12 @@ print(f"Found {len(prompt_groups)} prompt groups for dataset")
 
 for i, group in enumerate(prompt_groups):
     prompt_text = group.prompts[0].value
-
-    results = await attack.execute_async(objective=prompt_text, seed_prompt_group=group)  # type: ignore
-
+    
+    results = await attack.execute_async( # type: ignore
+        objective=prompt_text,
+        seed_prompt_group=group
+    )
+    
     print(f"Attack completed - Conversation ID: {results.conversation_id}")
     await ConsoleAttackResultPrinter().print_conversation_async(result=results)  # type: ignore
 
@@ -73,12 +76,12 @@ for i, group in enumerate(prompt_groups):
 # Now you can query your attack results by `targeted_harm_category`!
 
 # %% [markdown]
-# ### Single harm category:
+# ### Single harm category: 
 #
 # Here, we by a single harm category (eg shown below is querying for the harm category  `['illegal']`)
 
 # %%
-from pyrit.analytics.analyze_results import analyze_results
+from pyrit.analytics.result_analysis import analyze_results
 
 all_attack_results = memory.get_attack_results()
 
@@ -92,10 +95,12 @@ print(f"Total attack results in memory: {len(all_attack_results)}")
 
 overall_analytics = analyze_results(list(all_attack_results))
 
-print(f"  Success rate: {overall_analytics['Attack success rate']}")
-print(f"  Successes: {overall_analytics['Successes']}")
-print(f"  Failures: {overall_analytics['Failures']}")
-print(f"  Undetermined: {overall_analytics['Undetermined']}")
+# Access the Overall stats
+overall_stats = overall_analytics["Overall"]
+print(f"  Success rate: {overall_stats.success_rate}")
+print(f"  Successes: {overall_stats.successes}")
+print(f"  Failures: {overall_stats.failures}")
+print(f"  Undetermined: {overall_stats.undetermined}") 
 print()
 
 # Example 1: Query for a single harm category

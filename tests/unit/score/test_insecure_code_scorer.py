@@ -38,13 +38,13 @@ async def test_insecure_code_scorer_valid_response(mock_chat_target):
     # Patch _memory.add_scores_to_memory to prevent sqlite errors and check for call
     with patch.object(scorer._memory, "add_scores_to_memory", new=MagicMock()) as mock_add_scores:
         with patch.object(scorer, "_score_value_with_llm", new=AsyncMock(return_value=unvalidated_score)):
-            # Create a request_response object
-            request_response = MessagePiece(
+            # Create a message piece object
+            message = MessagePiece(
                 role="user", original_value="sample code"
             ).to_message()
 
             # Call the score_async method
-            scores = await scorer.score_async(request_response)
+            scores = await scorer.score_async(message)
 
             # Assertions
             assert len(scores) == 1
@@ -66,12 +66,12 @@ async def test_insecure_code_scorer_invalid_json(mock_chat_target):
         with patch.object(
             scorer, "_score_value_with_llm", new=AsyncMock(side_effect=InvalidJsonException(message="Invalid JSON"))
         ):
-            request_response = MessagePiece(
+            message = MessagePiece(
                 role="user", original_value="sample code"
             ).to_message()
 
             with pytest.raises(InvalidJsonException, match="Invalid JSON"):
-                await scorer.score_async(request_response)
+                await scorer.score_async(message)
 
             # Ensure memory functions were not called
             mock_add_scores.assert_not_called()

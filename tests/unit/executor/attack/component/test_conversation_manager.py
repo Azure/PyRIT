@@ -52,7 +52,7 @@ def attack_identifier():
 
 @pytest.fixture
 def sample_user_piece():
-    """Create a sample user prompt request piece"""
+    """Create a sample user message piece"""
     return MessagePiece(
         role="user",
         original_value="Hello, how are you?",
@@ -63,7 +63,7 @@ def sample_user_piece():
 
 @pytest.fixture
 def sample_assistant_piece():
-    """Create a sample assistant prompt request piece"""
+    """Create a sample assistant message piece"""
     return MessagePiece(
         role="assistant",
         original_value="I'm doing well, thank you!",
@@ -74,7 +74,7 @@ def sample_assistant_piece():
 
 @pytest.fixture
 def sample_system_piece():
-    """Create a sample system prompt request piece"""
+    """Create a sample system message piece"""
     return MessagePiece(
         role="system",
         original_value="You are a helpful assistant",
@@ -779,7 +779,7 @@ class TestEdgeCasesAndErrorHandling:
     @pytest.mark.asyncio
     async def test_update_conversation_state_with_empty_message_pieces(self, attack_identifier: dict[str, str]):
         # Create request with empty pieces list should raise ValueError
-        with pytest.raises(ValueError, match="Message must have at least one request piece"):
+        with pytest.raises(ValueError, match="Message must have at least one message piece"):
             Message(message_pieces=[])
 
     @pytest.mark.asyncio

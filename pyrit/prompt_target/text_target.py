@@ -39,7 +39,7 @@ class TextTarget(PromptTarget):
 
     def import_scores_from_csv(self, csv_file_path: Path) -> list[MessagePiece]:
 
-        request_responses = []
+        message_pieces = []
 
         with open(csv_file_path, newline="") as csvfile:
             csvreader = csv.DictReader(csvfile)
@@ -49,7 +49,7 @@ class TextTarget(PromptTarget):
                 labels_str = row.get("labels", None)
                 labels = json.loads(labels_str) if labels_str else None
 
-                request_response = MessagePiece(
+                message_piece = MessagePiece(
                     role=row["role"],  # type: ignore
                     original_value=row["value"],
                     original_value_data_type=row.get["data_type", None],  # type: ignore
@@ -59,11 +59,11 @@ class TextTarget(PromptTarget):
                     response_error=row.get("response_error", None),  # type: ignore
                     prompt_target_identifier=self.get_identifier(),
                 )
-                request_responses.append(request_response)
+                message_pieces.append(message_piece)
 
         # This is post validation, so the message_pieces should be okay and normalized
-        self._memory.add_message_pieces_to_memory(message_pieces=request_responses)
-        return request_responses
+        self._memory.add_message_pieces_to_memory(message_pieces=message_pieces)
+        return message_pieces
 
     def _validate_request(self, *, prompt_request: Message) -> None:
         pass

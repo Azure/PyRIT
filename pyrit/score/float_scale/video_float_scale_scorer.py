@@ -67,7 +67,7 @@ class VideoFloatScaleScorer(FloatScaleScorer, _BaseVideoScorer):
         Score a single video piece by extracting frames and aggregating their scores.
 
         Args:
-            message_piece: The prompt request piece containing the video.
+            message_piece: The message piece containing the video.
             objective: Optional objective description for scoring.
 
         Returns:

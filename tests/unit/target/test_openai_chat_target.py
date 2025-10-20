@@ -217,7 +217,7 @@ async def test_construct_request_body_serializes_complex_message(
 async def test_send_prompt_async_empty_response_adds_to_memory(openai_response_json: dict, target: OpenAIChatTarget):
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
-    mock_memory.add_request_response_to_memory = AsyncMock()
+    mock_memory.add_message_to_memory = AsyncMock()
 
     target._memory = mock_memory
 
@@ -278,7 +278,7 @@ async def test_send_prompt_async_rate_limit_exception_adds_to_memory(
 ):
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
-    mock_memory.add_request_response_to_memory = AsyncMock()
+    mock_memory.add_message_to_memory = AsyncMock()
 
     target._memory = mock_memory
 
@@ -296,7 +296,7 @@ async def test_send_prompt_async_rate_limit_exception_adds_to_memory(
         with pytest.raises(RateLimitException) as rle:
             await target.send_prompt_async(prompt_request=prompt_request)
             target._memory.get_conversation.assert_called_once_with(conversation_id="123")
-            target._memory.add_request_response_to_memory.assert_called_once_with(request=prompt_request)
+            target._memory.add_message_to_memory.assert_called_once_with(request=prompt_request)
 
             assert str(rle.value) == "Rate Limit Reached"
 
@@ -305,7 +305,7 @@ async def test_send_prompt_async_rate_limit_exception_adds_to_memory(
 async def test_send_prompt_async_bad_request_error_adds_to_memory(target: OpenAIChatTarget):
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
-    mock_memory.add_request_response_to_memory = AsyncMock()
+    mock_memory.add_message_to_memory = AsyncMock()
 
     target._memory = mock_memory
 
@@ -323,7 +323,7 @@ async def test_send_prompt_async_bad_request_error_adds_to_memory(target: OpenAI
         with pytest.raises(httpx.HTTPStatusError) as bre:
             await target.send_prompt_async(prompt_request=prompt_request)
             target._memory.get_conversation.assert_called_once_with(conversation_id="123")
-            target._memory.add_request_response_to_memory.assert_called_once_with(request=prompt_request)
+            target._memory.add_message_to_memory.assert_called_once_with(request=prompt_request)
 
             assert str(bre.value) == "Bad Request"
 
@@ -661,7 +661,7 @@ async def test_openai_chat_target_default_api_version(sample_conversations: Muta
 async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIChatTarget):
     mock_memory = MagicMock(spec=MemoryInterface)
     mock_memory.get_conversation.return_value = []
-    mock_memory.add_request_response_to_memory = AsyncMock()
+    mock_memory.add_message_to_memory = AsyncMock()
 
     target._azure_auth = MagicMock()
     target._memory = mock_memory
@@ -697,7 +697,7 @@ async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIChatTa
 async def test_send_prompt_async_content_filter_400(target: OpenAIChatTarget):
     mock_memory = MagicMock(spec=MemoryInterface)
     mock_memory.get_conversation.return_value = []
-    mock_memory.add_request_response_to_memory = AsyncMock()
+    mock_memory.add_message_to_memory = AsyncMock()
     target._azure_auth = MagicMock()
     target._memory = mock_memory
 

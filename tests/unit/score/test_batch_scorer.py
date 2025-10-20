@@ -136,7 +136,7 @@ class TestBatchScorerUtilityMethods:
     """Test utility methods of BatchScorer."""
 
     def test_remove_duplicates(self) -> None:
-        """Test removal of duplicate prompt request pieces."""
+        """Test removal of duplicate message pieces."""
         prompt_id1 = uuid.uuid4()
         prompt_id2 = uuid.uuid4()
 
@@ -267,10 +267,10 @@ class TestBatchScorerErrorHandling:
             # Should successfully group by conversation and sequence
             scorer.score_prompts_batch_async.assert_called_once()
             call_args = scorer.score_prompts_batch_async.call_args
-            request_responses = call_args.kwargs["request_responses"]
+            messages = call_args.kwargs["messages"]
 
             # Should have 4 groups: 2 sequences from conv1, 2 sequences from conv2
-            assert len(request_responses) == 4
+            assert len(messages) == 4
             assert len(scores) == 4
 
     @pytest.mark.asyncio
@@ -318,10 +318,10 @@ class TestBatchScorerErrorHandling:
 
             # Verify grouping
             call_args = scorer.score_prompts_batch_async.call_args
-            request_responses = call_args.kwargs["request_responses"]
+            messages = call_args.kwargs["messages"]
 
             # Should have 3 groups: sequence 0 (with 1 pieces) and sequence 1 (with 2 pieces)
-            assert len(request_responses) == 3
-            assert len(request_responses[0].message_pieces) == 1
-            assert len(request_responses[1].message_pieces) == 2
-            assert len(request_responses[2].message_pieces) == 1
+            assert len(messages) == 3
+            assert len(messages[0].message_pieces) == 1
+            assert len(messages[1].message_pieces) == 2
+            assert len(messages[2].message_pieces) == 1

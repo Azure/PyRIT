@@ -75,4 +75,4 @@ async def test_send_prompt_async_validation(mock_request, patch_central_database
     with pytest.raises(ValueError) as excinfo:
         await target.send_prompt_async(prompt_request=prompt_request)
 
-    assert "This target only supports a single prompt request piece." in str(excinfo.value)
+    assert "This target only supports a single message piece." in str(excinfo.value)

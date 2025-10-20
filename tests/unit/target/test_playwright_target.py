@@ -60,7 +60,7 @@ async def test_playwright_validate_request_length(mock_interaction_func, mock_pa
             MessagePiece(role="user", conversation_id="123", original_value="test2"),
         ]
     )
-    with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
+    with pytest.raises(ValueError, match="This target only supports a single message piece."):
         await target.send_prompt_async(prompt_request=request)
 
 

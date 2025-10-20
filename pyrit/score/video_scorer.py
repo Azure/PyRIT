@@ -57,7 +57,7 @@ class _BaseVideoScorer(ABC):
         Extract frames from video and score them.
 
         Args:
-            message_piece: The prompt request piece containing the video.
+            message_piece: The message piece containing the video.
             objective: Optional objective description for scoring.
 
         Returns:
@@ -102,7 +102,7 @@ class _BaseVideoScorer(ABC):
             memory.add_message_to_memory(request=request)
 
         frame_scores = await self.image_scorer.score_prompts_batch_async(
-            request_responses=image_requests, objectives=objectives, batch_size=len(frames)
+            messages=image_requests, objectives=objectives, batch_size=len(frames)
         )
 
         if not frame_scores:

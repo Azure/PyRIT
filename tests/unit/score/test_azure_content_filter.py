@@ -15,8 +15,7 @@ from unit.mocks import (
 
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import MessagePiece
-from pyrit.models.prompt_request_response import Message
+from pyrit.models import Message, MessagePiece
 from pyrit.score.float_scale.azure_content_filter_scorer import AzureContentFilterScorer
 
 
@@ -44,7 +43,7 @@ async def test_score_piece_async_invalid_type(patch_central_database, audio_mess
 
     # Should raise ValueError for unsupported data type
     with pytest.raises(ValueError, match="There are no valid pieces to score"):
-        await scorer.score_async(request_response=request)
+        await scorer.score_async(message=request)
     os.remove(audio_message_piece.converted_value)
 
 

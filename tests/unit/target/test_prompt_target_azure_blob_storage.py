@@ -69,7 +69,7 @@ async def test_azure_blob_storage_validate_request_length(
             MessagePiece(role="user", conversation_id="123", original_value="test2"),
         ]
     )
-    with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
+    with pytest.raises(ValueError, match="This target only supports a single message piece."):
         await azure_blob_storage_target.send_prompt_async(prompt_request=request)
 
 

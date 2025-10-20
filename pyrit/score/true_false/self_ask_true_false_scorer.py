@@ -120,7 +120,7 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
         Scores the given request piece using "self-ask" for the chat target.
 
         Args:
-            message_piece (MessagePiece): The prompt request piece containing the text to be scored.
+            message_piece (MessagePiece): The message piece containing the text to be scored.
             objective (Optional[str]): The objective to evaluate against (the original attacker model's objective).
                 Defaults to None.
 

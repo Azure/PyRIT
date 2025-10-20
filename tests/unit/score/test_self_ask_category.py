@@ -224,10 +224,10 @@ async def test_score_prompts_batch_async(
             if batch_size != 1 and max_requests_per_minute:
                 with pytest.raises(ValueError):
                     await scorer.score_prompts_batch_async(
-                        request_responses=[prompt], batch_size=batch_size, objectives=[""]
+                        messages=[prompt], batch_size=batch_size, objectives=[""]
                     )
             else:
                 results = await scorer.score_prompts_batch_async(
-                    request_responses=[prompt, prompt2], batch_size=batch_size, objectives=["", ""]
+                    messages=[prompt, prompt2], batch_size=batch_size, objectives=["", ""]
                 )
                 assert len(results) == 2

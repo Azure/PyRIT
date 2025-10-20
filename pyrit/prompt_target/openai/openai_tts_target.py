@@ -150,7 +150,7 @@ class OpenAITTSTarget(OpenAITarget):
         n_pieces = len(prompt_request.message_pieces)
         if n_pieces != 1:
             raise ValueError(
-                "This target only supports a single prompt request piece. " f"Received: {n_pieces} pieces."
+                "This target only supports a single message piece. " f"Received: {n_pieces} pieces."
             )
 
         piece_type = prompt_request.message_pieces[0].converted_value_data_type

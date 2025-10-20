@@ -121,7 +121,7 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         self.api_key_environment_variable = "OPENAI_CHAT_KEY"
 
     async def _build_chat_messages_async(self, conversation: MutableSequence[Message]) -> list[dict]:
-        """Builds chat messages based on prompt request response entries.
+        """Builds chat messages based on message entries.
 
         Args:
             conversation (list[Message]): A list of Message objects.
@@ -152,7 +152,7 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
 
     def _build_chat_messages_for_text(self, conversation: MutableSequence[Message]) -> list[dict]:
         """
-        Builds chat messages based on prompt request response entries. This is needed because many
+        Builds chat messages based on message entries. This is needed because many
         openai "compatible" models don't support ChatMessageListDictContent format (this is more universally accepted)
 
         Args:
@@ -166,7 +166,7 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
             # validated to only have one text entry
 
             if len(message.message_pieces) != 1:
-                raise ValueError("_build_chat_messages_for_text only supports a single prompt request piece.")
+                raise ValueError("_build_chat_messages_for_text only supports a single message piece.")
 
             message_piece = message.message_pieces[0]
 
@@ -182,7 +182,7 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         self, conversation: MutableSequence[Message]
     ) -> list[dict]:
         """
-        Builds chat messages based on prompt request response entries.
+        Builds chat messages based on message entries.
 
         Args:
             conversation (list[Message]): A list of Message objects.
@@ -214,7 +214,7 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
                     )
 
             if not role:
-                raise ValueError("No role could be determined from the prompt request pieces.")
+                raise ValueError("No role could be determined from the message pieces.")
 
             chat_message = ChatMessageListDictContent(role=role, content=content)  # type: ignore
             chat_messages.append(chat_message.model_dump(exclude_none=True))
@@ -285,7 +285,7 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         """Validates the structure and content of a prompt request for compatibility of this target.
 
         Args:
-            prompt_request (Message): The prompt request response object.
+            prompt_request (Message): The message object.
 
         Raises:
             ValueError: If more than two request pieces are provided.

@@ -161,11 +161,11 @@ def test_message_get_value(sample_conversations: MutableSequence[Message]):
     piece = MessagePiece(
         role="user", conversation_id="test", original_value="Hello, how are you?", converted_value="Hello, how are you?"
     )
-    request_response = Message(message_pieces=[piece])
-    assert request_response.get_value() == "Hello, how are you?"
+    message = Message(message_pieces=[piece])
+    assert message.get_value() == "Hello, how are you?"
 
     with pytest.raises(IndexError):
-        request_response.get_value(3)
+        message.get_value(3)
 
 
 def test_message_get_values(sample_conversations: MutableSequence[Message]):
@@ -184,8 +184,8 @@ def test_message_get_values(sample_conversations: MutableSequence[Message]):
         original_value="Another message",
         converted_value="Another message",
     )
-    request_response = Message(message_pieces=[piece1, piece2])
-    assert request_response.get_values() == ["Hello, how are you?", "Another message"]
+    message = Message(message_pieces=[piece1, piece2])
+    assert message.get_values() == ["Hello, how are you?", "Another message"]
 
 
 def test_message_validate(sample_conversations: MutableSequence[Message]):
@@ -194,7 +194,7 @@ def test_message_validate(sample_conversations: MutableSequence[Message]):
 
 
 def test_message_empty_throws():
-    with pytest.raises(ValueError, match="Message must have at least one request piece."):
+    with pytest.raises(ValueError, match="Message must have at least one message piece."):
         Message(message_pieces=[])
 
 
@@ -212,7 +212,7 @@ def test_message_inconsistent_roles_throws():
     piece1 = MessagePiece(role="user", conversation_id="conv1", original_value="test1")
     piece2 = MessagePiece(role="assistant", conversation_id="conv1", original_value="test2")
 
-    with pytest.raises(ValueError, match="Inconsistent roles within the same prompt request response entry."):
+    with pytest.raises(ValueError, match="Inconsistent roles within the same message entry."):
         Message(message_pieces=[piece1, piece2])
 
 
@@ -221,7 +221,7 @@ def test_message_inconsistent_sequence_throws():
     piece1 = MessagePiece(role="user", conversation_id="conv1", sequence=1, original_value="test1")
     piece2 = MessagePiece(role="user", conversation_id="conv1", sequence=2, original_value="test2")
 
-    with pytest.raises(ValueError, match="Inconsistent sequences within the same prompt request response entry."):
+    with pytest.raises(ValueError, match="Inconsistent sequences within the same message entry."):
         Message(message_pieces=[piece1, piece2])
 
 

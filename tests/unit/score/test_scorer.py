@@ -48,7 +48,7 @@ KEY_ERROR2_JSON = (
 
 
 class DummyValidator(ScorerPromptValidator):
-    def validate(self, request_response, objective=None):
+    def validate(self, message, objective=None):
         pass
 
     def is_message_piece_supported(self, message_piece):
@@ -60,7 +60,7 @@ class MockScorer(TrueFalseScorer):
         super().__init__(validator=DummyValidator())
 
     async def _score_async(
-        self, request_response: Message, *, objective: Optional[str] = None
+        self, message: Message, *, objective: Optional[str] = None
     ) -> list[Score]:
         return [
             Score(
@@ -369,7 +369,7 @@ async def test_scorer_score_responses_batch_async(patch_central_database):
         ).to_message()
 
         results = await scorer.score_prompts_batch_async(
-            request_responses=[user_req, assistant_resp], batch_size=10, infer_objective_from_request=True
+            messages=[user_req, assistant_resp], batch_size=10, infer_objective_from_request=True
         )
 
         # Verify mock_score_async was called twice
@@ -378,10 +378,10 @@ async def test_scorer_score_responses_batch_async(patch_central_database):
         # Get the call_args for the first call
         _, first_call_kwargs = mock_score_async.call_args_list[0]
 
-        assert "request_response" in first_call_kwargs
+        assert "message" in first_call_kwargs
         assert "objective" in first_call_kwargs
         assert "infer_objective_from_request" in first_call_kwargs
-        assert first_call_kwargs["request_response"] == user_req
+        assert first_call_kwargs["message"] == user_req
 
         assert fake_scores[0] in results
         assert len(fake_scores) == 2
@@ -451,10 +451,10 @@ async def test_score_response_async_parallel_execution():
     assert score1_1 in result["auxiliary_scores"]
     assert score2_1 in result["auxiliary_scores"]
     scorer1.score_async.assert_any_call(
-        request_response=response, objective="test task", role_filter="assistant", skip_on_error_result=True
+        message=response, objective="test task", role_filter="assistant", skip_on_error_result=True
     )
     scorer2.score_async.assert_any_call(
-        request_response=response, objective="test task", role_filter="assistant", skip_on_error_result=True
+        message=response, objective="test task", role_filter="assistant", skip_on_error_result=True
     )
 
 
@@ -477,7 +477,7 @@ async def test_score_async_no_matching_role():
         message_pieces=[MessagePiece(role="user", original_value="test", conversation_id="test-convo")]
     )
     scorer = MockScorer()
-    result = await scorer.score_async(request_response=response, role_filter="assistant", objective="test task")
+    result = await scorer.score_async(message=response, role_filter="assistant", objective="test task")
 
     assert result == []
 
@@ -571,14 +571,14 @@ async def test_score_response_success_async_parallel_scoring_per_piece():
     # Track call order
     call_order = []
 
-    async def mock_score_async_1(request_response: Message, **kwargs) -> list[Score]:
-        call_order.append(("scorer1", request_response.message_pieces[0].original_value))
+    async def mock_score_async_1(message: Message, **kwargs) -> list[Score]:
+        call_order.append(("scorer1", message.message_pieces[0].original_value))
         score = MagicMock(spec=Score)
         score.get_value.return_value = False
         return [score]
 
-    async def mock_score_async_2(request_response: Message, **kwargs) -> list[Score]:
-        call_order.append(("scorer2", request_response.message_pieces[0].original_value))
+    async def mock_score_async_2(message: Message, **kwargs) -> list[Score]:
+        call_order.append(("scorer2", message.message_pieces[0].original_value))
         score = MagicMock(spec=Score)
         score.get_value.return_value = False
         return [score]
@@ -855,14 +855,14 @@ async def test_score_response_async_concurrent_execution():
     # Track call order to verify concurrent execution
     call_order = []
 
-    async def mock_aux_score_async(request_response: Message, **kwargs) -> list[Score]:
+    async def mock_aux_score_async(message: Message, **kwargs) -> list[Score]:
         call_order.append("aux_start")
         # Simulate some async work
         await asyncio.sleep(0.01)
         call_order.append("aux_end")
         return [MagicMock(spec=Score)]
 
-    async def mock_obj_score_async(request_response: Message, **kwargs) -> list[Score]:
+    async def mock_obj_score_async(message: Message, **kwargs) -> list[Score]:
         call_order.append("obj_start")
         # Simulate some async work
         await asyncio.sleep(0.01)

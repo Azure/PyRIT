@@ -41,9 +41,9 @@ def test_add_message_pieces_to_memory(
         c.role = sample_conversations[0].role
         c.sequence = 0
 
-    request_response = Message(message_pieces=sample_conversations[:num_conversations])
+    message = Message(message_pieces=sample_conversations[:num_conversations])
 
-    sqlite_instance.add_message_to_memory(request=request_response)
+    sqlite_instance.add_message_to_memory(request=message)
     assert len(sqlite_instance.get_message_pieces()) == num_conversations
 
 
@@ -474,14 +474,14 @@ def test_duplicate_memory_attack_id_collision(sqlite_instance: MemoryInterface):
 
 
 def test_add_message_pieces_to_memory_calls_validate(sqlite_instance: MemoryInterface):
-    request_response = MagicMock(Message)
-    request_response.message_pieces = [MagicMock(MessagePiece)]
+    message = MagicMock(Message)
+    message.message_pieces = [MagicMock(MessagePiece)]
     with (
         patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_message_pieces_to_memory"),
         patch("pyrit.memory.memory_interface.MemoryInterface._update_sequence"),
     ):
-        sqlite_instance.add_message_to_memory(request=request_response)
-    assert request_response.validate.called
+        sqlite_instance.add_message_to_memory(request=message)
+    assert message.validate.called
 
 
 def test_add_message_pieces_to_memory_updates_sequence(

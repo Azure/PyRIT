@@ -224,9 +224,9 @@ interesting_prompts = []
 # Configure the types of scores you are interested in;
 for piece in result_pieces:
     for score in piece.scores:
-        if (score.score_type == "float_scale" and score.get_value() > 0) or (
-            score.scorer_class_identifier["__type__"] == "SelfAskRefusalScorer" and score.get_value() == False
-        ):
+        positive_float_scale_score = score.score_type == "float_scale" and score.get_value() > 0
+        no_refusal_score = score.scorer_class_identifier["__type__"] == "SelfAskRefusalScorer" and score.get_value() == False
+        if positive_float_scale_score or no_refusal_score:
             interesting_prompts.append(piece.to_message())
             break
 
@@ -252,9 +252,7 @@ for result in new_results:
 # %%
 # Configure how you want to export the conversations - this exports to a json
 
-memory.export_conversations(
-    labels=memory_labels,
-)
+memory.export_conversations(labels=memory_labels)
 
 # %% [markdown]
 # Some operators also like to work locally and then upload to a central DB. You can upload your prompts like this.

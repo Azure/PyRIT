@@ -113,10 +113,10 @@ class BatchScorer:
             responses.extend(conversation)
 
         return await scorer.score_prompts_batch_async(
-            request_responses=responses, objectives=[objective] * len(responses), batch_size=self._batch_size
+            messages=responses, objectives=[objective] * len(responses), batch_size=self._batch_size
         )
 
-    def _remove_duplicates(self, request_responses: Sequence[MessagePiece]) -> list[MessagePiece]:
+    def _remove_duplicates(self, messages: Sequence[MessagePiece]) -> list[MessagePiece]:
         """
         Remove duplicates from the list of MessagePiece objects.
 
@@ -124,9 +124,9 @@ class BatchScorer:
         to only include original prompts (where original_prompt_id == id).
 
         Args:
-            request_responses (Sequence[MessagePiece]): The request responses to deduplicate.
+            messages (Sequence[MessagePiece]): The request responses to deduplicate.
 
         Returns:
             list[MessagePiece]: A list with duplicates removed.
         """
-        return [response for response in request_responses if response.original_prompt_id == response.id]
+        return [response for response in messages if response.original_prompt_id == response.id]

@@ -112,9 +112,9 @@ async def test_send_prompt_async_no_response_adds_memory(mock_memory_instance, s
     normalizer = PromptNormalizer()
 
     await normalizer.send_prompt_async(seed_prompt_group=seed_prompt_group, target=prompt_target)
-    assert mock_memory_instance.add_request_response_to_memory.call_count == 1
+    assert mock_memory_instance.add_message_to_memory.call_count == 1
 
-    request = mock_memory_instance.add_request_response_to_memory.call_args[1]["request"]
+    request = mock_memory_instance.add_message_to_memory.call_args[1]["request"]
     assert_prompt_piece_hashes_set(request)
 
 
@@ -127,7 +127,7 @@ async def test_send_prompt_async_empty_response_exception_handled(mock_memory_in
 
     response = await normalizer.send_prompt_async(seed_prompt_group=seed_prompt_group, target=prompt_target)
 
-    assert mock_memory_instance.add_request_response_to_memory.call_count == 2
+    assert mock_memory_instance.add_message_to_memory.call_count == 2
 
     assert response.message_pieces[0].response_error == "empty"
     assert response.message_pieces[0].original_value == ""
@@ -148,24 +148,24 @@ async def test_send_prompt_async_request_response_added_to_memory(mock_memory_in
 
     await normalizer.send_prompt_async(seed_prompt_group=seed_prompt_group, target=prompt_target)
 
-    assert mock_memory_instance.add_request_response_to_memory.call_count == 2
+    assert mock_memory_instance.add_message_to_memory.call_count == 2
 
     seed_prompt_value = seed_prompt_group.prompts[0].value
     # Validate that first request is added to memory, then response is added to memory
     assert (
         seed_prompt_value
-        == mock_memory_instance.add_request_response_to_memory.call_args_list[0][1]["request"]
+        == mock_memory_instance.add_message_to_memory.call_args_list[0][1]["request"]
         .message_pieces[0]
         .original_value
     )
     assert (
         "test_response"
-        == mock_memory_instance.add_request_response_to_memory.call_args_list[1][1]["request"]
+        == mock_memory_instance.add_message_to_memory.call_args_list[1][1]["request"]
         .message_pieces[0]
         .original_value
     )
 
-    assert mock_memory_instance.add_request_response_to_memory.call_args_list[1].called_after(
+    assert mock_memory_instance.add_message_to_memory.call_args_list[1].called_after(
         prompt_target.send_prompt_async
     )
 
@@ -184,18 +184,18 @@ async def test_send_prompt_async_exception(mock_memory_instance, seed_prompt_gro
         try:
             await normalizer.send_prompt_async(seed_prompt_group=seed_prompt_group, target=prompt_target)
         except ValueError:
-            assert mock_memory_instance.add_request_response_to_memory.call_count == 2
+            assert mock_memory_instance.add_message_to_memory.call_count == 2
 
             # Validate that first request is added to memory, then exception is added to memory
             assert (
                 seed_prompt_value
-                == mock_memory_instance.add_request_response_to_memory.call_args_list[0][1]["request"]
+                == mock_memory_instance.add_message_to_memory.call_args_list[0][1]["request"]
                 .message_pieces[0]
                 .original_value
             )
             assert (
                 "test_exception"
-                == mock_memory_instance.add_request_response_to_memory.call_args_list[1][1]["request"]
+                == mock_memory_instance.add_message_to_memory.call_args_list[1][1]["request"]
                 .message_pieces[0]
                 .original_value
             )
@@ -254,7 +254,7 @@ async def test_send_prompt_async_adds_memory_twice(
     normalizer = PromptNormalizer()
 
     response = await normalizer.send_prompt_async(seed_prompt_group=seed_prompt_group, target=prompt_target)
-    assert mock_memory_instance.add_request_response_to_memory.call_count == 2
+    assert mock_memory_instance.add_message_to_memory.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -413,7 +413,7 @@ async def test_convert_response_values_index(mock_memory_instance, response: Mes
 
     normalizer = PromptNormalizer()
 
-    await normalizer.convert_values(converter_configurations=[response_converter], request_response=response)
+    await normalizer.convert_values(converter_configurations=[response_converter], message=response)
     assert response.get_value() == "SGVsbG8=", "Converter should be applied here"
     assert response.get_value(1) == "part 2", "Converter should not be applied since we specified only 0"
 
@@ -426,7 +426,7 @@ async def test_convert_response_values_type(mock_memory_instance, response: Mess
 
     normalizer = PromptNormalizer()
 
-    await normalizer.convert_values(converter_configurations=[response_converter], request_response=response)
+    await normalizer.convert_values(converter_configurations=[response_converter], message=response)
     assert response.get_value() == "SGVsbG8="
     assert response.get_value(1) == "cGFydCAy"
 
@@ -554,13 +554,13 @@ async def test_send_prompt_async_exception_conv_id(mock_memory_instance, seed_pr
     # Validate that first request is added to memory, then exception is added to memory
     assert (
         seed_prompt_group.prompts[0].value
-        == mock_memory_instance.add_request_response_to_memory.call_args_list[0][1]["request"]
+        == mock_memory_instance.add_message_to_memory.call_args_list[0][1]["request"]
         .message_pieces[0]
         .original_value
     )
     assert (
         "Test Exception"
-        in mock_memory_instance.add_request_response_to_memory.call_args_list[1][1]["request"]
+        in mock_memory_instance.add_message_to_memory.call_args_list[1][1]["request"]
         .message_pieces[0]
         .original_value
     )

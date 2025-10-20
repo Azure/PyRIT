@@ -170,7 +170,7 @@ async def test_dalle_validate_request_length(dalle_target: OpenAIDALLETarget):
         ]
     )
 
-    with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
+    with pytest.raises(ValueError, match="This target only supports a single message piece."):
         await dalle_target.send_prompt_async(prompt_request=request)
 
 
@@ -190,7 +190,7 @@ async def test_send_prompt_async_empty_response_adds_memory(
 
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
-    mock_memory.add_request_response_to_memory = AsyncMock()
+    mock_memory.add_message_to_memory = AsyncMock()
 
     request = sample_conversations[0]
     request.conversation_id = str(uuid.uuid4())
@@ -208,7 +208,7 @@ async def test_send_prompt_async_empty_response_adds_memory(
 
         with pytest.raises(EmptyResponseException):
             await dalle_target.send_prompt_async(prompt_request=Message([request]))
-            assert mock_memory.add_request_response_to_memory.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
+            assert mock_memory.add_message_to_memory.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
 
 
 @pytest.mark.asyncio
@@ -218,7 +218,7 @@ async def test_send_prompt_async_rate_limit_adds_memory(
 ) -> None:
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
-    mock_memory.add_request_response_to_memory = AsyncMock()
+    mock_memory.add_message_to_memory = AsyncMock()
 
     request = sample_conversations[0]
     request.conversation_id = str(uuid.uuid4())
@@ -234,7 +234,7 @@ async def test_send_prompt_async_rate_limit_adds_memory(
 
         with pytest.raises(RateLimitException):
             await dalle_target.send_prompt_async(prompt_request=Message([request]))
-            assert mock_memory.add_request_response_to_memory.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
+            assert mock_memory.add_message_to_memory.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
 
 
 @pytest.mark.asyncio
@@ -265,7 +265,7 @@ async def test_send_prompt_async_bad_request_content_filter(
 def test_is_json_response_supported(patch_central_database):
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
-    mock_memory.add_request_response_to_memory = AsyncMock()
+    mock_memory.add_message_to_memory = AsyncMock()
 
     mock_dalle_target = OpenAIDALLETarget(model_name="test", endpoint="test", api_key="test")
     assert mock_dalle_target.is_json_response_supported() is False
@@ -322,7 +322,7 @@ async def test_dalle_target_default_api_version(
 async def test_send_prompt_async_calls_refresh_auth_headers(dalle_target):
     mock_memory = MagicMock(spec=MemoryInterface)
     mock_memory.get_conversation.return_value = []
-    mock_memory.add_request_response_to_memory = AsyncMock()
+    mock_memory.add_message_to_memory = AsyncMock()
 
     dalle_target._memory = mock_memory
 

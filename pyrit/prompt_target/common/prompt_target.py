@@ -37,7 +37,7 @@ class PromptTarget(abc.ABC, Identifier):
     @abc.abstractmethod
     def _validate_request(self, *, prompt_request: Message) -> None:
         """
-        Validates the provided prompt request response
+        Validates the provided message
         """
 
     def dispose_db_engine(self) -> None:

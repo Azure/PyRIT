@@ -417,7 +417,7 @@ def test_get_attack_results_nonexistent_ids(sqlite_instance: MemoryInterface):
 
 def test_attack_result_with_last_response_and_score(sqlite_instance: MemoryInterface):
     """Test attack result with last_response and last_score relationships."""
-    # Create a prompt request piece first
+    # Create a message piece first
     prompt_piece = MessagePiece(
         role="user",
         original_value="Test prompt",
@@ -614,7 +614,7 @@ def test_attack_result_without_attack_generation_conversation_ids(sqlite_instanc
 def test_get_attack_results_by_harm_category_single(sqlite_instance: MemoryInterface):
     """Test filtering attack results by a single harm category."""
 
-    # Create prompt request pieces with harm categories using helper function
+    # Create message pieces with harm categories using helper function
     prompt_piece1 = create_prompt_piece("conv_1", 1, targeted_harm_categories=["violence", "illegal"])
     prompt_piece2 = create_prompt_piece("conv_2", 2, targeted_harm_categories=["illegal"])
     prompt_piece3 = create_prompt_piece("conv_3", 3, targeted_harm_categories=["violence"])
@@ -643,7 +643,7 @@ def test_get_attack_results_by_harm_category_single(sqlite_instance: MemoryInter
 def test_get_attack_results_by_harm_category_multiple(sqlite_instance: MemoryInterface):
     """Test filtering attack results by multiple harm categories (AND logic)."""
 
-    # Create prompt request pieces with different harm category combinations
+    # Create message pieces with different harm category combinations
     prompt_piece1 = create_prompt_piece("conv_1", 1, targeted_harm_categories=["violence", "illegal", "hate"])
     prompt_piece2 = create_prompt_piece("conv_2", 2, targeted_harm_categories=["violence", "illegal"])
     prompt_piece3 = create_prompt_piece("conv_3", 3, targeted_harm_categories=["violence"])
@@ -670,7 +670,7 @@ def test_get_attack_results_by_harm_category_multiple(sqlite_instance: MemoryInt
 def test_get_attack_results_by_labels_single(sqlite_instance: MemoryInterface):
     """Test filtering attack results by single label."""
 
-    # Create prompt request pieces with labels
+    # Create message pieces with labels
     prompt_piece1 = create_prompt_piece("conv_1", 1, labels={"operation": "test_op", "operator": "roakey"})
     prompt_piece2 = create_prompt_piece("conv_2", 2, labels={"operation": "test_op"})
     prompt_piece3 = create_prompt_piece("conv_3", 3, labels={"operation": "other_op", "operator": "roakey"})
@@ -698,7 +698,7 @@ def test_get_attack_results_by_labels_single(sqlite_instance: MemoryInterface):
 def test_get_attack_results_by_labels_multiple(sqlite_instance: MemoryInterface):
     """Test filtering attack results by multiple labels (AND logic)."""
 
-    # Create prompt request pieces with multiple labels using helper function
+    # Create message pieces with multiple labels using helper function
     prompt_piece1 = create_prompt_piece(
         "conv_1", 1, labels={"operation": "test_op", "operator": "roakey", "phase": "initial"}
     )
@@ -732,7 +732,7 @@ def test_get_attack_results_by_labels_multiple(sqlite_instance: MemoryInterface)
 def test_get_attack_results_by_harm_category_and_labels(sqlite_instance: MemoryInterface):
     """Test filtering attack results by both harm categories and labels."""
 
-    # Create prompt request pieces with both harm categories and labels using helper function
+    # Create message pieces with both harm categories and labels using helper function
     prompt_piece1 = create_prompt_piece(
         "conv_1",
         1,

@@ -73,12 +73,12 @@ class SelfAskScaleScorer(FloatScaleScorer):
         Scores the given message_piece using "self-ask" for the chat target.
 
         Args:
-            message_piece (MessagePiece): The prompt request piece containing the text to be scored.
+            message_piece (MessagePiece): The message piece containing the text to be scored.
             objective (str): The task based on which the text should be scored (the original
                 attacker model's objective).
 
         Returns:
-            list[Score]: The request_response scored.
+            list[Score]: The message piece's score.
                          The score_value is a value from [0,1] that is scaled based on the scorer's scale.
         """
         scoring_prompt = f"objective: {objective}\nresponse: {message_piece.converted_value}"

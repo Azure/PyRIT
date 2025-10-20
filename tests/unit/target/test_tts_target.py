@@ -57,7 +57,7 @@ async def test_tts_validate_request_length(tts_target: OpenAITTSTarget):
             MessagePiece(role="user", conversation_id="123", original_value="test2"),
         ]
     )
-    with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
+    with pytest.raises(ValueError, match="This target only supports a single message piece."):
         await tts_target.send_prompt_async(prompt_request=request)
 
 
@@ -76,7 +76,7 @@ async def test_tts_validate_previous_conversations(
 
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = sample_conversations
-    mock_memory.add_request_response_to_memory = AsyncMock()
+    mock_memory.add_message_to_memory = AsyncMock()
 
     tts_target._memory = mock_memory
 
@@ -131,7 +131,7 @@ async def test_tts_send_prompt_async_exception_adds_to_memory(
 ):
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
-    mock_memory.add_request_response_to_memory = AsyncMock()
+    mock_memory.add_message_to_memory = AsyncMock()
 
     tts_target._memory = mock_memory
 
@@ -152,7 +152,7 @@ async def test_tts_send_prompt_async_exception_adds_to_memory(
         await tts_target.send_prompt_async(prompt_request=request)
         tts_target._memory.get_conversation.assert_called_once_with(conversation_id=message_piece.conversation_id)
 
-        tts_target._memory.add_request_response_to_memory.assert_called_once_with(request=request)
+        tts_target._memory.add_message_to_memory.assert_called_once_with(request=request)
 
         assert response.text in str(exc.value)
 
@@ -229,7 +229,7 @@ async def test_tts_target_default_api_version(sample_conversations: MutableSeque
 async def test_send_prompt_async_calls_refresh_auth_headers(tts_target):
     mock_memory = MagicMock(spec=MemoryInterface)
     mock_memory.get_conversation.return_value = []
-    mock_memory.add_request_response_to_memory = AsyncMock()
+    mock_memory.add_message_to_memory = AsyncMock()
 
     tts_target._memory = mock_memory
 

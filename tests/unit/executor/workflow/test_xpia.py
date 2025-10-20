@@ -326,8 +326,8 @@ class TestXPIAWorkflowPerform:
         assert response == "Processing response"
 
         # Verify memory addition
-        mock_memory_instance.add_request_response_to_memory.assert_called_once()
-        call_args = mock_memory_instance.add_request_response_to_memory.call_args
+        mock_memory_instance.add_message_to_memory.assert_called_once()
+        call_args = mock_memory_instance.add_message_to_memory.call_args
         assert call_args.kwargs["request"] is not None
         assert isinstance(call_args.kwargs["request"], Message)
 

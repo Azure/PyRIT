@@ -50,7 +50,7 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
 
     async def _score_async(
         self,
-        request_response: Message,
+        message: Message,
         *,
         objective: Optional[str] = None,
         role_filter: Optional[ChatMessageRole] = None,
@@ -58,7 +58,7 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
         """Score a request/response by combining results from all constituent scorers.
 
         Args:
-            request_response (Message): The request/response to score.
+            message (Message): The request/response to score.
             objective (Optional[str]): Scoring objective or context.
 
         Returns:
@@ -66,7 +66,7 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
         """
 
         tasks = [
-            scorer.score_async(request_response=request_response, objective=objective, role_filter=role_filter)
+            scorer.score_async(message=message, objective=objective, role_filter=role_filter)
             for scorer in self._scorers
         ]
 
@@ -86,7 +86,7 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
         result = self._score_aggregator(score_list)
 
         # Ensure the request piece has an ID
-        piece_id = request_response.message_pieces[0].id
+        piece_id = message.message_pieces[0].id
         assert piece_id is not None, "Request piece must have an ID"
 
         return_score = Score(

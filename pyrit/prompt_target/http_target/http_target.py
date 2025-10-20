@@ -233,4 +233,4 @@ class HTTPTarget(PromptTarget):
 
         n_pieces = len(message_pieces)
         if n_pieces != 1:
-            raise ValueError(f"This target only supports a single prompt request piece. Received: {n_pieces} pieces.")
+            raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")

@@ -310,11 +310,11 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
     def _validate_request(self, *, prompt_request: Message) -> None:
         """
-        Validates the provided prompt request response.
+        Validates the provided message.
         """
         n_pieces = len(prompt_request.message_pieces)
         if n_pieces != 1:
-            raise ValueError(f"This target only supports a single prompt request piece. Received: {n_pieces} pieces.")
+            raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
 
         piece_type = prompt_request.message_pieces[0].converted_value_data_type
         if piece_type != "text":

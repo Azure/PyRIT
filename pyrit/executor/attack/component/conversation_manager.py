@@ -269,7 +269,7 @@ class ConversationManager:
                 # Create a temporary request with just this piece for conversion
                 temp_request = Message(message_pieces=[piece])
                 await self._prompt_normalizer.convert_values(
-                    request_response=temp_request,
+                    message=temp_request,
                     converter_configurations=applicable_converters,
                 )
 

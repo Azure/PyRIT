@@ -77,7 +77,7 @@ print(result.generated_content)
 # %%
 generator_with_kg = AnecdoctorGenerator(
     objective_target=objective_target,
-    processing_model=objective_target,  # Providing a processing model means the generator will extract a knowledge graph from the examples before generation.
+    processing_model=objective_target, # Providing a processing model means the generator will extract a knowledge graph from the examples before generation.
 )
 
 result_kg = await generator_with_kg.execute_async(  # type: ignore[top-level-await]
@@ -122,6 +122,7 @@ print(result_kg_german.generated_content)
 
 # %%
 import json
+import re
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -134,14 +135,38 @@ def visualize_knowledge_graph(kg_result):
     """
     Parses the knowledge graph result, converts it to a DataFrame, and visualizes it as a graph.
     """
-    # 1) Parse as JSON
-    clean_output = kg_result.strip("`")
-    clean_output = kg_result.replace("json\n", "")  # Remove "json\n" if present
-    data = json.loads(clean_output)
+    if not kg_result or not kg_result.strip():
+        print("Warning: Empty knowledge graph result. Skipping visualization.")
+        return
+    
+    # 1) Parse as JSON - handle markdown code blocks
+    clean_output = kg_result.strip()
+    
+    # Remove markdown code block markers if present
+    # Match ```json ... ``` or ``` ... ```
+    code_block_pattern = r'^```(?:json)?\s*\n?(.*?)\n?```$'
+    match = re.search(code_block_pattern, clean_output, re.DOTALL)
+    if match:
+        clean_output = match.group(1).strip()
+    
+    try:
+        data = json.loads(clean_output)
+    except json.JSONDecodeError as e:
+        print(f"Warning: Failed to parse knowledge graph as JSON: {e}")
+        print(f"Raw output (first 200 chars): {kg_result[:200]}")
+        return
+
+    if not data:
+        print("Warning: Empty knowledge graph data. Skipping visualization.")
+        return
 
     # 2) Convert to DataFrame
     df = pd.DataFrame(data, columns=["Type", "col1", "col2", "col3"])
     rel_df = df[df["Type"] == "relationship"]
+
+    if rel_df.empty:
+        print("Warning: No relationships found in knowledge graph. Skipping visualization.")
+        return
 
     # 3) Create and visualize the graph
     G = nx.Graph()
@@ -177,3 +202,4 @@ graph_german = await generator_with_kg_german._extract_knowledge_graph_async(con
 # Visualize the knowledge graphs
 visualize_knowledge_graph(graph_english)
 visualize_knowledge_graph(graph_german)
+

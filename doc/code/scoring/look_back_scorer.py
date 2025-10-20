@@ -108,11 +108,13 @@ conversation_history = memory.get_conversation(conversation_id=result.conversati
 # Exclude the instruction prompts from the scoring process by setting exclude_instruction_prompts to True
 score_conversation = LookBackScorer(chat_target=adversarial_chat, exclude_instruction_prompts=True)
 
-# Score requires a MessagePiece
-request_response = memory.get_message_pieces(conversation_id=result.conversation_id)
-message_piece = request_response[0]
+# Score requires a Message object with a single MessagePiece
+# The scorer will use the conversation_id to get the full conversation history from memory
+conversation_message_pieces = memory.get_message_pieces(conversation_id=result.conversation_id)
+message_piece = conversation_message_pieces[0]
+message = Message(message_pieces=[message_piece])
 
 # Returns a score using entire conversation as context
-score = (await score_conversation.score_async(request))[0]  # type: ignore
+score = (await score_conversation.score_async(message))[0]  # type: ignore
 
-print(f"{score} {score.score_rationale}")
+print (f"{score} {score.score_rationale}")

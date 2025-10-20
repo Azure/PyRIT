@@ -56,7 +56,7 @@ class TestPlagiarismScorer:
 
         request = message_piece.to_message()
 
-        scores = await scorer.score_async(request_response=request)
+        scores = await scorer.score_async(message=request)
 
         assert len(scores) == 1
         score = scores[0]
@@ -84,7 +84,7 @@ class TestPlagiarismScorer:
             converted_value_data_type="text",
         ).to_message()
 
-        scores = await scorer._score_async(request_response=request)
+        scores = await scorer._score_async(message=request)
 
         assert len(scores) == 1
         score = scores[0]
@@ -108,7 +108,7 @@ class TestPlagiarismScorer:
             converted_value_data_type="text",
         ).to_message()
 
-        scores = await scorer._score_async(request_response=request)
+        scores = await scorer._score_async(message=request)
 
         assert len(scores) == 1
         score = scores[0]
@@ -127,7 +127,7 @@ class TestPlagiarismScorer:
             role="assistant", original_value="", converted_value="", converted_value_data_type="text"
         ).to_message()
 
-        scores = await scorer._score_async(request_response=request)
+        scores = await scorer._score_async(message=request)
 
         assert len(scores) == 1
         score = scores[0]
@@ -148,7 +148,7 @@ class TestPlagiarismScorer:
             converted_value_data_type="text",
         ).to_message()
 
-        scores = await scorer._score_async(request_response=request)
+        scores = await scorer._score_async(message=request)
 
         assert len(scores) == 1
         score = scores[0]
@@ -170,7 +170,7 @@ class TestPlagiarismScorer:
             converted_value_data_type="text",
         ).to_message()
 
-        scores = await scorer._score_async(request_response=request)
+        scores = await scorer._score_async(message=request)
 
         assert len(scores) == 1
         score = scores[0]

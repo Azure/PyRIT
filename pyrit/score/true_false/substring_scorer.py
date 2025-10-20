@@ -49,7 +49,7 @@ class SubStringScorer(TrueFalseScorer):
         """Score the given request piece based on presence of the substring.
 
         Args:
-            message_piece (MessagePiece): The prompt request piece to score.
+            message_piece (MessagePiece): The message piece to score.
             objective (Optional[str]): The objective to evaluate against. Defaults to None.
                 Currently not used for this scorer.
 

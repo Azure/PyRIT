@@ -104,15 +104,15 @@ class SelfAskCategoryScorer(TrueFalseScorer):
         self, message_piece: MessagePiece, *, objective: Optional[str] = None
     ) -> list[Score]:
         """
-        Scores the given request_response using the chat target.
+        Scores the given message using the chat target.
 
         Args:
-            request_response (MessagePiece): The prompt request piece to score.
+            message_piece (MessagePiece): The message piece to score.
             task (str): The task based on which the text should be scored (the original attacker model's objective).
                 Currently not supported for this scorer.
 
         Returns:
-            list[Score]: The request_response scored.
+            list[Score]: The message_piece's score.
                          The category that fits best in the response is used for score_category.
                          The score_value is True in all cases unless no category fits. In which case,
                          the score value is false and the _false_category is used.

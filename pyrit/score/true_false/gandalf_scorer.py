@@ -82,10 +82,10 @@ class GandalfScorer(TrueFalseScorer):
             raise ValueError(f"Conversation with ID {conversation_id} not found in memory.")
 
         conversation_as_text = ""
-        for request_response in conversation:
-            conversation_as_text += "Gandalf" if request_response.message_pieces[0].role == "assistant" else "user"
+        for message in conversation:
+            conversation_as_text += "Gandalf" if message.message_pieces[0].role == "assistant" else "user"
             conversation_as_text += ": "
-            conversation_as_text += request_response.get_value()
+            conversation_as_text += message.get_value()
             conversation_as_text += "\n"
 
         request = Message(
