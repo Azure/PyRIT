@@ -25,6 +25,7 @@ from pyrit.prompt_converter.charswap_attack_converter import CharSwapConverter
 from pyrit.prompt_converter.codechameleon_converter import CodeChameleonConverter
 from pyrit.prompt_converter.colloquial_wordswap_converter import ColloquialWordswapConverter
 from pyrit.prompt_converter.diacritic_converter import DiacriticConverter
+from pyrit.prompt_converter.ecoji_converter import EcojiConverter
 from pyrit.prompt_converter.emoji_converter import EmojiConverter
 from pyrit.prompt_converter.first_letter_converter import FirstLetterConverter
 from pyrit.prompt_converter.flip_converter import FlipConverter
@@ -44,6 +45,7 @@ from pyrit.prompt_converter.llm_generic_text_converter import LLMGenericTextConv
 from pyrit.prompt_converter.malicious_question_generator_converter import MaliciousQuestionGeneratorConverter
 from pyrit.prompt_converter.math_prompt_converter import MathPromptConverter
 from pyrit.prompt_converter.morse_converter import MorseConverter
+from pyrit.prompt_converter.nato_converter import NatoConverter
 from pyrit.prompt_converter.noise_converter import NoiseConverter
 from pyrit.prompt_converter.pdf_converter import PDFConverter
 from pyrit.prompt_converter.persuasion_converter import PersuasionConverter
@@ -56,7 +58,7 @@ from pyrit.prompt_converter.string_join_converter import StringJoinConverter
 from pyrit.prompt_converter.suffix_append_converter import SuffixAppendConverter
 from pyrit.prompt_converter.superscript_converter import SuperscriptConverter
 from pyrit.prompt_converter.tense_converter import TenseConverter
-from pyrit.prompt_converter.text_to_hex_converter import TextToHexConverter
+from pyrit.prompt_converter.bin_ascii_converter import BinAsciiConverter
 from pyrit.prompt_converter.tone_converter import ToneConverter
 from pyrit.prompt_converter.translation_converter import TranslationConverter
 from pyrit.prompt_converter.transparency_attack_converter import TransparencyAttackConverter
@@ -99,6 +101,7 @@ __all__ = [
     "DenylistConverter",
     "DiacriticConverter",
     "ConverterResult",
+    "EcojiConverter",
     "EmojiConverter",
     "FirstLetterConverter",
     "FlipConverter",
@@ -118,6 +121,7 @@ __all__ = [
     "MaliciousQuestionGeneratorConverter",
     "MathPromptConverter",
     "MorseConverter",
+    "NatoConverter",
     "NoiseConverter",
     "PDFConverter",
     "PersuasionConverter",
@@ -131,7 +135,7 @@ __all__ = [
     "StringJoinConverter",
     "SuffixAppendConverter",
     "SuperscriptConverter",
-    "TextToHexConverter",
+    "BinAsciiConverter",
     "TenseConverter",
     "ToneConverter",
     "TranslationConverter",
