@@ -173,8 +173,8 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
             if message_piece.converted_value_data_type != "text":
                 raise ValueError("_build_chat_messages_for_text only supports text.")
 
-            message = ChatMessage(role=message_piece.role, content=message_piece.converted_value)
-            chat_messages.append(message.model_dump(exclude_none=True))
+            chat_message = ChatMessage(role=message_piece.role, content=message_piece.converted_value)
+            chat_messages.append(chat_message.model_dump(exclude_none=True))
 
         return chat_messages
 
