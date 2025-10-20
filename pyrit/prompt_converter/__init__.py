@@ -18,6 +18,7 @@ from pyrit.prompt_converter.audio_frequency_converter import AudioFrequencyConve
 from pyrit.prompt_converter.azure_speech_audio_to_text_converter import AzureSpeechAudioToTextConverter
 from pyrit.prompt_converter.azure_speech_text_to_audio_converter import AzureSpeechTextToAudioConverter
 from pyrit.prompt_converter.base64_converter import Base64Converter
+from pyrit.prompt_converter.base2048_converter import Base2048Converter
 from pyrit.prompt_converter.binary_converter import BinaryConverter
 from pyrit.prompt_converter.caesar_converter import CaesarConverter
 from pyrit.prompt_converter.character_space_converter import CharacterSpaceConverter
@@ -91,6 +92,7 @@ __all__ = [
     "AzureSpeechAudioToTextConverter",
     "AzureSpeechTextToAudioConverter",
     "Base64Converter",
+    "Base2048Converter",
     "BinaryConverter",
     "BrailleConverter",
     "CaesarConverter",
