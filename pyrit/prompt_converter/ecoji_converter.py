@@ -4,6 +4,8 @@
 import io
 import logging
 
+import ecoji
+
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 
@@ -16,22 +18,11 @@ class EcojiConverter(PromptConverter):
 
     Ecoji is an encoding scheme that represents binary data using emojis.
     See https://ecoji.io/ for more details.
-
-    Raises:
-        ModuleNotFoundError: If the ``ecoji`` module is not installed.
     """
 
     def __init__(self) -> None:
-        """Initialize the Ecoji converter.
-
-        Raises:
-            ModuleNotFoundError: If the ``ecoji`` module is not installed.
-        """
-        try:
-            import ecoji  # noqa: F401
-        except ModuleNotFoundError as e:
-            logger.error("Could not import ecoji. " "You may need to install it via 'pip install pyrit[converters]'")
-            raise e
+        """Initialize the Ecoji converter."""
+        pass
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
@@ -63,8 +54,6 @@ class EcojiConverter(PromptConverter):
         Returns:
             str: The Ecoji-encoded text.
         """
-        import ecoji
-
         text_bytes = text.encode("utf-8")
         reader = io.BytesIO(text_bytes)
         writer = io.StringIO()

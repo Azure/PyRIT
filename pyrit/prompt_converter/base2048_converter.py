@@ -3,6 +3,8 @@
 
 import logging
 
+import base2048
+
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 
@@ -16,22 +18,11 @@ class Base2048Converter(PromptConverter):
     which uses 2048 different Unicode characters to represent binary data.
     This can be useful for obfuscating text or testing how systems
     handle encoded Unicode content.
-
-    Raises:
-        ModuleNotFoundError: If the ``base2048`` module is not installed.
     """
 
     def __init__(self) -> None:
-        """Initialize the Base2048Converter.
-
-        Raises:
-            ModuleNotFoundError: If the ``base2048`` module is not installed.
-        """
-        try:
-            import base2048  # noqa: F401
-        except ModuleNotFoundError as e:
-            logger.error("Could not import base2048. " "You may need to install it via 'pip install pyrit[all]'")
-            raise e
+        """Initialize the Base2048Converter."""
+        pass
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """Converts the given prompt to base2048 encoding.
@@ -46,8 +37,6 @@ class Base2048Converter(PromptConverter):
         Raises:
             ValueError: If the input type is not supported.
         """
-        import base2048
-
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 

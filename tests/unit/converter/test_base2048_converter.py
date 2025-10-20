@@ -6,16 +6,6 @@ import pytest
 from pyrit.prompt_converter import Base2048Converter, ConverterResult
 
 
-def is_base2048_installed():
-    try:
-        import base2048  # noqa: F401
-
-        return True
-    except ModuleNotFoundError:
-        return False
-
-
-@pytest.mark.skipif(not is_base2048_installed(), reason="base2048 is not installed")
 @pytest.mark.asyncio
 async def test_base2048_converter_basic():
     converter = Base2048Converter()
@@ -27,7 +17,6 @@ async def test_base2048_converter_basic():
     assert len(result.output_text) > 0
 
 
-@pytest.mark.skipif(not is_base2048_installed(), reason="base2048 is not installed")
 @pytest.mark.asyncio
 async def test_base2048_converter_unicode():
     converter = Base2048Converter()
@@ -38,7 +27,6 @@ async def test_base2048_converter_unicode():
     assert result.output_type == "text"
 
 
-@pytest.mark.skipif(not is_base2048_installed(), reason="base2048 is not installed")
 @pytest.mark.asyncio
 async def test_base2048_converter_input_supported():
     converter = Base2048Converter()
@@ -46,7 +34,6 @@ async def test_base2048_converter_input_supported():
     assert converter.input_supported("image_path") is False
 
 
-@pytest.mark.skipif(not is_base2048_installed(), reason="base2048 is not installed")
 @pytest.mark.asyncio
 async def test_base2048_converter_output_supported():
     converter = Base2048Converter()
@@ -54,7 +41,6 @@ async def test_base2048_converter_output_supported():
     assert converter.output_supported("image_path") is False
 
 
-@pytest.mark.skipif(not is_base2048_installed(), reason="base2048 is not installed")
 @pytest.mark.asyncio
 async def test_base2048_converter_invalid_input_type():
     converter = Base2048Converter()

@@ -6,16 +6,6 @@ import pytest
 from pyrit.prompt_converter import EcojiConverter
 
 
-def is_ecoji_installed():
-    try:
-        import ecoji  # noqa: F401
-
-        return True
-    except ModuleNotFoundError:
-        return False
-
-
-@pytest.mark.skipif(not is_ecoji_installed(), reason="ecoji is not installed")
 @pytest.mark.asyncio
 async def test_ecoji_converter_encode_simple_text() -> None:
     """Test encoding simple text to Ecoji format."""
@@ -30,7 +20,6 @@ async def test_ecoji_converter_encode_simple_text() -> None:
     assert result.output_text != prompt
 
 
-@pytest.mark.skipif(not is_ecoji_installed(), reason="ecoji is not installed")
 @pytest.mark.asyncio
 async def test_ecoji_converter_encode_empty_string() -> None:
     """Test encoding an empty string."""
@@ -43,7 +32,6 @@ async def test_ecoji_converter_encode_empty_string() -> None:
     assert result.output_type == "text"
 
 
-@pytest.mark.skipif(not is_ecoji_installed(), reason="ecoji is not installed")
 @pytest.mark.asyncio
 async def test_ecoji_converter_encode_with_special_characters() -> None:
     """Test encoding text with special characters."""
@@ -57,7 +45,6 @@ async def test_ecoji_converter_encode_with_special_characters() -> None:
     assert result.output_text != prompt
 
 
-@pytest.mark.skipif(not is_ecoji_installed(), reason="ecoji is not installed")
 @pytest.mark.asyncio
 async def test_ecoji_converter_encode_unicode() -> None:
     """Test encoding Unicode text."""
@@ -70,7 +57,6 @@ async def test_ecoji_converter_encode_unicode() -> None:
     assert result.output_type == "text"
 
 
-@pytest.mark.skipif(not is_ecoji_installed(), reason="ecoji is not installed")
 @pytest.mark.asyncio
 async def test_ecoji_converter_encode_multiline() -> None:
     """Test encoding multiline text."""
@@ -83,7 +69,6 @@ async def test_ecoji_converter_encode_multiline() -> None:
     assert result.output_type == "text"
 
 
-@pytest.mark.skipif(not is_ecoji_installed(), reason="ecoji is not installed")
 @pytest.mark.asyncio
 async def test_ecoji_converter_unsupported_input_type() -> None:
     """Test that unsupported input types raise ValueError."""
@@ -94,7 +79,6 @@ async def test_ecoji_converter_unsupported_input_type() -> None:
         await converter.convert_async(prompt=prompt, input_type="image_path")
 
 
-@pytest.mark.skipif(not is_ecoji_installed(), reason="ecoji is not installed")
 def test_ecoji_converter_input_supported_text() -> None:
     """Test that text input type is supported."""
     converter = EcojiConverter()
@@ -102,7 +86,6 @@ def test_ecoji_converter_input_supported_text() -> None:
     assert converter.input_supported(input_type="text") is True
 
 
-@pytest.mark.skipif(not is_ecoji_installed(), reason="ecoji is not installed")
 def test_ecoji_converter_input_supported_image() -> None:
     """Test that image input type is not supported."""
     converter = EcojiConverter()
@@ -110,7 +93,6 @@ def test_ecoji_converter_input_supported_image() -> None:
     assert converter.input_supported(input_type="image_path") is False
 
 
-@pytest.mark.skipif(not is_ecoji_installed(), reason="ecoji is not installed")
 def test_ecoji_converter_input_supported_audio() -> None:
     """Test that audio input type is not supported."""
     converter = EcojiConverter()
@@ -118,7 +100,6 @@ def test_ecoji_converter_input_supported_audio() -> None:
     assert converter.input_supported(input_type="audio_path") is False
 
 
-@pytest.mark.skipif(not is_ecoji_installed(), reason="ecoji is not installed")
 @pytest.mark.asyncio
 async def test_ecoji_converter_deterministic() -> None:
     """Test that encoding the same text produces the same result."""
@@ -131,7 +112,6 @@ async def test_ecoji_converter_deterministic() -> None:
     assert result1.output_text == result2.output_text
 
 
-@pytest.mark.skipif(not is_ecoji_installed(), reason="ecoji is not installed")
 @pytest.mark.asyncio
 async def test_ecoji_converter_different_inputs_produce_different_outputs() -> None:
     """Test that different inputs produce different outputs."""
