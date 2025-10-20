@@ -1,13 +1,22 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from typing import Literal
 from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 
-
-class TextToHexConverter(WordLevelConverter):
+class BinAsciiConverter(WordLevelConverter):
     """
     Converts text to a hexadecimal encoded utf-8 string.
     """
+    EncodingFunc = Literal[
+        "hex",
+        "quoted-printable",
+        "UUencode",
+    ]
+
+    def __init__(self, *, encoding_func: EncodingFunc = "hex"):
+        super().__init__()
+        self._encoding_func = encoding_func
 
     async def convert_word_async(self, word: str) -> str:
         return word.encode("utf-8").hex().upper()

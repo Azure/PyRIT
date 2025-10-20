@@ -119,6 +119,13 @@ speech = [
     "azure-cognitiveservices-speech>=1.46.0",
 ]
 
+# modules used for converters
+converters = [
+    "base2048>=0.1.3",
+    
+]
+
+
 # all includes all functional dependencies excluding the ones from the "dev" extra
 all = [
     "accelerate>=1.7.0",
