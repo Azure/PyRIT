@@ -252,8 +252,6 @@ for conv_id, prompts in conversations.items():
     print("Score: ", conversation_score[0].score_value)
     print("Reasoning: ", conversation_score[0].score_rationale)
 
-    # TODO: add assertions here to validate the scores against expected values
-
 # %% [markdown]
 # ## 4) Piecing together for Automated Multiturn Conversations:
 #
