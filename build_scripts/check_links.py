@@ -27,6 +27,9 @@ custom_myst_references = ["notebook_tests"]
 # Updated regex pattern to capture URLs from Markdown and HTML
 URL_PATTERN = re.compile(r'\[.*?\]\((.*?)\)|href="([^"]+)"|src="([^"]+)"')
 
+# Pattern to capture :link: directives from MyST grid-item-cards
+GRID_LINK_PATTERN = re.compile(r"^:link:\s+(.+)$", re.MULTILINE)
+
 
 def extract_urls(file_path):
     with open(file_path, "r", encoding="utf-8") as file:
@@ -34,6 +37,11 @@ def extract_urls(file_path):
     matches = URL_PATTERN.findall(content)
     # Flatten the list of tuples and filter out empty strings
     urls = [strip_fragment(url) for match in matches for url in match if url]
+
+    # Extract :link: directives from MyST grid-item-cards
+    grid_links = GRID_LINK_PATTERN.findall(content)
+    urls.extend(grid_links)
+
     return urls
 
 
@@ -47,7 +55,17 @@ def strip_fragment(url):
 
 def resolve_relative_url(base_path, url):
     if not url.startswith(("http://", "https://", "mailto:", "attachment:")):
-        return os.path.abspath(os.path.join(os.path.dirname(base_path), url))
+        # Handle MyST doc references (e.g., setup/1b_install_docker)
+        # These can be .md, .rst, or directory paths
+        abs_path = os.path.abspath(os.path.join(os.path.dirname(base_path), url))
+
+        # Check various possible file extensions for doc links
+        if not os.path.exists(abs_path):
+            for ext in [".md", ".ipynb"]:
+                if os.path.exists(abs_path + ext):
+                    return abs_path + ext
+
+        return abs_path
     return url
 
 
@@ -74,6 +92,10 @@ def check_url(url, retries=2, delay=2):
     ):
         return url, True
 
+    # If it's not an HTTP URL at this point, it's likely a broken local file reference
+    if not url.startswith(("http://", "https://")):
+        return url, False
+
     attempts = 0
     while attempts <= retries:
         try:
@@ -90,6 +112,9 @@ def check_url(url, retries=2, delay=2):
             if attempts > retries:
                 return url, False
             time.sleep(delay)
+
+    # If we exit the loop without returning, the URL is broken
+    return url, False
 
 
 def check_links_in_file(file_path):
