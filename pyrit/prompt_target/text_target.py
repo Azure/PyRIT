@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from typing import IO
 
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import PromptTarget
 
 

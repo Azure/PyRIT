@@ -23,7 +23,7 @@ from pyrit.exceptions.exception_classes import (
     RateLimitException,
 )
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import OpenAIResponseTarget
 
 
@@ -329,9 +329,7 @@ async def test_send_prompt_async_bad_request_error_adds_to_memory(target: OpenAI
 
     target._memory = mock_memory
 
-    prompt_request = Message(
-        message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="Hello")]
-    )
+    prompt_request = Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="Hello")])
 
     response = MagicMock()
     response.status_code = 400
@@ -756,9 +754,7 @@ def test_validate_request_allows_text_and_image(target: OpenAIResponseTarget):
     # Should not raise for valid types
     req = Message(
         message_pieces=[
-            MessagePiece(
-                role="user", original_value_data_type="text", original_value="Hello", conversation_id="123"
-            ),
+            MessagePiece(role="user", original_value_data_type="text", original_value="Hello", conversation_id="123"),
             MessagePiece(
                 role="user", original_value_data_type="image_path", original_value="fake.jpg", conversation_id="123"
             ),
@@ -946,9 +942,7 @@ async def test_build_input_for_multi_modal_async_function_call_forwarded(target:
         original_value_data_type="function_call",
         converted_value_data_type="function_call",
     )
-    items = await target._build_input_for_multi_modal_async(
-        [Message(message_pieces=[assistant_call_piece])]
-    )
+    items = await target._build_input_for_multi_modal_async([Message(message_pieces=[assistant_call_piece])])
     assert len(items) == 1
     assert items[0]["type"] == "function_call"
     assert items[0]["name"] == "sum"

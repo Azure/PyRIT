@@ -21,9 +21,9 @@ from pyrit.exceptions import (
     handle_bad_request_exception,
 )
 from pyrit.models import (
-    PromptDataType,
-    MessagePiece,
     Message,
+    MessagePiece,
+    PromptDataType,
     PromptResponseError,
 )
 from pyrit.prompt_target.openai.openai_chat_target_base import OpenAIChatTargetBase
@@ -176,9 +176,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             return {"type": "input_image", "image_url": {"url": data_url}}
         raise ValueError(f"Unsupported piece type for inline content: {piece.converted_value_data_type}")
 
-    async def _build_input_for_multi_modal_async(
-        self, conversation: MutableSequence[Message]
-    ) -> List[Dict[str, Any]]:
+    async def _build_input_for_multi_modal_async(self, conversation: MutableSequence[Message]) -> List[Dict[str, Any]]:
         """
         Build the Responses API `input` array.
 
@@ -275,9 +273,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
                 request["role"] = "developer"
         return
 
-    async def _construct_request_body(
-        self, conversation: MutableSequence[Message], is_json_response: bool
-    ) -> dict:
+    async def _construct_request_body(self, conversation: MutableSequence[Message], is_json_response: bool) -> dict:
         """
         Construct the request body to send to the Responses API.
 
@@ -541,9 +537,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
 
         return await fn(args)
 
-    def _make_tool_message(
-        self, output: dict[str, Any], call_id: str, *, reference_piece: MessagePiece
-    ) -> Message:
+    def _make_tool_message(self, output: dict[str, Any], call_id: str, *, reference_piece: MessagePiece) -> Message:
         """
         Wrap tool output as a top-level function_call_output artifact.
 

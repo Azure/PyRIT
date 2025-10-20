@@ -113,9 +113,7 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
             true_description=true_category, false_description=false_category, metadata=metadata
         )
 
-    async def _score_piece_async(
-        self, message_piece: MessagePiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
         Scores the given request piece using "self-ask" for the chat target.
 

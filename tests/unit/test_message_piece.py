@@ -14,12 +14,12 @@ from unit.mocks import MockPromptTarget, get_sample_conversations
 
 from pyrit.executor.attack import PromptSendingAttack
 from pyrit.models import (
-    MessagePiece,
     Message,
+    MessagePiece,
     Score,
     construct_response_from_request,
     group_conversation_message_pieces_by_sequence,
-    sort_message_pieces
+    sort_message_pieces,
 )
 from pyrit.prompt_converter import Base64Converter
 

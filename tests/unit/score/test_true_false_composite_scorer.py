@@ -30,9 +30,7 @@ class MockScorer(TrueFalseScorer):
         self._validator = MagicMock()
         self.aggregator = aggregator
 
-    async def _score_piece_async(
-        self, message_piece: MessagePiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         return [
             Score(
                 score_value=str(self._score_value),

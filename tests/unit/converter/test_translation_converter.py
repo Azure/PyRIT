@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from unit.mocks import MockPromptTarget
 
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_converter import TranslationConverter
 
 

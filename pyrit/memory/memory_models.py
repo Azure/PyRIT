@@ -29,7 +29,7 @@ from sqlalchemy.orm import (  # type: ignore
 from sqlalchemy.types import Uuid  # type: ignore
 
 from pyrit.common.utils import to_sha256
-from pyrit.models import PromptDataType, MessagePiece, Score, SeedPrompt
+from pyrit.models import MessagePiece, PromptDataType, Score, SeedPrompt
 from pyrit.models.attack_result import AttackOutcome, AttackResult
 from pyrit.models.conversation_reference import ConversationReference, ConversationType
 from pyrit.models.literals import ChatMessageRole

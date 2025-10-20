@@ -60,7 +60,7 @@ memory.print_schema()  # type: ignore
 # %%
 from uuid import uuid4
 
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 
 conversation_id = str(uuid4())
 

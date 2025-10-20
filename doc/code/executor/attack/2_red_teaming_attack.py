@@ -120,7 +120,7 @@ await ConsoleAttackResultPrinter().print_result_async(result=result)  # type: ig
 import os
 
 from pyrit.datasets import TextJailBreak
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 
 jailbreak = TextJailBreak(template_file_name="dan_1.yaml")
 

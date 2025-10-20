@@ -4,7 +4,7 @@
 import pytest
 from unit.mocks import get_image_message_piece
 
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import GandalfLevel, GandalfTarget
 
 

@@ -50,9 +50,7 @@ class _BaseVideoScorer(ABC):
             num_sampled_frames if num_sampled_frames is not None else self._DEFAULT_VIDEO_FRAMES_SAMPLING_NUM
         )
 
-    async def _score_frames_async(
-        self, *, message_piece: MessagePiece, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_frames_async(self, *, message_piece: MessagePiece, objective: Optional[str] = None) -> list[Score]:
         """
         Extract frames from video and score them.
 

@@ -8,8 +8,8 @@ from typing import Any, Literal, Optional, Sequence
 from pyrit.auth.azure_auth import AzureAuth, get_default_scope
 from pyrit.common import default_values, net_utility
 from pyrit.models import (
-    MessagePiece,
     Message,
+    MessagePiece,
     construct_response_from_request,
 )
 from pyrit.prompt_target import PromptTarget, limit_requests_per_minute

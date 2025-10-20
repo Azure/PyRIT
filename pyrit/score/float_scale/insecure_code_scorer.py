@@ -44,9 +44,7 @@ class InsecureCodeScorer(FloatScaleScorer):
         # Render the system prompt with the harm category
         self._system_prompt = scoring_instructions_template.render_template_value(harm_categories=self._harm_category)
 
-    async def _score_piece_async(
-        self, message_piece: MessagePiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
         Scores the given request piece using LLM to detect security vulnerabilities.
 

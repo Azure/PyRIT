@@ -38,9 +38,7 @@ class TrueFalseScorer(Scorer):
         if scores[0].score_value.lower() not in ["true", "false"]:
             raise ValueError("TrueFalseScorer score value must be True or False.")
 
-    async def _score_async(
-        self, message: Message, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         """
         Score the given request response asynchronously.
 

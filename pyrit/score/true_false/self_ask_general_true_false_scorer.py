@@ -79,9 +79,7 @@ class SelfAskGeneralTrueFalseScorer(TrueFalseScorer):
         self._metadata_output_key = metadata_output_key
         self._category_output_key = category_output_key
 
-    async def _score_piece_async(
-        self, message_piece: MessagePiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
         Score a single request piece using the configured prompts.
 

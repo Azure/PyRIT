@@ -12,7 +12,7 @@ from tenacity import RetryError
 from unit.mocks import get_sample_conversations
 
 from pyrit.exceptions.exception_classes import RateLimitException
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import OpenAISoraTarget
 
 

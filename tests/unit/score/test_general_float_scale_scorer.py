@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.score.float_scale.self_ask_general_float_scale_scorer import (
     SelfAskGeneralFloatScaleScorer,
 )
@@ -29,9 +29,7 @@ def general_float_scorer_response() -> Message:
 
 
 @pytest.mark.asyncio
-async def test_general_float_scorer_score_async(
-    patch_central_database, general_float_scorer_response: Message
-):
+async def test_general_float_scorer_score_async(patch_central_database, general_float_scorer_response: Message):
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=general_float_scorer_response)
 
@@ -92,9 +90,7 @@ async def test_general_float_scorer_score_async_handles_custom_keys(patch_centra
         .strip()
         .replace("\n", " ")
     )
-    response = Message(
-        message_pieces=[MessagePiece(role="assistant", original_value=json_response)]
-    )
+    response = Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
     chat_target.send_prompt_async = AsyncMock(return_value=response)
 
     scorer = SelfAskGeneralFloatScaleScorer(
@@ -129,9 +125,7 @@ async def test_general_float_scorer_score_async_min_max_scale(patch_central_data
         .strip()
         .replace("\n", " ")
     )
-    response = Message(
-        message_pieces=[MessagePiece(role="assistant", original_value=json_response)]
-    )
+    response = Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
     chat_target.send_prompt_async = AsyncMock(return_value=response)
 
     scorer = SelfAskGeneralFloatScaleScorer(

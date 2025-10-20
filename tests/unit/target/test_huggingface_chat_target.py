@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from pyrit.models import (
-    MessagePiece,
     Message,
+    MessagePiece,
 )
 from pyrit.prompt_target import HuggingFaceChatTarget
 

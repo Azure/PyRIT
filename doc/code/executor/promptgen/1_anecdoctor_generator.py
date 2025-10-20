@@ -77,7 +77,7 @@ print(result.generated_content)
 # %%
 generator_with_kg = AnecdoctorGenerator(
     objective_target=objective_target,
-    processing_model=objective_target, # Providing a processing model means the generator will extract a knowledge graph from the examples before generation.
+    processing_model=objective_target,  # Providing a processing model means the generator will extract a knowledge graph from the examples before generation.
 )
 
 result_kg = await generator_with_kg.execute_async(  # type: ignore[top-level-await]
@@ -138,17 +138,17 @@ def visualize_knowledge_graph(kg_result):
     if not kg_result or not kg_result.strip():
         print("Warning: Empty knowledge graph result. Skipping visualization.")
         return
-    
+
     # 1) Parse as JSON - handle markdown code blocks
     clean_output = kg_result.strip()
-    
+
     # Remove markdown code block markers if present
     # Match ```json ... ``` or ``` ... ```
-    code_block_pattern = r'^```(?:json)?\s*\n?(.*?)\n?```$'
+    code_block_pattern = r"^```(?:json)?\s*\n?(.*?)\n?```$"
     match = re.search(code_block_pattern, clean_output, re.DOTALL)
     if match:
         clean_output = match.group(1).strip()
-    
+
     try:
         data = json.loads(clean_output)
     except json.JSONDecodeError as e:
@@ -202,4 +202,3 @@ graph_german = await generator_with_kg_german._extract_knowledge_graph_async(con
 # Visualize the knowledge graphs
 visualize_knowledge_graph(graph_english)
 visualize_knowledge_graph(graph_german)
-

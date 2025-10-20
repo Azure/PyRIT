@@ -3,7 +3,7 @@
 
 import pytest
 
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.score import ScorerPromptValidator
 
 
@@ -15,12 +15,8 @@ class TestScorerPromptValidatorDataTypes:
         validator = ScorerPromptValidator()
 
         text_piece = MessagePiece(role="assistant", original_value="text", converted_value_data_type="text")
-        image_piece = MessagePiece(
-            role="assistant", original_value="image.png", converted_value_data_type="image_path"
-        )
-        audio_piece = MessagePiece(
-            role="assistant", original_value="audio.wav", converted_value_data_type="audio_path"
-        )
+        image_piece = MessagePiece(role="assistant", original_value="image.png", converted_value_data_type="image_path")
+        audio_piece = MessagePiece(role="assistant", original_value="audio.wav", converted_value_data_type="audio_path")
 
         assert validator.is_message_piece_supported(text_piece) is True
         assert validator.is_message_piece_supported(image_piece) is True
@@ -31,12 +27,8 @@ class TestScorerPromptValidatorDataTypes:
         validator = ScorerPromptValidator(supported_data_types=["text"])
 
         text_piece = MessagePiece(role="assistant", original_value="text", converted_value_data_type="text")
-        image_piece = MessagePiece(
-            role="assistant", original_value="image.png", converted_value_data_type="image_path"
-        )
-        audio_piece = MessagePiece(
-            role="assistant", original_value="audio.wav", converted_value_data_type="audio_path"
-        )
+        image_piece = MessagePiece(role="assistant", original_value="image.png", converted_value_data_type="image_path")
+        audio_piece = MessagePiece(role="assistant", original_value="audio.wav", converted_value_data_type="audio_path")
 
         assert validator.is_message_piece_supported(text_piece) is True
         assert validator.is_message_piece_supported(image_piece) is False
@@ -47,12 +39,8 @@ class TestScorerPromptValidatorDataTypes:
         validator = ScorerPromptValidator(supported_data_types=["text", "image_path"])
 
         text_piece = MessagePiece(role="assistant", original_value="text", converted_value_data_type="text")
-        image_piece = MessagePiece(
-            role="assistant", original_value="image.png", converted_value_data_type="image_path"
-        )
-        audio_piece = MessagePiece(
-            role="assistant", original_value="audio.wav", converted_value_data_type="audio_path"
-        )
+        image_piece = MessagePiece(role="assistant", original_value="image.png", converted_value_data_type="image_path")
+        audio_piece = MessagePiece(role="assistant", original_value="audio.wav", converted_value_data_type="audio_path")
 
         assert validator.is_message_piece_supported(text_piece) is True
         assert validator.is_message_piece_supported(image_piece) is True
@@ -63,9 +51,7 @@ class TestScorerPromptValidatorDataTypes:
         validator = ScorerPromptValidator(supported_data_types=["image_path"])
 
         text_piece = MessagePiece(role="assistant", original_value="text", converted_value_data_type="text")
-        image_piece = MessagePiece(
-            role="assistant", original_value="image.png", converted_value_data_type="image_path"
-        )
+        image_piece = MessagePiece(role="assistant", original_value="image.png", converted_value_data_type="image_path")
 
         assert validator.is_message_piece_supported(text_piece) is False
         assert validator.is_message_piece_supported(image_piece) is True
@@ -84,9 +70,7 @@ class TestScorerPromptValidatorMetadata:
             converted_value_data_type="text",
             prompt_metadata={"key": "value"},
         )
-        piece_without_metadata = MessagePiece(
-            role="assistant", original_value="text", converted_value_data_type="text"
-        )
+        piece_without_metadata = MessagePiece(role="assistant", original_value="text", converted_value_data_type="text")
 
         assert validator.is_message_piece_supported(piece_with_metadata) is True
         assert validator.is_message_piece_supported(piece_without_metadata) is True
@@ -101,9 +85,7 @@ class TestScorerPromptValidatorMetadata:
             converted_value_data_type="text",
             prompt_metadata={"category": "test"},
         )
-        piece_without_metadata = MessagePiece(
-            role="assistant", original_value="text", converted_value_data_type="text"
-        )
+        piece_without_metadata = MessagePiece(role="assistant", original_value="text", converted_value_data_type="text")
 
         assert validator.is_message_piece_supported(piece_with_metadata) is True
         assert validator.is_message_piece_supported(piece_without_metadata) is False
@@ -124,9 +106,7 @@ class TestScorerPromptValidatorMetadata:
             converted_value_data_type="text",
             prompt_metadata={"category": "test"},
         )
-        piece_without_metadata = MessagePiece(
-            role="assistant", original_value="text", converted_value_data_type="text"
-        )
+        piece_without_metadata = MessagePiece(role="assistant", original_value="text", converted_value_data_type="text")
 
         assert validator.is_message_piece_supported(piece_with_all_metadata) is True
         assert validator.is_message_piece_supported(piece_with_partial_metadata) is False
@@ -283,9 +263,7 @@ class TestScorerPromptValidatorCombined:
         )
 
         # Invalid: correct type but missing metadata
-        missing_metadata_piece = MessagePiece(
-            role="assistant", original_value="text", converted_value_data_type="text"
-        )
+        missing_metadata_piece = MessagePiece(role="assistant", original_value="text", converted_value_data_type="text")
 
         assert validator.is_message_piece_supported(valid_piece) is True
         assert validator.is_message_piece_supported(wrong_type_piece) is False

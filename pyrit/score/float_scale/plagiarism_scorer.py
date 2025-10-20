@@ -130,9 +130,7 @@ class PlagiarismScorer(FloatScaleScorer):
         else:
             raise ValueError("metric must be 'lcs', 'levenshtein', or 'jaccard'")
 
-    async def _score_piece_async(
-        self, message_piece: MessagePiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """Scores the AI response against the reference text using the specified metric.
 
         Args:

@@ -9,7 +9,7 @@ import pytest
 from unit.mocks import get_sample_conversations
 
 from pyrit.memory import CentralMemory
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.score import BatchScorer
 
 

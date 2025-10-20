@@ -13,8 +13,8 @@ from pyrit.exceptions import (
 )
 from pyrit.models import (
     ChatMessageListDictContent,
-    MessagePiece,
     Message,
+    MessagePiece,
     construct_response_from_request,
 )
 from pyrit.models.chat_message import ChatMessage
@@ -178,9 +178,7 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
 
         return chat_messages
 
-    async def _build_chat_messages_for_multi_modal_async(
-        self, conversation: MutableSequence[Message]
-    ) -> list[dict]:
+    async def _build_chat_messages_for_multi_modal_async(self, conversation: MutableSequence[Message]) -> list[dict]:
         """
         Builds chat messages based on message entries.
 
@@ -202,9 +200,7 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
                     entry = {"type": "text", "text": message_piece.converted_value}
                     content.append(entry)
                 elif message_piece.converted_value_data_type == "image_path":
-                    data_base64_encoded_url = await convert_local_image_to_data_url(
-                        message_piece.converted_value
-                    )
+                    data_base64_encoded_url = await convert_local_image_to_data_url(message_piece.converted_value)
                     image_url_entry = {"url": data_base64_encoded_url}
                     entry = {"type": "image_url", "image_url": image_url_entry}  # type: ignore
                     content.append(entry)
@@ -220,9 +216,7 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
             chat_messages.append(chat_message.model_dump(exclude_none=True))
         return chat_messages
 
-    async def _construct_request_body(
-        self, conversation: MutableSequence[Message], is_json_response: bool
-    ) -> dict:
+    async def _construct_request_body(self, conversation: MutableSequence[Message], is_json_response: bool) -> dict:
         messages = await self._build_chat_messages_async(conversation)
 
         body_parameters = {

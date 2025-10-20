@@ -14,7 +14,7 @@ from unit.mocks import get_image_message_piece, get_sample_conversations
 from pyrit.common import net_utility
 from pyrit.exceptions import RateLimitException
 from pyrit.memory import MemoryInterface
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import OpenAITTSTarget
 from pyrit.prompt_target.openai.openai_tts_target import TTSResponseFormat
 

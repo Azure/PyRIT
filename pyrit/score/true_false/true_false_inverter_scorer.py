@@ -68,9 +68,7 @@ class TrueFalseInverterScorer(TrueFalseScorer):
 
         return [inv_score]
 
-    async def _score_piece_async(
-        self, message_piece: MessagePiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """True False Inverter scorers do not support piecewise scoring.
 
         Args:

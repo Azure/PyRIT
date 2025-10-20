@@ -26,8 +26,8 @@ from pyrit.models import (
     AttackOutcome,
     ConversationReference,
     ConversationType,
-    MessagePiece,
     Message,
+    MessagePiece,
     Score,
     SeedPrompt,
 )

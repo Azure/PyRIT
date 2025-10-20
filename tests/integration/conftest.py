@@ -81,6 +81,7 @@ def sqlite_instance() -> Generator[SQLiteMemory, None, None]:
     temp_dir.cleanup()
     sqlite_memory.dispose_engine()
 
+
 @pytest.fixture()
 def patch_central_database(sqlite_instance):
     """Fixture to mock CentralMemory.get_memory_instance"""

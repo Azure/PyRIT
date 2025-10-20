@@ -33,7 +33,7 @@ from pyrit.executor.attack import (
     RedTeamingAttack,
 )
 from pyrit.memory import CentralMemory
-from pyrit.models import MessagePiece, Message, SeedPrompt
+from pyrit.models import Message, MessagePiece, SeedPrompt
 from pyrit.prompt_target import AzureMLChatTarget, OpenAIChatTarget
 from pyrit.score import LookBackScorer, SubStringScorer
 
@@ -117,4 +117,4 @@ message = Message(message_pieces=[message_piece])
 # Returns a score using entire conversation as context
 score = (await score_conversation.score_async(message))[0]  # type: ignore
 
-print (f"{score} {score.score_rationale}")
+print(f"{score} {score.score_rationale}")

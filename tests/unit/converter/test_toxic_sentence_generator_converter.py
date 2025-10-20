@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from pyrit.models import SeedPrompt, MessagePiece
+from pyrit.models import MessagePiece, SeedPrompt
 from pyrit.prompt_converter import ToxicSentenceGeneratorConverter
 from pyrit.prompt_target import PromptChatTarget
 

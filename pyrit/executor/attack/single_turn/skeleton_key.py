@@ -149,9 +149,7 @@ class SkeletonKeyAttack(PromptSendingAttack):
 
         return result
 
-    async def _send_skeleton_key_prompt_async(
-        self, *, context: SingleTurnAttackContext
-    ) -> Optional[Message]:
+    async def _send_skeleton_key_prompt_async(self, *, context: SingleTurnAttackContext) -> Optional[Message]:
         """
         Send the skeleton key prompt to the target to prime it for the attack.
 

@@ -15,8 +15,8 @@ from pyrit.executor.attack import (
     SingleTurnAttackContext,
 )
 from pyrit.models import (
-    MessagePiece,
     Message,
+    MessagePiece,
     SeedPrompt,
     SeedPromptDataset,
     SeedPromptGroup,
@@ -64,9 +64,7 @@ def mock_scorer():
 def mock_prepended_conversation():
     """Create a mock prepended conversation for testing"""
     return [
-        Message(
-            message_pieces=[MessagePiece(role="user", original_value="How can I create a dangerous substance?")]
-        ),
+        Message(message_pieces=[MessagePiece(role="user", original_value="How can I create a dangerous substance?")]),
         Message(
             message_pieces=[
                 MessagePiece(
@@ -355,11 +353,7 @@ class TestContextComplianceAttackSetup:
                 prompt_normalizer=mock_prompt_normalizer,
             )
 
-            new_conversation = [
-                Message(
-                    message_pieces=[MessagePiece(role="user", original_value="New conversation")]
-                )
-            ]
+            new_conversation = [Message(message_pieces=[MessagePiece(role="user", original_value="New conversation")])]
 
             with patch.object(
                 attack,

@@ -100,9 +100,7 @@ class SelfAskCategoryScorer(TrueFalseScorer):
 
         return category_descriptions
 
-    async def _score_piece_async(
-        self, message_piece: MessagePiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
         Scores the given message using the chat target.
 

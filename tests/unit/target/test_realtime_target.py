@@ -11,7 +11,7 @@ from websockets.exceptions import ConnectionClosed
 from websockets.frames import Close
 
 from pyrit.exceptions.exception_classes import ServerErrorException
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import RealtimeTarget
 from pyrit.prompt_target.openai.openai_realtime_target import RealtimeTargetResult
 

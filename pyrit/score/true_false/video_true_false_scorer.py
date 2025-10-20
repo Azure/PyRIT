@@ -48,9 +48,7 @@ class VideoTrueFalseScorer(TrueFalseScorer, _BaseVideoScorer):
             self, image_capable_scorer=image_capable_scorer, num_sampled_frames=num_sampled_frames
         )
 
-    async def _score_piece_async(
-        self, message_piece: MessagePiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
         Score a single video piece by extracting frames and aggregating their scores.
 

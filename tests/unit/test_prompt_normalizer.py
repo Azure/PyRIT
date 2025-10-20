@@ -11,7 +11,7 @@ from unit.mocks import MockPromptTarget, get_image_message_piece
 
 from pyrit.exceptions import EmptyResponseException
 from pyrit.memory import CentralMemory
-from pyrit.models import PromptDataType, MessagePiece, Message
+from pyrit.models import Message, MessagePiece, PromptDataType
 from pyrit.models.filter_criteria import PromptFilterCriteria
 from pyrit.models.seed_prompt import SeedPrompt
 from pyrit.models.seed_prompt_group import SeedPromptGroup
@@ -154,20 +154,14 @@ async def test_send_prompt_async_request_response_added_to_memory(mock_memory_in
     # Validate that first request is added to memory, then response is added to memory
     assert (
         seed_prompt_value
-        == mock_memory_instance.add_message_to_memory.call_args_list[0][1]["request"]
-        .message_pieces[0]
-        .original_value
+        == mock_memory_instance.add_message_to_memory.call_args_list[0][1]["request"].message_pieces[0].original_value
     )
     assert (
         "test_response"
-        == mock_memory_instance.add_message_to_memory.call_args_list[1][1]["request"]
-        .message_pieces[0]
-        .original_value
+        == mock_memory_instance.add_message_to_memory.call_args_list[1][1]["request"].message_pieces[0].original_value
     )
 
-    assert mock_memory_instance.add_message_to_memory.call_args_list[1].called_after(
-        prompt_target.send_prompt_async
-    )
+    assert mock_memory_instance.add_message_to_memory.call_args_list[1].called_after(prompt_target.send_prompt_async)
 
 
 @pytest.mark.asyncio
@@ -245,9 +239,7 @@ async def test_send_prompt_async_mixed_sequence_types(mock_memory_instance):
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_adds_memory_twice(
-    mock_memory_instance, seed_prompt_group, response: Message
-):
+async def test_send_prompt_async_adds_memory_twice(mock_memory_instance, seed_prompt_group, response: Message):
     prompt_target = MagicMock()
     prompt_target.send_prompt_async = AsyncMock(return_value=response)
 
@@ -258,9 +250,7 @@ async def test_send_prompt_async_adds_memory_twice(
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_no_converters_response(
-    mock_memory_instance, seed_prompt_group, response: Message
-):
+async def test_send_prompt_async_no_converters_response(mock_memory_instance, seed_prompt_group, response: Message):
 
     prompt_target = MagicMock()
     prompt_target.send_prompt_async = AsyncMock(return_value=response)
@@ -273,9 +263,7 @@ async def test_send_prompt_async_no_converters_response(
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_converters_response(
-    mock_memory_instance, seed_prompt_group, response: Message
-):
+async def test_send_prompt_async_converters_response(mock_memory_instance, seed_prompt_group, response: Message):
 
     prompt_target = MagicMock()
     prompt_target.send_prompt_async = AsyncMock(return_value=response)
@@ -554,15 +542,11 @@ async def test_send_prompt_async_exception_conv_id(mock_memory_instance, seed_pr
     # Validate that first request is added to memory, then exception is added to memory
     assert (
         seed_prompt_group.prompts[0].value
-        == mock_memory_instance.add_message_to_memory.call_args_list[0][1]["request"]
-        .message_pieces[0]
-        .original_value
+        == mock_memory_instance.add_message_to_memory.call_args_list[0][1]["request"].message_pieces[0].original_value
     )
     assert (
         "Test Exception"
-        in mock_memory_instance.add_message_to_memory.call_args_list[1][1]["request"]
-        .message_pieces[0]
-        .original_value
+        in mock_memory_instance.add_message_to_memory.call_args_list[1][1]["request"].message_pieces[0].original_value
     )
 
 

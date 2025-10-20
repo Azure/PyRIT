@@ -17,8 +17,8 @@ from pyrit.executor.attack import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    MessagePiece,
     Message,
+    MessagePiece,
     Score,
     SeedPrompt,
     SeedPromptGroup,

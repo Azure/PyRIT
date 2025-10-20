@@ -33,8 +33,8 @@ from pyrit.memory.memory_models import (
 from pyrit.models import (
     ChatMessage,
     DataTypeSerializer,
-    MessagePiece,
     Message,
+    MessagePiece,
     Score,
     SeedPrompt,
     SeedPromptDataset,

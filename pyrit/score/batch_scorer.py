@@ -8,8 +8,8 @@ from typing import Optional, Sequence
 
 from pyrit.memory import CentralMemory
 from pyrit.models import (
-    MessagePiece,
     Message,
+    MessagePiece,
     Score,
     group_message_pieces_into_conversations,
 )

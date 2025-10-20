@@ -3,7 +3,7 @@
 
 from typing import Optional, Sequence, get_args
 
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.models.literals import PromptDataType
 
 

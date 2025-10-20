@@ -6,7 +6,7 @@ import logging
 import pytest
 
 from pyrit.common.path import SCORER_EVALS_HARM_PATH
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.score import (
     HarmHumanLabeledEntry,
     HumanLabeledDataset,

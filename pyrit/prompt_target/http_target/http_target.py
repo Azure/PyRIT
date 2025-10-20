@@ -10,8 +10,8 @@ from typing import Any, Callable, Dict, Optional, Sequence
 import httpx
 
 from pyrit.models import (
-    MessagePiece,
     Message,
+    MessagePiece,
     construct_response_from_request,
 )
 from pyrit.prompt_target import PromptTarget, limit_requests_per_minute

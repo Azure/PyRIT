@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from pyrit.models import MessagePiece, Message, SeedPrompt
+from pyrit.models import Message, MessagePiece, SeedPrompt
 from pyrit.prompt_converter import ConverterResult
 from pyrit.prompt_converter.math_prompt_converter import MathPromptConverter
 

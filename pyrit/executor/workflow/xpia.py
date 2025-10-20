@@ -18,8 +18,8 @@ from pyrit.executor.workflow.core import (
 )
 from pyrit.memory import CentralMemory
 from pyrit.models import (
-    MessagePiece,
     Message,
+    MessagePiece,
     Score,
     SeedPromptGroup,
 )

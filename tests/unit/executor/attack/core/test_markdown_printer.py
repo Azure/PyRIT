@@ -9,7 +9,7 @@ import pytest
 
 from pyrit.executor.attack.printer.markdown_printer import MarkdownAttackResultPrinter
 from pyrit.memory import CentralMemory
-from pyrit.models import AttackOutcome, AttackResult, MessagePiece, Message, Score
+from pyrit.models import AttackOutcome, AttackResult, Message, MessagePiece, Score
 
 
 @pytest.fixture

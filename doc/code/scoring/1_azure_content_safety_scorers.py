@@ -35,7 +35,7 @@ import os
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.memory import CentralMemory
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.score.float_scale.azure_content_filter_scorer import AzureContentFilterScorer
 
 initialize_pyrit(memory_db_type=IN_MEMORY)

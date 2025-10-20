@@ -6,7 +6,7 @@ import logging
 import uuid
 from typing import Optional
 
-from pyrit.models import MessagePiece, Message, Score, ScoreType
+from pyrit.models import Message, MessagePiece, Score, ScoreType
 from pyrit.prompt_target import PromptShieldTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
@@ -47,9 +47,7 @@ class PromptShieldScorer(TrueFalseScorer):
         super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
         self._prompt_target = prompt_shield_target
 
-    async def _score_piece_async(
-        self, message_piece: MessagePiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         self._conversation_id = str(uuid.uuid4())
 
         body = message_piece.original_value

@@ -10,8 +10,8 @@ from IPython.display import Markdown, display
 from pyrit.executor.attack.printer.attack_result_printer import AttackResultPrinter
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackResult, Score
-from pyrit.models.message_piece import MessagePiece
 from pyrit.models.message import Message
+from pyrit.models.message_piece import MessagePiece
 
 
 class MarkdownAttackResultPrinter(AttackResultPrinter):

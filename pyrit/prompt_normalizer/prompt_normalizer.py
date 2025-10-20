@@ -11,8 +11,8 @@ from uuid import uuid4
 from pyrit.exceptions import EmptyResponseException
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import (
-    MessagePiece,
     Message,
+    MessagePiece,
     construct_response_from_request,
 )
 from pyrit.models.filter_criteria import PromptConverterState, PromptFilterCriteria

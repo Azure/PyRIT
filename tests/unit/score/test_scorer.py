@@ -13,7 +13,7 @@ import pytest
 from pyrit.common.path import SCORER_CONFIG_PATH
 from pyrit.exceptions import InvalidJsonException, remove_markdown_json
 from pyrit.memory import CentralMemory
-from pyrit.models import MessagePiece, Message, Score
+from pyrit.models import Message, MessagePiece, Score
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer, ScorerPromptValidator, TrueFalseScorer
 
@@ -59,9 +59,7 @@ class MockScorer(TrueFalseScorer):
     def __init__(self):
         super().__init__(validator=DummyValidator())
 
-    async def _score_async(
-        self, message: Message, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         return [
             Score(
                 score_value="true",
@@ -76,9 +74,7 @@ class MockScorer(TrueFalseScorer):
             )
         ]
 
-    async def _score_piece_async(
-        self, message_piece: MessagePiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         return [
             Score(
                 score_value="true",
@@ -114,9 +110,7 @@ class MockFloatScorer(Scorer):
         super().__init__(validator=validator)
         self.scored_piece_ids: list[str] = []
 
-    async def _score_piece_async(
-        self, message_piece: MessagePiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         # Track which pieces get scored
         self.scored_piece_ids.append(str(message_piece.id))
 
@@ -364,9 +358,7 @@ async def test_scorer_score_responses_batch_async(patch_central_database):
         mock_score_async.return_value = fake_scores
 
         user_req = MessagePiece(role="user", original_value="Hello user", sequence=1).to_message()
-        assistant_resp = MessagePiece(
-            role="assistant", original_value="Hello from assistant", sequence=2
-        ).to_message()
+        assistant_resp = MessagePiece(role="assistant", original_value="Hello from assistant", sequence=2).to_message()
 
         results = await scorer.score_prompts_batch_async(
             messages=[user_req, assistant_resp], batch_size=10, infer_objective_from_request=True
@@ -473,9 +465,7 @@ async def test_score_response_select_first_success_async_empty_scorers():
 @pytest.mark.asyncio
 async def test_score_async_no_matching_role():
     """Test that score_response_select_first_success_async returns None when no pieces match role filter."""
-    response = Message(
-        message_pieces=[MessagePiece(role="user", original_value="test", conversation_id="test-convo")]
-    )
+    response = Message(message_pieces=[MessagePiece(role="user", original_value="test", conversation_id="test-convo")])
     scorer = MockScorer()
     result = await scorer.score_async(message=response, role_filter="assistant", objective="test task")
 

@@ -11,7 +11,7 @@ from unit.mocks import get_image_message_piece, get_sample_conversations
 
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import OpenAICompletionTarget
 
 

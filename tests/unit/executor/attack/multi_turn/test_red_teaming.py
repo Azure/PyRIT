@@ -23,8 +23,8 @@ from pyrit.models import (
     AttackResult,
     ConversationReference,
     ConversationType,
-    MessagePiece,
     Message,
+    MessagePiece,
     Score,
     SeedPrompt,
 )

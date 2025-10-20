@@ -97,9 +97,7 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
         score.scorer_class_identifier["sub_identifier"] = str(self._scorer.get_identifier())
         return [score]
 
-    async def _score_piece_async(
-        self, message_piece: MessagePiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """Float Scale scorers do not support piecewise scoring.
 
         Args:

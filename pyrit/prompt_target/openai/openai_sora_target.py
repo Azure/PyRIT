@@ -16,8 +16,8 @@ from pyrit.exceptions import (
     pyrit_target_retry,
 )
 from pyrit.models import (
-    MessagePiece,
     Message,
+    MessagePiece,
     construct_response_from_request,
     data_serializer_factory,
 )
@@ -315,9 +315,7 @@ class OpenAISoraTarget(OpenAITarget):
 
         return response_entry
 
-    async def _handle_response_async(
-        self, request: MessagePiece, response: httpx.Response
-    ) -> Message:
+    async def _handle_response_async(self, request: MessagePiece, response: httpx.Response) -> Message:
         """
         Asynchronously handle the response to a video generation request.
 

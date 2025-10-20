@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock
 import pytest
 
 from pyrit.models import (
-    MessagePiece,
     Message,
+    MessagePiece,
     construct_response_from_request,
 )
 from pyrit.prompt_target import PlaywrightTarget

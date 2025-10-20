@@ -51,9 +51,7 @@ class LookBackScorer(FloatScaleScorer):
             step_description=behavior_change_scale
         )
 
-    async def _score_piece_async(
-        self, message_piece: MessagePiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
         Scores the entire conversation based on detected behavior change.
 

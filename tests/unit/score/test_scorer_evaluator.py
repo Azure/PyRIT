@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 
 from pyrit.common.path import SCORER_EVALS_HARM_PATH, SCORER_EVALS_OBJECTIVE_PATH
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.score import (
     FloatScaleScorer,
     HarmHumanLabeledEntry,
@@ -255,11 +255,7 @@ def test_get_metrics_path_and_csv_path_objective(mock_objective_scorer):
 @pytest.mark.asyncio
 async def test_run_evaluation_async_harm(mock_harm_scorer):
     responses = [
-        Message(
-            message_pieces=[
-                MessagePiece(role="assistant", original_value="test", original_value_data_type="text")
-            ]
-        )
+        Message(message_pieces=[MessagePiece(role="assistant", original_value="test", original_value_data_type="text")])
     ]
     entry1 = HarmHumanLabeledEntry(responses, [0.1, 0.3], "hate_speech")
     entry2 = HarmHumanLabeledEntry(responses, [0.2, 0.6], "hate_speech")
@@ -280,11 +276,7 @@ async def test_run_evaluation_async_harm(mock_harm_scorer):
 @pytest.mark.asyncio
 async def test_run_evaluation_async_objective(mock_objective_scorer):
     responses = [
-        Message(
-            message_pieces=[
-                MessagePiece(role="assistant", original_value="test", original_value_data_type="text")
-            ]
-        )
+        Message(message_pieces=[MessagePiece(role="assistant", original_value="test", original_value_data_type="text")])
     ]
     entry = ObjectiveHumanLabeledEntry(responses, [True], "Test objective")
     mock_dataset = HumanLabeledDataset(name="test_dataset", metrics_type=MetricsType.OBJECTIVE, entries=[entry])

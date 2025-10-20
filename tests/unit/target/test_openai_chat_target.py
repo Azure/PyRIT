@@ -22,7 +22,7 @@ from pyrit.exceptions.exception_classes import (
     RateLimitException,
 )
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 
 
@@ -309,9 +309,7 @@ async def test_send_prompt_async_bad_request_error_adds_to_memory(target: OpenAI
 
     target._memory = mock_memory
 
-    prompt_request = Message(
-        message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="Hello")]
-    )
+    prompt_request = Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="Hello")])
 
     response = MagicMock()
     response.status_code = 400
@@ -594,9 +592,7 @@ def test_construct_message_valid_stop(
     assert result.get_value() == "Hello from stop"
 
 
-def test_construct_message_empty_response(
-    target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece
-):
+def test_construct_message_empty_response(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
     response_dict = {"choices": [{"finish_reason": "stop", "message": {"content": ""}}]}
     response_str = json.dumps(response_dict)
 
@@ -607,9 +603,7 @@ def test_construct_message_empty_response(
     assert "The chat returned an empty response." in str(excinfo.value)
 
 
-def test_construct_message_unknown_finish_reason(
-    target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece
-):
+def test_construct_message_unknown_finish_reason(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
     response_dict = {"choices": [{"finish_reason": "unexpected", "message": {"content": "Some content"}}]}
     response_str = json.dumps(response_dict)
 

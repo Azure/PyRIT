@@ -10,7 +10,7 @@ from typing import List, Optional, Union, cast, get_args
 
 import pandas as pd
 
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.models.literals import PromptDataType
 from pyrit.score import MetricsType
 
@@ -308,9 +308,7 @@ class HumanLabeledDataset:
         return HarmHumanLabeledEntry(messages, float_scores, harm)
 
     @staticmethod
-    def _construct_objective_entry(
-        *, messages: List[Message], objective: str, human_scores: List
-    ):
+    def _construct_objective_entry(*, messages: List[Message], objective: str, human_scores: List):
         # Convert scores to int before casting to bool in case the values (0, 1) are parsed as strings
         bool_scores = [bool(int(score)) for score in human_scores]
         return ObjectiveHumanLabeledEntry(messages, bool_scores, objective)

@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, patch
 from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 
 from pyrit.memory import AzureSQLMemory, CentralMemory, PromptMemoryEntry
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
 
 

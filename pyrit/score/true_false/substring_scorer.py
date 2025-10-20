@@ -43,9 +43,7 @@ class SubStringScorer(TrueFalseScorer):
         self._substring = substring
         self._score_categories = categories if categories else []
 
-    async def _score_piece_async(
-        self, message_piece: MessagePiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """Score the given request piece based on presence of the substring.
 
         Args:

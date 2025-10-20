@@ -33,9 +33,7 @@ class MarkdownInjectionScorer(TrueFalseScorer):
         super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
         self._category = "security"
 
-    async def _score_piece_async(
-        self, message_piece: MessagePiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
         Check for markdown injection in the text. It returns True if markdown injection is detected, else False.
 

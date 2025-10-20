@@ -60,9 +60,7 @@ class VideoFloatScaleScorer(FloatScaleScorer, _BaseVideoScorer):
         )
         self._score_aggregator = score_aggregator
 
-    async def _score_piece_async(
-        self, message_piece: MessagePiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
         Score a single video piece by extracting frames and aggregating their scores.
 

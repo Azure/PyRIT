@@ -9,14 +9,12 @@ import pytest
 
 from pyrit.exceptions.exception_classes import PyritException
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import GandalfLevel
 from pyrit.score import GandalfScorer
 
 
-def generate_password_extraction_response(
-    response_text: str, conversation_id: Optional[str] = None
-) -> Message:
+def generate_password_extraction_response(response_text: str, conversation_id: Optional[str] = None) -> Message:
     return Message(
         message_pieces=[
             MessagePiece(

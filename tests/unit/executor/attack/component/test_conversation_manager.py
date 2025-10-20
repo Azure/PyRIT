@@ -10,7 +10,7 @@ from pyrit.executor.attack import (
     ConversationManager,
     ConversationState,
 )
-from pyrit.models import MessagePiece, Message, Score
+from pyrit.models import Message, MessagePiece, Score
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 

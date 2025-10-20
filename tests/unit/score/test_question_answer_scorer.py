@@ -10,7 +10,7 @@ from unit.mocks import get_image_message_piece
 
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.score import QuestionAnswerScorer
 
 
@@ -70,9 +70,7 @@ async def test_question_answer_scorer_validate_missing_metadata():
         ("The answer is Paris", True),
     ],
 )
-async def test_question_answer_scorer_score(
-    response: str, expected_score: bool, text_message_piece: MessagePiece
-):
+async def test_question_answer_scorer_score(response: str, expected_score: bool, text_message_piece: MessagePiece):
     text_message_piece.converted_value = response
     scorer = QuestionAnswerScorer(category=["new_category"])
     message = Message(message_pieces=[text_message_piece])

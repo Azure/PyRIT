@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.score import SelfAskGeneralTrueFalseScorer
 
 
@@ -93,9 +93,7 @@ async def test_general_scorer_score_async_handles_custom_keys(patch_central_data
         .replace("\n", " ")
     )
     # Simulate a response missing some keys
-    response = Message(
-        message_pieces=[MessagePiece(role="assistant", original_value=json_response)]
-    )
+    response = Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
     chat_target.send_prompt_async = AsyncMock(return_value=response)
 
     assert chat_target

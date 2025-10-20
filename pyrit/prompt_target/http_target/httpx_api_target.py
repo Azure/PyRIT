@@ -9,8 +9,8 @@ from typing import Any, Callable, Literal, Optional
 import httpx
 
 from pyrit.models import (
-    MessagePiece,
     Message,
+    MessagePiece,
     construct_response_from_request,
 )
 from pyrit.prompt_target import HTTPTarget

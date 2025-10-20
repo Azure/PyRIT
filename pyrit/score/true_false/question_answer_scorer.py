@@ -50,9 +50,7 @@ class QuestionAnswerScorer(TrueFalseScorer):
         self._correct_answer_matching_patterns = correct_answer_matching_patterns
         self._score_category = category if category is not None else []
 
-    async def _score_piece_async(
-        self, message_piece: MessagePiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
         Score the request piece using question answering evaluation.
 

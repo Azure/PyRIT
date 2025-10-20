@@ -940,9 +940,7 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
 
         return [template.render_template_value(prompt=prompt) for prompt in prompts]
 
-    async def _send_prompts_to_target_async(
-        self, *, context: FuzzerContext, prompts: List[str]
-    ) -> List[Message]:
+    async def _send_prompts_to_target_async(self, *, context: FuzzerContext, prompts: List[str]) -> List[Message]:
         """
         Send prompts to the target in batches.
 

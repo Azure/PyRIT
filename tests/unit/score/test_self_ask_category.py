@@ -10,7 +10,7 @@ import pytest
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.score import (
     ContentClassifierPaths,
     SelfAskCategoryScorer,
@@ -64,9 +64,7 @@ def test_category_scorer_set_no_category_found():
 
 
 @pytest.mark.asyncio
-async def test_category_scorer_set_system_prompt(
-    scorer_category_response_bullying: Message, patch_central_database
-):
+async def test_category_scorer_set_system_prompt(scorer_category_response_bullying: Message, patch_central_database):
     chat_target = MagicMock()
 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_category_response_bullying)
@@ -104,9 +102,7 @@ async def test_category_scorer_score(scorer_category_response_bullying: Message,
 
 
 @pytest.mark.asyncio
-async def test_category_scorer_score_false(
-    scorer_category_response_false: Message, patch_central_database
-):
+async def test_category_scorer_score_false(scorer_category_response_false: Message, patch_central_database):
 
     chat_target = MagicMock()
 
@@ -128,9 +124,7 @@ async def test_category_scorer_score_false(
 
 
 @pytest.mark.asyncio
-async def test_category_scorer_adds_to_memory(
-    scorer_category_response_false: Message, patch_central_database
-):
+async def test_category_scorer_adds_to_memory(scorer_category_response_false: Message, patch_central_database):
     memory = MagicMock(MemoryInterface)
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_category_response_false)
@@ -151,9 +145,7 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries(patch_centra
 
     chat_target = MagicMock()
 
-    bad_json_resp = Message(
-        message_pieces=[MessagePiece(role="assistant", original_value="this is not a json")]
-    )
+    bad_json_resp = Message(message_pieces=[MessagePiece(role="assistant", original_value="this is not a json")])
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
     with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
 
@@ -184,9 +176,7 @@ async def test_self_ask_objective_scorer_json_missing_key_exception_retries(patc
         .replace("\n", " ")
     )
 
-    bad_json_resp = Message(
-        message_pieces=[MessagePiece(role="assistant", original_value=json_response)]
-    )
+    bad_json_resp = Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
     with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
 
@@ -223,9 +213,7 @@ async def test_score_prompts_batch_async(
         with patch.object(chat_target, "send_prompt_async", return_value=scorer_category_response_false):
             if batch_size != 1 and max_requests_per_minute:
                 with pytest.raises(ValueError):
-                    await scorer.score_prompts_batch_async(
-                        messages=[prompt], batch_size=batch_size, objectives=[""]
-                    )
+                    await scorer.score_prompts_batch_async(messages=[prompt], batch_size=batch_size, objectives=[""])
             else:
                 results = await scorer.score_prompts_batch_async(
                     messages=[prompt, prompt2], batch_size=batch_size, objectives=["", ""]

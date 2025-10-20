@@ -459,9 +459,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
 
         return feedback
 
-    async def _send_prompt_to_objective_target_async(
-        self, *, context: MultiTurnAttackContext, prompt: str
-    ) -> Message:
+    async def _send_prompt_to_objective_target_async(self, *, context: MultiTurnAttackContext, prompt: str) -> Message:
         """
         Send a prompt to the target system.
 

@@ -4,8 +4,8 @@
 import pytest
 
 from pyrit.models import (
-    MessagePiece,
     Message,
+    MessagePiece,
 )
 
 

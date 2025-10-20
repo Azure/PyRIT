@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from unit.mocks import MockPromptTarget
 
-from pyrit.models import MessagePiece, Message, SeedPrompt
+from pyrit.models import Message, MessagePiece, SeedPrompt
 from pyrit.prompt_converter import DenylistConverter
 
 

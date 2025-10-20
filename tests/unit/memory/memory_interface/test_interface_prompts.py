@@ -13,8 +13,8 @@ import pytest
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.memory import MemoryInterface, PromptMemoryEntry
 from pyrit.models import (
-    MessagePiece,
     Message,
+    MessagePiece,
     Score,
 )
 
@@ -493,9 +493,7 @@ def test_add_message_pieces_to_memory_updates_sequence(
         conversation.sequence = 17
 
     with patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_message_pieces_to_memory") as mock_add:
-        sqlite_instance.add_message_to_memory(
-            request=Message(message_pieces=sample_conversations)
-        )
+        sqlite_instance.add_message_to_memory(request=Message(message_pieces=sample_conversations))
         assert mock_add.called
 
         args, kwargs = mock_add.call_args
@@ -517,9 +515,7 @@ def test_add_message_pieces_to_memory_updates_sequence_with_prev_conversation(
     sqlite_instance.add_message_to_memory(request=Message(message_pieces=sample_conversations))
 
     with patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_message_pieces_to_memory") as mock_add:
-        sqlite_instance.add_message_to_memory(
-            request=Message(message_pieces=sample_conversations)
-        )
+        sqlite_instance.add_message_to_memory(request=Message(message_pieces=sample_conversations))
         assert mock_add.called
 
         args, kwargs = mock_add.call_args

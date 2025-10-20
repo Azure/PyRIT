@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from pyrit.models import MessagePiece, Message, UnvalidatedScore
+from pyrit.models import Message, MessagePiece, UnvalidatedScore
 from pyrit.score import ContentClassifierPaths, SelfAskScaleScorer
 
 tree_scale_path = SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value

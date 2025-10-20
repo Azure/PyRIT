@@ -67,9 +67,7 @@ class MockTrueFalseScorer(TrueFalseScorer):
         super().__init__(validator=validator)
         self.return_value = return_value
 
-    async def _score_piece_async(
-        self, message_piece: MessagePiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         return [
             Score(
                 score_type="true_false",
@@ -92,9 +90,7 @@ class MockFloatScaleScorer(FloatScaleScorer):
         super().__init__(validator=validator)
         self.return_value = return_value
 
-    async def _score_piece_async(
-        self, message_piece: MessagePiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         return [
             Score(
                 score_type="float_scale",

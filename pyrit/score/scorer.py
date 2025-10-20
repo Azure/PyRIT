@@ -19,9 +19,9 @@ from pyrit.exceptions import (
 )
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import (
-    PromptDataType,
-    MessagePiece,
     Message,
+    MessagePiece,
+    PromptDataType,
     Score,
     ScoreType,
     UnvalidatedScore,
@@ -111,9 +111,7 @@ class Scorer(abc.ABC):
 
         return scores
 
-    async def _score_async(
-        self, message: Message, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         """
         Score the given request response asynchronously.
 
@@ -146,9 +144,7 @@ class Scorer(abc.ABC):
         return [score for sublist in piece_score_lists for score in sublist]
 
     @abstractmethod
-    async def _score_piece_async(
-        self, message_piece: MessagePiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         raise NotImplementedError()
 
     def _get_supported_pieces(self, message: Message) -> list[MessagePiece]:
@@ -156,9 +152,7 @@ class Scorer(abc.ABC):
         Returns a list of supported request pieces for this scorer.
         """
         return [
-            piece
-            for piece in message.message_pieces
-            if self._validator.is_message_piece_supported(message_piece=piece)
+            piece for piece in message.message_pieces if self._validator.is_message_piece_supported(message_piece=piece)
         ]
 
     @abstractmethod

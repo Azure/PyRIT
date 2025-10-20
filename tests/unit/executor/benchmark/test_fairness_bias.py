@@ -13,8 +13,8 @@ from pyrit.executor.benchmark.fairness_bias import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    MessagePiece,
     Message,
+    MessagePiece,
     SeedPrompt,
     SeedPromptGroup,
 )
@@ -81,9 +81,7 @@ def mock_conversation_pieces() -> List[Message]:
     """Mock conversation pieces for memory testing."""
     return [
         Message(
-            message_pieces=[
-                MessagePiece(role="user", original_value="Test prompt", converted_value="Test prompt")
-            ]
+            message_pieces=[MessagePiece(role="user", original_value="Test prompt", converted_value="Test prompt")]
         ),
         Message(
             message_pieces=[

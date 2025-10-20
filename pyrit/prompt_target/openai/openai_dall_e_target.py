@@ -14,8 +14,8 @@ from pyrit.exceptions import (
 )
 from pyrit.exceptions.exception_classes import RateLimitException
 from pyrit.models import (
-    PromptDataType,
     Message,
+    PromptDataType,
     construct_response_from_request,
     data_serializer_factory,
 )

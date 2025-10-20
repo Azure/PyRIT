@@ -62,7 +62,7 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 
 # %%
 from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target.openai.openai_response_target import OpenAIResponseTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
@@ -137,7 +137,7 @@ import os
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.tool_configs import web_search_tool
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target.openai.openai_response_target import OpenAIResponseTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)

@@ -104,9 +104,7 @@ class SelfAskLikertScorer(FloatScaleScorer):
 
         return likert_scale_description
 
-    async def _score_piece_async(
-        self, message_piece: MessagePiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
         Scores the given message_piece using "self-ask" for the chat target.
 

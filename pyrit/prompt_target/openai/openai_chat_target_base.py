@@ -15,8 +15,8 @@ from pyrit.exceptions import (
 )
 from pyrit.exceptions.exception_classes import RateLimitException
 from pyrit.models import (
-    MessagePiece,
     Message,
+    MessagePiece,
 )
 from pyrit.prompt_target import (
     OpenAITarget,
@@ -164,9 +164,7 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
 
         return response
 
-    async def _construct_request_body(
-        self, conversation: MutableSequence[Message], is_json_response: bool
-    ) -> dict:
+    async def _construct_request_body(self, conversation: MutableSequence[Message], is_json_response: bool) -> dict:
         raise NotImplementedError
 
     def _construct_message_from_openai_json(

@@ -13,8 +13,8 @@ from pyrit.executor.benchmark.question_answering import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    MessagePiece,
     Message,
+    MessagePiece,
     QuestionAnsweringEntry,
     QuestionChoice,
     SeedPrompt,

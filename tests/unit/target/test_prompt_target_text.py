@@ -9,7 +9,7 @@ from typing import MutableSequence
 import pytest
 from unit.mocks import get_sample_conversations
 
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import TextTarget
 
 

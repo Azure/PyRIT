@@ -16,8 +16,8 @@ from pyrit.models import (
     AttackOutcome,
     AttackResult,
     ConversationType,
-    MessagePiece,
     Message,
+    MessagePiece,
     Score,
     SeedPrompt,
     SeedPromptGroup,
@@ -70,9 +70,7 @@ def basic_context():
 def sample_response():
     """Create a sample response for testing"""
     return Message(
-        message_pieces=[
-            MessagePiece(role="assistant", original_value="Test response", original_value_data_type="text")
-        ]
+        message_pieces=[MessagePiece(role="assistant", original_value="Test response", original_value_data_type="text")]
     )
 
 

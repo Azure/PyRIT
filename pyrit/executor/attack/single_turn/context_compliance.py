@@ -16,8 +16,8 @@ from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
 )
 from pyrit.models import (
-    MessagePiece,
     Message,
+    MessagePiece,
     SeedPrompt,
     SeedPromptDataset,
     SeedPromptGroup,

@@ -39,9 +39,7 @@ async def test_insecure_code_scorer_valid_response(mock_chat_target):
     with patch.object(scorer._memory, "add_scores_to_memory", new=MagicMock()) as mock_add_scores:
         with patch.object(scorer, "_score_value_with_llm", new=AsyncMock(return_value=unvalidated_score)):
             # Create a message piece object
-            message = MessagePiece(
-                role="user", original_value="sample code"
-            ).to_message()
+            message = MessagePiece(role="user", original_value="sample code").to_message()
 
             # Call the score_async method
             scores = await scorer.score_async(message)
@@ -66,9 +64,7 @@ async def test_insecure_code_scorer_invalid_json(mock_chat_target):
         with patch.object(
             scorer, "_score_value_with_llm", new=AsyncMock(side_effect=InvalidJsonException(message="Invalid JSON"))
         ):
-            message = MessagePiece(
-                role="user", original_value="sample code"
-            ).to_message()
+            message = MessagePiece(role="user", original_value="sample code").to_message()
 
             with pytest.raises(InvalidJsonException, match="Invalid JSON"):
                 await scorer.score_async(message)

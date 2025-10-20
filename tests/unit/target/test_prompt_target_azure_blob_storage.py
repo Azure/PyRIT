@@ -10,7 +10,7 @@ from azure.storage.blob.aio import BlobClient as AsyncBlobClient
 from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
 from unit.mocks import get_image_message_piece, get_sample_conversations
 
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import AzureBlobStorageTarget
 
 
@@ -94,9 +94,7 @@ async def test_azure_blob_storage_validate_prev_convs(
 ):
     mock_upload_async.return_value = None
     message_piece = sample_entries[0]
-    azure_blob_storage_target._memory.add_message_to_memory(
-        request=Message(message_pieces=[message_piece])
-    )
+    azure_blob_storage_target._memory.add_message_to_memory(request=Message(message_pieces=[message_piece]))
     request = Message(message_pieces=[message_piece])
 
     with pytest.raises(ValueError, match="This target only supports a single turn conversation."):

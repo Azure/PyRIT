@@ -225,7 +225,9 @@ interesting_prompts = []
 for piece in result_pieces:
     for score in piece.scores:
         positive_float_scale_score = score.score_type == "float_scale" and score.get_value() > 0
-        no_refusal_score = score.scorer_class_identifier["__type__"] == "SelfAskRefusalScorer" and score.get_value() == False
+        no_refusal_score = (
+            score.scorer_class_identifier["__type__"] == "SelfAskRefusalScorer" and score.get_value() == False
+        )
         if positive_float_scale_score or no_refusal_score:
             interesting_prompts.append(piece.to_message())
             break

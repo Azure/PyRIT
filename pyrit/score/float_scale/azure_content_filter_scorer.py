@@ -91,9 +91,7 @@ class AzureContentFilterScorer(FloatScaleScorer):
         else:
             raise ValueError("Please provide the Azure Content Safety endpoint")
 
-    async def _score_piece_async(
-        self, message_piece: MessagePiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """Evaluating the input text or image using the Azure Content Filter API
 
         Args:

@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_converter import RandomTranslationConverter
 from pyrit.prompt_target.common.prompt_target import PromptTarget
 

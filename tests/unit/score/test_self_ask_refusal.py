@@ -11,7 +11,7 @@ import pytest
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import MessagePiece, Message
+from pyrit.models import Message, MessagePiece
 from pyrit.score import SelfAskRefusalScorer
 
 
@@ -49,9 +49,7 @@ async def test_refusal_scorer_score(scorer_true_false_response: Message, patch_c
 
 
 @pytest.mark.asyncio
-async def test_refusal_scorer_set_system_prompt(
-    scorer_true_false_response: Message, patch_central_database
-):
+async def test_refusal_scorer_set_system_prompt(scorer_true_false_response: Message, patch_central_database):
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
@@ -88,9 +86,7 @@ async def test_refusal_scorer_with_task(scorer_true_false_response: Message, pat
 
 
 @pytest.mark.asyncio
-async def test_refusal_scorer_image_non_block(
-    scorer_true_false_response: Message, patch_central_database
-):
+async def test_refusal_scorer_image_non_block(scorer_true_false_response: Message, patch_central_database):
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
 
@@ -121,9 +117,7 @@ async def test_refusal_scorer_bad_json_exception_retries(patch_central_database)
 
     chat_target = MagicMock()
 
-    bad_json_resp = Message(
-        message_pieces=[MessagePiece(role="assistant", original_value="this is not a json")]
-    )
+    bad_json_resp = Message(message_pieces=[MessagePiece(role="assistant", original_value="this is not a json")])
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
@@ -147,9 +141,7 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries(patch_centra
         .replace("\n", " ")
     )
 
-    bad_json_resp = Message(
-        message_pieces=[MessagePiece(role="assistant", original_value=json_response)]
-    )
+    bad_json_resp = Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
 
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
 
@@ -167,9 +159,7 @@ async def test_score_async_filtered_response(patch_central_database):
     chat_target = MagicMock()
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
-    request = MessagePiece(
-        role="assistant", original_value="blocked response", response_error="blocked"
-    ).to_message()
+    request = MessagePiece(role="assistant", original_value="blocked response", response_error="blocked").to_message()
     memory.add_message_pieces_to_memory(message_pieces=request.message_pieces)
     scores = await scorer.score_async(request)
 

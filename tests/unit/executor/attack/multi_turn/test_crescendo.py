@@ -27,8 +27,8 @@ from pyrit.models import (
     AttackOutcome,
     ChatMessageRole,
     ConversationType,
-    MessagePiece,
     Message,
+    MessagePiece,
     Score,
     ScoreType,
 )
