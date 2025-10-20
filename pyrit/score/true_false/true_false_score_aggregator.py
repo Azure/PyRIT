@@ -31,7 +31,10 @@ def _build_rationale(scores: List[Score], *, result: bool, true_msg: str, false_
     else:
         description = true_msg if result else false_msg
         sep = "-"
-        rationale = "\n".join(f"   {sep} {s.score_value}: {s.score_rationale or ''}" for s in scores)
+        rationale = "\n".join(
+            f"   {sep} {s.scorer_class_identifier.get('__type__', 'Unknown')} {s.score_value}: {s.score_rationale or ''}"
+            for s in scores
+        )
 
     return description, rationale
 

@@ -12,6 +12,7 @@ from enum import Enum
 import logging
 from typing import Dict, List, Optional
 
+from tqdm.auto import tqdm
 import pyrit
 from pyrit.models import AttackResult
 from pyrit.scenarios.attack_run import AttackRun
@@ -49,10 +50,12 @@ class ScenarioResult:
     @property
     def objective_achieved_rate(self) -> int:
         """Get the success rate of this scenario."""
+        from pyrit.models import AttackOutcome
+        
         total_results = len(self.attack_results)
         if total_results == 0:
             return 0
-        successful_results = sum(1 for result in self.attack_results if result.outcome == "success")
+        successful_results = sum(1 for result in self.attack_results if result.outcome == AttackOutcome.SUCCESS)
 
         return int((successful_results / total_results) * 100)
 
@@ -109,8 +112,9 @@ class Scenario:
         name: str,
         version: int,
         attack_strategies: List[str],
-        attack_runs: List[AttackRun],
+        max_concurrency: int = 1,
         memory_labels: Optional[Dict[str, str]] = None,
+        attack_runs: Optional[List[AttackRun]] = None,
     ) -> None:
         """
         Initialize a scenario with a collection of attack runs.
@@ -118,26 +122,27 @@ class Scenario:
         Args:
             name (str): Descriptive name for the scenario.
             attack_runs (List[AttackRun]): List of AttackRun instances to execute.
+                Can be empty if the scenario will be initialized later with an
+                initialize() method.
             memory_labels (Optional[Dict[str, str]]): Additional labels to apply to all
                 attack runs in the scenario. These help track and categorize the scenario.
 
-        Raises:
-            ValueError: If attack_runs list is empty.
+        Note:
+            If attack_runs is empty, the scenario must be initialized before calling
+            run_async(). Scenarios requiring async initialization should use an
+            initialize() method pattern.
         """
-        if not attack_runs:
-            raise ValueError("Scenario must contain at least one AttackRun")
-
         self._identifier = ScenarioIdentifier(
             name=type(self).__name__,
             version=version,
         )
 
         self._name = name
-        self._attack_runs = attack_runs
         self._attack_strategies = attack_strategies
         self._memory_labels = memory_labels or {}
+        self._max_concurrency = max_concurrency
+        self._attack_runs = attack_runs or []
 
-        logger.info(f"Initialized scenario '{name}' with {len(attack_runs)} attack runs")
 
     @property
     def name(self) -> str:
@@ -149,7 +154,31 @@ class Scenario:
         """Get the number of attack runs in this scenario."""
         return len(self._attack_runs)
 
-    async def run_async(self, *, max_concurrency: int = 1) -> ScenarioResult:
+    async def initialize_async(self) -> None:
+        """
+        Initialize the scenario by populating self._attack_runs
+        
+        This method allows scenarios to be initialized with attack runs after construction,
+        which is useful when attack runs require async operations to be built.
+        
+        Args:
+            attack_runs: List of AttackRun instances to execute in this scenario.
+        
+        Returns:
+            Scenario: Self for method chaining.
+            
+        Example:
+            >>> scenario = MyScenario(
+            ...     objective_target=target,
+            ...     attack_strategies=["base64", "leetspeak"]
+            ... )
+            >>> attack_runs = await scenario.build_attack_runs_async()
+            >>> await scenario.initialize_async()
+            >>> results = await scenario.run_async()
+        """
+        pass
+
+    async def run_async(self) -> ScenarioResult:
         """
         Execute all attack runs in the scenario sequentially.
 
@@ -163,6 +192,10 @@ class Scenario:
         Returns:
             ScenarioResult: Contains scenario identifier and aggregated list of all
                 attack results from all runs.
+                
+        Raises:
+            ValueError: If the scenario has no attack runs configured. If your scenario
+                requires initialization, call await scenario.initialize() first.
 
         Example:
             >>> result = await scenario.run_async(max_concurrency=3)
@@ -171,15 +204,24 @@ class Scenario:
             >>> for attack_result in result.attack_results:
             ...     print(f"Objective: {attack_result.objective}, Outcome: {attack_result.outcome}")
         """
+        if not self._attack_runs:
+            raise ValueError(
+                "Cannot run scenario with no attack runs. Either supply them in initialization or"
+                "call await scenario.initialize_async() first."
+            )
+            
         logger.info(f"Starting scenario '{self._name}' execution with {len(self._attack_runs)} attack runs")
 
         all_results: List[AttackResult] = []
 
-        for i, attack_run in enumerate(self._attack_runs, start=1):
+        for i, attack_run in enumerate(
+            tqdm(self._attack_runs, desc=f"Executing {self._name}", unit="attack"), 
+            start=1
+        ):
             logger.info(f"Executing attack run {i}/{len(self._attack_runs)} in scenario '{self._name}'")
 
             try:
-                results = await attack_run.run_async(max_concurrency=max_concurrency)
+                results = await attack_run.run_async(max_concurrency=self._max_concurrency)
                 all_results.extend(results)
                 logger.info(f"Attack run {i}/{len(self._attack_runs)} completed with {len(results)} results")
             except Exception as e:
@@ -187,4 +229,8 @@ class Scenario:
                 raise ValueError(f"Failed to execute attack run {i} in scenario '{self._name}': {str(e)}") from e
 
         logger.info(f"Scenario '{self._name}' completed successfully with {len(all_results)} total results")
-        return ScenarioResult(scenario_identifier=self._identifier, attack_results=all_results)
+        return ScenarioResult(
+            scenario_identifier=self._identifier, 
+            attack_strategies=self._attack_strategies,
+            attack_results=all_results
+        )

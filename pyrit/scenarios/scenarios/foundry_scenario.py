@@ -256,9 +256,15 @@ class FoundryScenario(Scenario):
 
         self._objective_scorer = objective_scorer if objective_scorer else self._get_default_scorer()
 
+        default_objectives = list(fetch_harmbench_dataset().get_random_values(
+            number=4,
+            harm_categories= ['harmful', 'harassment_bullying']
+        ))
+
         self._objectives: list[str] = (
-            objectives if objectives else list(fetch_harmbench_dataset().get_random_values(number=4))
+            objectives if objectives else default_objectives
         )
+        
         self._memory_labels = memory_labels or {}
 
         strategies = self._normalize_attack_strategies(attack_strategies)

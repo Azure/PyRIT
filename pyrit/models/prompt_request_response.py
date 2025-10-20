@@ -99,6 +99,21 @@ class PromptRequestResponse:
         for request_piece in self.request_pieces:
             ret += str(request_piece) + "\n"
         return "\n".join([str(request_piece) for request_piece in self.request_pieces])
+    
+    @property
+    def conversation_id(self) -> str:
+        """Return the conversation ID of the first request piece (they should all be the same)."""
+        return self.request_pieces[0].conversation_id
+    
+    @property
+    def sequence(self) -> int:
+        """Return the sequence of the first request piece (they should all be the same)."""
+        return self.request_pieces[0].sequence
+
+    @property
+    def role(self) -> ChatMessageRole:
+        """Return the role of the first request piece (they should all be the same)."""
+        return self.request_pieces[0].role
 
     @staticmethod
     def get_all_values(request_responses: Sequence["PromptRequestResponse"]) -> list[str]:

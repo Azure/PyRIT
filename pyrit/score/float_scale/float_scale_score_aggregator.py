@@ -29,7 +29,11 @@ def _build_rationale(scores: List[Score], *, aggregate_description: str) -> tupl
         description = aggregate_description
         # Only include scores with non-empty rationales
         sep = "-"
-        rationale_parts = [f"   {sep} {s.score_rationale}" for s in scores if s.score_rationale]
+        rationale_parts = [
+            f"   {sep} {s.scorer_class_identifier.get('__type__', 'Unknown')} {s.score_value}: {s.score_rationale or ''}"
+            for s in scores
+            if s.score_rationale
+        ]
         rationale = "\n".join(rationale_parts) if rationale_parts else ""
 
     return description, rationale

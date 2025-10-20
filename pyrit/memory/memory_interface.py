@@ -325,6 +325,24 @@ class MemoryInterface(abc.ABC):
         """
         request_pieces = self.get_prompt_request_pieces(conversation_id=conversation_id)
         return group_conversation_request_pieces_by_sequence(request_pieces=request_pieces)
+    
+    def get_request_from_response(self, *, response: PromptRequestResponse) -> PromptRequestResponse:
+        """
+        Retrieves the request that produced the given response.
+
+        Args:
+            request (PromptRequestResponse): The response object to match.
+
+        Returns:
+            PromptRequestResponse: The corresponding request object.
+        """
+        if response.role != "assistant":
+            raise ValueError("The provided request is not a response (role must be 'assistant').")
+        if response.sequence < 1:
+            raise ValueError("The provided request does not have a preceding request (sequence < 1).")
+        
+        conversation = self.get_conversation(conversation_id=response.conversation_id)
+        return conversation[response.sequence - 1]
 
     def get_prompt_request_pieces(
         self,
