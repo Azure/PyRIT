@@ -2,10 +2,14 @@
 # Licensed under the MIT license.
 
 import io
+import logging
+
 import ecoji
 
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import ConverterResult, PromptConverter
+
+logger = logging.getLogger(__name__)
 
 
 class EcojiConverter(PromptConverter):
