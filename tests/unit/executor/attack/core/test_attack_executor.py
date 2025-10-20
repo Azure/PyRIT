@@ -14,7 +14,6 @@ from pyrit.executor.attack import (
     SingleTurnAttackContext,
 )
 from pyrit.models import AttackOutcome, AttackResult, SeedPrompt, SeedPromptGroup
-from pyrit.models.seed_objective import SeedObjective
 
 
 @pytest.fixture
