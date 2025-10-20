@@ -33,6 +33,8 @@ from pyrit.models import PromptDataType, PromptRequestPiece, Score, SeedPrompt
 from pyrit.models.attack_result import AttackOutcome, AttackResult
 from pyrit.models.conversation_reference import ConversationReference, ConversationType
 from pyrit.models.literals import ChatMessageRole
+from pyrit.models.seed import Seed
+from pyrit.models.seed_objective import SeedObjective
 
 
 class CustomUUID(TypeDecorator):
@@ -363,11 +365,13 @@ class SeedPromptEntry(Base):
     role: Mapped[ChatMessageRole] = mapped_column(String, nullable=True)
     is_objective: Mapped[Optional[bool]] = mapped_column(String, nullable=True)
 
-    def __init__(self, *, entry: SeedPrompt):
+    def __init__(self, *, entry: Seed):
+        is_objective = isinstance(entry, SeedObjective)
+
         self.id = entry.id
         self.value = entry.value
         self.value_sha256 = entry.value_sha256
-        self.data_type = entry.data_type  # type: ignore
+        self.data_type = "text" if is_objective else entry.data_type  # type: ignore
         self.name = entry.name
         self.dataset_name = entry.dataset_name
         self.harm_categories = entry.harm_categories  # type: ignore
@@ -378,11 +382,11 @@ class SeedPromptEntry(Base):
         self.date_added = entry.date_added
         self.added_by = entry.added_by
         self.prompt_metadata = entry.metadata  # type: ignore
-        self.parameters = entry.parameters  # type: ignore
+        self.parameters = None if is_objective else entry.parameters  # type: ignore
         self.prompt_group_id = entry.prompt_group_id
-        self.sequence = entry.sequence
-        self.role = entry.role  # type: ignore
-        self.is_objective = True
+        self.sequence = None if is_objective else entry.sequence  # type: ignore
+        self.role = None if is_objective else entry.role  # type: ignore
+        self.is_objective = is_objective
 
     def get_seed_prompt(self) -> SeedPrompt:
         return SeedPrompt(

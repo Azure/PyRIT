@@ -141,7 +141,9 @@ class SeedPromptGroup(YamlLoadable):
         self.objective = SeedObjective(
             value=prompt.value,
             value_sha256=prompt.value_sha256,
-            id=prompt.id,
+            # Note: all entries in database must have unique IDs
+            # generate a new UUID for the objective
+            id=uuid.uuid4(),
             data_type=prompt.data_type,
             name=prompt.name,
             dataset_name=prompt.dataset_name,

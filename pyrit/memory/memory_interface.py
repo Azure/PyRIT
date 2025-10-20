@@ -45,6 +45,7 @@ from pyrit.models import (
     sort_request_pieces,
 )
 from pyrit.models.attack_result import AttackResult
+from pyrit.models.seed import Seed
 
 logger = logging.getLogger(__name__)
 
@@ -749,7 +750,7 @@ class MemoryInterface(abc.ABC):
         return serialized_prompt_value
 
     async def add_seed_prompts_to_memory_async(
-        self, *, prompts: Sequence[SeedPrompt], added_by: Optional[str] = None
+        self, *, prompts: Sequence[Seed], added_by: Optional[str] = None
     ) -> None:
         """
         Inserts a list of prompts into the memory storage.
@@ -773,7 +774,10 @@ class MemoryInterface(abc.ABC):
 
             prompt.set_encoding_metadata()
 
-            serialized_prompt_value = await self._serialize_seed_prompt_value(prompt)
+            # Handle serialization for image, audio & videoSeedPrompts, SeedObjectives will always be text
+            serialized_prompt_value = None
+            if isinstance(prompt, SeedPrompt):
+                serialized_prompt_value = await self._serialize_seed_prompt_value(prompt=prompt)
             if serialized_prompt_value:
                 prompt.value = serialized_prompt_value
 
@@ -824,7 +828,7 @@ class MemoryInterface(abc.ABC):
             raise ValueError("At least one prompt group must be provided.")
         # Validates the prompt group IDs and sets them if possible before leveraging
         # the add_seed_prompts_to_memory method.
-        all_prompts: MutableSequence[SeedPrompt] = []
+        all_prompts: MutableSequence[Seed] = []
         for prompt_group in prompt_groups:
             if not prompt_group.prompts:
                 raise ValueError("Prompt group must have at least one prompt.")
@@ -840,7 +844,10 @@ class MemoryInterface(abc.ABC):
             prompt_group_id = group_id_set.pop() or uuid.uuid4()
             for prompt in prompt_group.prompts:
                 prompt.prompt_group_id = prompt_group_id
+
             all_prompts.extend(prompt_group.prompts)
+            if prompt_group.objective:
+                all_prompts.append(prompt_group.objective)
         await self.add_seed_prompts_to_memory_async(prompts=all_prompts, added_by=added_by)
 
     def get_seed_prompt_groups(
