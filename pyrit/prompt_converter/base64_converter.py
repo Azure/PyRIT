@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import base64
-
 import binascii
 from typing import Literal
 
@@ -37,7 +36,7 @@ class Base64Converter(PromptConverter):
         """
         self._encoding_func = encoding_func
 
-    async def convert_async(self, *, prompt: str,input_type: PromptDataType = "text") -> ConverterResult:
+    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """Converts the given prompt to base64 encoding.
 
         Args:

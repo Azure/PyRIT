@@ -2,12 +2,10 @@
 # Licensed under the MIT license.
 
 import io
-from typing import Optional
-
 import ecoji
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter, ConverterResult
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 
 class EcojiConverter(PromptConverter):

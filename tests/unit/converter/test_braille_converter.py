@@ -3,7 +3,7 @@
 
 import pytest
 
-from pyrit.prompt_converter import ConverterResult, BrailleConverter
+from pyrit.prompt_converter import BrailleConverter, ConverterResult
 
 
 @pytest.mark.asyncio
@@ -11,9 +11,9 @@ async def test_braille_converter_simple_text():
     """Test basic Braille conversion."""
     converter = BrailleConverter()
     prompt = "hello"
-    
+
     result = await converter.convert_async(prompt=prompt, input_type="text")
-    
+
     assert isinstance(result, ConverterResult)
     assert result.output_type == "text"
     # Verify it returns some braille characters
@@ -26,9 +26,9 @@ async def test_braille_converter_with_space():
     """Test Braille conversion with spaces."""
     converter = BrailleConverter()
     prompt = "hi there"
-    
+
     result = await converter.convert_async(prompt=prompt, input_type="text")
-    
+
     assert isinstance(result, ConverterResult)
     assert result.output_type == "text"
     # Should preserve space
@@ -40,9 +40,9 @@ async def test_braille_converter_uppercase():
     """Test Braille conversion with uppercase letters."""
     converter = BrailleConverter()
     prompt = "Hello"
-    
+
     result = await converter.convert_async(prompt=prompt, input_type="text")
-    
+
     assert isinstance(result, ConverterResult)
     assert result.output_type == "text"
     # Should have some output
@@ -54,9 +54,9 @@ async def test_braille_converter_numbers():
     """Test Braille conversion with numbers."""
     converter = BrailleConverter()
     prompt = "123"
-    
+
     result = await converter.convert_async(prompt=prompt, input_type="text")
-    
+
     assert isinstance(result, ConverterResult)
     assert result.output_type == "text"
     assert len(result.output_text) > 0
@@ -67,9 +67,9 @@ async def test_braille_converter_punctuation():
     """Test Braille conversion with punctuation."""
     converter = BrailleConverter()
     prompt = "Hello, world!"
-    
+
     result = await converter.convert_async(prompt=prompt, input_type="text")
-    
+
     assert isinstance(result, ConverterResult)
     assert result.output_type == "text"
     assert len(result.output_text) > 0
@@ -79,7 +79,7 @@ async def test_braille_converter_punctuation():
 async def test_braille_converter_input_type_not_supported():
     """Test that non-text input types raise ValueError."""
     converter = BrailleConverter()
-    
+
     with pytest.raises(ValueError, match="Input type not supported"):
         await converter.convert_async(prompt="test", input_type="image_path")
 
