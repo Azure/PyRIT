@@ -11,7 +11,7 @@
 # %% [markdown]
 # # Automating and Evaluating Psychosocial Harms:
 #
-# In this notebook we demonstrate how automation can help scale and automate red teaming for psychosocial harms. Using a three-step method of building user contexts, user behaviors, and model behaviors, we develop an automated attack strategy by mapping user contexts to objectives, user behaviors to attack strategies, and model behaviors to automated scorers.
+# In this notebook we notebook we demonstrate how we can scale and automate red teaming for psychosocial harms. Using a three-step method of building user contexts, user behaviors, and model behaviors, we develop an automated attack strategy by mapping user contexts to objectives, user behaviors to attack strategies, and model behaviors to automated scorers.
 #
 # We break this up into three parts:
 #
