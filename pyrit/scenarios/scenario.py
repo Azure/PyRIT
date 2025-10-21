@@ -15,7 +15,7 @@ from typing import Dict, List, Optional
 from tqdm.auto import tqdm
 
 import pyrit
-from pyrit.models import AttackResult, AttackOutcome
+from pyrit.models import AttackOutcome, AttackResult
 from pyrit.scenarios.attack_run import AttackRun
 
 logger = logging.getLogger(__name__)
