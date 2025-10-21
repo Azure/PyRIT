@@ -135,13 +135,13 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
             return await self._build_chat_messages_for_multi_modal_async(conversation)
 
     def _is_text_message_format(self, conversation: MutableSequence[Message]) -> bool:
-        """Checks if the request piece is in text message format.
+        """Checks if the message piece is in text message format.
 
         Args:
             conversation list[Message]: The conversation
 
         Returns:
-            bool: True if the request piece is in text message format, False otherwise.
+            bool: True if the message piece is in text message format, False otherwise.
         """
         for turn in conversation:
             if len(turn.message_pieces) != 1:
@@ -282,8 +282,8 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
             prompt_request (Message): The message object.
 
         Raises:
-            ValueError: If more than two request pieces are provided.
-            ValueError: If any of the request pieces have a data type other than 'text' or 'image_path'.
+            ValueError: If more than two message pieces are provided.
+            ValueError: If any of the message pieces have a data type other than 'text' or 'image_path'.
         """
 
         converted_prompt_data_types = [

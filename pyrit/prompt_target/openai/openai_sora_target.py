@@ -296,7 +296,7 @@ class OpenAISoraTarget(OpenAITarget):
             data (bytes): The video content to save.
             job_id (str): The video generation job ID.
             generation_id (str): The video generation ID.
-            request (MessagePiece): The request piece associated with the prompt.
+            request (MessagePiece): The message piece associated with the prompt.
 
         Returns:
             Message: The response entry with the saved video path.
@@ -322,7 +322,7 @@ class OpenAISoraTarget(OpenAITarget):
         This includes checking the status of the job and downloading the video content if successful.
 
         Args:
-            request (MessagePiece): The request piece associated with the prompt.
+            request (MessagePiece): The message piece associated with the prompt.
             response (httpx.Response): The response from the API.
 
         Returns:

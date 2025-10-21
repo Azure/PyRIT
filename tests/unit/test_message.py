@@ -52,7 +52,7 @@ def test_get_piece_returns_correct_piece(message: Message) -> None:
 
 
 def test_get_piece_raises_index_error_for_invalid_index(message: Message) -> None:
-    with pytest.raises(IndexError, match="No request piece at index 3"):
+    with pytest.raises(IndexError, match="No message piece at index 3"):
         message.get_piece(3)
 
 

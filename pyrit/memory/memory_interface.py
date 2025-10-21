@@ -497,7 +497,7 @@ class MemoryInterface(abc.ABC):
         If necessary, generates embedding data for applicable entries
 
         Args:
-            request (MessagePiece): The request piece to add to the memory.
+            request (MessagePiece): The message piece to add to the memory.
 
         Returns:
             None
@@ -520,10 +520,10 @@ class MemoryInterface(abc.ABC):
 
     def _update_sequence(self, *, message_pieces: Sequence[MessagePiece]):
         """
-        Updates the sequence number of the request pieces in the conversation.
+        Updates the sequence number of the message pieces in the conversation.
 
         Args:
-            message_pieces (Sequence[MessagePiece]): The list of request pieces to update.
+            message_pieces (Sequence[MessagePiece]): The list of message pieces to update.
         """
 
         prev_conversations = self.get_message_pieces(conversation_id=message_pieces[0].conversation_id)

@@ -202,7 +202,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             pieces = message.message_pieces
             if not pieces:
                 raise ValueError(
-                    f"Failed to process conversation message at index {msg_idx}: Message contains no request pieces"
+                    f"Failed to process conversation message at index {msg_idx}: Message contains no message pieces"
                 )
 
             # System message -> single role message (remapped to developer later)
@@ -405,7 +405,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
 
         Args:
             section: The section dict from OpenAI output.
-            message_piece: The original request piece.
+            message_piece: The original message piece.
             error: Any error information from OpenAI.
 
         Returns:
@@ -462,7 +462,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             prompt_request (Message): The message object.
 
         Raises:
-            ValueError: If any of the request pieces have a data type other than supported set.
+            ValueError: If any of the message pieces have a data type other than supported set.
         """
         # Some models may not support all of these; we accept them at the transport layer
         # so the Responses API can decide. We include reasoning and function_call_output now.

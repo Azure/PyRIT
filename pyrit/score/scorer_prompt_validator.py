@@ -35,7 +35,7 @@ class ScorerPromptValidator:
                 valid_pieces_count += 1
             elif self._enforce_all_pieces_valid:
                 raise ValueError(
-                    f"Request piece {piece.id} with data type {piece.converted_value_data_type} is not supported."
+                    f"Message piece {piece.id} with data type {piece.converted_value_data_type} is not supported."
                 )
 
         if valid_pieces_count < 1:

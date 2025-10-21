@@ -181,7 +181,7 @@ class TestScorerPromptValidatorValidate:
         )
         response = Message(message_pieces=[text_piece, image_piece])
 
-        with pytest.raises(ValueError, match="Request piece image-1 with data type image_path is not supported"):
+        with pytest.raises(ValueError, match="Message piece image-1 with data type image_path is not supported"):
             validator.validate(response, objective=None)
 
     def test_validate_raises_when_exceeds_max_pieces(self):

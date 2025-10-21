@@ -524,14 +524,14 @@ class RealtimeTarget(OpenAITarget):
             prompt_request (Message): The message object.
 
         Raises:
-            ValueError: If more than two request pieces are provided.
-            ValueError: If any of the request pieces have a data type other than 'text' or 'audio_path'.
+            ValueError: If more than two message pieces are provided.
+            ValueError: If any of the message pieces have a data type other than 'text' or 'audio_path'.
         """
 
-        # Check the number of request pieces
+        # Check the number of message pieces
         n_pieces = len(prompt_request.message_pieces)
         if n_pieces != 1:
-            raise ValueError(f"This target only supports one request piece. Received: {n_pieces} pieces.")
+            raise ValueError(f"This target only supports one message piece. Received: {n_pieces} pieces.")
 
         piece_type = prompt_request.message_pieces[0].converted_value_data_type
         if piece_type not in ["text", "audio_path"]:

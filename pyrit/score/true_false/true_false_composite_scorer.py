@@ -83,9 +83,9 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
 
         result = self._score_aggregator(score_list)
 
-        # Ensure the request piece has an ID
+        # Ensure the message piece has an ID
         piece_id = message.message_pieces[0].id
-        assert piece_id is not None, "Request piece must have an ID"
+        assert piece_id is not None, "Message piece must have an ID"
 
         return_score = Score(
             score_value=str(result.value),

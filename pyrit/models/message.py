@@ -32,29 +32,29 @@ class Message:
         return self.message_pieces[n].converted_value
 
     def get_values(self) -> list[str]:
-        """Return the converted values of all request pieces."""
+        """Return the converted values of all message pieces."""
         return [message_piece.converted_value for message_piece in self.message_pieces]
 
     def get_piece(self, n: int = 0) -> MessagePiece:
-        """Return the nth request piece."""
+        """Return the nth message piece."""
         if len(self.message_pieces) == 0:
-            raise ValueError("Empty request pieces.")
+            raise ValueError("Empty message pieces.")
 
         if n >= len(self.message_pieces):
-            raise IndexError(f"No request piece at index {n}.")
+            raise IndexError(f"No message piece at index {n}.")
 
         return self.message_pieces[n]
 
     def get_role(self) -> ChatMessageRole:
         """Return the role of the first request."""
         if len(self.message_pieces) == 0:
-            raise ValueError("Empty request pieces.")
+            raise ValueError("Empty message pieces.")
 
         return self.message_pieces[0].role
 
     def is_error(self) -> bool:
         """
-        Returns True if any of the request pieces has an error response.
+        Returns True if any of the message pieces has an error response.
         """
         for piece in self.message_pieces:
             if piece.response_error != "none" or piece.converted_value_data_type == "error":
@@ -75,7 +75,7 @@ class Message:
         Validates the request response.
         """
         if len(self.message_pieces) == 0:
-            raise ValueError("Empty request pieces.")
+            raise ValueError("Empty message pieces.")
 
         conversation_id = self.message_pieces[0].conversation_id
         sequence = self.message_pieces[0].sequence
@@ -141,15 +141,15 @@ def group_conversation_message_pieces_by_sequence(
 
     Args:
         message_pieces (Sequence[MessagePiece]): A list of MessagePiece objects representing individual
-            request pieces.
+            message pieces.
 
     Returns:
         MutableSequence[Message]: A list of Message objects representing grouped request
             pieces. This is ordered by the sequence number
 
     Raises:
-        ValueError: If the conversation ID of any request piece does not match the conversation ID of the first
-        request piece.
+        ValueError: If the conversation ID of any message piece does not match the conversation ID of the first
+        message piece.
 
     Example:
     >>> message_pieces = [
@@ -183,7 +183,7 @@ def group_conversation_message_pieces_by_sequence(
     for message_piece in message_pieces:
         if message_piece.conversation_id != conversation_id:
             raise ValueError(
-                f"All request pieces must be from the same conversation. "
+                f"All message pieces must be from the same conversation. "
                 f"Expected conversation_id='{conversation_id}', but found '{message_piece.conversation_id}'. "
                 f"If grouping pieces from multiple conversations, group by conversation_id first."
             )

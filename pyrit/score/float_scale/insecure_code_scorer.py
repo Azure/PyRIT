@@ -46,7 +46,7 @@ class InsecureCodeScorer(FloatScaleScorer):
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
-        Scores the given request piece using LLM to detect security vulnerabilities.
+        Scores the given message piece using LLM to detect security vulnerabilities.
 
         Args:
             message_piece (MessagePiece): The code snippet to be scored.

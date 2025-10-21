@@ -74,7 +74,7 @@ class VideoFloatScaleScorer(FloatScaleScorer, _BaseVideoScorer):
         """
         frame_scores = await self._score_frames_async(message_piece=message_piece, objective=objective)
 
-        # Get the ID from the request piece
+        # Get the ID from the message piece
         piece_id = message_piece.id if message_piece.id is not None else message_piece.original_prompt_id
 
         # Call the aggregator - all aggregators now return List[ScoreAggregatorResult]

@@ -233,7 +233,7 @@ def test_group_conversation_message_pieces_throws():
     ]
     with pytest.raises(
         ValueError,
-        match="All request pieces must be from the same conversation",
+        match="All message pieces must be from the same conversation",
     ):
         group_conversation_message_pieces_by_sequence(pieces)
 
@@ -756,7 +756,7 @@ def test_message_piece_to_dict():
 
 
 def test_construct_response_from_request_combines_metadata():
-    # Create a request piece with metadata
+    # Create a message piece with metadata
     request = MessagePiece(
         role="user", original_value="test prompt", conversation_id="123", prompt_metadata={"key1": "value1", "key2": 2}
     )

@@ -55,11 +55,11 @@ class TrueFalseScorer(Scorer):
 
         if not score_list:
             # If no pieces matched (e.g., due to role filter), return False
-            # Use the first request piece's ID (or original_prompt_id as fallback)
+            # Use the first message piece's ID (or original_prompt_id as fallback)
             first_piece = message.message_pieces[0]
             piece_id = first_piece.id or first_piece.original_prompt_id
             if piece_id is None:
-                raise ValueError("Cannot create score: request piece has no id or original_prompt_id")
+                raise ValueError("Cannot create score: message piece has no id or original_prompt_id")
 
             return_score = Score(
                 score_value=str(False).lower(),

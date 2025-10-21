@@ -360,7 +360,7 @@ class PromptNormalizer:
         Processes the prepended conversation by converting it if needed and adding it to memory.
 
         Args:
-            conversation_id (str): The conversation ID to use for the request pieces
+            conversation_id (str): The conversation ID to use for the message pieces
             should_convert (bool): Whether to convert the prepended conversation
             converter_configurations (Optional[list[PromptConverterConfiguration]]): Configurations for converting the
                 request

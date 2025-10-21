@@ -149,7 +149,7 @@ class Scorer(abc.ABC):
 
     def _get_supported_pieces(self, message: Message) -> list[MessagePiece]:
         """
-        Returns a list of supported request pieces for this scorer.
+        Returns a list of supported message pieces for this scorer.
         """
         return [
             piece for piece in message.message_pieces if self._validator.is_message_piece_supported(message_piece=piece)
@@ -506,7 +506,7 @@ class Scorer(abc.ABC):
         conversation = self._memory.get_message_pieces(conversation_id=piece.conversation_id)
         last_prompt = max(conversation, key=lambda x: x.sequence)
 
-        # Every text request piece from the last turn
+        # Every text message piece from the last turn
         last_turn_text = "\n".join(
             [
                 piece.original_value

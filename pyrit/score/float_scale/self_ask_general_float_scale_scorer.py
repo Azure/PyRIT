@@ -82,7 +82,7 @@ class SelfAskGeneralFloatScaleScorer(FloatScaleScorer):
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
-        Score a single request piece using the configured prompts and scale to [0, 1].
+        Score a single message piece using the configured prompts and scale to [0, 1].
 
         Args:
             message_piece (MessagePiece): The piece to score.

@@ -80,7 +80,7 @@ class SelfAskGeneralTrueFalseScorer(TrueFalseScorer):
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
-        Score a single request piece using the configured prompts.
+        Score a single message piece using the configured prompts.
 
         Args:
             message_piece (MessagePiece): The piece to score.

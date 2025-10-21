@@ -66,7 +66,7 @@ class VideoTrueFalseScorer(TrueFalseScorer, _BaseVideoScorer):
         # Use the TrueFalseAggregatorFunc to combine frame scores
         result = self._score_aggregator(frame_scores)
 
-        # Get the ID from the request piece
+        # Get the ID from the message piece
         piece_id = message_piece.id if message_piece.id is not None else message_piece.original_prompt_id
 
         # Create the aggregated score using the aggregator result

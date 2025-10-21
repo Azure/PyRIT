@@ -780,12 +780,12 @@ def test_is_json_response_supported_returns_true(target: OpenAIResponseTarget):
 
 @pytest.mark.asyncio
 async def test_build_input_for_multi_modal_async_empty_conversation(target: OpenAIResponseTarget):
-    # Should raise ValueError if no request pieces
+    # Should raise ValueError if no message pieces
     req = MagicMock()
     req.message_pieces = []
     with pytest.raises(ValueError) as excinfo:
         await target._build_input_for_multi_modal_async([req])
-    assert "Failed to process conversation message at index 0: Message contains no request pieces" in str(excinfo.value)
+    assert "Failed to process conversation message at index 0: Message contains no message pieces" in str(excinfo.value)
 
 
 @pytest.mark.asyncio
@@ -1083,7 +1083,7 @@ async def test_send_prompt_async_agentic_loop_executes_function_and_returns_fina
         "status": "completed",
         "output": [{"type": "message", "content": [{"type": "output_text", "text": "Done: 14"}]}],
     }
-    # Use a request piece with the same conversation ID for reference
+    # Use a message piece with the same conversation ID for reference
     reference_piece = MessagePiece(role="user", original_value="hi", conversation_id=shared_conversation_id)
     second_reply = target._construct_message_from_openai_json(
         open_ai_str_response=json.dumps(final_output),

@@ -38,7 +38,7 @@ def authenticate_user(username, password):
 # Create a MessagePiece to hold the example prompt as if it were an assistant response
 request = MessagePiece(role="assistant", original_value=example_prompt).to_message()
 
-# Request piece is added to memory first
+# Message piece is added to memory first
 scorer._memory.add_message_to_memory(request=request)
 
 # Run the scorer to evaluate the security of the prompt

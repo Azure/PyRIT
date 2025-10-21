@@ -448,7 +448,7 @@ async def test_should_skip_based_on_skip_criteria_no_matches(mock_memory_instanc
 
     normalizer.set_skip_criteria(skip_criteria, skip_value_type="converted")
 
-    # Construct a request piece that doesn't match the memory's hash
+    # Construct a message piece that doesn't match the memory's hash
     message_piece = MessagePiece(role="user", original_value="My user prompt")
     message_piece.original_value_sha256 = "completely_different_hash"
     message_piece.converted_value_sha256 = "completely_different_hash"
@@ -473,14 +473,14 @@ async def test_should_skip_based_on_skip_criteria_match_found(mock_memory_instan
     )
 
     # We'll say that memory returns one piece with the exact same converted_value_sha256
-    # as our request piece
+    # as our message piece
     matching_sha = "matching_converted_hash"
 
     piece = MessagePiece(role="user", original_value="prompt")
     piece.converted_value_sha256 = matching_sha
     mock_memory_instance.get_message_pieces.return_value = [piece]
 
-    # Our request piece also has that same matching sha
+    # Our message piece also has that same matching sha
     message_piece = MessagePiece(role="user", original_value="My user prompt")
     message_piece.converted_value_sha256 = matching_sha
 
@@ -500,13 +500,13 @@ async def test_should_skip_based_on_skip_criteria_original_value_match(mock_memo
     """
     matching_sha = "matching_original_hash"
 
-    # Build a request piece with the same original_value_sha256
+    # Build a message piece with the same original_value_sha256
     message_piece = MessagePiece(role="user", original_value="My user prompt")
     message_piece.original_value_sha256 = matching_sha
 
     request = Message(message_pieces=[message_piece])
 
-    # Memory returns a piece that has an original_value_sha256 matching our request piece
+    # Memory returns a piece that has an original_value_sha256 matching our message piece
     piece = MessagePiece(role="user", original_value="prompt")
     piece.original_value_sha256 = matching_sha
     mock_memory_instance.get_message_pieces.return_value = [piece]
@@ -550,7 +550,7 @@ async def test_send_prompt_async_exception_conv_id(mock_memory_instance, seed_pr
 
 @pytest.mark.asyncio
 async def test_build_message_harm_categories(mock_memory_instance):
-    """Test that harm_categories from seed prompts are propagated to request pieces."""
+    """Test that harm_categories from seed prompts are propagated to message pieces."""
 
     harm_categories = ["violence", "illegal"]
 

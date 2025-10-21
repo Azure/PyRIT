@@ -64,7 +64,7 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
-        Score the request piece using question answering evaluation.
+        Score the message piece using question answering evaluation.
 
         Args:
             message_piece (MessagePiece): The answer given by the target to be scored.

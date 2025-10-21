@@ -211,7 +211,7 @@ class ConversationManager:
                     response_converters=response_converters,
                 )
 
-            # Process the request piece
+            # Process the message piece
             logger.debug(f"Processing message {i + 1}/{len(valid_requests)} in conversation {conversation_id}")
             await self._process_prepended_message_async(
                 request=request,
@@ -282,7 +282,7 @@ class ConversationManager:
     ) -> None:
         """
         Process a prepended message and update the conversation state.
-        This method handles the conversion of request pieces, sets conversation IDs,
+        This method handles the conversion of message pieces, sets conversation IDs,
         and attack identifiers, and processes each piece based on its role.
 
         Args:
