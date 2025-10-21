@@ -19,10 +19,10 @@ from pyrit.exceptions import (
 )
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import (
+    ChatMessageRole,
     Message,
     MessagePiece,
     PromptDataType,
-    ChatMessageRole,
     Score,
     ScoreType,
     UnvalidatedScore,

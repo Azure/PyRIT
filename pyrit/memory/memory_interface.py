@@ -31,13 +31,13 @@ from pyrit.memory.memory_models import (
     SeedPromptEntry,
 )
 from pyrit.models import (
+    AttackResult,
     ChatMessage,
     DataTypeSerializer,
     Message,
     MessagePiece,
     Score,
     SeedPrompt,
-    AttackResult,
     SeedPromptDataset,
     SeedPromptGroup,
     StorageIO,

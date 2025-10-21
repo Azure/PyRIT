@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 from __future__ import annotations
+
 from typing import Dict, MutableSequence, Optional, Sequence, Union
 
 from pyrit.common.utils import combine_dict

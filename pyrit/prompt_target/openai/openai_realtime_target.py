@@ -13,7 +13,11 @@ from urllib.parse import urlencode
 import websockets
 
 from pyrit.exceptions.exception_classes import ServerErrorException
-from pyrit.models import Message, construct_response_from_request, data_serializer_factory
+from pyrit.models import (
+    Message,
+    construct_response_from_request,
+    data_serializer_factory,
+)
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
