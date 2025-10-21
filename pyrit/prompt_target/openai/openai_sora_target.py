@@ -273,6 +273,71 @@ class OpenAISoraTarget(OpenAITarget):
         else:
             return await self._send_v2_request_async(request, prompt)
 
+    def _parse_http_error(self, error: httpx.HTTPStatusError) -> tuple[str, bool]:
+        """
+        Parse HTTP error response and extract detailed error information.
+        
+        Args:
+            error: The HTTPStatusError to parse.
+            
+        Returns:
+            tuple: (error_message, is_content_filter)
+        """
+        error_details = [f"HTTP {error.response.status_code}"]
+
+        try:
+            error_content = error.response.json()
+            if "error" in error_content:
+                error_info = error_content["error"]
+                if isinstance(error_info, dict):
+                    for key in ["message", "type", "code", "param"]:
+                        if key in error_info:
+                            error_details.append(f"{key.capitalize()}: {error_info[key]}")
+                else:
+                    error_details.append(f"Error: {error_info}")
+            else:
+                error_details.append(f"Response: {error_content}")
+        except Exception:
+            error_details.append(f"Raw response: {error.response.text}")
+
+        error_message = "; ".join(error_details)
+        
+        # Check if it's a content filtering error
+        is_content_filter = error.response.status_code == 400 and any(
+            keyword in error_message.lower()
+            for keyword in ["content", "policy", "moderation", "filter", "inappropriate", "violation"]
+        )
+        
+        return error_message, is_content_filter
+
+    def _handle_http_error(self, error: httpx.HTTPStatusError, request: MessagePiece) -> Message:
+        """
+        Handle HTTP errors with standardized error parsing and response construction.
+        
+        Args:
+            error: The HTTPStatusError to handle.
+            request: The request piece associated with the prompt.
+            
+        Returns:
+            Message: The error response entry.
+        """
+        error_message, is_content_filter = self._parse_http_error(error)
+        logger.error(f"HTTP error during prompt send: {error_message}")
+
+        if is_content_filter:
+            return handle_bad_request_exception(
+                response_text=error_message,
+                request=request,
+                is_content_filter=True,
+            )
+        else:
+            return construct_response_from_request(
+                request=request,
+                response_text_pieces=[error_message],
+                response_type="error",
+                error="unknown",
+            )
+
     async def _send_v1_request_async(self, request: MessagePiece, prompt: str) -> Message:
         """Send request using Sora-1 API (JSON body)."""
         body = self._construct_v1_request_body(prompt=prompt)
@@ -281,14 +346,16 @@ class OpenAISoraTarget(OpenAITarget):
         # Set api-version parameter for v1
         self._params["api-version"] = "preview"
 
-        response = await self._send_httpx_request_async(
-            endpoint_uri=endpoint_uri,
-            method="POST",
-            request_body=body,
-        )
-
-        self._detected_api_version = "v1"
-        return await self._handle_response_async(request=request, response=response)
+        try:
+            response = await self._send_httpx_request_async(
+                endpoint_uri=endpoint_uri,
+                method="POST",
+                request_body=body,
+            )
+            return await self._handle_response_async(request=request, response=response)
+        
+        except httpx.HTTPStatusError as e:
+            return self._handle_http_error(error=e, request=request)
 
     async def _send_v2_request_async(self, request: MessagePiece, prompt: str) -> Message:
         """Send request using Sora-2 API (multipart form data)."""
@@ -303,50 +370,10 @@ class OpenAISoraTarget(OpenAITarget):
                 method="POST",
                 files=files,
             )
-            self._detected_api_version = "v2"
             return await self._handle_response_async(request=request, response=response)
 
         except httpx.HTTPStatusError as e:
-            # Handle HTTP errors for v2
-            error_details = [f"HTTP {e.response.status_code}"]
-
-            try:
-                error_content = e.response.json()
-                if "error" in error_content:
-                    error_info = error_content["error"]
-                    if isinstance(error_info, dict):
-                        for key in ["message", "type", "code", "param"]:
-                            if key in error_info:
-                                error_details.append(f"{key.capitalize()}: {error_info[key]}")
-                    else:
-                        error_details.append(f"Error: {error_info}")
-                else:
-                    error_details.append(f"Response: {error_content}")
-            except Exception:
-                error_details.append(f"Raw response: {e.response.text}")
-
-            error_message = "; ".join(error_details)
-            logger.error(f"HTTP error during prompt send: {error_message}")
-
-            # Check if it's a content filtering error
-            is_content_filter = e.response.status_code == 400 and any(
-                keyword in error_message.lower()
-                for keyword in ["content", "policy", "moderation", "filter", "inappropriate", "violation"]
-            )
-
-            if is_content_filter:
-                return handle_bad_request_exception(
-                    response_text=error_message,
-                    request=request,
-                    is_content_filter=True,
-                )
-            else:
-                return construct_response_from_request(
-                    request=request,
-                    response_text_pieces=[error_message],
-                    response_type="error",
-                    error="unknown",
-                )
+            return self._handle_http_error(error=e, request=request)
 
     @pyrit_custom_result_retry(
         retry_function=_should_retry_check_job,
@@ -413,7 +440,7 @@ class OpenAISoraTarget(OpenAITarget):
 
         return response
 
-    async def _handle_response_async(self, request: MessagePiece, response: httpx.Response) -> Message:
+    async def _handle_response_async(self, *, request: MessagePiece, response: httpx.Response) -> Message:
         """
         Asynchronously handle the response to a video generation request.
 
@@ -427,7 +454,6 @@ class OpenAISoraTarget(OpenAITarget):
             Message: The response entry with the saved video path or error message.
         """
         content = json.loads(response.content)
-
         task_id = content.get("id")
         logger.info(f"Handling response for Task ID: {task_id}")
 
@@ -436,68 +462,141 @@ class OpenAISoraTarget(OpenAITarget):
         task_content = json.loads(task_response.content)
         status = task_content.get("status")
 
-        # Handle completed task
+        # Handle task based on status
         if status in [JobStatus.SUCCEEDED.value, JobStatus.COMPLETED.value]:
-            response_entry = await self._download_and_save_video_async(
+            return await self._download_and_save_video_async(
                 task_id=task_id,
                 task_content=task_content,
                 request=request,
             )
         elif status in [JobStatus.FAILED.value, JobStatus.CANCELLED.value]:
-            failure_reason = task_content.get("failure_reason", None)
-
-            # Extract additional error details from the response
-            error_details = []
-            if failure_reason:
-                error_details.append(f"Failure reason: {failure_reason}")
-
-            # Look for additional error information in the response
-            if "error" in task_content:
-                error_info = task_content["error"]
-                if isinstance(error_info, dict):
-                    if "message" in error_info:
-                        error_details.append(f"Error message: {error_info['message']}")
-                    if "type" in error_info:
-                        error_details.append(f"Error type: {error_info['type']}")
-                    if "code" in error_info:
-                        error_details.append(f"Error code: {error_info['code']}")
-                else:
-                    error_details.append(f"Error: {error_info}")
-
-            # Include raw task content for debugging if no specific errors found
-            if not error_details:
-                error_details.append(f"Raw response: {task_content}")
-
-            failure_message = f"{task_id} {status}. {'; '.join(error_details)}"
-            logger.error(failure_message)
-
-            if failure_reason in [FailureReason.INPUT_MODERATION.value, FailureReason.OUTPUT_MODERATION.value]:
-                response_entry = handle_bad_request_exception(
-                    response_text=failure_message,
-                    request=request,
-                    is_content_filter=True,
-                )
-            else:
-                # Non-moderation failure reason
-                response_entry = construct_response_from_request(
-                    request=request,
-                    response_text_pieces=[failure_message],
-                    response_type="error",
-                    error="unknown",
-                )
-        else:
-            # Retry stop condition reached, return result
-            logger.info(
-                f"{task_id} is still processing after attempting retries. Consider setting a value > "
-                + f"{self.CHECK_JOB_RETRY_MAX_NUM_ATTEMPTS} for environment variable "
-                + f"CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS. Status: {status}"
-            )
-            response_entry = construct_response_from_request(
+            return self._handle_failed_task(
+                task_id=task_id,
+                status=status,
+                task_content=task_content,
                 request=request,
-                response_text_pieces=[f"{str(task_content)}"],
+            )
+        else:
+            return self._handle_processing_task(
+                task_id=task_id,
+                status=status,
+                task_content=task_content,
+                request=request,
             )
 
-        return response_entry
+    def _handle_failed_task(
+        self,
+        *,
+        task_id: str,
+        status: str,
+        task_content: dict,
+        request: MessagePiece,
+    ) -> Message:
+        """
+        Handle a failed or cancelled video generation task.
+
+        Args:
+            task_id (str): The ID of the failed task.
+            status (str): The status value (failed or cancelled).
+            task_content (dict): The response content from the status check.
+            request (MessagePiece): The message piece associated with the prompt.
+
+        Returns:
+            Message: The error response entry.
+        """
+        failure_reason = task_content.get("failure_reason", None)
+        error_details = self._extract_error_details(
+            task_content=task_content,
+            failure_reason=failure_reason,
+        )
+
+        failure_message = f"{task_id} {status}. {'; '.join(error_details)}"
+        logger.error(failure_message)
+
+        # Check if failure was due to content moderation
+        if failure_reason in [FailureReason.INPUT_MODERATION.value, FailureReason.OUTPUT_MODERATION.value]:
+            return handle_bad_request_exception(
+                response_text=failure_message,
+                request=request,
+                is_content_filter=True,
+            )
+        else:
+            return construct_response_from_request(
+                request=request,
+                response_text_pieces=[failure_message],
+                response_type="error",
+                error="unknown",
+            )
+
+    def _extract_error_details(
+        self,
+        *,
+        task_content: dict,
+        failure_reason: Optional[str],
+    ) -> list[str]:
+        """
+        Extract detailed error information from the task response.
+
+        Args:
+            task_content (dict): The response content from the status check.
+            failure_reason (Optional[str]): The failure reason if available.
+
+        Returns:
+            list[str]: List of error detail strings.
+        """
+        error_details = []
+
+        if failure_reason:
+            error_details.append(f"Failure reason: {failure_reason}")
+
+        # Look for additional error information in the response
+        if "error" in task_content:
+            error_info = task_content["error"]
+            if isinstance(error_info, dict):
+                if "message" in error_info:
+                    error_details.append(f"Error message: {error_info['message']}")
+                if "type" in error_info:
+                    error_details.append(f"Error type: {error_info['type']}")
+                if "code" in error_info:
+                    error_details.append(f"Error code: {error_info['code']}")
+            else:
+                error_details.append(f"Error: {error_info}")
+
+        # Include raw task content for debugging if no specific errors found
+        if not error_details:
+            error_details.append(f"Raw response: {task_content}")
+
+        return error_details
+
+    def _handle_processing_task(
+        self,
+        *,
+        task_id: str,
+        status: str,
+        task_content: dict,
+        request: MessagePiece,
+    ) -> Message:
+        """
+        Handle a task that is still processing after max retries.
+
+        Args:
+            task_id (str): The ID of the processing task.
+            status (str): The current status value.
+            task_content (dict): The response content from the status check.
+            request (MessagePiece): The message piece associated with the prompt.
+
+        Returns:
+            Message: The response entry with task status information.
+        """
+        logger.info(
+            f"{task_id} is still processing after attempting retries. Consider setting a value > "
+            + f"{self.CHECK_JOB_RETRY_MAX_NUM_ATTEMPTS} for environment variable "
+            + f"CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS. Status: {status}"
+        )
+        return construct_response_from_request(
+            request=request,
+            response_text_pieces=[f"{str(task_content)}"],
+        )
 
     async def _download_and_save_video_async(
         self,
@@ -507,14 +606,20 @@ class OpenAISoraTarget(OpenAITarget):
         request: MessagePiece,
     ) -> Message:
         """Download and save video using the appropriate method."""
+        # Determine generation_id and file_name suffix based on API version
         if self._detected_api_version == "v1":
             generations = task_content.get("generations", [])
             generation_id = generations[0].get("id") if generations else None
-            video_response = await self.download_video_content_async(task_id=task_id, generation_id=generation_id)
-            file_name = self._output_filename if self._output_filename else f"{task_id}_{generation_id}"
+            file_name_suffix = f"{task_id}_{generation_id}"
         else:
-            video_response = await self.download_video_content_async(task_id=task_id)
-            file_name = self._output_filename if self._output_filename else f"{task_id}"
+            generation_id = None
+            file_name_suffix = f"{task_id}"
+
+        # Download video content
+        video_response = await self.download_video_content_async(task_id=task_id, generation_id=generation_id)
+        
+        # Determine final file name
+        file_name = self._output_filename if self._output_filename else file_name_suffix
 
         return await self._save_video_to_storage_async(
             data=video_response.content,
