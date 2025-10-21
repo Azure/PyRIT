@@ -6,7 +6,7 @@ from datetime import datetime
 
 import pytest
 
-from pyrit.models.score import Score
+from pyrit.models import Score
 
 
 @pytest.mark.asyncio
@@ -16,13 +16,13 @@ async def test_score_to_dict():
         score_value="false",
         score_value_description="true false score",
         score_type="true_false",
-        score_category="Category1",
+        score_category=["Category1"],
         score_rationale="Rationale text",
         score_metadata={"key": "value"},
         scorer_class_identifier="Scorer1",
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
         timestamp=datetime.now(),
-        task="Task1",
+        objective="Task1",
     )
     result = sample_score.to_dict()
 
@@ -36,9 +36,9 @@ async def test_score_to_dict():
         "score_rationale",
         "score_metadata",
         "scorer_class_identifier",
-        "prompt_request_response_id",
+        "message_piece_id",
         "timestamp",
-        "task",
+        "objective",
     ]
 
     for key in expected_keys:
@@ -53,6 +53,6 @@ async def test_score_to_dict():
     assert result["score_rationale"] == sample_score.score_rationale
     assert result["score_metadata"] == sample_score.score_metadata
     assert result["scorer_class_identifier"] == sample_score.scorer_class_identifier
-    assert result["prompt_request_response_id"] == str(sample_score.prompt_request_response_id)
+    assert result["message_piece_id"] == str(sample_score.message_piece_id)
     assert result["timestamp"] == sample_score.timestamp.isoformat()
-    assert result["task"] == sample_score.task
+    assert result["objective"] == sample_score.objective

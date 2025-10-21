@@ -6,22 +6,18 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
 # # Tree of Attacks with Pruning (Multi-Turn) - optional
 #
 # The `TreeOfAttacksWithPruningAttack` (aka `TAPAttack`) implements the [TAP attack strategy](https://arxiv.org/abs/2312.02119).
-
+#
 # The TAP attack strategy systematically explores multiple adversarial prompt paths in parallel
 # using a tree structure. It employs breadth-first search with pruning to efficiently find
 # effective jailbreaks while managing computational resources.
-
+#
 # How it works:
 # 1. **Initialization**: Creates multiple initial attack branches (width) to explore different approaches
 # 2. **Tree Expansion**: For each iteration (depth), branches are expanded by a branching factor

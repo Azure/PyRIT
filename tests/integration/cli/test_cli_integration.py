@@ -18,6 +18,8 @@ test_cases_success = [
     "--config-file 'tests/unit/cli/prompt_send_success_converters_custom_target.yaml'",
     "--config-file 'tests/unit/cli/prompt_send_success_converters_no_target.yaml'",
     "--config-file 'tests/integration/cli/multiple_converters_success.yaml'",
+    "--config-file 'scanner_configurations/basic_multi_turn_attack.yaml'",
+    "--config-file 'scanner_configurations/prompt_send.yaml'",
 ]
 
 
@@ -162,7 +164,7 @@ converters = [
     ),
     (
         "text",
-        {"type": "TextToHexConverter"},
+        {"type": "BinAsciiConverter", "encoding_func": "hex"},
     ),
     (
         "text",

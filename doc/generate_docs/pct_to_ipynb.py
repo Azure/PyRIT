@@ -11,7 +11,6 @@ skip_files = {
     "0_auxiliary_attacks.py",
     "1_gcg_azure_ml.py",
     "6_human_converter.py",
-    "5_human_in_the_loop_scorer.py",
 }
 
 exec_dir = Path(os.getcwd())

@@ -15,14 +15,14 @@ from pyrit.executor.attack import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
+    MessagePiece,
     SeedPrompt,
 )
 from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptTarget
-from pyrit.score import Scorer
+from pyrit.score import TrueFalseScorer
 
 
 @pytest.fixture
@@ -55,8 +55,7 @@ def sample_many_shot_examples():
 @pytest.fixture
 def mock_scorer():
     """Create a mock true/false scorer"""
-    scorer = MagicMock(spec=Scorer)
-    scorer.scorer_type = "true_false"
+    scorer = MagicMock(spec=TrueFalseScorer)
     scorer.score_text_async = AsyncMock()
     return scorer
 
@@ -368,9 +367,7 @@ class TestManyShotJailbreakAttackLifecycle:
 
         # Context with prepended conversation (not allowed)
         basic_context.prepended_conversation = [
-            PromptRequestResponse(
-                request_pieces=[PromptRequestPiece(role="user", original_value="Test prepended conversation")]
-            )
+            Message(message_pieces=[MessagePiece(role="user", original_value="Test prepended conversation")])
         ]
 
         attack._setup_async = AsyncMock()

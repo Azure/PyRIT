@@ -6,11 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -22,9 +18,8 @@
 # The attack technique is inspired by the char-swap attack method from Project Moonshot.
 # Reference: [Charswap Attack](https://github.com/aiverify-foundation/moonshot-data/blob/main/attack-modules/charswap_attack.py)
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
-
 # %%
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     AttackConverterConfig,
     ConsoleAttackResultPrinter,

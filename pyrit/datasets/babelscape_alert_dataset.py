@@ -5,8 +5,7 @@ from typing import Literal, Optional
 
 from datasets import load_dataset
 
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import SeedPrompt, SeedPromptDataset
 
 
 def fetch_babelscape_alert_dataset(

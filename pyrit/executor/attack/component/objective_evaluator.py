@@ -4,7 +4,7 @@
 import logging
 from typing import Optional
 
-from pyrit.models.score import Score
+from pyrit.models import Score
 from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)

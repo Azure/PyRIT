@@ -12,7 +12,7 @@ from pyrit.exceptions import (
     handle_bad_request_exception,
     pyrit_target_retry,
 )
-from pyrit.models import PromptRequestResponse, construct_response_from_request
+from pyrit.models import Message, construct_response_from_request
 from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
@@ -36,9 +36,9 @@ class CrucibleTarget(PromptTarget):
         )
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.request_pieces[0]
+        request = prompt_request.message_pieces[0]
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
@@ -55,12 +55,12 @@ class CrucibleTarget(PromptTarget):
 
         return response_entry
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
-        n_pieces = len(prompt_request.request_pieces)
+    def _validate_request(self, *, prompt_request: Message) -> None:
+        n_pieces = len(prompt_request.message_pieces)
         if n_pieces != 1:
-            raise ValueError(f"This target only supports a single prompt request piece. Received: {n_pieces} pieces.")
+            raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
 
-        piece_type = prompt_request.request_pieces[0].converted_value_data_type
+        piece_type = prompt_request.message_pieces[0].converted_value_data_type
         if piece_type != "text":
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 

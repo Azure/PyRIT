@@ -9,11 +9,11 @@ from uuid import uuid4
 import pytest
 
 from pyrit.memory import MemoryInterface
-from pyrit.models import PromptRequestPiece, SeedPrompt, SeedPromptGroup
+from pyrit.models import MessagePiece, SeedPrompt, SeedPromptGroup
 
 
-def assert_original_value_in_list(original_value: str, prompt_request_pieces: Sequence[PromptRequestPiece]):
-    for piece in prompt_request_pieces:
+def assert_original_value_in_list(original_value: str, message_pieces: Sequence[MessagePiece]):
+    for piece in message_pieces:
         if piece.original_value == original_value:
             return True
     raise AssertionError(f"Original value {original_value} not found in list")

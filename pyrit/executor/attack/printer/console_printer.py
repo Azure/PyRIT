@@ -113,7 +113,7 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
 
         turn_number = 0
         for message in messages:
-            for piece in message.request_pieces:
+            for piece in message.message_pieces:
                 if piece.role == "user":
                     turn_number += 1
                     # User message header

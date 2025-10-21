@@ -9,17 +9,15 @@ import pytest
 
 from pyrit.exceptions.exception_classes import PyritException
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import GandalfLevel
 from pyrit.score import GandalfScorer
 
 
-def generate_password_extraction_response(
-    response_text: str, conversation_id: Optional[str] = None
-) -> PromptRequestResponse:
-    return PromptRequestResponse(
-        request_pieces=[
-            PromptRequestPiece(
+def generate_password_extraction_response(response_text: str, conversation_id: Optional[str] = None) -> Message:
+    return Message(
+        message_pieces=[
+            MessagePiece(
                 role="assistant",
                 original_value=response_text,
                 original_value_data_type="text",
@@ -31,10 +29,10 @@ def generate_password_extraction_response(
     )
 
 
-def generate_request(conversation_id: Optional[str] = None) -> PromptRequestResponse:
-    return PromptRequestResponse(
-        request_pieces=[
-            PromptRequestPiece(
+def generate_request(conversation_id: Optional[str] = None) -> Message:
+    return Message(
+        message_pieces=[
+            MessagePiece(
                 role="user",
                 original_value="some request",
                 original_value_data_type="text",
@@ -56,9 +54,9 @@ async def test_gandalf_scorer_score(
     chat_target = MagicMock()
 
     conversation_id = str(uuid.uuid4())
-    sqlite_instance.add_request_response_to_memory(request=generate_request(conversation_id=conversation_id))
+    sqlite_instance.add_message_to_memory(request=generate_request(conversation_id=conversation_id))
     response = generate_password_extraction_response("SUNSHINE", conversation_id=conversation_id)
-    sqlite_instance.add_request_response_to_memory(request=response)
+    sqlite_instance.add_message_to_memory(request=response)
 
     chat_target.send_prompt_async = AsyncMock(return_value=response)
 
@@ -68,7 +66,7 @@ async def test_gandalf_scorer_score(
         status_code=200, json=lambda: {"success": password_correct, "message": "Message"}
     )
 
-    scores = await scorer.score_async(response.request_pieces[0])
+    scores = await scorer.score_async(response)
 
     assert len(scores) == 1
     assert scores[0].get_value() == password_correct
@@ -92,9 +90,9 @@ async def test_gandalf_scorer_set_system_prompt(
     level: GandalfLevel,
 ):
     conversation_id = str(uuid.uuid4())
-    sqlite_instance.add_request_response_to_memory(request=generate_request(conversation_id=conversation_id))
+    sqlite_instance.add_message_to_memory(request=generate_request(conversation_id=conversation_id))
     response = generate_password_extraction_response("SUNSHINE", conversation_id=conversation_id)
-    sqlite_instance.add_request_response_to_memory(request=response)
+    sqlite_instance.add_message_to_memory(request=response)
 
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=response)
@@ -103,7 +101,7 @@ async def test_gandalf_scorer_set_system_prompt(
 
     mocked_post.return_value = MagicMock(status_code=200, json=lambda: {"success": True, "message": "Message"})
 
-    await scorer.score_async(response.request_pieces[0])
+    await scorer.score_async(response)
 
     chat_target.set_system_prompt.assert_called_once()
 
@@ -116,9 +114,9 @@ async def test_gandalf_scorer_set_system_prompt(
 async def test_gandalf_scorer_adds_to_memory(mocked_post, level: GandalfLevel, sqlite_instance: MemoryInterface):
     conversation_id = str(uuid.uuid4())
     generated_request = generate_request(conversation_id=conversation_id)
-    sqlite_instance.add_request_response_to_memory(request=generated_request)
+    sqlite_instance.add_message_to_memory(request=generated_request)
     response = generate_password_extraction_response("SUNSHINE", conversation_id=conversation_id)
-    sqlite_instance.add_request_response_to_memory(request=response)
+    sqlite_instance.add_message_to_memory(request=response)
 
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=response)
@@ -126,10 +124,10 @@ async def test_gandalf_scorer_adds_to_memory(mocked_post, level: GandalfLevel, s
     # Mock the requests.post call to return a successful response
     mocked_post.return_value = MagicMock(status_code=200, json=lambda: {"success": True, "message": "Message"})
 
-    with patch.object(sqlite_instance, "get_prompt_request_pieces", return_value=[generated_request.request_pieces[0]]):
+    with patch.object(sqlite_instance, "get_message_pieces", return_value=[generated_request.message_pieces[0]]):
         scorer = GandalfScorer(level=level, chat_target=chat_target)
 
-        await scorer.score_async(response.request_pieces[0])
+        await scorer.score_async(response)
 
 
 @pytest.mark.parametrize("level", [GandalfLevel.LEVEL_1, GandalfLevel.LEVEL_2, GandalfLevel.LEVEL_3])
@@ -137,15 +135,15 @@ async def test_gandalf_scorer_adds_to_memory(mocked_post, level: GandalfLevel, s
 async def test_gandalf_scorer_runtime_error_retries(level: GandalfLevel, sqlite_instance: MemoryInterface):
 
     conversation_id = str(uuid.uuid4())
-    sqlite_instance.add_request_response_to_memory(request=generate_request(conversation_id=conversation_id))
+    sqlite_instance.add_message_to_memory(request=generate_request(conversation_id=conversation_id))
     response = generate_password_extraction_response("SUNSHINE", conversation_id=conversation_id)
-    sqlite_instance.add_request_response_to_memory(request=response)
+    sqlite_instance.add_message_to_memory(request=response)
 
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(side_effect=[RuntimeError("Error"), response])
     scorer = GandalfScorer(level=level, chat_target=chat_target)
 
     with pytest.raises(PyritException):
-        await scorer.score_async(response.request_pieces[0])
+        await scorer.score_async(response)
 
     assert chat_target.send_prompt_async.call_count == 1

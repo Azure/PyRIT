@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -32,6 +32,8 @@ from pyrit.prompt_target import OpenAIResponseTarget
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
 target = OpenAIResponseTarget()
+# For an AzureOpenAI endpoint with Entra ID authentication enabled, use the following command instead. Make sure to run `az login` first.
+# target = OpenAIResponseTarget(use_entra_auth=True)
 
 attack = PromptSendingAttack(objective_target=target)
 
@@ -56,7 +58,7 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 
 # %%
 from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target.openai.openai_response_target import OpenAIResponseTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
@@ -101,16 +103,16 @@ target = OpenAIResponseTarget(
 )
 
 # Build the user prompt
-prompt_piece = PromptRequestPiece(
+message_piece = MessagePiece(
     role="user",
     original_value="What is the weather in Boston in celsius? Use the get_current_weather function.",
     original_value_data_type="text",
 )
-prompt_request = PromptRequestResponse(request_pieces=[prompt_piece])
+prompt_request = Message(message_pieces=[message_piece])
 
 response = await target.send_prompt_async(prompt_request=prompt_request)  # type: ignore
 
-for idx, piece in enumerate(response.request_pieces):
+for idx, piece in enumerate(response.message_pieces):
     print(f"{idx} | {piece.role}: {piece.original_value}")
 
 # %% [markdown]
@@ -127,14 +129,20 @@ for idx, piece in enumerate(response.request_pieces):
 # NOTE that web search is NOT supported through an Azure OpenAI endpoint, only through the OpenAI platform endpoint (i.e. api.openai.com)
 
 # %%
+import os
+
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.tool_configs import web_search_tool
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target.openai.openai_response_target import OpenAIResponseTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
 target = OpenAIResponseTarget(
+    endpoint=os.getenv("PLATFORM_OPENAI_RESPONSES_ENDPOINT"),
+    api_key=os.getenv("PLATFORM_OPENAI_RESPONSES_KEY"),
+    model_name=os.getenv("PLATFORM_OPENAI_RESPONSES_MODEL", "gpt-4o-mini"),
+    api_version=None,
     extra_body_parameters={
         "tools": [web_search_tool()],
         "tool_choice": "auto",
@@ -142,14 +150,14 @@ target = OpenAIResponseTarget(
     httpx_client_kwargs={"timeout": 60},
 )
 
-prompt_piece = PromptRequestPiece(
+message_piece = MessagePiece(
     role="user", original_value="Briefly, what is one positive news story from today?", original_value_data_type="text"
 )
-prompt_request = PromptRequestResponse(request_pieces=[prompt_piece])
+prompt_request = Message(message_pieces=[message_piece])
 
 response = await target.send_prompt_async(prompt_request=prompt_request)  # type: ignore
 
-for idx, piece in enumerate(response.request_pieces):
+for idx, piece in enumerate(response.message_pieces):
     # Reasoning traces are necessary to be sent back to the endpoint for function calling even if they're empty.
     # They are excluded here for a cleaner output.
     if piece.original_value_data_type != "reasoning":

@@ -62,7 +62,7 @@ class UnicodeConfusableConverter(PromptConverter):
             input_type (PromptDataType): The type of input data.
 
         Returns:
-            ConverterResult: The result containing the prompt with confusable subsitutions applied.
+            ConverterResult: The result containing the prompt with confusable substitutions applied.
 
         Raises:
             ValueError: If the input type is not supported.

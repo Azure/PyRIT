@@ -12,6 +12,8 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
+    analyze_results
+    AttackStats
     ConversationAnalytics
 
 :py:mod:`pyrit.auth`
@@ -126,6 +128,7 @@ API Reference
     fetch_examples
     fetch_forbidden_questions_dataset
     fetch_harmbench_dataset
+    fetch_harmbench_multimodal_dataset_async
     fetch_librAI_do_not_answer_dataset
     fetch_llm_latent_adversarial_training_harmful_dataset
     fetch_jbb_behaviors_by_harm_category
@@ -311,14 +314,13 @@ API Reference
     EmbeddingSupport
     EmbeddingUsageInformation
     ErrorDataTypeSerializer
-    group_conversation_request_pieces_by_sequence
+    group_conversation_message_pieces_by_sequence
     Identifier
     ImagePathDataTypeSerializer
-    PromptRequestPiece
-    PromptResponse
-    PromptResponseError
+    Message
+    MessagePiece
     PromptDataType
-    PromptRequestResponse
+    PromptResponseError
     QuestionAnsweringDataset
     QuestionAnsweringEntry
     QuestionChoice
@@ -332,37 +334,6 @@ API Reference
     TextDataTypeSerializer
     UnvalidatedScore
 
-:py:mod:`pyrit.orchestrator`
-============================
-
-.. automodule:: pyrit.orchestrator
-    :no-members:
-    :no-inherited-members:
-
-.. autosummary::
-    :nosignatures:
-    :toctree: _autosummary/
-
-    AnecdoctorOrchestrator
-    ContextComplianceOrchestrator
-    CrescendoOrchestrator
-    FlipAttackOrchestrator
-    FuzzerOrchestrator
-    ManyShotJailbreakOrchestrator
-    MultiTurnOrchestrator
-    Orchestrator
-    OrchestratorResult
-    PAIROrchestrator
-    PromptSendingOrchestrator
-    QuestionAnsweringBenchmarkOrchestrator
-    RedTeamingOrchestrator
-    RolePlayOrchestrator
-    ScoringOrchestrator
-    SkeletonKeyOrchestrator
-    TreeOfAttacksWithPruningOrchestrator
-    XPIAManualProcessingOrchestrator
-    XPIAOrchestrator
-    XPIATestOrchestrator
 
 :py:mod:`pyrit.prompt_converter`
 ================================
@@ -386,6 +357,7 @@ API Reference
     AzureSpeechAudioToTextConverter
     AzureSpeechTextToAudioConverter
     Base64Converter
+    BinAsciiConverter
     BinaryConverter
     CaesarConverter
     CharacterSpaceConverter
@@ -427,10 +399,10 @@ API Reference
     TemplateSegmentConverter
     TenseConverter
     TextJailbreakConverter
-    TextToHexConverter
     ToneConverter
     ToxicSentenceGeneratorConverter
     TranslationConverter
+    TransparencyAttackConverter
     UnicodeConfusableConverter
     UnicodeReplacementConverter
     UnicodeSubstitutionConverter
@@ -511,13 +483,12 @@ API Reference
     AzureContentFilterScorer
     BatchScorer
     ContentClassifierPaths
-    CompositeScorer
+    FloatScaleScorer
     FloatScaleThresholdScorer
     GandalfScorer
     HarmHumanLabeledEntry
     HarmScorerEvaluator
     HarmScorerMetrics
-    HumanInTheLoopScorer
     HumanInTheLoopScorerGradio
     HumanLabeledDataset
     HumanLabeledEntry
@@ -529,21 +500,26 @@ API Reference
     ObjectiveHumanLabeledEntry
     ObjectiveScorerEvaluator
     ObjectiveScorerMetrics
+    PlagiarismMetric
     PlagiarismScorer
     PromptShieldScorer
     QuestionAnswerScorer
     Scorer
     ScorerEvaluator
     ScorerMetrics
-    ScoreAggregator
+    ScorerPromptValidator
     SelfAskCategoryScorer
-    SelfAskGeneralScorer
+    SelfAskGeneralFloatScaleScorer
+    SelfAskGeneralTrueFalseScorer
     SelfAskLikertScorer
+    SelfAskQuestionAnswerScorer
     SelfAskRefusalScorer
     SelfAskScaleScorer
     SelfAskTrueFalseScorer
-    SelfAskQuestionAnswerScorer
     SubStringScorer
+    TrueFalseCompositeScorer
     TrueFalseInverterScorer
     TrueFalseQuestion
     TrueFalseQuestionPaths
+    TrueFalseScoreAggregator
+    TrueFalseScorer

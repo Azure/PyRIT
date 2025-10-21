@@ -13,9 +13,9 @@ from pyrit.exceptions import (
     remove_markdown_json,
 )
 from pyrit.models import (
+    Message,
+    MessagePiece,
     PromptDataType,
-    PromptRequestPiece,
-    PromptRequestResponse,
     SeedPrompt,
 )
 from pyrit.prompt_converter import ConverterResult, PromptConverter
@@ -78,12 +78,12 @@ class PersuasionConverter(PromptConverter):
         self.converter_target.set_system_prompt(
             system_prompt=self.system_prompt,
             conversation_id=conversation_id,
-            orchestrator_identifier=None,
+            attack_identifier=None,
         )
 
-        request = PromptRequestResponse(
+        request = Message(
             [
-                PromptRequestPiece(
+                MessagePiece(
                     role="user",
                     original_value=prompt,
                     converted_value=prompt,

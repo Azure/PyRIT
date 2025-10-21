@@ -9,9 +9,7 @@ from IPython.display import Markdown, display
 
 from pyrit.executor.attack.printer.attack_result_printer import AttackResultPrinter
 from pyrit.memory import CentralMemory
-from pyrit.models import AttackResult, Score
-from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import AttackResult, Message, MessagePiece, Score
 
 
 class MarkdownAttackResultPrinter(AttackResultPrinter):
@@ -214,7 +212,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
         turn_number = 0
 
         for message in messages:
-            if not message.request_pieces:
+            if not message.message_pieces:
                 continue
 
             message_role = message.get_piece().role
@@ -233,7 +231,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
 
         return markdown_lines
 
-    def _format_system_message(self, message: PromptRequestResponse) -> List[str]:
+    def _format_system_message(self, message: Message) -> List[str]:
         """
         Format a system message as markdown.
 
@@ -241,17 +239,17 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
         containing instructions or context for the conversation.
 
         Args:
-            message (PromptRequestResponse): The system message to format.
+            message (Message): The system message to format.
 
         Returns:
             List[str]: List of markdown strings representing the system message.
         """
         lines = ["\n### System Message\n"]
-        for piece in message.request_pieces:
+        for piece in message.message_pieces:
             lines.append(f"{piece.converted_value}\n")
         return lines
 
-    async def _format_user_message_async(self, *, message: PromptRequestResponse, turn_number: int) -> List[str]:
+    async def _format_user_message_async(self, *, message: Message, turn_number: int) -> List[str]:
         """
         Format a user message as markdown with turn numbering.
 
@@ -260,7 +258,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
         values when they differ.
 
         Args:
-            message (PromptRequestResponse): The user message to format.
+            message (Message): The user message to format.
             turn_number (int): The conversation turn number for this message.
 
         Returns:
@@ -268,12 +266,12 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
         """
         lines = [f"\n### Turn {turn_number}\n", "#### User\n"]
 
-        for piece in message.request_pieces:
+        for piece in message.message_pieces:
             lines.extend(await self._format_piece_content_async(piece=piece, show_original=True))
 
         return lines
 
-    async def _format_assistant_message_async(self, *, message: PromptRequestResponse) -> List[str]:
+    async def _format_assistant_message_async(self, *, message: Message) -> List[str]:
         """
         Format an assistant or system response message as markdown.
 
@@ -282,17 +280,17 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
         for display purposes.
 
         Args:
-            message (PromptRequestResponse): The response message to format.
+            message (Message): The response message to format.
 
         Returns:
             List[str]: List of markdown strings representing the response message.
         """
         lines = []
-        role_name = message.request_pieces[0].role.capitalize()
+        role_name = message.message_pieces[0].role.capitalize()
 
         lines.append(f"\n#### {role_name}\n")
 
-        for piece in message.request_pieces:
+        for piece in message.message_pieces:
             lines.extend(await self._format_piece_content_async(piece=piece, show_original=False))
 
         return lines
@@ -351,12 +349,12 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
 
         return lines
 
-    def _format_error_content(self, *, piece: PromptRequestPiece) -> List[str]:
+    def _format_error_content(self, *, piece: MessagePiece) -> List[str]:
         """
         Format error response content with proper styling.
 
         Args:
-            piece (PromptRequestPiece): The prompt piece containing the error.
+            piece (MessagePiece): The message piece containing the error.
 
         Returns:
             List[str]: List of markdown lines for the error response.
@@ -370,12 +368,12 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
 
         return lines
 
-    def _format_text_content(self, *, piece: PromptRequestPiece, show_original: bool) -> List[str]:
+    def _format_text_content(self, *, piece: MessagePiece, show_original: bool) -> List[str]:
         """
         Format regular text content.
 
         Args:
-            piece (PromptRequestPiece): The prompt piece containing the text.
+            piece (MessagePiece): The message piece containing the text.
             show_original (bool): Whether to show original value if different.
 
         Returns:
@@ -392,14 +390,14 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
 
         return lines
 
-    async def _format_piece_content_async(self, *, piece: PromptRequestPiece, show_original: bool) -> List[str]:
+    async def _format_piece_content_async(self, *, piece: MessagePiece, show_original: bool) -> List[str]:
         """
         Format a single piece content based on its data type.
 
         Handles different content types including text, images, audio, and error responses.
 
         Args:
-            piece (PromptRequestPiece): The prompt piece to format.
+            piece (MessagePiece): The message piece to format.
             show_original (bool): Whether to show original value if different
                 from converted value.
 
@@ -417,23 +415,23 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
             else:
                 return self._format_text_content(piece=piece, show_original=show_original)
 
-    def _format_message_scores(self, message: PromptRequestResponse) -> List[str]:
+    def _format_message_scores(self, message: Message) -> List[str]:
         """
         Format scores for all pieces in a message as markdown.
 
-        Retrieves and formats all scores associated with the prompt pieces
+        Retrieves and formats all scores associated with the message pieces
         in the given message. Creates a dedicated scores section with
         appropriate markdown formatting.
 
         Args:
-            message (PromptRequestResponse): The message containing pieces
+            message (Message): The message containing pieces
                 to format scores for.
 
         Returns:
             List[str]: List of markdown strings representing the scores.
         """
         lines = []
-        for piece in message.request_pieces:
+        for piece in message.message_pieces:
             scores = self._memory.get_prompt_scores(prompt_ids=[str(piece.id)])
             if scores:
                 lines.append("\n##### Scores\n")
