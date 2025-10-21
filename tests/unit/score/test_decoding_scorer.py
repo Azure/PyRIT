@@ -6,7 +6,7 @@ import uuid
 import pytest
 
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import MessagePiece, Message
 from pyrit.score.true_false.decoding_scorer import DecodingScorer
 
 
@@ -16,13 +16,13 @@ def create_conversation(
     memory: MemoryInterface,
     user_converted: str = "encoded",
     user_metadata: dict | None = None,
-) -> PromptRequestResponse:
+) -> Message:
     """Helper to create a conversation and return the assistant response."""
     conversation_id = str(uuid.uuid4())
     
-    user_request = PromptRequestResponse(
-        request_pieces=[
-            PromptRequestPiece(
+    user_request = Message(
+        message_pieces=[
+            MessagePiece(
                 role="user",
                 original_value=user_original,
                 converted_value=user_converted,
@@ -33,11 +33,11 @@ def create_conversation(
             )
         ]
     )
-    memory.add_request_response_to_memory(request=user_request)
+    memory.add_message_to_memory(request=user_request)
     
-    assistant = PromptRequestResponse(
-        request_pieces=[
-            PromptRequestPiece(
+    assistant = Message(
+        message_pieces=[
+            MessagePiece(
                 role="assistant",
                 original_value=assistant_response,
                 converted_value=assistant_response,
@@ -47,7 +47,7 @@ def create_conversation(
             )
         ]
     )
-    memory.add_request_response_to_memory(request=assistant)
+    memory.add_message_to_memory(request=assistant)
     
     return assistant
 

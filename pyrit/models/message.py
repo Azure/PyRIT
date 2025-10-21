@@ -48,8 +48,9 @@ class Message:
         return self.message_pieces[n]
 
 
-    def get_role(self) -> ChatMessageRole:
-        """Return the role of the first request."""
+    @property
+    def role(self) -> ChatMessageRole:
+        """Return the role of the first request piece (they should all be the same)."""
         if len(self.message_pieces) == 0:
             raise ValueError("Empty message pieces.")
 

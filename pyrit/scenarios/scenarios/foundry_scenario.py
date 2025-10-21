@@ -10,7 +10,6 @@ Foundry attacks against specified datasets.
 """
 
 import os
-from enum import Enum
 from inspect import signature
 from typing import Dict, List, Optional, TypeVar
 
@@ -59,6 +58,7 @@ from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.prompt_target.openai.openai_chat_target import OpenAIChatTarget
 from pyrit.scenarios.attack_run import AttackRun
 from pyrit.scenarios.scenario import Scenario
+from pyrit.scenarios.scenario_attack_strategy import ScenarioAttackStrategy
 from pyrit.score import (
     AzureContentFilterScorer,
     FloatScaleThresholdScorer,
@@ -72,100 +72,80 @@ from pyrit.score import (
 AttackStrategyT = TypeVar("AttackStrategyT", bound=AttackStrategy)
 
 
-class FoundryAttackStrategy(Enum):
+class FoundryAttackStrategy(ScenarioAttackStrategy):
     """
-    Strategies for attacks with associated complexity levels.
+    Strategies for attacks with tag-based categorization.
 
-    Each enum member is defined as (value, complexity) where:
+    Each enum member is defined as (value, tags) where:
     - value: The strategy name (string)
-    - complexity: The difficulty level ("baseline", "easy", "moderate", "difficult")
+    - tags: Set of tags for categorization (e.g., {"easy", "converter"})
 
-    Complexity level shortcuts (EASY, MODERATE, DIFFICULT) can be used to expand
-    into all strategies of that complexity.
+    Tags can include complexity levels (easy, moderate, difficult) and other
+    characteristics (converter, multi_turn, jailbreak, llm_assisted, etc.).
+
+    Aggregate tags (EASY, MODERATE, DIFFICULT, ALL) can be used to expand
+    into all strategies with that tag.
 
     Example:
         >>> strategy = FoundryAttackStrategy.Base64
         >>> print(strategy.value)  # "base64"
-        >>> print(strategy.complexity)  # "easy"
+        >>> print(strategy.tags)  # {"easy", "converter"}
         >>>
         >>> # Get all easy strategies
-        >>> easy_strategies = FoundryAttackStrategy.get_strategies_by_complexity("easy")
+        >>> easy_strategies = FoundryAttackStrategy.get_strategies_by_tag("easy")
+        >>>
+        >>> # Get all converter strategies
+        >>> converter_strategies = FoundryAttackStrategy.get_strategies_by_tag("converter")
+        >>>
+        >>> # Expand EASY to all easy strategies
+        >>> scenario = FoundryScenario(target, attack_strategies={FoundryAttackStrategy.EASY})
     """
 
-    _complexity: str
-
-    def __new__(cls, value: str, complexity: str = "easy"):
-        """Create a new FoundryAttackStrategy with value and complexity."""
-        obj = object.__new__(cls)
-        obj._value_ = value
-        obj._complexity = complexity  # type: ignore[misc]
-        return obj
-
-    # Complexity level shortcuts (these are special and should not be included in complexity queries)
-    EASY = ("easy", "easy")
-    MODERATE = ("moderate", "moderate")
-    DIFFICULT = ("difficult", "difficult")
-
-    # Baseline strategy
-    Baseline = ("baseline", "baseline")
+    # Aggregate members (special markers that expand to strategies with matching tags)
+    ALL = ("all", {"all"})
+    EASY = ("easy", {"easy"})
+    MODERATE = ("moderate", {"moderate"})
+    DIFFICULT = ("difficult", {"difficult"})
 
     # Easy strategies
-    AnsiAttack = ("ansi_attack", "easy")
-    AsciiArt = ("ascii_art", "easy")
-    AsciiSmuggler = ("ascii_smuggler", "easy")
-    Atbash = ("atbash", "easy")
-    Base64 = ("base64", "easy")
-    Binary = ("binary", "easy")
-    Caesar = ("caesar", "easy")
-    CharacterSpace = ("character_space", "easy")
-    CharSwap = ("char_swap", "easy")
-    Diacritic = ("diacritic", "easy")
-    Flip = ("flip", "easy")
-    Leetspeak = ("leetspeak", "easy")
-    Morse = ("morse", "easy")
-    ROT13 = ("rot13", "easy")
-    SuffixAppend = ("suffix_append", "easy")
-    StringJoin = ("string_join", "easy")
-    UnicodeConfusable = ("unicode_confusable", "easy")
-    UnicodeSubstitution = ("unicode_substitution", "easy")
-    Url = ("url", "easy")
-    Jailbreak = ("jailbreak", "easy")
+    AnsiAttack = ("ansi_attack", {"easy", "converter"})
+    AsciiArt = ("ascii_art", {"easy", "converter"})
+    AsciiSmuggler = ("ascii_smuggler", {"easy", "converter"})
+    Atbash = ("atbash", {"easy", "converter"})
+    Base64 = ("base64", {"easy", "converter"})
+    Binary = ("binary", {"easy", "converter"})
+    Caesar = ("caesar", {"easy", "converter"})
+    CharacterSpace = ("character_space", {"easy", "converter"})
+    CharSwap = ("char_swap", {"easy", "converter"})
+    Diacritic = ("diacritic", {"easy", "converter"})
+    Flip = ("flip", {"easy", "converter"})
+    Leetspeak = ("leetspeak", {"easy", "converter"})
+    Morse = ("morse", {"easy", "converter"})
+    ROT13 = ("rot13", {"easy", "converter"})
+    SuffixAppend = ("suffix_append", {"easy", "converter"})
+    StringJoin = ("string_join", {"easy", "converter"})
+    UnicodeConfusable = ("unicode_confusable", {"easy", "converter"})
+    UnicodeSubstitution = ("unicode_substitution", {"easy", "converter"})
+    Url = ("url", {"easy", "converter"})
+    Jailbreak = ("jailbreak", {"easy", "converter"})
 
     # Moderate strategies
-    Tense = ("tense", "moderate")
+    Tense = ("tense", {"moderate", "converter"})
 
     # Difficult strategies
-    MultiTurn = ("multi_turn", "difficult")
-    Crescendo = ("crescendo", "difficult")
-
-    @property
-    def complexity(self) -> str:
-        """
-        Get the complexity level of this attack strategy.
-
-        Returns:
-            str: One of "baseline", "easy", "moderate", or "difficult".
-        """
-        return self._complexity
+    MultiTurn = ("multi_turn", {"difficult", "workflow"})
+    Crescendo = ("crescendo", {"difficult", "workflow"})
 
     @classmethod
-    def get_strategies_by_complexity(cls, complexity: str) -> set["FoundryAttackStrategy"]:
+    def get_aggregate_tags(cls) -> set[str]:
         """
-        Get all attack strategies that match a given complexity level.
-
-        Excludes the complexity level shortcuts (EASY, MODERATE, DIFFICULT) themselves.
-
-        Args:
-            complexity (str): The complexity level ("baseline", "easy", "moderate", or "difficult").
+        Get the set of tags that represent aggregate categories.
 
         Returns:
-            set[FoundryAttackStrategy]: Set of strategies matching the complexity level.
+            set[str]: Set of tags that are aggregate markers.
         """
-        return {
-            strategy
-            for strategy in cls
-            if strategy.complexity == complexity and strategy not in (cls.EASY, cls.MODERATE, cls.DIFFICULT)
-        }
+        # Include base class aggregates ("all") and add Foundry-specific ones
+        return super().get_aggregate_tags() | {"easy", "moderate", "difficult", "converter", "workflow"}
 
 
 class FoundryScenario(Scenario):
@@ -214,7 +194,7 @@ class FoundryScenario(Scenario):
         self,
         *,
         objective_target: PromptTarget,
-        attack_strategies: set[FoundryAttackStrategy] = {FoundryAttackStrategy.EASY},
+        attack_strategies: list[list[FoundryAttackStrategy]] = [[FoundryAttackStrategy.EASY]],
         adversarial_chat: Optional[PromptChatTarget] = None,
         objectives: Optional[list[str]] = None,
         objective_scorer: Optional[TrueFalseScorer] = None,
@@ -226,9 +206,29 @@ class FoundryScenario(Scenario):
 
         Args:
             objective_target (PromptTarget): The target system to attack.
-            attack_strategies (set[FoundryAttackStrategy]): Set of attack strategies to use.
-                Can include difficulty levels (EASY, MODERATE, DIFFICULT) which will be
-                expanded into specific strategies, or individual strategies.
+            attack_strategies (list[list[FoundryAttackStrategy]]): List of strategy compositions.
+                Each inner list represents a composition of strategies to apply together.
+                The outer list contains all strategy combinations to test.
+                
+                Aggregate strategies (EASY, MODERATE, DIFFICULT, ALL) are automatically 
+                expanded into individual strategies - they cannot be composed with others.
+                
+                Examples:
+                    # Single strategies (will be expanded from EASY)
+                    [[FoundryAttackStrategy.EASY]]
+                    
+                    # Multiple single strategies
+                    [[FoundryAttackStrategy.Base64], [FoundryAttackStrategy.ROT13]]
+                    
+                    # Composed strategies (Base64 then Atbash on same prompt)
+                    [[FoundryAttackStrategy.Base64, FoundryAttackStrategy.Atbash]]
+                    
+                    # Mix of single and composed
+                    [
+                        [FoundryAttackStrategy.Base64],  # Single
+                        [FoundryAttackStrategy.Base64, FoundryAttackStrategy.ROT13],  # Composed
+                        [FoundryAttackStrategy.Crescendo]  # Single multi-turn
+                    ]
             adversarial_chat (Optional[PromptChatTarget]): Target for multi-turn attacks
                 like Crescendo and RedTeaming. Additionally used for scoring defaults.
                 If not provided, a default OpenAI target will be created using environment variables.
@@ -244,39 +244,174 @@ class FoundryScenario(Scenario):
             ValueError: If attack_strategies is empty or contains unsupported strategies.
 
         Example:
+            >>> # Single strategies from easy category
             >>> scenario = FoundryScenario(
             ...     objective_target=my_target,
-            ...     attack_strategies={FoundryAttackStrategy.MODERATE},
-            ...     objectives=["test objective 1", "test objective 2"]
+            ...     attack_strategies=[[FoundryAttackStrategy.EASY]]
+            ... )
+            >>>
+            >>> # Composed strategies
+            >>> scenario = FoundryScenario(
+            ...     objective_target=my_target,
+            ...     attack_strategies=[
+            ...         [FoundryAttackStrategy.Base64, FoundryAttackStrategy.Atbash],
+            ...         [FoundryAttackStrategy.ROT13, FoundryAttackStrategy.Leetspeak]
+            ...     ]
             ... )
         """
 
         self._objective_target = objective_target
-
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
 
         self._objective_scorer = objective_scorer if objective_scorer else self._get_default_scorer()
 
-        default_objectives = list(fetch_harmbench_dataset().get_random_values(
-            number=4,
-            harm_categories= ['harmful', 'harassment_bullying']
-        ))
-
-        self._objectives: list[str] = (
-            objectives if objectives else default_objectives
+        self._objectives: list[str] = objectives if objectives else list(
+            fetch_harmbench_dataset().get_random_values(
+                number=4,
+                harm_categories=['harmful', 'harassment_bullying']
+            )
         )
         
         self._memory_labels = memory_labels or {}
 
-        self._foundry_strategies = self._normalize_attack_strategies(attack_strategies)
+        # Normalize and validate strategy compositions
+        self._foundry_strategy_compositions = self._normalize_strategy_compositions(attack_strategies)
+
+        # Create deterministic string representations for compositions
+        all_strategies = [
+            self._get_composition_name(composition) 
+            for composition in self._foundry_strategy_compositions
+        ]
+        
+        # Sort all strategies for consistent ordering
+        all_strategies = sorted(all_strategies)
 
         super().__init__(
             name=f"Foundry Scenario",
-            attack_strategies=sorted([s.value for s in self._foundry_strategies]),
+            attack_strategies=all_strategies,
             version=self.version,
             memory_labels=memory_labels,
             max_concurrency=max_concurrency,
         )
+
+    def _get_composition_name(self, composition: list[FoundryAttackStrategy]) -> str:
+        """
+        Get a name for a strategy composition.
+
+        For single strategies, returns the strategy value.
+        For composed strategies, returns a formatted string with workflow first,
+        then converters in alphabetical order.
+
+        Args:
+            composition: A list of FoundryAttackStrategy instances.
+
+        Returns:
+            A string name for the composition.
+        """
+        if len(composition) == 1:
+            # Single strategy - use its value
+            return composition[0].value
+        else:
+            # Composed strategy - separate workflows from converters
+            workflows = [s for s in composition if "workflow" in s.tags]
+            converters = [s for s in composition if "workflow" not in s.tags]
+            
+            # Sort converters alphabetically by value
+            sorted_converters = sorted(converters, key=lambda s: s.value)
+            
+            # Build composition string: workflow first, then converters
+            ordered_strategies = workflows + sorted_converters
+            strategy_names = ", ".join(s.value for s in ordered_strategies)
+            return f"ComposedStrategy({strategy_names})"
+
+    def _normalize_strategy_compositions(
+        self, attack_strategies: list[list[FoundryAttackStrategy]]
+    ) -> list[list[FoundryAttackStrategy]]:
+        """
+        Normalize strategy compositions by expanding aggregates while preserving concrete compositions.
+        
+        Aggregate strategies (ALL, EASY, MODERATE, DIFFICULT) are expanded into their constituent
+        individual strategies. Each aggregate expansion creates separate single-strategy compositions.
+        
+        Concrete strategies in a composition are preserved together as a single composition.
+        
+        Args:
+            attack_strategies: List of strategy compositions to normalize.
+            
+        Returns:
+            Normalized list of strategy compositions with aggregates expanded.
+            
+        Raises:
+            ValueError: If attack_strategies is empty, contains empty compositions,
+                       or mixes aggregates with concrete strategies in the same composition.
+                       
+        Examples:
+            # Aggregate expands to individual strategies
+            [[EASY]] -> [[Base64], [ROT13], [Leetspeak], ...]
+            
+            # Concrete composition preserved
+            [[Base64, Atbash]] -> [[Base64, Atbash]]
+            
+            # Mix of aggregate and concrete
+            [[EASY], [Base64, ROT13]] -> [[Base64], [ROT13], ..., [Base64, ROT13]]
+            
+            # Error: Cannot mix aggregate with concrete in same composition
+            [[EASY, Base64]] -> ValueError
+        """
+        if not attack_strategies:
+            raise ValueError("attack_strategies cannot be empty")
+            
+        aggregate_tags = set(FoundryAttackStrategy.get_aggregate_tags())
+        normalized_compositions: list[list[FoundryAttackStrategy]] = []
+        
+        for composition in attack_strategies:
+            if not composition:
+                raise ValueError("Empty compositions are not allowed")
+                
+            # Check if composition contains any aggregates
+            aggregates_in_composition = [s for s in composition if s.value in aggregate_tags]
+            concretes_in_composition = [s for s in composition if s.value not in aggregate_tags]
+            
+            # Error if mixing aggregates with concrete strategies
+            if aggregates_in_composition and concretes_in_composition:
+                raise ValueError(
+                    f"Cannot mix aggregate strategies {[s.value for s in aggregates_in_composition]} "
+                    f"with concrete strategies {[s.value for s in concretes_in_composition]} "
+                    f"in the same composition. Aggregates must be in their own composition to be expanded."
+                )
+            
+            # Error if multiple aggregates in same composition
+            if len(aggregates_in_composition) > 1:
+                raise ValueError(
+                    f"Cannot compose multiple aggregate strategies together: "
+                    f"{[s.value for s in aggregates_in_composition]}. "
+                    f"Each aggregate must be in its own composition."
+                )
+            
+            # Error if more than one workflow 
+            workflows_in_composition = [s for s in composition if "workflow" in s.tags]
+            if len(workflows_in_composition) > 1:
+                raise ValueError(
+                    f"Cannot compose more than one workflow strategy together. "
+                    f"This composition contains {len(workflows_in_composition)} workflows: "
+                    f"{[s.value for s in workflows_in_composition]}"
+                )
+            
+            # If composition has an aggregate, expand it into individual strategies
+            if aggregates_in_composition:
+                aggregate = aggregates_in_composition[0]
+                expanded = FoundryAttackStrategy.normalize_strategies({aggregate})
+                # Each expanded strategy becomes its own composition
+                for strategy in expanded:
+                    normalized_compositions.append([strategy])
+            else:
+                # Concrete composition - preserve as-is
+                normalized_compositions.append(composition)
+        
+        if not normalized_compositions:
+            raise ValueError("No valid strategy compositions after normalization")
+            
+        return normalized_compositions
 
     async def _get_attack_runs_async(self) -> List[AttackRun]:
         """
@@ -286,18 +421,19 @@ class FoundryScenario(Scenario):
             List[AttackRun]: The list of AttackRun instances in this scenario.
         """
         attack_runs = []
-        for strategy in self._foundry_strategies:
-            attack_runs.append(self._get_attack_from_strategy(strategy))
+        for composition in self._foundry_strategy_compositions:
+            attack_runs.append(self._get_attack_from_strategy(composition))
         return attack_runs
 
-    def _get_default_adversarial_target(self):
+
+    def _get_default_adversarial_target(self) -> OpenAIChatTarget:
         return OpenAIChatTarget(
             endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"),
             api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
             temperature=0.7,
         )
 
-    def _get_default_scorer(self):
+    def _get_default_scorer(self) -> TrueFalseCompositeScorer:
         return TrueFalseCompositeScorer(
             aggregator=TrueFalseScoreAggregator.AND,
             scorers=[
@@ -313,113 +449,91 @@ class FoundryScenario(Scenario):
             ],
         )
 
-    def _normalize_attack_strategies(self, strategies: set[FoundryAttackStrategy]) -> set[FoundryAttackStrategy]:
+    def _get_attack_from_strategy(self, composite_strategy: list[FoundryAttackStrategy]) -> AttackRun:
         """
-        Normalize the set of attack strategies by expanding difficulty levels into specific strategies.
-
-        This method uses the complexity mapping defined in the FoundryAttackStrategy enum to
-        dynamically expand complexity levels (EASY, MODERATE, DIFFICULT) into their constituent
-        attack strategies. The Baseline strategy is always included.
+        Get an attack run for the specified strategy composition.
 
         Args:
-            strategies (set[FoundryAttackStrategy]): The initial set of attack strategies, which may include
-                                                     difficulty levels (EASY, MODERATE, DIFFICULT).
-
-        Returns:
-            set[FoundryAttackStrategy]: The normalized set of attack strategies with difficulty levels expanded.
-        """
-        normalized_strategies = set(strategies)
-
-        # Always include Baseline
-        normalized_strategies.add(FoundryAttackStrategy.Baseline)
-
-        # Expand complexity level shortcuts into specific strategies
-        if FoundryAttackStrategy.EASY in strategies:
-            normalized_strategies.remove(FoundryAttackStrategy.EASY)
-            normalized_strategies.update(FoundryAttackStrategy.get_strategies_by_complexity("easy"))
-
-        if FoundryAttackStrategy.MODERATE in strategies:
-            normalized_strategies.remove(FoundryAttackStrategy.MODERATE)
-            normalized_strategies.update(FoundryAttackStrategy.get_strategies_by_complexity("moderate"))
-
-        if FoundryAttackStrategy.DIFFICULT in strategies:
-            normalized_strategies.remove(FoundryAttackStrategy.DIFFICULT)
-            normalized_strategies.update(FoundryAttackStrategy.get_strategies_by_complexity("difficult"))
-
-        return normalized_strategies
-
-    def _get_attack_from_strategy(self, strategy: FoundryAttackStrategy) -> AttackRun:
-        """
-        Get an attack run for the specified strategy.
-
-        Args:
-            strategy (FoundryAttackStrategy): The attack strategy to create.
+            composite_strategy (list[FoundryAttackStrategy]): List of attack strategies to compose together.
+                Can include workflow strategies (e.g., Crescendo, MultiTurn) and converter strategies
+                (e.g., Base64, ROT13) that will be applied to the same prompts.
 
         Returns:
             AttackRun: The configured attack run.
 
         Raises:
-            ValueError: If the strategy is not supported.
+            ValueError: If the strategy composition is invalid (e.g., multiple workflow strategies).
         """
         attack: AttackStrategy
 
-        if strategy == FoundryAttackStrategy.AnsiAttack:
-            attack = self._get_attack(attack_type=PromptSendingAttack, converters=[AnsiAttackConverter()])
-        elif strategy == FoundryAttackStrategy.AsciiArt:
-            attack = self._get_attack(attack_type=PromptSendingAttack, converters=[AsciiArtConverter()])
-        elif strategy == FoundryAttackStrategy.AsciiSmuggler:
-            attack = self._get_attack(attack_type=PromptSendingAttack, converters=[AsciiSmugglerConverter()])
-        elif strategy == FoundryAttackStrategy.Atbash:
-            attack = self._get_attack(attack_type=PromptSendingAttack, converters=[AtbashConverter()])
-        elif strategy == FoundryAttackStrategy.Base64:
-            attack = self._get_attack(attack_type=PromptSendingAttack, converters=[Base64Converter()])
-        elif strategy == FoundryAttackStrategy.Binary:
-            attack = self._get_attack(attack_type=PromptSendingAttack, converters=[BinaryConverter()])
-        elif strategy == FoundryAttackStrategy.Caesar:
-            attack = self._get_attack(attack_type=PromptSendingAttack, converters=[CaesarConverter(caesar_offset=3)])
-        elif strategy == FoundryAttackStrategy.CharacterSpace:
-            attack = self._get_attack(attack_type=PromptSendingAttack, converters=[CharacterSpaceConverter()])
-        elif strategy == FoundryAttackStrategy.CharSwap:
-            attack = self._get_attack(attack_type=PromptSendingAttack, converters=[CharSwapConverter()])
-        elif strategy == FoundryAttackStrategy.Diacritic:
-            attack = self._get_attack(attack_type=PromptSendingAttack, converters=[DiacriticConverter()])
-        elif strategy == FoundryAttackStrategy.Flip:
-            attack = self._get_attack(attack_type=PromptSendingAttack, converters=[FlipConverter()])
-        elif strategy == FoundryAttackStrategy.Leetspeak:
-            attack = self._get_attack(attack_type=PromptSendingAttack, converters=[LeetspeakConverter()])
-        elif strategy == FoundryAttackStrategy.Morse:
-            attack = self._get_attack(attack_type=PromptSendingAttack, converters=[MorseConverter()])
-        elif strategy == FoundryAttackStrategy.ROT13:
-            attack = self._get_attack(attack_type=PromptSendingAttack, converters=[ROT13Converter()])
-        elif strategy == FoundryAttackStrategy.SuffixAppend:
-            attack = self._get_attack(attack_type=PromptSendingAttack, converters=[SuffixAppendConverter(suffix="!!!")])
-        elif strategy == FoundryAttackStrategy.StringJoin:
-            attack = self._get_attack(attack_type=PromptSendingAttack, converters=[StringJoinConverter()])
-        elif strategy == FoundryAttackStrategy.Tense:
-            attack = self._get_attack(
-                attack_type=PromptSendingAttack,
-                converters=[TenseConverter(tense="past", converter_target=self._adversarial_chat)],
+
+        workflows = [s for s in composite_strategy if "workflow" in s.tags]
+        converters_strategies = [s for s in composite_strategy if "workflow" not in s.tags]
+        
+        # Validate workflow composition
+        if len(workflows) > 1:
+            raise ValueError(
+                f"Cannot compose multiple workflow strategies: {[w.value for w in workflows]}"
             )
-        elif strategy == FoundryAttackStrategy.UnicodeConfusable:
-            attack = self._get_attack(attack_type=PromptSendingAttack, converters=[UnicodeConfusableConverter()])
-        elif strategy == FoundryAttackStrategy.UnicodeSubstitution:
-            attack = self._get_attack(attack_type=PromptSendingAttack, converters=[UnicodeSubstitutionConverter()])
-        elif strategy == FoundryAttackStrategy.Url:
-            attack = self._get_attack(attack_type=PromptSendingAttack, converters=[UrlConverter()])
-        elif strategy == FoundryAttackStrategy.Baseline:
-            attack = self._get_attack(attack_type=PromptSendingAttack, converters=[])
-        elif strategy == FoundryAttackStrategy.Jailbreak:
-            jailbreak_template = TextJailBreak(random_template=True)
-            attack = self._get_attack(
-                attack_type=PromptSendingAttack,
-                converters=[TextJailbreakConverter(jailbreak_template=jailbreak_template)],
-            )
-        elif strategy == FoundryAttackStrategy.MultiTurn:
-            attack = self._get_attack(attack_type=RedTeamingAttack, converters=[])
-        elif strategy == FoundryAttackStrategy.Crescendo:
-            attack = self._get_attack(attack_type=CrescendoAttack, converters=[])
-        else:
-            raise ValueError(f"Unsupported Foundry attack strategy: {strategy}")
+        
+        attack_type = PromptSendingAttack
+        if len(workflows) == 1:
+            if workflows[0] == FoundryAttackStrategy.Crescendo:
+                attack_type = CrescendoAttack
+            elif workflows[0] == FoundryAttackStrategy.MultiTurn:
+                attack_type = RedTeamingAttack
+
+        converters = []
+        for strategy in converters_strategies:
+            if strategy == FoundryAttackStrategy.AnsiAttack:
+                converters.append(AnsiAttackConverter())
+            elif strategy == FoundryAttackStrategy.AsciiArt:
+                converters.append(AsciiArtConverter())
+            elif strategy == FoundryAttackStrategy.AsciiSmuggler:
+                converters.append(AsciiSmugglerConverter())
+            elif strategy == FoundryAttackStrategy.Atbash:
+                converters.append(AtbashConverter())
+            elif strategy == FoundryAttackStrategy.Base64:
+                converters.append(Base64Converter())
+            elif strategy == FoundryAttackStrategy.Binary:
+                converters.append(BinaryConverter())
+            elif strategy == FoundryAttackStrategy.Caesar:
+                converters.append(CaesarConverter(caesar_offset=3))
+            elif strategy == FoundryAttackStrategy.CharacterSpace:
+                converters.append(CharacterSpaceConverter())
+            elif strategy == FoundryAttackStrategy.CharSwap:
+                converters.append(CharSwapConverter())
+            elif strategy == FoundryAttackStrategy.Diacritic:
+                converters.append(DiacriticConverter())
+            elif strategy == FoundryAttackStrategy.Flip:
+                converters.append(FlipConverter())
+            elif strategy == FoundryAttackStrategy.Leetspeak:
+                converters.append(LeetspeakConverter())
+            elif strategy == FoundryAttackStrategy.Morse:
+                converters.append(MorseConverter())
+            elif strategy == FoundryAttackStrategy.ROT13:
+                converters.append(ROT13Converter())
+            elif strategy == FoundryAttackStrategy.SuffixAppend:
+                converters.append(SuffixAppendConverter(suffix="!!!"))
+            elif strategy == FoundryAttackStrategy.StringJoin:
+                converters.append(StringJoinConverter())
+            elif strategy == FoundryAttackStrategy.Tense:
+                converters.append(
+                    TenseConverter(tense="past", converter_target=self._adversarial_chat)
+                )
+            elif strategy == FoundryAttackStrategy.UnicodeConfusable:
+                converters.append(UnicodeConfusableConverter())
+            elif strategy == FoundryAttackStrategy.UnicodeSubstitution:
+                converters.append(UnicodeSubstitutionConverter())
+            elif strategy == FoundryAttackStrategy.Url:
+                converters.append(UrlConverter())
+            elif strategy == FoundryAttackStrategy.Jailbreak:
+                jailbreak_template = TextJailBreak(random_template=True)
+                converters.append(
+                    TextJailbreakConverter(jailbreak_template=jailbreak_template)
+                )
+
+        attack = self._get_attack(attack_type=attack_type, converters=converters)
 
         return AttackRun(
             attack=attack,
@@ -439,7 +553,7 @@ class FoundryScenario(Scenario):
         This method creates an instance of an AttackStrategy subclass with the provided
         converters configured as request converters. For multi-turn attacks that require
         an adversarial target (e.g., CrescendoAttack), the method automatically creates
-        an AttackAdversarialConfig using self._adversarial_target.
+        an AttackAdversarialConfig using self._adversarial_chat.
 
         Supported attack types include:
         - PromptSendingAttack (single-turn): Only requires objective_target and attack_converter_config
@@ -456,17 +570,17 @@ class FoundryScenario(Scenario):
             AttackStrategyT: An instance of the specified attack type with configured converters.
 
         Raises:
-            ValueError: If the attack requires an adversarial target but self._adversarial_target is None.
+            ValueError: If the attack requires an adversarial target but self._adversarial_chat is None.
 
         Example:
             # Single-turn attack (no adversarial config needed)
-            attack = scenario.get_attack(
+            attack = scenario._get_attack(
                 attack_type=PromptSendingAttack,
                 converters=[Base64Converter()]
             )
 
-            # Multi-turn attack (adversarial config auto-generated from self._adversarial_target)
-            attack = scenario.get_attack(
+            # Multi-turn attack (adversarial config auto-generated from self._adversarial_chat)
+            attack = scenario._get_attack(
                 attack_type=CrescendoAttack,
                 converters=[LeetspeakConverter()]
             )
@@ -489,8 +603,8 @@ class FoundryScenario(Scenario):
             if self._adversarial_chat is None:
                 raise ValueError(
                     f"{attack_type.__name__} requires an adversarial target, "
-                    f"but self._adversarial_target is None. "
-                    f"Please provide adversarial_target when initializing {self.__class__.__name__}."
+                    f"but self._adversarial_chat is None. "
+                    f"Please provide adversarial_chat when initializing {self.__class__.__name__}."
                 )
 
             # Create the adversarial config from self._adversarial_target

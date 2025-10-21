@@ -7,6 +7,10 @@ AttackRun class for executing single attack configurations against datasets.
 This module provides the AttackRun class that represents an atomic test combining
 an attack, a dataset, and execution parameters. Multiple AttackRuns can be grouped
 together into larger test scenarios for comprehensive security testing.
+
+Eventually it's a good goal to unify attacks as much as we can. But there are
+times when that may not be possible or make sense. So this class exists to
+have a common interface for scenarios.
 """
 
 import logging
@@ -143,7 +147,6 @@ class AttackRun:
         )
 
         self._objectives = objectives
-        self._prepended_conversation = prepended_conversation
         self._prepended_conversations = prepended_conversations
         self._seed_prompt_groups = seed_prompt_groups
         self._custom_prompts = custom_prompts
@@ -228,9 +231,6 @@ class AttackRun:
 
         # Determine prepended_conversations to use
         prepended_conversations = self._prepended_conversations
-        if prepended_conversations is None and self._prepended_conversation is not None:
-            # If single prepended_conversation provided, replicate it for all objectives
-            prepended_conversations = [self._prepended_conversation] * len(self._objectives)
 
         logger.info(
             f"Starting attack run execution with {len(self._objectives)} objectives "
@@ -259,7 +259,7 @@ class AttackRun:
                 # Fall back to generic execute_multi_objective_attack_async
                 execute_params = {
                     "objectives": self._objectives,
-                    "prepended_conversation": self._prepended_conversation,
+                    "prepended_conversations": self._prepended_conversations,
                     "memory_labels": merged_memory_labels,
                     **self._attack_execute_params,
                 }
