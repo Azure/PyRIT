@@ -33,7 +33,6 @@ from pyrit.models import (
     MessagePiece,
     construct_response_from_request,
     data_serializer_factory,
-    message,
 )
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
@@ -383,9 +382,7 @@ class OpenAISoraTarget(OpenAITarget):
 
         return response
 
-    async def _handle_response_async(
-        self, request: MessagePiece, response: httpx.Response
-    ) -> Message:
+    async def _handle_response_async(self, request: MessagePiece, response: httpx.Response) -> Message:
         """
         Asynchronously handle the response to a video generation request.
 
