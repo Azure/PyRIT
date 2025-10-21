@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Literal, Optional
 if TYPE_CHECKING:
     import azure.cognitiveservices.speech as speechsdk  # noqa: F401
 
+from pyrit.auth.azure_auth import get_speech_config
 from pyrit.common import default_values
 from pyrit.models import PromptDataType, data_serializer_factory
 from pyrit.prompt_converter import ConverterResult, PromptConverter
@@ -25,38 +26,66 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
     AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_REGION"
     #: The API key for accessing the service.
     AZURE_SPEECH_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_KEY"
+    #: The resource ID for accessing the service when using Entra ID auth.
+    AZURE_SPEECH_RESOURCE_ID_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_RESOURCE_ID"
 
     #: Supported audio formats for output.
-    AzureSpeachAudioFormat = Literal["wav", "mp3"]
+    AzureSpeechAudioFormat = Literal["wav", "mp3"]
 
     def __init__(
         self,
         azure_speech_region: Optional[str] = None,
         azure_speech_key: Optional[str] = None,
+        azure_speech_resource_id: Optional[str] = None,
+        use_entra_auth: bool = False,
         synthesis_language: str = "en_US",
         synthesis_voice_name: str = "en-US-AvaNeural",
-        output_format: AzureSpeachAudioFormat = "wav",
+        output_format: AzureSpeechAudioFormat = "wav",
     ) -> None:
         """
         Initializes the converter with Azure Speech service credentials, synthesis language, and voice name.
 
         Args:
             azure_speech_region (str, Optional): The name of the Azure region.
-            azure_speech_key (str, Optional): The API key for accessing the service.
+            azure_speech_key (str, Optional): The API key for accessing the service (only if you're not using Entra
+                authentication).
+            azure_speech_resource_id (str, Optional): The resource ID for accessing the service when using
+                Entra ID auth. This can be found by selecting 'Properties' in the 'Resource Management'
+                section of your Azure Speech resource in the Azure portal.
+            use_entra_auth (bool): Whether to use Entra ID authentication. If True, azure_speech_resource_id
+                must be provided. If False, azure_speech_key must be provided. Defaults to False.
             synthesis_language (str): Synthesis voice language.
             synthesis_voice_name (str): Synthesis voice name, see URL.
                 For more details see the following link for synthesis language and synthesis voice:
                 https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support
             filename (str): File name to be generated. Please include either .wav or .mp3.
             output_format (str): Either wav or mp3. Must match the file prefix.
+
+        Raises:
+            ValueError: If the required environment variables are not set, if azure_speech_key is passed in
+                when use_entra_auth is True, or if azure_speech_resource_id is passed in when use_entra_auth
+                is False.
         """
         self._azure_speech_region: str = default_values.get_required_value(
-            env_var_name=self.AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE, passed_value=azure_speech_region
+            env_var_name=self.AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE,
+            passed_value=azure_speech_region,
         )
-
-        self._azure_speech_key: str = default_values.get_required_value(
-            env_var_name=self.AZURE_SPEECH_KEY_ENVIRONMENT_VARIABLE, passed_value=azure_speech_key
-        )
+        if use_entra_auth:
+            if azure_speech_key:
+                raise ValueError("If using Entra ID auth, please do not specify azure_speech_key.")
+            self._azure_speech_resource_id = default_values.get_required_value(
+                env_var_name=self.AZURE_SPEECH_RESOURCE_ID_ENVIRONMENT_VARIABLE,
+                passed_value=azure_speech_resource_id,
+            )
+            self._azure_speech_key = None
+        else:
+            if azure_speech_resource_id:
+                raise ValueError("If using key auth, please do not specify azure_speech_resource_id.")
+            self._azure_speech_key = default_values.get_required_value(
+                env_var_name=self.AZURE_SPEECH_KEY_ENVIRONMENT_VARIABLE,
+                passed_value=azure_speech_key,
+            )
+            self._azure_speech_resource_id = None
 
         self._synthesis_language = synthesis_language
         self._synthesis_voice_name = synthesis_voice_name
@@ -105,9 +134,8 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
 
         audio_serializer_file = None
         try:
-            speech_config = speechsdk.SpeechConfig(
-                subscription=self._azure_speech_key,
-                region=self._azure_speech_region,
+            speech_config = get_speech_config(
+                resource_id=self._azure_speech_resource_id, key=self._azure_speech_key, region=self._azure_speech_region
             )
             pull_stream = speechsdk.audio.PullAudioOutputStream()
             audio_cfg = speechsdk.audio.AudioOutputConfig(stream=pull_stream)

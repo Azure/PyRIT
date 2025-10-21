@@ -13,7 +13,7 @@ from pyrit.prompt_target import OpenAIChatTarget, OpenAIDALLETarget
 @pytest.mark.parametrize(
     ("endpoint", "api_key", "model_name"),
     [
-        ("Azure_OPENAI_GPT4O_STRICT_FILTER_ENDPOINT", "AZURE_OPENAI_GPT4O_STRICT_FILTER_KEY", ""),
+        ("AZURE_OPENAI_GPT4O_STRICT_FILTER_ENDPOINT", "AZURE_OPENAI_GPT4O_STRICT_FILTER_KEY", ""),
     ],
 )
 async def test_azure_content_filters(sqlite_instance, endpoint, api_key, model_name):
@@ -36,8 +36,8 @@ async def test_azure_content_filters(sqlite_instance, endpoint, api_key, model_n
     conversation = sqlite_instance.get_conversation(conversation_id=result.conversation_id)
     assert len(conversation) == 2
     response = conversation[-1]
-    assert len(response.request_pieces) == 1
-    response_piece = response.request_pieces[0]
+    assert len(response.message_pieces) == 1
+    response_piece = response.message_pieces[0]
     assert "filter" in response_piece.converted_value.lower()
     assert response_piece.converted_value_data_type == "error"
     assert response_piece.response_error == "blocked"
@@ -63,8 +63,8 @@ async def test_dalle_input_filters(sqlite_instance, endpoint, api_key):
     conversation = sqlite_instance.get_conversation(conversation_id=result.conversation_id)
     assert len(conversation) == 2
     response = conversation[-1]
-    assert len(response.request_pieces) == 1
-    response_piece = response.request_pieces[0]
+    assert len(response.message_pieces) == 1
+    response_piece = response.message_pieces[0]
     assert "filter" in response_piece.converted_value.lower()
     assert response_piece.converted_value_data_type == "error"
     assert response_piece.response_error == "blocked"

@@ -1,14 +1,19 @@
-# 1. Install
+# 1. Local Installation with Conda/Python
 
 ## Choose Your Setup Approach
 
-You can set up PyRIT in one of two ways:
-1. Local Installation with Conda/Python (see [Local Installation with Conda/Python](#local-installation-with-condapython)).
-2. Using DevContainers (see [DevContainers Setup in Visual Studio Code](#devcontainers-setup-in-visual-studio-code)).
+You can set up PyRIT for development in one of two ways:
 
-## Local Installation with Conda/Python
+1. **Local Installation with Conda/Python** (this page) - Install PyRIT in editable mode on your machine
+2. **[DevContainers in VS Code](./1b_install_devcontainers.md)** - Use a pre-configured Docker container with VS Code
 
-To install PyRIT as a library, the simplest way to do it is just `pip install pyrit`. This is documented [here](../setup/install_pyrit.md).
+```{note}
+**Development Version:** Contributor installations use the **latest development code** from the `main` branch, not a stable release. The notebooks in your cloned repository will match your code version. This documentation website also shows the main branch version.
+```
+
+## Overview
+
+To install PyRIT as a library, the simplest way to do it is just `pip install pyrit`. This is documented [here](../setup/1a_install_conda.md).
 
 However, there are many reasons to install as a contributor. Yes, of course, if you want to contribute. But also because of the nature of the tool, it is often the case that targets, attacks, converters, core, etc. code needs to be modified. This section walks through how to install PyRIT as a contributor.
 
@@ -75,7 +80,7 @@ This is a guide for how to install PyRIT into a `conda` environment.
    ```bash
    pip install -e '.[dev]'
    ```
-   If you plan to use the [Playwright integration 3](../code/targets/playwright_target.py), install with the playwright extra:
+   If you plan to use the [Playwright integration](../code/targets/playwright_target.py), install with the playwright extra:
    ```bash
    pip install -e '.[dev,playwright]'
    ```
@@ -98,30 +103,19 @@ Alternatively, you can run the tool directly on Windows using PowerShell.
 
 **Visual Studio Code** is the code editor of choice for the AI Red Team: Download [here](https://code.visualstudio.com/Download).
 
-## DevContainers Setup in Visual Studio Code
-### Prerequisites
-* Install **Docker** (Docker Desktop if you are using Windows)
-* Install [**DevContainer**](https://code.visualstudio.com/docs/devcontainers/containers) extension in VS Code
-
-You can also follow the **Installation** section on [Developing inside a Container](https://code.visualstudio.com/docs/devcontainers/containers)
-
-### Run the Container
-Press `Ctrl + Shift + P` to open VS Code Command Palette and type `Dev Containers: Reopen in Container`
-![DevContainer in VS Code Commands Menu](images/DevContainer-vscode.png)
-
-### Running Jupyter Notebooks in VS Code
-
-_note:_ When constructing a pull request, notebooks should not be edited directly. Instead, edit the corresponding `.py` file. See [notebooks.md](8_notebooks.md) for more details.
-
-## Selecting a Kernel
+## Selecting a Jupyter Kernel
 
 With a Jupyter Notebook (.ipynb file) window open, in the top search bar of VS Code, type `>Notebook: Select Notebook Kernel` > `Python Environments...` to choose the `pyrit-dev` kernel when executing code in the notebooks, like those in `examples`. You can also choose a kernel with the "Select Kernel" button on the top-right corner of a Notebook.
 
 This will be the kernel that runs all code examples in Python Notebooks.
 
-### Jupyter Variables
+### Viewing Jupyter Variables
 
 To view the variables that are populated by code examples, go to `View > Output > Jupyter`.
+
+```{note}
+When constructing a pull request, notebooks should not be edited directly. Instead, edit the corresponding `.py` file. See [notebooks.md](8_notebooks.md) for more details.
+```
 
 ## Populating Secrets
 

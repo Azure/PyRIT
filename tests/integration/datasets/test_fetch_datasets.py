@@ -32,7 +32,7 @@ from pyrit.datasets import (
     fetch_wmdp_dataset,
     fetch_xstest_dataset,
 )
-from pyrit.models.seed_prompt_dataset import SeedPromptDataset
+from pyrit.models import SeedPromptDataset
 
 
 @pytest.mark.parametrize(

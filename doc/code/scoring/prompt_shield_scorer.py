@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.3
+#       jupytext_version: 1.17.2
 # ---
 
 # %% [markdown]
@@ -48,6 +48,8 @@ from pyrit.score import BatchScorer, PromptShieldScorer
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
 pst = PromptShieldTarget()
+# For an Azure Content Safety endpoint with Entra ID authentication enabled, use the following command instead. Make sure to run `az login` first.
+# target = PromptShieldTarget(use_entra_auth=True)
 
 scorer = PromptShieldScorer(prompt_shield_target=pst)
 
@@ -66,7 +68,7 @@ await ConsoleAttackResultPrinter().print_result_async(result=result)  # type: ig
 
 # Fetch prompts to score by conversation ID
 memory = CentralMemory.get_memory_instance()
-prompt_to_score = memory.get_prompt_request_pieces(conversation_id=result.conversation_id)[0]
+prompt_to_score = memory.get_message_pieces(conversation_id=result.conversation_id)[0]
 
 batch_scorer = BatchScorer()
 scores = await batch_scorer.score_responses_by_filters_async(  # type: ignore
@@ -74,5 +76,5 @@ scores = await batch_scorer.score_responses_by_filters_async(  # type: ignore
 )
 
 for score in scores:
-    prompt_text = memory.get_prompt_request_pieces(prompt_ids=[str(score.prompt_request_response_id)])[0].original_value
+    prompt_text = memory.get_message_pieces(prompt_ids=[str(score.message_piece_id)])[0].original_value
     print(f"{score} : {prompt_text}")  # We can see that the attack was detected

@@ -177,7 +177,7 @@ def get_updated_endpoint_name(endpoint_name):
     Generates a unique string based on the Azure ML endpoint name.
 
     This function takes the first 26 characters of the given endpoint name and appends
-    a 5-character random alphanumeric string with hypen to ensure uniqueness.
+    a 5-character random alphanumeric string with hyphen to ensure uniqueness.
     """
     # Take the first 26 characters of the endpoint name
     base_name = endpoint_name[:26]

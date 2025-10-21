@@ -11,7 +11,7 @@ from websockets.exceptions import ConnectionClosed
 from websockets.frames import Close
 
 from pyrit.exceptions.exception_classes import ServerErrorException
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import RealtimeTarget
 from pyrit.prompt_target.openai.openai_realtime_target import RealtimeTargetResult
 
@@ -22,7 +22,7 @@ def target(sqlite_instance):
 
 
 @pytest.fixture
-def target_with_aad(sqlite_instance):
+def target_with_entra(sqlite_instance):
     target = RealtimeTarget(endpoint="wss://test_url", api_key="test_api_key")
     target._azure_auth = MagicMock()
     target._azure_auth.refresh_token = MagicMock(return_value="test_access_token")
@@ -48,8 +48,8 @@ async def test_send_prompt_async(target):
     target.send_text_async = AsyncMock(return_value=("output.wav", result))
     target.set_system_prompt = MagicMock()
 
-    # Create a mock PromptRequestResponse with a valid data type
-    request_piece = PromptRequestPiece(
+    # Create a mock Message with a valid data type
+    message_piece = MessagePiece(
         original_value="Hello",
         original_value_data_type="text",
         converted_value="Hello",
@@ -57,7 +57,7 @@ async def test_send_prompt_async(target):
         role="user",
         conversation_id="test_conversation_id",
     )
-    prompt_request = PromptRequestResponse(request_pieces=[request_piece])
+    prompt_request = Message(message_pieces=[message_piece])
 
     # Call the send_prompt_async method
     response = await target.send_prompt_async(prompt_request=prompt_request)
@@ -85,8 +85,8 @@ async def test_send_prompt_async_adds_system_prompt_to_memory(target):
     target.send_text_async = AsyncMock(return_value=("output_audio_path", result))
     target.set_system_prompt = MagicMock()
 
-    # Create a mock PromptRequestResponse with a valid data type
-    request_piece = PromptRequestPiece(
+    # Create a mock Message with a valid data type
+    message_piece = MessagePiece(
         original_value="Hello",
         original_value_data_type="text",
         converted_value="Hello",
@@ -94,7 +94,7 @@ async def test_send_prompt_async_adds_system_prompt_to_memory(target):
         role="user",
         conversation_id="new_conversation_id",
     )
-    prompt_request = PromptRequestResponse(request_pieces=[request_piece])
+    prompt_request = Message(message_pieces=[message_piece])
 
     # Call the send_prompt_async method
     await target.send_prompt_async(prompt_request=prompt_request)
@@ -121,8 +121,8 @@ async def test_multiple_websockets_created_for_multiple_conversations(target):
     target.send_text_async = AsyncMock(return_value=("output_audio_path", result))
     target.set_system_prompt = MagicMock()
 
-    # Create mock PromptRequestResponses for two different conversations
-    request_piece_1 = PromptRequestPiece(
+    # Create mock Messages for two different conversations
+    message_piece_1 = MessagePiece(
         original_value="Hello",
         original_value_data_type="text",
         converted_value="Hello",
@@ -130,9 +130,9 @@ async def test_multiple_websockets_created_for_multiple_conversations(target):
         role="user",
         conversation_id="conversation_1",
     )
-    prompt_request_1 = PromptRequestResponse(request_pieces=[request_piece_1])
+    prompt_request_1 = Message(message_pieces=[message_piece_1])
 
-    request_piece_2 = PromptRequestPiece(
+    message_piece_2 = MessagePiece(
         original_value="Hi",
         original_value_data_type="text",
         converted_value="Hi",
@@ -140,7 +140,7 @@ async def test_multiple_websockets_created_for_multiple_conversations(target):
         role="user",
         conversation_id="conversation_2",
     )
-    prompt_request_2 = PromptRequestResponse(request_pieces=[request_piece_2])
+    prompt_request_2 = Message(message_pieces=[message_piece_2])
 
     # Call the send_prompt_async method for both conversations
     await target.send_prompt_async(prompt_request=prompt_request_1)
@@ -158,15 +158,15 @@ async def test_multiple_websockets_created_for_multiple_conversations(target):
 @pytest.mark.asyncio
 async def test_send_prompt_async_invalid_request(target):
 
-    # Create a mock PromptRequestResponse with an invalid data type
-    request_piece = PromptRequestPiece(
+    # Create a mock Message with an invalid data type
+    message_piece = MessagePiece(
         original_value="Invalid",
         original_value_data_type="image_path",
         converted_value="Invalid",
         converted_value_data_type="image_path",
         role="user",
     )
-    prompt_request = PromptRequestResponse(request_pieces=[request_piece])
+    prompt_request = Message(message_pieces=[message_piece])
     with pytest.raises(ValueError) as excinfo:
         target._validate_request(prompt_request=prompt_request)
 
@@ -189,7 +189,7 @@ async def test_realtime_target_no_api_version(target):
         mock_websocket_connect.return_value = mock_websocket
 
         # Create a mock request
-        request_piece = PromptRequestPiece(
+        message_piece = MessagePiece(
             original_value="Hello",
             original_value_data_type="text",
             converted_value="Hello",
@@ -197,7 +197,7 @@ async def test_realtime_target_no_api_version(target):
             role="user",
             conversation_id="test_conversation_id",
         )
-        prompt_request = PromptRequestResponse(request_pieces=[request_piece])
+        prompt_request = Message(message_pieces=[message_piece])
 
         # Call the method
         response = await target.send_prompt_async(prompt_request=prompt_request)
@@ -236,7 +236,7 @@ async def test_realtime_target_default_api_version(target):
         mock_websocket_connect.return_value = mock_websocket
 
         # Create a mock request
-        request_piece = PromptRequestPiece(
+        message_piece = MessagePiece(
             original_value="Hello",
             original_value_data_type="text",
             converted_value="Hello",
@@ -244,7 +244,7 @@ async def test_realtime_target_default_api_version(target):
             role="user",
             conversation_id="test_conversation_id",
         )
-        prompt_request = PromptRequestResponse(request_pieces=[request_piece])
+        prompt_request = Message(message_pieces=[message_piece])
 
         # Call the method
         response = await target.send_prompt_async(prompt_request=prompt_request)
@@ -264,23 +264,23 @@ async def test_realtime_target_default_api_version(target):
         assert query_params["api-version"][0] == "2024-06-01"
 
 
-def test_add_auth_param_to_query_params_with_api_key(target_with_aad):
+def test_add_auth_param_to_query_params_with_api_key(target_with_entra):
     query_params = {}
-    target_with_aad._add_auth_param_to_query_params(query_params)
+    target_with_entra._add_auth_param_to_query_params(query_params)
     assert query_params["api-key"] == "test_api_key"
 
 
-def test_add_auth_param_to_query_params_with_azure_auth(target_with_aad):
+def test_add_auth_param_to_query_params_with_azure_auth(target_with_entra):
     query_params = {}
-    target_with_aad._add_auth_param_to_query_params(query_params)
-    assert query_params["access_token"] == "test_access_token"
+    target_with_entra._add_auth_param_to_query_params(query_params)
+    assert "test_access_token" in query_params["Authorization"]
 
 
-def test_add_auth_param_to_query_params_with_both_auth_methods(target_with_aad):
+def test_add_auth_param_to_query_params_with_both_auth_methods(target_with_entra):
     query_params = {}
-    target_with_aad._add_auth_param_to_query_params(query_params)
+    target_with_entra._add_auth_param_to_query_params(query_params)
     assert query_params["api-key"] == "test_api_key"
-    assert query_params["access_token"] == "test_access_token"
+    assert "test_access_token" in query_params["Authorization"]
 
 
 @pytest.mark.asyncio

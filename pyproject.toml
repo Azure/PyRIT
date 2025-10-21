@@ -34,9 +34,11 @@ dependencies = [
     "azure-identity>=1.19.0",
     "azure-ai-contentsafety>=1.0.0",
     "azure-storage-blob>=12.19.0",
+    "base2048>=0.1.3",
     "colorama>=0.4.6",
     "confusables>=1.2.0",
     "confusable-homoglyphs>=3.3.1",
+    "ecoji>=0.1.1",
     "datasets>=3.6.0",
     "fpdf2>=2.8.3",
     "httpx[http2]>=0.27.2",
@@ -82,7 +84,6 @@ dev = [
     "pytest-cov>=6.1.1",
     "pytest-timeout>=2.4.0",
     "respx>=0.22.0",
-    "semantic-kernel>=1.32.0",
     "sphinxcontrib-mermaid>=1.0.0",
     "types-PyYAML>=6.0.12.20250516",
     "types-requests>=2.31.0.20250515",
@@ -117,8 +118,9 @@ opencv = [
 ]
 
 speech = [
-    "azure-cognitiveservices-speech>=1.44.0",
+    "azure-cognitiveservices-speech>=1.46.0",
 ]
+
 
 # all includes all functional dependencies excluding the ones from the "dev" extra
 all = [

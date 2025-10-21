@@ -12,6 +12,8 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
+    analyze_results
+    AttackStats
     ConversationAnalytics
 
 :py:mod:`pyrit.auth`
@@ -312,14 +314,13 @@ API Reference
     EmbeddingSupport
     EmbeddingUsageInformation
     ErrorDataTypeSerializer
-    group_conversation_request_pieces_by_sequence
+    group_conversation_message_pieces_by_sequence
     Identifier
     ImagePathDataTypeSerializer
-    PromptRequestPiece
-    PromptResponse
-    PromptResponseError
+    Message
+    MessagePiece
     PromptDataType
-    PromptRequestResponse
+    PromptResponseError
     QuestionAnsweringDataset
     QuestionAnsweringEntry
     QuestionChoice
@@ -356,6 +357,7 @@ API Reference
     AzureSpeechAudioToTextConverter
     AzureSpeechTextToAudioConverter
     Base64Converter
+    BinAsciiConverter
     BinaryConverter
     CaesarConverter
     CharacterSpaceConverter
@@ -397,7 +399,6 @@ API Reference
     TemplateSegmentConverter
     TenseConverter
     TextJailbreakConverter
-    TextToHexConverter
     ToneConverter
     ToxicSentenceGeneratorConverter
     TranslationConverter

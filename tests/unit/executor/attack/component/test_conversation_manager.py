@@ -10,7 +10,7 @@ from pyrit.executor.attack import (
     ConversationManager,
     ConversationState,
 )
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
+from pyrit.models import Message, MessagePiece, Score
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 
@@ -52,8 +52,8 @@ def attack_identifier():
 
 @pytest.fixture
 def sample_user_piece():
-    """Create a sample user prompt request piece"""
-    return PromptRequestPiece(
+    """Create a sample user message piece"""
+    return MessagePiece(
         role="user",
         original_value="Hello, how are you?",
         original_value_data_type="text",
@@ -63,8 +63,8 @@ def sample_user_piece():
 
 @pytest.fixture
 def sample_assistant_piece():
-    """Create a sample assistant prompt request piece"""
-    return PromptRequestPiece(
+    """Create a sample assistant message piece"""
+    return MessagePiece(
         role="assistant",
         original_value="I'm doing well, thank you!",
         original_value_data_type="text",
@@ -74,8 +74,8 @@ def sample_assistant_piece():
 
 @pytest.fixture
 def sample_system_piece():
-    """Create a sample system prompt request piece"""
-    return PromptRequestPiece(
+    """Create a sample system message piece"""
+    return MessagePiece(
         role="system",
         original_value="You are a helpful assistant",
         original_value_data_type="text",
@@ -84,11 +84,11 @@ def sample_system_piece():
 
 
 @pytest.fixture
-def sample_conversation(sample_user_piece: PromptRequestPiece, sample_assistant_piece: PromptRequestPiece):
+def sample_conversation(sample_user_piece: MessagePiece, sample_assistant_piece: MessagePiece):
     """Create a sample conversation with user and assistant messages"""
     return [
-        PromptRequestResponse(request_pieces=[sample_user_piece]),
-        PromptRequestResponse(request_pieces=[sample_assistant_piece]),
+        Message(message_pieces=[sample_user_piece]),
+        Message(message_pieces=[sample_assistant_piece]),
     ]
 
 
@@ -102,7 +102,7 @@ def sample_score():
         score_value_description="Test score",
         score_rationale="Test rationale",
         score_metadata="{}",
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
     )
 
 
@@ -138,22 +138,22 @@ class TestConversationRetrieval:
         assert result == []
 
     def test_get_conversation_returns_messages_in_order(
-        self, attack_identifier: dict[str, str], sample_conversation: list[PromptRequestResponse]
+        self, attack_identifier: dict[str, str], sample_conversation: list[Message]
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
         # Add messages to the database
         for response in sample_conversation:
-            for piece in response.request_pieces:
+            for piece in response.message_pieces:
                 piece.conversation_id = conversation_id
-            manager._memory.add_request_response_to_memory(request=response)
+            manager._memory.add_message_to_memory(request=response)
 
         result = manager.get_conversation(conversation_id)
 
         assert len(result) == 2
-        assert result[0].request_pieces[0].role == "user"
-        assert result[1].request_pieces[0].role == "assistant"
+        assert result[0].message_pieces[0].role == "user"
+        assert result[1].message_pieces[0].role == "assistant"
 
     def test_get_last_message_returns_none_for_empty_conversation(self, attack_identifier: dict[str, str]):
         manager = ConversationManager(attack_identifier=attack_identifier)
@@ -164,16 +164,16 @@ class TestConversationRetrieval:
         assert result is None
 
     def test_get_last_message_returns_last_piece(
-        self, attack_identifier: dict[str, str], sample_conversation: list[PromptRequestResponse]
+        self, attack_identifier: dict[str, str], sample_conversation: list[Message]
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
         # Add messages to the database
         for response in sample_conversation:
-            for piece in response.request_pieces:
+            for piece in response.message_pieces:
                 piece.conversation_id = conversation_id
-            manager._memory.add_request_response_to_memory(request=response)
+            manager._memory.add_message_to_memory(request=response)
 
         result = manager.get_last_message(conversation_id=conversation_id)
 
@@ -181,16 +181,16 @@ class TestConversationRetrieval:
         assert result.role == "assistant"
 
     def test_get_last_message_with_role_filter(
-        self, attack_identifier: dict[str, str], sample_conversation: list[PromptRequestResponse]
+        self, attack_identifier: dict[str, str], sample_conversation: list[Message]
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
         # Add messages to the database
         for response in sample_conversation:
-            for piece in response.request_pieces:
+            for piece in response.message_pieces:
                 piece.conversation_id = conversation_id
-            manager._memory.add_request_response_to_memory(request=response)
+            manager._memory.add_message_to_memory(request=response)
 
         # Get last user message
         result = manager.get_last_message(conversation_id=conversation_id, role="user")
@@ -199,16 +199,16 @@ class TestConversationRetrieval:
         assert result.role == "user"
 
     def test_get_last_message_with_role_filter_returns_none_when_no_match(
-        self, attack_identifier: dict[str, str], sample_conversation: list[PromptRequestResponse]
+        self, attack_identifier: dict[str, str], sample_conversation: list[Message]
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
         # Add messages to the database
         for response in sample_conversation:
-            for piece in response.request_pieces:
+            for piece in response.message_pieces:
                 piece.conversation_id = conversation_id
-            manager._memory.add_request_response_to_memory(request=response)
+            manager._memory.add_message_to_memory(request=response)
 
         # Try to get system message when none exists
         result = manager.get_last_message(conversation_id=conversation_id, role="system")
@@ -291,7 +291,7 @@ class TestConversationStateUpdate:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_single_turn_mode(
-        self, attack_identifier: dict[str, str], sample_conversation: list[PromptRequestResponse]
+        self, attack_identifier: dict[str, str], sample_conversation: list[Message]
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
@@ -311,13 +311,13 @@ class TestConversationStateUpdate:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_multi_turn_mode_excludes_last_user_message(
-        self, attack_identifier: dict[str, str], sample_user_piece: PromptRequestPiece
+        self, attack_identifier: dict[str, str], sample_user_piece: MessagePiece
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
         # Create conversation ending with user message
-        conversation = [PromptRequestResponse(request_pieces=[sample_user_piece])]
+        conversation = [Message(message_pieces=[sample_user_piece])]
 
         state = await manager.update_conversation_state_async(
             conversation_id=conversation_id, prepended_conversation=conversation, max_turns=5
@@ -335,7 +335,7 @@ class TestConversationStateUpdate:
         self,
         attack_identifier: dict[str, str],
         mock_prompt_normalizer: MagicMock,
-        sample_conversation: list[PromptRequestResponse],
+        sample_conversation: list[Message],
     ):
         """Test that role-specific converters apply correctly"""
         manager = ConversationManager(attack_identifier=attack_identifier, prompt_normalizer=mock_prompt_normalizer)
@@ -376,14 +376,14 @@ class TestConversationStateUpdate:
         attack_identifier: dict[str, str],
         mock_prompt_normalizer: MagicMock,
         mock_chat_target: MagicMock,
-        sample_system_piece: PromptRequestPiece,
+        sample_system_piece: MessagePiece,
     ):
         """Test that system messages do not get converters applied regardless of config"""
         manager = ConversationManager(attack_identifier=attack_identifier, prompt_normalizer=mock_prompt_normalizer)
         conversation_id = str(uuid.uuid4())
 
         # Create conversation with just a system message
-        conversation = [PromptRequestResponse(request_pieces=[sample_system_piece])]
+        conversation = [Message(message_pieces=[sample_system_piece])]
 
         request_converter_config = [PromptConverterConfiguration(converters=[])]
         response_converter_config = [PromptConverterConfiguration(converters=[])]
@@ -402,13 +402,13 @@ class TestConversationStateUpdate:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_processes_system_prompts_multi_turn(
-        self, attack_identifier: dict[str, str], mock_chat_target: MagicMock, sample_system_piece: PromptRequestPiece
+        self, attack_identifier: dict[str, str], mock_chat_target: MagicMock, sample_system_piece: MessagePiece
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
         # Create conversation with system message
-        conversation = [PromptRequestResponse(request_pieces=[sample_system_piece])]
+        conversation = [Message(message_pieces=[sample_system_piece])]
 
         await manager.update_conversation_state_async(
             conversation_id=conversation_id,
@@ -426,14 +426,14 @@ class TestConversationStateUpdate:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_processes_system_prompts_single_turn(
-        self, attack_identifier: dict[str, str], mock_chat_target: MagicMock, sample_system_piece: PromptRequestPiece
+        self, attack_identifier: dict[str, str], mock_chat_target: MagicMock, sample_system_piece: MessagePiece
     ):
         """Test that system messages in single-turn mode are NOT added to memory"""
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
         # Create conversation with system message
-        conversation = [PromptRequestResponse(request_pieces=[sample_system_piece])]
+        conversation = [Message(message_pieces=[sample_system_piece])]
 
         await manager.update_conversation_state_async(
             conversation_id=conversation_id,
@@ -450,9 +450,9 @@ class TestConversationStateUpdate:
         self,
         attack_identifier: dict[str, str],
         mock_chat_target: MagicMock,
-        sample_user_piece: PromptRequestPiece,
-        sample_assistant_piece: PromptRequestPiece,
-        sample_system_piece: PromptRequestPiece,
+        sample_user_piece: MessagePiece,
+        sample_assistant_piece: MessagePiece,
+        sample_system_piece: MessagePiece,
     ):
         """Test that single-turn behavior correctly excludes system messages from memory"""
         manager = ConversationManager(attack_identifier=attack_identifier)
@@ -460,9 +460,9 @@ class TestConversationStateUpdate:
 
         # Create conversation with all types of messages
         conversation = [
-            PromptRequestResponse(request_pieces=[sample_system_piece]),
-            PromptRequestResponse(request_pieces=[sample_user_piece]),
-            PromptRequestResponse(request_pieces=[sample_assistant_piece]),
+            Message(message_pieces=[sample_system_piece]),
+            Message(message_pieces=[sample_user_piece]),
+            Message(message_pieces=[sample_assistant_piece]),
         ]
 
         # Store original IDs to verify they get updated
@@ -482,7 +482,7 @@ class TestConversationStateUpdate:
 
         # Verify that user and assistant pieces have the correct conversation_id and attack_identifier
         for stored_response in stored_conversation:
-            for piece in stored_response.request_pieces:
+            for piece in stored_response.message_pieces:
                 assert piece.conversation_id == conversation_id
                 assert piece.attack_identifier == attack_identifier
                 # Verify that IDs were regenerated
@@ -499,14 +499,14 @@ class TestConversationStateUpdate:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_system_prompt_without_target_raises_error(
-        self, attack_identifier: dict[str, str], sample_system_piece: PromptRequestPiece
+        self, attack_identifier: dict[str, str], sample_system_piece: MessagePiece
     ):
         """Test that providing system prompts without a target raises an error"""
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
         # Create conversation with system message
-        conversation = [PromptRequestResponse(request_pieces=[sample_system_piece])]
+        conversation = [Message(message_pieces=[sample_system_piece])]
 
         with pytest.raises(ValueError, match="Target must be provided to handle system prompts"):
             await manager.update_conversation_state_async(
@@ -517,14 +517,14 @@ class TestConversationStateUpdate:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_system_prompt_with_non_chat_target_raises_error(
-        self, attack_identifier: dict[str, str], mock_prompt_target: MagicMock, sample_system_piece: PromptRequestPiece
+        self, attack_identifier: dict[str, str], mock_prompt_target: MagicMock, sample_system_piece: MessagePiece
     ):
         """Test that providing system prompts with non-chat target raises an error"""
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
         # Create conversation with system message
-        conversation = [PromptRequestResponse(request_pieces=[sample_system_piece])]
+        conversation = [Message(message_pieces=[sample_system_piece])]
 
         with pytest.raises(ValueError, match="Target must be a PromptChatTarget to set system prompts"):
             await manager.update_conversation_state_async(
@@ -538,9 +538,9 @@ class TestConversationStateUpdate:
         self,
         attack_identifier: dict[str, str],
         mock_chat_target: MagicMock,
-        sample_user_piece: PromptRequestPiece,
-        sample_assistant_piece: PromptRequestPiece,
-        sample_system_piece: PromptRequestPiece,
+        sample_user_piece: MessagePiece,
+        sample_assistant_piece: MessagePiece,
+        sample_system_piece: MessagePiece,
     ):
         """Test that in multi-turn mode, system prompts are excluded but other messages are added"""
         manager = ConversationManager(attack_identifier=attack_identifier)
@@ -548,9 +548,9 @@ class TestConversationStateUpdate:
 
         # Create conversation with mixed message types
         conversation = [
-            PromptRequestResponse(request_pieces=[sample_system_piece]),
-            PromptRequestResponse(request_pieces=[sample_user_piece]),
-            PromptRequestResponse(request_pieces=[sample_assistant_piece]),
+            Message(message_pieces=[sample_system_piece]),
+            Message(message_pieces=[sample_user_piece]),
+            Message(message_pieces=[sample_assistant_piece]),
         ]
 
         await manager.update_conversation_state_async(
@@ -574,7 +574,7 @@ class TestConversationStateUpdate:
     async def test_update_conversation_state_preserves_original_values_like_legacy(
         self,
         attack_identifier: dict[str, str],
-        sample_user_piece: PromptRequestPiece,
+        sample_user_piece: MessagePiece,
     ):
         """Test that original values and other piece properties are preserved like the legacy function"""
         manager = ConversationManager(attack_identifier=attack_identifier)
@@ -586,7 +586,7 @@ class TestConversationStateUpdate:
         sample_user_piece.labels = {"test": "label", "category": "user"}
         sample_user_piece.prompt_metadata = {"timestamp": "2023-01-01", "version": 1}
 
-        conversation = [PromptRequestResponse(request_pieces=[sample_user_piece])]
+        conversation = [Message(message_pieces=[sample_user_piece])]
 
         await manager.update_conversation_state_async(
             conversation_id=conversation_id,
@@ -610,18 +610,18 @@ class TestConversationStateUpdate:
     async def test_update_conversation_state_counts_turns_correctly(
         self,
         attack_identifier: dict[str, str],
-        sample_user_piece: PromptRequestPiece,
-        sample_assistant_piece: PromptRequestPiece,
+        sample_user_piece: MessagePiece,
+        sample_assistant_piece: MessagePiece,
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
         # Create multi-turn conversation
         conversation = [
-            PromptRequestResponse(request_pieces=[sample_user_piece]),
-            PromptRequestResponse(request_pieces=[sample_assistant_piece]),
-            PromptRequestResponse(request_pieces=[sample_user_piece]),
-            PromptRequestResponse(request_pieces=[sample_assistant_piece]),
+            Message(message_pieces=[sample_user_piece]),
+            Message(message_pieces=[sample_assistant_piece]),
+            Message(message_pieces=[sample_user_piece]),
+            Message(message_pieces=[sample_assistant_piece]),
         ]
 
         state = await manager.update_conversation_state_async(
@@ -634,18 +634,18 @@ class TestConversationStateUpdate:
     async def test_update_conversation_state_exceeds_max_turns_raises_error(
         self,
         attack_identifier: dict[str, str],
-        sample_user_piece: PromptRequestPiece,
-        sample_assistant_piece: PromptRequestPiece,
+        sample_user_piece: MessagePiece,
+        sample_assistant_piece: MessagePiece,
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
         # Create conversation that exceeds max turns
         conversation = [
-            PromptRequestResponse(request_pieces=[sample_user_piece]),
-            PromptRequestResponse(request_pieces=[sample_assistant_piece]),
-            PromptRequestResponse(request_pieces=[sample_user_piece]),
-            PromptRequestResponse(request_pieces=[sample_assistant_piece]),
+            Message(message_pieces=[sample_user_piece]),
+            Message(message_pieces=[sample_assistant_piece]),
+            Message(message_pieces=[sample_user_piece]),
+            Message(message_pieces=[sample_assistant_piece]),
         ]
 
         with pytest.raises(ValueError, match="exceeds the maximum number of turns"):
@@ -659,34 +659,34 @@ class TestConversationStateUpdate:
     async def test_update_conversation_state_extracts_assistant_scores(
         self,
         attack_identifier: dict[str, str],
-        sample_user_piece: PromptRequestPiece,
-        sample_assistant_piece: PromptRequestPiece,
+        sample_user_piece: MessagePiece,
+        sample_assistant_piece: MessagePiece,
         sample_score: Score,
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
         # First add the conversation to memory
-        user_response = PromptRequestResponse(request_pieces=[sample_user_piece])
-        assistant_response = PromptRequestResponse(request_pieces=[sample_assistant_piece])
+        user_response = Message(message_pieces=[sample_user_piece])
+        assistant_response = Message(message_pieces=[sample_assistant_piece])
 
         # Manually add to memory to establish the original_prompt_id
-        for piece in user_response.request_pieces:
+        for piece in user_response.message_pieces:
             piece.conversation_id = conversation_id
-        for piece in assistant_response.request_pieces:
+        for piece in assistant_response.message_pieces:
             piece.conversation_id = conversation_id
 
-        manager._memory.add_request_response_to_memory(request=user_response)
-        manager._memory.add_request_response_to_memory(request=assistant_response)
+        manager._memory.add_message_to_memory(request=user_response)
+        manager._memory.add_message_to_memory(request=assistant_response)
 
         # Add score to memory
-        sample_score.prompt_request_response_id = str(sample_assistant_piece.original_prompt_id)
+        sample_score.message_piece_id = str(sample_assistant_piece.original_prompt_id)
         manager._memory.add_scores_to_memory(scores=[sample_score])
 
         # Create conversation ending with assistant message
         conversation = [
-            PromptRequestResponse(request_pieces=[sample_user_piece]),
-            PromptRequestResponse(request_pieces=[sample_assistant_piece]),
+            Message(message_pieces=[sample_user_piece]),
+            Message(message_pieces=[sample_assistant_piece]),
         ]
 
         state = await manager.update_conversation_state_async(
@@ -699,14 +699,14 @@ class TestConversationStateUpdate:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_no_scores_for_assistant_message(
-        self, attack_identifier: dict[str, str], sample_assistant_piece: PromptRequestPiece
+        self, attack_identifier: dict[str, str], sample_assistant_piece: MessagePiece
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
         # Create conversation with only assistant message
         conversation = [
-            PromptRequestResponse(request_pieces=[sample_assistant_piece]),
+            Message(message_pieces=[sample_assistant_piece]),
         ]
 
         state = await manager.update_conversation_state_async(
@@ -719,24 +719,24 @@ class TestConversationStateUpdate:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_assistant_without_preceding_user_raises_error(
-        self, attack_identifier: dict[str, str], sample_assistant_piece: PromptRequestPiece, sample_score: Score
+        self, attack_identifier: dict[str, str], sample_assistant_piece: MessagePiece, sample_score: Score
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
         # Add assistant message to memory and add score
-        assistant_response = PromptRequestResponse(request_pieces=[sample_assistant_piece])
-        for piece in assistant_response.request_pieces:
+        assistant_response = Message(message_pieces=[sample_assistant_piece])
+        for piece in assistant_response.message_pieces:
             piece.conversation_id = conversation_id
-        manager._memory.add_request_response_to_memory(request=assistant_response)
+        manager._memory.add_message_to_memory(request=assistant_response)
 
-        sample_score.prompt_request_response_id = str(sample_assistant_piece.original_prompt_id)
+        sample_score.message_piece_id = str(sample_assistant_piece.original_prompt_id)
         manager._memory.add_scores_to_memory(scores=[sample_score])
 
         # Create conversation with assistant messages only
         conversation = [
-            PromptRequestResponse(request_pieces=[sample_assistant_piece]),
-            PromptRequestResponse(request_pieces=[sample_assistant_piece]),
+            Message(message_pieces=[sample_assistant_piece]),
+            Message(message_pieces=[sample_assistant_piece]),
         ]
 
         with pytest.raises(ValueError, match="There must be a user message preceding"):
@@ -748,24 +748,24 @@ class TestConversationStateUpdate:
 class TestPrivateMethods:
     """Tests for private helper methods"""
 
-    def test_should_exclude_piece_from_memory_single_turn_mode(self, sample_system_piece: PromptRequestPiece):
+    def test_should_exclude_piece_from_memory_single_turn_mode(self, sample_system_piece: MessagePiece):
         # System pieces should be excluded in both single-turn and multi-turn modes
         # because set_system_prompt() is called on the target, which internally adds them to memory
         assert ConversationManager._should_exclude_piece_from_memory(piece=sample_system_piece, max_turns=None)
 
-    def test_should_exclude_piece_from_memory_multi_turn_system_piece(self, sample_system_piece: PromptRequestPiece):
+    def test_should_exclude_piece_from_memory_multi_turn_system_piece(self, sample_system_piece: MessagePiece):
         # System pieces should be excluded in both single-turn and multi-turn modes
         assert ConversationManager._should_exclude_piece_from_memory(piece=sample_system_piece, max_turns=5)
 
     def test_should_exclude_piece_from_memory_single_turn_non_system_piece(
-        self, sample_user_piece: PromptRequestPiece, sample_assistant_piece: PromptRequestPiece
+        self, sample_user_piece: MessagePiece, sample_assistant_piece: MessagePiece
     ):
         # In single-turn mode, non-system pieces should not be excluded
         assert not ConversationManager._should_exclude_piece_from_memory(piece=sample_user_piece, max_turns=None)
         assert not ConversationManager._should_exclude_piece_from_memory(piece=sample_assistant_piece, max_turns=None)
 
     def test_should_exclude_piece_from_memory_multi_turn_non_system_piece(
-        self, sample_user_piece: PromptRequestPiece, sample_assistant_piece: PromptRequestPiece
+        self, sample_user_piece: MessagePiece, sample_assistant_piece: MessagePiece
     ):
         # In multi-turn mode, non-system pieces should not be excluded
         assert not ConversationManager._should_exclude_piece_from_memory(piece=sample_user_piece, max_turns=5)
@@ -777,10 +777,10 @@ class TestEdgeCasesAndErrorHandling:
     """Tests for edge cases and error handling"""
 
     @pytest.mark.asyncio
-    async def test_update_conversation_state_with_empty_request_pieces(self, attack_identifier: dict[str, str]):
+    async def test_update_conversation_state_with_empty_message_pieces(self, attack_identifier: dict[str, str]):
         # Create request with empty pieces list should raise ValueError
-        with pytest.raises(ValueError, match="PromptRequestResponse must have at least one request piece"):
-            PromptRequestResponse(request_pieces=[])
+        with pytest.raises(ValueError, match="Message must have at least one message piece"):
+            Message(message_pieces=[])
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_with_none_request(self, attack_identifier: dict[str, str]):
@@ -799,7 +799,7 @@ class TestEdgeCasesAndErrorHandling:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_preserves_piece_metadata(
-        self, attack_identifier: dict[str, str], sample_user_piece: PromptRequestPiece
+        self, attack_identifier: dict[str, str], sample_user_piece: MessagePiece
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
@@ -808,7 +808,7 @@ class TestEdgeCasesAndErrorHandling:
         sample_user_piece.labels = {"test": "label"}
         sample_user_piece.prompt_metadata = {"key": "value", "count": 1}
 
-        conversation = [PromptRequestResponse(request_pieces=[sample_user_piece])]
+        conversation = [Message(message_pieces=[sample_user_piece])]
 
         await manager.update_conversation_state_async(
             conversation_id=conversation_id, prepended_conversation=conversation
@@ -817,7 +817,7 @@ class TestEdgeCasesAndErrorHandling:
         # Verify piece was processed with metadata intact
         stored_conversation = manager.get_conversation(conversation_id)
         assert len(stored_conversation) == 1
-        processed_piece = stored_conversation[0].request_pieces[0]
+        processed_piece = stored_conversation[0].message_pieces[0]
         assert processed_piece.labels == {"test": "label"}
         assert processed_piece.prompt_metadata == {"key": "value", "count": 1}
 

@@ -8,13 +8,13 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
 
 from azure.core.credentials import AccessToken
-from azure.identity import DefaultAzureCredential
 from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload, sessionmaker
 from sqlalchemy.orm.session import Session
 
+from pyrit.auth.azure_auth import AzureAuth
 from pyrit.common import default_values
 from pyrit.common.singleton import Singleton
 from pyrit.memory.memory_interface import MemoryInterface
@@ -26,7 +26,7 @@ from pyrit.memory.memory_models import (
 )
 from pyrit.models import (
     AzureBlobStorageIO,
-    PromptRequestPiece,
+    MessagePiece,
 )
 
 logger = logging.getLogger(__name__)
@@ -117,10 +117,9 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Creates an Azure Entra ID access token.
         Stores the token and its expiry time.
         """
-        azure_credentials = DefaultAzureCredential()
-        token: AccessToken = azure_credentials.get_token(self.TOKEN_URL)
-        self._auth_token = token
-        self._auth_token_expiry = token.expires_on
+        azure_auth = AzureAuth(token_scope=self.TOKEN_URL)
+        self._auth_token = azure_auth.access_token
+        self._auth_token_expiry = azure_auth.access_token.expires_on
 
     def _refresh_token_if_needed(self) -> None:
         """
@@ -202,7 +201,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         self._insert_entries(entries=embedding_data)
 
-    def _get_prompt_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> list:
+    def _get_message_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> list:
         json_validation = "ISJSON(labels) = 1"
         json_conditions = " AND ".join([f"JSON_VALUE(labels, '$.{key}') = :{key}" for key in memory_labels])
         # Combine both conditions
@@ -213,7 +212,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         condition = text(conditions).bindparams(**{key: str(value) for key, value in memory_labels.items()})
         return [condition]
 
-    def _get_prompt_pieces_attack_conditions(self, *, attack_id: str) -> Any:
+    def _get_message_pieces_attack_conditions(self, *, attack_id: str) -> Any:
         return text("ISJSON(attack_identifier) = 1 AND JSON_VALUE(attack_identifier, '$.id') = :json_id").bindparams(
             json_id=str(attack_id)
         )
@@ -229,18 +228,18 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         condition = text(conditions).bindparams(**{key: str(value) for key, value in prompt_metadata.items()})
         return [condition]
 
-    def _get_prompt_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list:
+    def _get_message_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list:
         return self._get_metadata_conditions(prompt_metadata=prompt_metadata)
 
     def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> Any:
         return self._get_metadata_conditions(prompt_metadata=metadata)[0]
 
-    def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
+    def add_message_pieces_to_memory(self, *, message_pieces: Sequence[MessagePiece]) -> None:
         """
-        Inserts a list of prompt request pieces into the memory storage.
+        Inserts a list of message pieces into the memory storage.
 
         """
-        self._insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in request_pieces])
+        self._insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in message_pieces])
 
     def dispose_engine(self):
         """

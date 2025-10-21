@@ -7,14 +7,16 @@ chapters:
     - file: cookbooks/2_precomputing_turns
     - file: cookbooks/3_copyright_violations
     - file: cookbooks/4_testing_bias
-  - file: setup/install_pyrit
+  - file: setup/1a_install_conda
     sections:
+    - file: setup/1b_install_docker
     - file: setup/jupyter_setup
     - file: setup/populating_secrets
     - file: setup/use_azure_sql_db
   - file: contributing/README
     sections:
-    - file: contributing/1_installation
+    - file: contributing/1a_install_conda
+    - file: contributing/1b_install_devcontainers
     - file: contributing/2_git
     - file: contributing/3_incorporating_research
     - file: contributing/4_style_guide
@@ -49,7 +51,8 @@ chapters:
           - file: code/executor/attack/multi_prompt_sending_attack
         - file: code/executor/workflow/0_workflow
           sections:
-          - file: code/executor/workflow/1_xpia_workflow
+          - file: code/executor/workflow/1_xpia_website
+          - file: code/executor/workflow/2_xpia_ai_recruiter
         - file: code/executor/benchmark/0_benchmark
           sections:
           - file: code/executor/benchmark/1_qa_benchmark
@@ -104,7 +107,7 @@ chapters:
       sections:
       - file: code/memory/1_sqlite_memory
       - file: code/memory/2_basic_memory_programming
-      - file: code/memory/3_prompt_request
+      - file: code/memory/3_memory_data_types
       - file: code/memory/4_manually_working_with_memory
       - file: code/memory/5_memory_labels
       - file: code/memory/6_azure_sql_memory
@@ -118,6 +121,7 @@ chapters:
     - file: code/auxiliary_attacks/0_auxiliary_attacks
       sections:
       - file: code/auxiliary_attacks/1_gcg_azure_ml
+    - file: code/scenarios/scenarios
     - file: code/scanner/0_scanner
       sections:
       - file: code/scanner/1_configuration

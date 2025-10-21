@@ -16,8 +16,8 @@ from pyrit.models import (
     AttackOutcome,
     AttackResult,
     ConversationType,
-    PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
+    MessagePiece,
     Score,
     SeedPrompt,
     SeedPromptGroup,
@@ -69,10 +69,8 @@ def basic_context():
 @pytest.fixture
 def sample_response():
     """Create a sample response for testing"""
-    return PromptRequestResponse(
-        request_pieces=[
-            PromptRequestPiece(role="assistant", original_value="Test response", original_value_data_type="text")
-        ]
+    return Message(
+        message_pieces=[MessagePiece(role="assistant", original_value="Test response", original_value_data_type="text")]
     )
 
 
@@ -86,7 +84,7 @@ def success_score():
         score_value_description="Test success score",
         score_rationale="Test rationale for success",
         score_metadata="{}",
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
     )
 
 
@@ -100,7 +98,7 @@ def failure_score():
         score_value_description="Test failure score",
         score_rationale="Test rationale for failure",
         score_metadata={},
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
     )
 
 
@@ -387,7 +385,7 @@ class TestResponseEvaluation:
             score_value_description="Auxiliary score",
             score_rationale="Auxiliary rationale",
             score_metadata={},
-            prompt_request_response_id=str(uuid.uuid4()),
+            message_piece_id=str(uuid.uuid4()),
         )
 
         attack = PromptSendingAttack(
@@ -724,7 +722,7 @@ class TestDetermineAttackOutcome:
             score_value_description="Success",
             score_rationale="Objective achieved",
             score_metadata="{}",
-            prompt_request_response_id=str(uuid.uuid4()),
+            message_piece_id=str(uuid.uuid4()),
         )
 
         outcome, reason = attack._determine_attack_outcome(
@@ -748,7 +746,7 @@ class TestDetermineAttackOutcome:
             score_value_description="Failure",
             score_rationale="Objective not achieved",
             score_metadata="{}",
-            prompt_request_response_id=str(uuid.uuid4()),
+            message_piece_id=str(uuid.uuid4()),
         )
 
         outcome, reason = attack._determine_attack_outcome(
@@ -772,7 +770,7 @@ class TestDetermineAttackOutcome:
             score_value_description="Failure",
             score_rationale="Objective not achieved",
             score_metadata="{}",
-            prompt_request_response_id=str(uuid.uuid4()),
+            message_piece_id=str(uuid.uuid4()),
         )
 
         outcome, reason = attack._determine_attack_outcome(
@@ -798,8 +796,8 @@ class TestDetermineAttackOutcome:
         attack._objective_scorer = MagicMock()
 
         # Create an empty response
-        empty_response = MagicMock(spec=PromptRequestResponse)
-        empty_response.request_pieces = []
+        empty_response = MagicMock(spec=Message)
+        empty_response.message_pieces = []
 
         outcome, reason = attack._determine_attack_outcome(response=empty_response, score=None, context=basic_context)
 

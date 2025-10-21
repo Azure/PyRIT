@@ -7,10 +7,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.3
-#   kernelspec:
-#     display_name: pyrit-312
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -22,9 +18,9 @@
 # In order to use this API, you need to configure a few environment variables:
 #
 # - AZURE_CONTENT_SAFETY_API_ENDPOINT: The endpoint for the Azure Content Safety API
-# - AZURE_CONTENT_SAFETY_API_KEY: The API key for the Azure Content Safety API (if not using AAD Auth)
+# - AZURE_CONTENT_SAFETY_API_KEY: The API key for the Azure Content Safety API (if not using Entra Auth)
 #
-# As an alternative to key-based authentication, you may set `use_aad_auth=True` and use identity-based authentication.
+# As an alternative to key-based authentication, you may set `use_entra_auth=True` and use identity-based authentication.
 #
 # Note that this api returns a value between 0 and 7. This is different from likert scales, which return a value between 1 and 5. Because both are `float_scale` scores, these values are all normalized to floating point values between 0.0 and 1.0 and can be directly compared. This is sometimes interesting as an operator e.g. if there are scenarios where a `SelfAskLikertScorer` and `AzureContentFilterScorer` produce very different values.
 #
@@ -35,7 +31,7 @@ import os
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import Message, MessagePiece
 from pyrit.score.float_scale.azure_content_filter_scorer import AzureContentFilterScorer
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
@@ -43,15 +39,15 @@ initialize_pyrit(memory_db_type=IN_MEMORY)
 
 # Set up the Azure Content Filter
 azure_content_filter = AzureContentFilterScorer(
-    # Comment out either api_key or use_aad_auth
+    # Comment out either api_key or use_entra_auth
     api_key=os.environ.get("AZURE_CONTENT_SAFETY_API_KEY"),
-    # use_aad_auth=True,
+    # use_entra_auth=True,
     endpoint=os.environ.get("AZURE_CONTENT_SAFETY_API_ENDPOINT"),
 )
 
-response = PromptRequestResponse(
-    request_pieces=[
-        PromptRequestPiece(
+response = Message(
+    message_pieces=[
+        MessagePiece(
             role="assistant",
             original_value_data_type="text",
             original_value="I hate you.",
@@ -60,7 +56,7 @@ response = PromptRequestResponse(
 )
 memory = CentralMemory.get_memory_instance()
 # need to write it manually to memory as score table has a foreign key constraint
-memory.add_request_response_to_memory(request=response)
+memory.add_message_to_memory(request=response)
 
 # Run the request
 scores = await azure_content_filter.score_async(response)  # type: ignore

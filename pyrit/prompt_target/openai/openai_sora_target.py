@@ -16,8 +16,8 @@ from pyrit.exceptions import (
     pyrit_target_retry,
 )
 from pyrit.models import (
-    PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
+    MessagePiece,
     construct_response_from_request,
     data_serializer_factory,
 )
@@ -100,7 +100,7 @@ class OpenAISoraTarget(OpenAITarget):
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
                 Defaults to the `OPENAI_SORA_KEY` environment variable.
             headers (str, Optional): Extra headers of the endpoint (JSON).
-            use_aad_auth (bool, Optional): When set to True, user authentication is used
+            use_entra_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default. Please run `az login` locally
                 to leverage user AuthN.
@@ -186,21 +186,21 @@ class OpenAISoraTarget(OpenAITarget):
 
     @limit_requests_per_minute
     @pyrit_target_retry
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         """Asynchronously sends a prompt request and handles the response within a managed conversation context.
 
         Args:
-            prompt_request (PromptRequestResponse): The prompt request response object.
+            prompt_request (Message): The message object.
 
         Returns:
-            PromptRequestResponse: The updated conversation entry with the response from the prompt target.
+            Message: The updated conversation entry with the response from the prompt target.
 
         Raises:
             RateLimitException: If the rate limit is exceeded.
             httpx.HTTPStatusError: If the request fails.
         """
         self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.request_pieces[0]
+        request = prompt_request.message_pieces[0]
         prompt = request.converted_value
 
         logger.info(f"Sending the following prompt to the prompt target: {prompt}")
@@ -224,7 +224,7 @@ class OpenAISoraTarget(OpenAITarget):
         """
         Asynchronously check status of a submitted video generation job using the job_id.
 
-        Retries a maxium of {self.CHECK_JOB_RETRY_MAX_NUM_ATTEMPTS} times,
+        Retries a maximum of {self.CHECK_JOB_RETRY_MAX_NUM_ATTEMPTS} times,
         until the job is complete (succeeded, failed, or cancelled). Also
         retries upon RateLimitException.
 
@@ -285,8 +285,8 @@ class OpenAISoraTarget(OpenAITarget):
         data: bytes,
         job_id: str,
         generation_id: str,
-        request: PromptRequestPiece,
-    ) -> PromptRequestResponse:
+        request: MessagePiece,
+    ) -> Message:
         """
         Asynchronously save the video content to storage using a serializer.
 
@@ -296,10 +296,10 @@ class OpenAISoraTarget(OpenAITarget):
             data (bytes): The video content to save.
             job_id (str): The video generation job ID.
             generation_id (str): The video generation ID.
-            request (PromptRequestPiece): The request piece associated with the prompt.
+            request (MessagePiece): The message piece associated with the prompt.
 
         Returns:
-            PromptRequestResponse: The response entry with the saved video path.
+            Message: The response entry with the saved video path.
         """
         serializer = data_serializer_factory(
             category="prompt-memory-entries",
@@ -315,20 +315,18 @@ class OpenAISoraTarget(OpenAITarget):
 
         return response_entry
 
-    async def _handle_response_async(
-        self, request: PromptRequestPiece, response: httpx.Response
-    ) -> PromptRequestResponse:
+    async def _handle_response_async(self, request: MessagePiece, response: httpx.Response) -> Message:
         """
         Asynchronously handle the response to a video generation request.
 
         This includes checking the status of the job and downloading the video content if successful.
 
         Args:
-            request (PromptRequestPiece): The request piece associated with the prompt.
+            request (MessagePiece): The message piece associated with the prompt.
             response (httpx.Response): The response from the API.
 
         Returns:
-            PromptRequestResponse: The response entry with the saved video path or error message.
+            Message: The response entry with the saved video path or error message.
         """
         content = json.loads(response.content)
 
@@ -442,23 +440,23 @@ class OpenAISoraTarget(OpenAITarget):
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: Message) -> None:
         """
         Validates the prompt request to ensure it meets the requirements for the Sora target.
 
         Args:
-            prompt_request (PromptRequestResponse): The prompt request response object.
+            prompt_request (Message): The message object.
 
         Raises:
             ValueError: If the request is invalid.
         """
-        request_piece = prompt_request.get_piece()
+        message_piece = prompt_request.get_piece()
 
-        n_pieces = len(prompt_request.request_pieces)
+        n_pieces = len(prompt_request.message_pieces)
         if n_pieces != 1:
-            raise ValueError(f"This target only supports a single prompt request piece. Received: {n_pieces} pieces.")
+            raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
 
-        piece_type = request_piece.converted_value_data_type
+        piece_type = message_piece.converted_value_data_type
         if piece_type != "text":
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 

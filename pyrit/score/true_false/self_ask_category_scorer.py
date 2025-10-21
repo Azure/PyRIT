@@ -8,7 +8,7 @@ from typing import Dict, Optional, Union
 import yaml
 
 from pyrit.common.path import CONTENT_CLASSIFIERS_PATH
-from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore
+from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
@@ -26,10 +26,10 @@ class ContentClassifierPaths(enum.Enum):
 class SelfAskCategoryScorer(TrueFalseScorer):
     """
     A class that represents a self-ask score for text classification and scoring.
-    Given a classifer file, it scores according to these categories and returns the category
-    the PromptRequestPiece fits best.
+    Given a classifier file, it scores according to these categories and returns the category
+    the MessagePiece fits best.
 
-    There is also a false category that is used if the promptrequestpiece does not fit any of the categories.
+    There is also a false category that is used if the MessagePiece does not fit any of the categories.
     """
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator()
@@ -100,19 +100,17 @@ class SelfAskCategoryScorer(TrueFalseScorer):
 
         return category_descriptions
 
-    async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
-        Scores the given request_response using the chat target.
+        Scores the given message using the chat target.
 
         Args:
-            request_response (PromptRequestPiece): The prompt request piece to score.
+            message_piece (MessagePiece): The message piece to score.
             task (str): The task based on which the text should be scored (the original attacker model's objective).
                 Currently not supported for this scorer.
 
         Returns:
-            list[Score]: The request_response scored.
+            list[Score]: The message_piece's score.
                          The category that fits best in the response is used for score_category.
                          The score_value is True in all cases unless no category fits. In which case,
                          the score value is false and the _false_category is used.
@@ -120,11 +118,11 @@ class SelfAskCategoryScorer(TrueFalseScorer):
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=self._system_prompt,
-            prompt_request_value=request_piece.converted_value,
-            prompt_request_data_type=request_piece.converted_value_data_type,
-            scored_prompt_id=request_piece.id,
+            prompt_request_value=message_piece.converted_value,
+            prompt_request_data_type=message_piece.converted_value_data_type,
+            scored_prompt_id=message_piece.id,
             objective=objective,
-            attack_identifier=request_piece.attack_identifier,
+            attack_identifier=message_piece.attack_identifier,
         )
 
         score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value, score_type="true_false")
