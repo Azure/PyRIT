@@ -6,10 +6,7 @@ import uuid
 from typing import Optional
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import SeedPrompt
-from pyrit.models.literals import PromptDataType
-from pyrit.models.message import Message
-from pyrit.models.message_piece import MessagePiece
+from pyrit.models import Message, MessagePiece, PromptDataType, SeedPrompt
 from pyrit.prompt_converter.fuzzer_converter.fuzzer_converter_base import (
     FuzzerConverter,
 )

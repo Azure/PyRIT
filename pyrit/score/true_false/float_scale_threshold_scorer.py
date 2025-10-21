@@ -4,9 +4,7 @@
 import uuid
 from typing import Optional
 
-from pyrit.models import MessagePiece, Score
-from pyrit.models.literals import ChatMessageRole
-from pyrit.models.message import Message
+from pyrit.models import ChatMessageRole, Message, MessagePiece, Score
 from pyrit.score.float_scale.float_scale_score_aggregator import (
     FloatScaleAggregatorFunc,
     FloatScaleScoreAggregator,

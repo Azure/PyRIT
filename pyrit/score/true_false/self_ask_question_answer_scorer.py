@@ -7,11 +7,7 @@ import pathlib
 from typing import Optional
 
 from pyrit.common.path import SCORER_CONFIG_PATH
-from pyrit.models import (
-    Score,
-    UnvalidatedScore,
-)
-from pyrit.models.message_piece import MessagePiece
+from pyrit.models import MessagePiece, Score, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import SelfAskTrueFalseScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator

@@ -5,8 +5,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from pyrit.models import Score
-from pyrit.models.message_piece import MessagePiece
+from pyrit.models import MessagePiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
     TrueFalseAggregatorFunc,

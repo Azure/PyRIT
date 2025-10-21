@@ -26,9 +26,9 @@ from pyrit.models import (
     Message,
     MessagePiece,
     Score,
+    ScoreType,
     SeedPrompt,
 )
-from pyrit.models.score import ScoreType
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import Scorer, TrueFalseScorer

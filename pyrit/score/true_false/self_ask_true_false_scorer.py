@@ -8,8 +8,7 @@ from typing import Optional, Union
 import yaml
 
 from pyrit.common.path import SCORER_CONFIG_PATH
-from pyrit.models import MessagePiece, SeedPrompt
-from pyrit.models.score import Score, UnvalidatedScore
+from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (

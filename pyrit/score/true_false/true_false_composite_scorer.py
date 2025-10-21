@@ -4,9 +4,7 @@
 import asyncio
 from typing import List, Optional
 
-from pyrit.models import MessagePiece, Score
-from pyrit.models.literals import ChatMessageRole
-from pyrit.models.message import Message
+from pyrit.models import ChatMessageRole, Message, MessagePiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import TrueFalseAggregatorFunc
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer

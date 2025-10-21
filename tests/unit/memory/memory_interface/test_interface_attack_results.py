@@ -8,9 +8,14 @@ from typing import Sequence
 from pyrit.common.utils import to_sha256
 from pyrit.memory import MemoryInterface
 from pyrit.memory.memory_models import AttackResultEntry
-from pyrit.models import MessagePiece, Score
-from pyrit.models.attack_result import AttackOutcome, AttackResult
-from pyrit.models.conversation_reference import ConversationReference, ConversationType
+from pyrit.models import (
+    AttackOutcome,
+    AttackResult,
+    ConversationReference,
+    ConversationType,
+    MessagePiece,
+    Score,
+)
 
 
 def create_message_piece(conversation_id: str, prompt_num: int, targeted_harm_categories=None, labels=None):
@@ -424,7 +429,7 @@ def test_attack_result_with_last_response_and_score(sqlite_instance: MemoryInter
         converted_value="Test prompt",
         conversation_id="conv_1",
     )
-    assert message_piece.id is not None, "Prompt piece ID should not be None"
+    assert message_piece.id is not None, "Message piece ID should not be None"
 
     # Create a score
     score = Score(
@@ -438,7 +443,7 @@ def test_attack_result_with_last_response_and_score(sqlite_instance: MemoryInter
         score_metadata={"test": "metadata"},
     )
 
-    # Add prompt piece and score to memory
+    # Add message piece and score to memory
     sqlite_instance.add_message_pieces_to_memory(message_pieces=[message_piece])
     sqlite_instance.add_scores_to_memory(scores=[score])
 
@@ -619,7 +624,7 @@ def test_get_attack_results_by_harm_category_single(sqlite_instance: MemoryInter
     message_piece2 = create_message_piece("conv_2", 2, targeted_harm_categories=["illegal"])
     message_piece3 = create_message_piece("conv_3", 3, targeted_harm_categories=["violence"])
 
-    # Add prompt pieces to memory
+    # Add message pieces to memory
     sqlite_instance.add_message_pieces_to_memory(message_pieces=[message_piece1, message_piece2, message_piece3])
 
     # Create attack results using helper function

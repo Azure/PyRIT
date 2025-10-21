@@ -14,10 +14,10 @@ from pyrit.exceptions import (
 )
 from pyrit.models import (
     Message,
+    MessagePiece,
     construct_response_from_request,
     data_serializer_factory,
 )
-from pyrit.models.message_piece import MessagePiece
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)

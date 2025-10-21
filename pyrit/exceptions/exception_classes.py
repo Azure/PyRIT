@@ -17,11 +17,7 @@ from tenacity import (
 )
 
 from pyrit.exceptions.exceptions_helpers import log_exception
-from pyrit.models.message import (
-    Message,
-    construct_response_from_request,
-)
-from pyrit.models.message_piece import MessagePiece
+from pyrit.models import Message, MessagePiece, construct_response_from_request
 
 # Used with pyrit_custom_result_retry, as this function may be used in conjunction with other decorators
 CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS = int(os.getenv("CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS", 10))

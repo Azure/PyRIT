@@ -13,10 +13,10 @@ from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import (
     Message,
     MessagePiece,
+    SeedPromptGroup,
     construct_response_from_request,
 )
 from pyrit.models.filter_criteria import PromptConverterState, PromptFilterCriteria
-from pyrit.models.seed_prompt_group import SeedPromptGroup
 from pyrit.prompt_normalizer import NormalizerRequest, PromptConverterConfiguration
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.batch_helper import batch_task_async

@@ -6,9 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from pyrit.memory import CentralMemory
-from pyrit.models import MessagePiece
-from pyrit.models.chat_message import ChatMessage
-from pyrit.models.score import UnvalidatedScore
+from pyrit.models import ChatMessage, MessagePiece, UnvalidatedScore
 from pyrit.score import LookBackScorer
 
 

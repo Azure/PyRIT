@@ -12,12 +12,12 @@ from pyrit.exceptions import (
     handle_bad_request_exception,
 )
 from pyrit.models import (
+    ChatMessage,
     ChatMessageListDictContent,
     Message,
     MessagePiece,
     construct_response_from_request,
 )
-from pyrit.models.chat_message import ChatMessage
 from pyrit.prompt_target.openai.openai_chat_target_base import OpenAIChatTargetBase
 
 logger = logging.getLogger(__name__)

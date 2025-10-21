@@ -11,10 +11,8 @@ from unit.mocks import MockPromptTarget, get_image_message_piece
 
 from pyrit.exceptions import EmptyResponseException
 from pyrit.memory import CentralMemory
-from pyrit.models import Message, MessagePiece, PromptDataType
+from pyrit.models import Message, MessagePiece, PromptDataType, SeedPrompt, SeedPromptGroup
 from pyrit.models.filter_criteria import PromptFilterCriteria
-from pyrit.models.seed_prompt import SeedPrompt
-from pyrit.models.seed_prompt_group import SeedPromptGroup
 from pyrit.prompt_converter import (
     Base64Converter,
     ConverterResult,
@@ -382,7 +380,7 @@ async def test_build_message(mock_memory_instance, seed_prompt_group):
         labels=labels,
     )
 
-    # Check all prompt pieces in the response have the same conversation ID
+    # Check all message pieces in the response have the same conversation ID
     assert len(set(message_piece.conversation_id for message_piece in response.message_pieces)) == 1
 
     assert response.message_pieces[0].sequence == 1
@@ -458,13 +456,13 @@ async def test_should_skip_based_on_skip_criteria_no_matches(mock_memory_instanc
     request = Message(message_pieces=[message_piece])
 
     result = normalizer._should_skip_based_on_skip_criteria(request)
-    assert result is False, "Should return False if no prompt pieces in memory match"
+    assert result is False, "Should return False if no message pieces in memory match"
 
 
 @pytest.mark.asyncio
 async def test_should_skip_based_on_skip_criteria_match_found(mock_memory_instance):
     """
-    If skip criteria is set and the prompt pieces in memory DO match,
+    If skip criteria is set and the message pieces in memory DO match,
     _should_skip_based_on_skip_criteria should return True.
     """
     normalizer = PromptNormalizer()

@@ -3,8 +3,7 @@
 
 from typing import Optional, Sequence, get_args
 
-from pyrit.models import Message, MessagePiece
-from pyrit.models.literals import PromptDataType
+from pyrit.models import Message, MessagePiece, PromptDataType
 
 
 class ScorerPromptValidator:
@@ -47,7 +46,7 @@ class ScorerPromptValidator:
                 f"Required metadata: {self._required_metadata}. "
                 f"Length limit: {self._max_pieces_in_response}. "
                 f"Objective required: {self._is_objective_required}. "
-                f"Prompt pieces: {message.message_pieces}. "
+                f"Message pieces: {message.message_pieces}. "
                 f"Prompt metadata: {attempted_metadata}. "
                 f"Objective included: {objective}. "
             )

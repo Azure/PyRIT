@@ -311,7 +311,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         if not self.exporter:
             self.exporter = MemoryExporter()
 
-        # Get prompt pieces using the parent class method with appropriate filters
+        # Get message pieces using the parent class method with appropriate filters
         message_pieces = self.get_message_pieces(
             attack_id=attack_id,
             conversation_id=conversation_id,
@@ -336,7 +336,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
                 file_name = f"all_conversations.{export_type}"
             file_path = Path(DB_DATA_PATH, file_name)
 
-        # Get scores for the prompt pieces
+        # Get scores for the message pieces
         if message_pieces:
             message_piece_ids = [str(piece.id) for piece in message_pieces]
             scores = self.get_prompt_scores(prompt_ids=message_piece_ids)

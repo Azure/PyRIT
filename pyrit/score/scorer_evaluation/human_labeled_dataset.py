@@ -10,8 +10,7 @@ from typing import List, Optional, Union, cast, get_args
 
 import pandas as pd
 
-from pyrit.models import Message, MessagePiece
-from pyrit.models.literals import PromptDataType
+from pyrit.models import Message, MessagePiece, PromptDataType
 from pyrit.score import MetricsType
 
 logger = logging.getLogger(__name__)

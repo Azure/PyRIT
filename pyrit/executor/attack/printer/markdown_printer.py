@@ -9,9 +9,7 @@ from IPython.display import Markdown, display
 
 from pyrit.executor.attack.printer.attack_result_printer import AttackResultPrinter
 from pyrit.memory import CentralMemory
-from pyrit.models import AttackResult, Score
-from pyrit.models.message import Message
-from pyrit.models.message_piece import MessagePiece
+from pyrit.models import AttackResult, Message, MessagePiece, Score
 
 
 class MarkdownAttackResultPrinter(AttackResultPrinter):
@@ -356,7 +354,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
         Format error response content with proper styling.
 
         Args:
-            piece (MessagePiece): The prompt piece containing the error.
+            piece (MessagePiece): The message piece containing the error.
 
         Returns:
             List[str]: List of markdown lines for the error response.
@@ -375,7 +373,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
         Format regular text content.
 
         Args:
-            piece (MessagePiece): The prompt piece containing the text.
+            piece (MessagePiece): The message piece containing the text.
             show_original (bool): Whether to show original value if different.
 
         Returns:
@@ -399,7 +397,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
         Handles different content types including text, images, audio, and error responses.
 
         Args:
-            piece (MessagePiece): The prompt piece to format.
+            piece (MessagePiece): The message piece to format.
             show_original (bool): Whether to show original value if different
                 from converted value.
 
@@ -421,7 +419,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
         """
         Format scores for all pieces in a message as markdown.
 
-        Retrieves and formats all scores associated with the prompt pieces
+        Retrieves and formats all scores associated with the message pieces
         in the given message. Creates a dedicated scores section with
         appropriate markdown formatting.
 

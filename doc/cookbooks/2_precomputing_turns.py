@@ -127,7 +127,7 @@ for objective in conversation_objectives:
 from typing import List
 
 from pyrit.memory import CentralMemory
-from pyrit.models.attack_result import AttackResult
+from pyrit.models import AttackResult
 
 memory = CentralMemory.get_memory_instance()
 

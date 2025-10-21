@@ -7,9 +7,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Union
 
 from pyrit.memory import CentralMemory
-from pyrit.models import Message, MessagePiece
-from pyrit.models.literals import ChatMessageRole
-from pyrit.models.score import Score
+from pyrit.models import ChatMessageRole, Message, MessagePiece, Score
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
 )

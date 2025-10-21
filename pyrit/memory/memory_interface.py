@@ -37,6 +37,7 @@ from pyrit.models import (
     MessagePiece,
     Score,
     SeedPrompt,
+    AttackResult,
     SeedPromptDataset,
     SeedPromptGroup,
     StorageIO,
@@ -44,7 +45,6 @@ from pyrit.models import (
     group_conversation_message_pieces_by_sequence,
     sort_message_pieces,
 )
-from pyrit.models.attack_result import AttackResult
 
 logger = logging.getLogger(__name__)
 
@@ -297,7 +297,7 @@ class MemoryInterface(abc.ABC):
             converted_value_sha256=converted_value_sha256,
         )
 
-        # Deduplicate prompt pieces by original_prompt_id to avoid duplicate scores
+        # Deduplicate message pieces by original_prompt_id to avoid duplicate scores
         # since duplicated pieces share scores with their originals
         seen_original_ids = set()
         unique_pieces = []

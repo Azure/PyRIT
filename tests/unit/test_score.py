@@ -6,7 +6,7 @@ from datetime import datetime
 
 import pytest
 
-from pyrit.models.score import Score
+from pyrit.models import Score
 
 
 @pytest.mark.asyncio

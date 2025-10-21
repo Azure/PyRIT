@@ -79,7 +79,7 @@ class HTTPXAPITarget(HTTPTarget):
         Override the parent's method to skip raw http_request usage,
         and do a standard "API mode" approach.
 
-        - If file_path is set or we can deduce it from the prompt piece, we upload a file.
+        - If file_path is set or we can deduce it from the message piece, we upload a file.
         - Otherwise, we send normal requests with JSON or form_data (if provided).
         """
 
