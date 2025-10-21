@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import List, Literal, Optional
 
 from pyrit.datasets.dataset_helper import fetch_examples
-from pyrit.models import SeedDataset, SeedPrompt
+from pyrit.models import SeedPrompt, SeedPromptDataset
 
 
 def fetch_aya_redteaming_dataset(
@@ -29,9 +29,9 @@ def fetch_aya_redteaming_dataset(
         ]
     ] = None,
     harm_scope: Optional[Literal["global", "local"]] = None,
-) -> SeedDataset:
+) -> SeedPromptDataset:
     """
-    Fetch examples from the Aya Red-teaming dataset with optional filtering and create a SeedDataset.
+    Fetch examples from the Aya Red-teaming dataset with optional filtering and create a SeedPromptDataset.
 
     Args:
         cache (bool): Whether to cache the fetched examples. Defaults to True.
@@ -44,7 +44,7 @@ def fetch_aya_redteaming_dataset(
             Defaults to None, which means all examples are included.
 
     Returns:
-        SeedDataset: A SeedDataset containing the filtered examples.
+        SeedPromptDataset: A SeedPromptDataset containing the filtered examples.
 
     Note:
         For more information and access to the original dataset and related materials, visit:
@@ -91,5 +91,5 @@ def fetch_aya_redteaming_dataset(
                     )
                 )
 
-    seed_prompt_dataset = SeedDataset(prompts=seed_prompts)
+    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
     return seed_prompt_dataset

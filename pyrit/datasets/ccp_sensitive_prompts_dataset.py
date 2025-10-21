@@ -3,18 +3,18 @@
 
 from datasets import load_dataset
 
-from pyrit.models import SeedDataset, SeedPrompt
+from pyrit.models import SeedPrompt, SeedPromptDataset
 
 
-def fetch_ccp_sensitive_prompts_dataset() -> SeedDataset:
+def fetch_ccp_sensitive_prompts_dataset() -> SeedPromptDataset:
     """
-    Fetch CCP-sensitive-prompts examples and create a SeedDataset.
+    Fetch CCP-sensitive-prompts examples and create a SeedPromptDataset.
 
     The dataset was collected by Promptfoo to cover sensitive topics in China.
     These are likely to be censored by certain models.
 
     Returns:
-        SeedDataset: A dataset of CCP-sensitive prompts.
+        SeedPromptDataset: A dataset of CCP-sensitive prompts.
 
     Note:
         For more information, see https://huggingface.co/datasets/promptfoo/CCP-sensitive-prompts
@@ -24,7 +24,7 @@ def fetch_ccp_sensitive_prompts_dataset() -> SeedDataset:
         split="train",
     )
 
-    return SeedDataset(
+    return SeedPromptDataset(
         prompts=[
             SeedPrompt(
                 value=row["prompt"],

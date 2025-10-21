@@ -9,7 +9,7 @@ from pyrit.datasets.harmbench_multimodal_dataset import (
     SemanticCategory,
     fetch_harmbench_multimodal_dataset_async,
 )
-from pyrit.models import SeedDataset
+from pyrit.models import SeedPromptDataset
 
 
 @pytest.mark.asyncio
@@ -47,7 +47,7 @@ class TestHarmBenchMultimodalDataset:
 
         result = await fetch_harmbench_multimodal_dataset_async()
 
-        assert isinstance(result, SeedDataset)
+        assert isinstance(result, SeedPromptDataset)
         assert len(result.prompts) == 4  # 2 text + 2 image prompts
 
         text_prompts = [p for p in result.prompts if p.data_type == "text"]
@@ -131,7 +131,7 @@ class TestHarmBenchMultimodalDataset:
 
         result = await fetch_harmbench_multimodal_dataset_async()
 
-        assert isinstance(result, SeedDataset)
+        assert isinstance(result, SeedPromptDataset)
         assert len(result.prompts) == 2
 
         # Verify image prompt handles missing optional fields
@@ -144,7 +144,7 @@ class TestHarmBenchMultimodalDataset:
     async def test_fetching_with_empty_examples(self, mock_fetch, mock_fetch_image):
         mock_fetch.return_value = []
 
-        with pytest.raises(ValueError, match="SeedDataset cannot be empty"):
+        with pytest.raises(ValueError, match="SeedPromptDataset cannot be empty"):
             await fetch_harmbench_multimodal_dataset_async()
 
     @patch("pyrit.datasets.harmbench_multimodal_dataset._fetch_and_save_image_async")
@@ -218,7 +218,7 @@ class TestHarmBenchMultimodalDataset:
 
         # Filter by single category
         result = await fetch_harmbench_multimodal_dataset_async(categories=[SemanticCategory.ILLEGAL])
-        assert isinstance(result, SeedDataset)
+        assert isinstance(result, SeedPromptDataset)
         assert len(result.prompts) == 2  # 1 text + 1 image prompt for illegal category
         assert all(p.metadata["behavior_id"] == "illegal_behavior" for p in result.prompts)
         assert all(p.harm_categories == ["illegal"] for p in result.prompts)
@@ -227,13 +227,13 @@ class TestHarmBenchMultimodalDataset:
         result = await fetch_harmbench_multimodal_dataset_async(
             categories=[SemanticCategory.CYBERCRIME_INTRUSION, SemanticCategory.HARMFUL]
         )
-        assert isinstance(result, SeedDataset)
+        assert isinstance(result, SeedPromptDataset)
         assert len(result.prompts) == 4  # 2 examples × 2 prompts each
         behavior_ids = {p.metadata["behavior_id"] for p in result.prompts}
         assert behavior_ids == {"cybercrime_behavior", "harmful_behavior"}
 
         # Filter with an empty list
-        with pytest.raises(ValueError, match="SeedDataset cannot be empty"):
+        with pytest.raises(ValueError, match="SeedPromptDataset cannot be empty"):
             await fetch_harmbench_multimodal_dataset_async(categories=[])
 
     @patch("pyrit.datasets.harmbench_multimodal_dataset._fetch_and_save_image_async")
@@ -265,7 +265,7 @@ class TestHarmBenchMultimodalDataset:
         result = await fetch_harmbench_multimodal_dataset_async()
 
         # Only the successful example should be included (1 text + 1 image = 2 prompts)
-        assert isinstance(result, SeedDataset)
+        assert isinstance(result, SeedPromptDataset)
         assert len(result.prompts) == 2
         behavior_ids = {p.metadata["behavior_id"] for p in result.prompts}
         assert behavior_ids == {"success_behavior"}

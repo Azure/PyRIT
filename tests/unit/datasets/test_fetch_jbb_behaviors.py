@@ -11,7 +11,7 @@ from pyrit.datasets.fetch_jbb_behaviors import (
     fetch_jbb_behaviors_by_jbb_category,
     fetch_jbb_behaviors_dataset,
 )
-from pyrit.models import SeedDataset, SeedPrompt
+from pyrit.models import SeedPrompt, SeedPromptDataset
 
 
 class TestFetchJBBBehaviors:
@@ -43,7 +43,7 @@ class TestFetchJBBBehaviors:
         result = fetch_jbb_behaviors_dataset()
 
         # Assertions
-        assert isinstance(result, SeedDataset)
+        assert isinstance(result, SeedPromptDataset)
         assert len(result.prompts) == 3
         assert all(isinstance(prompt, SeedPrompt) for prompt in result.prompts)
 
@@ -111,7 +111,7 @@ class TestFetchJBBBehaviors:
         custom_source = "custom/jbb-dataset"
 
         # The function now raises a ValueError which is caught and re-raised as a generic Exception.
-        with pytest.raises(Exception, match="Error loading JBB-Behaviors dataset: SeedDataset cannot be empty."):
+        with pytest.raises(Exception, match="Error loading JBB-Behaviors dataset: SeedPromptDataset cannot be empty."):
             fetch_jbb_behaviors_dataset(source=custom_source)
 
         mock_load_dataset.assert_called_once_with(custom_source, "behaviors", cache_dir=None)
@@ -272,13 +272,13 @@ class TestFilteringFunctions:
                 dataset_name="test",
             ),
         ]
-        mock_dataset = SeedDataset(prompts=mock_prompts)
+        mock_dataset = SeedPromptDataset(prompts=mock_prompts)
         mock_fetch_all.return_value = mock_dataset
 
         # Test filtering
         result = fetch_jbb_behaviors_by_harm_category("hate")
 
-        assert isinstance(result, SeedDataset)
+        assert isinstance(result, SeedPromptDataset)
         assert len(result.prompts) == 2  # Two prompts contain "hate"
         assert all("hate" in prompt.harm_categories for prompt in result.prompts)
 
@@ -294,7 +294,7 @@ class TestFilteringFunctions:
                 dataset_name="test",
             ),
         ]
-        mock_dataset = SeedDataset(prompts=mock_prompts)
+        mock_dataset = SeedPromptDataset(prompts=mock_prompts)
         mock_fetch_all.return_value = mock_dataset
 
         # Test case insensitive matching
@@ -325,13 +325,13 @@ class TestFilteringFunctions:
                 metadata={"jbb_category": "hate"},
             ),
         ]
-        mock_dataset = SeedDataset(prompts=mock_prompts)
+        mock_dataset = SeedPromptDataset(prompts=mock_prompts)
         mock_fetch_all.return_value = mock_dataset
 
         # Test filtering by JBB category
         result = fetch_jbb_behaviors_by_jbb_category("violence")
 
-        assert isinstance(result, SeedDataset)
+        assert isinstance(result, SeedPromptDataset)
         assert len(result.prompts) == 1
         assert result.prompts[0].metadata["jbb_category"] == "violence"
 
@@ -356,8 +356,8 @@ class TestFilteringFunctions:
                 metadata={"jbb_category": "other"},
             ),
         ]
-        mock_dataset = SeedDataset(prompts=mock_prompts)
+        mock_dataset = SeedPromptDataset(prompts=mock_prompts)
         mock_fetch_all.return_value = mock_dataset
 
-        with pytest.raises(ValueError, match="SeedDataset cannot be empty."):
+        with pytest.raises(ValueError, match="SeedPromptDataset cannot be empty."):
             fetch_jbb_behaviors_by_jbb_category("violence")

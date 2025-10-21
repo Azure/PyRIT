@@ -127,7 +127,7 @@ class TestSkeletonKeyAttackInitialization:
 
         assert attack._skeleton_key_prompt == custom_prompt
 
-    @patch("pyrit.executor.attack.single_turn.skeleton_key.SeedDataset.from_yaml_file")
+    @patch("pyrit.executor.attack.single_turn.skeleton_key.SeedPromptDataset.from_yaml_file")
     def test_init_loads_default_skeleton_key_prompt_when_none_provided(self, mock_dataset, mock_target):
         """Test that default skeleton key prompt is loaded when none is provided."""
         mock_seed_prompt = MagicMock()
@@ -179,7 +179,7 @@ class TestSkeletonKeyPromptLoading:
 
         assert result == custom_prompt
 
-    @patch("pyrit.executor.attack.single_turn.skeleton_key.SeedDataset.from_yaml_file")
+    @patch("pyrit.executor.attack.single_turn.skeleton_key.SeedPromptDataset.from_yaml_file")
     def test_load_skeleton_key_prompt_from_default_file(self, mock_dataset, mock_target):
         """Test loading skeleton key prompt from default file."""
         mock_seed_prompt = MagicMock()
@@ -195,7 +195,7 @@ class TestSkeletonKeyPromptLoading:
         assert result == "Default prompt from file"
         mock_dataset.assert_called_once_with(SkeletonKeyAttack.DEFAULT_SKELETON_KEY_PROMPT_PATH)
 
-    @patch("pyrit.executor.attack.single_turn.skeleton_key.SeedDataset.from_yaml_file")
+    @patch("pyrit.executor.attack.single_turn.skeleton_key.SeedPromptDataset.from_yaml_file")
     def test_load_skeleton_key_prompt_handles_empty_string(self, mock_dataset, mock_target):
         """Test that empty string triggers loading from default file."""
         mock_seed_prompt = MagicMock()

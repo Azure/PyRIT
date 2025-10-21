@@ -29,7 +29,7 @@ datasets:
 
 - **Type**: List of strings
 - **Required**: Yes
-- **Description**: Paths to YAML files containing seed prompts. Each file should follow the `SeedDataset` format.
+- **Description**: Paths to YAML files containing seed prompts. Each file should follow the `SeedPromptDataset` format.
 
 ## Scenarios
 

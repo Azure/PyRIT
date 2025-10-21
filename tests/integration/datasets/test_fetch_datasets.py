@@ -32,7 +32,7 @@ from pyrit.datasets import (
     fetch_wmdp_dataset,
     fetch_xstest_dataset,
 )
-from pyrit.models import SeedDataset
+from pyrit.models import SeedPromptDataset
 
 
 @pytest.mark.parametrize(
@@ -69,7 +69,7 @@ def test_fetch_datasets(fetch_function, is_seed_prompt_dataset):
 
     assert data is not None
     if is_seed_prompt_dataset:
-        assert isinstance(data, SeedDataset)
+        assert isinstance(data, SeedPromptDataset)
         assert len(data.prompts) > 0
 
 
@@ -84,7 +84,7 @@ async def test_fetch_multimodal_datasets(fetch_function, number_of_prompts):
     data = await fetch_function()
 
     assert data is not None
-    assert isinstance(data, SeedDataset)
+    assert isinstance(data, SeedPromptDataset)
     assert len(data.prompts) == number_of_prompts
 
 
@@ -94,7 +94,7 @@ def test_fetch_jbb_behaviors_by_harm_category():
     try:
         # Filter for a common category to ensure we get results
         violence_prompts = fetch_jbb_behaviors_by_harm_category("violence")
-        assert isinstance(violence_prompts, SeedDataset)
+        assert isinstance(violence_prompts, SeedPromptDataset)
         assert len(violence_prompts.prompts) > 0
     except Exception as e:
         pytest.skip(f"Integration test skipped due to: {e}")
@@ -106,7 +106,7 @@ def test_fetch_jbb_behaviors_by_jbb_category():
     try:
         # Filter for a common category to ensure we get results
         hate_prompts = fetch_jbb_behaviors_by_jbb_category("Disinformation")
-        assert isinstance(hate_prompts, SeedDataset)
+        assert isinstance(hate_prompts, SeedPromptDataset)
         assert len(hate_prompts.prompts) > 0
     except Exception as e:
         pytest.skip(f"Integration test skipped due to: {e}")

@@ -3,12 +3,12 @@
 
 from datasets import load_dataset
 
-from pyrit.models import SeedDataset, SeedPrompt
+from pyrit.models import SeedPrompt, SeedPromptDataset
 
 
-def fetch_librAI_do_not_answer_dataset() -> SeedDataset:
+def fetch_librAI_do_not_answer_dataset() -> SeedPromptDataset:
     """
-    Fetch the LibrAI 'Do Not Answer' dataset and return it as a SeedDataset.
+    Fetch the LibrAI 'Do Not Answer' dataset and return it as a SeedPromptDataset.
 
     Relevant Columns:
     - "risk_area"
@@ -17,7 +17,7 @@ def fetch_librAI_do_not_answer_dataset() -> SeedDataset:
     - "question"
 
     Returns:
-        SeedDataset: A SeedDataset containing the examples.
+        SeedPromptDataset: A SeedPromptDataset containing the examples.
 
     Note: For more info
     - Paper       - https://arxiv.org/abs/2308.13387
@@ -43,5 +43,5 @@ def fetch_librAI_do_not_answer_dataset() -> SeedDataset:
         for entry in data
     ]
 
-    # Create a SeedDataset from the list of SeedPrompt instances
-    return SeedDataset(prompts=seed_prompts)
+    # Create a SeedPromptDataset from the list of SeedPrompt instances
+    return SeedPromptDataset(prompts=seed_prompts)

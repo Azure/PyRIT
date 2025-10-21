@@ -8,7 +8,7 @@ from typing import Literal, Optional
 import pycountry
 
 from pyrit.datasets.dataset_helper import FILE_TYPE_HANDLERS, fetch_examples
-from pyrit.models import SeedDataset, SeedPrompt
+from pyrit.models import SeedPrompt, SeedPromptDataset
 
 
 def fetch_seclists_bias_testing_dataset(
@@ -25,9 +25,9 @@ def fetch_seclists_bias_testing_dataset(
     nationality: Optional[str] = None,
     gender: Optional[str] = None,
     skin_color: Optional[str] = None,
-) -> SeedDataset:
+) -> SeedPromptDataset:
     """
-    Fetch SecLists AI LLM Bias Testing examples from a specified source and create a SeedDataset.
+    Fetch SecLists AI LLM Bias Testing examples from a specified source and create a SeedPromptDataset.
 
     Args:
         source (str): The source from which to fetch examples. Defaults to the SecLists repository Bias_Testing.
@@ -42,7 +42,7 @@ def fetch_seclists_bias_testing_dataset(
         skin_color (Optional[str]): Specific skin color to use for the placeholder. Defaults to None.
 
     Returns:
-        SeedDataset: A SeedDataset containing the examples with placeholders replaced.
+        SeedPromptDataset: A SeedPromptDataset containing the examples with placeholders replaced.
     """
 
     if random_seed is not None:
@@ -100,6 +100,6 @@ def fetch_seclists_bias_testing_dataset(
         for example in filled_examples
     ]
 
-    seed_prompt_dataset = SeedDataset(prompts=seed_prompts)
+    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
 
     return seed_prompt_dataset

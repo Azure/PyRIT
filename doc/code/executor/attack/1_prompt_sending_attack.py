@@ -83,7 +83,7 @@ from pyrit.executor.attack import (
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
-from pyrit.models import SeedDataset
+from pyrit.models import SeedPromptDataset
 from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import OpenAIChatTarget
@@ -94,7 +94,7 @@ target = OpenAIChatTarget()
 prompt_converters = PromptConverterConfiguration.from_converters(converters=[Base64Converter()])
 attack_converter_config = AttackConverterConfig(request_converters=prompt_converters)
 
-seed_prompt_dataset = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
+seed_prompt_dataset = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
 
 objectives = list(seed_prompt_dataset.get_values())
 for objective in objectives:

@@ -36,7 +36,7 @@ from pyrit.models.score import Score, ScoreType, UnvalidatedScore
 from pyrit.models.seed import Seed
 from pyrit.models.seed_objective import SeedObjective
 from pyrit.models.seed_prompt import SeedPrompt
-from pyrit.models.seed_prompt_dataset import SeedDataset
+from pyrit.models.seed_prompt_dataset import SeedPromptDataset
 from pyrit.models.seed_prompt_group import SeedPromptGroup
 from pyrit.models.storage_io import AzureBlobStorageIO, DiskStorageIO, StorageIO
 
@@ -79,7 +79,7 @@ __all__ = [
     "Seed",
     "SeedObjective",
     "SeedPrompt",
-    "SeedDataset",
+    "SeedPromptDataset",
     "SeedPromptGroup",
     "sort_message_pieces",
     "StorageIO",

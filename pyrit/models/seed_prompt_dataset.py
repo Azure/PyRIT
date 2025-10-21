@@ -23,9 +23,9 @@ from pyrit.models.seed_prompt_group import SeedPromptGroup
 logger = logging.getLogger(__name__)
 
 
-class SeedDataset(YamlLoadable):
+class SeedPromptDataset(YamlLoadable):
     """
-    SeedDataset manages seed prompts plus optional top-level defaults.
+    SeedPromptDataset manages seed prompts plus optional top-level defaults.
     Prompts are stored as a Sequence[Seed], so references to prompt properties
     are straightforward (e.g. ds.prompts[0].value).
     """
@@ -70,7 +70,7 @@ class SeedDataset(YamlLoadable):
         if prompts is None:
             prompts = []
         if not prompts:
-            raise ValueError("SeedDataset cannot be empty.")
+            raise ValueError("SeedPromptDataset cannot be empty.")
 
         # Store top-level fields
         self.data_type = data_type
@@ -159,9 +159,9 @@ class SeedDataset(YamlLoadable):
         return random.sample(prompts, min(len(prompts), number))
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SeedDataset":
+    def from_dict(cls, data: Dict[str, Any]) -> "SeedPromptDataset":
         """
-        Builds a SeedDataset by merging top-level defaults into each item in 'prompts'.
+        Builds a SeedPromptDataset by merging top-level defaults into each item in 'prompts'.
         """
         # Pop out the prompts section
         prompts_data = data.pop("prompts", [])
@@ -196,7 +196,7 @@ class SeedDataset(YamlLoadable):
             if "prompt_group_id" in prompt:
                 raise ValueError("prompt_group_id should not be set in prompt data")
 
-        SeedDataset._set_seed_prompt_group_id_by_alias(seed_prompts=merged_prompts)
+        SeedPromptDataset._set_seed_prompt_group_id_by_alias(seed_prompts=merged_prompts)
 
         # Now create the dataset with the newly merged prompt dicts
         return cls(prompts=merged_prompts, **dataset_defaults)
@@ -205,7 +205,7 @@ class SeedDataset(YamlLoadable):
         """Renders self.value as a template, applying provided parameters in kwargs
 
         Args:
-            kwargs:Key-value pairs to replace in the SeedDataset value.
+            kwargs:Key-value pairs to replace in the SeedPromptDataset value.
 
         Returns:
             None
@@ -269,4 +269,4 @@ class SeedDataset(YamlLoadable):
         return seed_prompt_groups
 
     def __repr__(self):
-        return f"<SeedDataset(prompts={len(self.prompts)} prompts)>"
+        return f"<SeedPromptDataset(prompts={len(self.prompts)} prompts)>"

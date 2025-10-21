@@ -3,14 +3,14 @@
 
 from datasets import load_dataset
 
-from pyrit.models import SeedDataset, SeedPrompt
+from pyrit.models import SeedPrompt, SeedPromptDataset
 
 
-def fetch_forbidden_questions_dataset() -> SeedDataset:
+def fetch_forbidden_questions_dataset() -> SeedPromptDataset:
     """
-    Fetch Forbidden question dataset and return it as a SeedDataset
+    Fetch Forbidden question dataset and return it as a SeedPromptDataset
 
-    Returns: SeedDataset
+    Returns: SeedPromptDataset
 
     Note: For more info
         Paper - https://arxiv.org/abs/2308.03825
@@ -39,5 +39,5 @@ def fetch_forbidden_questions_dataset() -> SeedDataset:
         for item in data["train"]
     ]
 
-    seed_prompt_dataset = SeedDataset(prompts=seed_prompts)
+    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
     return seed_prompt_dataset

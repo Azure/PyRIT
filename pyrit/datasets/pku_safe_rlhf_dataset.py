@@ -5,7 +5,7 @@ from typing import List, Literal, Optional
 
 from datasets import load_dataset
 
-from pyrit.models import SeedDataset, SeedPrompt
+from pyrit.models import SeedPrompt, SeedPromptDataset
 
 
 def fetch_pku_safe_rlhf_dataset(
@@ -35,9 +35,9 @@ def fetch_pku_safe_rlhf_dataset(
             ]
         ]
     ] = None,
-) -> SeedDataset:
+) -> SeedPromptDataset:
     """
-    Fetch PKU-SafeRLHF examples and create a SeedDataset.
+    Fetch PKU-SafeRLHF examples and create a SeedPromptDataset.
 
     Args:
         include_safe_prompts (bool): All prompts in the dataset are returned if True; the dataset has
@@ -47,7 +47,7 @@ def fetch_pku_safe_rlhf_dataset(
             Otherwise, only prompts with at least one matching category are included.
 
     Returns:
-        SeedDataset: A SeedDataset containing the examples.
+        SeedPromptDataset: A SeedPromptDataset containing the examples.
 
     Note:
         For more information and access to the original dataset and related materials, visit:
@@ -91,5 +91,5 @@ def fetch_pku_safe_rlhf_dataset(
                 )
             )
 
-    seed_prompt_dataset = SeedDataset(prompts=seed_prompts)
+    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
     return seed_prompt_dataset

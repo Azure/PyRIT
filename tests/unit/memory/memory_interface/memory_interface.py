@@ -37,8 +37,8 @@ from pyrit.models import (
     Message,
     MessagePiece,
     Score,
-    SeedDataset,
     SeedPrompt,
+    SeedPromptDataset,
     SeedPromptGroup,
     StorageIO,
     data_serializer_factory,
@@ -781,7 +781,7 @@ class MemoryInterface(abc.ABC):
 
     def get_seed_prompt_dataset_names(self) -> Sequence[str]:
         """
-        Returns a list of all seed dataset names in the memory storage.
+        Returns a list of all seed prompt dataset names in the memory storage.
         """
         try:
             entries: Sequence[SeedPromptEntry] = self._query_entries(
@@ -876,7 +876,7 @@ class MemoryInterface(abc.ABC):
             groups=groups,
             source=source,
         )
-        seed_prompt_groups = SeedDataset.group_seed_prompts_by_prompt_group_id(seed_prompts)
+        seed_prompt_groups = SeedPromptDataset.group_seed_prompts_by_prompt_group_id(seed_prompts)
         return seed_prompt_groups
 
     def export_conversations(

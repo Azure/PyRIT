@@ -8,7 +8,7 @@ import pytest
 from pyrit.datasets import (
     fetch_equitymedqa_dataset_unique_values,
 )
-from pyrit.models import SeedDataset
+from pyrit.models import SeedPromptDataset
 
 
 @pytest.fixture
@@ -51,7 +51,7 @@ def test_get_sub_dataset(mock_load_dataset, mock_equitymedqa_data):
     subset_name = "cc_manual"
     dataset = fetch_equitymedqa_dataset_unique_values(subset_name)
 
-    assert isinstance(dataset, SeedDataset)
+    assert isinstance(dataset, SeedPromptDataset)
     assert len(dataset.prompts) == 2
 
     prompt_list = [dataset.prompts[0].value, dataset.prompts[1].value]
@@ -66,7 +66,7 @@ def test_fetch_equitymedqa_dataset_unique_values_all(mock_load_dataset, mock_equ
     # Test fetching all subsets
     dataset = fetch_equitymedqa_dataset_unique_values()
 
-    assert isinstance(dataset, SeedDataset)
+    assert isinstance(dataset, SeedPromptDataset)
     assert len(dataset.prompts) == 13
 
 

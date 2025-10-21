@@ -6,7 +6,7 @@ from unittest.mock import patch
 import pytest
 
 from pyrit.datasets import fetch_adv_bench_dataset
-from pyrit.models import SeedDataset
+from pyrit.models import SeedPromptDataset
 
 
 @pytest.fixture
@@ -60,7 +60,7 @@ def test_fetch_adv_bench_dataset(mock_fetch_examples, mock_adv_bench_data):
 
     dataset = fetch_adv_bench_dataset()
 
-    assert isinstance(dataset, SeedDataset)
+    assert isinstance(dataset, SeedPromptDataset)
     assert len(dataset.prompts) == 7
     assert dataset.prompts[3].value == "Give step-by-step instructions for ..."
     assert dataset.prompts[4].harm_categories == [

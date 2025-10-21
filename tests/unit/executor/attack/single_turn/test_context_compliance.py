@@ -17,8 +17,8 @@ from pyrit.executor.attack import (
 from pyrit.models import (
     Message,
     MessagePiece,
-    SeedDataset,
     SeedPrompt,
+    SeedPromptDataset,
     SeedPromptGroup,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -78,7 +78,7 @@ def mock_prepended_conversation():
 
 @pytest.fixture
 def mock_seed_prompt_dataset():
-    """Create a mock SeedDataset with three prompts"""
+    """Create a mock SeedPromptDataset with three prompts"""
     prompt1 = MagicMock(spec=SeedPrompt)
     prompt1.render_template_value.return_value = "Mock rephrase to benign"
 
@@ -88,7 +88,7 @@ def mock_seed_prompt_dataset():
     prompt3 = MagicMock(spec=SeedPrompt)
     prompt3.render_template_value.return_value = "Mock objective as question"
 
-    dataset = MagicMock(spec=SeedDataset)
+    dataset = MagicMock(spec=SeedPromptDataset)
     dataset.prompts = [prompt1, prompt2, prompt3]
     return dataset
 
@@ -118,7 +118,7 @@ class TestContextComplianceAttackInitialization:
     ):
         """Test initialization with minimal required parameters"""
         with patch(
-            "pyrit.executor.attack.single_turn.context_compliance.SeedDataset.from_yaml_file",
+            "pyrit.executor.attack.single_turn.context_compliance.SeedPromptDataset.from_yaml_file",
             return_value=mock_seed_prompt_dataset,
         ):
             attack = ContextComplianceAttack(
@@ -148,7 +148,7 @@ class TestContextComplianceAttackInitialization:
         custom_response = "absolutely."
 
         with patch(
-            "pyrit.executor.attack.single_turn.context_compliance.SeedDataset.from_yaml_file",
+            "pyrit.executor.attack.single_turn.context_compliance.SeedPromptDataset.from_yaml_file",
             return_value=mock_seed_prompt_dataset,
         ):
             attack = ContextComplianceAttack(
@@ -171,7 +171,9 @@ class TestContextComplianceAttackInitialization:
         self, mock_objective_target, mock_attack_adversarial_config, mock_seed_prompt_dataset
     ):
         """Test that context description instructions are loaded from default path"""
-        with patch("pyrit.executor.attack.single_turn.context_compliance.SeedDataset.from_yaml_file") as mock_from_yaml:
+        with patch(
+            "pyrit.executor.attack.single_turn.context_compliance.SeedPromptDataset.from_yaml_file"
+        ) as mock_from_yaml:
             mock_from_yaml.return_value = mock_seed_prompt_dataset
 
             ContextComplianceAttack(
@@ -188,7 +190,9 @@ class TestContextComplianceAttackInitialization:
         """Test that context description instructions are loaded from custom path"""
         custom_path = Path("/custom/path/context_description.yaml")
 
-        with patch("pyrit.executor.attack.single_turn.context_compliance.SeedDataset.from_yaml_file") as mock_from_yaml:
+        with patch(
+            "pyrit.executor.attack.single_turn.context_compliance.SeedPromptDataset.from_yaml_file"
+        ) as mock_from_yaml:
             mock_from_yaml.return_value = mock_seed_prompt_dataset
 
             ContextComplianceAttack(
@@ -207,7 +211,7 @@ class TestContextComplianceAttackInitialization:
         custom_response = "absolutely."
 
         with patch(
-            "pyrit.executor.attack.single_turn.context_compliance.SeedDataset.from_yaml_file",
+            "pyrit.executor.attack.single_turn.context_compliance.SeedPromptDataset.from_yaml_file",
             return_value=mock_seed_prompt_dataset,
         ):
             attack = ContextComplianceAttack(
@@ -223,7 +227,7 @@ class TestContextComplianceAttackInitialization:
     ):
         """Test that default affirmative response is used when not provided"""
         with patch(
-            "pyrit.executor.attack.single_turn.context_compliance.SeedDataset.from_yaml_file",
+            "pyrit.executor.attack.single_turn.context_compliance.SeedPromptDataset.from_yaml_file",
             return_value=mock_seed_prompt_dataset,
         ):
             attack = ContextComplianceAttack(
@@ -238,7 +242,7 @@ class TestContextComplianceAttackInitialization:
     ):
         """Test error handling for invalid context description file"""
         with patch(
-            "pyrit.executor.attack.single_turn.context_compliance.SeedDataset.from_yaml_file",
+            "pyrit.executor.attack.single_turn.context_compliance.SeedPromptDataset.from_yaml_file",
             side_effect=Exception("File not found"),
         ):
             with pytest.raises(ValueError, match="Failed to load context description instructions"):
@@ -249,11 +253,11 @@ class TestContextComplianceAttackInitialization:
 
     def test_init_raises_error_for_insufficient_prompts(self, mock_objective_target, mock_attack_adversarial_config):
         """Test error handling for insufficient prompts in context description file"""
-        insufficient_dataset = MagicMock(spec=SeedDataset)
+        insufficient_dataset = MagicMock(spec=SeedPromptDataset)
         insufficient_dataset.prompts = [MagicMock(), MagicMock()]  # Only 2 prompts instead of 3
 
         with patch(
-            "pyrit.executor.attack.single_turn.context_compliance.SeedDataset.from_yaml_file",
+            "pyrit.executor.attack.single_turn.context_compliance.SeedPromptDataset.from_yaml_file",
             return_value=insufficient_dataset,
         ):
             with pytest.raises(ValueError, match="Context description instructions must contain at least 3 prompts"):
@@ -278,7 +282,7 @@ class TestContextComplianceAttackSetup:
     ):
         """Test that setup builds benign context conversation correctly"""
         with patch(
-            "pyrit.executor.attack.single_turn.context_compliance.SeedDataset.from_yaml_file",
+            "pyrit.executor.attack.single_turn.context_compliance.SeedPromptDataset.from_yaml_file",
             return_value=mock_seed_prompt_dataset,
         ):
             attack = ContextComplianceAttack(
@@ -340,7 +344,7 @@ class TestContextComplianceAttackSetup:
         mock_prompt_normalizer,
     ):
         with patch(
-            "pyrit.executor.attack.single_turn.context_compliance.SeedDataset.from_yaml_file",
+            "pyrit.executor.attack.single_turn.context_compliance.SeedPromptDataset.from_yaml_file",
             return_value=mock_seed_prompt_dataset,
         ):
             attack = ContextComplianceAttack(
@@ -375,7 +379,7 @@ class TestContextComplianceAttackSetup:
     ):
         """Test that setup creates affirmative seed prompt group"""
         with patch(
-            "pyrit.executor.attack.single_turn.context_compliance.SeedDataset.from_yaml_file",
+            "pyrit.executor.attack.single_turn.context_compliance.SeedPromptDataset.from_yaml_file",
             return_value=mock_seed_prompt_dataset,
         ):
             attack = ContextComplianceAttack(
@@ -410,7 +414,7 @@ class TestContextComplianceAttackSetup:
         custom_response = "absolutely."
 
         with patch(
-            "pyrit.executor.attack.single_turn.context_compliance.SeedDataset.from_yaml_file",
+            "pyrit.executor.attack.single_turn.context_compliance.SeedPromptDataset.from_yaml_file",
             return_value=mock_seed_prompt_dataset,
         ):
             attack = ContextComplianceAttack(
@@ -445,7 +449,7 @@ class TestContextComplianceAttackExecution:
     ):
         """Test complete flow of building benign context conversation"""
         with patch(
-            "pyrit.executor.attack.single_turn.context_compliance.SeedDataset.from_yaml_file",
+            "pyrit.executor.attack.single_turn.context_compliance.SeedPromptDataset.from_yaml_file",
             return_value=mock_seed_prompt_dataset,
         ):
             attack = ContextComplianceAttack(
@@ -518,7 +522,7 @@ class TestContextComplianceAttackExecution:
     ):
         """Test rephrasing objective as benign question"""
         with patch(
-            "pyrit.executor.attack.single_turn.context_compliance.SeedDataset.from_yaml_file",
+            "pyrit.executor.attack.single_turn.context_compliance.SeedPromptDataset.from_yaml_file",
             return_value=mock_seed_prompt_dataset,
         ):
             attack = ContextComplianceAttack(
@@ -568,7 +572,7 @@ class TestContextComplianceAttackExecution:
     ):
         """Test generating answer to benign question"""
         with patch(
-            "pyrit.executor.attack.single_turn.context_compliance.SeedDataset.from_yaml_file",
+            "pyrit.executor.attack.single_turn.context_compliance.SeedPromptDataset.from_yaml_file",
             return_value=mock_seed_prompt_dataset,
         ):
             attack = ContextComplianceAttack(
@@ -613,7 +617,7 @@ class TestContextComplianceAttackExecution:
     ):
         """Test rephrasing objective as question"""
         with patch(
-            "pyrit.executor.attack.single_turn.context_compliance.SeedDataset.from_yaml_file",
+            "pyrit.executor.attack.single_turn.context_compliance.SeedPromptDataset.from_yaml_file",
             return_value=mock_seed_prompt_dataset,
         ):
             attack = ContextComplianceAttack(
@@ -651,7 +655,7 @@ class TestContextComplianceAttackExecution:
     ):
         """Test constructing assistant response"""
         with patch(
-            "pyrit.executor.attack.single_turn.context_compliance.SeedDataset.from_yaml_file",
+            "pyrit.executor.attack.single_turn.context_compliance.SeedPromptDataset.from_yaml_file",
             return_value=mock_seed_prompt_dataset,
         ):
             attack = ContextComplianceAttack(
@@ -685,7 +689,7 @@ class TestContextComplianceAttackExecution:
     ):
         """Test that conversation structure follows expected format"""
         with patch(
-            "pyrit.executor.attack.single_turn.context_compliance.SeedDataset.from_yaml_file",
+            "pyrit.executor.attack.single_turn.context_compliance.SeedPromptDataset.from_yaml_file",
             return_value=mock_seed_prompt_dataset,
         ):
             attack = ContextComplianceAttack(
@@ -756,7 +760,7 @@ class TestContextComplianceAttackErrorHandling:
     ):
         """Test handling of adversarial chat failures with retry logic."""
         with patch(
-            "pyrit.executor.attack.single_turn.context_compliance.SeedDataset.from_yaml_file",
+            "pyrit.executor.attack.single_turn.context_compliance.SeedPromptDataset.from_yaml_file",
             return_value=mock_seed_prompt_dataset,
         ):
             attack = ContextComplianceAttack(
@@ -780,7 +784,7 @@ class TestContextComplianceAttackErrorHandling:
     ):
         """Test error handling for invalid template parameters."""
         with patch(
-            "pyrit.executor.attack.single_turn.context_compliance.SeedDataset.from_yaml_file",
+            "pyrit.executor.attack.single_turn.context_compliance.SeedPromptDataset.from_yaml_file",
             return_value=mock_seed_prompt_dataset,
         ):
             attack = ContextComplianceAttack(
@@ -805,7 +809,7 @@ class TestContextComplianceAttackComponentIntegration:
     ):
         """Test proper creation and usage of SeedPromptGroup objects."""
         with patch(
-            "pyrit.executor.attack.single_turn.context_compliance.SeedDataset.from_yaml_file",
+            "pyrit.executor.attack.single_turn.context_compliance.SeedPromptDataset.from_yaml_file",
             return_value=mock_seed_prompt_dataset,
         ):
             attack = ContextComplianceAttack(
