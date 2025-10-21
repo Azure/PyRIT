@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from pyrit.executor.attack import ObjectiveEvaluator
-from pyrit.models.score import Score
+from pyrit.models import Score
 from pyrit.score import Scorer
 
 
@@ -29,7 +29,7 @@ def true_false_score_true() -> Score:
         score_value_description="Test true score",
         score_rationale="This is a true score rationale",
         score_metadata={},
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
         scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
     )
 
@@ -44,7 +44,7 @@ def true_false_score_false() -> Score:
         score_value_description="Test false score",
         score_rationale="This is a false score rationale",
         score_metadata={},
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
         scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
     )
 
@@ -59,7 +59,7 @@ def float_scale_score_high() -> Score:
         score_value_description="High float score",
         score_rationale="This is a high score rationale",
         score_metadata={},
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
         scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
     )
 
@@ -74,7 +74,7 @@ def float_scale_score_low() -> Score:
         score_value_description="Low float score",
         score_rationale="This is a low score rationale",
         score_metadata={},
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
         scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
     )
 
@@ -159,7 +159,7 @@ class TestIsObjectiveAchieved:
             score_value_description="Test score",
             score_rationale="Test rationale",
             score_metadata={},
-            prompt_request_response_id=str(uuid.uuid4()),
+            message_piece_id=str(uuid.uuid4()),
             scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
         )
 
@@ -190,7 +190,7 @@ class TestIsObjectiveAchieved:
             score_value_description="Test score",
             score_rationale="Test rationale",
             score_metadata={},
-            prompt_request_response_id=str(uuid.uuid4()),
+            message_piece_id=str(uuid.uuid4()),
             scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
         )
 
@@ -246,7 +246,7 @@ class TestGetFeedback:
             score_value_description="Test score",
             score_rationale="",  # Empty rationale
             score_metadata={},
-            prompt_request_response_id=str(uuid.uuid4()),
+            message_piece_id=str(uuid.uuid4()),
             scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
         )
 
@@ -288,7 +288,7 @@ class TestEdgeCases:
             score_value_description="Just above threshold",
             score_rationale="Score is slightly above the threshold",
             score_metadata={},
-            prompt_request_response_id=str(uuid.uuid4()),
+            message_piece_id=str(uuid.uuid4()),
             scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
         )
 
@@ -303,7 +303,7 @@ class TestEdgeCases:
             score_value_description="Just below threshold",
             score_rationale="Score is slightly below the threshold",
             score_metadata={},
-            prompt_request_response_id=str(uuid.uuid4()),
+            message_piece_id=str(uuid.uuid4()),
             scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
         )
 
@@ -332,7 +332,7 @@ class TestEdgeCases:
                 score_value_description=f"Score: {score_value}",
                 score_rationale=f"Rationale for score {score_value}",
                 score_metadata={},
-                prompt_request_response_id=str(uuid.uuid4()),
+                message_piece_id=str(uuid.uuid4()),
                 scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
             )
 

@@ -4,9 +4,7 @@
 import uuid
 from typing import Optional
 
-from pyrit.models import PromptRequestPiece, Score
-from pyrit.models.literals import ChatMessageRole
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import ChatMessageRole, Message, MessagePiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
@@ -31,7 +29,7 @@ class TrueFalseInverterScorer(TrueFalseScorer):
 
     async def _score_async(
         self,
-        request_response: PromptRequestResponse,
+        message: Message,
         *,
         objective: Optional[str] = None,
         role_filter: Optional[ChatMessageRole] = None,
@@ -39,7 +37,7 @@ class TrueFalseInverterScorer(TrueFalseScorer):
         """Scores the piece using the underlying true-false scorer and returns the inverted score.
 
         Args:
-            request_response (PromptRequestResponse): The prompt request response to score.
+            message (Message): The message to score.
             objective (Optional[str]): The objective to evaluate against (the original attacker model's objective).
                 Defaults to None.
             role_filter (Optional[ChatMessageRole]): Optional filter for message roles. Defaults to None.
@@ -48,7 +46,7 @@ class TrueFalseInverterScorer(TrueFalseScorer):
             list[Score]: A list containing a single Score object with the inverted true/false value.
         """
         scores = await self._scorer.score_async(
-            request_response,
+            message,
             objective=objective,
             role_filter=role_filter,
         )
@@ -68,13 +66,11 @@ class TrueFalseInverterScorer(TrueFalseScorer):
 
         return [inv_score]
 
-    async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """True False Inverter scorers do not support piecewise scoring.
 
         Args:
-            request_piece (PromptRequestPiece): Unused.
+            message_piece (MessagePiece): Unused.
             objective (Optional[str]): Unused.
 
         Raises:

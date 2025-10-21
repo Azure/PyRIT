@@ -20,7 +20,7 @@ from pyrit.executor.promptgen.core import (
     PromptGeneratorStrategyResult,
 )
 from pyrit.models import (
-    PromptRequestResponse,
+    Message,
     SeedPrompt,
     SeedPromptGroup,
 )
@@ -63,10 +63,10 @@ class AnecdoctorResult(PromptGeneratorStrategyResult):
     Contains the generated content from the misinformation prompt generation.
 
     Args:
-        generated_content (PromptRequestResponse): The generated content from the prompt generation.
+        generated_content (Message): The generated content from the prompt generation.
     """
 
-    generated_content: PromptRequestResponse
+    generated_content: Message
 
 
 class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorResult]):
@@ -246,7 +246,7 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
 
     async def _send_examples_to_target_async(
         self, *, formatted_examples: str, context: AnecdoctorContext
-    ) -> Optional[PromptRequestResponse]:
+    ) -> Optional[Message]:
         """
         Send the formatted examples to the target model.
 
@@ -258,7 +258,7 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
             context (AnecdoctorContext): The generation context containing conversation metadata.
 
         Returns:
-            Optional[PromptRequestResponse]: The response from the target model,
+            Optional[Message]: The response from the target model,
                 or None if the request failed.
         """
         # Create seed prompt group containing the formatted examples

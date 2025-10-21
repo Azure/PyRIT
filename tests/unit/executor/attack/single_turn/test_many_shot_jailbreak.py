@@ -15,8 +15,8 @@ from pyrit.executor.attack import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
+    MessagePiece,
     SeedPrompt,
 )
 from pyrit.prompt_converter import Base64Converter
@@ -367,9 +367,7 @@ class TestManyShotJailbreakAttackLifecycle:
 
         # Context with prepended conversation (not allowed)
         basic_context.prepended_conversation = [
-            PromptRequestResponse(
-                request_pieces=[PromptRequestPiece(role="user", original_value="Test prepended conversation")]
-            )
+            Message(message_pieces=[MessagePiece(role="user", original_value="Test prepended conversation")])
         ]
 
         attack._setup_async = AsyncMock()

@@ -13,7 +13,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from pyrit.executor.attack import AttackExecutor, AttackStrategy
-from pyrit.models import AttackResult, PromptRequestResponse
+from pyrit.models import AttackResult, Message
 
 logger = logging.getLogger(__name__)
 
@@ -43,8 +43,8 @@ class AttackRun:
         >>> results = await attack_run.run_async(max_concurrency=5)
         >>>
         >>> # With prepended conversation
-        >>> from pyrit.models import PromptRequestResponse
-        >>> conversation = [PromptRequestResponse(...)]
+        >>> from pyrit.models import Message
+        >>> conversation = [Message(...)]
         >>> attack_run = AttackRun(
         ...     attack=attack,
         ...     objectives=objectives,
@@ -58,7 +58,7 @@ class AttackRun:
         *,
         attack: AttackStrategy,
         objectives: List[str],
-        prepended_conversation: Optional[List[PromptRequestResponse]] = None,
+        prepended_conversation: Optional[List[Message]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
         **attack_execute_params: Any,
     ) -> None:
@@ -68,7 +68,7 @@ class AttackRun:
         Args:
             attack (AttackStrategy): The configured attack strategy to execute.
             objectives (List[str]): List of attack objectives to test against.
-            prepended_conversation (Optional[List[PromptRequestResponse]]): Optional
+            prepended_conversation (Optional[List[Message]]): Optional
                 conversation history to prepend to each attack execution.
             memory_labels (Optional[Dict[str, str]]): Additional labels to apply to prompts.
                 These labels help track and categorize the attack run in memory.

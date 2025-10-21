@@ -15,12 +15,12 @@ from pyrit.models.score import Score
 Originator = Literal["attack", "converter", "undefined", "scorer"]
 
 
-class PromptRequestPiece:
+class MessagePiece:
     """Represents a piece of a prompt request to a target.
 
     This class represents a single piece of a prompt request that will be sent
     to a target. Since some targets can handle multiple pieces (e.g., text and images),
-    requests are composed of lists of PromptRequestPiece objects.
+    requests are composed of lists of MessagePiece objects.
     """
 
     def __init__(
@@ -49,7 +49,7 @@ class PromptRequestPiece:
         scores: Optional[List[Score]] = None,
         targeted_harm_categories: Optional[List[str]] = None,
     ):
-        """Initialize a PromptRequestPiece.
+        """Initialize a MessagePiece.
 
         Args:
             role: The role of the prompt (system, assistant, user).
@@ -166,20 +166,20 @@ class PromptRequestPiece:
     def to_chat_message(self) -> ChatMessage:
         return ChatMessage(role=cast(ChatMessageRole, self.role), content=self.converted_value)
 
-    def to_prompt_request_response(self) -> "PromptRequestResponse":  # type: ignore # noqa F821
-        from pyrit.models.prompt_request_response import PromptRequestResponse
+    def to_message(self) -> Message:  # type: ignore # noqa F821
+        from pyrit.models.message import Message
 
-        return PromptRequestResponse([self])  # noqa F821
+        return Message([self])  # noqa F821
 
     def has_error(self) -> bool:
         """
-        Check if the prompt request piece has an error.
+        Check if the message piece has an error.
         """
         return self.response_error != "none"
 
     def is_blocked(self) -> bool:
         """
-        Check if the prompt request piece is blocked.
+        Check if the message piece is blocked.
         """
         return self.response_error == "blocked"
 
@@ -237,16 +237,16 @@ class PromptRequestPiece:
         )
 
 
-def sort_request_pieces(prompt_pieces: list[PromptRequestPiece]) -> list[PromptRequestPiece]:
+def sort_message_pieces(message_pieces: list[MessagePiece]) -> list[MessagePiece]:
     """
     Group by conversation_id.
     Order conversations by the earliest timestamp within each conversation_id.
     Within each conversation, order messages by sequence.
     """
     earliest_timestamps = {
-        convo_id: min(x.timestamp for x in prompt_pieces if x.conversation_id == convo_id)
-        for convo_id in {x.conversation_id for x in prompt_pieces}
+        convo_id: min(x.timestamp for x in message_pieces if x.conversation_id == convo_id)
+        for convo_id in {x.conversation_id for x in message_pieces}
     }
 
     # Sort using the precomputed timestamp values, then by sequence
-    return sorted(prompt_pieces, key=lambda x: (earliest_timestamps[x.conversation_id], x.conversation_id, x.sequence))
+    return sorted(message_pieces, key=lambda x: (earliest_timestamps[x.conversation_id], x.conversation_id, x.sequence))
