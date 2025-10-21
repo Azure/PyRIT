@@ -10,7 +10,7 @@ These are detailed in `.env_example`, and are generally retrievable from the Azu
 
 ## Authenticate with Azure Subscription
 
-There are certain targets that can interact using AAD auth (e.g. most Azure OpenAI targets). To use this, you must authenticate to your Azure subscription. Depending on your operating system, download the appropriate Azure CLI tool from the links provided below:
+There are certain targets that can interact using Entra auth (e.g. most Azure OpenAI targets). To use this, you must authenticate to your Azure subscription. Depending on your operating system, download the appropriate Azure CLI tool from the links provided below:
 
    - Windows OS: [Download link](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-windows?tabs=azure-cli)
    - Linux: [Download link](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-linux?pivots=apt)

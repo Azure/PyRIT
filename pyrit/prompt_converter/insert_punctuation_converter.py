@@ -64,7 +64,7 @@ class InsertPunctuationConverter(PromptConverter):
             punctuation_list (Optional[List[str]]): List of punctuations to use for insertion.
 
         Returns:
-            ConverterResult: The result containing a interation of modified prompts.
+            ConverterResult: The result containing an iteration of modified prompts.
 
         Raises:
             ValueError: If the input type is not supported.

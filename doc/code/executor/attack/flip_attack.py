@@ -5,11 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -19,7 +15,7 @@
 #
 # We replicate the ability to send prompts that match this output: https://github.com/yueliu1999/FlipAttack/blob/main/result/FlipAttack-gpt-4.json. In other words, it sends a system prompt to the target, directing it to unflip the word, and then it flips the malicious prompt.
 #
-# Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../../setup/install_pyrit.md).
+# Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../../index.md#Installation-Guide.
 #
 # The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../../memory/0_memory.md).
 # %%

@@ -15,8 +15,8 @@ from pyrit.exceptions import (
 )
 from pyrit.exceptions.exception_classes import RateLimitException
 from pyrit.models import (
-    PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
+    MessagePiece,
 )
 from pyrit.prompt_target import (
     OpenAITarget,
@@ -50,7 +50,7 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
                 Defaults to the OPENAI_CHAT_KEY environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
-            use_aad_auth (bool, Optional): When set to True, user authentication is used
+            use_entra_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default . Please run `az login` locally
                 to leverage user AuthN.
@@ -95,24 +95,24 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
 
     @limit_requests_per_minute
     @pyrit_target_retry
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         """Asynchronously sends a prompt request and handles the response within a managed conversation context.
 
         Args:
-            prompt_request (PromptRequestResponse): The prompt request response object.
+            prompt_request (Message): The message object.
 
         Returns:
-            PromptRequestResponse: The updated conversation entry with the response from the prompt target.
+            Message: The updated conversation entry with the response from the prompt target.
         """
 
         self._validate_request(prompt_request=prompt_request)
         self.refresh_auth_headers()
 
-        request_piece: PromptRequestPiece = prompt_request.request_pieces[0]
+        message_piece: MessagePiece = prompt_request.message_pieces[0]
 
-        is_json_response = self.is_response_format_json(request_piece)
+        is_json_response = self.is_response_format_json(message_piece)
 
-        conversation = self._memory.get_conversation(conversation_id=request_piece.conversation_id)
+        conversation = self._memory.get_conversation(conversation_id=message_piece.conversation_id)
         conversation.append(prompt_request)
 
         logger.info(f"Sending the following prompt to the prompt target: {prompt_request}")
@@ -148,7 +148,7 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
 
                 return handle_bad_request_exception(
                     response_text=error_response_text,
-                    request=request_piece,
+                    request=message_piece,
                     error_code=StatusError.response.status_code,
                     is_content_filter=is_content_filter,
                 )
@@ -158,23 +158,21 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
                 raise
 
         logger.info(f'Received the following response from the prompt target "{str_response.text}"')
-        response: PromptRequestResponse = self._construct_prompt_response_from_openai_json(
-            open_ai_str_response=str_response.text, request_piece=request_piece
+        response: Message = self._construct_message_from_openai_json(
+            open_ai_str_response=str_response.text, message_piece=message_piece
         )
 
         return response
 
-    async def _construct_request_body(
-        self, conversation: MutableSequence[PromptRequestResponse], is_json_response: bool
-    ) -> dict:
+    async def _construct_request_body(self, conversation: MutableSequence[Message], is_json_response: bool) -> dict:
         raise NotImplementedError
 
-    def _construct_prompt_response_from_openai_json(
+    def _construct_message_from_openai_json(
         self,
         *,
         open_ai_str_response: str,
-        request_piece: PromptRequestPiece,
-    ) -> PromptRequestResponse:
+        message_piece: MessagePiece,
+    ) -> Message:
         raise NotImplementedError
 
     def is_json_response_supported(self) -> bool:

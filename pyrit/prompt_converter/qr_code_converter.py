@@ -5,8 +5,7 @@ from typing import Optional
 
 import segno
 
-from pyrit.models import PromptDataType
-from pyrit.models.data_type_serializer import data_serializer_factory
+from pyrit.models import PromptDataType, data_serializer_factory
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 

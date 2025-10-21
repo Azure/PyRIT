@@ -33,12 +33,13 @@ from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    PromptRequestResponse,
+    ConversationReference,
+    ConversationType,
+    Message,
     Score,
     SeedPrompt,
     SeedPromptGroup,
 )
-from pyrit.models.conversation_reference import ConversationReference, ConversationType
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import (
@@ -282,7 +283,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         self._adversarial_chat.set_system_prompt(
             system_prompt=system_prompt,
             conversation_id=context.session.adversarial_chat_conversation_id,
-            orchestrator_identifier=self.get_identifier(),
+            attack_identifier=self.get_identifier(),
             labels=context.memory_labels,
         )
 
@@ -489,7 +490,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             seed_prompt_group=seed_prompt_group,
             conversation_id=context.session.adversarial_chat_conversation_id,
             target=self._adversarial_chat,
-            orchestrator_identifier=self.get_identifier(),
+            attack_identifier=self.get_identifier(),
             labels=context.memory_labels,
         )
 
@@ -541,7 +542,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         *,
         attack_prompt: str,
         context: CrescendoAttackContext,
-    ) -> PromptRequestResponse:
+    ) -> Message:
         """
         Send the attack prompt to the objective target.
 
@@ -550,7 +551,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             context (CrescendoAttackContext): The attack context.
 
         Returns:
-            PromptRequestResponse: The response from the objective target.
+            Message: The response from the objective target.
 
         Raises:
             ValueError: If no response is received from the objective target.
@@ -567,7 +568,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             conversation_id=context.session.conversation_id,
             request_converter_configurations=self._request_converters,
             response_converter_configurations=self._response_converters,
-            orchestrator_identifier=self.get_identifier(),
+            attack_identifier=self.get_identifier(),
             labels=context.memory_labels,
         )
 
@@ -576,7 +577,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
 
         return response
 
-    async def _check_refusal_async(self, context: CrescendoAttackContext, task: str) -> Score:
+    async def _check_refusal_async(self, context: CrescendoAttackContext, objective: str) -> Score:
         """
         Check if the response indicates a refusal.
 
@@ -590,8 +591,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         if not context.last_response:
             raise ValueError("No response available in context to check for refusal")
 
-        response_piece = context.last_response.get_piece()
-        scores = await self._refusal_scorer.score_async(request_response=response_piece, task=task)
+        scores = await self._refusal_scorer.score_async(message=context.last_response, objective=objective)
         return scores[0]
 
     async def _score_response_async(self, *, context: CrescendoAttackContext) -> Score:
@@ -611,22 +611,20 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         if not context.last_response:
             raise ValueError("No response available in context to score")
 
-        scoring_results = await Scorer.score_response_with_objective_async(
+        scoring_results = await Scorer.score_response_async(
             response=context.last_response,
+            objective_scorer=self._objective_scorer,
             auxiliary_scorers=self._auxiliary_scorers,
-            objective_scorers=[self._objective_scorer],
             role_filter="assistant",
-            task=context.objective,
+            objective=context.objective,
         )
 
-        objective_scores = scoring_results["objective_scores"]
-        if not objective_scores:
+        objective_score = scoring_results["objective_scores"]
+        if not objective_score:
             raise RuntimeError("No objective scores returned from scoring process.")
 
-        score = objective_scores[0]
-
+        score = objective_score[0]
         self._logger.debug(f"Objective score: {score.get_value():.2f} - {score.score_rationale}")
-
         return score
 
     async def _backtrack_memory_async(self, *, conversation_id: str) -> str:
@@ -641,7 +639,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         """
         # Access memory through the conversation manager's memory instance
         new_conversation_id = self._memory.duplicate_conversation_excluding_last_turn(
-            new_orchestrator_id=self.get_identifier()["id"],
+            new_attack_id=self.get_identifier()["id"],
             conversation_id=conversation_id,
         )
         self._logger.debug(f"Backtracked conversation from {conversation_id} to {new_conversation_id}")

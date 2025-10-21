@@ -5,11 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -18,7 +14,7 @@
 # This attack prepends some prompts defined in `role_play_definition`, along with an `adversarial_chat` target LLM to generate the first turns to send. Typically these prompts describe a fictional scenario to attempt and elicit harmful responses.
 # Any converters that you provide will be applied to the prompt that has already been converted by the role play definition (using the provided `adversarial_chat` target). You may see better success if you provide a LLM that has no content moderation or other safety mechanisms. Otherwise, it may refuse to convert the prompt as expected.
 #
-# Before you begin, ensure you have the correct version of PyRIT installed and have secrets configured as described [here](../../../setup/install_pyrit.md).
+# Before you begin, ensure you have the correct version of PyRIT installed and have secrets configured as described [here](../../../index.md#Installation-Guide.
 #
 # The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../../memory/0_memory.md).
 
@@ -37,7 +33,7 @@ from pyrit.executor.attack import (
 from pyrit.prompt_converter import CharSwapConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score.azure_content_filter_scorer import AzureContentFilterScorer
+from pyrit.score import AzureContentFilterScorer
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

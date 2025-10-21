@@ -6,8 +6,7 @@ from uuid import uuid4
 
 from datasets import load_dataset
 
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import SeedPrompt, SeedPromptDataset
 
 
 def fetch_red_team_social_bias_dataset() -> SeedPromptDataset:

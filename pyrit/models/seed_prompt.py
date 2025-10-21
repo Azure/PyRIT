@@ -187,7 +187,7 @@ class SeedPrompt(YamlLoadable):
         This method sets the encoding data for the prompt within metadata dictionary. For images, this is just the
         file format. For audio and video, this also includes bitrate (kBits/s as int), samplerate (samples/second
         as int), bitdepth (as int), filesize (bytes as int), and duration (seconds as int) if the file type is
-        supported by TinyTag. Example suppported file types include: MP3, MP4, M4A, and WAV.
+        supported by TinyTag. Example supported file types include: MP3, MP4, M4A, and WAV.
         """
         if self.data_type not in ["audio_path", "video_path", "image_path"]:
             return

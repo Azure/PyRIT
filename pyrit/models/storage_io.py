@@ -215,7 +215,7 @@ class AzureBlobStorageIO(StorageIO):
         Asynchronously reads the content of a file (blob) from Azure Blob Storage.
 
         If the provided `path` is a full URL
-        (e.g., "https://<Azure STorage Account>.blob.core.windows.net/<container name>/dir1/dir2/sample.png"),
+        (e.g., "https://account.blob.core.windows.net/container/dir1/dir2/sample.png"),
         it extracts the relative blob path (e.g., "dir1/dir2/sample.png") to correctly access the blob.
         If a relative path is provided, it will use it as-is.
 

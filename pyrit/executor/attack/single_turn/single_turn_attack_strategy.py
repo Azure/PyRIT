@@ -12,7 +12,7 @@ from typing import List, Optional, Union, overload
 from pyrit.common.logger import logger
 from pyrit.common.utils import get_kwarg_param
 from pyrit.executor.attack.core import AttackContext, AttackStrategy
-from pyrit.models import AttackResult, PromptRequestResponse, SeedPromptGroup
+from pyrit.models import AttackResult, Message, SeedPromptGroup
 
 
 @dataclass
@@ -54,7 +54,7 @@ class SingleTurnAttackStrategy(AttackStrategy[SingleTurnAttackContext, AttackRes
         self,
         *,
         objective: str,
-        prepended_conversation: Optional[List[PromptRequestResponse]] = None,
+        prepended_conversation: Optional[List[Message]] = None,
         seed_prompt_group: Optional[SeedPromptGroup] = None,
         memory_labels: Optional[dict[str, str]] = None,
         **kwargs,
@@ -64,7 +64,7 @@ class SingleTurnAttackStrategy(AttackStrategy[SingleTurnAttackContext, AttackRes
 
         Args:
             objective (str): The objective of the attack.
-            prepended_conversation (Optional[List[PromptRequestResponse]]): Conversation to prepend.
+            prepended_conversation (Optional[List[Message]]): Conversation to prepend.
             seed_prompt_group (Optional[SeedPromptGroup]): Group of seed prompts for the attack.
             memory_labels (Optional[Dict[str, str]]): Memory labels for the attack context.
             **kwargs: Additional parameters for the attack.

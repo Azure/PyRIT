@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.17.3
 #   kernelspec:
-#     display_name: pyrit-dev
+#     display_name: pyrit-312
 #     language: python
 #     name: python3
 # ---
@@ -31,8 +31,7 @@ from pyrit.executor.attack import (
 )
 from pyrit.prompt_converter import FirstLetterConverter
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import PlagiarismScorer
-from pyrit.score.plagiarism_scorer import PlagiarismMetric
+from pyrit.score import PlagiarismMetric, PlagiarismScorer
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -93,7 +92,7 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 # $$
 # \text{Score} = 1 - \frac{d(\text{reference}, \text{response})}{\max(|\text{reference}|, |\text{response}|)}
 # $$
-
+#
 # * $d(\cdot)$ = minimum number of word-level insertions, deletions, or substitutions to transform the reference into the response.
 # * Normalized by the length of the longer text.
 # * Intuition: a strict measure of similarity accounting for all edits that must be made to transform the reference into the response.
@@ -102,7 +101,7 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 # $$
 # \text{Score} = \frac{|n\_\text{grams}(\text{reference}) \cap n\_\text{grams}(\text{response})|}{|n\_\text{grams}(\text{reference})|}
 # $$
-
+#
 # * $n\_\text{grams}(\cdot)$ = set of contiguous word sequences of length $n$ (n-grams).
 # * Measures the fraction of the reference’s n-grams that appear in the response.
 # * Intuition: captures local phrase overlap. If every sequence of $n$ words from the reference appears in the response, score = 1.

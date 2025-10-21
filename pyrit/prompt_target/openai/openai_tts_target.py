@@ -13,11 +13,11 @@ from pyrit.exceptions import (
     pyrit_target_retry,
 )
 from pyrit.models import (
-    PromptRequestResponse,
+    Message,
+    MessagePiece,
     construct_response_from_request,
     data_serializer_factory,
 )
-from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
@@ -48,7 +48,7 @@ class OpenAITTSTarget(OpenAITarget):
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
                 Defaults to the `OPENAI_TTS_KEY` environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
-            use_aad_auth (bool, Optional): When set to True, user authentication is used
+            use_entra_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default . Please run `az login` locally
                 to leverage user AuthN.
@@ -83,13 +83,13 @@ class OpenAITTSTarget(OpenAITarget):
 
     @limit_requests_per_minute
     @pyrit_target_retry
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.request_pieces[0]
+        request = prompt_request.message_pieces[0]
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
-        # Refresh auth headers if using AAD
+        # Refresh auth headers if using Entra authentication
         self.refresh_auth_headers()
 
         body = self._construct_request_body(request=request)
@@ -132,7 +132,7 @@ class OpenAITTSTarget(OpenAITarget):
 
         return response_entry
 
-    def _construct_request_body(self, request: PromptRequestPiece) -> dict:
+    def _construct_request_body(self, request: MessagePiece) -> dict:
 
         body_parameters: dict[str, object] = {
             "model": self._model_name,
@@ -146,18 +146,16 @@ class OpenAITTSTarget(OpenAITarget):
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
-        n_pieces = len(prompt_request.request_pieces)
+    def _validate_request(self, *, prompt_request: Message) -> None:
+        n_pieces = len(prompt_request.message_pieces)
         if n_pieces != 1:
-            raise ValueError(
-                "This target only supports a single prompt request piece. " f"Received: {n_pieces} pieces."
-            )
+            raise ValueError("This target only supports a single message piece. " f"Received: {n_pieces} pieces.")
 
-        piece_type = prompt_request.request_pieces[0].converted_value_data_type
+        piece_type = prompt_request.message_pieces[0].converted_value_data_type
         if piece_type != "text":
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
-        request = prompt_request.request_pieces[0]
+        request = prompt_request.message_pieces[0]
         messages = self._memory.get_conversation(conversation_id=request.conversation_id)
 
         n_messages = len(messages)

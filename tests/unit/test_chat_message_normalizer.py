@@ -11,7 +11,7 @@ def test_chat_message_nop():
     messages = [
         ChatMessage(role="system", content="System message"),
         ChatMessage(role="user", content="User message 1"),
-        ChatMessage(role="assistant", content="Assitant message"),
+        ChatMessage(role="assistant", content="Assistant message"),
     ]
     chat_message_nop = ChatMessageNop()
     result = chat_message_nop.normalize(messages)
@@ -23,14 +23,14 @@ def test_generic_squash_system_message():
     messages = [
         ChatMessage(role="system", content="System message"),
         ChatMessage(role="user", content="User message 1"),
-        ChatMessage(role="assistant", content="Assitant message"),
+        ChatMessage(role="assistant", content="Assistant message"),
     ]
     result = GenericSystemSquash().normalize(messages)
     assert len(result) == 2
     assert result[0].role == "user"
     assert result[0].content == "### Instructions ###\n\nSystem message\n\n######\n\nUser message 1"
     assert result[1].role == "assistant"
-    assert result[1].content == "Assitant message"
+    assert result[1].content == "Assistant message"
 
 
 def test_generic_squash_system_message_empty_list():
@@ -50,14 +50,14 @@ def test_generic_squash_system_message_multiple_messages():
     messages = [
         ChatMessage(role="system", content="System message"),
         ChatMessage(role="user", content="User message 1"),
-        ChatMessage(role="assistant", content="Assitant message"),
+        ChatMessage(role="assistant", content="Assistant message"),
     ]
     result = GenericSystemSquash().normalize(messages)
     assert len(result) == 2
     assert result[0].role == "user"
     assert result[0].content == "### Instructions ###\n\nSystem message\n\n######\n\nUser message 1"
     assert result[1].role == "assistant"
-    assert result[1].content == "Assitant message"
+    assert result[1].content == "Assistant message"
 
 
 def test_generic_squash_system_message_no_system_message():

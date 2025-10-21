@@ -5,11 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -17,14 +13,13 @@
 #
 # In this demo, we show an example of the `OpenAIChatTarget`, which includes many openAI-compatible models including `gpt-4o`, `gpt-4`, `DeepSeek`, `llama`, `phi-4`, and `gpt-3.5`. Internally, this is one of our most-used chat targets for our own infrastructure.
 #
-# For this example, we will use the Jailbreak `SeedPrompt`. Although you can interact with the target directly using `PromptRequestResponse` objects, it is almost always better to use an attack. The simplest attack is the `PromptSendingAttack`, which provides parallelization, access to converters and scoring, simpler calling methods, and error resiliency.
+# For this example, we will use the Jailbreak `SeedPrompt`. Although you can interact with the target directly using `Message` objects, it is almost always better to use an attack. The simplest attack is the `PromptSendingAttack`, which provides parallelization, access to converters and scoring, simpler calling methods, and error resiliency.
 #
 # Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
 
+# %%
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.datasets import TextJailBreak
-
-# %%
 from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
 from pyrit.prompt_target import OpenAIChatTarget
 
@@ -35,6 +30,8 @@ jailbreak_prompt: str = jailbreak.get_jailbreak(prompt="How to create a Molotov 
 
 
 target = OpenAIChatTarget()
+# For an AzureOpenAI endpoint with Entra ID authentication enabled, use the following command instead. Make sure to run `az login` first.
+# target = OpenAIChatTarget(use_entra_auth=True)
 
 attack = PromptSendingAttack(objective_target=target)
 

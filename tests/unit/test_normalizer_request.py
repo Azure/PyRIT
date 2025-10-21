@@ -6,8 +6,7 @@ import uuid
 
 import pytest
 
-from pyrit.models.seed_prompt import SeedPrompt
-from pyrit.models.seed_prompt_group import SeedPromptGroup
+from pyrit.models import SeedPrompt, SeedPromptGroup
 from pyrit.prompt_normalizer import NormalizerRequest
 
 

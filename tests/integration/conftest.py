@@ -4,6 +4,7 @@
 import os
 import tempfile
 from typing import Generator
+from unittest.mock import patch
 
 import pytest
 from sqlalchemy import inspect
@@ -79,3 +80,10 @@ def sqlite_instance() -> Generator[SQLiteMemory, None, None]:
     yield sqlite_memory
     temp_dir.cleanup()
     sqlite_memory.dispose_engine()
+
+
+@pytest.fixture()
+def patch_central_database(sqlite_instance):
+    """Fixture to mock CentralMemory.get_memory_instance"""
+    with patch.object(CentralMemory, "get_memory_instance", return_value=sqlite_instance) as sqlite_memory:
+        yield sqlite_memory

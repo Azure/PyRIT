@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Optional
 
-from pyrit.models import PromptRequestPiece
+from pyrit.models import MessagePiece
 
 
 class MemoryExporter:
@@ -25,13 +25,13 @@ class MemoryExporter:
         }
 
     def export_data(
-        self, data: list[PromptRequestPiece], *, file_path: Optional[Path] = None, export_type: str = "json"
+        self, data: list[MessagePiece], *, file_path: Optional[Path] = None, export_type: str = "json"
     ):  # type: ignore
         """
         Exports the provided data to a file in the specified format.
 
         Args:
-            data (list[PromptRequestPiece]): The data to be exported, as a list of PromptRequestPiece instances.
+            data (list[MessagePiece]): The data to be exported, as a list of MessagePiece instances.
             file_path (str): The full path, including the file name, where the data will be exported.
             export_type (str, Optional): The format for exporting data. Defaults to "json".
 
@@ -47,14 +47,14 @@ class MemoryExporter:
         else:
             raise ValueError(f"Unsupported export format: {export_type}")
 
-    def export_to_json(self, data: list[PromptRequestPiece], file_path: Path = None) -> None:  # type: ignore
+    def export_to_json(self, data: list[MessagePiece], file_path: Path = None) -> None:  # type: ignore
         """
         Exports the provided data to a JSON file at the specified file path.
         Each item in the data list, representing a row from the table,
         is converted to a dictionary before being written to the file.
 
         Args:
-            data (list[PromptRequestPiece]): The data to be exported, as a list of PromptRequestPiece instances.
+            data (list[MessagePiece]): The data to be exported, as a list of MessagePiece instances.
             file_path (Path): The full path, including the file name, where the data will be exported.
 
         Raises:
@@ -70,14 +70,14 @@ class MemoryExporter:
         with open(file_path, "w") as f:
             json.dump(export_data, f, indent=4)
 
-    def export_to_csv(self, data: list[PromptRequestPiece], file_path: Path = None) -> None:  # type: ignore
+    def export_to_csv(self, data: list[MessagePiece], file_path: Path = None) -> None:  # type: ignore
         """
         Exports the provided data to a CSV file at the specified file path.
         Each item in the data list, representing a row from the table,
         is converted to a dictionary before being written to the file.
 
         Args:
-            data (list[PromptRequestPiece]): The data to be exported, as a list of PromptRequestPiece instances.
+            data (list[MessagePiece]): The data to be exported, as a list of MessagePiece instances.
             file_path (Path): The full path, including the file name, where the data will be exported.
 
         Raises:
@@ -96,13 +96,13 @@ class MemoryExporter:
             writer.writeheader()
             writer.writerows(export_data)
 
-    def export_to_markdown(self, data: list[PromptRequestPiece], file_path: Path = None) -> None:  # type: ignore
+    def export_to_markdown(self, data: list[MessagePiece], file_path: Path = None) -> None:  # type: ignore
         """
         Exports the provided data to a Markdown file at the specified file path.
         Each item in the data list is converted to a dictionary and formatted as a table.
 
         Args:
-            data (list[PromptRequestPiece]): The data to be exported, as a list of PromptRequestPiece instances.
+            data (list[MessagePiece]): The data to be exported, as a list of MessagePiece instances.
             file_path (Path): The full path, including the file name, where the data will be exported.
 
         Raises:

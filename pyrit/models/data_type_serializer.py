@@ -115,9 +115,6 @@ class DataTypeSerializer(abc.ABC):
         if self._is_azure_storage_url(self.value):
             # Scenarios where a user utilizes an in-memory DuckDB but also needs to interact
             # with an Azure Storage Account, ex., XPIAWorkflow.
-            from pyrit.common import AZURE_SQL, initialize_pyrit
-
-            initialize_pyrit(memory_db_type=AZURE_SQL)
             return self._memory.results_storage_io
         return DiskStorageIO()
 
@@ -324,9 +321,10 @@ class URLDataTypeSerializer(DataTypeSerializer):
         self.value = prompt_text
         self.data_sub_directory = f"/{category}/urls"
         self.file_extension = extension if extension else "txt"
+        self.on_disk = not (prompt_text.startswith("http://") or prompt_text.startswith("https://"))
 
     def data_on_disk(self) -> bool:
-        return True
+        return self.on_disk
 
 
 class ImagePathDataTypeSerializer(DataTypeSerializer):

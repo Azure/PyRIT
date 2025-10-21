@@ -74,3 +74,10 @@ class TestAzureSpeechTextToAudioConverter:
         converter = AzureSpeechTextToAudioConverter()
         assert converter.input_supported("audio_path") is False
         assert converter.input_supported("text") is True
+
+    def test_use_entra_auth_true_with_api_key_raises_error(self):
+        """Test that use_entra_auth=True with api_key raises ValueError."""
+        with pytest.raises(ValueError, match="If using Entra ID auth, please do not specify azure_speech_key"):
+            AzureSpeechTextToAudioConverter(
+                azure_speech_region="test_region", azure_speech_key="test_key", use_entra_auth=True
+            )

@@ -12,6 +12,7 @@ from pyrit.datasets.dataset_helper import fetch_examples
 from pyrit.datasets.equitymedqa_dataset import fetch_equitymedqa_dataset_unique_values
 from pyrit.datasets.forbidden_questions_dataset import fetch_forbidden_questions_dataset
 from pyrit.datasets.harmbench_dataset import fetch_harmbench_dataset
+from pyrit.datasets.harmbench_multimodal_dataset import fetch_harmbench_multimodal_dataset_async
 from pyrit.datasets.fetch_jailbreakv_28k_dataset import fetch_jailbreakv_28k_dataset
 from pyrit.datasets.fetch_jbb_behaviors import (
     fetch_jbb_behaviors_dataset,
@@ -48,6 +49,7 @@ __all__ = [
     "fetch_examples",
     "fetch_forbidden_questions_dataset",
     "fetch_harmbench_dataset",
+    "fetch_harmbench_multimodal_dataset_async",
     "fetch_librAI_do_not_answer_dataset",
     "fetch_llm_latent_adversarial_training_harmful_dataset",
     "fetch_many_shot_jailbreaking_dataset",

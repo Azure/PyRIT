@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import logging
+import random
 import uuid
 from collections import defaultdict
 from datetime import datetime
@@ -113,6 +114,19 @@ class SeedPromptDataset(YamlLoadable):
         last_part = values[-last:] if last is not None else []
 
         return first_part + last_part
+
+    def get_random_values(self, number: PositiveInt) -> Sequence[str]:
+        """
+        Extracts and returns a list of random prompt values from the dataset.
+
+        Args:
+            number (int): The number of random prompt values to return.
+
+        Returns:
+            Sequence[str]: A list of prompt values.
+        """
+        prompts = self.get_values()
+        return random.sample(prompts, min(len(prompts), number))
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "SeedPromptDataset":

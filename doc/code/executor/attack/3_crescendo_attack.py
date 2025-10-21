@@ -6,11 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.6
-#   kernelspec:
-#     display_name: pyrit-312
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -92,3 +88,10 @@ results = AttackExecutor().execute_multi_turn_attacks_async(
 for result in results:
     await ConsoleAttackResultPrinter().print_result_async(result=result)  # type: ignore
 """
+
+
+# %%
+from pyrit.memory import CentralMemory
+
+memory = CentralMemory.get_memory_instance()
+memory.dispose_engine()
