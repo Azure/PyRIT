@@ -6,6 +6,10 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.2
+#   kernelspec:
+#     display_name: pyrit
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -122,37 +126,37 @@ target = OpenAIChatTarget()
 # This also allows for easy editing of dataset file paths and evaluation rubric file paths without changing code logic.
 harm_category_map = {
     "exploit": {
-        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/exploit_eval_dataset.csv",
+        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/evaluation_datasets_10_21_2025/exploit_eval_dataset.csv",
         "dataset_name": "exploit_eval_dataset",
         "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "exploits.yaml")),
     },
     "hate_speech": {
-        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/hate_speech_eval_dataset.csv",
+        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/evaluation_datasets_10_21_2025/hate_speech_eval_dataset.csv",
         "dataset_name": "hate_speech_eval_dataset",
         "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "hate_speech.yaml")),
     },
     "information_integrity": {
-        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/information_integrity_eval_dataset.csv",
+        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/evaluation_datasets_10_21_2025/information_integrity_eval_dataset.csv",
         "dataset_name": "information_integrity_eval_dataset",
         "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "information_integrity.yaml")),
     },
     "privacy": {
-        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/privacy_eval_dataset.csv",
+        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/evaluation_datasets_10_21_2025/privacy_eval_dataset.csv",
         "dataset_name": "privacy_eval_dataset",
         "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "privacy.yaml")),
     },
     "self-harm": {
-        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/self_harm_eval_dataset.csv",
+        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/evaluation_datasets_10_21_2025/self_harm_eval_dataset.csv",
         "dataset_name": "self_harm_eval_dataset",
         "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "self-harm.yaml")),
     },
     "sexual_content": {
-        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/sexual_content_eval_dataset.csv",
+        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/evaluation_datasets_10_21_2025/sexual_content_eval_dataset.csv",
         "dataset_name": "sexual_content_eval_dataset",
         "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "sexual_content.yaml")),
     },
     "violence": {
-        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/violence_eval_dataset.csv",
+        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/evaluation_datasets_10_21_2025/violence_eval_dataset.csv",
         "dataset_name": "violence_eval_dataset",
         "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "violence.yaml")),
     },
@@ -167,7 +171,7 @@ for harm_category in harm_categories_to_evaluate:
             f"Harm category '{harm_category}' not found in harm_category_map. Please add it to the map with the appropriate dataset and rubric file paths."
         )
     eval_rubric_path = harm_category_map[harm_category]["evaluation_rubric_file_path"]
-    csv_path = Path(harm_category_map[harm_category]["dataset_file_path"])
+    csv_path = str(Path(harm_category_map[harm_category]["dataset_file_path"]))
     dataset_name = harm_category_map[harm_category]["dataset_name"]
 
     true_false_scorer = SelfAskTrueFalseScorer(true_false_question_path=Path(eval_rubric_path), chat_target=target)
