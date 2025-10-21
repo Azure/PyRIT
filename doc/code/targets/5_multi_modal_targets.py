@@ -39,6 +39,8 @@ initialize_pyrit(memory_db_type=IN_MEMORY)
 objective = "Give me an image of a raccoon pirate as a Spanish baker in Spain"
 
 img_prompt_target = OpenAIDALLETarget()
+# For an AzureOpenAI endpoint with Entra ID authentication enabled, use the following command instead. Make sure to run `az login` first.
+# target = OpenAIChatTarget(use_entra_auth=True)
 
 image_scorer = SelfAskTrueFalseScorer(
     chat_target=OpenAIChatTarget(),
@@ -107,7 +109,8 @@ from pyrit.score import (
     AzureContentFilterScorer,
     SelfAskTrueFalseScorer,
     TrueFalseQuestion,
-    VideoScorer,
+    VideoFloatScaleScorer,
+    VideoTrueFalseScorer,
 )
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
@@ -123,7 +126,7 @@ objective_scorer = SelfAskTrueFalseScorer(
     true_false_question=TrueFalseQuestion(true_description="A raccoon dressed as a pirate is actively eating a pastry"),
 )
 
-video_scorer = VideoScorer(
+video_scorer = VideoTrueFalseScorer(
     image_capable_scorer=objective_scorer,
     num_sampled_frames=10,
 )
@@ -132,7 +135,7 @@ attack = PromptSendingAttack(
     objective_target=sora_target,
     attack_scoring_config=AttackScoringConfig(
         objective_scorer=video_scorer,
-        auxiliary_scorers=[VideoScorer(AzureContentFilterScorer())],
+        auxiliary_scorers=[VideoFloatScaleScorer(image_capable_scorer=AzureContentFilterScorer())],
     ),
 )
 

@@ -16,8 +16,8 @@ from pyrit.models import (
     AttackOutcome,
     AttackResult,
     ConversationType,
-    PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
+    MessagePiece,
     Score,
     SeedPrompt,
     SeedPromptGroup,
@@ -25,7 +25,7 @@ from pyrit.models import (
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptTarget
-from pyrit.score import Scorer
+from pyrit.score import Scorer, TrueFalseScorer
 
 
 @pytest.fixture
@@ -40,8 +40,7 @@ def mock_target():
 @pytest.fixture
 def mock_true_false_scorer():
     """Create a mock true/false scorer for testing"""
-    scorer = MagicMock(spec=Scorer)
-    scorer.scorer_type = "true_false"
+    scorer = MagicMock(spec=TrueFalseScorer)
     scorer.score_text_async = AsyncMock()
     return scorer
 
@@ -50,7 +49,6 @@ def mock_true_false_scorer():
 def mock_non_true_false_scorer():
     """Create a mock scorer that is not a true/false type"""
     scorer = MagicMock(spec=Scorer)
-    scorer.scorer_type = "float_scale"
     return scorer
 
 
@@ -71,10 +69,8 @@ def basic_context():
 @pytest.fixture
 def sample_response():
     """Create a sample response for testing"""
-    return PromptRequestResponse(
-        request_pieces=[
-            PromptRequestPiece(role="assistant", original_value="Test response", original_value_data_type="text")
-        ]
+    return Message(
+        message_pieces=[MessagePiece(role="assistant", original_value="Test response", original_value_data_type="text")]
     )
 
 
@@ -88,7 +84,7 @@ def success_score():
         score_value_description="Test success score",
         score_rationale="Test rationale for success",
         score_metadata="{}",
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
     )
 
 
@@ -98,11 +94,11 @@ def failure_score():
     return Score(
         score_type="true_false",
         score_value="false",
-        score_category="test",
+        score_category=["test"],
         score_value_description="Test failure score",
         score_rationale="Test rationale for failure",
-        score_metadata="{}",
-        prompt_request_response_id=str(uuid.uuid4()),
+        score_metadata={},
+        message_piece_id=str(uuid.uuid4()),
     )
 
 
@@ -123,11 +119,6 @@ class TestPromptSendingAttackInitialization:
         attack = PromptSendingAttack(objective_target=mock_target, attack_scoring_config=attack_scoring_config)
 
         assert attack._objective_scorer == mock_true_false_scorer
-
-    def test_init_raises_error_for_non_true_false_scorer(self, mock_target, mock_non_true_false_scorer):
-        attack_scoring_config = AttackScoringConfig(objective_scorer=mock_non_true_false_scorer)
-        with pytest.raises(ValueError, match="Objective scorer must be a true/false scorer"):
-            PromptSendingAttack(objective_target=mock_target, attack_scoring_config=attack_scoring_config)
 
     def test_init_with_all_custom_configurations(self, mock_target, mock_true_false_scorer, mock_prompt_normalizer):
         converter_cfg = AttackConverterConfig()
@@ -342,7 +333,7 @@ class TestResponseEvaluation:
         attack = PromptSendingAttack(objective_target=mock_target, attack_scoring_config=attack_scoring_config)
 
         with patch(
-            "pyrit.score.Scorer.score_response_with_objective_async",
+            "pyrit.score.Scorer.score_response_async",
             new_callable=AsyncMock,
             return_value={"auxiliary_scores": [], "objective_scores": [success_score]},
         ) as mock_score_method:
@@ -355,9 +346,9 @@ class TestResponseEvaluation:
             mock_score_method.assert_called_once_with(
                 response=sample_response,
                 auxiliary_scorers=attack._auxiliary_scorers,
-                objective_scorers=[mock_true_false_scorer],
+                objective_scorer=mock_true_false_scorer,
                 role_filter="assistant",
-                task="Test objective",
+                objective="Test objective",
             )
 
     @pytest.mark.asyncio
@@ -365,7 +356,7 @@ class TestResponseEvaluation:
         attack = PromptSendingAttack(objective_target=mock_target, attack_scoring_config=None)
 
         with patch(
-            "pyrit.score.Scorer.score_response_with_objective_async",
+            "pyrit.score.Scorer.score_response_async",
             new_callable=AsyncMock,
             return_value={"auxiliary_scores": [], "objective_scores": []},
         ) as mock_score_method:
@@ -377,9 +368,9 @@ class TestResponseEvaluation:
             mock_score_method.assert_called_once_with(
                 response=sample_response,
                 auxiliary_scorers=attack._auxiliary_scorers,
-                objective_scorers=None,
+                objective_scorer=None,
                 role_filter="assistant",
-                task="Test objective",
+                objective="Test objective",
             )
 
     @pytest.mark.asyncio
@@ -390,11 +381,11 @@ class TestResponseEvaluation:
         auxiliary_score = Score(
             score_type="float_scale",
             score_value="0.8",
-            score_category="test_auxiliary",
+            score_category=["test_auxiliary"],
             score_value_description="Auxiliary score",
             score_rationale="Auxiliary rationale",
-            score_metadata="{}",
-            prompt_request_response_id=str(uuid.uuid4()),
+            score_metadata={},
+            message_piece_id=str(uuid.uuid4()),
         )
 
         attack = PromptSendingAttack(
@@ -405,7 +396,7 @@ class TestResponseEvaluation:
         )
 
         with patch(
-            "pyrit.score.Scorer.score_response_with_objective_async",
+            "pyrit.score.Scorer.score_response_async",
             new_callable=AsyncMock,
             return_value={"auxiliary_scores": [auxiliary_score], "objective_scores": [success_score]},
         ) as mock_score_method:
@@ -419,9 +410,9 @@ class TestResponseEvaluation:
             mock_score_method.assert_called_once_with(
                 response=sample_response,
                 auxiliary_scorers=[auxiliary_scorer],
-                objective_scorers=[mock_true_false_scorer],
+                objective_scorer=mock_true_false_scorer,
                 role_filter="assistant",
-                task="Test objective",
+                objective="Test objective",
             )
 
 
@@ -731,7 +722,7 @@ class TestDetermineAttackOutcome:
             score_value_description="Success",
             score_rationale="Objective achieved",
             score_metadata="{}",
-            prompt_request_response_id=str(uuid.uuid4()),
+            message_piece_id=str(uuid.uuid4()),
         )
 
         outcome, reason = attack._determine_attack_outcome(
@@ -755,7 +746,7 @@ class TestDetermineAttackOutcome:
             score_value_description="Failure",
             score_rationale="Objective not achieved",
             score_metadata="{}",
-            prompt_request_response_id=str(uuid.uuid4()),
+            message_piece_id=str(uuid.uuid4()),
         )
 
         outcome, reason = attack._determine_attack_outcome(
@@ -779,7 +770,7 @@ class TestDetermineAttackOutcome:
             score_value_description="Failure",
             score_rationale="Objective not achieved",
             score_metadata="{}",
-            prompt_request_response_id=str(uuid.uuid4()),
+            message_piece_id=str(uuid.uuid4()),
         )
 
         outcome, reason = attack._determine_attack_outcome(
@@ -805,7 +796,8 @@ class TestDetermineAttackOutcome:
         attack._objective_scorer = MagicMock()
 
         # Create an empty response
-        empty_response = PromptRequestResponse(request_pieces=[])
+        empty_response = MagicMock(spec=Message)
+        empty_response.message_pieces = []
 
         outcome, reason = attack._determine_attack_outcome(response=empty_response, score=None, context=basic_context)
 
@@ -1018,7 +1010,7 @@ class TestEdgeCasesAndErrorHandling:
         attack = PromptSendingAttack(objective_target=mock_target, attack_scoring_config=attack_scoring_config)
 
         with patch(
-            "pyrit.score.Scorer.score_response_with_objective_async",
+            "pyrit.score.Scorer.score_response_async",
             new_callable=AsyncMock,
             side_effect=RuntimeError("Scorer error"),
         ):

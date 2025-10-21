@@ -17,7 +17,7 @@ from pyrit.executor.attack.single_turn import (
 from pyrit.executor.core import Strategy, StrategyContext
 from pyrit.models import (
     AttackResult,
-    PromptRequestResponse,
+    Message,
     QuestionAnsweringEntry,
     SeedPrompt,
     SeedPromptGroup,
@@ -36,7 +36,7 @@ class QuestionAnsweringBenchmarkContext(StrategyContext):
     question_answering_entry: QuestionAnsweringEntry
 
     # Prepended conversation for context
-    prepended_conversation: List[PromptRequestResponse] = field(default_factory=list)
+    prepended_conversation: List[Message] = field(default_factory=list)
 
     # Memory labels for tracking
     memory_labels: Dict[str, str] = field(default_factory=dict)
@@ -260,7 +260,7 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
         self,
         *,
         question_answering_entry: QuestionAnsweringEntry,
-        prepended_conversation: Optional[List[PromptRequestResponse]] = None,
+        prepended_conversation: Optional[List[Message]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
         **kwargs,
     ) -> AttackResult:
@@ -269,7 +269,7 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
 
         Args:
             question_answering_entry (QuestionAnsweringEntry): The question answering entry to evaluate.
-            prepended_conversation (Optional[List[PromptRequestResponse]]): Conversation to prepend.
+            prepended_conversation (Optional[List[Message]]): Conversation to prepend.
             memory_labels (Optional[Dict[str, str]]): Memory labels for the benchmark context.
             **kwargs: Additional parameters for the benchmark.
 

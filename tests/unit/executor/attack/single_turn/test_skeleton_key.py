@@ -16,14 +16,14 @@ from pyrit.executor.attack import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
+    MessagePiece,
     Score,
     SeedPromptGroup,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
-from pyrit.score import Scorer
+from pyrit.score import TrueFalseScorer
 
 
 @pytest.fixture
@@ -38,8 +38,7 @@ def mock_target():
 @pytest.fixture
 def mock_true_false_scorer():
     """Create a mock true/false scorer for testing"""
-    scorer = MagicMock(spec=Scorer)
-    scorer.scorer_type = "true_false"
+    scorer = MagicMock(spec=TrueFalseScorer)
     scorer.score_text_async = AsyncMock()
     return scorer
 
@@ -61,19 +60,17 @@ def basic_context():
 @pytest.fixture
 def sample_response():
     """Create a sample response for testing"""
-    return PromptRequestResponse(
-        request_pieces=[
-            PromptRequestPiece(role="assistant", original_value="Test response", original_value_data_type="text")
-        ]
+    return Message(
+        message_pieces=[MessagePiece(role="assistant", original_value="Test response", original_value_data_type="text")]
     )
 
 
 @pytest.fixture
 def skeleton_key_response():
     """Create a skeleton key response for testing"""
-    return PromptRequestResponse(
-        request_pieces=[
-            PromptRequestPiece(
+    return Message(
+        message_pieces=[
+            MessagePiece(
                 role="assistant",
                 original_value="I understand and will comply with your request.",
                 original_value_data_type="text",
@@ -88,11 +85,11 @@ def success_score():
     return Score(
         score_type="true_false",
         score_value="true",
-        score_category="test",
+        score_category=["test"],
         score_value_description="Test success score",
         score_rationale="Test rationale for success",
-        score_metadata="{}",
-        prompt_request_response_id=str(uuid.uuid4()),
+        score_metadata={},
+        message_piece_id=str(uuid.uuid4()),
     )
 
 
@@ -102,11 +99,11 @@ def failure_score():
     return Score(
         score_type="true_false",
         score_value="false",
-        score_category="test",
+        score_category=["test"],
         score_value_description="Test failure score",
         score_rationale="Test rationale for failure",
-        score_metadata="{}",
-        prompt_request_response_id=str(uuid.uuid4()),
+        score_metadata={},
+        message_piece_id=str(uuid.uuid4()),
     )
 
 
@@ -468,16 +465,6 @@ class TestSkeletonKeyAttackParameterValidation:
         # Test that it validates max_attempts_on_failure like parent
         with pytest.raises(ValueError):
             SkeletonKeyAttack(objective_target=mock_target, max_attempts_on_failure=-1)
-
-    def test_skeleton_key_with_invalid_scorer_type(self, mock_target):
-        """Test that invalid scorer types are rejected."""
-        mock_scorer = MagicMock(spec=Scorer)
-        mock_scorer.scorer_type = "float_scale"  # Should be true_false
-
-        attack_scoring_config = AttackScoringConfig(objective_scorer=mock_scorer)
-
-        with pytest.raises(ValueError, match="Objective scorer must be a true/false scorer"):
-            SkeletonKeyAttack(objective_target=mock_target, attack_scoring_config=attack_scoring_config)
 
 
 @pytest.mark.usefixtures("patch_central_database")

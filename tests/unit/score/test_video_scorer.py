@@ -2,14 +2,19 @@
 # Licensed under the MIT license.
 
 import os
+import uuid
 from typing import Optional
 from unittest.mock import AsyncMock, MagicMock
 
 import numpy as np
 import pytest
 
-from pyrit.models import PromptRequestPiece, Score
-from pyrit.score import Scorer, VideoScorer
+from pyrit.models import MessagePiece, Score
+from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
+from pyrit.score.float_scale.video_float_scale_scorer import VideoFloatScaleScorer
+from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
+from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
+from pyrit.score.true_false.video_true_false_scorer import VideoTrueFalseScorer
 
 
 def is_opencv_installed():
@@ -22,7 +27,7 @@ def is_opencv_installed():
 
 
 @pytest.fixture(autouse=True)
-def video_converter_sample_video():
+def video_converter_sample_video(patch_central_database):
     # Create a sample video file
     video_path = "test_video.mp4"
     width, height = 512, 512
@@ -40,92 +45,98 @@ def video_converter_sample_video():
 
         output_video.release()
 
-    request_piece = PromptRequestPiece(
+    message_piece = MessagePiece(
         role="user",
         original_value=video_path,
         converted_value=video_path,
         original_value_data_type="video_path",
         converted_value_data_type="video_path",
     )
-    request_piece.id = None
-    yield request_piece
+    message_piece.id = uuid.uuid4()
+    yield message_piece
     # Cleanup the sample video file
     if os.path.exists(video_path):
         os.remove(video_path)
 
 
-class MockScorer(Scorer):
-    def __init__(self, scorer_type: str = "true_false"):
-        self.scorer_type = scorer_type  # type: ignore
-        super().__init__()
+class MockTrueFalseScorer(TrueFalseScorer):
+    """Mock TrueFalseScorer for testing"""
 
-    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
-        # For testing, always return a Score object with a predefined value
-        if self.scorer_type == "true_false":
-            return [
-                Score(
-                    score_type=self.scorer_type,
-                    score_value="True",
-                    score_rationale="Test true rationale",
-                    score_category="test_category",
-                    score_metadata="tf metadata",
-                    score_value_description="test_tf_description",
-                    prompt_request_response_id="test_id",
-                )
-            ]
-        else:  # float_scale
-            return [
-                Score(
-                    score_type=self.scorer_type,
-                    score_value="0.8",
-                    score_rationale="Test float rationale",
-                    score_category="test_category",
-                    score_metadata="float metadata",
-                    score_value_description="test_float_description",
-                    prompt_request_response_id="test_id",
-                )
-            ]
+    def __init__(self, return_value: bool = True):
+        validator = ScorerPromptValidator(supported_data_types=["image_path"])
+        super().__init__(validator=validator)
+        self.return_value = return_value
 
-    async def score_image_async(self, image_path: str, *, task: Optional[str] = None) -> list[Score]:
-        """Mock implementation for image scoring needed by video scoring"""
-        # Create a mock PromptRequestPiece for the image
-        request_piece = PromptRequestPiece(
-            role="user",
-            original_value=image_path,
-            converted_value=image_path,
-            original_value_data_type="image_path",
-            converted_value_data_type="image_path",
-        )
-        return await self._score_async(request_piece, task=task)
-
-    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
-        pass
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
+        return [
+            Score(
+                score_type="true_false",
+                score_value=str(self.return_value).lower(),
+                score_rationale=f"Test rationale for {message_piece.converted_value}",
+                score_category=["test_category"],
+                score_metadata={},
+                score_value_description="test_description",
+                message_piece_id=message_piece.id or uuid.uuid4(),
+                objective=objective,
+            )
+        ]
 
 
-class MockVideoScorer(VideoScorer):
-    """Test implementation of VideoScorer for video tests"""
+class MockFloatScaleScorer(FloatScaleScorer):
+    """Mock FloatScaleScorer for testing"""
 
-    def __init__(
-        self,
-        image_scorer: Optional[MockScorer] = None,
-        scorer_type: str = "true_false",
-        num_sampled_frames: Optional[int] = 3,
-    ):
-        if not image_scorer:
-            image_scorer = MockScorer(scorer_type=scorer_type)
-        super().__init__(image_capable_scorer=image_scorer, num_sampled_frames=num_sampled_frames)
+    def __init__(self, return_value: float = 0.8):
+        validator = ScorerPromptValidator(supported_data_types=["image_path"])
+        super().__init__(validator=validator)
+        self.return_value = return_value
 
-    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
-        pass
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
+        return [
+            Score(
+                score_type="float_scale",
+                score_value=str(self.return_value),
+                score_rationale=f"Test rationale for {message_piece.converted_value}",
+                score_category=["test_category"],
+                score_metadata={},
+                score_value_description="test_description",
+                message_piece_id=message_piece.id or uuid.uuid4(),
+                objective=objective,
+            )
+        ]
 
 
 @pytest.mark.asyncio
 @pytest.mark.skipif(not is_opencv_installed(), reason="opencv is not installed")
-async def test_extract_frames(video_converter_sample_video):
+async def test_extract_frames_true_false(video_converter_sample_video):
     """Test that frame extraction produces the expected number of frames"""
     import cv2
 
-    scorer = MockVideoScorer()
+    image_scorer = MockTrueFalseScorer()
+    scorer = VideoTrueFalseScorer(image_capable_scorer=image_scorer, num_sampled_frames=3)
+    video_path = video_converter_sample_video.converted_value
+    frame_paths = scorer._extract_frames(video_path=video_path)
+
+    assert (
+        len(frame_paths) == scorer.num_sampled_frames
+    ), f"Expected {scorer.num_sampled_frames} frames, got {len(frame_paths)}"
+
+    # Verify frames are valid images and cleanup
+    for path in frame_paths:
+        assert os.path.exists(path), f"Frame file {path} does not exist"
+        img = cv2.imread(path)
+        assert img is not None, f"Failed to read frame file {path}"
+        assert img.shape == (512, 512, 3), f"Unexpected frame dimensions: {img.shape}"
+        os.remove(path)  # Cleanup
+
+
+@pytest.mark.asyncio
+@pytest.mark.skipif(not is_opencv_installed(), reason="opencv is not installed")
+async def test_extract_frames_float_scale(video_converter_sample_video):
+    """Test that frame extraction produces the expected number of frames for float scale scorer"""
+    import cv2
+
+    image_scorer = MockFloatScaleScorer()
+    scorer = VideoFloatScaleScorer(image_capable_scorer=image_scorer, num_sampled_frames=3)
     video_path = video_converter_sample_video.converted_value
     frame_paths = scorer._extract_frames(video_path=video_path)
 
@@ -146,301 +157,118 @@ async def test_extract_frames(video_converter_sample_video):
 @pytest.mark.skipif(not is_opencv_installed(), reason="opencv is not installed")
 async def test_score_video_true_false(video_converter_sample_video):
     """Test video scoring with a true/false scorer"""
-    scorer = MockVideoScorer(scorer_type="true_false")
-    scores = await scorer._score_async(video_converter_sample_video)
+    image_scorer = MockTrueFalseScorer(return_value=True)
+    scorer = VideoTrueFalseScorer(image_capable_scorer=image_scorer, num_sampled_frames=3)
+
+    scores = await scorer._score_piece_async(video_converter_sample_video)
 
     assert len(scores) == 1, "Expected one aggregated score"
     assert scores[0].score_type == "true_false"
-    assert scores[0].score_value == "True"
-    assert "3 out of 3 video frames meet objective" in scores[0].score_rationale
-    assert "Test true rationale" in scores[0].score_rationale
+    assert scores[0].score_value == "true"
+    assert "Video scored by analyzing" in scores[0].score_rationale
+
+
+@pytest.mark.asyncio
+@pytest.mark.skipif(not is_opencv_installed(), reason="opencv is not installed")
+async def test_score_video_true_false_with_false_frames(video_converter_sample_video):
+    """Test video scoring when all frames score false"""
+    image_scorer = MockTrueFalseScorer(return_value=False)
+    scorer = VideoTrueFalseScorer(image_capable_scorer=image_scorer, num_sampled_frames=3)
+
+    scores = await scorer._score_piece_async(video_converter_sample_video)
+
+    assert len(scores) == 1, "Expected one aggregated score"
+    assert scores[0].score_type == "true_false"
+    assert scores[0].score_value == "false"
+    assert "Video scored by analyzing" in scores[0].score_rationale
 
 
 @pytest.mark.asyncio
 @pytest.mark.skipif(not is_opencv_installed(), reason="opencv is not installed")
 async def test_score_video_float_scale(video_converter_sample_video):
     """Test video scoring with a float_scale scorer"""
-    scorer = MockVideoScorer(scorer_type="float_scale")
-    scores = await scorer._score_async(video_converter_sample_video)
+    image_scorer = MockFloatScaleScorer(return_value=0.8)
+    scorer = VideoFloatScaleScorer(image_capable_scorer=image_scorer, num_sampled_frames=3)
+
+    scores = await scorer._score_piece_async(video_converter_sample_video)
 
     assert len(scores) == 1, "Expected one aggregated score"
     assert scores[0].score_type == "float_scale"
-    assert scores[0].score_value == "0.8"  # Value from _score_async
-    assert "Highest score across 3 frames: 0.8" in scores[0].score_rationale
-    assert "Test float rationale" in scores[0].score_rationale
-
-
-@pytest.mark.asyncio
-@pytest.mark.skipif(not is_opencv_installed(), reason="opencv is not installed")
-async def test_score_video_cleanup(video_converter_sample_video):
-    """Test that temporary frame files are cleaned up after scoring"""
-    scorer = MockVideoScorer()
-    frame_paths = []
-
-    # Mock _extract_frames to capture the frame paths
-    original_extract_frames = scorer._extract_frames
-
-    def mock_extract_frames(*args, **kwargs):
-        nonlocal frame_paths
-        frame_paths = original_extract_frames(*args, **kwargs)
-        return frame_paths
-
-    scorer._extract_frames = mock_extract_frames
-
-    await scorer._score_async(video_converter_sample_video)
-
-    # Verify all temporary files were cleaned up
-    for path in frame_paths:
-        assert not os.path.exists(path), f"Temporary frame file {path} was not cleaned up"
+    # With MAX aggregator (default), should return 0.8
+    assert float(scores[0].score_value) == 0.8
+    assert "Video scored by analyzing" in scores[0].score_rationale
 
 
 @pytest.mark.asyncio
 @pytest.mark.skipif(not is_opencv_installed(), reason="opencv is not installed")
 async def test_score_video_no_frames(video_converter_sample_video):
     """Test error handling when no frames can be extracted"""
-    scorer = MockVideoScorer()
+    image_scorer = MockTrueFalseScorer()
+    scorer = VideoTrueFalseScorer(image_capable_scorer=image_scorer, num_sampled_frames=3)
 
     # Mock _extract_frames to return empty list
     scorer._extract_frames = MagicMock(return_value=[])
 
     with pytest.raises(ValueError, match="No frames extracted from video for scoring."):
-        await scorer._score_async(video_converter_sample_video)
+        await scorer._score_piece_async(video_converter_sample_video)
 
 
 @pytest.mark.asyncio
 @pytest.mark.skipif(not is_opencv_installed(), reason="opencv is not installed")
 async def test_score_video_no_scores(video_converter_sample_video):
     """Test error handling when frame scoring returns no scores"""
-    image_scorer = MockScorer()
+    image_scorer = MockTrueFalseScorer()
 
-    # Mock score_image_batch_async to return empty list
-    image_scorer.score_image_batch_async = AsyncMock(return_value=[])
-    scorer = MockVideoScorer(image_scorer=image_scorer)
+    # Mock score_prompts_batch_async to return empty list
+    image_scorer.score_prompts_batch_async = AsyncMock(return_value=[])
+    scorer = VideoTrueFalseScorer(image_capable_scorer=image_scorer, num_sampled_frames=3)
 
     with pytest.raises(ValueError, match="No scores returned for image frames extracted from video."):
-        await scorer._score_async(video_converter_sample_video)
+        await scorer._score_piece_async(video_converter_sample_video)
 
 
-def test_aggregate_frame_scores_multiple_categories_true_false():
-    """Test aggregating scores with multiple categories for true_false scorer"""
-    scorer = MockVideoScorer(scorer_type="true_false")
+@pytest.mark.asyncio
+@pytest.mark.skipif(not is_opencv_installed(), reason="opencv is not installed")
+async def test_video_true_false_scorer_with_objective(video_converter_sample_video):
+    """Test that objective is passed through correctly"""
+    image_scorer = MockTrueFalseScorer(return_value=True)
+    scorer = VideoTrueFalseScorer(image_capable_scorer=image_scorer, num_sampled_frames=3)
 
-    frame_scores = [
-        Score(
-            score_type="true_false",
-            score_value="True",
-            score_rationale="Frame 1 category A",
-            score_category="category_A",
-            score_metadata="metadata",
-            score_value_description="description",
-            prompt_request_response_id="id1",
-        ),
-        Score(
-            score_type="true_false",
-            score_value="False",
-            score_rationale="Frame 2 category A",
-            score_category="category_A",
-            score_metadata="metadata",
-            score_value_description="description",
-            prompt_request_response_id="id2",
-        ),
-        Score(
-            score_type="true_false",
-            score_value="True",
-            score_rationale="Frame 3 category B",
-            score_category="category_B",
-            score_metadata="metadata",
-            score_value_description="description",
-            prompt_request_response_id="id3",
-        ),
-    ]
+    objective = "Test objective"
+    scores = await scorer._score_piece_async(video_converter_sample_video, objective=objective)
 
-    aggregated = scorer._aggregate_frame_scores(frame_scores)
-
-    assert len(aggregated) == 2, "Expected two aggregated scores (one per category)"
-
-    # Check category A aggregation
-    cat_a_score = next(s for s in aggregated if s.score_category == "category_A")
-    assert cat_a_score.score_value == "True"
-    assert "1 out of 2 video frames meet objective" in cat_a_score.score_rationale
-    assert "Frame 1 category A" in cat_a_score.score_rationale
-
-    # Check category B aggregation
-    cat_b_score = next(s for s in aggregated if s.score_category == "category_B")
-    assert cat_b_score.score_value == "True"
-    assert "1 out of 1 video frames meet objective" in cat_b_score.score_rationale
-    assert "Frame 3 category B" in cat_b_score.score_rationale
+    assert len(scores) == 1
+    assert scores[0].objective == objective
 
 
-def test_aggregate_frame_scores_multiple_categories_float_scale():
-    """Test aggregating scores with multiple categories for float_scale scorer"""
-    scorer = MockVideoScorer(scorer_type="float_scale")
+@pytest.mark.asyncio
+@pytest.mark.skipif(not is_opencv_installed(), reason="opencv is not installed")
+async def test_video_float_scale_scorer_with_objective(video_converter_sample_video):
+    """Test that objective is passed through correctly for float scale scorer"""
+    image_scorer = MockFloatScaleScorer(return_value=0.7)
+    scorer = VideoFloatScaleScorer(image_capable_scorer=image_scorer, num_sampled_frames=3)
 
-    frame_scores = [
-        Score(
-            score_type="float_scale",
-            score_value="0.3",
-            score_rationale="Frame 1 category X",
-            score_category="category_X",
-            score_metadata="metadata",
-            score_value_description="description",
-            prompt_request_response_id="id1",
-        ),
-        Score(
-            score_type="float_scale",
-            score_value="0.9",
-            score_rationale="Frame 2 category X",
-            score_category="category_X",
-            score_metadata="metadata",
-            score_value_description="description",
-            prompt_request_response_id="id2",
-        ),
-        Score(
-            score_type="float_scale",
-            score_value="0.5",
-            score_rationale="Frame 3 category Y",
-            score_category="category_Y",
-            score_metadata="metadata",
-            score_value_description="description",
-            prompt_request_response_id="id3",
-        ),
-        Score(
-            score_type="float_scale",
-            score_value="0.7",
-            score_rationale="Frame 4 category Y",
-            score_category="category_Y",
-            score_metadata="metadata",
-            score_value_description="description",
-            prompt_request_response_id="id4",
-        ),
-    ]
+    objective = "Test objective"
+    scores = await scorer._score_piece_async(video_converter_sample_video, objective=objective)
 
-    aggregated = scorer._aggregate_frame_scores(frame_scores)
-
-    assert len(aggregated) == 2, "Expected two aggregated scores (one per category)"
-
-    # Check category X aggregation (should pick 0.9)
-    cat_x_score = next(s for s in aggregated if s.score_category == "category_X")
-    assert cat_x_score.score_value == "0.9"
-    assert "Highest score across 2 frames: 0.90" in cat_x_score.score_rationale
-    assert "Frame 2 category X" in cat_x_score.score_rationale
-
-    # Check category Y aggregation (should pick 0.7)
-    cat_y_score = next(s for s in aggregated if s.score_category == "category_Y")
-    assert cat_y_score.score_value == "0.7"
-    assert "Highest score across 2 frames: 0.70" in cat_y_score.score_rationale
-    assert "Frame 4 category Y" in cat_y_score.score_rationale
+    assert len(scores) == 1
+    assert scores[0].objective == objective
 
 
-def test_aggregate_frame_scores_no_category():
-    """Test aggregating scores when no categories are specified"""
-    scorer = MockVideoScorer(scorer_type="true_false")
+def test_video_scorer_invalid_frames():
+    """Test that VideoScorer raises error with invalid num_sampled_frames"""
+    image_scorer = MockTrueFalseScorer()
 
-    frame_scores = [
-        Score(
-            score_type="true_false",
-            score_value="True",
-            score_rationale="Frame 1 no category",
-            score_category=None,
-            score_metadata="metadata",
-            score_value_description="description",
-            prompt_request_response_id="id1",
-        ),
-        Score(
-            score_type="true_false",
-            score_value="False",
-            score_rationale="Frame 2 no category",
-            score_category=None,
-            score_metadata="metadata",
-            score_value_description="description",
-            prompt_request_response_id="id2",
-        ),
-    ]
+    with pytest.raises(ValueError, match="num_sampled_frames must be a positive integer"):
+        VideoTrueFalseScorer(image_capable_scorer=image_scorer, num_sampled_frames=0)
 
-    aggregated = scorer._aggregate_frame_scores(frame_scores)
-
-    assert len(aggregated) == 1, "Expected one aggregated score when no categories"
-    assert aggregated[0].score_value == "True"
-    assert "1 out of 2 video frames meet objective" in aggregated[0].score_rationale
-    assert aggregated[0].score_category is None
+    with pytest.raises(ValueError, match="num_sampled_frames must be a positive integer"):
+        VideoTrueFalseScorer(image_capable_scorer=image_scorer, num_sampled_frames=-1)
 
 
-def test_aggregate_frame_scores_mixed_categories():
-    """Test aggregating scores with some having categories and some without"""
-    scorer = MockVideoScorer(scorer_type="true_false")
+def test_video_scorer_default_num_frames():
+    """Test that VideoScorer uses default num_sampled_frames when not specified"""
+    image_scorer = MockTrueFalseScorer()
+    scorer = VideoTrueFalseScorer(image_capable_scorer=image_scorer)
 
-    frame_scores = [
-        Score(
-            score_type="true_false",
-            score_value="True",
-            score_rationale="Frame 1 with category",
-            score_category="category_A",
-            score_metadata="metadata",
-            score_value_description="description",
-            prompt_request_response_id="id1",
-        ),
-        Score(
-            score_type="true_false",
-            score_value="False",
-            score_rationale="Frame 2 no category",
-            score_category=None,
-            score_metadata="metadata",
-            score_value_description="description",
-            prompt_request_response_id="id2",
-        ),
-        Score(
-            score_type="true_false",
-            score_value="True",
-            score_rationale="Frame 3 with category",
-            score_category="category_A",
-            score_metadata="metadata",
-            score_value_description="description",
-            prompt_request_response_id="id3",
-        ),
-    ]
-
-    aggregated = scorer._aggregate_frame_scores(frame_scores)
-
-    # Check category A aggregation
-    cat_a_score = next(s for s in aggregated if s.score_category == "category_A")
-    assert cat_a_score.score_value == "True"
-    assert "2 out of 2 video frames meet objective" in cat_a_score.score_rationale
-
-    # Check aggregation for score without a category
-    cat_none_score = next(s for s in aggregated if not s.score_category)
-    assert cat_none_score.score_value == "False"
-    assert "Objective not met within 1 video frames" in cat_none_score.score_rationale
-    assert "Frame 2 no category" in cat_none_score.score_rationale
-
-
-def test_aggregate_frame_scores_all_false():
-    """Test aggregating scores when all are False for true_false scorer"""
-    scorer = MockVideoScorer(scorer_type="true_false")
-
-    frame_scores = [
-        Score(
-            score_type="true_false",
-            score_value="False",
-            score_rationale="Frame 1 false",
-            score_category="category_A",
-            score_metadata="metadata",
-            score_value_description="description",
-            prompt_request_response_id="id1",
-        ),
-        Score(
-            score_type="true_false",
-            score_value="False",
-            score_rationale="Frame 2 false",
-            score_category="category_A",
-            score_metadata="metadata",
-            score_value_description="description",
-            prompt_request_response_id="id2",
-        ),
-    ]
-
-    aggregated = scorer._aggregate_frame_scores(frame_scores)
-
-    assert len(aggregated) == 1
-    assert aggregated[0].score_value == "False"
-    assert "Objective not met within 2 video frames" in aggregated[0].score_rationale
-    assert "Frame 1 false" in aggregated[0].score_rationale  # Original rationale preserved
+    assert scorer.num_sampled_frames == 5  # Default value

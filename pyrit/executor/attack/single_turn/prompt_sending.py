@@ -17,7 +17,7 @@ from pyrit.models import (
     AttackResult,
     ConversationReference,
     ConversationType,
-    PromptRequestResponse,
+    Message,
     Score,
     SeedPrompt,
     SeedPromptGroup,
@@ -89,8 +89,6 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
 
         self._auxiliary_scorers = attack_scoring_config.auxiliary_scorers
         self._objective_scorer = attack_scoring_config.objective_scorer
-        if self._objective_scorer and self._objective_scorer.scorer_type != "true_false":
-            raise ValueError("Objective scorer must be a true/false scorer")
 
         # Skip criteria could be set directly in the injected prompt normalizer
         self._prompt_normalizer = prompt_normalizer or PromptNormalizer()
@@ -219,13 +217,13 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         return result
 
     def _determine_attack_outcome(
-        self, *, response: Optional[PromptRequestResponse], score: Optional[Score], context: SingleTurnAttackContext
+        self, *, response: Optional[Message], score: Optional[Score], context: SingleTurnAttackContext
     ) -> tuple[AttackOutcome, Optional[str]]:
         """
         Determine the outcome of the attack based on the response and score.
 
         Args:
-            response (Optional[PromptRequestResponse]): The last response from the target (if any).
+            response (Optional[Message]): The last response from the target (if any).
             score (Optional[Score]): The objective score (if any).
             context (SingleTurnAttackContext): The attack context containing configuration.
 
@@ -276,7 +274,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
 
     async def _send_prompt_to_objective_target_async(
         self, *, prompt_group: SeedPromptGroup, context: SingleTurnAttackContext
-    ) -> Optional[PromptRequestResponse]:
+    ) -> Optional[Message]:
         """
         Send the prompt to the target and return the response.
 
@@ -285,7 +283,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
             context (SingleTurnAttackContext): The attack context containing parameters and labels.
 
         Returns:
-            Optional[PromptRequestResponse]: The model's response if successful, or None if
+            Optional[Message]: The model's response if successful, or None if
                 the request was filtered, blocked, or encountered an error.
         """
 
@@ -302,7 +300,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
     async def _evaluate_response_async(
         self,
         *,
-        response: PromptRequestResponse,
+        response: Message,
         objective: str,
     ) -> Optional[Score]:
         """
@@ -312,7 +310,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         metrics, then runs the objective scorer to determine if the attack succeeded.
 
         Args:
-            response (PromptRequestResponse): The response from the model.
+            response (Message): The response from the model.
             objective (str): The natural-language description of the attack's objective.
 
         Returns:
@@ -320,16 +318,19 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
                 no objective scorer is set. Note that auxiliary scorer results are not returned
                 but are still executed and stored.
         """
-        scoring_results = await Scorer.score_response_with_objective_async(
+
+        scoring_results = await Scorer.score_response_async(
             response=response,
+            objective_scorer=self._objective_scorer,
             auxiliary_scorers=self._auxiliary_scorers,
-            objective_scorers=[self._objective_scorer] if self._objective_scorer else None,
             role_filter="assistant",
-            task=objective,
+            objective=objective,
         )
+
+        if not self._objective_scorer:
+            return None
 
         objective_scores = scoring_results["objective_scores"]
         if not objective_scores:
             return None
-
         return objective_scores[0]

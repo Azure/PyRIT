@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -15,7 +15,7 @@
 # Apart from storing results in memory it's also useful to store datasets of seed prompts
 # and seed prompt templates that we may want to use at a later point.
 # This can help us in curating prompts with custom metadata like harm categories.
-# As with all memory, we can use local SQLite or AzureSQLMemory in Azure to get the
+# As with all memory, we can use local DuckDBMemory or AzureSQLMemory in Azure to get the
 # benefits of sharing with other users and persisting data.
 
 # %%
@@ -66,12 +66,12 @@ for prompt in prompts:
 # In this next example, we will add a Seed Prompt Group with prompts across the audio, image, video, and text modalities.
 # Seed Prompts that have the same `prompt_group_alias` will be part of the same Seed Prompt Group. Within a Seed Prompt Group,
 # Seed Prompts that share a `sequence` will be sent together as part of the same turn (e.g. text and corresponding image).
-# <br> <center> <img src="../../../assets/seed_prompt.png" alt="SeedPrompt and SeedPromptGroup architecture" height="600" /> </center> </br>
+# <br> <center> <img src="../../../assets/seed_prompt.png" alt="seed_prompt.png" height="600" /> </center> </br>
 # When we add non-text seed prompts to memory, encoding data will automatically populate in the seed prompt's
 # `metadata` field, including `format` (i.e. png, mp4, wav, etc.) as well as additional metadata for audio
-# and video files, inclduing `bitrate` (kBits/s as int), `samplerate` (samples/second as int), `bitdepth` (as int),
+# and video files, including `bitrate` (kBits/s as int), `samplerate` (samples/second as int), `bitdepth` (as int),
 # `filesize` (bytes as int), and `duration` (seconds as int) if the file type is supported by TinyTag.
-# Example suppported file types include: MP3, MP4, M4A, and WAV. These may be helpful to filter for as some targets
+# Example supported file types include: MP3, MP4, M4A, and WAV. These may be helpful to filter for as some targets
 # have specific input prompt requirements.
 # %%
 import pathlib

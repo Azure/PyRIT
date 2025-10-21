@@ -6,7 +6,7 @@ import re
 from typing import List, Optional, Union
 
 from pyrit.common.utils import get_random_indices
-from pyrit.models.literals import PromptDataType
+from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_converter.prompt_converter import ConverterResult
 

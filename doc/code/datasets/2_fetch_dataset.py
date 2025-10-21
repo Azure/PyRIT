@@ -5,25 +5,20 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
-# # Fetching Datasets
+# # 2. Fetching Datasets
 #
 # This notebook demonstrates how to load datasets as a `SeedPromptDataset` to perform red teaming on a target.
 # There are several datasets which can be found in the `pyrit.datasets` module.
 # Three example datasets are shown in this notebook and can be used with attacks such as the `PromptSendingAttack`.
 # The example below demonstrates loading a HuggingFace dataset as a `SeedPromptDataset`.
 
+# %%
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.datasets import fetch_llm_latent_adversarial_training_harmful_dataset
-
-# %%
 from pyrit.executor.attack import (
     AttackExecutor,
     ConsoleAttackResultPrinter,

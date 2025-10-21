@@ -6,11 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -18,7 +14,7 @@
 #
 # The Batch Scorer is built to help with scoring prompts that have been sent using PyRIT. It works by:
 #
-# 1. Getting the `PromptRequestPiece`s into the database. This is done automatically when using any targets (e.g., running any of the demos). Even if you manually entered the prompts outside of PyRIT, you can import them using `TextTarget`s or CSVs as described [here](../memory/4_manually_working_with_memory.md).
+# 1. Getting the `MessagePiece`s into the database. This is done automatically when using any targets (e.g., running any of the demos). Even if you manually entered the prompts outside of PyRIT, you can import them using `TextTarget`s or CSVs as described [here](../memory/4_manually_working_with_memory.md).
 # 2. Scoring all prompts in the database that meet any criteria.
 #
 # The following example demonstrates this by manually entering prompts into the database and then scoring them.
@@ -56,7 +52,7 @@ memory = CentralMemory.get_memory_instance()
 
 prompt_ids = []
 for id in conversation_ids:
-    pieces = memory.get_prompt_request_pieces(
+    pieces = memory.get_message_pieces(
         conversation_id=id,
     )
 
@@ -74,25 +70,25 @@ from pyrit.score import (
     AzureContentFilterScorer,
     BatchScorer,
     ContentClassifierPaths,
-    HumanInTheLoopScorer,
+    HumanInTheLoopScorerGradio,
     SelfAskCategoryScorer,
 )
 
 # The scorer is interchangeable with other scorers
 # scorer = AzureContentFilterScorer()
-# scorer = HumanInTheLoopScorer()
+# scorer = HumanInTheLoopScorerGradio()
 scorer = SelfAskCategoryScorer(
     chat_target=OpenAIChatTarget(), content_classifier_path=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value
 )
 
 batch_scorer = BatchScorer()
 
-scores = await batch_scorer.score_prompts_by_id_async(scorer=scorer, prompt_ids=prompt_ids)  # type: ignore
+scores = await batch_scorer.score_responses_by_filters_async(scorer=scorer, prompt_ids=prompt_ids)  # type: ignore
 
 memory = CentralMemory.get_memory_instance()
 
 for score in scores:
-    prompt_text = memory.get_prompt_request_pieces(prompt_ids=[str(score.prompt_request_response_id)])[0].original_value
+    prompt_text = memory.get_message_pieces(prompt_ids=[str(score.message_piece_id)])[0].original_value
     print(f"{score} : {prompt_text}")
 
 # %% [markdown]
@@ -103,7 +99,7 @@ for score in scores:
 # Remember that `GLOBAL_MEMORY_LABELS`, which will be assigned to every prompt sent through an attack, can be set as an environment variable (.env or env.local), and any additional custom memory labels can be passed in the `PromptSendingAttack` `execute_async` function. (Custom memory labels passed in will have precedence over `GLOBAL_MEMORY_LABELS` in case of collisions.) For more information on memory labels, see the [Memory Labels Guide](../memory/5_memory_labels.ipynb).
 #
 # All filters include:
-# - attack ID
+# - Attack ID
 # - Conversation ID
 # - Prompt IDs
 # - Memory Labels
@@ -123,8 +119,9 @@ from pyrit.memory import CentralMemory
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import (
     AzureContentFilterScorer,
+    BatchScorer,
     ContentClassifierPaths,
-    HumanInTheLoopScorer,
+    HumanInTheLoopScorerGradio,
     SelfAskCategoryScorer,
 )
 
@@ -159,5 +156,5 @@ scores = await batch_scorer.score_responses_by_filters_async(scorer=scorer, labe
 memory = CentralMemory.get_memory_instance()
 
 for score in scores:
-    prompt_text = memory.get_prompt_request_pieces(prompt_ids=[str(score.prompt_request_response_id)])[0].original_value
+    prompt_text = memory.get_message_pieces(prompt_ids=[str(score.message_piece_id)])[0].original_value
     print(f"{score} : {prompt_text}")

@@ -5,11 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.6
-#   kernelspec:
-#     display_name: pyrit-312
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -71,7 +67,7 @@ memory_labels = {"op_name": "new_op", "user_name": "roakey", "test_name": "cookb
 
 # Configure any converters you want to use for the first few turns of the conversation.
 # In this case, we are using a tense converter to make the prompts in past tense, and then
-# we are using a translation converter to translate the promtps to Spanish.
+# we are using a translation converter to translate the prompts to Spanish.
 
 # All of this is very slow (but we only are doing it once)
 
@@ -128,7 +124,10 @@ for objective in conversation_objectives:
 # Notice in this run, when we print the conversation, the first N-1 turns are the same, but the last turn is different!
 
 # %%
+from typing import List
+
 from pyrit.memory import CentralMemory
+from pyrit.models import AttackResult
 
 memory = CentralMemory.get_memory_instance()
 
@@ -161,22 +160,27 @@ new_attack = CrescendoAttack(
     max_backtracks=2,
 )
 
-# Note, we want a better way to retrieve successful conversations from memory, so that's coming very soon.
-# We are tackling this internally.
+# Retrieve the conversations from memory and prepend them to the new attack.
+# (in this case, we have results in a variable, but you can assume it's from an old session)
 
-# For now, let's use results
-# But if you save the output of the attack, you can also view the conersation_ids in the results object, or reconstruct them.
+memory = CentralMemory.get_memory_instance()
+pieces = memory.get_message_pieces(labels=memory_labels)
+conversation_ids = set(piece.conversation_id for piece in pieces)
 
-# this object is a dictionary of the first N-1 turns of the successful conversations from the earlier attack
+attack_results: List[AttackResult] = [
+    result for cid in conversation_ids for result in memory.get_attack_results(conversation_id=cid)
+]
+
 conversation_starters = {}
 
-for result in results:
+for attack_result in attack_results:
     new_conversation = memory.duplicate_conversation_excluding_last_turn(
-        conversation_id=result.conversation_id,
+        conversation_id=attack_result.conversation_id,
         new_attack_id=new_attack.get_identifier()["id"],
     )
 
-    conversation_starters[result.objective] = list(memory.get_conversation(conversation_id=new_conversation))
+    conversation_starters[attack_result.objective] = list(memory.get_conversation(conversation_id=new_conversation))
+
 
 for objective, conversation in conversation_starters.items():
     new_result = await new_attack.execute_async(objective=objective, prepended_conversation=conversation, memory_labels=memory_labels)  # type: ignore

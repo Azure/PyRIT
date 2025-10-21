@@ -10,7 +10,7 @@ import logging
 import uuid
 from abc import abstractmethod
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Union
+from typing import Dict, List, Optional, Sequence, Union, cast
 
 from pyrit.exceptions import (
     InvalidJsonException,
@@ -19,17 +19,18 @@ from pyrit.exceptions import (
 )
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import (
+    ChatMessageRole,
+    Message,
+    MessagePiece,
     PromptDataType,
-    PromptRequestPiece,
-    PromptRequestResponse,
     Score,
     ScoreType,
     UnvalidatedScore,
 )
-from pyrit.models.literals import ChatMessageRole
-from pyrit.prompt_target import PromptChatTarget
+from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
 from pyrit.score.scorer_evaluation.metrics_type import MetricsType
+from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,9 @@ class Scorer(abc.ABC):
     """
 
     scorer_type: ScoreType
+
+    def __init__(self, *, validator: ScorerPromptValidator):
+        self._validator = validator
 
     @property
     def _memory(self) -> MemoryInterface:
@@ -64,38 +68,103 @@ class Scorer(abc.ABC):
             raise ValueError(f"Path not found: {str(path_obj)}")
         return path_obj
 
-    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+    async def score_async(
+        self,
+        message: Message,
+        *,
+        objective: Optional[str] = None,
+        role_filter: Optional[ChatMessageRole] = None,
+        skip_on_error_result: bool = False,
+        infer_objective_from_request: bool = False,
+    ) -> list[Score]:
         """
-        Score the request_response, add the results to the database
+        Score the message, add the results to the database
         and return a list of Score objects.
 
         Args:
-            request_response (PromptRequestPiece): The request response to be scored.
+            message (Message): The request response to be scored.
             task (str): The task based on which the text should be scored (the original attacker model's objective).
 
         Returns:
             list[Score]: A list of Score objects representing the results.
         """
-        self.validate(request_response, task=task)
-        scores = await self._score_async(request_response, task=task)
+        self._validator.validate(message, objective=objective)
+
+        if role_filter is not None and message.get_role() != role_filter:
+            logger.debug("Skipping scoring due to role filter mismatch.")
+            return []
+
+        if skip_on_error_result and message.is_error():
+            logger.debug("Skipping scoring due to error in message and skip_on_error=True.")
+            return []
+
+        if infer_objective_from_request and (not objective):
+            objective = self._extract_objective_from_response(message)
+
+        scores = await self._score_async(
+            message,
+            objective=objective,
+        )
+
+        self.validate_return_scores(scores=scores)
         self._memory.add_scores_to_memory(scores=scores)
+
         return scores
 
-    @abstractmethod
-    async def _score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
-        raise NotImplementedError("score_async method not implemented")
-
-    @abstractmethod
-    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
+    async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         """
-        Validates the request_response piece to score. Because some scorers may require
-        specific PromptRequestPiece types or values.
+        Score the given request response asynchronously.
+
+        This default implementation scores all supported pieces in the message
+        and returns a flattened list of scores. Subclasses can override this method
+        to implement custom scoring logic (e.g., aggregating scores).
 
         Args:
-            request_response (PromptRequestPiece): The request response to be validated.
-            task (str): The task based on which the text should be scored (the original attacker model's objective).
+            message (Message): The message to score.
+            objective (Optional[str]): The objective to evaluate against. Defaults to None.
+
+        Returns:
+            list[Score]: A list of Score objects.
         """
-        raise NotImplementedError("score_async method not implemented")
+        if not message.message_pieces:
+            return []
+
+        # Score only the supported pieces
+        supported_pieces = self._get_supported_pieces(message)
+
+        tasks = [self._score_piece_async(message_piece=piece, objective=objective) for piece in supported_pieces]
+
+        if not tasks:
+            return []
+
+        # Run all piece-level scorings concurrently
+        piece_score_lists = await asyncio.gather(*tasks)
+
+        # Flatten list[list[Score]] -> list[Score]
+        return [score for sublist in piece_score_lists for score in sublist]
+
+    @abstractmethod
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
+        raise NotImplementedError()
+
+    def _get_supported_pieces(self, message: Message) -> list[MessagePiece]:
+        """
+        Returns a list of supported message pieces for this scorer.
+        """
+        return [
+            piece for piece in message.message_pieces if self._validator.is_message_piece_supported(message_piece=piece)
+        ]
+
+    @abstractmethod
+    def validate_return_scores(self, scores: list[Score]):
+        """
+        Validates the scores returned by the scorer. Because some scorers may require
+        specific Score types or values.
+
+        Args:
+            scores (list[Score]): The scores to be validated.
+        """
+        raise NotImplementedError()
 
     def get_scorer_metrics(self, dataset_name: str, metrics_type: Optional[MetricsType] = None):
         """
@@ -124,99 +193,115 @@ class Scorer(abc.ABC):
         scorer_evaluator = ScorerEvaluator.from_scorer(self, metrics_type=metrics_type)
         return scorer_evaluator.get_scorer_metrics(dataset_name=dataset_name)
 
-    async def score_text_async(self, text: str, *, task: Optional[str] = None) -> list[Score]:
+    async def score_text_async(self, text: str, *, objective: Optional[str] = None) -> list[Score]:
         """
         Scores the given text based on the task using the chat target.
 
         Args:
             text (str): The text to be scored.
-            task (str): The task based on which the text should be scored (the original attacker model's objective).
+            objective (str): The task based on which the text should be scored
 
         Returns:
             list[Score]: A list of Score objects representing the results.
         """
-        request_piece = PromptRequestPiece(
-            role="user",
-            original_value=text,
+        request = Message(
+            message_pieces=[
+                MessagePiece(
+                    role="user",
+                    original_value=text,
+                )
+            ]
         )
 
-        request_piece.id = None
-        return await self.score_async(request_piece, task=task)
+        request.message_pieces[0].id = None
+        return await self.score_async(request, objective=objective)
 
-    async def score_text_batch_async(
-        self,
-        *,
-        texts: Sequence[str],
-        tasks: Optional[Sequence[str]] = None,
-        batch_size: int = 10,
-    ) -> list[Score]:
-        if tasks:
-            if len(tasks) != len(texts):
-                raise ValueError("The number of tasks must match the number of texts.")
-        if len(texts) == 0:
-            return []
-        prompt_target = getattr(self, "_prompt_target")
-        results = await batch_task_async(
-            task_func=self.score_text_async,
-            task_arguments=["text", "task"] if tasks else ["text"],
-            prompt_target=prompt_target,
-            batch_size=batch_size,
-            items_to_batch=[texts, tasks] if tasks else [texts],
+    async def score_image_async(self, image_path: str, *, objective: Optional[str] = None) -> list[Score]:
+        """
+        Scores the given image using the chat target.
+
+        Args:
+            text (str): The image to be scored.
+            objective (str): The objective based on which the text should be scored
+
+        Returns:
+            list[Score]: A list of Score objects representing the results.
+        """
+        request = Message(
+            message_pieces=[
+                MessagePiece(
+                    role="user",
+                    original_value=image_path,
+                    original_value_data_type="image_path",
+                )
+            ]
         )
-        return [score for sublist in results for score in sublist]
 
-    async def score_responses_inferring_tasks_batch_async(
+        request.message_pieces[0].id = None
+        return await self.score_async(request, objective=objective)
+
+    async def score_prompts_batch_async(
         self,
         *,
-        request_responses: Sequence[PromptRequestPiece],
+        messages: Sequence[Message],
+        objectives: Optional[Sequence[str]] = None,
         batch_size: int = 10,
+        role_filter: Optional[ChatMessageRole] = None,
+        skip_on_error_result: bool = False,
+        infer_objective_from_request: bool = False,
     ) -> list[Score]:
         """
-        Scores a batch of responses (ignores non-assistant messages).
+        Score multiple prompts in batches using the provided objectives.
 
-        This will send the last requests as tasks if it can. If it's complicated (e.g. non-text) it will send None.
+        Args:
+            messages (Sequence[Message]): The messages to be scored.
+            objectives (Sequence[str]): The objectives/tasks based on which the prompts should be scored.
+                Must have the same length as messages.
+            batch_size (int): The maximum batch size for processing prompts. Defaults to 10.
+            role_filter (Optional[ChatMessageRole]): If provided, only score pieces with this role.
+                Defaults to None (no filtering).
+            skip_on_error_result (bool): If True, skip scoring pieces that have errors. Defaults to False.
+            infer_objective_from_request (bool): If True and objective is empty, attempt to infer
+                the objective from the request. Defaults to False.
 
-        For more control, use score_prompts_with_tasks_batch_async
+        Returns:
+            list[Score]: A flattened list of Score objects from all scored prompts.
+
+        Raises:
+            ValueError: If objectives is empty or if the number of objectives doesn't match
+                the number of messages.
         """
-        responses = [piece for piece in request_responses if piece.role == "assistant"]
-        tasks = [self._extract_task_from_response(response) for response in responses]
-        return await self.score_prompts_with_tasks_batch_async(
-            request_responses=responses, tasks=tasks, batch_size=batch_size
-        )
+        if not objectives:
+            objectives = [""] * len(messages)
 
-    async def score_prompts_with_tasks_batch_async(
-        self,
-        *,
-        request_responses: Sequence[PromptRequestPiece],
-        tasks: Sequence[str],
-        batch_size: int = 10,
-    ) -> list[Score]:
-        if not tasks:
-            raise ValueError("Tasks must be provided.")
-        if len(tasks) != len(request_responses):
-            raise ValueError("The number of tasks must match the number of request_responses.")
+        elif len(objectives) != len(messages):
+            raise ValueError("The number of tasks must match the number of messages.")
 
-        if len(request_responses) == 0:
+        if len(messages) == 0:
             return []
 
+        # Some scorers do not have an associated prompt target; batch helper validates RPM only when present
         prompt_target = getattr(self, "_prompt_target", None)
         results = await batch_task_async(
             task_func=self.score_async,
-            task_arguments=["request_response", "task"],
-            prompt_target=prompt_target,
+            task_arguments=["message", "objective"],
+            prompt_target=cast(PromptTarget, prompt_target),
             batch_size=batch_size,
-            items_to_batch=[request_responses, tasks],
+            items_to_batch=[messages, objectives],
+            role_filter=role_filter,
+            skip_on_error_result=skip_on_error_result,
+            infer_objective_from_request=infer_objective_from_request,
         )
 
         # results is a list[list[Score]] and needs to be flattened
         return [score for sublist in results for score in sublist]
 
     async def score_image_batch_async(
-        self, *, image_paths: Sequence[str], tasks: Optional[Sequence[str]] = None, batch_size: int = 10
+        self, *, image_paths: Sequence[str], objectives: Optional[Sequence[str]] = None, batch_size: int = 10
     ) -> list[Score]:
-        if tasks:
-            if len(tasks) != len(image_paths):
-                raise ValueError("The number of tasks must match the number of image_paths.")
+        if objectives:
+            if len(objectives) != len(image_paths):
+                raise ValueError("The number of objectives must match the number of image_paths.")
 
         if len(image_paths) == 0:
             return []
@@ -224,35 +309,13 @@ class Scorer(abc.ABC):
         prompt_target = getattr(self, "_prompt_target", None)
         results = await batch_task_async(
             task_func=self.score_image_async,
-            task_arguments=["image_path", "task"] if tasks else ["image_path"],
+            task_arguments=["image_path", "objective"] if objectives else ["image_path"],
             prompt_target=prompt_target,
             batch_size=batch_size,
-            items_to_batch=[image_paths, tasks] if tasks else [image_paths],
+            items_to_batch=[image_paths, objectives] if objectives else [image_paths],
         )
 
         return [score for sublist in results for score in sublist]
-
-    async def score_image_async(self, image_path: str, *, task: Optional[str] = None) -> list[Score]:
-        """
-        Scores the given image using the chat target.
-
-        Args:
-            text (str): The image to be scored.
-            task (str): The task based on which the text should be scored (the original attacker model's objective).
-
-        Returns:
-            list[Score]: A list of Score objects representing the results.
-        """
-        request_piece = PromptRequestPiece(
-            role="user",
-            original_value=image_path,
-            converted_value=image_path,
-            original_value_data_type="image_path",
-            converted_value_data_type="image_path",
-        )
-
-        request_piece.id = None
-        return await self.score_async(request_piece, task=task)
 
     def scale_value_float(self, value: float, min_value: float, max_value: float) -> float:
         """
@@ -285,32 +348,6 @@ class Scorer(abc.ABC):
         identifier["sub_identifier"] = None
         return identifier
 
-    def _extract_task_from_response(self, response: PromptRequestPiece) -> str:
-        """
-        Extracts a task from the response using the last request (if it exists).
-
-        Args:
-            response (PromptRequestPiece): The response to extract the task from.
-
-        Returns:
-            str: The task extracted from the response.
-        """
-        if response.role != "assistant":
-            return ""
-
-        conversation = self._memory.get_prompt_request_pieces(conversation_id=response.conversation_id)
-
-        # Every text request piece from the last turn
-        last_turn_text = "\n".join(
-            [
-                piece.original_value
-                for piece in conversation
-                if piece.sequence == response.sequence - 1 and piece.original_value_data_type == "text"
-            ]
-        )
-
-        return last_turn_text
-
     @pyrit_json_retry
     async def _score_value_with_llm(
         self,
@@ -320,8 +357,8 @@ class Scorer(abc.ABC):
         prompt_request_value: str,
         prompt_request_data_type: PromptDataType,
         scored_prompt_id: str,
-        category: Optional[str] = None,
-        task: Optional[str] = None,
+        category: Optional[Sequence[str] | str] = None,
+        objective: Optional[str] = None,
         score_value_output_key: str = "score_value",
         rationale_output_key: str = "rationale",
         description_output_key: str = "description",
@@ -343,7 +380,7 @@ class Scorer(abc.ABC):
             scored_prompt_id (str): The ID of the scored prompt.
             category (str, Optional): The category of the score. Can also be parsed from the JSON response if
                 not provided.
-            task (str, Optional): A description of the task that is associated with the score, used for
+            objective (str, Optional): A description of the objective that is associated with the score, used for
                 contextualizing the result.
             score_value_output_key (str): The key in the JSON response that contains the score value.
             rationale_output_key (str): The key in the JSON response that contains the rationale.
@@ -368,9 +405,9 @@ class Scorer(abc.ABC):
             attack_identifier=attack_identifier,
         )
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
-        scorer_llm_request = PromptRequestResponse(
+        scorer_llm_request = Message(
             [
-                PromptRequestPiece(
+                MessagePiece(
                     role="user",
                     original_value=prompt_request_value,
                     original_value_data_type=prompt_request_data_type,
@@ -386,6 +423,7 @@ class Scorer(abc.ABC):
         except Exception as ex:
             raise Exception(f"Error scoring prompt with original prompt ID: {scored_prompt_id}") from ex
 
+        response_json: str = ""
         try:
             response_json = response.get_value()
 
@@ -396,18 +434,46 @@ class Scorer(abc.ABC):
             if category_response and category:
                 raise ValueError("Category is present in the response and an argument")
 
-            category = category_response if category_response else category
+            # Validate and normalize category to a list of strings
+            cat_val = category_response if category_response is not None else category
+            normalized_category: Optional[list[str]]
+            if cat_val is None:
+                normalized_category = None
+            elif isinstance(cat_val, str):
+                normalized_category = [cat_val]
+            elif isinstance(cat_val, list):
+                if not all(isinstance(x, str) for x in cat_val):
+                    raise ValueError("'category' must be a string or a list of strings")
+                normalized_category = cat_val
+            else:
+                # JSON must yield either a string or a list of strings
+                raise ValueError("'category' must be a string or a list of strings")
+
+            # Normalize metadata to a dictionary with string keys and string/int values
+            raw_md = parsed_response.get(metadata_output_key)
+            normalized_md: Optional[Dict[str, Union[str, int]]]
+            if raw_md is None:
+                normalized_md = None
+            elif isinstance(raw_md, dict):
+                # Coerce keys to str and filter to str/int values only
+                normalized_md = {str(k): v for k, v in raw_md.items() if isinstance(v, (str, int))}
+                # If dictionary becomes empty after filtering, keep as empty dict
+            elif isinstance(raw_md, (str, int)):
+                # Wrap primitive metadata into a namespaced field
+                normalized_md = {"metadata": raw_md}
+            else:
+                # Unrecognized metadata shape; drop to avoid downstream errors
+                normalized_md = None
 
             score = UnvalidatedScore(
                 raw_score_value=str(parsed_response[score_value_output_key]),
                 score_value_description=parsed_response.get(description_output_key),
-                score_type=self.scorer_type,
-                score_category=category,
+                score_category=normalized_category,
                 score_rationale=parsed_response[rationale_output_key],
                 scorer_class_identifier=self.get_identifier(),
-                score_metadata=parsed_response.get(metadata_output_key),
-                prompt_request_response_id=scored_prompt_id,
-                task=task,
+                score_metadata=normalized_md,
+                message_piece_id=scored_prompt_id,
+                objective=objective,
             )
 
         except json.JSONDecodeError:
@@ -416,61 +482,153 @@ class Scorer(abc.ABC):
         except KeyError:
             raise InvalidJsonException(message=f"Invalid JSON response, missing Key: {response_json}")
 
-        try:
-            if self.scorer_type == "float_scale":
-                # raise an exception if it's not parsable as a float
-                float(score.raw_score_value)
-        except ValueError:
-            raise InvalidJsonException(
-                message=f"Invalid JSON response, score_value should be a float not this: {score.raw_score_value}"
-            )
-
         return score
+
+    def _extract_objective_from_response(self, response: Message) -> str:
+        """
+        Extracts an objective from the response using the last request (if it exists).
+
+        Args:
+            response (Message): The response to extract the objective from.
+
+        Returns:
+            str: The objective extracted from the response.
+        """
+
+        if not response.message_pieces:
+            return ""
+
+        piece = response.get_piece()
+
+        if piece.role != "assistant":
+            return ""
+
+        conversation = self._memory.get_message_pieces(conversation_id=piece.conversation_id)
+        last_prompt = max(conversation, key=lambda x: x.sequence)
+
+        # Every text message piece from the last turn
+        last_turn_text = "\n".join(
+            [
+                piece.original_value
+                for piece in conversation
+                if piece.sequence == last_prompt.sequence - 1 and piece.original_value_data_type == "text"
+            ]
+        )
+
+        return last_turn_text
 
     @staticmethod
     async def score_response_async(
         *,
-        response: PromptRequestResponse,
+        response: Message,
+        objective_scorer: Optional[Scorer] = None,
+        auxiliary_scorers: Optional[List[Scorer]] = None,
+        role_filter: ChatMessageRole = "assistant",
+        objective: Optional[str] = None,
+        skip_on_error_result: bool = True,
+    ) -> Dict[str, List[Score]]:
+        """
+        Score a response using an objective scorer and optional auxiliary scorers.
+
+        Args:
+            response (Message): Response containing pieces to score
+            objective_scorer (Scorer): The main scorer to determine success
+            auxiliary_scorers (Optional[List[Scorer]]): List of auxiliary scorers to apply
+            role_filter (ChatMessageRole): Only score pieces with this role (default: `assistant`)
+            objective (Optional[str]): Task/objective for scoring context
+            skip_on_error_result (bool): If True, skip scoring pieces that have errors (default: `True`)
+
+        Returns:
+            Dict[str,List[Score]]: Dictionary with keys `auxiliary_scores` and `objective_scores`
+                containing lists of scores from each type of scorer.
+        """
+        result: Dict[str, List[Score]] = {"auxiliary_scores": [], "objective_scores": []}
+
+        if not response:
+            raise ValueError("Response must be provided for scoring.")
+
+        # If no objective_scorer is provided, only run auxiliary_scorers if present
+        if objective_scorer is None:
+            if auxiliary_scorers:
+                aux_scores = await Scorer.score_response_multiple_scorers_async(
+                    response=response,
+                    scorers=auxiliary_scorers,
+                    role_filter=role_filter,
+                    objective=objective,
+                    skip_on_error_result=skip_on_error_result,
+                )
+                result["auxiliary_scores"] = aux_scores
+            # objective_scores remains empty
+            return result
+
+        # Run auxiliary and objective scoring in parallel if auxiliary_scorers is provided
+        if auxiliary_scorers:
+            aux_task = Scorer.score_response_multiple_scorers_async(
+                response=response,
+                scorers=auxiliary_scorers,
+                role_filter=role_filter,
+                objective=objective,
+                skip_on_error_result=skip_on_error_result,
+            )
+            obj_task = objective_scorer.score_async(
+                message=response,
+                objective=objective,
+                skip_on_error_result=skip_on_error_result,
+                role_filter=role_filter,
+            )
+            aux_scores, obj_scores = await asyncio.gather(aux_task, obj_task)
+            result["auxiliary_scores"] = aux_scores
+            result["objective_scores"] = obj_scores
+        else:
+            obj_scores = await objective_scorer.score_async(
+                message=response,
+                objective=objective,
+                skip_on_error_result=skip_on_error_result,
+                role_filter=role_filter,
+            )
+            result["objective_scores"] = obj_scores
+        return result
+
+    @staticmethod
+    async def score_response_multiple_scorers_async(
+        *,
+        response: Message,
         scorers: List[Scorer],
         role_filter: ChatMessageRole = "assistant",
-        task: Optional[str] = None,
-        skip_on_error: bool = True,
+        objective: Optional[str] = None,
+        skip_on_error_result: bool = True,
     ) -> List[Score]:
         """
         Score a response using multiple scorers in parallel.
 
-        This method runs all scorers on all filtered response pieces concurrently for maximum performance.
-        Typically used for auxiliary scoring where all results are needed but not returned.
+        This method applies each scorer to the first scorable response piece (filtered by role and error),
+        and returns all scores. This is typically used for auxiliary scoring where all results are needed.
 
         Args:
-            response: PromptRequestResponse containing pieces to score
-            scorers: List of scorers to apply
-            role_filter: Only score pieces with this role (default: "assistant")
-            task: Optional task description for scoring context
-            skip_on_error: If True, skip scoring pieces that have errors (default: True)
+            response (Message): The response containing pieces to score.
+            scorers (List[Scorer]): List of scorers to apply.
+            role_filter (ChatMessageRole): Only score pieces with this role (default: "assistant").
+            objective (Optional[str]): Optional objective description for scoring context.
+            skip_on_error_result (bool): If True, skip scoring pieces that have errors (default: True).
 
         Returns:
-            List of all scores from all scorers
+            List[Score]: All scores from all scorers
         """
         if not scorers:
             return []
 
-        # Filter response pieces by role
-        filtered_pieces = list(response.filter_by_role(role=role_filter))
-        if not filtered_pieces:
-            return []
-
-        # Further filter out error responses if requested
-        if skip_on_error:
-            filtered_pieces = [p for p in filtered_pieces if not p.has_error()]
-            if not filtered_pieces:
-                logger.debug("All response pieces have errors, skipping scoring")
-                return []
-
         # Create all scoring tasks, note TEMPORARY fix to prevent multi-piece responses from breaking scoring logic
-        tasks = [
-            scorer.score_async(request_response=piece, task=task) for piece in filtered_pieces[:1] for scorer in scorers
-        ]
+        tasks = []
+
+        for scorer in scorers:
+            tasks.append(
+                scorer.score_async(
+                    message=response,
+                    objective=objective,
+                    role_filter=role_filter,
+                    skip_on_error_result=skip_on_error_result,
+                )
+            )
 
         if not tasks:
             return []
@@ -480,155 +638,3 @@ class Scorer(abc.ABC):
 
         # Flatten the list of lists into a single list
         return [score for scores in score_lists for score in scores]
-
-    @staticmethod
-    async def score_response_select_first_success_async(
-        *,
-        response: PromptRequestResponse,
-        scorers: List[Scorer],
-        role_filter: ChatMessageRole = "assistant",
-        task: Optional[str] = None,
-        skip_on_error: bool = True,
-    ) -> Optional[Score]:
-        """
-        Score response pieces sequentially until finding a successful score.
-
-        This method processes filtered response pieces one by one. For each piece, it runs all
-        scorers in parallel, then checks the results for a successful score (where score.get_value()
-        is truthy). If no successful score is found, it returns the first score as a failure indicator.
-
-        Args:
-            response: PromptRequestResponse containing pieces to score
-            scorers: List of scorers to use for evaluation
-            role_filter: Only score pieces with this role (default: "assistant")
-            task: Optional task description for scoring context
-            skip_on_error: If True, skip scoring pieces that have errors (default: True)
-
-        Returns:
-            The first successful score, or the first score if no success found, or None if no scores
-        """
-        if not scorers:
-            return None
-
-        # Filter response pieces by role
-        filtered_pieces = list(response.filter_by_role(role=role_filter))
-        if not filtered_pieces:
-            return None
-
-        # Further filter out error responses if requested
-        if skip_on_error:
-            scorable_pieces = [p for p in filtered_pieces if not p.has_error()]
-            if not scorable_pieces:
-                logger.debug("All response pieces have errors, skipping scoring")
-                return None
-        else:
-            scorable_pieces = filtered_pieces
-
-        first_score = None
-
-        # TEMPORARY fix to prevent multi-piece responses from breaking scoring logic of attack
-        for piece in scorable_pieces[:1]:
-            # Run all scorers on this piece in parallel
-            tasks = [scorer.score_async(request_response=piece, task=task) for scorer in scorers]
-            score_lists = await asyncio.gather(*tasks)
-
-            # Flatten the results
-            scores = [score for scores in score_lists for score in scores]
-
-            # Remember the first score as potential fallback
-            if scores and first_score is None:
-                first_score = scores[0]
-
-            # Check for successful score
-            for score in scores:
-                if score.get_value():
-                    return score
-
-        # No successful score found - return first score as failure indicator
-        return first_score
-
-    @staticmethod
-    async def score_response_with_objective_async(
-        *,
-        response: PromptRequestResponse,
-        auxiliary_scorers: Optional[List[Scorer]] = None,
-        objective_scorers: Optional[List[Scorer]] = None,
-        role_filter: ChatMessageRole = "assistant",
-        task: Optional[str] = None,
-        skip_on_error: bool = True,
-    ) -> Dict[str, List[Score]]:
-        """
-        Score a response using both auxiliary and objective scorers.
-
-        This method runs auxiliary scorers for collecting metrics and objective scorers
-        for determining success. All scorers are run asynchronously for performance.
-
-        Args:
-            response (PromptRequestResponse): Response containing pieces to score
-            auxiliary_scorers (Optional[List[Scorer]]): List of auxiliary scorers to apply
-            objective_scorers (Optional[List[Scorer]]): List of objective scorers to apply
-            role_filter (ChatMessageRole): Only score pieces with this role (default: `assistant`)
-            task (Optional[str]): Optional task description for scoring context
-            skip_on_error (bool): If True, skip scoring pieces that have errors (default: `True`)
-
-        Returns:
-            Dict[str,List[Score]]: Dictionary with keys `auxiliary_scores` and `objective_scores`
-                containing lists of scores from each type of scorer.
-        """
-        # Initialize result dictionary
-        result: Dict[str, List[Score]] = {"auxiliary_scores": [], "objective_scores": []}
-
-        has_auxiliary = auxiliary_scorers is not None
-        has_objective = objective_scorers is not None
-
-        # Early return if no scorers provided
-        if not has_auxiliary and not has_objective:
-            return result
-
-        # Run both types of scoring concurrently if both are present
-        if has_auxiliary and has_objective:
-            auxiliary_task = Scorer.score_response_async(
-                response=response,
-                scorers=auxiliary_scorers,
-                role_filter=role_filter,
-                task=task,
-                skip_on_error=skip_on_error,
-            )
-
-            objective_task = Scorer.score_response_select_first_success_async(
-                response=response,
-                scorers=objective_scorers,
-                role_filter=role_filter,
-                task=task,
-                skip_on_error=skip_on_error,
-            )
-
-            # Run them in parallel and unpack results
-            auxiliary_scores, objective_score = await asyncio.gather(auxiliary_task, objective_task)
-
-            # Store results
-            result["auxiliary_scores"] = auxiliary_scores
-            result["objective_scores"] = [objective_score] if objective_score else []
-
-        # Run only auxiliary scoring
-        elif has_auxiliary:
-            result["auxiliary_scores"] = await Scorer.score_response_async(
-                response=response,
-                scorers=auxiliary_scorers,
-                role_filter=role_filter,
-                task=task,
-                skip_on_error=skip_on_error,
-            )
-
-        # Run only objective scoring
-        elif has_objective:
-            objective_score = await Scorer.score_response_select_first_success_async(
-                response=response,
-                scorers=objective_scorers,
-                role_filter=role_filter,
-                task=task,
-                skip_on_error=skip_on_error,
-            )
-            result["objective_scores"] = [objective_score] if objective_score else []
-
-        return result

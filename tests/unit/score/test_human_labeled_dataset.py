@@ -6,7 +6,7 @@ import logging
 import pytest
 
 from pyrit.common.path import SCORER_EVALS_HARM_PATH
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import Message, MessagePiece
 from pyrit.score import (
     HarmHumanLabeledEntry,
     HumanLabeledDataset,
@@ -18,9 +18,9 @@ from pyrit.score import (
 @pytest.fixture
 def sample_responses():
     return [
-        PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(role="assistant", original_value="test response", original_value_data_type="text")
+        Message(
+            message_pieces=[
+                MessagePiece(role="assistant", original_value="test response", original_value_data_type="text")
             ]
         )
     ]
@@ -194,7 +194,7 @@ def test_validate_fields_invalid_data_type():
 
 def test_construct_harm_entry(sample_responses):
     entry = HumanLabeledDataset._construct_harm_entry(
-        request_responses=sample_responses, harm="hate_speech", human_scores=["0.1", 0.2]
+        messages=sample_responses, harm="hate_speech", human_scores=["0.1", 0.2]
     )
     assert entry.harm_category == "hate_speech"
     assert entry.human_scores == [0.1, 0.2]
@@ -202,7 +202,7 @@ def test_construct_harm_entry(sample_responses):
 
 def test_construct_objective_entry_bool_conversion(sample_responses):
     entry = HumanLabeledDataset._construct_objective_entry(
-        request_responses=sample_responses, objective="obj", human_scores=["1", "0"]
+        messages=sample_responses, objective="obj", human_scores=["1", "0"]
     )
     assert entry.human_scores == [True, False]
 
@@ -245,4 +245,4 @@ def test_human_labeled_dataset_from_csv_with_data_type_col(tmp_path):
         assistant_response_data_type_col_name="data_type",
     )
     assert isinstance(dataset, HumanLabeledDataset)
-    assert dataset.entries[0].conversation[0].request_pieces[0].original_value_data_type == "text"
+    assert dataset.entries[0].conversation[0].message_pieces[0].original_value_data_type == "text"

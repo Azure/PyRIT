@@ -9,9 +9,9 @@ import numpy as np
 import pytest
 
 from pyrit.common.path import SCORER_EVALS_HARM_PATH, SCORER_EVALS_OBJECTIVE_PATH
-from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import Message, MessagePiece
 from pyrit.score import (
+    FloatScaleScorer,
     HarmHumanLabeledEntry,
     HarmScorerEvaluator,
     HarmScorerMetrics,
@@ -20,8 +20,8 @@ from pyrit.score import (
     ObjectiveHumanLabeledEntry,
     ObjectiveScorerEvaluator,
     ObjectiveScorerMetrics,
-    Scorer,
     ScorerEvaluator,
+    TrueFalseScorer,
 )
 
 
@@ -37,16 +37,14 @@ def sample_objective_csv_path():
 
 @pytest.fixture
 def mock_harm_scorer():
-    scorer = MagicMock(spec=Scorer)
-    scorer.scorer_type = "float_scale"
+    scorer = MagicMock(spec=FloatScaleScorer)
     scorer._memory = MagicMock()
     return scorer
 
 
 @pytest.fixture
 def mock_objective_scorer():
-    scorer = MagicMock(spec=Scorer)
-    scorer.scorer_type = "true_false"
+    scorer = MagicMock(spec=TrueFalseScorer)
     scorer._memory = MagicMock()
     return scorer
 
@@ -257,23 +255,19 @@ def test_get_metrics_path_and_csv_path_objective(mock_objective_scorer):
 @pytest.mark.asyncio
 async def test_run_evaluation_async_harm(mock_harm_scorer):
     responses = [
-        PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(role="assistant", original_value="test", original_value_data_type="text")
-            ]
-        )
+        Message(message_pieces=[MessagePiece(role="assistant", original_value="test", original_value_data_type="text")])
     ]
     entry1 = HarmHumanLabeledEntry(responses, [0.1, 0.3], "hate_speech")
     entry2 = HarmHumanLabeledEntry(responses, [0.2, 0.6], "hate_speech")
     mock_dataset = HumanLabeledDataset(name="test_dataset", metrics_type=MetricsType.HARM, entries=[entry1, entry2])
     # Patch scorer to return fixed scores
     entry_values = [MagicMock(get_value=lambda: 0.2), MagicMock(get_value=lambda: 0.4)]
-    mock_harm_scorer.score_responses_inferring_tasks_batch_async = AsyncMock(return_value=entry_values)
+    mock_harm_scorer.score_prompts_batch_async = AsyncMock(return_value=entry_values)
     evaluator = HarmScorerEvaluator(mock_harm_scorer)
     metrics = await evaluator.run_evaluation_async(
         labeled_dataset=mock_dataset, num_scorer_trials=2, save_results=False
     )
-    assert mock_harm_scorer._memory.add_request_response_to_memory.call_count == 2
+    assert mock_harm_scorer._memory.add_message_to_memory.call_count == 2
     assert isinstance(metrics, HarmScorerMetrics)
     assert metrics.mean_absolute_error == 0.0
     assert metrics.mae_standard_error == 0.0
@@ -282,11 +276,7 @@ async def test_run_evaluation_async_harm(mock_harm_scorer):
 @pytest.mark.asyncio
 async def test_run_evaluation_async_objective(mock_objective_scorer):
     responses = [
-        PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(role="assistant", original_value="test", original_value_data_type="text")
-            ]
-        )
+        Message(message_pieces=[MessagePiece(role="assistant", original_value="test", original_value_data_type="text")])
     ]
     entry = ObjectiveHumanLabeledEntry(responses, [True], "Test objective")
     mock_dataset = HumanLabeledDataset(name="test_dataset", metrics_type=MetricsType.OBJECTIVE, entries=[entry])
@@ -298,7 +288,7 @@ async def test_run_evaluation_async_objective(mock_objective_scorer):
     metrics = await evaluator.run_evaluation_async(
         labeled_dataset=mock_dataset, num_scorer_trials=2, save_results=False
     )
-    assert mock_objective_scorer._memory.add_request_response_to_memory.call_count == 1
+    assert mock_objective_scorer._memory.add_message_to_memory.call_count == 1
     assert isinstance(metrics, ObjectiveScorerMetrics)
     assert metrics.accuracy == 0.0
     assert metrics.accuracy_standard_error == 0.0

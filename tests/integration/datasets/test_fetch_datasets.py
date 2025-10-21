@@ -13,6 +13,7 @@ from pyrit.datasets import (
     fetch_equitymedqa_dataset_unique_values,
     fetch_forbidden_questions_dataset,
     fetch_harmbench_dataset,
+    fetch_harmbench_multimodal_dataset_async,
     fetch_jbb_behaviors_by_harm_category,
     fetch_jbb_behaviors_by_jbb_category,
     fetch_jbb_behaviors_dataset,
@@ -31,7 +32,7 @@ from pyrit.datasets import (
     fetch_wmdp_dataset,
     fetch_xstest_dataset,
 )
-from pyrit.models.seed_prompt_dataset import SeedPromptDataset
+from pyrit.models import SeedPromptDataset
 
 
 @pytest.mark.parametrize(
@@ -70,6 +71,21 @@ def test_fetch_datasets(fetch_function, is_seed_prompt_dataset):
     if is_seed_prompt_dataset:
         assert isinstance(data, SeedPromptDataset)
         assert len(data.prompts) > 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "fetch_function, number_of_prompts",
+    [
+        (fetch_harmbench_multimodal_dataset_async, 110 * 2),
+    ],
+)
+async def test_fetch_multimodal_datasets(fetch_function, number_of_prompts):
+    data = await fetch_function()
+
+    assert data is not None
+    assert isinstance(data, SeedPromptDataset)
+    assert len(data.prompts) == number_of_prompts
 
 
 @pytest.mark.integration

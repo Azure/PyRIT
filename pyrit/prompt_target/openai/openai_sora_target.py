@@ -29,8 +29,8 @@ from pyrit.exceptions import (
     pyrit_target_retry,
 )
 from pyrit.models import (
-    PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
+    MessagePiece,
     construct_response_from_request,
     data_serializer_factory,
 )
@@ -124,8 +124,10 @@ class OpenAISoraTarget(OpenAITarget):
             api_key (str, Optional): The API key for accessing the service.
                 Uses OPENAI_SORA_KEY environment variable by default.
             headers (str, Optional): Extra headers of the endpoint (JSON).
-            use_aad_auth (bool, Optional): When set to True, user authentication is used
-                instead of API Key.
+            use_entra_auth (bool, Optional): When set to True, user authentication is used
+                instead of API Key. DefaultAzureCredential is taken for
+                https://cognitiveservices.azure.com/.default. Please run `az login` locally
+                to leverage user AuthN.
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit.
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
@@ -215,10 +217,21 @@ class OpenAISoraTarget(OpenAITarget):
 
     @limit_requests_per_minute
     @pyrit_target_retry
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        """Asynchronously sends a prompt request using the detected API version."""
-        self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.request_pieces[0]
+    async def send_prompt_async(self, *, message: Message) -> Message:
+        """Asynchronously sends a message and handles the response within a managed conversation context.
+
+        Args:
+            message (Message): The message object.
+
+        Returns:
+            Message: The updated conversation entry with the response from the prompt target.
+
+        Raises:
+            RateLimitException: If the rate limit is exceeded.
+            httpx.HTTPStatusError: If the request fails.
+        """
+        self._validate_request(message=message)
+        request = message.message_pieces[0]
         prompt = request.converted_value
 
         logger.info(f"Sending the following prompt to the prompt target: {prompt}")
@@ -229,7 +242,7 @@ class OpenAISoraTarget(OpenAITarget):
         else:
             return await self._send_v2_request_async(request, prompt)
 
-    async def _send_v1_request_async(self, request: PromptRequestPiece, prompt: str) -> PromptRequestResponse:
+    async def _send_v1_request_async(self, request: MessagePiece, prompt: str) -> Message:
         """Send request using Sora-1 API (JSON body)."""
         body = self._construct_v1_request_body(prompt=prompt)
         endpoint_uri = f"{self._endpoint}/jobs"
@@ -246,7 +259,7 @@ class OpenAISoraTarget(OpenAITarget):
         self._detected_api_version = "v1"
         return await self._handle_response_async(request=request, response=response)
 
-    async def _send_v2_request_async(self, request: PromptRequestPiece, prompt: str) -> PromptRequestResponse:
+    async def _send_v2_request_async(self, request: MessagePiece, prompt: str) -> Message:
         """Send request using Sora-2 API (multipart form data)."""
         files = self._construct_v2_request_files(prompt=prompt)
 
@@ -370,19 +383,19 @@ class OpenAISoraTarget(OpenAITarget):
         return response
 
     async def _handle_response_async(
-        self, request: PromptRequestPiece, response: httpx.Response
-    ) -> PromptRequestResponse:
+        self, request: MessagePiece, response: httpx.Response
+    ) -> Message:
         """
         Asynchronously handle the response to a video generation request.
 
         This includes checking the status of the task and downloading the video content if successful.
 
         Args:
-            request (PromptRequestPiece): The request piece associated with the prompt.
+            request (MessagePiece): The message piece associated with the prompt.
             response (httpx.Response): The response from the API.
 
         Returns:
-            PromptRequestResponse: The response entry with the saved video path or error message.
+            Message: The response entry with the saved video path or error message.
         """
         content = json.loads(response.content)
 
@@ -462,8 +475,8 @@ class OpenAISoraTarget(OpenAITarget):
         *,
         task_id: str,
         task_content: dict,
-        request: PromptRequestPiece,
-    ) -> PromptRequestResponse:
+        request: MessagePiece,
+    ) -> Message:
         """Download and save video using the appropriate method."""
         if self._detected_api_version == "v1":
             generations = task_content.get("generations", [])
@@ -485,18 +498,18 @@ class OpenAISoraTarget(OpenAITarget):
         *,
         data: bytes,
         file_name: str,
-        request: PromptRequestPiece,
-    ) -> PromptRequestResponse:
+        request: MessagePiece,
+    ) -> Message:
         """
         Asynchronously save the video content to storage using a serializer.
 
         Args:
             data (bytes): The video content to save.
             file_name (str): The filename to use.
-            request (PromptRequestPiece): The request piece associated with the prompt.
+            request (MessagePiece): The request piece associated with the prompt.
 
         Returns:
-            PromptRequestResponse: The response entry with the saved video path.
+            Message: The response entry with the saved video path.
         """
         serializer = data_serializer_factory(
             category="prompt-memory-entries",
@@ -535,23 +548,23 @@ class OpenAISoraTarget(OpenAITarget):
         }
         return {k: v for k, v in files_parameters.items() if v[1] is not None}
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, message: Message) -> None:
         """
-        Validates the prompt request to ensure it meets the requirements for the Sora target.
+        Validates the message to ensure it meets the requirements for the Sora target.
 
         Args:
-            prompt_request (PromptRequestResponse): The prompt request response object.
+            message (Message): The message object.
 
         Raises:
             ValueError: If the request is invalid.
         """
-        request_piece = prompt_request.get_piece()
+        message_piece = message.get_piece()
 
-        n_pieces = len(prompt_request.request_pieces)
+        n_pieces = len(message.message_pieces)
         if n_pieces != 1:
-            raise ValueError(f"This target only supports a single prompt request piece. Received: {n_pieces} pieces.")
+            raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
 
-        piece_type = request_piece.converted_value_data_type
+        piece_type = message_piece.converted_value_data_type
         if piece_type != "text":
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 

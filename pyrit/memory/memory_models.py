@@ -29,10 +29,17 @@ from sqlalchemy.orm import (  # type: ignore
 from sqlalchemy.types import Uuid  # type: ignore
 
 from pyrit.common.utils import to_sha256
-from pyrit.models import PromptDataType, PromptRequestPiece, Score, SeedPrompt
-from pyrit.models.attack_result import AttackOutcome, AttackResult
-from pyrit.models.conversation_reference import ConversationReference, ConversationType
-from pyrit.models.literals import ChatMessageRole
+from pyrit.models import (
+    AttackOutcome,
+    AttackResult,
+    ChatMessageRole,
+    ConversationReference,
+    ConversationType,
+    MessagePiece,
+    PromptDataType,
+    Score,
+    SeedPrompt,
+)
 
 
 class CustomUUID(TypeDecorator):
@@ -80,6 +87,7 @@ class PromptMemoryEntry(Base):
             Can be the same number for multi-part requests or multi-part responses.
         timestamp (DateTime): The timestamp of the memory entry.
         labels (Dict[str, str]): The labels associated with the memory entry. Several can be standardized.
+        targeted_harm_categories (List[str]): The targeted harm categories for the memory entry.
         prompt_metadata (JSON): The metadata associated with the prompt. This can be specific to any scenarios.
             Because memory is how components talk with each other, this can be component specific.
             e.g. the URI from a file uploaded to a blob store, or a document type you want to upload.
@@ -108,6 +116,7 @@ class PromptMemoryEntry(Base):
     timestamp = mapped_column(DateTime, nullable=False)
     labels: Mapped[dict[str, str]] = mapped_column(JSON)
     prompt_metadata: Mapped[dict[str, Union[str, int]]] = mapped_column(JSON)
+    targeted_harm_categories: Mapped[Optional[List[str]]] = mapped_column(JSON)
     converter_identifiers: Mapped[Optional[List[dict[str, str]]]] = mapped_column(JSON)
     prompt_target_identifier: Mapped[dict[str, str]] = mapped_column(JSON)
     attack_identifier: Mapped[dict[str, str]] = mapped_column(JSON)
@@ -136,7 +145,7 @@ class PromptMemoryEntry(Base):
         foreign_keys="ScoreEntry.prompt_request_response_id",
     )
 
-    def __init__(self, *, entry: PromptRequestPiece):
+    def __init__(self, *, entry: MessagePiece):
         self.id = entry.id
         self.role = entry.role
         self.conversation_id = entry.conversation_id
@@ -144,6 +153,7 @@ class PromptMemoryEntry(Base):
         self.timestamp = entry.timestamp
         self.labels = entry.labels
         self.prompt_metadata = entry.prompt_metadata
+        self.targeted_harm_categories = entry.targeted_harm_categories
         self.converter_identifiers = entry.converter_identifiers
         self.prompt_target_identifier = entry.prompt_target_identifier
         self.attack_identifier = entry.attack_identifier
@@ -160,8 +170,8 @@ class PromptMemoryEntry(Base):
 
         self.original_prompt_id = entry.original_prompt_id
 
-    def get_prompt_request_piece(self) -> PromptRequestPiece:
-        prompt_request_piece = PromptRequestPiece(
+    def get_message_piece(self) -> MessagePiece:
+        message_piece = MessagePiece(
             role=self.role,
             original_value=self.original_value,
             original_value_sha256=self.original_value_sha256,
@@ -172,6 +182,7 @@ class PromptMemoryEntry(Base):
             sequence=self.sequence,
             labels=self.labels,
             prompt_metadata=self.prompt_metadata,
+            targeted_harm_categories=self.targeted_harm_categories,
             converter_identifiers=self.converter_identifiers,
             prompt_target_identifier=self.prompt_target_identifier,
             attack_identifier=self.attack_identifier,
@@ -181,8 +192,8 @@ class PromptMemoryEntry(Base):
             original_prompt_id=self.original_prompt_id,
             timestamp=self.timestamp,
         )
-        prompt_request_piece.scores = [score.get_score() for score in self.scores]
-        return prompt_request_piece
+        message_piece.scores = [score.get_score() for score in self.scores]
+        return message_piece
 
     def __str__(self):
         if self.prompt_target_identifier:
@@ -225,13 +236,14 @@ class ScoreEntry(Base):  # type: ignore
     score_value = mapped_column(String, nullable=False)
     score_value_description = mapped_column(String, nullable=True)
     score_type: Mapped[Literal["true_false", "float_scale"]] = mapped_column(String, nullable=False)
-    score_category = mapped_column(String, nullable=True)
+    score_category: Mapped[Optional[list[str]]] = mapped_column(JSON, nullable=True)
     score_rationale = mapped_column(String, nullable=True)
-    score_metadata = mapped_column(String, nullable=True)
+    score_metadata: Mapped[dict[str, Union[str, int]]] = mapped_column(JSON)
     scorer_class_identifier: Mapped[dict[str, str]] = mapped_column(JSON)
     prompt_request_response_id = mapped_column(CustomUUID, ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
     timestamp = mapped_column(DateTime, nullable=False)
-    task = mapped_column(String, nullable=True)
+    task = mapped_column(String, nullable=True)  # Deprecated: Use objective instead
+    objective = mapped_column(String, nullable=True)
     prompt_request_piece: Mapped["PromptMemoryEntry"] = relationship("PromptMemoryEntry", back_populates="scores")
 
     def __init__(self, *, entry: Score):
@@ -243,9 +255,12 @@ class ScoreEntry(Base):  # type: ignore
         self.score_rationale = entry.score_rationale
         self.score_metadata = entry.score_metadata
         self.scorer_class_identifier = entry.scorer_class_identifier
-        self.prompt_request_response_id = entry.prompt_request_response_id if entry.prompt_request_response_id else None
+        self.prompt_request_response_id = entry.message_piece_id if entry.message_piece_id else None
         self.timestamp = entry.timestamp
-        self.task = entry.task
+        # Store in both columns for backward compatibility
+        # New code should only read from objective
+        self.task = entry.objective
+        self.objective = entry.objective
 
     def get_score(self) -> Score:
         return Score(
@@ -257,9 +272,9 @@ class ScoreEntry(Base):  # type: ignore
             score_rationale=self.score_rationale,
             score_metadata=self.score_metadata,
             scorer_class_identifier=self.scorer_class_identifier,
-            prompt_request_response_id=self.prompt_request_response_id,
+            message_piece_id=self.prompt_request_response_id,
             timestamp=self.timestamp,
-            task=self.task,
+            objective=self.objective,
         )
 
     def to_dict(self) -> dict:
@@ -274,7 +289,7 @@ class ScoreEntry(Base):  # type: ignore
             "scorer_class_identifier": self.scorer_class_identifier,
             "prompt_request_response_id": str(self.prompt_request_response_id),
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,
-            "task": self.task,
+            "objective": self.objective,
         }
 
 
@@ -408,7 +423,7 @@ class AttackResultEntry(Base):
         objective (str): Natural-language description of the attacker's objective.
         attack_identifier (dict[str, str]): Identifier of the attack (e.g., name, module).
         objective_sha256 (str): The SHA256 hash of the objective.
-        last_response_id (Uuid): Foreign key to the last response PromptRequestPiece.
+        last_response_id (Uuid): Foreign key to the last response MessagePiece.
         last_score_id (Uuid): Foreign key to the last score ScoreEntry.
         executed_turns (int): Total number of turns that were executed.
         execution_time_ms (int): Total execution time of the attack in milliseconds.
@@ -557,7 +572,7 @@ class AttackResultEntry(Base):
             conversation_id=self.conversation_id,
             objective=self.objective,
             attack_identifier=self.attack_identifier,
-            last_response=self.last_response.get_prompt_request_piece() if self.last_response else None,
+            last_response=self.last_response.get_message_piece() if self.last_response else None,
             last_score=self.last_score.get_score() if self.last_score else None,
             executed_turns=self.executed_turns,
             execution_time_ms=self.execution_time_ms,

@@ -13,7 +13,7 @@ from pyrit.executor.promptgen.anecdoctor import (
     AnecdoctorGenerator,
     AnecdoctorResult,
 )
-from pyrit.models import PromptRequestResponse
+from pyrit.models import Message
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
 
@@ -64,9 +64,9 @@ def sample_context(sample_evaluation_data) -> AnecdoctorContext:
 
 
 @pytest.fixture
-def mock_response() -> PromptRequestResponse:
+def mock_response() -> Message:
     """Create a mock response for testing."""
-    mock_response = MagicMock(spec=PromptRequestResponse)
+    mock_response = MagicMock(spec=Message)
     mock_response.get_piece.return_value = "Generated misinformation content"
     mock_response.get_value.return_value = "Generated misinformation content"
     return mock_response

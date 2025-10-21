@@ -25,7 +25,7 @@ from pyrit.executor.promptgen.core.prompt_generator_strategy import (
 )
 from pyrit.memory import CentralMemory
 from pyrit.models import (
-    PromptRequestResponse,
+    Message,
     Score,
     SeedPrompt,
     SeedPromptGroup,
@@ -33,8 +33,7 @@ from pyrit.models import (
 from pyrit.prompt_converter import FuzzerConverter
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
-from pyrit.score import FloatScaleThresholdScorer, SelfAskScaleScorer
-from pyrit.score.scorer import Scorer
+from pyrit.score import FloatScaleThresholdScorer, Scorer, SelfAskScaleScorer
 
 logger = logging.getLogger(__name__)
 
@@ -446,7 +445,7 @@ class FuzzerResultPrinter:
             self._print_colored(f"{self._indent}Conversation {i} (ID: {conversation_id}):", Style.BRIGHT, Fore.MAGENTA)
             self._print_colored("─" * (self._width - len(self._indent)), Fore.MAGENTA)
 
-            target_messages = self._memory.get_prompt_request_pieces(conversation_id=str(conversation_id))
+            target_messages = self._memory.get_message_pieces(conversation_id=str(conversation_id))
 
             if not target_messages:
                 self._print_colored(f"{self._indent * 2}No conversation data found", Fore.YELLOW)
@@ -941,9 +940,7 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
 
         return [template.render_template_value(prompt=prompt) for prompt in prompts]
 
-    async def _send_prompts_to_target_async(
-        self, *, context: FuzzerContext, prompts: List[str]
-    ) -> List[PromptRequestResponse]:
+    async def _send_prompts_to_target_async(self, *, context: FuzzerContext, prompts: List[str]) -> List[Message]:
         """
         Send prompts to the target in batches.
 
@@ -952,7 +949,7 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
             prompts (List[str]): The prompts to send.
 
         Returns:
-            List[PromptRequestResponse]: The responses from the target.
+            List[Message]: The responses from the target.
         """
         requests = self._create_normalizer_requests(prompts)
 
@@ -988,12 +985,12 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
 
         return requests
 
-    async def _score_responses_async(self, *, responses: List[PromptRequestResponse], tasks: List[str]) -> List[Score]:
+    async def _score_responses_async(self, *, responses: List[Message], tasks: List[str]) -> List[Score]:
         """
         Score the responses from the target.
 
         Args:
-            responses (List[PromptRequestResponse]): The responses to score.
+            responses (List[Message]): The responses to score.
             tasks (List[str]): The original tasks/prompts used for generating the responses.
 
         Returns:
@@ -1002,10 +999,12 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
         if not responses:
             return []
 
-        response_pieces = [response.request_pieces[0] for response in responses]
+        response_pieces = [response.message_pieces[0] for response in responses]
 
         # Score with objective scorer
-        scores = await self._scorer.score_prompts_with_tasks_batch_async(request_responses=response_pieces, tasks=tasks)
+        scores = await self._scorer.score_prompts_batch_async(
+            messages=[piece.to_message() for piece in response_pieces], objectives=tasks
+        )
 
         return scores
 
@@ -1014,7 +1013,7 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
         *,
         context: FuzzerContext,
         scores: List[Score],
-        responses: List[PromptRequestResponse],
+        responses: List[Message],
         template_node: _PromptNode,
         current_seed: _PromptNode,
     ) -> int:
@@ -1024,7 +1023,7 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
         Args:
             context (FuzzerContext): The generation context.
             scores (List[Score]): The scores for each response.
-            responses (List[PromptRequestResponse]): The responses that were scored.
+            responses (List[Message]): The responses that were scored.
             template_node (_PromptNode): The template node that was tested.
             current_seed (_PromptNode): The seed node that was selected.
 
@@ -1032,7 +1031,7 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
             int: The number of jailbreaks found.
         """
         jailbreak_count = 0
-        response_pieces = [response.request_pieces[0] for response in responses]
+        response_pieces = [response.message_pieces[0] for response in responses]
 
         for index, score in enumerate(scores):
             if self._is_jailbreak(score):

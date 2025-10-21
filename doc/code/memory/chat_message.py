@@ -6,11 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
-#   kernelspec:
-#     display_name: pyrit-311
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -19,7 +15,7 @@
 # This notebook gives an introduction to the concept of `ChatMessage` and `ChatMessageNormalizer` and how it can be helpful as you start to work with different models.
 #
 #
-# The main format PyRIT works with is the `PromptRequestPiece` paradigm. Any time a user wants to store or retrieve a chat message, they will use the `PromptRequestPiece` object. However, `ChatMessage` is very common, so there are a lot of times this is the most useful. Any `PromptRequestPiece` object can be translated into a `ChatMessage` object.
+# The main format PyRIT works with is the `MessagePiece` paradigm. Any time a user wants to store or retrieve a chat message, they will use the `MessagePiece` object. However, `ChatMessage` is very common, so there are a lot of times this is the most useful. Any `MessagePiece` object can be translated into a `ChatMessage` object.
 #
 # However, different models may require different formats. For example, certain models may use chatml, or may not support system messages. This is handled
 # in from `ChatMessageNormalizer` and its subclasses.
@@ -46,7 +42,6 @@ print(chatml_messages)
 # If you wish you load a chatml-format conversation, you can use the `from_chatml` method in the `ChatMessageNormalizerChatML`. This will return a list of `ChatMessage` objects that you can then use.
 
 # %%
-
 chat_messages = normalizer.from_chatml(
     """\
     <|im_start|>system
