@@ -5,8 +5,7 @@ from typing import Literal, Sequence
 
 from datasets import load_dataset
 
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import SeedPrompt, SeedPromptDataset
 
 # These are the available subsets of the EquityMedQA dataset
 DATA_SUBSETS: list[str] = [

@@ -576,7 +576,7 @@ initialize_pyrit()
 memory = CentralMemory.get_memory_instance()
 
 # Query by operation label
-results = memory.get_prompt_request_pieces(
+results = memory.get_message_pieces(
     labels={"operation": "your_operation_name"}
 )
 

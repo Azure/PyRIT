@@ -7,9 +7,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Union
 
 from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.models.literals import ChatMessageRole
-from pyrit.models.score import Score
+from pyrit.models import ChatMessageRole, Message, MessagePiece, Score
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
 )
@@ -55,7 +53,7 @@ class ConversationManager:
         self._memory = CentralMemory.get_memory_instance()
         self._attack_identifier = attack_identifier
 
-    def get_conversation(self, conversation_id: str) -> List[PromptRequestResponse]:
+    def get_conversation(self, conversation_id: str) -> List[Message]:
         """
         Retrieve a conversation by its ID.
 
@@ -63,7 +61,7 @@ class ConversationManager:
             conversation_id (str): The ID of the conversation to retrieve.
 
         Returns:
-            List[PromptRequestResponse]: A list of messages in the conversation, ordered by their creation time.
+            List[Message]: A list of messages in the conversation, ordered by their creation time.
                 If no messages exist, an empty list is returned.
         """
         conversation = self._memory.get_conversation(conversation_id=conversation_id)
@@ -71,7 +69,7 @@ class ConversationManager:
 
     def get_last_message(
         self, *, conversation_id: str, role: Optional[ChatMessageRole] = None
-    ) -> Optional[PromptRequestPiece]:
+    ) -> Optional[MessagePiece]:
         """
         Retrieve the most recent message from a conversation.
 
@@ -80,7 +78,7 @@ class ConversationManager:
             role (Optional[ChatMessageRole]): If provided, only return the last message that matches this role.
 
         Returns:
-            Optional[PromptRequestPiece]: The last message piece from the conversation,
+            Optional[MessagePiece]: The last message piece from the conversation,
                 or `None` if no messages exist.
         """
         conversation = self.get_conversation(conversation_id)
@@ -130,7 +128,7 @@ class ConversationManager:
         *,
         conversation_id: str,
         target: Optional[Union[PromptTarget, PromptChatTarget]] = None,
-        prepended_conversation: List[PromptRequestResponse],
+        prepended_conversation: List[Message],
         request_converters: Optional[List[PromptConverterConfiguration]] = None,
         response_converters: Optional[List[PromptConverterConfiguration]] = None,
         max_turns: Optional[int] = None,
@@ -155,7 +153,7 @@ class ConversationManager:
             conversation_id (str): Unique identifier for the conversation to update or create.
             target (Optional[Union[PromptTarget, PromptChatTarget]]): The target to set system prompts on (if
                 applicable).
-            prepended_conversation (List[PromptRequestResponse]):
+            prepended_conversation (List[Message]):
                 List of messages to prepend to the conversation history.
             request_converters (Optional[List[PromptConverterConfiguration]]):
                 List of configurations for converting user (request) messages.
@@ -185,14 +183,14 @@ class ConversationManager:
             return state
 
         # Filter out None values and empty requests
-        valid_requests = [req for req in prepended_conversation if req is not None and req.request_pieces]
+        valid_requests = [req for req in prepended_conversation if req is not None and req.message_pieces]
 
         if not valid_requests:
             logger.debug(f"No valid requests in prepended conversation for: {conversation_id}")
             return state
 
         # Determine if we should exclude the last message (if it's a user message in multi-turn context)
-        last_message = valid_requests[-1].request_pieces[0]
+        last_message = valid_requests[-1].message_pieces[0]
         is_multi_turn = max_turns is not None
         should_exclude_last = is_multi_turn and last_message.role == "user"
 
@@ -213,7 +211,7 @@ class ConversationManager:
                     response_converters=response_converters,
                 )
 
-            # Process the request piece
+            # Process the message piece
             logger.debug(f"Processing message {i + 1}/{len(valid_requests)} in conversation {conversation_id}")
             await self._process_prepended_message_async(
                 request=request,
@@ -236,7 +234,7 @@ class ConversationManager:
     async def _apply_role_specific_converters_async(
         self,
         *,
-        request: PromptRequestResponse,
+        request: Message,
         request_converters: Optional[List[PromptConverterConfiguration]] = None,
         response_converters: Optional[List[PromptConverterConfiguration]] = None,
     ) -> None:
@@ -248,14 +246,14 @@ class ConversationManager:
         - No converters are applied to 'system' role messages
 
         Args:
-            request (PromptRequestResponse): The request containing pieces to convert.
+            request (Message): The request containing pieces to convert.
             request_converters (Optional[List[PromptConverterConfiguration]]):
                 Converter configurations to apply to 'user' role messages.
             response_converters (Optional[List[PromptConverterConfiguration]]):
                 Converter configurations to apply to 'assistant' role messages.
         """
         # Determine which converters to apply based on message roles
-        for piece in request.request_pieces:
+        for piece in request.message_pieces:
             applicable_converters: Optional[List[PromptConverterConfiguration]] = None
 
             if piece.role == "user" and request_converters:
@@ -267,16 +265,16 @@ class ConversationManager:
             # Apply the determined converters
             if applicable_converters:
                 # Create a temporary request with just this piece for conversion
-                temp_request = PromptRequestResponse(request_pieces=[piece])
+                temp_request = Message(message_pieces=[piece])
                 await self._prompt_normalizer.convert_values(
-                    request_response=temp_request,
+                    message=temp_request,
                     converter_configurations=applicable_converters,
                 )
 
     async def _process_prepended_message_async(
         self,
         *,
-        request: PromptRequestResponse,
+        request: Message,
         conversation_id: str,
         conversation_state: ConversationState,
         target: Optional[Union[PromptTarget, PromptChatTarget]] = None,
@@ -284,11 +282,11 @@ class ConversationManager:
     ) -> None:
         """
         Process a prepended message and update the conversation state.
-        This method handles the conversion of request pieces, sets conversation IDs,
+        This method handles the conversion of message pieces, sets conversation IDs,
         and attack identifiers, and processes each piece based on its role.
 
         Args:
-            request (PromptRequestResponse): The request containing pieces to process.
+            request (Message): The request containing pieces to process.
             conversation_id (str): The ID of the conversation to update.
             conversation_state (ConversationState): The current state of the conversation.
             target (Optional[Union[PromptTarget, PromptChatTarget]]): The target to set system prompts on (if
@@ -299,12 +297,12 @@ class ConversationManager:
             ValueError: If the request is invalid or if a system prompt is provided but target doesn't support it.
         """
         # Validate the request before processing
-        if not request or not request.request_pieces:
+        if not request or not request.message_pieces:
             return
 
         # Set the conversation ID and attack ID for each piece in the request
         save_to_memory = True
-        for piece in request.request_pieces:
+        for piece in request.message_pieces:
             piece.conversation_id = conversation_id
             piece.attack_identifier = self._attack_identifier
             piece.id = uuid.uuid4()
@@ -323,12 +321,12 @@ class ConversationManager:
 
         # Add the request to memory if it was not a system piece
         if save_to_memory:
-            self._memory.add_request_response_to_memory(request=request)
+            self._memory.add_message_to_memory(request=request)
 
     def _process_piece(
         self,
         *,
-        piece: PromptRequestPiece,
+        piece: MessagePiece,
         conversation_state: ConversationState,
         max_turns: Optional[int] = None,
         target: Optional[Union[PromptTarget, PromptChatTarget]] = None,
@@ -337,7 +335,7 @@ class ConversationManager:
         Process a message piece based on its role and update conversation state.
 
         Args:
-            piece (PromptRequestPiece): The piece to process.
+            piece (MessagePiece): The piece to process.
             conversation_state (ConversationState): The current state of the conversation.
             max_turns (Optional[int]): Maximum allowed turns (for validation).
             target (Optional[Union[PromptTarget, PromptChatTarget]]): The target to set system prompts on.
@@ -381,7 +379,7 @@ class ConversationManager:
                 )
 
     @staticmethod
-    def _should_exclude_piece_from_memory(*, piece: PromptRequestPiece, max_turns: Optional[int] = None) -> bool:
+    def _should_exclude_piece_from_memory(*, piece: MessagePiece, max_turns: Optional[int] = None) -> bool:
         # System pieces should always be excluded from memory because set_system_prompt function
         # is called on the target, which internally adds them to memory
         return piece.role == "system"
@@ -389,8 +387,8 @@ class ConversationManager:
     async def _populate_conversation_state_async(
         self,
         *,
-        prepended_conversation: List[PromptRequestResponse],
-        last_message: PromptRequestPiece,
+        prepended_conversation: List[Message],
+        last_message: MessagePiece,
         conversation_state: ConversationState,
     ) -> None:
         """
@@ -401,8 +399,8 @@ class ConversationManager:
         - Scores for the last assistant message for evaluation.
 
         Args:
-            prepended_conversation (List[PromptRequestResponse]): Complete conversation history.
-            last_message (PromptRequestPiece): The last message in the history.
+            prepended_conversation (List[Message]): Complete conversation history.
+            last_message (MessagePiece): The last message in the history.
             conversation_state (ConversationState): State object to populate.
 
         Raises:

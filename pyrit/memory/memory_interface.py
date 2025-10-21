@@ -31,21 +31,20 @@ from pyrit.memory.memory_models import (
     SeedPromptEntry,
 )
 from pyrit.models import (
+    AttackResult,
     ChatMessage,
     DataTypeSerializer,
-    PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
+    MessagePiece,
     Score,
     SeedPrompt,
     SeedPromptDataset,
     SeedPromptGroup,
     StorageIO,
     data_serializer_factory,
-    group_conversation_request_pieces_by_sequence,
-    sort_request_pieces,
+    group_conversation_message_pieces_by_sequence,
+    sort_message_pieces,
 )
-from pyrit.models.attack_result import AttackResult
-from pyrit.models.seed import Seed
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +100,7 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _get_prompt_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> list:
+    def _get_message_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> list:
         """
         Returns a list of conditions for filtering memory entries based on memory labels.
 
@@ -116,7 +115,7 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _get_prompt_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list:
+    def _get_message_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list:
         """
         Returns a list of conditions for filtering memory entries based on prompt metadata.
 
@@ -129,7 +128,7 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _get_prompt_pieces_attack_conditions(self, *, attack_id: str) -> Any:
+    def _get_message_pieces_attack_conditions(self, *, attack_id: str) -> Any:
         """
         Returns a condition to retrieve based on attack ID.
         """
@@ -148,9 +147,9 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
+    def add_message_pieces_to_memory(self, *, message_pieces: Sequence[MessagePiece]) -> None:
         """
-        Inserts a list of prompt request pieces into the memory storage.
+        Inserts a list of message pieces into the memory storage.
         """
 
     @abc.abstractmethod
@@ -204,15 +203,15 @@ class MemoryInterface(abc.ABC):
         Inserts a list of scores into the memory storage.
         """
         for score in scores:
-            if score.prompt_request_response_id:
-                prompt_request_response_id = score.prompt_request_response_id
-                prompt_piece = self.get_prompt_request_pieces(prompt_ids=[str(prompt_request_response_id)])
-                if not prompt_piece:
-                    logging.error(f"Prompt with ID {prompt_request_response_id} not found in memory.")
+            if score.message_piece_id:
+                message_piece_id = score.message_piece_id
+                pieces = self.get_message_pieces(prompt_ids=[str(message_piece_id)])
+                if not pieces:
+                    logging.error(f"MessagePiece with ID {message_piece_id} not found in memory.")
                     continue
                 # auto-link score to the original prompt id if the prompt is a duplicate
-                if prompt_piece[0].original_prompt_id != prompt_piece[0].id:
-                    score.prompt_request_response_id = prompt_piece[0].original_prompt_id
+                if pieces[0].original_prompt_id != pieces[0].id:
+                    score.message_piece_id = pieces[0].original_prompt_id
         self._insert_entries(entries=[ScoreEntry(entry=score) for score in scores])
 
     def get_scores(
@@ -274,15 +273,15 @@ class MemoryInterface(abc.ABC):
         converted_value_sha256: Optional[Sequence[str]] = None,
     ) -> Sequence[Score]:
         """
-        Retrieves scores attached to prompt request pieces based on the specified filters.
+        Retrieves scores attached to message pieces based on the specified filters.
 
         Args:
-            Same as `get_prompt_request_pieces`.
+            Same as `get_message_pieces`.
 
         Returns:
-            Sequence[Score]: A list of scores extracted from the prompt request pieces.
+            Sequence[Score]: A list of scores extracted from the message pieces.
         """
-        prompt_pieces = self.get_prompt_request_pieces(
+        message_pieces = self.get_message_pieces(
             attack_id=attack_id,
             role=role,
             conversation_id=conversation_id,
@@ -298,11 +297,11 @@ class MemoryInterface(abc.ABC):
             converted_value_sha256=converted_value_sha256,
         )
 
-        # Deduplicate prompt pieces by original_prompt_id to avoid duplicate scores
+        # Deduplicate message pieces by original_prompt_id to avoid duplicate scores
         # since duplicated pieces share scores with their originals
         seen_original_ids = set()
         unique_pieces = []
-        for piece in prompt_pieces:
+        for piece in message_pieces:
             if piece.original_prompt_id not in seen_original_ids:
                 seen_original_ids.add(piece.original_prompt_id)
                 unique_pieces.append(piece)
@@ -314,20 +313,20 @@ class MemoryInterface(abc.ABC):
 
         return list(scores)
 
-    def get_conversation(self, *, conversation_id: str) -> MutableSequence[PromptRequestResponse]:
+    def get_conversation(self, *, conversation_id: str) -> MutableSequence[Message]:
         """
-        Retrieves a list of PromptRequestResponse objects that have the specified conversation ID.
+        Retrieves a list of Message objects that have the specified conversation ID.
 
         Args:
             conversation_id (str): The conversation ID to match.
 
         Returns:
-            MutableSequence[PromptRequestResponse]: A list of chat memory entries with the specified conversation ID.
+            MutableSequence[Message]: A list of chat memory entries with the specified conversation ID.
         """
-        request_pieces = self.get_prompt_request_pieces(conversation_id=conversation_id)
-        return group_conversation_request_pieces_by_sequence(request_pieces=request_pieces)
+        message_pieces = self.get_message_pieces(conversation_id=conversation_id)
+        return group_conversation_message_pieces_by_sequence(message_pieces=message_pieces)
 
-    def get_prompt_request_pieces(
+    def get_message_pieces(
         self,
         *,
         attack_id: Optional[str | uuid.UUID] = None,
@@ -343,9 +342,9 @@ class MemoryInterface(abc.ABC):
         data_type: Optional[str] = None,
         not_data_type: Optional[str] = None,
         converted_value_sha256: Optional[Sequence[str]] = None,
-    ) -> Sequence[PromptRequestPiece]:
+    ) -> Sequence[MessagePiece]:
         """
-        Retrieves a list of PromptRequestPiece objects based on the specified filters.
+        Retrieves a list of MessagePiece objects based on the specified filters.
 
         Args:
             attack_id (Optional[str | uuid.UUID], optional): The ID of the attack. Defaults to None.
@@ -363,7 +362,7 @@ class MemoryInterface(abc.ABC):
             converted_value_sha256 (Optional[Sequence[str]], optional): A list of SHA256 hashes of converted values.
                 Defaults to None.
         Returns:
-            Sequence[PromptRequestPiece]: A list of PromptRequestPiece objects that match the specified filters.
+            Sequence[MessagePiece]: A list of MessagePiece objects that match the specified filters.
         Raises:
             Exception: If there is an error retrieving the prompts,
                 an exception is logged and an empty list is returned.
@@ -371,7 +370,7 @@ class MemoryInterface(abc.ABC):
 
         conditions = []
         if attack_id:
-            conditions.append(self._get_prompt_pieces_attack_conditions(attack_id=str(attack_id)))
+            conditions.append(self._get_message_pieces_attack_conditions(attack_id=str(attack_id)))
         if role:
             conditions.append(PromptMemoryEntry.role == role)
         if conversation_id:
@@ -380,9 +379,9 @@ class MemoryInterface(abc.ABC):
             prompt_ids = [str(pi) for pi in prompt_ids]
             conditions.append(PromptMemoryEntry.id.in_(prompt_ids))
         if labels:
-            conditions.extend(self._get_prompt_pieces_memory_label_conditions(memory_labels=labels))
+            conditions.extend(self._get_message_pieces_memory_label_conditions(memory_labels=labels))
         if prompt_metadata:
-            conditions.extend(self._get_prompt_pieces_prompt_metadata_conditions(prompt_metadata=prompt_metadata))
+            conditions.extend(self._get_message_pieces_prompt_metadata_conditions(prompt_metadata=prompt_metadata))
         if sent_after:
             conditions.append(PromptMemoryEntry.timestamp >= sent_after)
         if sent_before:
@@ -402,8 +401,8 @@ class MemoryInterface(abc.ABC):
             memory_entries: Sequence[PromptMemoryEntry] = self._query_entries(
                 PromptMemoryEntry, conditions=and_(*conditions) if conditions else None, join_scores=True
             )  # type: ignore
-            prompt_pieces = [memory_entry.get_prompt_request_piece() for memory_entry in memory_entries]
-            return sort_request_pieces(prompt_pieces=prompt_pieces)
+            message_pieces = [memory_entry.get_message_piece() for memory_entry in memory_entries]
+            return sort_message_pieces(message_pieces=message_pieces)
         except Exception as e:
             logger.exception(f"Failed to retrieve prompts with error {e}")
             return []
@@ -425,8 +424,8 @@ class MemoryInterface(abc.ABC):
         """
         new_conversation_id = str(uuid.uuid4())
         # Deep copy objects to prevent any mutability-related issues that could arise due to in-memory databases.
-        prompt_pieces = copy.deepcopy(self.get_prompt_request_pieces(conversation_id=conversation_id))
-        for piece in prompt_pieces:
+        message_pieces = copy.deepcopy(self.get_message_pieces(conversation_id=conversation_id))
+        for piece in message_pieces:
             # Assign duplicated piece a new ID, but note that the `original_prompt_id` remains the same.
             piece.id = uuid.uuid4()
             if piece.attack_identifier["id"] == new_attack_id:
@@ -437,7 +436,7 @@ class MemoryInterface(abc.ABC):
 
             piece.conversation_id = new_conversation_id
 
-        self.add_request_pieces_to_memory(request_pieces=prompt_pieces)
+        self.add_message_pieces_to_memory(message_pieces=message_pieces)
         return new_conversation_id
 
     def duplicate_conversation_excluding_last_turn(
@@ -458,13 +457,13 @@ class MemoryInterface(abc.ABC):
         """
         new_conversation_id = str(uuid.uuid4())
         # Deep copy objects to prevent any mutability-related issues that could arise due to in-memory databases.
-        prompt_pieces = copy.deepcopy(self.get_prompt_request_pieces(conversation_id=conversation_id))
+        message_pieces = copy.deepcopy(self.get_message_pieces(conversation_id=conversation_id))
 
         # remove the final turn from the conversation
-        if len(prompt_pieces) == 0:
+        if len(message_pieces) == 0:
             return new_conversation_id
 
-        last_prompt = max(prompt_pieces, key=lambda x: x.sequence)
+        last_prompt = max(message_pieces, key=lambda x: x.sequence)
 
         length_of_sequence_to_remove = 0
 
@@ -473,32 +472,32 @@ class MemoryInterface(abc.ABC):
         else:
             length_of_sequence_to_remove = 2
 
-        prompt_pieces = [
-            prompt_piece
-            for prompt_piece in prompt_pieces
-            if prompt_piece.sequence <= last_prompt.sequence - length_of_sequence_to_remove
+        message_pieces = [
+            message_piece
+            for message_piece in message_pieces
+            if message_piece.sequence <= last_prompt.sequence - length_of_sequence_to_remove
         ]
 
-        for piece in prompt_pieces:
+        for piece in message_pieces:
             # Assign duplicated piece a new ID, but note that the `original_prompt_id` remains the same.
             piece.id = uuid.uuid4()
             if new_attack_id:
                 piece.attack_identifier["id"] = new_attack_id
             piece.conversation_id = new_conversation_id
 
-        self.add_request_pieces_to_memory(request_pieces=prompt_pieces)
+        self.add_message_pieces_to_memory(message_pieces=message_pieces)
 
         return new_conversation_id
 
-    def add_request_response_to_memory(self, *, request: PromptRequestResponse) -> None:
+    def add_message_to_memory(self, *, request: Message) -> None:
         """
-        Inserts a list of prompt request pieces into the memory storage.
+        Inserts a list of message pieces into the memory storage.
 
         Automatically updates the sequence to be the next number in the conversation.
         If necessary, generates embedding data for applicable entries
 
         Args:
-            request (PromptRequestPiece): The request piece to add to the memory.
+            request (MessagePiece): The message piece to add to the memory.
 
         Returns:
             None
@@ -506,35 +505,35 @@ class MemoryInterface(abc.ABC):
         request.validate()
 
         embedding_entries = []
-        request_pieces = request.request_pieces
+        message_pieces = request.message_pieces
 
-        self._update_sequence(request_pieces=request_pieces)
+        self._update_sequence(message_pieces=message_pieces)
 
-        self.add_request_pieces_to_memory(request_pieces=request_pieces)
+        self.add_message_pieces_to_memory(message_pieces=message_pieces)
 
         if self.memory_embedding:
-            for piece in request_pieces:
-                embedding_entry = self.memory_embedding.generate_embedding_memory_data(prompt_request_piece=piece)
+            for piece in message_pieces:
+                embedding_entry = self.memory_embedding.generate_embedding_memory_data(message_piece=piece)
                 embedding_entries.append(embedding_entry)
 
             self._add_embeddings_to_memory(embedding_data=embedding_entries)
 
-    def _update_sequence(self, *, request_pieces: Sequence[PromptRequestPiece]):
+    def _update_sequence(self, *, message_pieces: Sequence[MessagePiece]):
         """
-        Updates the sequence number of the request pieces in the conversation.
+        Updates the sequence number of the message pieces in the conversation.
 
         Args:
-            request_pieces (Sequence[PromptRequestPiece]): The list of request pieces to update.
+            message_pieces (Sequence[MessagePiece]): The list of message pieces to update.
         """
 
-        prev_conversations = self.get_prompt_request_pieces(conversation_id=request_pieces[0].conversation_id)
+        prev_conversations = self.get_message_pieces(conversation_id=message_pieces[0].conversation_id)
 
         sequence = 0
 
         if len(prev_conversations) > 0:
             sequence = max(prev_conversations, key=lambda item: item.sequence).sequence + 1
 
-        for piece in request_pieces:
+        for piece in message_pieces:
             piece.sequence = sequence
 
     def update_prompt_entries_by_conversation_id(self, *, conversation_id: str, update_fields: dict) -> bool:
@@ -626,7 +625,7 @@ class MemoryInterface(abc.ABC):
         Returns:
             Sequence[ChatMessage]: The list of chat messages.
         """
-        memory_entries = self.get_prompt_request_pieces(conversation_id=conversation_id)
+        memory_entries = self.get_message_pieces(conversation_id=conversation_id)
         return [ChatMessage(role=me.role, content=me.converted_value) for me in memory_entries]  # type: ignore
 
     def get_seed_prompts(
@@ -930,7 +929,7 @@ class MemoryInterface(abc.ABC):
                 Defaults to None.
             export_type (str, optional): The format of the export. Defaults to "json".
         """
-        data = self.get_prompt_request_pieces(
+        data = self.get_message_pieces(
             attack_id=attack_id,
             conversation_id=conversation_id,
             prompt_ids=prompt_ids,

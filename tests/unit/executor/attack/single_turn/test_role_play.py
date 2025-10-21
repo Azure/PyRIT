@@ -15,8 +15,7 @@ from pyrit.executor.attack import (
     RolePlayAttack,
     SingleTurnAttackContext,
 )
-from pyrit.models import AttackOutcome, Score
-from pyrit.models.attack_result import AttackResult
+from pyrit.models import AttackOutcome, AttackResult, Score
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import PromptChatTarget
@@ -263,7 +262,7 @@ class TestRolePlayAttack:
             score_value_description="Test success score",
             score_rationale="Test rationale for success",
             score_metadata={},
-            prompt_request_response_id=str(uuid.uuid4()),
+            message_piece_id=str(uuid.uuid4()),
         )
 
         # Mock the attack execution to return a successful result

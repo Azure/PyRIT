@@ -5,8 +5,7 @@ from typing import List
 
 import pandas as pd
 
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import SeedPrompt, SeedPromptDataset
 
 # URLs for the datasets
 RATINGS_URL = "https://zenodo.org/records/15482694/files/Ratings.xlsx?download=1"

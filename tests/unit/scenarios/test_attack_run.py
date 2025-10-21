@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from pyrit.executor.attack import AttackExecutor, AttackStrategy
-from pyrit.models import AttackOutcome, AttackResult, PromptRequestResponse
+from pyrit.models import AttackOutcome, AttackResult, Message
 from pyrit.scenarios import AttackRun
 
 
@@ -56,8 +56,8 @@ def sample_attack_results():
 def sample_conversation():
     """Create sample conversation for testing."""
     return [
-        MagicMock(spec=PromptRequestResponse),
-        MagicMock(spec=PromptRequestResponse),
+        MagicMock(spec=Message),
+        MagicMock(spec=Message),
     ]
 
 

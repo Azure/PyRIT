@@ -16,8 +16,8 @@ from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
 )
 from pyrit.models import (
-    PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
+    MessagePiece,
     SeedPrompt,
     SeedPromptDataset,
     SeedPromptGroup,
@@ -184,7 +184,7 @@ class ContextComplianceAttack(PromptSendingAttack):
 
     async def _build_benign_context_conversation_async(
         self, *, objective: str, context: SingleTurnAttackContext
-    ) -> list[PromptRequestResponse]:
+    ) -> list[Message]:
         """
         Build the conversation that creates a benign context for the objective.
 
@@ -193,7 +193,7 @@ class ContextComplianceAttack(PromptSendingAttack):
             context (SingleTurnAttackContext): The attack context.
 
         Returns:
-            list[PromptRequestResponse]: The constructed conversation with benign context.
+            list[Message]: The constructed conversation with benign context.
         """
         # Step 1: Rephrase objective as a benign question
         benign_user_query = await self._get_objective_as_benign_question_async(objective=objective, context=context)
@@ -213,18 +213,18 @@ class ContextComplianceAttack(PromptSendingAttack):
 
         # Create the conversation pieces
         return [
-            PromptRequestResponse(
-                request_pieces=[
-                    PromptRequestPiece(
+            Message(
+                message_pieces=[
+                    MessagePiece(
                         role="user",
                         original_value=objective,
                         converted_value=benign_user_query,
                     ),
                 ],
             ),
-            PromptRequestResponse(
-                request_pieces=[
-                    PromptRequestPiece(
+            Message(
+                message_pieces=[
+                    MessagePiece(
                         role="assistant",
                         original_value=assistant_response,
                     ),

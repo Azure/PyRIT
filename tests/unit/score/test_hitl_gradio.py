@@ -9,7 +9,7 @@ import pytest
 
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
+from pyrit.models import Message, MessagePiece, Score
 from pyrit.score import HumanInTheLoopScorerGradio
 
 
@@ -26,7 +26,7 @@ def score() -> Score:
         score_value_description="Safe",
         score_rationale="The prompt was marked safe",
         score_metadata=None,
-        prompt_request_response_id="1234",
+        message_piece_id="1234",
         scorer_class_identifier={"id": "test"},
         objective=None,
     )
@@ -65,10 +65,8 @@ class TestHiTLGradio:
         memory = MagicMock(MemoryInterface)
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
             scorer = HumanInTheLoopScorerGradio()
-            prompt = PromptRequestResponse(
-                request_pieces=[
-                    PromptRequestPiece(role="user", original_value="test", converted_value_data_type="text")
-                ]
+            prompt = Message(
+                message_pieces=[MessagePiece(role="user", original_value="test", converted_value_data_type="text")]
             )
 
             rpc_mocked = mock_rpc_server.return_value
@@ -80,7 +78,7 @@ class TestHiTLGradio:
             assert score_result[0].score_value == score.score_value
 
             rpc_mocked.wait_for_client.assert_called_once()
-            rpc_mocked.send_score_prompt.assert_called_once_with(prompt.request_pieces[0])
+            rpc_mocked.send_score_prompt.assert_called_once_with(prompt.message_pieces[0])
             rpc_mocked.wait_for_score.assert_called_once()
 
             memory.add_scores_to_memory.assert_called_once()
@@ -98,8 +96,8 @@ class TestHiTLGradio:
     @pytest.mark.asyncio
     async def test_scorer_score_async_on_cancel_stops_server(self, mock_rpc_server):
         scorer = HumanInTheLoopScorerGradio()
-        prompt = PromptRequestResponse(
-            request_pieces=[PromptRequestPiece(role="user", original_value="test", converted_value_data_type="text")]
+        prompt = Message(
+            message_pieces=[MessagePiece(role="user", original_value="test", converted_value_data_type="text")]
         )
 
         rpc_mocked = mock_rpc_server.return_value

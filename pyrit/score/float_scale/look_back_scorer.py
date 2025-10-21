@@ -8,8 +8,7 @@ from typing import Optional
 import yaml
 
 from pyrit.common.path import SCORER_CONFIG_PATH
-from pyrit.models import PromptRequestPiece, SeedPrompt
-from pyrit.models.score import Score, UnvalidatedScore
+from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -51,14 +50,12 @@ class LookBackScorer(FloatScaleScorer):
             step_description=behavior_change_scale
         )
 
-    async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
         Scores the entire conversation based on detected behavior change.
 
         Args:
-            request_piece (PromptRequestPiece): A piece of the conversation to be scored.
+            message_piece (MessagePiece): A piece of the conversation to be scored.
                 The conversation ID is used to retrieve the full conversation from memory.
             objective (Optional[str]): The objective to evaluate against. Defaults to None.
                 Currently not used for this scorer.
@@ -68,11 +65,11 @@ class LookBackScorer(FloatScaleScorer):
                 amount of behavior change throughout the conversation.
         """
 
-        # Retrieve conversation from provided PromptRequestPiece
-        conversation = self._memory.get_conversation(conversation_id=request_piece.conversation_id)
+        # Retrieve conversation from provided MessagePiece
+        conversation = self._memory.get_conversation(conversation_id=message_piece.conversation_id)
 
         if not conversation:
-            raise ValueError(f"Conversation with ID {request_piece.conversation_id} not found in memory.")
+            raise ValueError(f"Conversation with ID {message_piece.conversation_id} not found in memory.")
 
         # Loop through each request to create a single string containing the conversation text
         conversation_as_text = ""
@@ -80,13 +77,13 @@ class LookBackScorer(FloatScaleScorer):
             # Check exclude_instruction_prompts flag
             if self.exclude_instruction_prompts:
                 # Skip instruction prompts
-                if re.search(r"#\s*Instructions", request.request_pieces[0].original_value, re.IGNORECASE):
+                if re.search(r"#\s*Instructions", request.message_pieces[0].original_value, re.IGNORECASE):
                     continue
             # Append the request text to the conversation string
             # Only append user and assistant roles to the conversation string
-            if request.request_pieces[0].role in ["user", "assistant"]:
+            if request.message_pieces[0].role in ["user", "assistant"]:
                 conversation_as_text += (
-                    f"{request.request_pieces[0].role}: {request.request_pieces[0].original_value}\n"
+                    f"{request.message_pieces[0].role}: {request.message_pieces[0].original_value}\n"
                 )
 
         # Send full conversation to LLM for scoring
@@ -95,9 +92,9 @@ class LookBackScorer(FloatScaleScorer):
             system_prompt=self._system_prompt,
             prompt_request_value=conversation_as_text,
             prompt_request_data_type="text",
-            scored_prompt_id=conversation[0].request_pieces[0].original_prompt_id,
+            scored_prompt_id=conversation[0].message_pieces[0].original_prompt_id,
             category="illegal",
-            attack_identifier=conversation[0].request_pieces[0].attack_identifier,
+            attack_identifier=conversation[0].message_pieces[0].attack_identifier,
         )
 
         score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value, score_type="float_scale")
