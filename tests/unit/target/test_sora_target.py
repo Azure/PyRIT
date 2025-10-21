@@ -492,7 +492,7 @@ def test_api_version_detected_v2_from_endpoint(patch_central_database):
 @pytest.mark.asyncio
 async def test_send_prompt_async_uses_v1_api(
     sora_target: OpenAISoraTarget,
-    sample_conversations: MutableSequence[PromptRequestPiece],
+    sample_conversations: MutableSequence[MessagePiece],
     video_generation_response_success: dict,
 ):
     """Test that the target uses Sora-1 API when detected."""
@@ -512,7 +512,7 @@ async def test_send_prompt_async_uses_v1_api(
     ) as mock_request:
         mock_request.return_value = openai_mock_return
 
-        response = await sora_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+        response = await sora_target.send_prompt_async(prompt_request=Message([request]))
 
         # Verify v1 API was detected
         assert sora_target._detected_api_version == "v1"
@@ -536,7 +536,7 @@ async def test_send_prompt_async_uses_v1_api(
 @pytest.mark.asyncio
 async def test_send_prompt_async_uses_v2_api(
     patch_central_database,
-    sample_conversations: MutableSequence[PromptRequestPiece],
+    sample_conversations: MutableSequence[MessagePiece],
 ):
     """Test that the target uses Sora-2 API when detected from endpoint URL."""
     # Create target with v2 endpoint
@@ -583,7 +583,7 @@ async def test_send_prompt_async_uses_v2_api(
     ) as mock_request:
         mock_request.return_value = v2_mock_return
 
-        response = await target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+        response = await target.send_prompt_async(prompt_request=Message([request]))
 
         # Verify v2 API was detected from endpoint
         assert target._detected_api_version == "v2"
@@ -744,7 +744,7 @@ async def test_download_video_content_async_v1_missing_generation_id(
 @pytest.mark.asyncio
 async def test_send_v2_request_content_filter_error(
     patch_central_database,
-    sample_conversations: MutableSequence[PromptRequestPiece],
+    sample_conversations: MutableSequence[MessagePiece],
 ):
     """Test v2 API error handling for content filter errors."""
     target = OpenAISoraTarget(
@@ -769,16 +769,16 @@ async def test_send_v2_request_content_filter_error(
     ) as mock_request:
         mock_request.side_effect = http_error
 
-        response = await target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+        response = await target.send_prompt_async(prompt_request=Message([request]))
 
         # Should handle as content filter
-        assert response.request_pieces[0].response_error == "blocked"
+        assert response.message_pieces[0].response_error == "blocked"
 
 
 @pytest.mark.asyncio
 async def test_send_v2_request_non_content_filter_error(
     patch_central_database,
-    sample_conversations: MutableSequence[PromptRequestPiece],
+    sample_conversations: MutableSequence[MessagePiece],
 ):
     """Test v2 API error handling for non-content-filter errors."""
     target = OpenAISoraTarget(
@@ -800,17 +800,17 @@ async def test_send_v2_request_non_content_filter_error(
     ) as mock_request:
         mock_request.side_effect = http_error
 
-        response = await target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+        response = await target.send_prompt_async(prompt_request=Message([request]))
 
         # Should handle as unknown error
-        assert response.request_pieces[0].response_error == "unknown"
-        assert "500" in response.request_pieces[0].converted_value
+        assert response.message_pieces[0].response_error == "unknown"
+        assert "500" in response.message_pieces[0].converted_value
 
 
 @pytest.mark.asyncio
 async def test_send_v2_request_error_non_dict(
     patch_central_database,
-    sample_conversations: MutableSequence[PromptRequestPiece],
+    sample_conversations: MutableSequence[MessagePiece],
 ):
     """Test v2 API error handling when error field is not a dict."""
     target = OpenAISoraTarget(
@@ -832,15 +832,15 @@ async def test_send_v2_request_error_non_dict(
     ) as mock_request:
         mock_request.side_effect = http_error
 
-        response = await target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+        response = await target.send_prompt_async(prompt_request=Message([request]))
 
-        assert "Simple error string" in response.request_pieces[0].converted_value
+        assert "Simple error string" in response.message_pieces[0].converted_value
 
 
 @pytest.mark.asyncio
 async def test_send_v2_request_error_unparseable_json(
     patch_central_database,
-    sample_conversations: MutableSequence[PromptRequestPiece],
+    sample_conversations: MutableSequence[MessagePiece],
 ):
     """Test v2 API error handling when response JSON is unparseable."""
     target = OpenAISoraTarget(
@@ -863,15 +863,15 @@ async def test_send_v2_request_error_unparseable_json(
     ) as mock_request:
         mock_request.side_effect = http_error
 
-        response = await target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+        response = await target.send_prompt_async(prompt_request=Message([request]))
 
-        assert "Raw error response text" in response.request_pieces[0].converted_value
+        assert "Raw error response text" in response.message_pieces[0].converted_value
 
 
 @pytest.mark.asyncio
 async def test_handle_response_cancelled_status(
     sora_target: OpenAISoraTarget,
-    sample_conversations: MutableSequence[PromptRequestPiece],
+    sample_conversations: MutableSequence[MessagePiece],
 ):
     """Test handling of CANCELLED job status."""
     request = sample_conversations[0]
@@ -893,16 +893,16 @@ async def test_handle_response_cancelled_status(
     ) as mock_request:
         mock_request.return_value = openai_mock_return
 
-        response = await sora_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+        response = await sora_target.send_prompt_async(prompt_request=Message([request]))
 
-        assert response.request_pieces[0].response_error == "unknown"
-        assert "cancelled" in response.request_pieces[0].converted_value.lower()
+        assert response.message_pieces[0].response_error == "unknown"
+        assert "cancelled" in response.message_pieces[0].converted_value.lower()
 
 
 @pytest.mark.asyncio
 async def test_handle_response_internal_error(
     sora_target: OpenAISoraTarget,
-    sample_conversations: MutableSequence[PromptRequestPiece],
+    sample_conversations: MutableSequence[MessagePiece],
 ):
     """Test handling of FAILED job with internal_error reason."""
     request = sample_conversations[0]
@@ -924,17 +924,17 @@ async def test_handle_response_internal_error(
     ) as mock_request:
         mock_request.return_value = openai_mock_return
 
-        response = await sora_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+        response = await sora_target.send_prompt_async(prompt_request=Message([request]))
 
         # internal_error is not a moderation error, so it's "unknown"
-        assert response.request_pieces[0].response_error == "unknown"
-        assert "internal_error" in response.request_pieces[0].converted_value
+        assert response.message_pieces[0].response_error == "unknown"
+        assert "internal_error" in response.message_pieces[0].converted_value
 
 
 @pytest.mark.asyncio
 async def test_handle_response_error_dict_fields(
     sora_target: OpenAISoraTarget,
-    sample_conversations: MutableSequence[PromptRequestPiece],
+    sample_conversations: MutableSequence[MessagePiece],
 ):
     """Test handling of error response with dict containing message/type/code."""
     request = sample_conversations[0]
@@ -957,9 +957,9 @@ async def test_handle_response_error_dict_fields(
     ) as mock_request:
         mock_request.return_value = openai_mock_return
 
-        response = await sora_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+        response = await sora_target.send_prompt_async(prompt_request=Message([request]))
 
-        value = response.request_pieces[0].converted_value
+        value = response.message_pieces[0].converted_value
         assert "Detailed error message" in value
         assert "validation_error" in value
         assert "ERR_001" in value
@@ -967,27 +967,27 @@ async def test_handle_response_error_dict_fields(
 
 def test_validate_request_multiple_pieces(
     sora_target: OpenAISoraTarget,
-    sample_conversations: MutableSequence[PromptRequestPiece],
+    sample_conversations: MutableSequence[MessagePiece],
 ):
     """Test validation fails with multiple request pieces."""
     # Create request with 2 pieces
     request1 = sample_conversations[0]
     request2 = sample_conversations[0]
 
-    with pytest.raises(ValueError, match="only supports a single prompt request piece"):
-        sora_target._validate_request(prompt_request=PromptRequestResponse([request1, request2]))
+    with pytest.raises(ValueError, match="only supports a single message piece"):
+        sora_target._validate_request(prompt_request=Message([request1, request2]))
 
 
 def test_validate_request_non_text_type(
     sora_target: OpenAISoraTarget,
-    sample_conversations: MutableSequence[PromptRequestPiece],
+    sample_conversations: MutableSequence[MessagePiece],
 ):
     """Test validation fails with non-text data type."""
     request = sample_conversations[0]
     request.converted_value_data_type = "image_path"
 
     with pytest.raises(ValueError, match="only supports text prompt input"):
-        sora_target._validate_request(prompt_request=PromptRequestResponse([request]))
+        sora_target._validate_request(prompt_request=Message([request]))
 
 
 def test_is_json_response_supported(sora_target: OpenAISoraTarget):
