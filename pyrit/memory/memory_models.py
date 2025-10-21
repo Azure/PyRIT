@@ -378,7 +378,7 @@ class SeedPromptEntry(Base):
         self.id = entry.id
         self.value = entry.value
         self.value_sha256 = entry.value_sha256
-        self.data_type = "text" if is_objective else entry.data_type  # type: ignore
+        self.data_type = entry.data_type  # type: ignore
         self.name = entry.name
         self.dataset_name = entry.dataset_name
         self.harm_categories = entry.harm_categories  # type: ignore

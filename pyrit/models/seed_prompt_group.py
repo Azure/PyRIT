@@ -41,12 +41,12 @@ class SeedPromptGroup(YamlLoadable):
             elif isinstance(prompt, SeedObjective):
                 self._set_objective_from_prompt(objective_prompt=prompt)
             elif isinstance(prompt, dict):
-                # create an SeedObjective in addition to the SeedPrompt if is_objective is True
+                # create a SeedObjective in addition to the SeedPrompt if is_objective is True
                 is_objective = prompt.pop("is_objective", False)
                 self.prompts.append(SeedPrompt(**prompt))
                 if is_objective:
                     self._set_objective_from_prompt()
-                    # if the only prompt is the objective, remove it from prompts
+                    # if the only prompt is the objective, this is an objective only group
                     if len(prompts) == 1:
                         self.prompts = []
 
@@ -134,7 +134,7 @@ class SeedPromptGroup(YamlLoadable):
                 prompt.role = role
 
     def _set_objective_from_prompt(self, objective_prompt: Optional[SeedObjective] = None):
-        """Sets the objective from the prompt marked as objective and removes it from prompts list."""
+        """Sets the objective from the prompt marked as objective."""
         prompt = objective_prompt if objective_prompt else self.prompts[-1]
         if self.objective is not None:
             raise ValueError("SeedPromptGroups can only have one objective.")
@@ -154,7 +154,6 @@ class SeedPromptGroup(YamlLoadable):
             harm_categories=prompt.harm_categories,
             metadata=prompt.metadata,
         )
-        return
 
     def is_single_request(self) -> bool:
         unique_sequences = {prompt.sequence for prompt in self.prompts}

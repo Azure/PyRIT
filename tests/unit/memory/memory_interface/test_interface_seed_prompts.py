@@ -4,6 +4,7 @@
 import os
 import tempfile
 from typing import Sequence
+from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
@@ -801,3 +802,93 @@ async def test_get_seed_prompts_by_hash(sqlite_instance: MemoryInterface):
     assert len(retrieved_entries) == 1
     assert retrieved_entries[0].value == "Hello 1"
     assert retrieved_entries[0].value_sha256 == hello_1_hash
+
+
+@pytest.mark.asyncio
+async def test_add_seed_prompts_no_serialization_for_text(sqlite_instance: MemoryInterface):
+    """Test that text prompts don't go through serialization"""
+    text_prompt = SeedPrompt(value="Simple text prompt", dataset_name="test_dataset", data_type="text")
+    original_value = text_prompt.value
+
+    # Mock the _serialize_seed_prompt_value method
+    with patch.object(sqlite_instance, "_serialize_seed_prompt_value") as mock_serialize:
+        await sqlite_instance.add_seed_prompts_to_memory_async(prompts=[text_prompt], added_by="test_user")
+
+        # Verify that _serialize_seed_prompt_value was NOT called for text
+        mock_serialize.assert_not_called()
+
+        # Verify that the prompt value was not changed
+        assert text_prompt.value == original_value
+
+
+@pytest.mark.asyncio
+async def test_add_seed_prompt_groups_with_objective_added_to_all_prompts(sqlite_instance: MemoryInterface):
+    """Test objective is added to all_prompts list"""
+    from pyrit.models.seed_objective import SeedObjective
+
+    # Create prompts and objective
+    prompt1 = SeedPrompt(value="Test prompt 1", data_type="text", sequence=0, added_by="test_user", role="user")
+    prompt2 = SeedPrompt(value="Test prompt 2", data_type="text", sequence=0, added_by="test_user")
+    objective = SeedObjective(value="Test objective")
+
+    # Create a prompt group with both prompts and objective
+    prompt_group = SeedPromptGroup(prompts=[prompt1, prompt2, objective])
+
+    # Mock the add_seed_prompts_to_memory_async method to capture what gets passed to it
+    original_add_method = sqlite_instance.add_seed_prompts_to_memory_async
+    captured_prompts = []
+
+    async def mock_add_seed_prompts_to_memory_async(*, prompts, added_by=None):
+        captured_prompts.extend(prompts)
+        return await original_add_method(prompts=prompts, added_by=added_by)
+
+    with patch.object(
+        sqlite_instance, "add_seed_prompts_to_memory_async", side_effect=mock_add_seed_prompts_to_memory_async
+    ):
+        await sqlite_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group], added_by="test_user")
+
+        # Verify that both prompts and the objective were added to all_prompts
+        assert len(captured_prompts) == 3
+
+        # Check that the two SeedPrompts are included
+        seed_prompts = [p for p in captured_prompts if isinstance(p, SeedPrompt)]
+        assert len(seed_prompts) == 2
+        assert any(p.value == "Test prompt 1" for p in seed_prompts)
+        assert any(p.value == "Test prompt 2" for p in seed_prompts)
+
+        # Check that the objective is included
+        objectives = [p for p in captured_prompts if isinstance(p, SeedObjective)]
+        assert len(objectives) == 1
+        assert objectives[0].value == "Test objective"
+
+
+@pytest.mark.asyncio
+async def test_add_seed_prompt_groups_without_objective_only_prompts_added(sqlite_instance: MemoryInterface):
+    """Test when no objective, only prompts are added to all_prompts"""
+    # Create prompts without objective
+    prompt1 = SeedPrompt(value="Test prompt 1", data_type="text", sequence=0, added_by="test_user", role="user")
+    prompt2 = SeedPrompt(value="Test prompt 2", data_type="text", sequence=1, added_by="test_user", role="user")
+
+    # Create a prompt group with only prompts (no objective)
+    prompt_group = SeedPromptGroup(prompts=[prompt1, prompt2])
+
+    # Mock the add_seed_prompts_to_memory_async method to capture what gets passed to it
+    original_add_method = sqlite_instance.add_seed_prompts_to_memory_async
+    captured_prompts = []
+
+    async def mock_add_seed_prompts_to_memory_async(*, prompts, added_by=None):
+        captured_prompts.extend(prompts)
+        return await original_add_method(prompts=prompts, added_by=added_by)
+
+    with patch.object(
+        sqlite_instance, "add_seed_prompts_to_memory_async", side_effect=mock_add_seed_prompts_to_memory_async
+    ):
+        await sqlite_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group], added_by="test_user")
+
+        # Verify that only the prompts were added to all_prompts
+        assert len(captured_prompts) == 2
+
+        # Check that all are SeedPrompts (no objectives should be present)
+        assert all(isinstance(p, SeedPrompt) for p in captured_prompts)
+        assert any(p.value == "Test prompt 1" for p in captured_prompts)
+        assert any(p.value == "Test prompt 2" for p in captured_prompts)

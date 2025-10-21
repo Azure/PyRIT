@@ -774,11 +774,10 @@ class MemoryInterface(abc.ABC):
 
             prompt.set_encoding_metadata()
 
-            # Handle serialization for image, audio & videoSeedPrompts, SeedObjectives will always be text
-            serialized_prompt_value = None
-            if isinstance(prompt, SeedPrompt):
+            # Handle serialization for image, audio & video SeedPrompts
+
+            if isinstance(prompt, SeedPrompt) and prompt.data_type in ["image_path", "audio_path", "video_path"]:
                 serialized_prompt_value = await self._serialize_seed_prompt_value(prompt=prompt)
-            if serialized_prompt_value:
                 prompt.value = serialized_prompt_value
 
             await prompt.set_sha256_value_async()
