@@ -19,7 +19,7 @@ from pyrit.executor.attack.multi_turn.multi_turn_attack_strategy import (
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
 )
-from pyrit.models import AttackResult, PromptRequestResponse, SeedPromptGroup
+from pyrit.models import AttackResult, Message, SeedPromptGroup
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +53,8 @@ class AttackRun:
         >>> results = await attack_run.run_async(max_concurrency=5)
         >>>
         >>> # With prepended conversation
-        >>> from pyrit.models import PromptRequestResponse
-        >>> conversation = [PromptRequestResponse(...)]
+        >>> from pyrit.models import Message
+        >>> conversation = [Message(...)]
         >>> attack_run = AttackRun(
         ...     attack=attack,
         ...     objectives=objectives,
@@ -87,8 +87,7 @@ class AttackRun:
         *,
         attack: AttackStrategy,
         objectives: List[str],
-        prepended_conversation: Optional[List[PromptRequestResponse]] = None,
-        prepended_conversations: Optional[List[List[PromptRequestResponse]]] = None,
+        prepended_conversations: Optional[List[List[Message]]] = None,
         seed_prompt_groups: Optional[List[SeedPromptGroup]] = None,
         custom_prompts: Optional[List[str]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
@@ -100,15 +99,22 @@ class AttackRun:
         Args:
             attack (AttackStrategy): The configured attack strategy to execute.
             objectives (List[str]): List of attack objectives to test against.
-            prepended_conversation (Optional[List[PromptRequestResponse]]): Optional
-                conversation history to prepend to each attack execution. This will be
+            prepended_conversations (Optional[List[List[Message]]]): Optional
+                list of conversation histories to prepend to each attack execution. This will be
                 used for all objectives.
-            prepended_conversations (Optional[List[List[PromptRequestResponse]]]): Optional
-                list of conversation histories, one per objective. Must match the length
-                of objectives if provided.
             seed_prompt_groups (Optional[List[SeedPromptGroup]]): List of seed prompt groups
                 for single-turn attacks. Must match the length of objectives if provided.
                 Only valid for single-turn attacks.
+            custom_prompts (Optional[List[str]]): List of custom prompts for multi-turn attacks.
+                Must match the length of objectives if provided. Only valid for multi-turn attacks.
+            memory_labels (Optional[Dict[str, str]]): Additional labels to apply to prompts.
+                These labels help track and categorize the attack run in memory.
+            **attack_execute_params (Any): Additional parameters to pass to the attack
+                execution method (e.g., batch_size).
+
+        Raises:
+            ValueError: If objectives list is empty, or if parameters don't match requirements.
+            TypeError: If seed_prompt_groups is provided for multi-turn attacks or
             custom_prompts (Optional[List[str]]): List of custom prompts for multi-turn attacks.
                 Must match the length of objectives if provided. Only valid for multi-turn attacks.
             memory_labels (Optional[Dict[str, str]]): Additional labels to apply to prompts.

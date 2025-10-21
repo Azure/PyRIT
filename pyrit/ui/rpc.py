@@ -6,7 +6,7 @@ import time
 from threading import Semaphore, Thread
 from typing import Callable, Optional
 
-from pyrit.models import PromptRequestPiece, Score
+from pyrit.models import MessagePiece, Score
 from pyrit.ui.app import is_app_running, launch_app
 
 DEFAULT_PORT = 18812
@@ -62,7 +62,7 @@ class AppRPCServer:
 
         def __init__(self, *, score_received_semaphore: Semaphore, client_ready_semaphore: Semaphore):
             super().__init__()
-            self._callback_score_prompt = None  # type: Optional[Callable[[PromptRequestPiece, Optional[str]], None]]
+            self._callback_score_prompt = None  # type: Optional[Callable[[MessagePiece, Optional[str]], None]]
             self._last_ping = None  # type: Optional[float]
             self._scores_received = []  # type: list[Score]
             self._score_received_semaphore = score_received_semaphore
@@ -85,7 +85,7 @@ class AppRPCServer:
             self._last_ping = time.time()
             logger.debug("Ping received")
 
-        def exposed_callback_score_prompt(self, callback: Callable[[PromptRequestPiece, Optional[str]], None]):
+        def exposed_callback_score_prompt(self, callback: Callable[[MessagePiece, Optional[str]], None]):
             self._callback_score_prompt = callback
             self._client_ready_semaphore.release()
 
@@ -94,7 +94,7 @@ class AppRPCServer:
                 return False
             return True
 
-        def send_score_prompt(self, prompt: PromptRequestPiece, task: Optional[str] = None):
+        def send_score_prompt(self, prompt: MessagePiece, task: Optional[str] = None):
             if not self.is_client_ready():
                 raise RPCClientNotReadyException()
             self._callback_score_prompt(prompt, task)
@@ -194,7 +194,7 @@ class AppRPCServer:
         if self._score_received_semaphore is not None:
             self._score_received_semaphore.release()
 
-    def send_score_prompt(self, prompt: PromptRequestPiece, task: Optional[str] = None):
+    def send_score_prompt(self, prompt: MessagePiece, task: Optional[str] = None):
         """
         Send a score prompt to the client.
         """
@@ -227,7 +227,7 @@ class AppRPCServer:
             score_value_description=score_ref.score_value_description,
             score_rationale=score_ref.score_rationale,
             score_metadata=score_ref.score_metadata,
-            prompt_request_response_id=score_ref.prompt_request_response_id,
+            message_piece_id=score_ref.message_piece_id,
         )
 
         return score

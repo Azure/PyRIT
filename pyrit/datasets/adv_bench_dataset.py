@@ -6,8 +6,7 @@ from typing import List, Literal, Optional
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets.dataset_helper import fetch_examples
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import SeedPrompt, SeedPromptDataset
 
 
 def fetch_adv_bench_dataset(

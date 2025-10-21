@@ -15,10 +15,7 @@ from transformers import (
 from pyrit.common import default_values
 from pyrit.common.download_hf_model import download_specific_files
 from pyrit.exceptions import EmptyResponseException, pyrit_target_retry
-from pyrit.models.prompt_request_response import (
-    PromptRequestResponse,
-    construct_response_from_request,
-)
+from pyrit.models import Message, construct_response_from_request
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -216,7 +213,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
             raise
 
     @pyrit_target_retry
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         """
         Sends a normalized prompt asynchronously to the HuggingFace model.
         """
@@ -224,7 +221,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
         await self.load_model_and_tokenizer_task
 
         self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.request_pieces[0]
+        request = prompt_request.message_pieces[0]
         prompt_template = request.converted_value
 
         logger.info(f"Sending the following prompt to the HuggingFace model: {prompt_template}")
@@ -308,15 +305,15 @@ class HuggingFaceChatTarget(PromptChatTarget):
             logger.error(error_message)
             raise ValueError(error_message)
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: Message) -> None:
         """
-        Validates the provided prompt request response.
+        Validates the provided message.
         """
-        n_pieces = len(prompt_request.request_pieces)
+        n_pieces = len(prompt_request.message_pieces)
         if n_pieces != 1:
-            raise ValueError(f"This target only supports a single prompt request piece. Received: {n_pieces} pieces.")
+            raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
 
-        piece_type = prompt_request.request_pieces[0].converted_value_data_type
+        piece_type = prompt_request.message_pieces[0].converted_value_data_type
         if piece_type != "text":
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 

@@ -23,12 +23,12 @@ from pyrit.models import (
     AttackResult,
     ConversationReference,
     ConversationType,
-    PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
+    MessagePiece,
     Score,
+    ScoreType,
     SeedPrompt,
 )
-from pyrit.models.score import ScoreType
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import Scorer, TrueFalseScorer
@@ -75,10 +75,10 @@ def basic_context() -> MultiTurnAttackContext:
 
 
 @pytest.fixture
-def sample_response() -> PromptRequestResponse:
-    return PromptRequestResponse(
-        request_pieces=[
-            PromptRequestPiece(
+def sample_response() -> Message:
+    return Message(
+        message_pieces=[
+            MessagePiece(
                 role="assistant",
                 original_value="Test response",
                 original_value_data_type="text",
@@ -98,7 +98,7 @@ def success_score() -> Score:
         score_value_description="Test success score",
         score_rationale="Test rationale for success",
         score_metadata={},
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
         scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
     )
 
@@ -112,7 +112,7 @@ def failure_score() -> Score:
         score_value_description="Test failure score",
         score_rationale="Test rationale for failure",
         score_metadata={},
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
         scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
     )
 
@@ -126,7 +126,7 @@ def float_score() -> Score:
         score_value_description="High score",
         score_rationale="Test rationale for high score",
         score_metadata={},
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
         scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
     )
 
@@ -617,7 +617,7 @@ class TestSetupPhase:
             score_value_description="Other score",
             score_rationale="Other rationale",
             score_metadata={},
-            prompt_request_response_id=str(uuid.uuid4()),
+            message_piece_id=str(uuid.uuid4()),
             scorer_class_identifier={"__type__": "OtherScorer", "__module__": "test_module"},
         )
 
@@ -705,7 +705,7 @@ class TestPromptGeneration:
         mock_adversarial_chat: MagicMock,
         mock_prompt_normalizer: MagicMock,
         basic_context: MultiTurnAttackContext,
-        sample_response: PromptRequestResponse,
+        sample_response: Message,
     ):
         """Test that adversarial chat is used to generate prompts when no custom prompt."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
@@ -824,14 +824,14 @@ class TestAdversarialPromptBuilding:
             attack_scoring_config=scoring_config,
         )
 
-        response_piece = MagicMock(spec=PromptRequestPiece)
+        response_piece = MagicMock(spec=MessagePiece)
         response_piece.converted_value_data_type = data_type
         response_piece.converted_value = converted_value
         response_piece.has_error.return_value = has_error
         response_piece.is_blocked.return_value = is_blocked
         response_piece.response_error = "Error message"
 
-        basic_context.last_response = MagicMock(spec=PromptRequestResponse)
+        basic_context.last_response = MagicMock(spec=Message)
         basic_context.last_response.get_piece.return_value = response_piece
         basic_context.last_score = None
 
@@ -858,12 +858,12 @@ class TestAdversarialPromptBuilding:
             attack_scoring_config=scoring_config,
         )
 
-        response_piece = MagicMock(spec=PromptRequestPiece)
+        response_piece = MagicMock(spec=MessagePiece)
         response_piece.converted_value_data_type = "text"
         response_piece.converted_value = "Target response"
         response_piece.has_error.return_value = False
 
-        basic_context.last_response = MagicMock(spec=PromptRequestResponse)
+        basic_context.last_response = MagicMock(spec=Message)
         basic_context.last_response.get_piece.return_value = response_piece
         basic_context.last_score = success_score
 
@@ -912,12 +912,12 @@ class TestAdversarialPromptBuilding:
             attack_scoring_config=scoring_config,
         )
 
-        response_piece = MagicMock(spec=PromptRequestPiece)
+        response_piece = MagicMock(spec=MessagePiece)
         response_piece.converted_value_data_type = "image_path"
         response_piece.has_error.return_value = True
         response_piece.response_error = "File error"
 
-        basic_context.last_response = MagicMock(spec=PromptRequestResponse)
+        basic_context.last_response = MagicMock(spec=Message)
         basic_context.last_response.get_piece.return_value = response_piece
 
         with pytest.raises(RuntimeError, match="Request to target failed.*File error"):
@@ -940,11 +940,11 @@ class TestAdversarialPromptBuilding:
             attack_scoring_config=scoring_config,
         )
 
-        response_piece = MagicMock(spec=PromptRequestPiece)
+        response_piece = MagicMock(spec=MessagePiece)
         response_piece.converted_value_data_type = "image_path"
         response_piece.has_error.return_value = False
 
-        basic_context.last_response = MagicMock(spec=PromptRequestResponse)
+        basic_context.last_response = MagicMock(spec=Message)
         basic_context.last_response.get_piece.return_value = response_piece
 
         with pytest.raises(ValueError, match="use_score_as_feedback flag is set to False"):
@@ -968,11 +968,11 @@ class TestAdversarialPromptBuilding:
             attack_scoring_config=scoring_config,
         )
 
-        response_piece = MagicMock(spec=PromptRequestPiece)
+        response_piece = MagicMock(spec=MessagePiece)
         response_piece.converted_value_data_type = "image_path"
         response_piece.has_error.return_value = False
 
-        basic_context.last_response = MagicMock(spec=PromptRequestResponse)
+        basic_context.last_response = MagicMock(spec=Message)
         basic_context.last_response.get_piece.return_value = response_piece
         basic_context.last_score = success_score
 
@@ -1015,7 +1015,7 @@ class TestResponseScoring:
         mock_objective_scorer: MagicMock,
         mock_adversarial_chat: MagicMock,
         basic_context: MultiTurnAttackContext,
-        sample_response: PromptRequestResponse,
+        sample_response: Message,
         success_score: Score,
     ):
         """Test successful scoring of a response."""
@@ -1059,10 +1059,10 @@ class TestResponseScoring:
             attack_scoring_config=scoring_config,
         )
 
-        response_piece = MagicMock(spec=PromptRequestPiece)
+        response_piece = MagicMock(spec=MessagePiece)
         response_piece.is_blocked.return_value = True
 
-        basic_context.last_response = MagicMock(spec=PromptRequestResponse)
+        basic_context.last_response = MagicMock(spec=Message)
         basic_context.last_response.get_piece.return_value = response_piece
 
         result = await attack._score_response_async(context=basic_context)
@@ -1116,7 +1116,7 @@ class TestAttackExecution:
         mock_adversarial_chat: MagicMock,
         mock_prompt_normalizer: MagicMock,
         basic_context: MultiTurnAttackContext,
-        sample_response: PromptRequestResponse,
+        sample_response: Message,
         scorer_type: ScoreType,
         score_value: str,
         threshold: float,
@@ -1144,7 +1144,7 @@ class TestAttackExecution:
             score_value_description=f"Score: {score_value}",
             score_rationale="Test rationale",
             score_metadata={},
-            prompt_request_response_id=str(uuid.uuid4()),
+            message_piece_id=str(uuid.uuid4()),
             scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
         )
 
@@ -1169,7 +1169,7 @@ class TestAttackExecution:
         mock_adversarial_chat: MagicMock,
         mock_prompt_normalizer: MagicMock,
         basic_context: MultiTurnAttackContext,
-        sample_response: PromptRequestResponse,
+        sample_response: Message,
         failure_score: Score,
     ):
         """Test that attack stops after reaching max turns."""
@@ -1216,7 +1216,7 @@ class TestAttackLifecycle:
         mock_objective_target: MagicMock,
         mock_objective_scorer: MagicMock,
         mock_adversarial_chat: MagicMock,
-        sample_response: PromptRequestResponse,
+        sample_response: Message,
         success_score: Score,
     ):
         """Test successful execution of complete attack lifecycle using execute_async."""
@@ -1299,7 +1299,7 @@ class TestAttackLifecycle:
         mock_objective_scorer: MagicMock,
         mock_adversarial_chat: MagicMock,
         basic_context: MultiTurnAttackContext,
-        sample_response: PromptRequestResponse,
+        sample_response: Message,
         success_score: Score,
     ):
         """Test successful execution using execute_with_context_async."""
@@ -1403,7 +1403,7 @@ class TestRedTeamingConversationTracking:
         mock_objective_scorer: MagicMock,
         mock_adversarial_chat: MagicMock,
         basic_context: MultiTurnAttackContext,
-        sample_response: PromptRequestResponse,
+        sample_response: Message,
         success_score: Score,
     ):
         """Test that the attack result includes the tracked adversarial chat conversation IDs."""

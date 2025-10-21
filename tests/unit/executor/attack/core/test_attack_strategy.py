@@ -16,7 +16,7 @@ from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    PromptRequestResponse,
+    Message,
 )
 
 
@@ -231,7 +231,7 @@ class TestAttackStrategyExecution:
     async def test_execute_async_with_prepended_conversation(self, mock_attack_strategy):
         """Test that execute_async handles prepended_conversation parameter"""
         objective = "Test objective"
-        prepended_conversation = [MagicMock(spec=PromptRequestResponse)]
+        prepended_conversation = [MagicMock(spec=Message)]
 
         with patch.object(mock_attack_strategy, "_context_type") as mock_context_type:
             mock_context = MagicMock()

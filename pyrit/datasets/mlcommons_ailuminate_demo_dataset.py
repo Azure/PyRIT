@@ -5,8 +5,7 @@ from pathlib import Path
 from typing import Literal, Optional
 
 from pyrit.datasets.dataset_helper import fetch_examples
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import SeedPrompt, SeedPromptDataset
 
 # https://github.com/mlcommons/ailuminate#hazard-categories-and-abbreviations
 _hazard_categories_map = {
