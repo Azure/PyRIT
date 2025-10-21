@@ -168,6 +168,27 @@ class TestContextValidation:
         with pytest.raises(ValueError, match=expected_error):
             attack._validate_context(context=context)
 
+    @pytest.mark.parametrize(
+        "objective,conversation_id,expected_error",
+        [
+            ("test objective", str(uuid.uuid4()), "Objective should not be set in both context and seed prompt group"),
+        ],
+    )
+    def test_validate_context_raises_error_with_multi_objective(
+        self, mock_target, objective, conversation_id, expected_error
+    ):
+        attack = PromptSendingAttack(objective_target=mock_target)
+        context = SingleTurnAttackContext(
+            objective=objective,
+            conversation_id=conversation_id,
+            seed_prompt_group=SeedPromptGroup(
+                prompts=[SeedPrompt(value="test", data_type="text"), SeedObjective(value="test another objective")]
+            ),
+        )
+
+        with pytest.raises(ValueError, match=expected_error):
+            attack._validate_context(context=context)
+
     def test_validate_context_with_complete_valid_context(self, mock_target, basic_context):
         attack = PromptSendingAttack(objective_target=mock_target)
         attack._validate_context(context=basic_context)  # Should not raise
