@@ -26,8 +26,10 @@ PyRIT offers flexible installation options to suit different needs. Choose the p
 :gutter: 3
 
 :::{grid-item-card} 🐋 Docker Installation
-:link: ./setup/1b_install_docker.md
+:link: setup/1b_install_docker
+:shadow: md
 :class-header: bg-light
+:link-type: doc
 
 **For Users - Quick Start** ⭐
 
@@ -47,8 +49,10 @@ Get started immediately with a pre-configured environment:
 :::
 
 :::{grid-item-card} 🐍 Local Pip/Conda Installation
-:link: ./setup/1a_install_conda.md
+:link: setup/1a_install_conda
+:shadow: md
 :class-header: bg-light
+:link-type: doc
 
 **For Users - Custom Setup**
 
@@ -68,8 +72,10 @@ Install PyRIT directly on your machine:
 :::
 
 :::{grid-item-card} 🐋 DevContainers in VS Code
-:link: ./contributing/1b_install_devcontainers.md
+:link: contributing/1b_install_devcontainers
+:shadow: md
 :class-header: bg-light
+:link-type: doc
 
 **For Contributors** ⭐
 
@@ -89,8 +95,10 @@ Standardized development environment:
 :::
 
 :::{grid-item-card} 🐍 Local Conda Development
-:link: ./contributing/1a_install_conda.md#local-installation-with-condapython
+:link: contributing/1a_install_conda
+:shadow: md
 :class-header: bg-light
+:link-type: doc
 
 **For Contributors - Custom Dev Setup**
 
@@ -119,72 +127,90 @@ There is no single way to read the documentation, and it's perfectly fine to jum
 :gutter: 2
 
 :::{grid-item-card} 1️⃣ Cookbooks
-:link: ./cookbooks/README.md
+:link: cookbooks/README
+:shadow: md
 :class-header: bg-light
+:link-type: doc
 
 This provides an overview of PyRIT in action. A great place to see practical examples and get started quickly.
 
 :::
 
 :::{grid-item-card} 2️⃣ Architecture
-:link: ./code/architecture.md
+:link: code/architecture
+:shadow: md
 :class-header: bg-light
+:link-type: doc
 
 High-level overview of all PyRIT components. Understanding any single component is easier with knowledge of the others.
 
 :::
 
 :::{grid-item-card} 3️⃣ Attacks
-:link: ./code/executor/0_executor.md
+:link: code/executor/0_executor
+:shadow: md
 :class-header: bg-light
+:link-type: doc
 
 Top-level components implementing end-to-end attack techniques. Shows how all PyRIT components fit together.
 
 :::
 
 :::{grid-item-card} 4️⃣ Datasets
-:link: ./code/datasets/0_dataset.md
+:link: code/datasets/0_dataset
+:shadow: md
 :class-header: bg-light
+:link-type: doc
 
 Building attacks using seed prompts and fetching datasets. The foundation for creating test scenarios.
 
 :::
 
 :::{grid-item-card} 5️⃣ Targets
-:link: ./code/targets/0_prompt_targets.md
+:link: code/targets/0_prompt_targets
+:shadow: md
 :class-header: bg-light
+:link-type: doc
 
 Endpoints that PyRIT sends prompts to. Essential for nearly any PyRIT scenario - learn what targets are available.
 
 :::
 
 :::{grid-item-card} 6️⃣ Converters
-:link: ./code/converters/0_converters.ipynb
+:link: code/converters/0_converters
+:shadow: md
 :class-header: bg-light
+:link-type: doc
 
 Transform prompts from one format to another. One of the most powerful capabilities within PyRIT.
 
 :::
 
 :::{grid-item-card} 7️⃣ Scorers
-:link: ./code/scoring/0_scoring.md
+:link: code/scoring/0_scoring
+:shadow: md
 :class-header: bg-light
+:link-type: doc
 
 How PyRIT makes decisions and records output. Essential for evaluating AI system responses.
 
 :::
 
 :::{grid-item-card} 8️⃣ Memory
-:link: ./code/memory/0_memory.md
+:link: code/memory/0_memory
+:shadow: md
 :class-header: bg-light
+:link-type: doc
 
 How PyRIT components communicate state information. Understand the data flow and storage mechanisms.
 
 :::
 
 :::{grid-item-card} 9️⃣ Auxiliary Attacks (Optional)
-:link: ./code/auxiliary_attacks/0_auxiliary_attacks.ipynb
+:link: code/auxiliary_attacks/0_auxiliary_attacks
+:shadow: md
 :class-header: bg-light
+:link-type: doc
 
 Attacks and techniques that don't fit into core PyRIT functionality. Advanced and specialized methods.
 
@@ -198,16 +224,20 @@ Attacks and techniques that don't fit into core PyRIT functionality. Advanced an
 :gutter: 2
 
 :::{grid-item-card} 🚀 Deployment
-:link: ./deployment/README.md
+:link: deployment/README
+:shadow: md
 :class-header: bg-light
+:link-type: doc
 
 Code to download, deploy, and score open-source models (such as Hugging Face) on Azure.
 
 :::
 
 :::{grid-item-card} 📰 Blog
-:link: ./blog/README.md
+:link: blog/README
+:shadow: md
 :class-header: bg-light
+:link-type: doc
 
 Notable new changes and updates. Stay current with the latest PyRIT developments.
 

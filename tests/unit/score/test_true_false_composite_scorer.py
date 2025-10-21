@@ -162,6 +162,6 @@ async def test_composite_scorer_with_task(mock_request, true_scorer):
 
 
 def test_composite_scorer_empty_scorers_list():
-    """Test that CompositeScorer raises an exception when given an empty list of scorers."""
+    """Test that TrueFalseCompositeScorer raises an exception when given an empty list of scorers."""
     with pytest.raises(ValueError, match="At least one scorer must be provided"):
         TrueFalseCompositeScorer(aggregator=TrueFalseScoreAggregator.AND, scorers=[])

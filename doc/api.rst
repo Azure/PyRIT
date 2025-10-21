@@ -357,6 +357,7 @@ API Reference
     AzureSpeechAudioToTextConverter
     AzureSpeechTextToAudioConverter
     Base64Converter
+    BinAsciiConverter
     BinaryConverter
     CaesarConverter
     CharacterSpaceConverter
@@ -398,7 +399,6 @@ API Reference
     TemplateSegmentConverter
     TenseConverter
     TextJailbreakConverter
-    TextToHexConverter
     ToneConverter
     ToxicSentenceGeneratorConverter
     TranslationConverter
