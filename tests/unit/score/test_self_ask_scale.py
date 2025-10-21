@@ -155,7 +155,7 @@ async def test_scale_scorer_score(scorer_scale_response: Message, patch_central_
     assert "rationale" in score[0].score_rationale
     assert score[0].score_type == "float_scale"
     assert score[0].score_category == ["jailbreak"]
-    assert score[0].prompt_request_response_id is None
+    assert score[0].message_piece_id is None
     assert score[0].objective == "task"
 
 
@@ -192,7 +192,7 @@ async def test_scale_scorer_score_custom_scale(scorer_scale_response: Message, p
     assert "rationale" in score[0].score_rationale
     assert score[0].score_type == "float_scale"
     assert score[0].score_category == ["jailbreak"]
-    assert score[0].prompt_request_response_id is None
+    assert score[0].message_piece_id is None
     assert score[0].objective == "task"
 
 
@@ -214,7 +214,7 @@ async def test_scale_scorer_score_calls_send_chat(patch_central_database):
         score_value_description="description",
         score_metadata={"meta": "metadata"},
         scorer_class_identifier={"id": "identifier"},
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
         objective="task",
     )
 

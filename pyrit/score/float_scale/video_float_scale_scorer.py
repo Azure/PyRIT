@@ -91,7 +91,7 @@ class VideoFloatScaleScorer(FloatScaleScorer, _BaseVideoScorer):
                 score_metadata=result.metadata,
                 score_rationale=f"Video scored by analyzing {len(frame_scores)} frames.\n{result.rationale}",
                 scorer_class_identifier=self.get_identifier(),
-                prompt_request_response_id=piece_id,
+                message_piece_id=piece_id,
                 objective=objective,
             )
             aggregate_scores.append(aggregate_score)

@@ -437,7 +437,7 @@ def test_attack_result_with_last_response_and_score(sqlite_instance: MemoryInter
         score_type="float_scale",
         score_category=["test_category"],
         scorer_class_identifier={"name": "test_scorer"},
-        prompt_request_response_id=message_piece.id,
+        message_piece_id=message_piece.id,
         score_value_description="Test score description",
         score_rationale="Test score rationale",
         score_metadata={"test": "metadata"},

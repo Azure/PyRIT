@@ -262,7 +262,7 @@ class TestRolePlayAttack:
             score_value_description="Test success score",
             score_rationale="Test rationale for success",
             score_metadata={},
-            prompt_request_response_id=str(uuid.uuid4()),
+            message_piece_id=str(uuid.uuid4()),
         )
 
         # Mock the attack execution to return a successful result

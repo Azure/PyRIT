@@ -40,7 +40,7 @@ class MockScorer(TrueFalseScorer):
                 score_metadata=None,
                 score_rationale=self._score_rationale,
                 scorer_class_identifier={"name": "MockScorer"},
-                prompt_request_response_id=str(message_piece.id),
+                message_piece_id=str(message_piece.id),
                 objective=str(objective),
             )
         ]

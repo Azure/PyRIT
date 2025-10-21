@@ -36,7 +36,7 @@ async def test_score_async_success(patch_central_database):
         score_metadata={"metadata": "test"},
         score_category=["test_category"],
         scorer_class_identifier={"test": "test"},
-        prompt_request_response_id=piece_id,
+        message_piece_id=piece_id,
         objective="test_task",
     )
 
@@ -124,7 +124,7 @@ async def test_score_async_handles_persuasion_conversation(patch_central_databas
         score_metadata={"metadata": "test"},
         score_category=["test_category"],
         scorer_class_identifier={"test": "test"},
-        prompt_request_response_id=message_piece.id,
+        message_piece_id=message_piece.id,
         objective="test_task",
     )
 

@@ -98,7 +98,7 @@ async def test_category_scorer_score(scorer_category_response_bullying: Message,
     assert "contains bullying" in score[0].score_rationale
     assert score[0].score_type == "true_false"
     assert score[0].score_category == ["bullying"]
-    assert score[0].prompt_request_response_id is None
+    assert score[0].message_piece_id is None
 
 
 @pytest.mark.asyncio
@@ -120,7 +120,7 @@ async def test_category_scorer_score_false(scorer_category_response_false: Messa
     assert score[0].score_value == "false"
     assert score[0].score_type == "true_false"
     assert score[0].score_category == ["no_harm"]
-    assert score[0].prompt_request_response_id is None
+    assert score[0].message_piece_id is None
 
 
 @pytest.mark.asyncio

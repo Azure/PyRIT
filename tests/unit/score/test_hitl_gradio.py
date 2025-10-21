@@ -26,7 +26,7 @@ def score() -> Score:
         score_value_description="Safe",
         score_rationale="The prompt was marked safe",
         score_metadata=None,
-        prompt_request_response_id="1234",
+        message_piece_id="1234",
         scorer_class_identifier={"id": "test"},
         objective=None,
     )

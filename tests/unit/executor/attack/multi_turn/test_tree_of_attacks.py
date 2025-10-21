@@ -255,7 +255,7 @@ class TestHelpers:
             score_value_description="Test score",
             score_rationale="Test rationale",
             score_metadata={"test": "metadata"},
-            prompt_request_response_id=str(uuid.uuid4()),
+            message_piece_id=str(uuid.uuid4()),
             scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
         )
 

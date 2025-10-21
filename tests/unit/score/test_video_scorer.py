@@ -76,7 +76,7 @@ class MockTrueFalseScorer(TrueFalseScorer):
                 score_category=["test_category"],
                 score_metadata={},
                 score_value_description="test_description",
-                prompt_request_response_id=message_piece.id or uuid.uuid4(),
+                message_piece_id=message_piece.id or uuid.uuid4(),
                 objective=objective,
             )
         ]
@@ -99,7 +99,7 @@ class MockFloatScaleScorer(FloatScaleScorer):
                 score_category=["test_category"],
                 score_metadata={},
                 score_value_description="test_description",
-                prompt_request_response_id=message_piece.id or uuid.uuid4(),
+                message_piece_id=message_piece.id or uuid.uuid4(),
                 objective=objective,
             )
         ]

@@ -150,6 +150,6 @@ class PlagiarismScorer(FloatScaleScorer):
                 score_metadata=None,
                 score_type="float_scale",
                 score_rationale="Score is deterministic.",
-                prompt_request_response_id=message_piece.id,
+                message_piece_id=message_piece.id,
             )
         ]

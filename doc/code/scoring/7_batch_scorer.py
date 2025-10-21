@@ -88,7 +88,7 @@ scores = await batch_scorer.score_responses_by_filters_async(scorer=scorer, prom
 memory = CentralMemory.get_memory_instance()
 
 for score in scores:
-    prompt_text = memory.get_message_pieces(prompt_ids=[str(score.prompt_request_response_id)])[0].original_value
+    prompt_text = memory.get_message_pieces(prompt_ids=[str(score.message_piece_id)])[0].original_value
     print(f"{score} : {prompt_text}")
 
 # %% [markdown]
@@ -156,5 +156,5 @@ scores = await batch_scorer.score_responses_by_filters_async(scorer=scorer, labe
 memory = CentralMemory.get_memory_instance()
 
 for score in scores:
-    prompt_text = memory.get_message_pieces(prompt_ids=[str(score.prompt_request_response_id)])[0].original_value
+    prompt_text = memory.get_message_pieces(prompt_ids=[str(score.message_piece_id)])[0].original_value
     print(f"{score} : {prompt_text}")

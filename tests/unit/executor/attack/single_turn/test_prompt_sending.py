@@ -84,7 +84,7 @@ def success_score():
         score_value_description="Test success score",
         score_rationale="Test rationale for success",
         score_metadata="{}",
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
     )
 
 
@@ -98,7 +98,7 @@ def failure_score():
         score_value_description="Test failure score",
         score_rationale="Test rationale for failure",
         score_metadata={},
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
     )
 
 
@@ -385,7 +385,7 @@ class TestResponseEvaluation:
             score_value_description="Auxiliary score",
             score_rationale="Auxiliary rationale",
             score_metadata={},
-            prompt_request_response_id=str(uuid.uuid4()),
+            message_piece_id=str(uuid.uuid4()),
         )
 
         attack = PromptSendingAttack(
@@ -722,7 +722,7 @@ class TestDetermineAttackOutcome:
             score_value_description="Success",
             score_rationale="Objective achieved",
             score_metadata="{}",
-            prompt_request_response_id=str(uuid.uuid4()),
+            message_piece_id=str(uuid.uuid4()),
         )
 
         outcome, reason = attack._determine_attack_outcome(
@@ -746,7 +746,7 @@ class TestDetermineAttackOutcome:
             score_value_description="Failure",
             score_rationale="Objective not achieved",
             score_metadata="{}",
-            prompt_request_response_id=str(uuid.uuid4()),
+            message_piece_id=str(uuid.uuid4()),
         )
 
         outcome, reason = attack._determine_attack_outcome(
@@ -770,7 +770,7 @@ class TestDetermineAttackOutcome:
             score_value_description="Failure",
             score_rationale="Objective not achieved",
             score_metadata="{}",
-            prompt_request_response_id=str(uuid.uuid4()),
+            message_piece_id=str(uuid.uuid4()),
         )
 
         outcome, reason = attack._determine_attack_outcome(

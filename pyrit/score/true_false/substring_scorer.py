@@ -66,7 +66,7 @@ class SubStringScorer(TrueFalseScorer):
                 score_category=self._score_categories,
                 score_rationale="",
                 scorer_class_identifier=self.get_identifier(),
-                prompt_request_response_id=message_piece.id,
+                message_piece_id=message_piece.id,
                 objective=objective,
             )
         ]

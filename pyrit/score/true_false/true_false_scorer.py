@@ -69,7 +69,7 @@ class TrueFalseScorer(Scorer):
                 score_metadata=None,
                 score_rationale="No supported pieces (possibly filtered by role).",
                 scorer_class_identifier=self.get_identifier(),
-                prompt_request_response_id=piece_id,
+                message_piece_id=piece_id,
                 objective=objective,
             )
             return [return_score]
@@ -77,7 +77,7 @@ class TrueFalseScorer(Scorer):
         # Use score aggregator to combine multiple piece scores into a single score
         result = self._score_aggregator(score_list)
 
-        # Use the prompt_request_response_id from the first score
+        # Use the message_piece_id from the first score
         return_score = Score(
             score_value=str(result.value).lower(),
             score_value_description=result.description,
@@ -86,7 +86,7 @@ class TrueFalseScorer(Scorer):
             score_metadata=result.metadata,
             score_rationale=result.rationale,
             scorer_class_identifier=self.get_identifier(),
-            prompt_request_response_id=score_list[0].prompt_request_response_id,
+            message_piece_id=score_list[0].message_piece_id,
             objective=objective,
         )
 

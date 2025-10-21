@@ -35,7 +35,7 @@ def sample_boolean_score():
         score_value_description="Test true score",
         score_rationale="Line 1\nLine 2\nLine 3",
         score_metadata="{}",
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
         scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
     )
 
@@ -49,7 +49,7 @@ def sample_float_score():
         score_value_description="Other score",
         score_rationale="Other rationale",
         score_metadata="{}",
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
         scorer_class_identifier={"__type__": "OtherScorer", "__module__": "test_module"},
     )
 
@@ -71,7 +71,7 @@ def sample_attack_result():
             score_value_description="Other score",
             score_rationale="Other rationale",
             score_metadata="{}",
-            prompt_request_response_id=str(uuid.uuid4()),
+            message_piece_id=str(uuid.uuid4()),
             scorer_class_identifier={"__type__": "OtherScorer", "__module__": "test_module"},
         ),
     )

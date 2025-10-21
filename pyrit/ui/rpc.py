@@ -227,7 +227,7 @@ class AppRPCServer:
             score_value_description=score_ref.score_value_description,
             score_rationale=score_ref.score_rationale,
             score_metadata=score_ref.score_metadata,
-            prompt_request_response_id=score_ref.prompt_request_response_id,
+            message_piece_id=score_ref.message_piece_id,
         )
 
         return score

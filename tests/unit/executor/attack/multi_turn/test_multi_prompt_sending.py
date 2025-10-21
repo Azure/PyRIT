@@ -97,7 +97,7 @@ def success_score():
         score_value_description="Test success score",
         score_rationale="Test rationale for success",
         score_metadata={},
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
         scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
     )
 
@@ -112,7 +112,7 @@ def failure_score():
         score_value_description="Test failure score",
         score_rationale="Test rationale for failure",
         score_metadata={},
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
         scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
     )
 

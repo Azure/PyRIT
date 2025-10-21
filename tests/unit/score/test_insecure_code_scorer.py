@@ -31,7 +31,7 @@ async def test_insecure_code_scorer_valid_response(mock_chat_target):
         score_rationale="This code has potential vulnerabilities.",
         score_metadata=None,
         scorer_class_identifier={"scorer_name": "InsecureCodeScorer"},
-        prompt_request_response_id="12345",
+        message_piece_id="12345",
         objective=None,
     )
 

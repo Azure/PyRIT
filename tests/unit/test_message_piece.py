@@ -694,7 +694,7 @@ def test_message_piece_to_dict():
                 score_rationale="Rationale text",
                 score_metadata={"key": "value"},
                 scorer_class_identifier={"class": "Scorer1"},
-                prompt_request_response_id=str(uuid.uuid4()),
+                message_piece_id=str(uuid.uuid4()),
                 timestamp=datetime.now(),
                 objective="Task1",
             )

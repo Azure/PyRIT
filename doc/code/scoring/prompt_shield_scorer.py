@@ -76,5 +76,5 @@ scores = await batch_scorer.score_responses_by_filters_async(  # type: ignore
 )
 
 for score in scores:
-    prompt_text = memory.get_message_pieces(prompt_ids=[str(score.prompt_request_response_id)])[0].original_value
+    prompt_text = memory.get_message_pieces(prompt_ids=[str(score.message_piece_id)])[0].original_value
     print(f"{score} : {prompt_text}")  # We can see that the attack was detected

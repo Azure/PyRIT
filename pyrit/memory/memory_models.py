@@ -255,7 +255,7 @@ class ScoreEntry(Base):  # type: ignore
         self.score_rationale = entry.score_rationale
         self.score_metadata = entry.score_metadata
         self.scorer_class_identifier = entry.scorer_class_identifier
-        self.prompt_request_response_id = entry.prompt_request_response_id if entry.prompt_request_response_id else None
+        self.prompt_request_response_id = entry.message_piece_id if entry.message_piece_id else None
         self.timestamp = entry.timestamp
         # Store in both columns for backward compatibility
         # New code should only read from objective
@@ -272,7 +272,7 @@ class ScoreEntry(Base):  # type: ignore
             score_rationale=self.score_rationale,
             score_metadata=self.score_metadata,
             scorer_class_identifier=self.scorer_class_identifier,
-            prompt_request_response_id=self.prompt_request_response_id,
+            message_piece_id=self.prompt_request_response_id,
             timestamp=self.timestamp,
             objective=self.objective,
         )

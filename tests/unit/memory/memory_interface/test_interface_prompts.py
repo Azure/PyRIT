@@ -208,7 +208,7 @@ def test_duplicate_conversation_pieces_not_score(sqlite_instance: MemoryInterfac
             score_rationale="Test score",
             score_metadata={"test": "metadata"},
             scorer_class_identifier={"__type__": "TestScorer1"},
-            prompt_request_response_id=prompt_id_1,
+            message_piece_id=prompt_id_1,
         ),
         Score(
             score_value=str(0.5),
@@ -218,7 +218,7 @@ def test_duplicate_conversation_pieces_not_score(sqlite_instance: MemoryInterfac
             score_rationale="Test score",
             score_metadata={"test": "metadata"},
             scorer_class_identifier={"__type__": "TestScorer2"},
-            prompt_request_response_id=prompt_id_2,
+            message_piece_id=prompt_id_2,
         ),
     ]
     sqlite_instance.add_message_pieces_to_memory(message_pieces=pieces)
@@ -366,7 +366,7 @@ def test_duplicate_conversation_excluding_last_turn_not_score(sqlite_instance: M
             score_rationale="Test score",
             score_metadata={"test": "metadata"},
             scorer_class_identifier={"__type__": "TestScorer1"},
-            prompt_request_response_id=prompt_id_1,
+            message_piece_id=prompt_id_1,
         ),
         Score(
             score_value=str(0.5),
@@ -376,7 +376,7 @@ def test_duplicate_conversation_excluding_last_turn_not_score(sqlite_instance: M
             score_rationale="Test score",
             score_metadata={"test": "metadata"},
             scorer_class_identifier={"__type__": "TestScorer2"},
-            prompt_request_response_id=prompt_id_2,
+            message_piece_id=prompt_id_2,
         ),
     ]
     sqlite_instance.add_message_pieces_to_memory(message_pieces=pieces)
@@ -925,7 +925,7 @@ def test_message_piece_scores_duplicate_piece(sqlite_instance: MemoryInterface):
         score_category=["Sample category"],
         score_rationale="Sample rationale",
         score_metadata={"sample": "metadata"},
-        prompt_request_response_id=original_id,
+        message_piece_id=original_id,
     )
     sqlite_instance.add_scores_to_memory(scores=[score])
 

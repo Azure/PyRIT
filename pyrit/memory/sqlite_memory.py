@@ -348,7 +348,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         for piece in message_pieces:
             piece_data = piece.to_dict()
             # Find associated scores
-            piece_scores = [score for score in scores if score.prompt_request_response_id == piece.id]
+            piece_scores = [score for score in scores if score.message_piece_id == piece.id]
             piece_data["scores"] = [score.to_dict() for score in piece_scores]
             merged_data.append(piece_data)
 

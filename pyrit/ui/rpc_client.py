@@ -63,7 +63,7 @@ class RPCClient:
             score_value_description="Safe" if response else "Unsafe",
             score_rationale="The prompt was marked safe" if response else "The prompt was marked unsafe",
             score_metadata=None,
-            prompt_request_response_id=self._prompt_received.id,
+            message_piece_id=self._prompt_received.id,
         )
         self._c.root.receive_score(score)
 

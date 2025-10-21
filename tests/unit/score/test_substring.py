@@ -42,7 +42,7 @@ async def test_substring_scorer_score(sub_string: str, patch_central_database):
     assert score[0].get_value() == (sub_string in full_text)
     assert score[0].score_type == "true_false"
     assert score[0].score_category == ["new_category"]
-    assert score[0].prompt_request_response_id is None
+    assert score[0].message_piece_id is None
 
 
 @pytest.mark.asyncio

@@ -472,7 +472,7 @@ class Scorer(abc.ABC):
                 score_rationale=parsed_response[rationale_output_key],
                 scorer_class_identifier=self.get_identifier(),
                 score_metadata=normalized_md,
-                prompt_request_response_id=scored_prompt_id,
+                message_piece_id=scored_prompt_id,
                 objective=objective,
             )
 

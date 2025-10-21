@@ -20,7 +20,7 @@ def _mk_score(val: float, *, category: Optional[list[str]] = None, prr_id: str =
         score_category=category,
         score_rationale=rationale,
         score_metadata=None,
-        prompt_request_response_id=prr_id,
+        message_piece_id=prr_id,
         scorer_class_identifier={"__type__": "UnitTestScorer"},
         objective=None,
     )

@@ -62,7 +62,7 @@ class TestPlagiarismScorer:
         score = scores[0]
         assert "Plagiarism score using 'lcs' metric" in score.score_value_description
         assert score.score_rationale == "Score is deterministic."
-        assert score.prompt_request_response_id == message_piece.id
+        assert score.message_piece_id == message_piece.id
 
         # Verify the score value is reasonable (should be high due to similarity)
         score_value = float(score.score_value)

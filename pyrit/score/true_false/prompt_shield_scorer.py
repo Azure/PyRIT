@@ -85,7 +85,7 @@ class PromptShieldScorer(TrueFalseScorer):
             score_metadata=meta,
             score_rationale="",
             scorer_class_identifier=self.get_identifier(),
-            prompt_request_response_id=message_piece.id,
+            message_piece_id=message_piece.id,
             objective=objective,
         )
 

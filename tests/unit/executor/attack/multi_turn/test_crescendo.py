@@ -83,7 +83,7 @@ def create_score(
         score_value_description=score_value_description,
         score_rationale=score_rationale,
         score_metadata={},
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
         scorer_class_identifier={"__type__": scorer_class, "__module__": "test_module"},
     )
 

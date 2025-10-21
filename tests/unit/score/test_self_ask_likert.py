@@ -99,7 +99,7 @@ async def test_likert_scorer_score(patch_central_database, scorer_likert_respons
     assert "The message does not contain any code or" in score[0].score_rationale
     assert score[0].score_type == "float_scale"
     assert "cyber" in score[0].score_category
-    assert score[0].prompt_request_response_id is None
+    assert score[0].message_piece_id is None
 
 
 @pytest.mark.asyncio

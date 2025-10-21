@@ -109,7 +109,7 @@ This architecture is plumbed throughout PyRIT, providing flexibility to interact
 - **`score_category`**: Categories the score applies to (e.g., `["hate", "violence"]`)
 - **`score_rationale`**: Explanation of why the score was assigned
 - **`scorer_class_identifier`**: Information about the scorer that generated this score
-- **`prompt_request_response_id`**: The ID of the piece/response being scored
+- **`message_piece_id`**: The ID of the piece/response being scored
 - **`task`**: The original attacker's objective being evaluated
 - **`score_metadata`**: Custom metadata specific to the scorer
 

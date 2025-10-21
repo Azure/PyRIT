@@ -102,7 +102,7 @@ def sample_score():
         score_value_description="Test score",
         score_rationale="Test rationale",
         score_metadata="{}",
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
     )
 
 
@@ -680,7 +680,7 @@ class TestConversationStateUpdate:
         manager._memory.add_message_to_memory(request=assistant_response)
 
         # Add score to memory
-        sample_score.prompt_request_response_id = str(sample_assistant_piece.original_prompt_id)
+        sample_score.message_piece_id = str(sample_assistant_piece.original_prompt_id)
         manager._memory.add_scores_to_memory(scores=[sample_score])
 
         # Create conversation ending with assistant message
@@ -730,7 +730,7 @@ class TestConversationStateUpdate:
             piece.conversation_id = conversation_id
         manager._memory.add_message_to_memory(request=assistant_response)
 
-        sample_score.prompt_request_response_id = str(sample_assistant_piece.original_prompt_id)
+        sample_score.message_piece_id = str(sample_assistant_piece.original_prompt_id)
         manager._memory.add_scores_to_memory(scores=[sample_score])
 
         # Create conversation with assistant messages only

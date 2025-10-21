@@ -69,7 +69,7 @@ class MockScorer(TrueFalseScorer):
                 score_metadata=None,
                 score_rationale="rationale",
                 scorer_class_identifier=self.get_identifier(),
-                prompt_request_response_id="mock_id",
+                message_piece_id="mock_id",
                 objective=objective,
             )
         ]
@@ -84,7 +84,7 @@ class MockScorer(TrueFalseScorer):
                 score_metadata=None,
                 score_rationale="rationale",
                 scorer_class_identifier=self.get_identifier(),
-                prompt_request_response_id="mock_id",
+                message_piece_id="mock_id",
                 objective=objective,
             )
         ]
@@ -123,7 +123,7 @@ class MockFloatScorer(Scorer):
                 score_metadata=None,
                 score_rationale="Test rationale",
                 scorer_class_identifier=self.get_identifier(),
-                prompt_request_response_id=message_piece.id or "test-id",
+                message_piece_id=message_piece.id or "test-id",
                 objective=objective,
             )
         ]
@@ -967,7 +967,7 @@ async def test_get_supported_pieces_filters_unsupported_data_types(patch_central
     assert len(scorer.scored_piece_ids) == 1
     assert scorer.scored_piece_ids[0] == "text-1"
     assert len(scores) == 1
-    assert scores[0].prompt_request_response_id == "text-1"
+    assert scores[0].message_piece_id == "text-1"
 
 
 @pytest.mark.asyncio
@@ -1057,7 +1057,7 @@ async def test_true_false_scorer_uses_supported_pieces_only(patch_central_databa
                     score_metadata=None,
                     score_rationale="Test",
                     scorer_class_identifier=self.get_identifier(),
-                    prompt_request_response_id=message_piece.id or "test-id",
+                    message_piece_id=message_piece.id or "test-id",
                     objective=objective,
                 )
             ]
