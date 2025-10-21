@@ -18,10 +18,11 @@ class TestFetchJailbreakv28kDataset:
         "harm_categories",
         [None, ["Economic Harm"], ["Government Decision"]],
     )
+    @pytest.mark.parametrize("min_prompts", [0, 2, 5])
     @patch("pyrit.datasets.fetch_jailbreakv_28k_dataset._resolve_image_path")
     @patch("pyrit.datasets.fetch_jailbreakv_28k_dataset.load_dataset")
     def test_fetch_jailbreakv_28k_dataset_success(
-        self, mock_load_dataset, mock_resolve_image_path, text_field, harm_categories
+        self, mock_load_dataset, mock_resolve_image_path, text_field, harm_categories, min_prompts
     ):
         # Mock dataset response
         mock_dataset = {
@@ -55,12 +56,18 @@ class TestFetchJailbreakv28kDataset:
 
         # Call the function
         # Select context: expect error only for this filter
-        expect_error = harm_categories == ["Government Decision"]
+        expect_error = (
+            harm_categories == ["Government Decision"]
+            or (min_prompts == 1 and harm_categories == ["Government Decision"])
+            or min_prompts == 5
+        )
         ctx = pytest.raises(ValueError) if expect_error else nullcontext()
 
         # Single call
         with ctx:
-            result = fetch_jailbreakv_28k_dataset(text_field=text_field, harm_categories=harm_categories)
+            result = fetch_jailbreakv_28k_dataset(
+                text_field=text_field, harm_categories=harm_categories, min_prompts=min_prompts
+            )
         if expect_error:
             return
         # Assertions

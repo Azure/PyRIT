@@ -107,7 +107,7 @@ def test_fetch_jailbreakv_28k_dataset():
         assert sum(p.data_type == "text" for p in jailbreakv_28k.prompts) == len(jailbreakv_28k.prompts) / 2
         assert sum(p.data_type == "image_path" for p in jailbreakv_28k.prompts) == len(jailbreakv_28k.prompts) / 2
     except Exception as e:
-        pytest.skip(f"Integration test skipped due to: {e}")
+        pytest.fail(f"Integration test failed due to: {e}")
 
 
 def test_fetch_jailbreakv_28k_dataset_by_harm_category():
