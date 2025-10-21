@@ -3,7 +3,7 @@
 
 from typing import List, Optional
 
-from pyrit.models import PromptRequestPiece, Score
+from pyrit.models import MessagePiece, Score
 from pyrit.score.float_scale.float_scale_score_aggregator import (
     FloatScaleAggregatorFunc,
     FloatScaleScorerByCategory,
@@ -60,24 +60,22 @@ class VideoFloatScaleScorer(FloatScaleScorer, _BaseVideoScorer):
         )
         self._score_aggregator = score_aggregator
 
-    async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
         Score a single video piece by extracting frames and aggregating their scores.
 
         Args:
-            request_piece: The prompt request piece containing the video.
+            message_piece: The message piece containing the video.
             objective: Optional objective description for scoring.
 
         Returns:
             List of aggregated scores for the video. Returns one score if using FloatScaleScoreAggregator,
             or multiple scores (one per category) if using FloatScaleScorerByCategory.
         """
-        frame_scores = await self._score_frames_async(request_piece=request_piece, objective=objective)
+        frame_scores = await self._score_frames_async(message_piece=message_piece, objective=objective)
 
-        # Get the ID from the request piece
-        piece_id = request_piece.id if request_piece.id is not None else request_piece.original_prompt_id
+        # Get the ID from the message piece
+        piece_id = message_piece.id if message_piece.id is not None else message_piece.original_prompt_id
 
         # Call the aggregator - all aggregators now return List[ScoreAggregatorResult]
         aggregator_results: List[ScoreAggregatorResult] = self._score_aggregator(frame_scores)
@@ -93,7 +91,7 @@ class VideoFloatScaleScorer(FloatScaleScorer, _BaseVideoScorer):
                 score_metadata=result.metadata,
                 score_rationale=f"Video scored by analyzing {len(frame_scores)} frames.\n{result.rationale}",
                 scorer_class_identifier=self.get_identifier(),
-                prompt_request_response_id=piece_id,
+                message_piece_id=piece_id,
                 objective=objective,
             )
             aggregate_scores.append(aggregate_score)

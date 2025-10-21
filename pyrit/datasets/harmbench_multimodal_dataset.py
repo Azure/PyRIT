@@ -9,8 +9,7 @@ from typing import List, Literal, Optional
 
 from pyrit.common.net_utility import make_request_and_raise_if_error_async
 from pyrit.datasets.dataset_helper import fetch_examples
-from pyrit.models import SeedPromptDataset, data_serializer_factory
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import SeedPrompt, SeedPromptDataset, data_serializer_factory
 
 logger = logging.getLogger(__name__)
 

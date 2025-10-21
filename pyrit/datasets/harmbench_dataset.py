@@ -5,8 +5,7 @@ from pathlib import Path
 from typing import Literal, Optional
 
 from pyrit.datasets.dataset_helper import FILE_TYPE_HANDLERS, fetch_examples
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import SeedPrompt, SeedPromptDataset
 
 
 def fetch_harmbench_dataset(

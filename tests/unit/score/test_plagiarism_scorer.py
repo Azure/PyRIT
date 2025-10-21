@@ -7,7 +7,7 @@ import pytest
 
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece
+from pyrit.models import MessagePiece
 from pyrit.score import (
     PlagiarismMetric,
     PlagiarismScorer,
@@ -47,22 +47,22 @@ class TestPlagiarismScorer:
 
         scorer = PlagiarismScorer(reference_text=reference_text, metric=PlagiarismMetric.LCS)
 
-        request_piece = PromptRequestPiece(
+        message_piece = MessagePiece(
             role="assistant",
             original_value=response_text,
             converted_value=response_text,
             converted_value_data_type="text",
         )
 
-        request = request_piece.to_prompt_request_response()
+        request = message_piece.to_message()
 
-        scores = await scorer.score_async(request_response=request)
+        scores = await scorer.score_async(message=request)
 
         assert len(scores) == 1
         score = scores[0]
         assert "Plagiarism score using 'lcs' metric" in score.score_value_description
         assert score.score_rationale == "Score is deterministic."
-        assert score.prompt_request_response_id == request_piece.id
+        assert score.message_piece_id == message_piece.id
 
         # Verify the score value is reasonable (should be high due to similarity)
         score_value = float(score.score_value)
@@ -77,14 +77,14 @@ class TestPlagiarismScorer:
 
         scorer = PlagiarismScorer(reference_text=reference_text, metric=PlagiarismMetric.LEVENSHTEIN)
 
-        request = PromptRequestPiece(
+        request = MessagePiece(
             role="assistant",
             original_value=response_text,
             converted_value=response_text,
             converted_value_data_type="text",
-        ).to_prompt_request_response()
+        ).to_message()
 
-        scores = await scorer._score_async(request_response=request)
+        scores = await scorer._score_async(message=request)
 
         assert len(scores) == 1
         score = scores[0]
@@ -101,14 +101,14 @@ class TestPlagiarismScorer:
 
         scorer = PlagiarismScorer(reference_text=reference_text, metric=PlagiarismMetric.JACCARD, n=3)
 
-        request = PromptRequestPiece(
+        request = MessagePiece(
             role="assistant",
             original_value=response_text,
             converted_value=response_text,
             converted_value_data_type="text",
-        ).to_prompt_request_response()
+        ).to_message()
 
-        scores = await scorer._score_async(request_response=request)
+        scores = await scorer._score_async(message=request)
 
         assert len(scores) == 1
         score = scores[0]
@@ -123,11 +123,11 @@ class TestPlagiarismScorer:
         reference_text = "Sample reference text"
         scorer = PlagiarismScorer(reference_text=reference_text)
 
-        request = PromptRequestPiece(
+        request = MessagePiece(
             role="assistant", original_value="", converted_value="", converted_value_data_type="text"
-        ).to_prompt_request_response()
+        ).to_message()
 
-        scores = await scorer._score_async(request_response=request)
+        scores = await scorer._score_async(message=request)
 
         assert len(scores) == 1
         score = scores[0]
@@ -141,14 +141,14 @@ class TestPlagiarismScorer:
 
         scorer = PlagiarismScorer(reference_text=reference_text, metric=PlagiarismMetric.LCS)
 
-        request = PromptRequestPiece(
+        request = MessagePiece(
             role="assistant",
             original_value=reference_text,
             converted_value=reference_text,
             converted_value_data_type="text",
-        ).to_prompt_request_response()
+        ).to_message()
 
-        scores = await scorer._score_async(request_response=request)
+        scores = await scorer._score_async(message=request)
 
         assert len(scores) == 1
         score = scores[0]
@@ -163,14 +163,14 @@ class TestPlagiarismScorer:
 
         scorer = PlagiarismScorer(reference_text=reference_text, metric=PlagiarismMetric.LCS)
 
-        request = PromptRequestPiece(
+        request = MessagePiece(
             role="assistant",
             original_value=response_text,
             converted_value=response_text,
             converted_value_data_type="text",
-        ).to_prompt_request_response()
+        ).to_message()
 
-        scores = await scorer._score_async(request_response=request)
+        scores = await scorer._score_async(message=request)
 
         assert len(scores) == 1
         score = scores[0]
@@ -184,12 +184,12 @@ class TestPlagiarismScorer:
         reference_text = "Test reference text"
         scorer = PlagiarismScorer(reference_text=reference_text)
 
-        request = PromptRequestPiece(
+        request = MessagePiece(
             role="assistant",
             original_value="Test response text",
             converted_value="Test response text",
             converted_value_data_type="text",
-        ).to_prompt_request_response()
+        ).to_message()
 
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
             await scorer.score_async(request)
@@ -201,12 +201,12 @@ class TestPlagiarismScorer:
         reference_text = "Test reference text"
         scorer = PlagiarismScorer(reference_text=reference_text)
 
-        request = PromptRequestPiece(
+        request = MessagePiece(
             role="assistant",
             original_value="image_data",
             converted_value="image_data",
             converted_value_data_type="image_path",
-        ).to_prompt_request_response()
+        ).to_message()
 
         with pytest.raises(ValueError, match="There are no valid pieces to score"):
             await scorer.score_async(request)

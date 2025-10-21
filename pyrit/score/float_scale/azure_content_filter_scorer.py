@@ -16,7 +16,7 @@ from pyrit.auth.azure_auth import AzureAuth, get_default_scope
 from pyrit.common import default_values
 from pyrit.models import (
     DataTypeSerializer,
-    PromptRequestPiece,
+    MessagePiece,
     Score,
     data_serializer_factory,
 )
@@ -91,13 +91,11 @@ class AzureContentFilterScorer(FloatScaleScorer):
         else:
             raise ValueError("Please provide the Azure Content Safety endpoint")
 
-    async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """Evaluating the input text or image using the Azure Content Filter API
 
         Args:
-            request_piece (PromptRequestPiece): The prompt request piece containing the text to be scored.
+            message_piece (MessagePiece): The message piece containing the text to be scored.
                 Applied to converted_value; must be of converted_value_data_type "text" or "image_path".
                 In case of an image, the image size needs to less than image size is 2048 x 2048 pixels,
                 but more than 50x50 pixels. The data size should not exceed exceed 4 MB. Image must be
@@ -116,16 +114,16 @@ class AzureContentFilterScorer(FloatScaleScorer):
             ValueError if converted_value_data_type is not "text" or "image_path" or image isn't in supported format
         """
         filter_result: dict[str, list] = {}
-        if request_piece.converted_value_data_type == "text":
+        if message_piece.converted_value_data_type == "text":
             text_request_options = AnalyzeTextOptions(
-                text=request_piece.converted_value,
+                text=message_piece.converted_value,
                 categories=self._score_categories,
                 output_type="EightSeverityLevels",
             )
             filter_result = self._azure_cf_client.analyze_text(text_request_options)  # type: ignore
 
-        elif request_piece.converted_value_data_type == "image_path":
-            base64_encoded_data = await self._get_base64_image_data(request_piece)
+        elif message_piece.converted_value_data_type == "image_path":
+            base64_encoded_data = await self._get_base64_image_data(message_piece)
             image_data = ImageData(content=base64_encoded_data)
             image_request_options = AnalyzeImageOptions(
                 image=image_data, categories=self._score_categories, output_type="FourSeverityLevels"
@@ -152,15 +150,15 @@ class AzureContentFilterScorer(FloatScaleScorer):
                 score_metadata=metadata,
                 score_rationale="",
                 scorer_class_identifier=self.get_identifier(),
-                prompt_request_response_id=request_piece.id,
+                message_piece_id=message_piece.id,
                 objective=objective,
             )
             scores.append(score)
 
         return scores
 
-    async def _get_base64_image_data(self, request_response: PromptRequestPiece):
-        image_path = request_response.converted_value
+    async def _get_base64_image_data(self, message_piece: MessagePiece):
+        image_path = message_piece.converted_value
         ext = DataTypeSerializer.get_extension(image_path)
         image_serializer = data_serializer_factory(
             category="prompt-memory-entries", value=image_path, data_type="image_path", extension=ext

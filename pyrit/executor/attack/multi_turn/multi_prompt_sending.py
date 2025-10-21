@@ -19,7 +19,7 @@ from pyrit.executor.attack.multi_turn.multi_turn_attack_strategy import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    PromptRequestResponse,
+    Message,
     Score,
     SeedPrompt,
     SeedPromptGroup,
@@ -176,13 +176,11 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
             prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=prompt_text, data_type="text")])
 
             # Send the prompt
-            prompt_response = await self._send_prompt_to_objective_target_async(
-                prompt_group=prompt_group, context=context
-            )
+            message = await self._send_prompt_to_objective_target_async(prompt_group=prompt_group, context=context)
 
             # Update context with latest response (may be None if sending failed)
-            if prompt_response:
-                response = prompt_response
+            if message:
+                response = message
                 context.last_response = response
                 context.executed_turns += 1
                 self._logger.debug(f"Successfully sent prompt {prompt_index + 1}")
@@ -217,7 +215,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
     def _determine_attack_outcome(
         self,
         *,
-        response: Optional[PromptRequestResponse],
+        response: Optional[Message],
         score: Optional[Score],
         context: MultiPromptSendingAttackContext,
     ) -> tuple[AttackOutcome, Optional[str]]:
@@ -225,7 +223,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
         Determine the outcome of the attack based on the response and score.
 
         Args:
-            response (Optional[PromptRequestResponse]): The last response from the target (if any).
+            response (Optional[Message]): The last response from the target (if any).
             score (Optional[Score]): The objective score (if any).
             context (MultiPromptSendingAttackContext): The attack context containing configuration.
 
@@ -257,7 +255,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
 
     async def _send_prompt_to_objective_target_async(
         self, *, prompt_group: SeedPromptGroup, context: MultiPromptSendingAttackContext
-    ) -> Optional[PromptRequestResponse]:
+    ) -> Optional[Message]:
         """
         Send the prompt to the target and return the response.
 
@@ -266,7 +264,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
             context (MultiPromptSendingAttackContext): The attack context containing parameters and labels.
 
         Returns:
-            Optional[PromptRequestResponse]: The model's response if successful, or None if
+            Optional[Message]: The model's response if successful, or None if
                 the request was filtered, blocked, or encountered an error.
         """
         return await self._prompt_normalizer.send_prompt_async(
@@ -279,7 +277,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
             attack_identifier=self.get_identifier(),
         )
 
-    async def _evaluate_response_async(self, *, response: PromptRequestResponse, objective: str) -> Optional[Score]:
+    async def _evaluate_response_async(self, *, response: Message, objective: str) -> Optional[Score]:
         """
         Evaluate the response against the objective using the configured scorers.
 
@@ -287,7 +285,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
         metrics, then runs the objective scorer to determine if the attack succeeded.
 
         Args:
-            response (PromptRequestResponse): The response from the model.
+            response (Message): The response from the model.
             objective (str): The natural-language description of the attack's objective.
 
         Returns:

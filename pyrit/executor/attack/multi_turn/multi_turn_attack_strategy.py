@@ -17,7 +17,7 @@ from pyrit.executor.attack.core import (
     AttackStrategyResultT,
 )
 from pyrit.models import (
-    PromptRequestResponse,
+    Message,
     Score,
 )
 
@@ -46,7 +46,7 @@ class MultiTurnAttackContext(AttackContext):
     executed_turns: int = 0
 
     # Model response produced in the latest turn
-    last_response: Optional[PromptRequestResponse] = None
+    last_response: Optional[Message] = None
 
     # Score assigned to the latest response by a scorer component
     last_score: Optional[Score] = None
@@ -72,7 +72,7 @@ class MultiTurnAttackStrategy(AttackStrategy[MultiTurnAttackStrategyContextT, At
         self,
         *,
         objective: str,
-        prepended_conversation: Optional[List[PromptRequestResponse]] = None,
+        prepended_conversation: Optional[List[Message]] = None,
         custom_prompt: Optional[str] = None,
         memory_labels: Optional[dict[str, str]] = None,
         **kwargs,
@@ -82,7 +82,7 @@ class MultiTurnAttackStrategy(AttackStrategy[MultiTurnAttackStrategyContextT, At
 
         Args:
             objective (str): The objective of the attack.
-            prepended_conversation (Optional[List[PromptRequestResponse]]): Conversation to prepend.
+            prepended_conversation (Optional[List[Message]]): Conversation to prepend.
             custom_prompt (Optional[str]): Custom prompt for the attack.
             memory_labels (Optional[Dict[str, str]]): Memory labels for the attack context.
             **kwargs: Additional parameters for the attack.

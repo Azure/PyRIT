@@ -31,8 +31,8 @@ from pyrit.models import (
     AttackResult,
     ConversationReference,
     ConversationType,
-    PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
+    MessagePiece,
     Score,
     SeedPrompt,
     SeedPromptGroup,
@@ -375,7 +375,7 @@ class _TreeOfAttacksNode:
 
         return False
 
-    async def _send_prompt_to_target_async(self, prompt: str) -> PromptRequestResponse:
+    async def _send_prompt_to_target_async(self, prompt: str) -> Message:
         """
         Send the generated adversarial prompt to the objective target.
 
@@ -392,7 +392,7 @@ class _TreeOfAttacksNode:
             prompt (str): The generated adversarial prompt to send to the target system.
 
         Returns:
-            PromptRequestResponse: The response from the objective target, containing the
+            Message: The response from the objective target, containing the
                 target's reply and associated metadata.
 
         Raises:
@@ -423,7 +423,7 @@ class _TreeOfAttacksNode:
 
         return response
 
-    async def _score_response_async(self, *, response: PromptRequestResponse, objective: str) -> None:
+    async def _score_response_async(self, *, response: Message, objective: str) -> None:
         """
         Score the response from the objective target using the configured scorers.
 
@@ -437,7 +437,7 @@ class _TreeOfAttacksNode:
         to avoid scoring failures from blocking the attack progress.
 
         Args:
-            response (PromptRequestResponse): The response from the objective target to evaluate.
+            response (Message): The response from the objective target to evaluate.
                 This contains the target's reply to the adversarial prompt.
             objective (str): The attack objective describing what the attacker wants to achieve.
                 This is passed to scorers as context for evaluation.
@@ -1695,11 +1695,11 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
 
         return result
 
-    def _get_last_response_from_conversation(self, conversation_id: Optional[str]) -> Optional[PromptRequestPiece]:
+    def _get_last_response_from_conversation(self, conversation_id: Optional[str]) -> Optional[MessagePiece]:
         """
         Retrieve the last response from a conversation.
 
-        Fetches all prompt request pieces from memory for the given conversation ID
+        Fetches all message pieces from memory for the given conversation ID
         and returns the most recent one. This is typically used to extract the final
         response from the best performing conversation for inclusion in the attack result.
 
@@ -1708,13 +1708,13 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
                 None if no successful conversations were found during the attack.
 
         Returns:
-            Optional[PromptRequestPiece]: The last response piece from the conversation,
+            Optional[MessagePiece]: The last response piece from the conversation,
                 or None if no conversation ID was provided or no responses exist.
         """
         if not conversation_id:
             return None
 
-        responses = self._memory.get_prompt_request_pieces(conversation_id=conversation_id)
+        responses = self._memory.get_message_pieces(conversation_id=conversation_id)
         return responses[-1] if responses else None
 
     def _get_auxiliary_scores_summary(self, nodes: List[_TreeOfAttacksNode]) -> Dict[str, float]:

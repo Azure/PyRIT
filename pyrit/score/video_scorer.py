@@ -9,7 +9,7 @@ import uuid
 from abc import ABC
 from typing import Optional
 
-from pyrit.models import PromptRequestPiece, Score
+from pyrit.models import MessagePiece, Score
 from pyrit.score.scorer import Scorer
 
 logger = logging.getLogger(__name__)
@@ -50,20 +50,18 @@ class _BaseVideoScorer(ABC):
             num_sampled_frames if num_sampled_frames is not None else self._DEFAULT_VIDEO_FRAMES_SAMPLING_NUM
         )
 
-    async def _score_frames_async(
-        self, *, request_piece: PromptRequestPiece, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_frames_async(self, *, message_piece: MessagePiece, objective: Optional[str] = None) -> list[Score]:
         """
         Extract frames from video and score them.
 
         Args:
-            request_piece: The prompt request piece containing the video.
+            message_piece: The message piece containing the video.
             objective: Optional objective description for scoring.
 
         Returns:
             List of scores for the extracted frames.
         """
-        video_path = request_piece.converted_value
+        video_path = message_piece.converted_value
 
         if not os.path.exists(video_path):
             raise FileNotFoundError(f"Video file not found: {video_path}")
@@ -80,18 +78,18 @@ class _BaseVideoScorer(ABC):
 
         for frame in frames:
             # Convert original_prompt_id to UUID if it's a string
-            original_prompt_id = request_piece.original_prompt_id
+            original_prompt_id = message_piece.original_prompt_id
             if isinstance(original_prompt_id, str):
                 original_prompt_id = uuid.UUID(original_prompt_id)
 
-            piece = PromptRequestPiece(
-                original_value=request_piece.converted_value,
-                role=request_piece.role,
+            piece = MessagePiece(
+                original_value=message_piece.converted_value,
+                role=message_piece.role,
                 original_prompt_id=original_prompt_id,
                 converted_value=frame,
                 converted_value_data_type="image_path",
             )
-            response = piece.to_prompt_request_response()
+            response = piece.to_message()
             image_requests.append(response)
 
         # Add the frame pieces to memory before scoring so that score references are valid
@@ -99,10 +97,10 @@ class _BaseVideoScorer(ABC):
 
         memory = CentralMemory.get_memory_instance()
         for request in image_requests:
-            memory.add_request_response_to_memory(request=request)
+            memory.add_message_to_memory(request=request)
 
         frame_scores = await self.image_scorer.score_prompts_batch_async(
-            request_responses=image_requests, objectives=objectives, batch_size=len(frames)
+            messages=image_requests, objectives=objectives, batch_size=len(frames)
         )
 
         if not frame_scores:
