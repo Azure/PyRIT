@@ -36,59 +36,105 @@ def sample_attack_results():
     ]
 
 
+class ConcreteScenario(Scenario):
+    """Concrete implementation of Scenario for testing."""
+
+    def __init__(self, attack_runs_to_return=None, **kwargs):
+        super().__init__(**kwargs)
+        self._attack_runs_to_return = attack_runs_to_return or []
+
+    async def _get_attack_runs_async(self):
+        return self._attack_runs_to_return
+
+
 @pytest.mark.usefixtures("patch_central_database")
 class TestScenarioInitialization:
     """Tests for Scenario class initialization."""
 
-    def test_init_with_valid_params(self, mock_attack_runs):
+    def test_init_with_valid_params(self):
         """Test successful initialization with valid parameters."""
-        scenario = Scenario(
+        scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            attack_runs=mock_attack_runs,
+            attack_strategies=["base64", "rot13"],
         )
 
         assert scenario.name == "Test Scenario"
-        assert scenario.attack_run_count == 3
-        assert scenario._attack_runs == mock_attack_runs
-        assert scenario._memory_labels == {}
-        assert scenario._identifier.name == "Scenario"
+        assert scenario._identifier.name == "ConcreteScenario"
         assert scenario._identifier.version == 1
+        assert scenario._attack_strategies == ["base64", "rot13"]
+        assert scenario._memory_labels == {}
+        assert scenario._max_concurrency == 1
+        assert scenario.attack_run_count == 0  # Not initialized yet
 
-    def test_init_with_memory_labels(self, mock_attack_runs):
+    def test_init_with_memory_labels(self):
         """Test initialization with memory labels."""
         memory_labels = {"test": "scenario", "category": "foundry"}
 
-        scenario = Scenario(
+        scenario = ConcreteScenario(
             name="Test Scenario",
             version=2,
-            attack_runs=mock_attack_runs,
+            attack_strategies=["base64"],
             memory_labels=memory_labels,
         )
 
         assert scenario._memory_labels == memory_labels
 
-    def test_init_creates_scenario_identifier(self, mock_attack_runs):
+    def test_init_with_custom_concurrency(self):
+        """Test initialization with custom max_concurrency."""
+        scenario = ConcreteScenario(
+            name="Test Scenario",
+            version=1,
+            attack_strategies=["base64"],
+            max_concurrency=5,
+        )
+
+        assert scenario._max_concurrency == 5
+
+    def test_init_creates_scenario_identifier(self):
         """Test that initialization creates a proper ScenarioIdentifier."""
-        scenario = Scenario(
+        scenario = ConcreteScenario(
             name="Test Scenario",
             version=3,
-            attack_runs=mock_attack_runs,
+            attack_strategies=["base64"],
         )
 
         assert isinstance(scenario._identifier, ScenarioIdentifier)
-        assert scenario._identifier.name == "Scenario"
+        assert scenario._identifier.name == "ConcreteScenario"
         assert scenario._identifier.version == 3
         assert scenario._identifier.pyrit_version is not None
 
-    def test_init_fails_with_empty_attack_runs(self):
-        """Test that initialization fails when attack_runs list is empty."""
-        with pytest.raises(ValueError, match="Scenario must contain at least one AttackRun"):
-            Scenario(
-                name="Test Scenario",
-                version=1,
-                attack_runs=[],
-            )
+    def test_init_with_empty_attack_strategies(self):
+        """Test that initialization accepts empty attack_strategies."""
+        scenario = ConcreteScenario(
+            name="Test Scenario",
+            version=1,
+            attack_strategies=[],
+        )
+
+        assert scenario._attack_strategies == []
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestScenarioInitialization2:
+    """Tests for Scenario initialization_async method."""
+
+    @pytest.mark.asyncio
+    async def test_initialize_async_populates_attack_runs(self, mock_attack_runs):
+        """Test that initialize_async populates attack runs."""
+        scenario = ConcreteScenario(
+            name="Test Scenario",
+            version=1,
+            attack_strategies=["base64"],
+            attack_runs_to_return=mock_attack_runs,
+        )
+
+        assert scenario.attack_run_count == 0
+
+        await scenario.initialize_async()
+
+        assert scenario.attack_run_count == len(mock_attack_runs)
+        assert scenario._attack_runs == mock_attack_runs
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -102,21 +148,23 @@ class TestScenarioExecution:
         for i, run in enumerate(mock_attack_runs):
             run.run_async = AsyncMock(return_value=[sample_attack_results[i]])
 
-        scenario = Scenario(
+        scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            attack_runs=mock_attack_runs,
+            attack_strategies=["base64", "rot13"],
+            attack_runs_to_return=mock_attack_runs,
         )
+        await scenario.initialize_async()
 
         result = await scenario.run_async()
 
         # Verify return type is ScenarioResult
         assert isinstance(result, ScenarioResult)
 
-        # Verify all runs were executed
+        # Verify all runs were executed with correct concurrency
         assert len(result.attack_results) == 3
         for run in mock_attack_runs:
-            run.run_async.assert_called_once()
+            run.run_async.assert_called_once_with(max_concurrency=1)
 
         # Verify results are aggregated correctly
         assert result.attack_results[0] == sample_attack_results[0]
@@ -125,17 +173,20 @@ class TestScenarioExecution:
 
     @pytest.mark.asyncio
     async def test_run_async_with_custom_concurrency(self, mock_attack_runs, sample_attack_results):
-        """Test that max_concurrency is passed to each attack run."""
+        """Test that max_concurrency from init is passed to each attack run."""
         for i, run in enumerate(mock_attack_runs):
             run.run_async = AsyncMock(return_value=[sample_attack_results[i]])
 
-        scenario = Scenario(
+        scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            attack_runs=mock_attack_runs,
+            attack_strategies=["base64"],
+            max_concurrency=5,
+            attack_runs_to_return=mock_attack_runs,
         )
+        await scenario.initialize_async()
 
-        result = await scenario.run_async(max_concurrency=5)
+        result = await scenario.run_async()
 
         # Verify max_concurrency was passed to each run
         for run in mock_attack_runs:
@@ -153,11 +204,13 @@ class TestScenarioExecution:
         mock_attack_runs[1].run_async = AsyncMock(return_value=sample_attack_results[2:4])
         mock_attack_runs[2].run_async = AsyncMock(return_value=sample_attack_results[4:5])
 
-        scenario = Scenario(
+        scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            attack_runs=mock_attack_runs,
+            attack_strategies=["base64", "rot13", "leetspeak"],
+            attack_runs_to_return=mock_attack_runs,
         )
+        await scenario.initialize_async()
 
         result = await scenario.run_async()
 
@@ -173,11 +226,13 @@ class TestScenarioExecution:
         mock_attack_runs[1].run_async = AsyncMock(side_effect=Exception("Test error"))
         mock_attack_runs[2].run_async = AsyncMock(return_value=[sample_attack_results[2]])
 
-        scenario = Scenario(
+        scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            attack_runs=mock_attack_runs,
+            attack_strategies=["base64"],
+            attack_runs_to_return=mock_attack_runs,
         )
+        await scenario.initialize_async()
 
         with pytest.raises(ValueError, match="Failed to execute attack run 2 in scenario 'Test Scenario'"):
             await scenario.run_async()
@@ -190,25 +245,16 @@ class TestScenarioExecution:
         mock_attack_runs[2].run_async.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_run_async_with_default_concurrency(self, mock_attack_runs, sample_attack_results):
-        """Test that default concurrency (1) is used when not specified."""
-        for i, run in enumerate(mock_attack_runs):
-            run.run_async = AsyncMock(return_value=[sample_attack_results[i]])
-
-        scenario = Scenario(
+    async def test_run_async_fails_without_initialization(self):
+        """Test that run_async fails if initialize_async was not called."""
+        scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            attack_runs=mock_attack_runs,
+            attack_strategies=["base64"],
         )
 
-        result = await scenario.run_async()
-
-        # Verify default concurrency of 1 was passed
-        for run in mock_attack_runs:
-            run.run_async.assert_called_once_with(max_concurrency=1)
-
-        # Verify result structure
-        assert isinstance(result, ScenarioResult)
+        with pytest.raises(ValueError, match="Cannot run scenario with no attack runs"):
+            await scenario.run_async()
 
     @pytest.mark.asyncio
     async def test_run_async_returns_scenario_result_with_identifier(self, mock_attack_runs, sample_attack_results):
@@ -216,53 +262,75 @@ class TestScenarioExecution:
         for i, run in enumerate(mock_attack_runs):
             run.run_async = AsyncMock(return_value=[sample_attack_results[i]])
 
-        scenario = Scenario(
+        scenario = ConcreteScenario(
             name="Test Scenario",
             version=5,
-            attack_runs=mock_attack_runs,
+            attack_strategies=["base64", "rot13"],
+            attack_runs_to_return=mock_attack_runs,
         )
+        await scenario.initialize_async()
 
         result = await scenario.run_async()
 
         assert isinstance(result, ScenarioResult)
         assert isinstance(result.scenario_identifier, ScenarioIdentifier)
-        assert result.scenario_identifier.name == "Scenario"
+        assert result.scenario_identifier.name == "ConcreteScenario"
         assert result.scenario_identifier.version == 5
         assert result.scenario_identifier.pyrit_version is not None
+        assert result.attack_strategies == ["base64", "rot13"]
 
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestScenarioProperties:
     """Tests for Scenario property methods."""
 
-    def test_name_property(self, mock_attack_runs):
+    def test_name_property(self):
         """Test that name property returns the scenario name."""
-        scenario = Scenario(
+        scenario = ConcreteScenario(
             name="My Test Scenario",
             version=1,
-            attack_runs=mock_attack_runs,
+            attack_strategies=["base64"],
         )
 
         assert scenario.name == "My Test Scenario"
 
-    def test_attack_run_count_property(self, mock_attack_runs):
+    @pytest.mark.asyncio
+    async def test_attack_run_count_property(self, mock_attack_runs):
         """Test that attack_run_count returns the correct count."""
-        scenario = Scenario(
+        scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            attack_runs=mock_attack_runs,
+            attack_strategies=["base64"],
+            attack_runs_to_return=mock_attack_runs,
         )
+
+        assert scenario.attack_run_count == 0
+
+        await scenario.initialize_async()
 
         assert scenario.attack_run_count == 3
 
-    def test_attack_run_count_with_different_sizes(self):
+    @pytest.mark.asyncio
+    async def test_attack_run_count_with_different_sizes(self):
         """Test attack_run_count with different numbers of runs."""
         single_run = [MagicMock(spec=AttackRun)]
-        scenario1 = Scenario(name="Single", version=1, attack_runs=single_run)  # type: ignore
+        scenario1 = ConcreteScenario(
+            name="Single",
+            version=1,
+            attack_strategies=["base64"],
+            attack_runs_to_return=single_run,
+        )
+        await scenario1.initialize_async()
         assert scenario1.attack_run_count == 1
 
         many_runs = [MagicMock(spec=AttackRun) for _ in range(10)]
-        scenario2 = Scenario(name="Many", version=1, attack_runs=many_runs)  # type: ignore
+        scenario2 = ConcreteScenario(
+            name="Many",
+            version=1,
+            attack_strategies=["base64", "rot13"],
+            attack_runs_to_return=many_runs,
+        )
+        await scenario2.initialize_async()
         assert scenario2.attack_run_count == 10
 
 
@@ -272,19 +340,65 @@ class TestScenarioResult:
 
     def test_scenario_result_initialization(self, sample_attack_results):
         """Test ScenarioResult initialization."""
-        identifier = ScenarioIdentifier(name="TestScenario", version=1)
-        result = ScenarioResult(scenario_identifier=identifier, attack_results=sample_attack_results)
+        identifier = ScenarioIdentifier(name="Test", version=1)
+        result = ScenarioResult(
+            scenario_identifier=identifier,
+            attack_strategies=["base64", "rot13"],
+            attack_results=sample_attack_results,
+        )
 
         assert result.scenario_identifier == identifier
+        assert result.attack_strategies == ["base64", "rot13"]
         assert result.attack_results == sample_attack_results
         assert len(result.attack_results) == 5
 
     def test_scenario_result_with_empty_results(self):
         """Test ScenarioResult with empty attack results."""
         identifier = ScenarioIdentifier(name="TestScenario", version=1)
-        result = ScenarioResult(scenario_identifier=identifier, attack_results=[])
+        result = ScenarioResult(
+            scenario_identifier=identifier,
+            attack_strategies=["base64"],
+            attack_results=[],
+        )
 
         assert len(result.attack_results) == 0
+        assert result.objective_achieved_rate == 0
+
+    def test_scenario_result_objective_achieved_rate(self, sample_attack_results):
+        """Test objective_achieved_rate calculation."""
+        identifier = ScenarioIdentifier(name="Test", version=1)
+
+        # All successful
+        result = ScenarioResult(
+            scenario_identifier=identifier,
+            attack_strategies=["base64"],
+            attack_results=sample_attack_results,
+        )
+        assert result.objective_achieved_rate == 100
+
+        # Mixed outcomes
+        mixed_results = sample_attack_results[:3] + [
+            AttackResult(
+                conversation_id="conv-fail",
+                objective="objective",
+                attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": "1"},
+                outcome=AttackOutcome.FAILURE,
+                executed_turns=1,
+            ),
+            AttackResult(
+                conversation_id="conv-fail2",
+                objective="objective",
+                attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": "2"},
+                outcome=AttackOutcome.FAILURE,
+                executed_turns=1,
+            ),
+        ]
+        result2 = ScenarioResult(
+            scenario_identifier=identifier,
+            attack_strategies=["base64"],
+            attack_results=mixed_results,
+        )
+        assert result2.objective_achieved_rate == 60  # 3 out of 5
 
 
 @pytest.mark.usefixtures("patch_central_database")
