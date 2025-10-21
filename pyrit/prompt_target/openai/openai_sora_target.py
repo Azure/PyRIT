@@ -146,6 +146,15 @@ class OpenAISoraTarget(OpenAITarget):
             output_filename (str, Optional): The name of the output file for the generated video.
                 Note: DO NOT SET if using target with PromptSendingAttack.
         """
+        # Initialize parent class first to get endpoint
+        super().__init__(**kwargs)
+
+        # Detect API version based on endpoint URL
+        if "v1/videos" in self._endpoint:
+            self._detected_api_version = "v2"
+        else:
+            self._detected_api_version = "v1"
+
         # Parse resolution
         if "x" not in resolution_dimensions:
             raise ValueError(
@@ -158,22 +167,44 @@ class OpenAISoraTarget(OpenAITarget):
                 f"Invalid resolution format: '{resolution_dimensions}'. "
                 "Expected format: 'WIDTHxHEIGHT' (e.g., '1280x720')"
             )
+        
+        # Validate resolution based on detected API version
+        if self._detected_api_version == "v1":
+            if resolution_dimensions not in self.V1_RESOLUTIONS:
+                raise ValueError(
+                    f"Unsupported resolution for Sora-1: '{resolution_dimensions}'. "
+                    f"Supported resolutions: {', '.join(self.V1_RESOLUTIONS)}."
+                )
+        else:  # v2
+            if resolution_dimensions not in self.V2_RESOLUTIONS:
+                raise ValueError(
+                    f"Unsupported resolution for Sora-2: '{resolution_dimensions}'. "
+                    f"Supported resolutions: {', '.join(self.V2_RESOLUTIONS)}."
+                )
+        
         self._height = dimensions[1]
         self._width = dimensions[0]
 
+        # Validate duration based on detected API version
+        if n_seconds <= 0:
+            raise ValueError(f"Invalid duration: {n_seconds}. Duration must be greater than 0 seconds.")
+        
+        if self._detected_api_version == "v1":
+            if n_seconds > 20:
+                raise ValueError(
+                    f"Invalid duration for Sora-1: {n_seconds}. Maximum duration is 20 seconds."
+                )
+        else:  # v2
+            if n_seconds not in self.V2_DURATIONS:
+                raise ValueError(
+                    f"Invalid duration for Sora-2: {n_seconds}. "
+                    f"Supported durations: {', '.join(map(str, self.V2_DURATIONS))} seconds."
+                )
+        
         self._n_seconds = n_seconds
         self._n_variants = n_variants
         self._output_filename = output_filename
         self._params: Dict[str, Any] = {}  # Initialize params dict
-
-        # Initialize parent class first to get endpoint
-        super().__init__(**kwargs)
-
-        # Detect API version based on endpoint URL
-        if "openai/v1/videos" in self._endpoint:
-            self._detected_api_version = "v2"
-        else:
-            self._detected_api_version = "v1"
 
     def _set_openai_env_configuration_vars(self) -> None:
         """Set unified environment variable names for both API versions."""

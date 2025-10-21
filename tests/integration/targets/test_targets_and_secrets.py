@@ -213,29 +213,22 @@ async def test_connect_tts(sqlite_instance, endpoint, api_key):
 
 
 @pytest.mark.asyncio
-async def test_connect_sora1(sqlite_instance):
-    """Test OpenAISoraTarget with Sora-1 API (auto-detected via endpoint)."""
+@pytest.mark.parametrize(
+    ("endpoint", "api_key", "model_name"),
+    [
+        ("OPENAI_SORA1_ENDPOINT", "OPENAI_SORA1_KEY", "OPENAI_SORA1_MODEL"),
+        ("OPENAI_SORA2_ENDPOINT", "OPENAI_SORA2_KEY", "OPENAI_SORA2_MODEL"),
+        ("PLATFORM_OPENAI_SORA_ENDPOINT", "PLATFORM_OPENAI_SORA_KEY", "PLATFORM_OPENAI_SORA_MODEL"),
+    ],
+)
+async def test_connect_sora(sqlite_instance, endpoint, api_key, model_name):
+    """Test OpenAISoraTarget with both Sora-1 and Sora-2 APIs (auto-detected via endpoint)."""
     target = OpenAISoraTarget(
-        endpoint=os.getenv("OPENAI_SORA1_ENDPOINT"),
-        api_key=os.getenv("OPENAI_SORA1_KEY"),
-        model_name=os.getenv("OPENAI_SORA1_MODEL"),
-        resolution_dimensions="1280x720",
-        n_seconds=8,  # v1 supports flexible durations (up to 20s)
-        n_variants=1,
-    )
-
-    await _assert_can_send_video_prompt(target)
-
-
-@pytest.mark.asyncio
-async def test_connect_sora2(sqlite_instance):
-    """Test OpenAISoraTarget with Sora-2 API (auto-detected via endpoint)."""
-    target = OpenAISoraTarget(
-        endpoint=os.getenv("OPENAI_SORA2_ENDPOINT"),
-        api_key=os.getenv("OPENAI_SORA2_KEY"),
-        model_name=os.getenv("OPENAI_SORA2_MODEL"),
-        resolution_dimensions="1280x720",
-        n_seconds=4,  # v2 only supports 4, 8, or 12 seconds
+        endpoint=os.getenv(endpoint),
+        api_key=os.getenv(api_key),
+        model_name=os.getenv(model_name),
+        resolution_dimensions="1280x720",  # Supported by both v1 and v2
+        n_seconds=4,  # Supported by both v1 (up to 20s) and v2 (4, 8, or 12s)
     )
 
     await _assert_can_send_video_prompt(target)
