@@ -37,6 +37,7 @@ from pyrit.models import (
     Message,
     MessagePiece,
     Score,
+    Seed,
     SeedPrompt,
     SeedPromptDataset,
     SeedPromptGroup,
