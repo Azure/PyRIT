@@ -13,7 +13,7 @@ from PIL import Image
 from scipy.io import wavfile
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import SeedPrompt, SeedPromptDataset, SeedPromptGroup
+from pyrit.models import SeedDataset, SeedPrompt, SeedPromptGroup
 from pyrit.models.seed_objective import SeedObjective
 
 
@@ -127,13 +127,13 @@ def test_seed_prompt_group_sequence_default():
 
 
 def test_seed_prompt_dataset_initialization(seed_prompt_fixture):
-    dataset = SeedPromptDataset(prompts=[seed_prompt_fixture])
+    dataset = SeedDataset(prompts=[seed_prompt_fixture])
     assert len(dataset.prompts) == 1
     assert dataset.prompts[0].value == "Test prompt"
 
 
 def test_seed_prompt_dataset_get_values():
-    dataset = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
+    dataset = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
     values = dataset.get_values()
 
     assert len(values) == 5
@@ -156,7 +156,7 @@ def test_seed_prompt_dataset_get_values():
 
 
 def test_prompt_dataset_from_yaml_defaults():
-    prompts = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
+    prompts = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
     assert len(prompts.prompts) == 5
     assert len(prompts.prompts) == 5
 
@@ -188,7 +188,7 @@ def test_prompt_dataset_from_yaml_defaults():
 
 @pytest.mark.asyncio
 async def test_group_seed_prompt_groups_from_yaml(sqlite_instance):
-    prompts = SeedPromptDataset.from_yaml_file(
+    prompts = SeedDataset.from_yaml_file(
         pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal-dataset.prompt"
     )
     await sqlite_instance.add_seed_prompts_to_memory_async(prompts=prompts.prompts, added_by="rlundeen")
@@ -200,7 +200,7 @@ async def test_group_seed_prompt_groups_from_yaml(sqlite_instance):
 
 @pytest.mark.asyncio
 async def test_group_seed_prompt_alias_sets_group_id(sqlite_instance):
-    prompts = SeedPromptDataset.from_yaml_file(
+    prompts = SeedDataset.from_yaml_file(
         pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal-dataset.prompt"
     )
     await sqlite_instance.add_seed_prompts_to_memory_async(prompts=prompts.prompts, added_by="rlundeen")

@@ -327,7 +327,7 @@ API Reference
     Score
     ScoreType
     SeedPrompt
-    SeedPromptDataset
+    SeedDataset
     SeedPromptGroup
     StorageIO
     StrategyResult

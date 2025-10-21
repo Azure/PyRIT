@@ -18,8 +18,8 @@ from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
 from pyrit.models import (
     Message,
     MessagePiece,
+    SeedDataset,
     SeedPrompt,
-    SeedPromptDataset,
     SeedPromptGroup,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -111,7 +111,7 @@ class ContextComplianceAttack(PromptSendingAttack):
             ValueError: If the instructions file is invalid or missing required prompts.
         """
         try:
-            context_description_instructions = SeedPromptDataset.from_yaml_file(instructions_path)
+            context_description_instructions = SeedDataset.from_yaml_file(instructions_path)
         except Exception as e:
             raise ValueError(f"Failed to load context description instructions from {instructions_path}: {e}")
 

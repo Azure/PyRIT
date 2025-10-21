@@ -14,7 +14,7 @@
 # This notebook demonstrates how to retrieve attack results based on harm category. While harm category information is not duplicated into the `AttackResultEntries` table, PyRIT provides functions that perform the necessary SQL queries to filter `AttackResults` by harm category.
 
 # %% [markdown]
-# ## Import Seed Prompt Dataset
+# ## Import Seed Dataset
 #
 # First we import a dataset which has individual prompts with different harm categories as an example.
 
@@ -24,13 +24,13 @@ import pathlib
 from pyrit.common.initialization import initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
 from pyrit.memory.central_memory import CentralMemory
-from pyrit.models import SeedPromptDataset
+from pyrit.models import SeedDataset
 
 initialize_pyrit(memory_db_type="InMemory")
 
 memory = CentralMemory.get_memory_instance()
 
-seed_prompts = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
+seed_prompts = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
 
 print(f"Dataset name: {seed_prompts.dataset_name}")
 print(f"Number of prompts in dataset: {len(seed_prompts.prompts)}")

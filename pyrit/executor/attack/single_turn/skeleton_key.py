@@ -15,8 +15,8 @@ from pyrit.models import (
     AttackOutcome,
     AttackResult,
     Message,
+    SeedDataset,
     SeedPrompt,
-    SeedPromptDataset,
     SeedPromptGroup,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -92,7 +92,7 @@ class SkeletonKeyAttack(PromptSendingAttack):
         if skeleton_key_prompt:
             return skeleton_key_prompt
 
-        return SeedPromptDataset.from_yaml_file(self.DEFAULT_SKELETON_KEY_PROMPT_PATH).prompts[0].value
+        return SeedDataset.from_yaml_file(self.DEFAULT_SKELETON_KEY_PROMPT_PATH).prompts[0].value
 
     def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
         """

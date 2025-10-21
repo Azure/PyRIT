@@ -11,18 +11,18 @@
 # %% [markdown]
 # # 1. Seed Prompts
 #
-# Most of the datasets we load into PyRIT are stored as a `SeedPromptDataset`. It is useful to store these results with the attributes and metadata associated with these prompts. In order to better understand the organization of the data, we will first start by defining what a `SeedPrompt` is. A `SeedPrompt` can either be a prompt template with parameters such as `{{gender}}` or just a prompt. By loading a YAML file as a `SeedPromptDataset`, we can use the prompts in other components within PyRIT.
+# Most of the datasets we load into PyRIT are stored as a `SeedDataset`. It is useful to store these results with the attributes and metadata associated with these prompts. In order to better understand the organization of the data, we will first start by defining what a `SeedPrompt` is. A `SeedPrompt` can either be a prompt template with parameters such as `{{gender}}` or just a prompt. By loading a YAML file as a `SeedDataset`, we can use the prompts in other components within PyRIT.
 
 # %%
 import pathlib
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import SeedPromptDataset
+from pyrit.models import SeedDataset
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
-seed_prompt_dataset = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
+seed_prompt_dataset = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
 
 print(seed_prompt_dataset.prompts[0])
 
@@ -30,9 +30,9 @@ print(seed_prompt_dataset.prompts[0])
 # There are many attributes stored in a `SeedPrompt` that is very useful for querying by fields such as `harm_categories`.
 
 # %% [markdown]
-# # Loading a Dataset as a `SeedPromptDataset`
+# # Loading a Dataset as a `SeedDataset`
 #
-# By managing `SeedPrompt` objects as a `SeedPromptDataset`, we can load prompts from other datasets. This example demonstrates the process of using XSTest Bias Testing examples to evaluate the safety and bias of an AI language model.
+# By managing `SeedPrompt` objects as a `SeedDataset`, we can load prompts from other datasets. This example demonstrates the process of using XSTest Bias Testing examples to evaluate the safety and bias of an AI language model.
 
 # %%
 from pyrit.datasets import fetch_xstest_dataset

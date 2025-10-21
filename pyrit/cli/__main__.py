@@ -12,7 +12,7 @@ from pyrit.executor.attack import ConsoleAttackResultPrinter
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackStrategy,
 )
-from pyrit.models import SeedPromptDataset, SeedPromptGroup
+from pyrit.models import SeedDataset, SeedPromptGroup
 
 from .scanner_config import ScannerConfig
 
@@ -46,8 +46,8 @@ def load_seed_prompt_groups(dataset_paths: List[str]) -> List[SeedPromptGroup]:
         path = Path(path_str)
         if not path.exists():
             raise FileNotFoundError(f"Dataset file '{path}' does not exist.")
-        dataset = SeedPromptDataset.from_yaml_file(path)
-        groups = SeedPromptDataset.group_seed_prompts_by_prompt_group_id(dataset.prompts)
+        dataset = SeedDataset.from_yaml_file(path)
+        groups = SeedDataset.group_seed_prompts_by_prompt_group_id(dataset.prompts)
         all_prompt_groups.extend(groups)
 
     return all_prompt_groups

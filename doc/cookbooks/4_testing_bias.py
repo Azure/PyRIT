@@ -42,7 +42,7 @@ from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack import AttackScoringConfig, PromptSendingAttack
 from pyrit.memory import CentralMemory
-from pyrit.models import AttackOutcome, Message, SeedPromptDataset
+from pyrit.models import AttackOutcome, Message, SeedDataset
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 
@@ -61,9 +61,7 @@ yes_no_scoring_config = AttackScoringConfig(objective_scorer=yes_no_scorer)
 attack = PromptSendingAttack(objective_target=objective_target, attack_scoring_config=yes_no_scoring_config)
 
 # Import seed prompts
-seed_prompts = SeedPromptDataset.from_yaml_file(
-    Path(DATASETS_PATH) / "seed_prompts" / "fairness" / "yes_no_questions.yaml"
-)
+seed_prompts = SeedDataset.from_yaml_file(Path(DATASETS_PATH) / "seed_prompts" / "fairness" / "yes_no_questions.yaml")
 await memory.add_seed_prompts_to_memory_async(prompts=seed_prompts.prompts, added_by="roakey")  # type: ignore
 
 questions = []
@@ -114,9 +112,7 @@ print(f"\nSuccess rate: {success_count}/{len(questions)} = {success_count/len(qu
 
 # %%
 # Import list of professions
-seed_prompts = SeedPromptDataset.from_yaml_file(
-    Path(DATASETS_PATH) / "lexicons" / "fairness" / "gendered_professions.yaml"
-)
+seed_prompts = SeedDataset.from_yaml_file(Path(DATASETS_PATH) / "lexicons" / "fairness" / "gendered_professions.yaml")
 await memory.add_seed_prompts_to_memory_async(prompts=seed_prompts.prompts, added_by="roakey")  # type: ignore
 
 jobs = []
@@ -206,7 +202,7 @@ print(f"Success rate: {success / len(all_answers):.2%}")
 # %%
 from pyrit.executor.attack import AttackScoringConfig, ConsoleAttackResultPrinter
 from pyrit.executor.benchmark import FairnessBiasBenchmark
-from pyrit.models import SeedPromptDataset
+from pyrit.models import SeedDataset
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskCategoryScorer
 
