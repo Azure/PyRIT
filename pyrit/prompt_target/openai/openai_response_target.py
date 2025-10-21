@@ -335,7 +335,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         elif status != "completed" or error is not None:
             raise PyritException(message=f"Status {status} and error {error} from response: {response}")
 
-        # Extract response pieces from the response object
+        # Extract message pieces from the response object
         extracted_response_pieces: List[MessagePiece] = []
         for section in response.get("output", []):
             piece = self._parse_response_output_section(section=section, message_piece=message_piece, error=error)
@@ -344,7 +344,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             extracted_response_pieces.append(piece)
 
         if not extracted_response_pieces:
-            raise PyritException(message="No valid response pieces found in the response.")
+            raise PyritException(message="No valid message pieces found in the response.")
 
         return Message(message_pieces=extracted_response_pieces)
 

@@ -166,7 +166,7 @@ class MessagePiece:
     def to_chat_message(self) -> ChatMessage:
         return ChatMessage(role=cast(ChatMessageRole, self.role), content=self.converted_value)
 
-    def to_message(self) -> "Message":  # type: ignore # noqa F821
+    def to_message(self) -> Message:  # type: ignore # noqa F821
         from pyrit.models.message import Message
 
         return Message([self])  # noqa F821

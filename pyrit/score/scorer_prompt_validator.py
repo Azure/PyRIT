@@ -54,7 +54,7 @@ class ScorerPromptValidator:
         if self._max_pieces_in_response is not None:
             if len(message.message_pieces) > self._max_pieces_in_response:
                 raise ValueError(
-                    f"Request response has {len(message.message_pieces)} pieces, "
+                    f"Message has {len(message.message_pieces)} pieces, "
                     f"exceeding the limit of {self._max_pieces_in_response}."
                 )
 

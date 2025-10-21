@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
 from typing import Dict, MutableSequence, Optional, Sequence, Union
 
 from pyrit.common.utils import combine_dict
@@ -54,7 +55,7 @@ class Message:
 
     def is_error(self) -> bool:
         """
-        Returns True if any of the message pieces has an error response.
+        Returns True if any of the message pieces have an error response.
         """
         for piece in self.message_pieces:
             if piece.response_error != "none" or piece.converted_value_data_type == "error":
@@ -101,8 +102,8 @@ class Message:
         return "\n".join([str(message_piece) for message_piece in self.message_pieces])
 
     @staticmethod
-    def get_all_values(messages: Sequence["Message"]) -> list[str]:
-        """Return all converted values across the provided request responses."""
+    def get_all_values(messages: Sequence[Message]) -> list[str]:
+        """Return all converted values across the provided messages."""
         values: list[str] = []
         for message in messages:
             values.extend(message.get_values())
@@ -110,24 +111,24 @@ class Message:
 
     @staticmethod
     def flatten_to_message_pieces(
-        messages: Sequence["Message"],
+        messages: Sequence[Message],
     ) -> MutableSequence[MessagePiece]:
         if not messages:
             return []
-        response_pieces: MutableSequence[MessagePiece] = []
+        message_pieces: MutableSequence[MessagePiece] = []
 
         for response in messages:
-            response_pieces.extend(response.message_pieces)
+            message_pieces.extend(response.message_pieces)
 
-        return response_pieces
+        return message_pieces
 
     @classmethod
-    def from_prompt(cls, *, prompt: str, role: ChatMessageRole) -> "Message":
+    def from_prompt(cls, *, prompt: str, role: ChatMessageRole) -> Message:
         piece = MessagePiece(original_value=prompt, role=role)
         return cls(message_pieces=[piece])
 
     @classmethod
-    def from_system_prompt(cls, system_prompt: str) -> "Message":
+    def from_system_prompt(cls, system_prompt: str) -> Message:
         return cls.from_prompt(prompt=system_prompt, role="system")
 
 
@@ -144,12 +145,12 @@ def group_conversation_message_pieces_by_sequence(
             message pieces.
 
     Returns:
-        MutableSequence[Message]: A list of Message objects representing grouped request
-            pieces. This is ordered by the sequence number
+        MutableSequence[Message]: A list of Message objects representing grouped message
+            pieces. This is ordered by the sequence number.
 
     Raises:
         ValueError: If the conversation ID of any message piece does not match the conversation ID of the first
-        message piece.
+            message piece.
 
     Example:
     >>> message_pieces = [
