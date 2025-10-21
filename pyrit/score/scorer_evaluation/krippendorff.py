@@ -1,395 +1,154 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-"""
-This module provides a function to compute the Krippendorff's alpha statistical measure of the agreement achieved
-when coding a set of units based on the values of a variable.
+"""Krippendorff's alpha for ordinal data.
+
+This module exposes an ordinal-only implementation of Krippendorff's alpha used by
+the harm scorer evaluation.
 """
 
 from __future__ import annotations
 
-from typing import Any, Literal, Protocol, TypeVar, Union, cast
-
 import numpy as np
-import numpy.typing as npt
-
-DEFAULT_DTYPE = np.float64
-
-
-ValueScalarType = TypeVar("ValueScalarType", bound=np.generic)
-MetricResultScalarType = TypeVar("MetricResultScalarType", bound=np.inexact)
-
-
-class DistanceMetric(Protocol):
-    def __call__(
-        self,
-        v1: npt.NDArray[Any],
-        v2: npt.NDArray[Any],
-        i1: npt.NDArray[np.int_],
-        i2: npt.NDArray[np.int_],
-        n_v: npt.NDArray[np.number],
-        dtype: npt.DTypeLike = DEFAULT_DTYPE,
-    ) -> npt.NDArray[np.floating[Any]]:
-        """Computes the distance for two arrays element-wise."""
-        ...
-
-
-LevelOfMeasurement = Union[Literal["nominal", "ordinal", "interval", "ratio"], DistanceMetric]
-
-
-def _nominal_metric(
-    v1: npt.NDArray[Any],
-    v2: npt.NDArray[Any],
-    i1: npt.NDArray[np.int_],
-    i2: npt.NDArray[np.int_],  # noqa
-    n_v: npt.NDArray[np.number],  # noqa
-    dtype: npt.DTypeLike = DEFAULT_DTYPE,
-) -> npt.NDArray[np.floating[Any]]:
-    """Metric for nominal data."""
-    return (v1 != v2).astype(dtype)
-
-
-def _ordinal_metric(
-    v1: npt.NDArray[Any],
-    v2: npt.NDArray[Any],  # noqa
-    i1: npt.NDArray[np.int_],
-    i2: npt.NDArray[np.int_],
-    n_v: npt.NDArray[np.number],
-    dtype: npt.DTypeLike = DEFAULT_DTYPE,
-) -> npt.NDArray[np.floating[Any]]:
-    """Metric for ordinal data."""
-    i1, i2 = np.minimum(i1, i2), np.maximum(i1, i2)
-
-    ranges = np.dstack((i1, i2 + 1))
-    sums_between_indices = np.add.reduceat(np.append(n_v, 0), ranges.reshape(-1))[::2].reshape(*i1.shape)
-
-    return (sums_between_indices - np.divide(n_v[i1] + n_v[i2], 2, dtype=dtype)) ** 2
-
-
-def _interval_metric(
-    v1: npt.NDArray[np.number],
-    v2: npt.NDArray[np.number],
-    i1: npt.NDArray[np.int_],
-    i2: npt.NDArray[np.int_],
-    n_v: npt.NDArray[np.number],  # noqa
-    dtype: npt.DTypeLike = DEFAULT_DTYPE,
-) -> npt.NDArray[np.floating[Any]]:
-    """Metric for interval data."""
-    return (v1 - v2).astype(dtype) ** 2
-
-
-def _ratio_metric(
-    v1: npt.NDArray[np.number],
-    v2: npt.NDArray[np.number],
-    i1: npt.NDArray[np.int_],  # noqa
-    i2: npt.NDArray[np.int_],
-    n_v: npt.NDArray[np.number],  # noqa
-    dtype: npt.DTypeLike = DEFAULT_DTYPE,
-) -> npt.NDArray[np.floating[Any]]:
-    """Metric for ratio data."""
-    v1_plus_v2 = v1 + v2
-    return (
-        np.divide(v1 - v2, v1_plus_v2, out=np.zeros(np.broadcast(v1, v2).shape), where=v1_plus_v2 != 0, dtype=dtype)
-        ** 2
-    )
-
-
-def _coincidences(
-    value_counts: npt.NDArray[np.int_],
-    dtype: npt.DTypeLike = DEFAULT_DTYPE,
-) -> npt.NDArray[np.floating[Any]]:
-    """Coincidence matrix.
-
-    Parameters
-    ----------
-    value_counts : ndarray, with shape (N, V)
-        Number of coders that assigned a certain value to a determined unit, where N is the number of units
-        and V is the value count.
-
-    dtype : data-type
-        Result and computation data-type.
-
-    Returns
-    -------
-    o : ndarray, with shape (V, V)
-        Coincidence matrix.
-    """
-    N, V = value_counts.shape
-    pairable = np.maximum(value_counts.sum(axis=1), 2)
-    diagonals = value_counts[:, np.newaxis, :] * np.eye(V)[np.newaxis, ...]
-    unnormalized_coincidences = value_counts[..., np.newaxis] * value_counts[:, np.newaxis, :] - diagonals
-    return np.divide(unnormalized_coincidences, (pairable - 1).reshape((-1, 1, 1)), dtype=dtype).sum(axis=0)
-
-
-def _random_coincidences(
-    n_v: npt.NDArray[np.number],
-    dtype: npt.DTypeLike = DEFAULT_DTYPE,
-) -> npt.NDArray[np.floating[Any]]:
-    """Random coincidence matrix.
-
-    Parameters
-    ----------
-    n_v : ndarray, with shape (V,)
-        Number of pairable elements for each value.
-
-    dtype : data-type
-        Result and computation data-type.
-
-    Returns
-    -------
-    e : ndarray, with shape (V, V)
-        Random coincidence matrix.
-    """
-    return np.divide(np.outer(n_v, n_v) - np.diagflat(n_v), n_v.sum() - 1, dtype=dtype)
-
-
-def _distances(
-    value_domain: npt.NDArray[ValueScalarType],
-    distance_metric: DistanceMetric,
-    n_v: npt.NDArray[np.number],
-    dtype: npt.DTypeLike = DEFAULT_DTYPE,
-) -> npt.NDArray[np.floating[Any]]:
-    """Distances of the different possible values.
-
-    Parameters
-    ----------
-    value_domain : ndarray, with shape (V,)
-        Possible values V the units can take.
-        If the level of measurement is not nominal, it must be ordered.
-
-    distance_metric : callable
-        Callable that returns the distance of two given values.
-
-    n_v : ndarray, with shape (V,)
-        Number of pairable elements for each value.
-
-    dtype : data-type
-        Result and computation data-type.
-
-    Returns
-    -------
-    d : ndarray, with shape (V, V)
-        Distance matrix for each value pair.
-    """
-    indices = np.arange(len(value_domain))
-    return distance_metric(
-        value_domain[:, np.newaxis],
-        value_domain[np.newaxis, :],
-        i1=indices[:, np.newaxis],
-        i2=indices[np.newaxis, :],
-        n_v=n_v,
-        dtype=dtype,
-    )
-
-
-def _distance_metric(level_of_measurement: LevelOfMeasurement) -> DistanceMetric:
-    """Distance metric callable of the level of measurement.
-
-    Parameters
-    ----------
-    level_of_measurement : string or callable
-        Steven's level of measurement of the variable.
-        It must be one of "nominal", "ordinal", "interval", "ratio", or a callable.
-
-    Returns
-    -------
-    metric : callable
-        Distance callable.
-    """
-    if isinstance(level_of_measurement, str):
-        mapping: dict[str, DistanceMetric] = {
-            "nominal": cast(DistanceMetric, _nominal_metric),
-            "ordinal": cast(DistanceMetric, _ordinal_metric),
-            "interval": cast(DistanceMetric, _interval_metric),
-            "ratio": cast(DistanceMetric, _ratio_metric),
-        }
-        if level_of_measurement not in mapping:
-            raise ValueError("Invalid level_of_measurement. Expected one of 'nominal', 'ordinal', 'interval', 'ratio'.")
-        return mapping[level_of_measurement]
-
-    return cast(DistanceMetric, level_of_measurement)
-
-
-def _reliability_data_to_value_counts(
-    reliability_data: npt.NDArray[ValueScalarType],
-    value_domain: npt.NDArray[ValueScalarType],
-) -> npt.NDArray[np.int_]:
-    """Return the value counts given the reliability data.
-
-    Parameters
-    ----------
-    reliability_data : ndarray, with shape (M, N)
-        Reliability data matrix which has the rate the i coder gave to the j unit, where M is the number of raters
-        and N is the unit count.
-        Missing rates are represented with `np.nan`.
-
-    value_domain : ndarray, with shape (V,)
-        Possible values the units can take.
-
-    Returns
-    -------
-    value_counts : ndarray, with shape (N, V)
-        Number of coders that assigned a certain value to a determined unit, where N is the number of units
-        and V is the value count.
-    """
-    return (reliability_data.T[..., np.newaxis] == value_domain[np.newaxis, np.newaxis, :]).sum(axis=1)  # noqa
 
 
 def alpha(
-    reliability_data: npt.ArrayLike | None = None,
-    value_counts: npt.ArrayLike | None = None,
-    value_domain: npt.ArrayLike | None = None,
-    level_of_measurement: LevelOfMeasurement = "interval",
-    dtype: npt.DTypeLike = DEFAULT_DTYPE,
+    reliability_data: "np.ndarray",  # shape: (num_raters_or_trials, num_items); dtype float
+    level_of_measurement: str = "ordinal",
+    missing: float | None = np.nan,
 ) -> float:
-    """Compute Krippendorff's alpha.
+    """Compute Krippendorff's alpha inter-rater reliability for ordinal data.
 
-    See https://en.wikipedia.org/wiki/Krippendorff%27s_alpha for more information.
+    Computes inter-rater reliability for ordered categories, ignoring missing
+    entries and supporting varying numbers of raters per item.
 
-    Parameters
-    ----------
-    reliability_data : array_like, with shape (M, N)
-        Reliability data matrix which has the rate the i coder gave to the j unit, where M is the number of raters
-        and N is the unit count.
-        Missing rates are represented with `np.nan`.
-        If it's provided then `value_counts` must not be provided.
+    Args:
+        reliability_data (np.ndarray):
+            Ratings array of shape (num_raters_or_trials, num_items). Each entry
+            is a numeric rating on an ordered scale. Missing ratings should be
+            represented by ``np.nan`` (default) or the value specified by
+            ``missing``.
+        level_of_measurement (str):
+            Level of measurement. Must be ``"ordinal"``. Any other value will
+            raise ``ValueError``.
+        missing (float | None):
+            Sentinel value indicating missing ratings. If ``None``, it is
+            treated as ``np.nan``. Defaults to ``np.nan``.
 
-    value_counts : array_like, with shape (N, V)
-        Number of coders that assigned a certain value to a determined unit, where N is the number of units
-        and V is the value count.
-        If it's provided then `reliability_data` must not be provided.
+    Returns:
+        float: Krippendorff's alpha, where 1.0 indicates perfect agreement. The
+        value can be below 0 when agreement is worse than chance. ``np.nan`` is
+        returned when the statistic is undefined (e.g., fewer than two usable
+        ratings or zero expected disagreement with non-zero observed
+        disagreement).
 
-    value_domain : array_like, with shape (V,)
-        Possible values the units can take.
-        If the level of measurement is not nominal, it must be ordered.
-        If `reliability_data` is provided, then the default value is the ordered list of unique rates that appear.
-        Else, the default value is `list(range(V))`.
-
-    level_of_measurement : string or callable
-        Steven's level of measurement of the variable.
-        It must be one of "nominal", "ordinal", "interval", "ratio", or a callable.
-
-    dtype : data-type
-        Result and computation data-type.
-
-    Returns
-    -------
-    alpha : float
-        Scalar value of Krippendorff's alpha.
-
-    Examples
-    --------
-    >>> reliability_data = [[np.nan, np.nan, np.nan, np.nan, np.nan, 3, 4, 1, 2, 1, 1, 3, 3, np.nan, 3],
-    ...                     [1, np.nan, 2, 1, 3, 3, 4, 3, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
-    ...                     [np.nan, np.nan, 2, 1, 3, 4, 4, np.nan, 2, 1, 1, 3, 3, np.nan, 4]]
-    >>> print(round(alpha(reliability_data=reliability_data, level_of_measurement="nominal"), 6))
-    0.691358
-    >>> print(round(alpha(reliability_data=reliability_data, level_of_measurement="interval"), 6))
-    0.810845
-    >>> value_counts = np.array([[1, 0, 0, 0],
-    ...                          [0, 0, 0, 0],
-    ...                          [0, 2, 0, 0],
-    ...                          [2, 0, 0, 0],
-    ...                          [0, 0, 2, 0],
-    ...                          [0, 0, 2, 1],
-    ...                          [0, 0, 0, 3],
-    ...                          [1, 0, 1, 0],
-    ...                          [0, 2, 0, 0],
-    ...                          [2, 0, 0, 0],
-    ...                          [2, 0, 0, 0],
-    ...                          [0, 0, 2, 0],
-    ...                          [0, 0, 2, 0],
-    ...                          [0, 0, 0, 0],
-    ...                          [0, 0, 1, 1]])
-    >>> print(round(alpha(value_counts=value_counts, level_of_measurement="nominal"), 6))
-    0.691358
-    >>> # The following examples were extracted from
-    >>> # https://www.statisticshowto.datasciencecentral.com/wp-content/uploads/2016/07/fulltext.pdf, page 8.
-    >>> reliability_data = [[1, 2, 3, 3, 2, 1, 4, 1, 2, np.nan, np.nan, np.nan],
-    ...                     [1, 2, 3, 3, 2, 2, 4, 1, 2, 5, np.nan, 3],
-    ...                     [np.nan, 3, 3, 3, 2, 3, 4, 2, 2, 5, 1, np.nan],
-    ...                     [1, 2, 3, 3, 2, 4, 4, 1, 2, 5, 1, np.nan]]
-    >>> print(round(alpha(reliability_data, level_of_measurement="ordinal"), 3))
-    0.815
-    >>> print(round(alpha(reliability_data, value_domain=[1,2,3,4,5], level_of_measurement="ordinal"), 3))
-    0.815
-    >>> print(round(alpha(reliability_data, level_of_measurement="ratio"), 3))
-    0.797
-    >>> reliability_data = [["very low", "low", "mid", "mid", "low", "very low", "high", "very low", "low", np.nan,
-    ...                      np.nan, np.nan],
-    ...                     ["very low", "low", "mid", "mid", "low", "low", "high", "very low", "low", "very high",
-    ...                      np.nan, "mid"],
-    ...                     [np.nan, "mid", "mid", "mid", "low", "mid", "high", "low", "low", "very high", "very low",
-    ...                      np.nan],
-    ...                     ["very low", "low", "mid", "mid", "low", "high", "high", "very low", "low", "very high",
-    ...                      "very low", np.nan]]
-    >>> print(round(alpha(reliability_data, level_of_measurement="ordinal",
-    ...                   value_domain=["very low", "low", "mid", "high", "very high"]), 3))
-    0.815
-    >>> # Note that without an ordered value_domain, we can only calculate nominal distances on strings.
-    >>> print(round(alpha(reliability_data, level_of_measurement="nominal"), 3))
-    0.743
+    Raises:
+        ValueError: If ``level_of_measurement`` is not ``"ordinal"``.
     """
-    if (reliability_data is None) == (value_counts is None):
-        raise ValueError("Either reliability_data or value_counts must be provided, but not both.")
+    # Validate level of measurement
+    if level_of_measurement != "ordinal":
+        raise ValueError(f"Only 'ordinal' level of measurement is supported, got '{level_of_measurement}'")
 
-    # Don't know if it's a `list` or NumPy array. If it's the latter, the truth value is ambiguous. So, ask for `None`.
-    if value_counts is None:
-        reliability_data = np.asarray(reliability_data)
+    # Convert to float64 for numerical precision
+    data = np.asarray(reliability_data, dtype=np.float64)
 
-        kind = reliability_data.dtype.kind
-        if kind in {"i", "u", "f"}:
-            # `np.isnan` only operates on signed integers, unsigned integers, and floats, not strings.
-            computed_value_domain = np.unique(reliability_data[~np.isnan(reliability_data)])
-        elif kind in {"U", "S"}:  # Unicode or byte string.
-            # `np.asarray` will coerce `np.nan` values to "nan".
-            computed_value_domain = np.unique(reliability_data[reliability_data != "nan"])
-        else:
-            raise ValueError(f"Don't know how to construct value domain for dtype kind {kind}.")
+    # Handle missing value indicator
+    if missing is None:
+        missing = np.nan
 
-        if value_domain is None:
-            # Check if Unicode or byte string.
-            if kind in {"U", "S"} and level_of_measurement != "nominal":
-                raise ValueError(
-                    "When using strings, an ordered value_domain is required for "
-                    "level_of_measurement other than 'nominal'."
-                )
-            value_domain = computed_value_domain
-        else:
-            value_domain = np.asarray(value_domain)
-            # Note: We do not need to test for `np.nan` in the input data.
-            # `np.nan` indicates the absence of a domain value and is always allowed.
-            if not np.isin(computed_value_domain, value_domain).all():
-                raise ValueError("The reliability data contains out-of-domain values.")
-
-        value_counts = _reliability_data_to_value_counts(reliability_data, value_domain)
+    # Identify valid (non-missing) values
+    if np.isnan(missing):
+        valid_mask = ~np.isnan(data)
     else:
-        value_counts = np.asarray(value_counts)
+        valid_mask = data != missing
 
-        if value_domain is None:
-            value_domain = np.arange(value_counts.shape[1])
-        else:
-            value_domain = np.asarray(value_domain)
-            if value_counts.shape[1] != len(value_domain):
-                raise ValueError("The value domain should be equal to the number of columns of value_counts.")
+    # Extract valid ratings and get unique categories
+    valid_ratings = data[valid_mask]
 
-    # Help static type checkers: ensure value_domain is an ndarray from here on
-    assert value_domain is not None
-    value_domain = np.asarray(value_domain)
+    # Check if we have enough data
+    if len(valid_ratings) < 2:
+        return np.nan
 
-    if len(value_domain) <= 1:
-        raise ValueError("There has to be more than one value in the domain.")
+    # Get sorted unique categories
+    categories = np.unique(valid_ratings)
+    num_categories = len(categories)
 
-    if (value_counts.sum(axis=-1) <= 1).all():
-        raise ValueError("There has to be at least one unit with values assigned by at least two coders.")
+    # All ratings identical - perfect agreement
+    if num_categories == 1:
+        return 1.0
 
-    dtype = np.dtype(dtype)
-    if not np.issubdtype(dtype, np.inexact):
-        raise ValueError("`dtype` must be an inexact type.")
+    # Build value counts matrix (items x categories)
+    # This represents how many raters assigned each category to each item
+    num_items = data.shape[1]
+    value_counts = np.zeros((num_items, num_categories), dtype=np.int64)
 
-    distance_metric = _distance_metric(level_of_measurement)
+    for item_idx in range(num_items):
+        item_ratings = data[:, item_idx]
+        item_valid = valid_mask[:, item_idx]
+        valid_item_ratings = item_ratings[item_valid]
 
-    o: npt.NDArray[np.floating[Any]] = _coincidences(value_counts, dtype=dtype)
-    n_v = cast(npt.NDArray[np.number], o.sum(axis=0))
-    e: npt.NDArray[np.floating[Any]] = _random_coincidences(n_v, dtype=dtype)
-    d: npt.NDArray[np.floating[Any]] = _distances(np.asarray(value_domain), distance_metric, n_v, dtype=dtype)
-    return float(1 - (o * d).sum() / (e * d).sum())
+        for rating in valid_item_ratings:
+            cat_idx = np.searchsorted(categories, rating)
+            value_counts[item_idx, cat_idx] += 1
+
+    # Calculate pairable values per item (must have at least 2 raters)
+    pairable = np.maximum(value_counts.sum(axis=1), 2)
+
+    # Build coincidence matrix using vectorized operations
+    coincidence_matrix = np.zeros((num_categories, num_categories), dtype=np.float64)
+
+    for item_idx in range(num_items):
+        item_counts = value_counts[item_idx]
+        m_c = pairable[item_idx]
+
+        if m_c < 2:
+            continue
+
+        # Compute outer product for this item
+        item_coincidences = np.outer(item_counts, item_counts).astype(np.float64)
+
+        # Set diagonal to n_i * (n_i - 1) to remove self-pairs
+        np.fill_diagonal(item_coincidences, item_counts * (item_counts - 1))
+
+        # Normalize and add to total
+        coincidence_matrix += item_coincidences / (m_c - 1)
+
+    # Calculate marginals (total coincidences per category)
+    n_v = coincidence_matrix.sum(axis=0)
+    total_n = n_v.sum()
+
+    # Check for degenerate case
+    if total_n == 0:
+        return np.nan
+
+    # Expected coincidence matrix
+    expected_matrix = np.outer(n_v, n_v) - np.diag(n_v)
+    expected_matrix = expected_matrix / (total_n - 1)
+
+    # Ordinal distance matrix using category marginals
+    distance_matrix = np.zeros((num_categories, num_categories), dtype=np.float64)
+    for i in range(num_categories):
+        for j in range(num_categories):
+            if i == j:
+                continue
+            min_idx, max_idx = (i, j) if i < j else (j, i)
+            between_sum = n_v[min_idx : max_idx + 1].sum() - (n_v[min_idx] + n_v[max_idx]) / 2.0
+            distance_matrix[i, j] = between_sum**2
+
+    # Observed and expected disagreements
+    observed_disagreement = float(np.sum(coincidence_matrix * distance_matrix))
+    expected_disagreement = float(np.sum(expected_matrix * distance_matrix))
+
+    # Handle edge case where expected disagreement is zero
+    if np.abs(expected_disagreement) < 1e-15:
+        if np.abs(observed_disagreement) < 1e-15:
+            return 1.0
+        return np.nan
+
+    # Krippendorff's alpha
+    alpha_value = 1.0 - observed_disagreement / expected_disagreement
+
+    # Clip tiny negative values due to rounding
+    if -1e-10 < alpha_value < 0:
+        alpha_value = 0.0
+
+    return float(alpha_value)
