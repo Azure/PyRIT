@@ -115,7 +115,11 @@ from typing import cast
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import SCORER_EVALS_OBJECTIVE_PATH
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import ObjectiveScorerEvaluator, ScorerEvaluator, SelfAskTrueFalseScorer
+from pyrit.score import (
+    ObjectiveScorerEvaluator,
+    ScorerEvaluator,
+    SelfAskTrueFalseScorer,
+)
 from pyrit.score.true_false.self_ask_true_false_scorer import TRUE_FALSE_QUESTIONS_PATH
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
