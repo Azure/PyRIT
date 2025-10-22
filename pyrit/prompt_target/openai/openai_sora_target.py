@@ -149,25 +149,69 @@ class OpenAISoraTarget(OpenAITarget):
         # Initialize parent class first to get endpoint
         super().__init__(**kwargs)
 
-        # Detect API version based on endpoint URL
-        if "v1/videos" in self._endpoint:
-            self._detected_api_version = "v2"
-        else:
-            self._detected_api_version = "v1"
+        # Detect API version
+        self._detected_api_version = self._detect_api_version()
 
-        # Parse resolution
+        # Set instance variables
+        self._width, self._height = self._parse_and_validate_resolution(resolution_dimensions=resolution_dimensions)
+        self._n_seconds = n_seconds
+        self._n_variants = n_variants
+        self._output_filename = output_filename
+        self._params: Dict[str, Any] = {}
+
+        # Validate parameters
+        self._validate_duration(n_seconds=n_seconds)
+        self._validate_variants(
+            n_variants=n_variants,
+            resolution_dimensions=resolution_dimensions,
+            n_seconds=n_seconds,
+        )
+
+    def _set_openai_env_configuration_vars(self) -> None:
+        """Set unified environment variable names for both API versions."""
+        self.model_name_environment_variable = "OPENAI_SORA_MODEL"
+        self.endpoint_environment_variable = "OPENAI_SORA_ENDPOINT"
+        self.api_key_environment_variable = "OPENAI_SORA_KEY"
+
+    def _detect_api_version(self) -> str:
+        """
+        Detect the API version based on the endpoint URL.
+
+        Returns:
+            str: The detected API version ("v1" or "v2").
+        """
+        if "v1/videos" in self._endpoint:
+            return "v2"
+        else:
+            return "v1"
+
+    def _parse_and_validate_resolution(self, *, resolution_dimensions: str) -> tuple[str, str]:
+        """
+        Parse and validate the resolution dimensions string.
+
+        Args:
+            resolution_dimensions (str): Resolution dimensions in WIDTHxHEIGHT format.
+
+        Returns:
+            tuple[str, str]: A tuple of (width, height) as strings.
+
+        Raises:
+            ValueError: If the resolution format is invalid or unsupported for the detected API version.
+        """
+        # Parse resolution format
         if "x" not in resolution_dimensions:
             raise ValueError(
                 f"Invalid resolution format: '{resolution_dimensions}'. "
                 "Expected format: 'WIDTHxHEIGHT' (e.g., '1280x720')"
             )
+
         dimensions = resolution_dimensions.split("x")
         if len(dimensions) != 2:
             raise ValueError(
                 f"Invalid resolution format: '{resolution_dimensions}'. "
                 "Expected format: 'WIDTHxHEIGHT' (e.g., '1280x720')"
             )
-        
+
         # Validate resolution based on detected API version
         if self._detected_api_version == "v1":
             if resolution_dimensions not in self.V1_RESOLUTIONS:
@@ -181,36 +225,89 @@ class OpenAISoraTarget(OpenAITarget):
                     f"Unsupported resolution for Sora-2: '{resolution_dimensions}'. "
                     f"Supported resolutions: {', '.join(self.V2_RESOLUTIONS)}."
                 )
-        
-        self._height = dimensions[1]
-        self._width = dimensions[0]
 
-        # Validate duration based on detected API version
+        width = dimensions[0]
+        height = dimensions[1]
+
+        return width, height
+
+    def _validate_duration(self, *, n_seconds: int) -> None:
+        """
+        Validate the video duration based on the detected API version.
+
+        Args:
+            n_seconds (int): The duration of the generated video (in seconds).
+
+        Raises:
+            ValueError: If the duration is invalid for the detected API version.
+        """
+        # Basic duration validation
         if n_seconds <= 0:
             raise ValueError(f"Invalid duration: {n_seconds}. Duration must be greater than 0 seconds.")
-        
+
+        # API-specific duration validation
         if self._detected_api_version == "v1":
             if n_seconds > 20:
-                raise ValueError(
-                    f"Invalid duration for Sora-1: {n_seconds}. Maximum duration is 20 seconds."
-                )
+                raise ValueError(f"Invalid duration for Sora-1: {n_seconds}. Maximum duration is 20 seconds.")
         else:  # v2
             if n_seconds not in self.V2_DURATIONS:
                 raise ValueError(
                     f"Invalid duration for Sora-2: {n_seconds}. "
                     f"Supported durations: {', '.join(map(str, self.V2_DURATIONS))} seconds."
                 )
-        
-        self._n_seconds = n_seconds
-        self._n_variants = n_variants
-        self._output_filename = output_filename
-        self._params: Dict[str, Any] = {}  # Initialize params dict
 
-    def _set_openai_env_configuration_vars(self) -> None:
-        """Set unified environment variable names for both API versions."""
-        self.model_name_environment_variable = "OPENAI_SORA_MODEL"
-        self.endpoint_environment_variable = "OPENAI_SORA_ENDPOINT"
-        self.api_key_environment_variable = "OPENAI_SORA_KEY"
+    def _validate_variants(self, *, n_variants: int, resolution_dimensions: str, n_seconds: int) -> None:
+        """
+        Validate the number of video variants based on the detected API version and resolution.
+
+        Args:
+            n_variants (int): Number of video variants to generate.
+            resolution_dimensions (str): The resolution dimensions in WIDTHxHEIGHT format.
+            n_seconds (int): The duration of the generated video (in seconds).
+
+        Raises:
+            ValueError: If the number of variants is invalid for the detected API version or resolution.
+        """
+        # Only validate constraints for v1 API
+        if self._detected_api_version == "v1":
+            self._validate_v1_video_constraints(
+                resolution_dimensions=resolution_dimensions,
+                n_variants=n_variants,
+                n_seconds=n_seconds,
+            )
+
+    def _validate_v1_video_constraints(self, *, resolution_dimensions: str, n_variants: int, n_seconds: int) -> None:
+        """
+        Validate Sora-1 specific video constraints based on resolution dimensions.
+
+        This checks both n_seconds and n_variants values, which have different constraints for different resolution
+        dimensions. Only called for v1 API.
+
+        Args:
+            resolution_dimensions (str): The resolution dimensions in WIDTHxHEIGHT format.
+            n_variants (int): Number of video variants to generate.
+            n_seconds (int): The duration of the generated video (in seconds).
+
+        Raises:
+            ValueError: If the constraints are not met.
+        """
+        if resolution_dimensions in ["1080x1080", "1920x1080"]:
+            # Constraints apply to all 1080p dimensions
+            if n_seconds > 10:
+                raise ValueError(
+                    f"n_seconds must be less than or equal to 10 for resolution dimensions of {resolution_dimensions}."
+                )
+
+            if n_variants > 1:
+                raise ValueError(
+                    f"n_variants must be less than or equal to 1 for resolution dimensions of {resolution_dimensions}."
+                )
+        elif resolution_dimensions in ["720x720", "1280x720"]:
+            # Constraints apply to all 720p dimensions
+            if n_variants > 2:
+                raise ValueError(
+                    f"n_variants must be less than or equal to 2 for resolution dimensions of {resolution_dimensions}."
+                )
 
     async def _send_httpx_request_async(
         self,
@@ -276,10 +373,10 @@ class OpenAISoraTarget(OpenAITarget):
     def _parse_http_error(self, error: httpx.HTTPStatusError) -> tuple[str, bool]:
         """
         Parse HTTP error response and extract detailed error information.
-        
+
         Args:
             error: The HTTPStatusError to parse.
-            
+
         Returns:
             tuple: (error_message, is_content_filter)
         """
@@ -301,23 +398,23 @@ class OpenAISoraTarget(OpenAITarget):
             error_details.append(f"Raw response: {error.response.text}")
 
         error_message = "; ".join(error_details)
-        
+
         # Check if it's a content filtering error
         is_content_filter = error.response.status_code == 400 and any(
             keyword in error_message.lower()
             for keyword in ["content", "policy", "moderation", "filter", "inappropriate", "violation"]
         )
-        
+
         return error_message, is_content_filter
 
     def _handle_http_error(self, error: httpx.HTTPStatusError, request: MessagePiece) -> Message:
         """
         Handle HTTP errors with standardized error parsing and response construction.
-        
+
         Args:
             error: The HTTPStatusError to handle.
             request: The request piece associated with the prompt.
-            
+
         Returns:
             Message: The error response entry.
         """
@@ -353,7 +450,7 @@ class OpenAISoraTarget(OpenAITarget):
                 request_body=body,
             )
             return await self._handle_response_async(request=request, response=response)
-        
+
         except httpx.HTTPStatusError as e:
             return self._handle_http_error(error=e, request=request)
 
@@ -617,7 +714,7 @@ class OpenAISoraTarget(OpenAITarget):
 
         # Download video content
         video_response = await self.download_video_content_async(task_id=task_id, generation_id=generation_id)
-        
+
         # Determine final file name
         file_name = self._output_filename if self._output_filename else file_name_suffix
 

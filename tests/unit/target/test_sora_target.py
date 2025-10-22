@@ -385,42 +385,56 @@ async def test_check_job_status_async_custom_retry(
         assert mock_request.call_count == sora_target.CHECK_JOB_RETRY_MAX_NUM_ATTEMPTS
 
 
-@pytest.mark.parametrize(
-    "err_class, status_code, message, err_msg",
-    [
-        (RateLimitException, 429, "Rate Limit Exception", "Status Code: 429, Message: Rate Limit Exception"),
-        (httpx.HTTPStatusError, 400, "Bad Request", "Status Code: 400, Message: Bad Request"),
-    ],
-)
 @pytest.mark.asyncio
-async def test_send_prompt_async_exceptions(
+async def test_send_prompt_async_rate_limit_exception(
     sora_target: OpenAISoraTarget,
     sample_conversations: MutableSequence[MessagePiece],
-    err_class: Exception,
-    status_code: int,
-    message: str,
-    err_msg: str,
 ):
+    """Test that RateLimitException is raised for 429 status."""
     request = sample_conversations[0]
 
     response = MagicMock()
-    response.status_code = status_code
+    response.status_code = 429
 
-    side_effect = httpx.HTTPStatusError(message, response=response, request=MagicMock())
+    side_effect = httpx.HTTPStatusError("Rate Limit Exception", response=response, request=MagicMock())
 
     with patch(
         "pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect
     ) as mock_request:
 
-        with pytest.raises(err_class) as e:  # type: ignore
+        with pytest.raises(RateLimitException):
             await sora_target.send_prompt_async(prompt_request=Message([request]))
-            assert str(e.value) == err_msg
 
-            max_attempts = os.getenv("RETRY_MAX_NUM_ATTEMPTS")
-            if max_attempts and err_class == RateLimitException:
-                assert mock_request.call_count == int(max_attempts)
-            elif err_class == httpx.HTTPStatusError:
-                assert mock_request.call_count == 1
+        max_attempts = os.getenv("RETRY_MAX_NUM_ATTEMPTS")
+        if max_attempts:
+            assert mock_request.call_count == int(max_attempts)
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_http_error_handled(
+    sora_target: OpenAISoraTarget,
+    sample_conversations: MutableSequence[MessagePiece],
+):
+    """Test that HTTPStatusError (400) is handled gracefully and returns an error message."""
+    request = sample_conversations[0]
+
+    response = MagicMock()
+    response.status_code = 400
+    response.json.return_value = {"error": {"message": "Bad Request"}}
+
+    side_effect = httpx.HTTPStatusError("Bad Request", response=response, request=MagicMock())
+
+    with patch(
+        "pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect
+    ) as mock_request:
+
+        result = await sora_target.send_prompt_async(prompt_request=Message([request]))
+
+        # Should return an error message, not raise an exception
+        assert result is not None
+        assert result.message_pieces[0].response_error == "unknown"
+        assert "400" in result.message_pieces[0].converted_value
+        assert mock_request.call_count == 1
 
 
 @pytest.mark.asyncio
