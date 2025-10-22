@@ -35,9 +35,10 @@ class SeedObjective(Seed):
         template_path: Union[str, Path],
         required_parameters: list[str],
         error_message: Optional[str] = None,
-    ) -> "SeedObjective":
+    ) -> SeedObjective:
         """
-        Load a Seed from a YAML file and validate that it contains specific parameters.
+        Load a Seed from a YAML file. Because SeedObjectives do not have any parameters, the required_parameters
+        and error_message arguments are unused.
 
         Args:
             template_path: Path to the YAML file containing the template.

@@ -115,8 +115,6 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         """
         if not context.objective or context.objective.isspace():
             raise ValueError("Attack objective must be provided and non-empty in the context")
-        if context.objective and context.seed_prompt_group and context.seed_prompt_group.objective:
-            raise ValueError("Objective should not be set in both context and seed prompt group")
 
     async def _setup_async(self, *, context: SingleTurnAttackContext) -> None:
         """

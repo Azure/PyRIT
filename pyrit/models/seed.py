@@ -164,7 +164,7 @@ class Seed(YamlLoadable):
         template_path: Union[str, Path],
         required_parameters: list[str],
         error_message: Optional[str] = None,
-    ) -> "Seed":
+    ) -> Seed:
         """
         Load a Seed from a YAML file and validate that it contains specific parameters.
 

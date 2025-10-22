@@ -159,7 +159,7 @@ class SeedPromptDataset(YamlLoadable):
         return random.sample(prompts, min(len(prompts), number))
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SeedPromptDataset":
+    def from_dict(cls, data: Dict[str, Any]) -> SeedPromptDataset:
         """
         Builds a SeedPromptDataset by merging top-level defaults into each item in 'prompts'.
         """
