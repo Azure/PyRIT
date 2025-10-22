@@ -152,7 +152,7 @@ class FoundryScenario(Scenario):
     """
     Factory for creating comprehensive Foundry attack test scenarios.
 
-    FoundryScenario is a pre-configured scenario that automatically generates multiple
+    FoundryScenario is a preconfigured scenario that automatically generates multiple
     AttackRun instances based on the specified attack strategies. It supports both
     single-turn attacks (with various converters) and multi-turn attacks (Crescendo,
     RedTeaming), making it easy to quickly test a target against multiple attack vectors.
@@ -199,7 +199,7 @@ class FoundryScenario(Scenario):
         objectives: Optional[list[str]] = None,
         objective_scorer: Optional[TrueFalseScorer] = None,
         memory_labels: Optional[Dict[str, str]] = None,
-        max_concurrency: int = 5
+        max_concurrency: int = 5,
     ):
         """
         Initialize a FoundryScenario with the specified attack strategies.
@@ -209,20 +209,20 @@ class FoundryScenario(Scenario):
             attack_strategies (list[list[FoundryAttackStrategy]]): List of strategy compositions.
                 Each inner list represents a composition of strategies to apply together.
                 The outer list contains all strategy combinations to test.
-                
-                Aggregate strategies (EASY, MODERATE, DIFFICULT, ALL) are automatically 
+
+                Aggregate strategies (EASY, MODERATE, DIFFICULT, ALL) are automatically
                 expanded into individual strategies - they cannot be composed with others.
-                
+
                 Examples:
                     # Single strategies (will be expanded from EASY)
                     [[FoundryAttackStrategy.EASY]]
-                    
+
                     # Multiple single strategies
                     [[FoundryAttackStrategy.Base64], [FoundryAttackStrategy.ROT13]]
-                    
+
                     # Composed strategies (Base64 then Atbash on same prompt)
                     [[FoundryAttackStrategy.Base64, FoundryAttackStrategy.Atbash]]
-                    
+
                     # Mix of single and composed
                     [
                         [FoundryAttackStrategy.Base64],  # Single
@@ -262,16 +262,17 @@ class FoundryScenario(Scenario):
 
         self._objective_target = objective_target
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
-
         self._objective_scorer = objective_scorer if objective_scorer else self._get_default_scorer()
-
-        self._objectives: list[str] = objectives if objectives else list(
-            fetch_harmbench_dataset().get_random_values(
-                number=4,
-                harm_categories=['harmful', 'harassment_bullying']
+        self._objectives: list[str] = (
+            objectives
+            if objectives
+            else list(
+                fetch_harmbench_dataset().get_random_values(
+                    number=4, harm_categories=["harmful", "harassment_bullying"]
+                )
             )
         )
-        
+
         self._memory_labels = memory_labels or {}
 
         # Normalize and validate strategy compositions
@@ -279,15 +280,14 @@ class FoundryScenario(Scenario):
 
         # Create deterministic string representations for compositions
         all_strategies = [
-            self._get_composition_name(composition) 
-            for composition in self._foundry_strategy_compositions
+            self._get_composition_name(composition) for composition in self._foundry_strategy_compositions
         ]
-        
+
         # Sort all strategies for consistent ordering
         all_strategies = sorted(all_strategies)
 
         super().__init__(
-            name=f"Foundry Scenario",
+            name="Foundry Scenario",
             attack_strategies=all_strategies,
             version=self.version,
             memory_labels=memory_labels,
@@ -315,10 +315,10 @@ class FoundryScenario(Scenario):
             # Composed strategy - separate workflows from converters
             workflows = [s for s in composition if "workflow" in s.tags]
             converters = [s for s in composition if "workflow" not in s.tags]
-            
+
             # Sort converters alphabetically by value
             sorted_converters = sorted(converters, key=lambda s: s.value)
-            
+
             # Build composition string: workflow first, then converters
             ordered_strategies = workflows + sorted_converters
             strategy_names = ", ".join(s.value for s in ordered_strategies)
@@ -329,49 +329,49 @@ class FoundryScenario(Scenario):
     ) -> list[list[FoundryAttackStrategy]]:
         """
         Normalize strategy compositions by expanding aggregates while preserving concrete compositions.
-        
+
         Aggregate strategies (ALL, EASY, MODERATE, DIFFICULT) are expanded into their constituent
         individual strategies. Each aggregate expansion creates separate single-strategy compositions.
-        
+
         Concrete strategies in a composition are preserved together as a single composition.
-        
+
         Args:
             attack_strategies: List of strategy compositions to normalize.
-            
+
         Returns:
             Normalized list of strategy compositions with aggregates expanded.
-            
+
         Raises:
             ValueError: If attack_strategies is empty, contains empty compositions,
                        or mixes aggregates with concrete strategies in the same composition.
-                       
+
         Examples:
             # Aggregate expands to individual strategies
             [[EASY]] -> [[Base64], [ROT13], [Leetspeak], ...]
-            
+
             # Concrete composition preserved
             [[Base64, Atbash]] -> [[Base64, Atbash]]
-            
+
             # Mix of aggregate and concrete
             [[EASY], [Base64, ROT13]] -> [[Base64], [ROT13], ..., [Base64, ROT13]]
-            
+
             # Error: Cannot mix aggregate with concrete in same composition
             [[EASY, Base64]] -> ValueError
         """
         if not attack_strategies:
             raise ValueError("attack_strategies cannot be empty")
-            
+
         aggregate_tags = set(FoundryAttackStrategy.get_aggregate_tags())
         normalized_compositions: list[list[FoundryAttackStrategy]] = []
-        
+
         for composition in attack_strategies:
             if not composition:
                 raise ValueError("Empty compositions are not allowed")
-                
+
             # Check if composition contains any aggregates
             aggregates_in_composition = [s for s in composition if s.value in aggregate_tags]
             concretes_in_composition = [s for s in composition if s.value not in aggregate_tags]
-            
+
             # Error if mixing aggregates with concrete strategies
             if aggregates_in_composition and concretes_in_composition:
                 raise ValueError(
@@ -379,7 +379,7 @@ class FoundryScenario(Scenario):
                     f"with concrete strategies {[s.value for s in concretes_in_composition]} "
                     f"in the same composition. Aggregates must be in their own composition to be expanded."
                 )
-            
+
             # Error if multiple aggregates in same composition
             if len(aggregates_in_composition) > 1:
                 raise ValueError(
@@ -387,8 +387,8 @@ class FoundryScenario(Scenario):
                     f"{[s.value for s in aggregates_in_composition]}. "
                     f"Each aggregate must be in its own composition."
                 )
-            
-            # Error if more than one workflow 
+
+            # Error if more than one workflow
             workflows_in_composition = [s for s in composition if "workflow" in s.tags]
             if len(workflows_in_composition) > 1:
                 raise ValueError(
@@ -396,7 +396,7 @@ class FoundryScenario(Scenario):
                     f"This composition contains {len(workflows_in_composition)} workflows: "
                     f"{[s.value for s in workflows_in_composition]}"
                 )
-            
+
             # If composition has an aggregate, expand it into individual strategies
             if aggregates_in_composition:
                 aggregate = aggregates_in_composition[0]
@@ -407,10 +407,10 @@ class FoundryScenario(Scenario):
             else:
                 # Concrete composition - preserve as-is
                 normalized_compositions.append(composition)
-        
+
         if not normalized_compositions:
             raise ValueError("No valid strategy compositions after normalization")
-            
+
         return normalized_compositions
 
     async def _get_attack_runs_async(self) -> List[AttackRun]:
@@ -424,7 +424,6 @@ class FoundryScenario(Scenario):
         for composition in self._foundry_strategy_compositions:
             attack_runs.append(self._get_attack_from_strategy(composition))
         return attack_runs
-
 
     def _get_default_adversarial_target(self) -> OpenAIChatTarget:
         return OpenAIChatTarget(
@@ -466,24 +465,21 @@ class FoundryScenario(Scenario):
         """
         attack: AttackStrategy
 
-
         workflows = [s for s in composite_strategy if "workflow" in s.tags]
         converters_strategies = [s for s in composite_strategy if "workflow" not in s.tags]
-        
+
         # Validate workflow composition
         if len(workflows) > 1:
-            raise ValueError(
-                f"Cannot compose multiple workflow strategies: {[w.value for w in workflows]}"
-            )
-        
-        attack_type = PromptSendingAttack
+            raise ValueError(f"Cannot compose multiple workflow strategies: {[w.value for w in workflows]}")
+
+        attack_type: type[AttackStrategy] = PromptSendingAttack
         if len(workflows) == 1:
             if workflows[0] == FoundryAttackStrategy.Crescendo:
                 attack_type = CrescendoAttack
             elif workflows[0] == FoundryAttackStrategy.MultiTurn:
                 attack_type = RedTeamingAttack
 
-        converters = []
+        converters: list[PromptConverter] = []
         for strategy in converters_strategies:
             if strategy == FoundryAttackStrategy.AnsiAttack:
                 converters.append(AnsiAttackConverter())
@@ -518,9 +514,7 @@ class FoundryScenario(Scenario):
             elif strategy == FoundryAttackStrategy.StringJoin:
                 converters.append(StringJoinConverter())
             elif strategy == FoundryAttackStrategy.Tense:
-                converters.append(
-                    TenseConverter(tense="past", converter_target=self._adversarial_chat)
-                )
+                converters.append(TenseConverter(tense="past", converter_target=self._adversarial_chat))
             elif strategy == FoundryAttackStrategy.UnicodeConfusable:
                 converters.append(UnicodeConfusableConverter())
             elif strategy == FoundryAttackStrategy.UnicodeSubstitution:
@@ -529,9 +523,9 @@ class FoundryScenario(Scenario):
                 converters.append(UrlConverter())
             elif strategy == FoundryAttackStrategy.Jailbreak:
                 jailbreak_template = TextJailBreak(random_template=True)
-                converters.append(
-                    TextJailbreakConverter(jailbreak_template=jailbreak_template)
-                )
+                converters.append(TextJailbreakConverter(jailbreak_template=jailbreak_template))
+            else:
+                raise ValueError(f"Unknown strategy: {strategy}")
 
         attack = self._get_attack(attack_type=attack_type, converters=converters)
 

@@ -59,10 +59,12 @@ def fetch_harmbench_dataset(
 
         # Extract and append the data with its specific category
         category = example["SemanticCategory"]
-        prompt_data.append({
-            "behavior": example["Behavior"],
-            "category": category,
-        })
+        prompt_data.append(
+            {
+                "behavior": example["Behavior"],
+                "category": category,
+            }
+        )
         all_semantic_categories.add(category)
 
     seed_prompts = [

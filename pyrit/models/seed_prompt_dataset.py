@@ -97,7 +97,7 @@ class SeedPromptDataset(YamlLoadable):
         *,
         first: Optional[PositiveInt] = None,
         last: Optional[PositiveInt] = None,
-        harm_categories: Optional[Sequence[str]] = None
+        harm_categories: Optional[Sequence[str]] = None,
     ) -> Sequence[str]:
         """
         Extracts and returns a list of prompt values from the dataset. By default, returns all of them.
@@ -105,7 +105,7 @@ class SeedPromptDataset(YamlLoadable):
         Args:
             first (Optional[int]): If provided, values from the first N prompts are included.
             last (Optional[int]): If provided, values from the last N prompts are included.
-            harm_categories (Optional[Sequence[str]]): If provided, only prompts containing at least one of 
+            harm_categories (Optional[Sequence[str]]): If provided, only prompts containing at least one of
                 these harm categories are included.
 
         Returns:
@@ -113,12 +113,13 @@ class SeedPromptDataset(YamlLoadable):
         """
         # Filter by harm categories if specified
         prompts = self.prompts
-        if harm_categories is not None:
+        if harm_categories:
             prompts = [
-                prompt for prompt in prompts 
+                prompt
+                for prompt in prompts
                 if prompt.harm_categories and any(cat in prompt.harm_categories for cat in harm_categories)
             ]
-        
+
         values = [prompt.value for prompt in prompts]
 
         if first is None and last is None:
@@ -131,13 +132,15 @@ class SeedPromptDataset(YamlLoadable):
 
         return first_part + last_part
 
-    def get_random_values(self, *, number: PositiveInt, harm_categories: Optional[Sequence[str]] = None) -> Sequence[str]:
+    def get_random_values(
+        self, *, number: PositiveInt, harm_categories: Optional[Sequence[str]] = None
+    ) -> Sequence[str]:
         """
         Extracts and returns a list of random prompt values from the dataset.
 
         Args:
             number (int): The number of random prompt values to return.
-            harm_categories (Optional[Sequence[str]]): If provided, only prompts containing at least one of 
+            harm_categories (Optional[Sequence[str]]): If provided, only prompts containing at least one of
                 these harm categories are included.
 
         Returns:

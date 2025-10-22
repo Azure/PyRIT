@@ -12,7 +12,6 @@ and automatically expanded during scenario initialization.
 from enum import Enum
 from typing import Set, TypeVar
 
-
 # TypeVar for the enum subclass itself
 T = TypeVar("T", bound="ScenarioAttackStrategy")
 
@@ -23,7 +22,7 @@ class ScenarioAttackStrategy(Enum):
 
     This class provides a pattern for defining attack strategies as enums where each
     strategy has a set of tags for flexible categorization. It supports aggregate tags
-    (like "easy", "moderate", "difficult" or "fast", "medium") that automatically expand 
+    (like "easy", "moderate", "difficult" or "fast", "medium") that automatically expand
     to include all strategies with that tag.
 
     **Tags**: Flexible categorization system where strategies can have multiple tags
@@ -142,11 +141,7 @@ class ScenarioAttackStrategy(Enum):
                     any aggregate markers.
         """
         aggregate_tags = cls.get_aggregate_tags()
-        return {
-            strategy
-            for strategy in cls
-            if tag in strategy.tags and strategy.value not in aggregate_tags
-        }
+        return {strategy for strategy in cls if tag in strategy.tags and strategy.value not in aggregate_tags}
 
     @classmethod
     def normalize_strategies(cls: type[T], strategies: Set[T]) -> Set[T]:
@@ -177,26 +172,18 @@ class ScenarioAttackStrategy(Enum):
         # Find aggregate tags in the input and expand them
         aggregate_tags = cls.get_aggregate_tags()
         aggregates_to_expand = {
-            tag 
-            for strategy in strategies 
-            if strategy.value in aggregate_tags
-            for tag in strategy.tags
+            tag for strategy in strategies if strategy.value in aggregate_tags for tag in strategy.tags
         }
 
         for aggregate_tag in aggregates_to_expand:
             # Remove the aggregate marker itself
-            aggregate_marker = next(
-                (s for s in normalized_strategies if s.value == aggregate_tag), None
-            )
+            aggregate_marker = next((s for s in normalized_strategies if s.value == aggregate_tag), None)
             if aggregate_marker:
                 normalized_strategies.remove(aggregate_marker)
 
             # Special handling for "all" tag - expand to all non-aggregate strategies
             if aggregate_tag == "all":
-                normalized_strategies.update({
-                    strategy for strategy in cls 
-                    if strategy.value not in aggregate_tags
-                })
+                normalized_strategies.update({strategy for strategy in cls if strategy.value not in aggregate_tags})
             else:
                 # Add all strategies with that tag
                 normalized_strategies.update(cls.get_strategies_by_tag(aggregate_tag))

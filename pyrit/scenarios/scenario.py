@@ -10,11 +10,13 @@ AttackRun instances sequentially, enabling comprehensive security testing campai
 
 from abc import abstractmethod
 import logging
+from abc import abstractmethod
 from typing import Dict, List, Optional
 
 from tqdm.auto import tqdm
+
 import pyrit
-from pyrit.models import AttackResult
+from pyrit.models import AttackOutcome, AttackResult
 from pyrit.scenarios.attack_run import AttackRun
 
 logger = logging.getLogger(__name__)
@@ -24,12 +26,21 @@ class ScenarioIdentifier:
     def __init__(
         self,
         name: str,
-        version: int = 1,
+        scenario_version: int = 1,
         pyrit_version: Optional[str] = None,
         init_data: Optional[dict] = None,
     ):
+        """
+        Initialize a ScenarioIdentifier.
+
+        Args:
+            name (str): Name of the scenario.
+            scenario_version (int): Version of the scenario.
+            pyrit_version (Optional[str]): PyRIT version string.
+            init_data (Optional[dict]): Initialization data.
+        """
         self.name = name
-        self.version = version
+        self.version = scenario_version
         self.pyrit_version = pyrit_version if pyrit_version is not None else pyrit.__version__
         self.init_data = init_data
 
@@ -40,7 +51,7 @@ class ScenarioResult:
         *,
         scenario_identifier: ScenarioIdentifier,
         attack_strategies: List[str],
-        attack_results: List[AttackResult]
+        attack_results: List[AttackResult],
     ) -> None:
 
         self.scenario_identifier = scenario_identifier
@@ -50,8 +61,7 @@ class ScenarioResult:
     @property
     def objective_achieved_rate(self) -> int:
         """Get the success rate of this scenario."""
-        from pyrit.models import AttackOutcome
-        
+
         total_results = len(self.attack_results)
         if total_results == 0:
             return 0
@@ -128,7 +138,7 @@ class Scenario:
         """
         self._identifier = ScenarioIdentifier(
             name=type(self).__name__,
-            version=version,
+            scenario_version=version,
         )
 
         self._name = name
@@ -136,7 +146,6 @@ class Scenario:
         self._memory_labels = memory_labels or {}
         self._max_concurrency = max_concurrency
         self._attack_runs: List[AttackRun] = []
-
 
     @property
     def name(self) -> str:
@@ -151,16 +160,16 @@ class Scenario:
     async def initialize_async(self) -> None:
         """
         Initialize the scenario by populating self._attack_runs
-        
+
         This method allows scenarios to be initialized with attack runs after construction,
         which is useful when attack runs require async operations to be built.
-        
+
         Args:
             attack_runs: List of AttackRun instances to execute in this scenario.
-        
+
         Returns:
             Scenario: Self for method chaining.
-            
+
         Example:
             >>> scenario = MyScenario(
             ...     objective_target=target,
@@ -171,7 +180,6 @@ class Scenario:
             >>> results = await scenario.run_async()
         """
         self._attack_runs = await self._get_attack_runs_async()
-
 
     @abstractmethod
     async def _get_attack_runs_async(self) -> List[AttackRun]:
@@ -200,7 +208,7 @@ class Scenario:
         Returns:
             ScenarioResult: Contains scenario identifier and aggregated list of all
                 attack results from all runs.
-                
+
         Raises:
             ValueError: If the scenario has no attack runs configured. If your scenario
                 requires initialization, call await scenario.initialize() first.
@@ -217,15 +225,12 @@ class Scenario:
                 "Cannot run scenario with no attack runs. Either supply them in initialization or"
                 "call await scenario.initialize_async() first."
             )
-            
+
         logger.info(f"Starting scenario '{self._name}' execution with {len(self._attack_runs)} attack runs")
 
         all_results: List[AttackResult] = []
 
-        for i, attack_run in enumerate(
-            tqdm(self._attack_runs, desc=f"Executing {self._name}", unit="attack"), 
-            start=1
-        ):
+        for i, attack_run in enumerate(tqdm(self._attack_runs, desc=f"Executing {self._name}", unit="attack"), start=1):
             logger.info(f"Executing attack run {i}/{len(self._attack_runs)} in scenario '{self._name}'")
 
             try:
@@ -238,7 +243,5 @@ class Scenario:
 
         logger.info(f"Scenario '{self._name}' completed successfully with {len(all_results)} total results")
         return ScenarioResult(
-            scenario_identifier=self._identifier, 
-            attack_strategies=self._attack_strategies,
-            attack_results=all_results
+            scenario_identifier=self._identifier, attack_strategies=self._attack_strategies, attack_results=all_results
         )
