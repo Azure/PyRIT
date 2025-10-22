@@ -113,7 +113,7 @@ class SeedPromptDataset(YamlLoadable):
         """
         # Filter by harm categories if specified
         prompts = self.prompts
-        if harm_categories is not None:
+        if harm_categories:
             prompts = [
                 prompt
                 for prompt in prompts

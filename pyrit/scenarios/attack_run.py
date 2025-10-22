@@ -56,13 +56,13 @@ class AttackRun:
         ... )
         >>> results = await attack_run.run_async(max_concurrency=5)
         >>>
-        >>> # With prepended conversation
+        >>> # With prepended conversations
         >>> from pyrit.models import Message
         >>> conversation = [Message(...)]
         >>> attack_run = AttackRun(
         ...     attack=attack,
         ...     objectives=objectives,
-        ...     prepended_conversation=conversation
+        ...     prepended_conversations=[conversation]
         ... )
         >>> results = await attack_run.run_async(max_concurrency=5)
         >>>
@@ -107,27 +107,16 @@ class AttackRun:
                 list of conversation histories to prepend to each attack execution. This will be
                 used for all objectives.
             seed_prompt_groups (Optional[List[SeedPromptGroup]]): List of seed prompt groups
-                for single-turn attacks. Must match the length of objectives if provided.
-                Only valid for single-turn attacks.
+                for single-turn attacks. Only valid for single-turn attacks.
             custom_prompts (Optional[List[str]]): List of custom prompts for multi-turn attacks.
-                Must match the length of objectives if provided. Only valid for multi-turn attacks.
+                Only valid for multi-turn attacks.
             memory_labels (Optional[Dict[str, str]]): Additional labels to apply to prompts.
                 These labels help track and categorize the attack run in memory.
             **attack_execute_params (Any): Additional parameters to pass to the attack
                 execution method (e.g., batch_size).
 
         Raises:
-            ValueError: If objectives list is empty, or if parameters don't match requirements.
-            TypeError: If seed_prompt_groups is provided for multi-turn attacks or
-            custom_prompts (Optional[List[str]]): List of custom prompts for multi-turn attacks.
-                Must match the length of objectives if provided. Only valid for multi-turn attacks.
-            memory_labels (Optional[Dict[str, str]]): Additional labels to apply to prompts.
-                These labels help track and categorize the attack run in memory.
-            **attack_execute_params (Any): Additional parameters to pass to the attack
-                execution method (e.g., batch_size).
-
-        Raises:
-            ValueError: If objectives list is empty, or if parameters don't match requirements.
+            ValueError: If objectives list is empty.
             TypeError: If seed_prompt_groups is provided for multi-turn attacks or
                 custom_prompts is provided for single-turn attacks.
         """
@@ -238,35 +227,30 @@ class AttackRun:
         )
 
         try:
-            # Execute based on context type
+            # Build common parameters for all execution methods
+            execute_params = {
+                "attack": self._attack,
+                "objectives": self._objectives,
+                "prepended_conversations": prepended_conversations,
+                "memory_labels": merged_memory_labels,
+            }
+
+            # Add context-specific parameters and execute
             if self._context_type == "single_turn":
-                results = await executor.execute_single_turn_attacks_async(
-                    attack=self._attack,
-                    objectives=self._objectives,
-                    seed_prompt_groups=self._seed_prompt_groups,
-                    prepended_conversations=prepended_conversations,
-                    memory_labels=merged_memory_labels,
-                )
+                execute_params["seed_prompt_groups"] = self._seed_prompt_groups
+                results = await executor.execute_single_turn_attacks_async(**execute_params)
             elif self._context_type == "multi_turn":
-                results = await executor.execute_multi_turn_attacks_async(
-                    attack=self._attack,
-                    objectives=self._objectives,
-                    custom_prompts=self._custom_prompts,
-                    prepended_conversations=prepended_conversations,
-                    memory_labels=merged_memory_labels,
-                )
+                execute_params["custom_prompts"] = self._custom_prompts
+                results = await executor.execute_multi_turn_attacks_async(**execute_params)
             else:
                 # Fall back to generic execute_multi_objective_attack_async
-                execute_params = {
-                    "objectives": self._objectives,
-                    "prepended_conversations": self._prepended_conversations,
-                    "memory_labels": merged_memory_labels,
-                    **self._attack_execute_params,
-                }
-                results = await executor.execute_multi_objective_attack_async(
-                    attack=self._attack,
-                    **execute_params,
+                # Note: This method uses prepended_conversation (singular) instead of prepended_conversations
+                execute_params["prepended_conversation"] = (
+                    prepended_conversations[0] if prepended_conversations else None
                 )
+                del execute_params["prepended_conversations"]
+                execute_params.update(self._attack_execute_params)
+                results = await executor.execute_multi_objective_attack_async(**execute_params)
 
             logger.info(f"Attack run execution completed successfully with {len(results)} results")
             return results

@@ -524,6 +524,8 @@ class FoundryScenario(Scenario):
             elif strategy == FoundryAttackStrategy.Jailbreak:
                 jailbreak_template = TextJailBreak(random_template=True)
                 converters.append(TextJailbreakConverter(jailbreak_template=jailbreak_template))
+            else:
+                raise ValueError(f"Unknown strategy: {strategy}")
 
         attack = self._get_attack(attack_type=attack_type, converters=converters)
 
