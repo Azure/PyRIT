@@ -89,7 +89,7 @@ class DecodingScorer(TrueFalseScorer):
             Score(
                 score_value=str(match_found),
                 score_value_description="",
-                score_metadata=None,
+                score_metadata={"text_matcher": str(type(self._text_matcher))},
                 score_type="true_false",
                 score_category=self._score_categories,
                 score_rationale="",

@@ -8,18 +8,17 @@ This module provides various text matching algorithms including exact substring 
 and n-gram based approximate matching through a unified TextMatching interface.
 """
 
-from abc import ABC, abstractmethod
+from typing import Protocol
 
 
-class TextMatching(ABC):
+class TextMatching(Protocol):
     """
-    Abstract base class for text matching strategies.
+    Protocol for text matching strategies.
 
-    Subclasses implement different matching algorithms (exact, approximate, etc.)
-    through the is_match method.
+    Classes implementing this protocol must provide an is_match method that
+    checks if a target string matches text according to some strategy.
     """
 
-    @abstractmethod
     def is_match(self, *, target: str, text: str) -> bool:
         """
         Check if target matches text according to the strategy.
@@ -31,7 +30,7 @@ class TextMatching(ABC):
         Returns:
             bool: True if target matches text according to the strategy, False otherwise.
         """
-        pass
+        ...
 
 
 class ExactTextMatching(TextMatching):

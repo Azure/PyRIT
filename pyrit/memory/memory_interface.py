@@ -330,9 +330,9 @@ class MemoryInterface(abc.ABC):
         """
         Retrieves the request that produced the given response.
         Args:
-            request (PromptRequestResponse): The response object to match.
+            request (Message): The message object to match.
         Returns:
-            PromptRequestResponse: The corresponding request object.
+            Message: The corresponding message object.
         """
         if response.role != "assistant":
             raise ValueError("The provided request is not a response (role must be 'assistant').")
