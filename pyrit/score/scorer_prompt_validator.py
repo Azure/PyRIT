@@ -3,7 +3,7 @@
 
 from typing import Optional, Sequence, get_args
 
-from pyrit.models import Message, MessagePiece, PromptDataType
+from pyrit.models import ChatMessageRole, Message, MessagePiece, PromptDataType
 
 
 class ScorerPromptValidator:
@@ -12,6 +12,7 @@ class ScorerPromptValidator:
         *,
         supported_data_types: Optional[Sequence[PromptDataType]] = None,
         required_metadata: Optional[Sequence[str]] = None,
+        required_role: Optional[Sequence[ChatMessageRole]] = None,
         max_pieces_in_response: Optional[int] = None,
         enforce_all_pieces_valid: Optional[bool] = False,
         is_objective_required=False,
@@ -20,6 +21,11 @@ class ScorerPromptValidator:
             self._supported_data_types = supported_data_types
         else:
             self._supported_data_types = get_args(PromptDataType)
+
+        if required_role:
+            self._required_role = required_role
+        else:
+            self._required_role = get_args(ChatMessageRole)
 
         self._required_metadata = required_metadata or []
 
@@ -68,5 +74,8 @@ class ScorerPromptValidator:
         for metadata in self._required_metadata:
             if metadata not in message_piece.prompt_metadata:
                 return False
+
+        if message_piece.role not in self._required_role:
+            return False
 
         return True
