@@ -49,9 +49,7 @@ class DecodingScorer(TrueFalseScorer):
         self._text_matcher = text_matcher if text_matcher else ExactTextMatching(case_sensitive=False)
         self._score_categories = categories if categories else []
 
-    async def _score_piece_async(
-        self, message_piece: MessagePiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """Score the given request piece based on text matching strategy.
 
         Args:

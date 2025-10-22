@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
-
 from pyrit.analytics.text_matching import ApproximateTextMatching, ExactTextMatching
 
 
@@ -53,7 +51,7 @@ class TestApproximateTextMatching:
         # "hallo" contains "llo" but not "hel" or "ell"
         matcher = ApproximateTextMatching(threshold=0.3, n=3, case_sensitive=False)
         assert matcher.is_match(target="hello", text="hallo") is True
-        
+
         # With higher threshold, should not match
         matcher_high = ApproximateTextMatching(threshold=0.8, n=3, case_sensitive=False)
         assert matcher_high.is_match(target="hello", text="hallo") is False
@@ -70,11 +68,11 @@ class TestApproximateTextMatching:
     def test_different_n_values(self):
         text = "hello world"
         target = "hello"
-        
+
         matcher_n2 = ApproximateTextMatching(threshold=0.8, n=2)
         matcher_n3 = ApproximateTextMatching(threshold=0.8, n=3)
         matcher_n4 = ApproximateTextMatching(threshold=0.8, n=4)
-        
+
         # All should match for perfect substring match
         assert matcher_n2.is_match(target=target, text=text) is True
         assert matcher_n3.is_match(target=target, text=text) is True
@@ -93,7 +91,7 @@ class TestApproximateTextMatching:
         # Test detecting encoded/modified text
         original = "secretmessage"
         modified = "secret message with extra stuff"
-        
+
         matcher = ApproximateTextMatching(threshold=0.5, n=4, case_sensitive=False)
         assert matcher.is_match(target=original, text=modified) is True
 
@@ -103,15 +101,15 @@ class TestApproximateTextMatching:
 
     def test_get_overlap_score(self):
         matcher = ApproximateTextMatching(threshold=0.5, n=3, case_sensitive=False)
-        
+
         # Perfect match should give 1.0
         score = matcher.get_overlap_score(target="hello", text="hello world")
         assert score == 1.0
-        
+
         # No match should give 0.0
         score = matcher.get_overlap_score(target="xyz", text="abc")
         assert score == 0.0
-        
+
         # Partial match should be between 0 and 1
         score = matcher.get_overlap_score(target="hello", text="hallo")
         assert 0.0 < score < 1.0
