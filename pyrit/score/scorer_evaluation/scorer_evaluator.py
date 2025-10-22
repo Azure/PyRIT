@@ -229,6 +229,7 @@ class ScorerEvaluator(abc.ABC):
         objectives_or_harms: List[str],
         responses: List[str],
         all_model_scores: np.ndarray,
+        true_scores: np.ndarray,
         file_path: Path,
     ):
         """
@@ -238,11 +239,15 @@ class ScorerEvaluator(abc.ABC):
             objectives_or_harms (List[str]): The objectives or harms associated with each response.
             responses (List[str]): The assistant responses.
             all_model_scores (np.ndarray): The scores for each trial.
+            true_scores (np.ndarray): The true/gold scores from the original dataset.
             file_path (Path): The path save the model scoring trials to.
         """
         cols_dict = {"objective_or_harm": objectives_or_harms, "assistant_response": responses}
         for trial, scores in enumerate(all_model_scores):
             cols_dict[f"trial {trial+1}"] = scores
+
+        # Add the true_label column after all trials
+        cols_dict["true_label"] = true_scores
 
         scores_df = pd.DataFrame(cols_dict)
         scores_df.to_csv(file_path, index=False)
@@ -253,8 +258,8 @@ class HarmScorerEvaluator(ScorerEvaluator):
     A class that evaluates a harm scorer against HumanLabeledDatasets of type HARM.
     """
 
-    def get_scorer_metrics(self, dataset_name) -> HarmScorerMetrics:
-        metrics_path = self._get_metrics_path(dataset_name=dataset_name)
+    def get_scorer_metrics(self, dataset_name, csv_path: Optional[Union[str, Path]] = None) -> HarmScorerMetrics:
+        metrics_path = self._get_metrics_path(dataset_name=dataset_name, csv_path=csv_path)
         if not os.path.exists(metrics_path):
             raise FileNotFoundError(
                 f"{metrics_path} does not exist. Evaluation may not have been run with this dataset yet."
@@ -282,7 +287,10 @@ class HarmScorerEvaluator(ScorerEvaluator):
             dataset_name=dataset_name,
         )
         metrics = await self.run_evaluation_async(
-            labeled_dataset=labeled_dataset, num_scorer_trials=num_scorer_trials, save_results=save_results
+            labeled_dataset=labeled_dataset,
+            num_scorer_trials=num_scorer_trials,
+            save_results=save_results,
+            csv_path=csv_path,
         )
 
         return metrics
@@ -292,6 +300,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
         labeled_dataset: HumanLabeledDataset,
         num_scorer_trials: int = 1,
         save_results: bool = True,
+        csv_path: Optional[Union[str, Path]] = None,
     ) -> HarmScorerMetrics:
         """
         Evaluate the scorer against a HumanLabeledDataset of type HARM. If save_results is True, the evaluation
@@ -349,12 +358,15 @@ class HarmScorerEvaluator(ScorerEvaluator):
         )
 
         if save_results:
-            metrics_path = self._get_metrics_path(dataset_name=labeled_dataset.name)
-            csv_results_path = self._get_csv_results_path(dataset_name=labeled_dataset.name)
+            # Calculate the gold scores (mean of human scores) for the CSV output
+            gold_scores = np.mean(all_human_scores, axis=0)
+            metrics_path = self._get_metrics_path(dataset_name=labeled_dataset.name, csv_path=csv_path)
+            csv_results_path = self._get_csv_results_path(dataset_name=labeled_dataset.name, csv_path=csv_path)
             self._save_model_scores_to_csv(
                 objectives_or_harms=harms,
                 responses=Message.get_all_values(assistant_responses),
                 all_model_scores=all_model_scores,
+                true_scores=gold_scores,
                 file_path=csv_results_path,
             )
             # Save the metrics to a JSON file
@@ -400,31 +412,47 @@ class HarmScorerEvaluator(ScorerEvaluator):
 
         return HarmScorerMetrics(**metrics)
 
-    def _get_metrics_path(self, dataset_name: str) -> Path:
+    def _get_metrics_path(self, dataset_name: str, csv_path: Optional[Union[str, Path]] = None) -> Path:
         """
         Get the path to save the metrics file.
 
         Args:
             dataset_name (str): The name of the HumanLabeledDataset on which evaluation was run.
+            csv_path (str, optional): The path to the input CSV file. If provided, results will be saved
+                in the same directory as the CSV file.
 
         Returns:
             Path: The path to save the metrics file.
         """
         scorer_name = type(self.scorer).__name__
-        return Path(SCORER_EVALS_HARM_PATH, f"{dataset_name}_{scorer_name}_metrics.json").resolve()
+        if csv_path:
+            csv_dir = Path(csv_path).parent
+            results_dir = csv_dir / "results"
+            results_dir.mkdir(exist_ok=True)
+            return Path(results_dir, f"{dataset_name}_{scorer_name}_metrics.json").resolve()
+        else:
+            return Path(SCORER_EVALS_HARM_PATH, f"{dataset_name}_{scorer_name}_metrics.json").resolve()
 
-    def _get_csv_results_path(self, dataset_name: str) -> Path:
+    def _get_csv_results_path(self, dataset_name: str, csv_path: Optional[Union[str, Path]] = None) -> Path:
         """
         Get the path to save the CSV results file.
 
         Args:
             dataset_name (str): The name of the HumanLabeledDataset on which evaluation was run.
+            csv_path (str, optional): The path to the input CSV file. If provided, results will be saved
+                in the same directory as the CSV file.
 
         Returns:
             Path: The path to the CSV to save the results from the LLM scoring trials.
         """
         scorer_name = type(self.scorer).__name__
-        return Path(SCORER_EVALS_HARM_PATH, f"{dataset_name}_{scorer_name}_scoring_results.csv").resolve()
+        if csv_path:
+            csv_dir = Path(csv_path).parent
+            results_dir = csv_dir / "results"
+            results_dir.mkdir(exist_ok=True)
+            return Path(results_dir, f"{dataset_name}_{scorer_name}_scoring_results.csv").resolve()
+        else:
+            return Path(SCORER_EVALS_HARM_PATH, f"{dataset_name}_{scorer_name}_scoring_results.csv").resolve()
 
 
 class ObjectiveScorerEvaluator(ScorerEvaluator):
@@ -432,8 +460,10 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
     A class that evaluates an objective scorer against HumanLabeledDatasets of type OBJECTIVE.
     """
 
-    def get_scorer_metrics(self, dataset_name: str) -> ObjectiveScorerMetrics:
-        metrics_path = self._get_metrics_path(dataset_name=dataset_name)
+    def get_scorer_metrics(
+        self, dataset_name: str, csv_path: Optional[Union[str, Path]] = None
+    ) -> ObjectiveScorerMetrics:
+        metrics_path = self._get_metrics_path(dataset_name=dataset_name, csv_path=csv_path)
         if not os.path.exists(metrics_path):
             raise FileNotFoundError(
                 f"{metrics_path} does not exist. Evaluation may not have been run with this dataset yet."
@@ -461,13 +491,20 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
             dataset_name=dataset_name,
         )
         metrics = await self.run_evaluation_async(
-            labeled_dataset=labeled_dataset, num_scorer_trials=num_scorer_trials, save_results=save_results
+            labeled_dataset=labeled_dataset,
+            num_scorer_trials=num_scorer_trials,
+            save_results=save_results,
+            csv_path=csv_path,
         )
 
         return metrics
 
     async def run_evaluation_async(
-        self, labeled_dataset: HumanLabeledDataset, num_scorer_trials: int = 1, save_results: bool = True
+        self,
+        labeled_dataset: HumanLabeledDataset,
+        num_scorer_trials: int = 1,
+        save_results: bool = True,
+        csv_path: Optional[Union[str, Path]] = None,
     ) -> ObjectiveScorerMetrics:
         """
         Evaluate the scorer against a HumanLabeledDataset of type OBJECTIVE. If save_results is True, the evaluation
@@ -517,12 +554,15 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
             all_model_scores=all_model_scores,
         )
         if save_results:
-            metrics_path = self._get_metrics_path(dataset_name=labeled_dataset.name)
-            csv_results_path = self._get_csv_results_path(dataset_name=labeled_dataset.name)
+            # Calculate the gold scores (majority vote of human scores) for the CSV output
+            gold_scores = np.round(np.mean(all_human_scores, axis=0))
+            metrics_path = self._get_metrics_path(dataset_name=labeled_dataset.name, csv_path=csv_path)
+            csv_results_path = self._get_csv_results_path(dataset_name=labeled_dataset.name, csv_path=csv_path)
             self._save_model_scores_to_csv(
                 objectives_or_harms=objectives,
                 responses=[response.converted_value for response in assistant_responses],
                 all_model_scores=all_model_scores,
+                true_scores=gold_scores,
                 file_path=csv_results_path,
             )
             # Save the metrics to a JSON file
@@ -560,30 +600,44 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
 
         return ObjectiveScorerMetrics(**metrics)
 
-    def _get_metrics_path(self, dataset_name: str) -> Path:
+    def _get_metrics_path(self, dataset_name: str, csv_path: Optional[Union[str, Path]] = None) -> Path:
         """
         Get the path to save the metrics file.
 
         Args:
-            metrics_type (MetricsType): The type of the scorer metrics, either HARM or OBJECTIVE.
             dataset_name (str): The name of the HumanLabeledDataset on which evaluation was run.
+            csv_path (str, optional): The path to the input CSV file. If provided, results will be saved
+                in the same directory as the CSV file.
 
         Returns:
             Path: The path to save the metrics file.
         """
         scorer_name = type(self.scorer).__name__
-        return Path(SCORER_EVALS_OBJECTIVE_PATH, f"{dataset_name}_{scorer_name}_metrics.json").resolve()
+        if csv_path:
+            csv_dir = Path(csv_path).parent
+            results_dir = csv_dir / "results"
+            results_dir.mkdir(exist_ok=True)
+            return Path(results_dir, f"{dataset_name}_{scorer_name}_metrics.json").resolve()
+        else:
+            return Path(SCORER_EVALS_OBJECTIVE_PATH, f"{dataset_name}_{scorer_name}_metrics.json").resolve()
 
-    def _get_csv_results_path(self, dataset_name: str) -> Path:
+    def _get_csv_results_path(self, dataset_name: str, csv_path: Optional[Union[str, Path]] = None) -> Path:
         """
         Get the path to save the CSV results file.
 
         Args:
-            metrics_type (MetricsType): The type of the scorer metrics, either HARM or OBJECTIVE.
             dataset_name (str): The name of the HumanLabeledDataset on which evaluation was run.
+            csv_path (str, optional): The path to the input CSV file. If provided, results will be saved
+                in the same directory as the CSV file.
 
         Returns:
             Path: The path to the CSV to save the results from the LLM scoring trials.
         """
         scorer_name = type(self.scorer).__name__
-        return Path(SCORER_EVALS_OBJECTIVE_PATH, f"{dataset_name}_{scorer_name}_scoring_results.csv").resolve()
+        if csv_path:
+            csv_dir = Path(csv_path).parent
+            results_dir = csv_dir / "results"
+            results_dir.mkdir(exist_ok=True)
+            return Path(results_dir, f"{dataset_name}_{scorer_name}_scoring_results.csv").resolve()
+        else:
+            return Path(SCORER_EVALS_OBJECTIVE_PATH, f"{dataset_name}_{scorer_name}_scoring_results.csv").resolve()
