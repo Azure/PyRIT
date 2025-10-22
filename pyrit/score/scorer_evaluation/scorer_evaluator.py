@@ -229,7 +229,7 @@ class ScorerEvaluator(abc.ABC):
         objectives_or_harms: List[str],
         responses: List[str],
         all_model_scores: np.ndarray,
-        true_scores: np.ndarray,
+        true_scores: Union[np.ndarray, np.floating, np.integer, float, int],
         file_path: Path,
     ):
         """
@@ -247,7 +247,15 @@ class ScorerEvaluator(abc.ABC):
             cols_dict[f"trial {trial+1}"] = scores
 
         # Add the true_label column after all trials
-        cols_dict["true_label"] = true_scores
+        # Convert true_scores to a list, handling both arrays and scalars
+        try:
+            # If it's a numpy array, convert to list
+            true_label_values = true_scores.tolist()  # type: ignore
+        except AttributeError:
+            # If it's a scalar, create a list with repeated values
+            true_label_values = [true_scores] * len(responses)  # type: ignore
+
+        cols_dict["true_label"] = true_label_values  # type: ignore
 
         scores_df = pd.DataFrame(cols_dict)
         scores_df.to_csv(file_path, index=False)
