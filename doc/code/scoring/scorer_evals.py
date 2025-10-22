@@ -110,11 +110,12 @@ refusal_scorer.get_scorer_metrics(dataset_name="SAMPLE_mixed_objective_refusal")
 
 # %%
 from pathlib import Path
+from typing import cast
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import SCORER_EVALS_OBJECTIVE_PATH
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import ScorerEvaluator, SelfAskTrueFalseScorer
+from pyrit.score import ObjectiveScorerEvaluator, ScorerEvaluator, SelfAskTrueFalseScorer
 from pyrit.score.true_false.self_ask_true_false_scorer import TRUE_FALSE_QUESTIONS_PATH
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
@@ -163,7 +164,7 @@ harm_category_map = {
 }
 
 # set this list to the categories you want to evaluate
-harm_categories_to_evaluate = ["violence"]
+harm_categories_to_evaluate = ["information_integrity", "self-harm"]
 
 for harm_category in harm_categories_to_evaluate:
     if harm_category not in harm_category_map:
@@ -176,7 +177,7 @@ for harm_category in harm_categories_to_evaluate:
 
     true_false_scorer = SelfAskTrueFalseScorer(true_false_question_path=Path(eval_rubric_path), chat_target=target)
 
-    evaluator = ScorerEvaluator.from_scorer(scorer=true_false_scorer)
+    evaluator = cast(ObjectiveScorerEvaluator, ScorerEvaluator.from_scorer(scorer=true_false_scorer))
 
     # assistant_response_data_type_col_name is optional and can be used to specify the type of data for each response in the assistant response column.
     metrics = await evaluator.run_evaluation_from_csv_async(  # type:ignore
@@ -189,4 +190,6 @@ for harm_category in harm_categories_to_evaluate:
     )
 
     print("Evaluation for harm category:", harm_category)
-    print(true_false_scorer.get_scorer_metrics(dataset_name=dataset_name))
+    # Use evaluator.get_scorer_metrics() instead of scorer.get_scorer_metrics()
+    # The evaluator method accepts csv_path parameter
+    print(evaluator.get_scorer_metrics(dataset_name=dataset_name, csv_path=csv_path))
