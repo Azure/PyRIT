@@ -227,30 +227,34 @@ class AttackRun:
         )
 
         try:
-            # Build common parameters for all execution methods
-            execute_params = {
-                "attack": self._attack,
-                "objectives": self._objectives,
-                "prepended_conversations": prepended_conversations,
-                "memory_labels": merged_memory_labels,
-            }
-
-            # Add context-specific parameters and execute
+            # Execute based on context type with common parameters
+            results: List[AttackResult]
             if self._context_type == "single_turn":
-                execute_params["seed_prompt_groups"] = self._seed_prompt_groups
-                results = await executor.execute_single_turn_attacks_async(**execute_params)
+                results = await executor.execute_single_turn_attacks_async(
+                    attack=self._attack,
+                    objectives=self._objectives,
+                    seed_prompt_groups=self._seed_prompt_groups,
+                    prepended_conversations=prepended_conversations,
+                    memory_labels=merged_memory_labels,
+                )
             elif self._context_type == "multi_turn":
-                execute_params["custom_prompts"] = self._custom_prompts
-                results = await executor.execute_multi_turn_attacks_async(**execute_params)
+                results = await executor.execute_multi_turn_attacks_async(
+                    attack=self._attack,
+                    objectives=self._objectives,
+                    custom_prompts=self._custom_prompts,
+                    prepended_conversations=prepended_conversations,
+                    memory_labels=merged_memory_labels,
+                )
             else:
                 # Fall back to generic execute_multi_objective_attack_async
                 # Note: This method uses prepended_conversation (singular) instead of prepended_conversations
-                execute_params["prepended_conversation"] = (
-                    prepended_conversations[0] if prepended_conversations else None
+                results = await executor.execute_multi_objective_attack_async(
+                    attack=self._attack,
+                    objectives=self._objectives,
+                    prepended_conversation=prepended_conversations[0] if prepended_conversations else None,
+                    memory_labels=merged_memory_labels,
+                    **self._attack_execute_params,
                 )
-                del execute_params["prepended_conversations"]
-                execute_params.update(self._attack_execute_params)
-                results = await executor.execute_multi_objective_attack_async(**execute_params)
 
             logger.info(f"Attack run execution completed successfully with {len(results)} results")
             return results

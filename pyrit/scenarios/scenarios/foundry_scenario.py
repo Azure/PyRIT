@@ -152,7 +152,7 @@ class FoundryScenario(Scenario):
     """
     Factory for creating comprehensive Foundry attack test scenarios.
 
-    FoundryScenario is a pre-configured scenario that automatically generates multiple
+    FoundryScenario is a preconfigured scenario that automatically generates multiple
     AttackRun instances based on the specified attack strategies. It supports both
     single-turn attacks (with various converters) and multi-turn attacks (Crescendo,
     RedTeaming), making it easy to quickly test a target against multiple attack vectors.
