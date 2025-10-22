@@ -340,7 +340,7 @@ class TestScenarioResult:
 
     def test_scenario_result_initialization(self, sample_attack_results):
         """Test ScenarioResult initialization."""
-        identifier = ScenarioIdentifier(name="Test", version=1)
+        identifier = ScenarioIdentifier(name="Test", scenario_version=1)
         result = ScenarioResult(
             scenario_identifier=identifier,
             attack_strategies=["base64", "rot13"],
@@ -354,7 +354,7 @@ class TestScenarioResult:
 
     def test_scenario_result_with_empty_results(self):
         """Test ScenarioResult with empty attack results."""
-        identifier = ScenarioIdentifier(name="TestScenario", version=1)
+        identifier = ScenarioIdentifier(name="TestScenario", scenario_version=1)
         result = ScenarioResult(
             scenario_identifier=identifier,
             attack_strategies=["base64"],
@@ -366,7 +366,7 @@ class TestScenarioResult:
 
     def test_scenario_result_objective_achieved_rate(self, sample_attack_results):
         """Test objective_achieved_rate calculation."""
-        identifier = ScenarioIdentifier(name="Test", version=1)
+        identifier = ScenarioIdentifier(name="Test", scenario_version=1)
 
         # All successful
         result = ScenarioResult(
@@ -407,7 +407,7 @@ class TestScenarioIdentifier:
 
     def test_scenario_identifier_initialization(self):
         """Test ScenarioIdentifier initialization."""
-        identifier = ScenarioIdentifier(name="TestScenario", version=2)
+        identifier = ScenarioIdentifier(name="TestScenario", scenario_version=2)
 
         assert identifier.name == "TestScenario"
         assert identifier.version == 2
@@ -415,13 +415,13 @@ class TestScenarioIdentifier:
 
     def test_scenario_identifier_with_custom_pyrit_version(self):
         """Test ScenarioIdentifier with custom pyrit version."""
-        identifier = ScenarioIdentifier(name="TestScenario", version=1, pyrit_version="1.2.3")
+        identifier = ScenarioIdentifier(name="TestScenario", scenario_version=1, pyrit_version="1.2.3")
 
         assert identifier.pyrit_version == "1.2.3"
 
     def test_scenario_identifier_with_init_data(self):
         """Test ScenarioIdentifier with init_data."""
         init_data = {"param1": "value1", "param2": 42}
-        identifier = ScenarioIdentifier(name="TestScenario", version=1, init_data=init_data)
+        identifier = ScenarioIdentifier(name="TestScenario", scenario_version=1, init_data=init_data)
 
         assert identifier.init_data == init_data

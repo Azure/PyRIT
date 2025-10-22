@@ -29,6 +29,15 @@ class ScenarioIdentifier:
         pyrit_version: Optional[str] = None,
         init_data: Optional[dict] = None,
     ):
+        """
+        Initialize a ScenarioIdentifier.
+
+        Args:
+            name (str): Name of the scenario.
+            scenario_version (int): Version of the scenario.
+            pyrit_version (Optional[str]): PyRIT version string.
+            init_data (Optional[dict]): Initialization data.
+        """
         self.name = name
         self.version = scenario_version
         self.pyrit_version = pyrit_version if pyrit_version is not None else pyrit.__version__
