@@ -24,7 +24,7 @@ class DecodingScorer(TrueFalseScorer):
     """
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(
-        supported_data_types=["text"], required_role=["assistant"]
+        supported_data_types=["text"], supported_roles=["assistant"]
     )
 
     def __init__(

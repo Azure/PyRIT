@@ -129,6 +129,10 @@ class ApproximateTextMatching(TextMatching):
         # Generate all n-grams from target
         target_ngrams = set([target_str[i : i + self._n] for i in range(len(target_str) - (self._n - 1))])
 
+        # Safety check: if no n-grams were generated, return 0.0
+        if not target_ngrams:
+            return 0.0
+
         # Count how many target n-grams are found in text
         matching_ngrams = sum([int(ngram in text_str) for ngram in target_ngrams])
 
