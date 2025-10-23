@@ -11,6 +11,7 @@ from sqlalchemy import (
     ARRAY,
     INTEGER,
     JSON,
+    Boolean,
     DateTime,
     Float,
     ForeignKey,
@@ -310,7 +311,7 @@ class EmbeddingMessageWithSimilarity(BaseModel):
     score: float = 0.0
 
 
-class SeedPromptEntry(Base):
+class SeedEntry(Base):
     """
     Represents the raw prompt or prompt template data as found in open datasets.
 
@@ -370,7 +371,7 @@ class SeedPromptEntry(Base):
     prompt_group_id: Mapped[Optional[uuid.UUID]] = mapped_column(CustomUUID, nullable=True)
     sequence: Mapped[Optional[int]] = mapped_column(INTEGER, nullable=True)
     role: Mapped[ChatMessageRole] = mapped_column(String, nullable=True)
-    is_objective: Mapped[Optional[bool]] = mapped_column(String, nullable=True)
+    is_objective: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
 
     def __init__(self, *, entry: Seed):
         is_objective = isinstance(entry, SeedObjective)
@@ -395,7 +396,25 @@ class SeedPromptEntry(Base):
         self.role = None if is_objective else entry.role  # type: ignore
         self.is_objective = is_objective
 
-    def get_seed_prompt(self) -> SeedPrompt:
+    def get_seed(self) -> Seed:
+        if self.is_objective:
+            return SeedObjective(
+                id=self.id,
+                value=self.value,
+                value_sha256=self.value_sha256,
+                data_type=self.data_type,
+                name=self.name,
+                dataset_name=self.dataset_name,
+                harm_categories=self.harm_categories,
+                description=self.description,
+                authors=self.authors,
+                groups=self.groups,
+                source=self.source,
+                date_added=self.date_added,
+                added_by=self.added_by,
+                metadata=self.prompt_metadata,
+                prompt_group_id=self.prompt_group_id,
+            )
         return SeedPrompt(
             id=self.id,
             value=self.value,

@@ -18,14 +18,14 @@ from pyrit.models.literals import PromptDataType
 from pyrit.models.seed import Seed
 from pyrit.models.seed_objective import SeedObjective
 from pyrit.models.seed_prompt import SeedPrompt
-from pyrit.models.seed_prompt_group import SeedPromptGroup
+from pyrit.models.seed_group import SeedGroup
 
 logger = logging.getLogger(__name__)
 
 
-class SeedPromptDataset(YamlLoadable):
+class SeedDataset(YamlLoadable):
     """
-    SeedPromptDataset manages seed prompts plus optional top-level defaults.
+    SeedDataset manages seed prompts plus optional top-level defaults.
     Prompts are stored as a Sequence[Seed], so references to prompt properties
     are straightforward (e.g. ds.prompts[0].value).
     """
@@ -70,7 +70,7 @@ class SeedPromptDataset(YamlLoadable):
         if prompts is None:
             prompts = []
         if not prompts:
-            raise ValueError("SeedPromptDataset cannot be empty.")
+            raise ValueError("SeedDataset cannot be empty.")
 
         # Store top-level fields
         self.data_type = data_type
@@ -159,9 +159,9 @@ class SeedPromptDataset(YamlLoadable):
         return random.sample(prompts, min(len(prompts), number))
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> SeedPromptDataset:
+    def from_dict(cls, data: Dict[str, Any]) -> SeedDataset:
         """
-        Builds a SeedPromptDataset by merging top-level defaults into each item in 'prompts'.
+        Builds a SeedDataset by merging top-level defaults into each item in 'prompts'.
         """
         # Pop out the prompts section
         prompts_data = data.pop("prompts", [])
@@ -196,7 +196,7 @@ class SeedPromptDataset(YamlLoadable):
             if "prompt_group_id" in prompt:
                 raise ValueError("prompt_group_id should not be set in prompt data")
 
-        SeedPromptDataset._set_seed_prompt_group_id_by_alias(seed_prompts=merged_prompts)
+        SeedDataset._set_seed_group_id_by_alias(seed_prompts=merged_prompts)
 
         # Now create the dataset with the newly merged prompt dicts
         return cls(prompts=merged_prompts, **dataset_defaults)
@@ -205,7 +205,7 @@ class SeedPromptDataset(YamlLoadable):
         """Renders self.value as a template, applying provided parameters in kwargs
 
         Args:
-            kwargs:Key-value pairs to replace in the SeedPromptDataset value.
+            kwargs:Key-value pairs to replace in the SeedDataset value.
 
         Returns:
             None
@@ -218,9 +218,9 @@ class SeedPromptDataset(YamlLoadable):
             prompt.value = prompt.render_template_value(**kwargs)
 
     @staticmethod
-    def _set_seed_prompt_group_id_by_alias(seed_prompts: Sequence[dict]):
+    def _set_seed_group_id_by_alias(seed_prompts: Sequence[dict]):
         """
-        Sets all seed_prompt_group_ids based on prompt_group_alias matches
+        Sets all seed_group_ids based on prompt_group_alias matches
 
         This is important so the prompt_group_alias can be set in yaml to group prompts
         """
@@ -236,16 +236,16 @@ class SeedPromptDataset(YamlLoadable):
                 prompt["prompt_group_id"] = uuid.uuid4()
 
     @staticmethod
-    def group_seed_prompts_by_prompt_group_id(seed: Sequence[Seed]) -> Sequence[SeedPromptGroup]:
+    def group_seed_prompts_by_prompt_group_id(seed: Sequence[Seed]) -> Sequence[SeedGroup]:
         """
         Groups the given list of Seeds by their prompt_group_id and creates
-        SeedPromptGroup instances. All seed prompts in a group must share the same prompt_group_id
+        SeedGroup instances. All seed prompts in a group must share the same prompt_group_id
 
         Args:
             seed: A list of Seed objects.
 
         Returns:
-            A list of SeedPromptGroup objects, with prompts grouped by prompt_group_id. Each SeedPromptGroup
+            A list of SeedGroup objects, with prompts grouped by prompt_group_id. Each SeedGroup
             will be ordered by the sequence number of the prompts, if available.
 
         """
@@ -257,16 +257,16 @@ class SeedPromptDataset(YamlLoadable):
             else:
                 grouped_prompts[uuid.uuid4()].append(prompt)
 
-        # Create SeedPromptGroup instances from grouped prompts
-        seed_prompt_groups = []
+        # Create SeedGroup instances from grouped prompts
+        seed_groups = []
         for group_prompts in grouped_prompts.values():
             if len(group_prompts) > 1:
                 group_prompts.sort(key=lambda prompt: prompt.sequence if hasattr(prompt, "sequence") else 0)
 
-            seed_prompt_group = SeedPromptGroup(prompts=group_prompts)
-            seed_prompt_groups.append(seed_prompt_group)
+            seed_group = SeedGroup(prompts=group_prompts)
+            seed_groups.append(seed_group)
 
-        return seed_prompt_groups
+        return seed_groups
 
     def __repr__(self):
-        return f"<SeedPromptDataset(prompts={len(self.prompts)} prompts)>"
+        return f"<SeedDataset(prompts={len(self.prompts)} prompts)>"

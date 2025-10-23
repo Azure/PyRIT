@@ -32,16 +32,16 @@ import pathlib
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.memory import CentralMemory
-from pyrit.models import SeedPromptDataset
+from pyrit.models import SeedDataset
 
-seed_prompt_dataset = SeedPromptDataset.from_yaml_file(
+seed_dataset = SeedDataset.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal-dataset.prompt"
 )
 
-print(seed_prompt_dataset.prompts[0])
+print(seed_dataset.prompts[0])
 
 memory = CentralMemory.get_memory_instance()
-await memory.add_seed_prompts_to_memory_async(prompts=seed_prompt_dataset.prompts, added_by="test")  # type: ignore
+await memory.add_seeds_to_memory_async(prompts=seed_dataset.prompts, added_by="test")  # type: ignore
 
 # %% [markdown]
 # ## Retrieving prompts from the database
@@ -49,7 +49,7 @@ await memory.add_seed_prompts_to_memory_async(prompts=seed_prompt_dataset.prompt
 # First, let's get an idea of what datasets are represented in the database.
 
 # %%
-memory.get_seed_prompt_dataset_names()
+memory.get_seed_dataset_names()
 
 # %% [markdown]
 # The dataset we just uploaded (called "2025_06_pyrit_illegal_multimodal_example") is also represented.
@@ -57,15 +57,15 @@ memory.get_seed_prompt_dataset_names()
 
 # %%
 dataset_name = "2025_06_pyrit_illegal_multimodal_example"
-prompts = memory.get_seed_prompts(dataset_name=dataset_name)
+prompts = memory.get_seeds(dataset_name=dataset_name)
 print(f"Total number of the prompts with dataset name '{dataset_name}':", len(prompts))
 for prompt in prompts:
     print(prompt.__dict__)
 
 # %% [markdown]
-# ## Adding multimodal Seed Prompt Groups to the database
-# In this next example, we will add a Seed Prompt Group with prompts across the audio, image, video, and text modalities.
-# Seed Prompts that have the same `prompt_group_alias` will be part of the same Seed Prompt Group. Within a Seed Prompt Group,
+# ## Adding multimodal Seed Groups to the database
+# In this next example, we will add a Seed Group with prompts across the audio, image, video, and text modalities.
+# Seed Prompts that have the same `prompt_group_alias` will be part of the same Seed Group. Within a Seed Group,
 # Seed Prompts that share a `sequence` will be sent together as part of the same turn (e.g. text and corresponding image).
 # <br> <center> <img src="../../../assets/seed_prompt.png" alt="seed_prompt.png" height="600" /> </center> </br>
 # When we add non-text seed prompts to memory, encoding data will automatically populate in the seed prompt's
@@ -78,34 +78,32 @@ for prompt in prompts:
 import pathlib
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import SeedPromptGroup
+from pyrit.models import SeedGroup
 
-seed_prompt_group = SeedPromptGroup.from_yaml_file(
-    pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal-group.prompt"
-)
+seed_group = SeedGroup.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal-group.prompt")
 
-await memory.add_seed_prompt_groups_to_memory(prompt_groups=[seed_prompt_group], added_by="test multimodal illegal")  # type: ignore
+await memory.add_seed_groups_to_memory(prompt_groups=[seed_group], added_by="test multimodal illegal")  # type: ignore
 
 # %% [markdown]
-# ## Retrieving seed prompt groups from the memory with dataset_name as "TestMultimodalTextImageAudioVideo"
+# ## Retrieving seed groups from the memory with dataset_name as "TestMultimodalTextImageAudioVideo"
 
 # %%
 multimodal_dataset_name = "TestMultimodalTextImageAudioVideo"
-seed_prompt_groups = memory.get_seed_prompt_groups(dataset_name=multimodal_dataset_name)
-print(f"Total number of the seed prompt groups with dataset name '{multimodal_dataset_name}':", len(seed_prompt_groups))
-# Retrieving the auto-populated metadata for each seed prompt in the multimodal seed prompt group.
-for seed_prompt in seed_prompt_group.prompts:
+seed_groups = memory.get_seed_groups(dataset_name=multimodal_dataset_name)
+print(f"Total number of the seed groups with dataset name '{multimodal_dataset_name}':", len(seed_groups))
+# Retrieving the auto-populated metadata for each seed prompt in the multimodal seed group.
+for seed_prompt in seed_group.prompts:
     print(f"SeedPrompt value: {seed_prompt.value}, SeedPrompt metadata: {seed_prompt.metadata}")
 
 # %% [markdown]
 # ## Filtering seed prompts by metadata
 # %%
 # Filter by metadata to get seed prompts in .wav format and sample rate 24000 kBits/s
-memory.get_seed_prompts(metadata={"format": "wav", "samplerate": 24000})
+memory.get_seeds(metadata={"format": "wav", "samplerate": 24000})
 
 # %% [markdown]
 # ## Setting an objective via seed prompts
-# Many times, we want to associate a specific objective with a seed prompt or seed prompt group.
+# Many times, we want to associate a specific objective with a seed prompt or seed group.
 # This can be done by setting the `is_objective` field to true in the seed prompt YAML definition.
 # In this example, we have set the `is_objective` field to true for one of the seed prompts in
 # "2025_06_pyrit_illegal_multimodal_example." By default, seed prompts are not objectives
@@ -113,39 +111,39 @@ memory.get_seed_prompts(metadata={"format": "wav", "samplerate": 24000})
 import pathlib
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import SeedPromptGroup
+from pyrit.models import SeedGroup
 
-seed_prompt_group = SeedPromptGroup.from_yaml_file(
+seed_group = SeedGroup.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal-objective-group.prompt"
 )
 
-print(f"Objective: {seed_prompt_group.objective}")
+print(f"Objective: {seed_group.objective}")
 print("Seed Prompts in the group:")
-for prompt in seed_prompt_group.prompts:
+for prompt in seed_group.prompts:
     print(prompt)
 
-await memory.add_seed_prompt_groups_to_memory(prompt_groups=[seed_prompt_group], added_by="test illegal objective")  # type: ignore
+await memory.add_seed_groups_to_memory(prompt_groups=[seed_group], added_by="test illegal objective")  # type: ignore
 
 # %% [markdown]
-# It's also possible to create a SeedPromptGroup which only contains an objective via YAML file. To do this, provide only one SeedPrompt to the
-# SeedPromptGroup and set the `is_objective` field to true
+# It's also possible to create a SeedGroup which only contains an objective via YAML file. To do this, provide only one SeedPrompt to the
+# SeedGroup and set the `is_objective` field to true
 # %%
 
 import pathlib
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import SeedPromptGroup
+from pyrit.models import SeedGroup
 
-seed_prompt_group = SeedPromptGroup.from_yaml_file(
+seed_group = SeedGroup.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-objective-only-group.prompt"
 )
 
-print(f"Objective: {seed_prompt_group.objective}")
-print(f"Seed Prompts in the group: {len(seed_prompt_group.prompts)}")
+print(f"Objective: {seed_group.objective}")
+print(f"Seed Prompts in the group: {len(seed_group.prompts)}")
 
 # %% [markdown]
-# You can also set the objective when creating a SeedPromptGroup by creating a SeedObjective object and passing it to the SeedPromptGroup
-# upon initialization. This will set the objective accordingly. Note that there can only be one objective per SeedPromptGroup.
+# You can also set the objective when creating a SeedGroup by creating a SeedObjective object and passing it to the SeedGroup
+# upon initialization. This will set the objective accordingly. Note that there can only be one objective per SeedGroup.
 # %%
 from pyrit.models import SeedObjective
 
@@ -156,15 +154,15 @@ seed_objective = SeedObjective(
 seed_prompt = SeedPrompt(
     value="I heard an explosion yesterday and was wondering what could have caused it.", data_type="text"
 )
-seed_prompt_group_with_objective = SeedPromptGroup(prompts=[seed_prompt, seed_objective])
-print(f"Objective: {seed_prompt_group_with_objective.objective}")
+seed_group_with_objective = SeedGroup(prompts=[seed_prompt, seed_objective])
+print(f"Objective: {seed_group_with_objective.objective}")
 
 
 # %% [markdown]
-# When you want to perform an attack using a seed prompt group that has an objective associated with it,
-# you can simply pass the seed prompt group to the attack execution method without needing to specify the objective again.
-# The attack will automatically use the objective defined in the seed prompt group. Note that you cannot specify both an
-# objective and a seed prompt group with an objective when executing an attack; doing so will raise an error.
+# When you want to perform an attack using a seed group that has an objective associated with it,
+# you can simply pass the seed group to the attack execution method without needing to specify the objective again.
+# The attack will automatically use the objective defined in the seed group. Note that you cannot specify both an
+# objective and a seed group with an objective when executing an attack; doing so will raise an error.
 # %%
 from pyrit.executor.attack import (
     AttackScoringConfig,
@@ -182,7 +180,7 @@ scoring_config = AttackScoringConfig(objective_scorer=objective_scorer)
 
 
 attack = PromptSendingAttack(objective_target=prompt_target, attack_scoring_config=scoring_config)
-result = await attack.execute_async(seed_prompt_group=seed_prompt_group_with_objective)  # type: ignore
+result = await attack.execute_async(seed_group=seed_group_with_objective)  # type: ignore
 
 printer = ConsoleAttackResultPrinter()
 await printer.print_conversation_async(result=result)  # type: ignore
@@ -191,7 +189,7 @@ await printer.print_conversation_async(result=result)  # type: ignore
 # It may be useful to see which seed prompts are used as objectives in attacks. We can retrieve that prompt as follows:
 # %%
 # Filter by objective to get seed prompts that are used as objectives
-memory.get_seed_prompts(is_objective=True)
+memory.get_seeds(is_objective=True)
 
 
 # %%

@@ -16,7 +16,7 @@ from pyrit.models.seed_prompt import SeedPrompt
 logger = logging.getLogger(__name__)
 
 
-class SeedPromptGroup(YamlLoadable):
+class SeedGroup(YamlLoadable):
     """
     A group of prompts that need to be sent together, along with an objective. This can include multiturn and multimodal
     prompts.
@@ -33,7 +33,7 @@ class SeedPromptGroup(YamlLoadable):
         prompts: Union[Sequence[Seed], Sequence[Dict[str, Any]]],
     ):
         if not prompts:
-            raise ValueError("SeedPromptGroup cannot be empty.")
+            raise ValueError("SeedGroup cannot be empty.")
         self.prompts = []
         for prompt in prompts:
             if isinstance(prompt, SeedPrompt):
@@ -63,7 +63,7 @@ class SeedPromptGroup(YamlLoadable):
         """Renders self.value as a template, applying provided parameters in kwargs
 
         Args:
-            kwargs:Key-value pairs to replace in the SeedPromptGroup value.
+            kwargs:Key-value pairs to replace in the SeedGroup value.
 
         Returns:
             None
@@ -137,7 +137,7 @@ class SeedPromptGroup(YamlLoadable):
         """Sets the objective from the prompt marked as objective."""
         prompt = objective_prompt if objective_prompt else self.prompts[-1]
         if self.objective is not None:
-            raise ValueError("SeedPromptGroups can only have one objective.")
+            raise ValueError("SeedGroups can only have one objective.")
         self.objective = SeedObjective(
             value=prompt.value,
             value_sha256=prompt.value_sha256,
@@ -155,6 +155,9 @@ class SeedPromptGroup(YamlLoadable):
             metadata=prompt.metadata,
         )
 
+    def is_single_turn(self) -> bool:
+        return self.is_single_request() and not self.objective
+    
     def is_single_request(self) -> bool:
         unique_sequences = {prompt.sequence for prompt in self.prompts}
         return len(unique_sequences) <= 1
@@ -163,4 +166,4 @@ class SeedPromptGroup(YamlLoadable):
         return len(self.prompts) == 1 and self.prompts[0].data_type == "text"
 
     def __repr__(self):
-        return f"<SeedPromptGroup(prompts={len(self.prompts)} prompts)>"
+        return f"<SeedGroup(prompts={len(self.prompts)} prompts)>"
