@@ -51,6 +51,7 @@ class ExactTextMatching(TextMatching):
 
         Args:
             case_sensitive (bool): Whether to perform case-sensitive matching. Defaults to False.
+            ignore_whitespace (bool): Whether to ignore whitespace. Defaults to True.
         """
         self._case_sensitive = case_sensitive
        self._ignore_whitespace = ignore_whitespace
