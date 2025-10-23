@@ -53,6 +53,7 @@ class ExactTextMatching(TextMatching):
             case_sensitive (bool): Whether to perform case-sensitive matching. Defaults to False.
         """
         self._case_sensitive = case_sensitive
+       self._ignore_whitespace = ignore_whitespace
 
     def is_match(self, *, target: str, text: str) -> bool:
         """
