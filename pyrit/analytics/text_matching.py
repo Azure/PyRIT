@@ -40,7 +40,12 @@ class ExactTextMatching(TextMatching):
     Checks if the target string is present in the text as a substring.
     """
 
-    def __init__(self, *, case_sensitive: bool = False) -> None:
+    def __init__(
+        self,
+        *, 
+        case_sensitive: bool = False,
+        ignore_whitespace: bool = True
+    ) -> None:
         """
         Initialize the exact text matching strategy.
 
