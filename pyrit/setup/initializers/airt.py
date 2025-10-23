@@ -143,7 +143,7 @@ class AIRTInitializer(PyRITInitializer):
         default_converter_target = OpenAIChatTarget(
             endpoint=endpoint,
             api_key=api_key,
-            temperature=0.5,
+            temperature=1.1,
         )
 
         set_global_variable(name="default_converter_target", value=default_converter_target)
@@ -158,6 +158,7 @@ class AIRTInitializer(PyRITInitializer):
         scorer_target = OpenAIChatTarget(
             endpoint=endpoint,
             api_key=api_key,
+            temperature=0.3,
         )
 
         # Configure composite harm scorer
@@ -222,7 +223,7 @@ class AIRTInitializer(PyRITInitializer):
             target=OpenAIChatTarget(
                 endpoint=endpoint,
                 api_key=api_key,
-                temperature=0.5,
+                temperature=1.2,
             )
         )
 

@@ -56,9 +56,8 @@ def _load_initializers_from_scripts(*, script_paths: Sequence[Union[str, pathlib
     """
     Load PyRITInitializer instances from external Python files.
 
-    Each script file should contain one or more PyRITInitializer classes and return
-    a list of instances via a `get_initializers()` function or by defining a
-    variable named `initializers`.
+    Each script file should contain one or more PyRITInitializer classes. All classes
+    that inherit from PyRITInitializer will be automatically discovered and instantiated.
 
     Args:
         script_paths (Sequence[Union[str, pathlib.Path]]): Sequence of file paths to Python scripts to load.
@@ -91,13 +90,6 @@ def _load_initializers_from_scripts(*, script_paths: Sequence[Union[str, pathlib
                         parameter_name="temperature", 
                         value=0.9
                     )
-
-            # Return initializers - either via function:
-            def get_initializers():
-                return [MyCustomInitializer()]
-
-            # OR via variable:
-            # initializers = [MyCustomInitializer()]
 
         Usage:
             initialize_pyrit(
@@ -136,39 +128,31 @@ def _load_initializers_from_scripts(*, script_paths: Sequence[Union[str, pathlib
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
 
-            # Try to get initializers from the module
+            # Auto-discover PyRITInitializer subclasses in the module
             script_initializers = []
             
-            # Method 1: Look for get_initializers() function
-            if hasattr(module, 'get_initializers') and callable(getattr(module, 'get_initializers')):
-                script_initializers = module.get_initializers()
-                logger.debug(f"Found get_initializers() function in {script.name}")
+            # Look for all PyRITInitializer subclasses defined in the module
+            for name in dir(module):
+                obj = getattr(module, name)
+                # Check if it's a class, is a subclass of PyRITInitializer, 
+                # and is not the base class itself
+                if (isinstance(obj, type) and 
+                    issubclass(obj, PyRITInitializer) and 
+                    obj is not PyRITInitializer):
+                    try:
+                        # Instantiate the initializer class
+                        initializer = obj()
+                        script_initializers.append(initializer)
+                        logger.debug(f"Found and instantiated {name} in {script.name}")
+                    except Exception as e:
+                        logger.warning(f"Could not instantiate {name} from {script.name}: {e}")
+                        # Continue to try other classes rather than failing completely
             
-            # Method 2: Look for 'initializers' variable
-            elif hasattr(module, 'initializers'):
-                script_initializers = module.initializers
-                logger.debug(f"Found 'initializers' variable in {script.name}")
-            
-            else:
+            if not script_initializers:
                 raise ValueError(
-                    f"Initialization script {script} must contain either:\n"
-                    f"  - A 'get_initializers()' function that returns a list of PyRITInitializer instances, OR\n"
-                    f"  - An 'initializers' variable containing a list of PyRITInitializer instances"
+                    f"Initialization script {script} must contain at least one PyRITInitializer subclass. "
+                    f"Define a class that inherits from PyRITInitializer."
                 )
-
-            # Validate that all returned items are PyRITInitializer instances
-            if not isinstance(script_initializers, (list, tuple)):
-                raise ValueError(
-                    f"Script {script} must return a list or tuple of PyRITInitializer instances, "
-                    f"got {type(script_initializers).__name__}"
-                )
-
-            for i, initializer in enumerate(script_initializers):
-                if not isinstance(initializer, PyRITInitializer):
-                    raise ValueError(
-                        f"Script {script} item {i} is not a PyRITInitializer instance. "
-                        f"Got {type(initializer).__name__}: {initializer}"
-                    )
 
             loaded_initializers.extend(script_initializers)
             logger.debug(f"Loaded {len(script_initializers)} initializer(s) from {script.name}")
