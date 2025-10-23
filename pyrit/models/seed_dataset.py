@@ -16,9 +16,9 @@ from pyrit.common import utils
 from pyrit.common.yaml_loadable import YamlLoadable
 from pyrit.models.literals import PromptDataType
 from pyrit.models.seed import Seed
+from pyrit.models.seed_group import SeedGroup
 from pyrit.models.seed_objective import SeedObjective
 from pyrit.models.seed_prompt import SeedPrompt
-from pyrit.models.seed_group import SeedGroup
 
 logger = logging.getLogger(__name__)
 

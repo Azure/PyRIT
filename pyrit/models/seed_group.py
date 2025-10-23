@@ -157,7 +157,7 @@ class SeedGroup(YamlLoadable):
 
     def is_single_turn(self) -> bool:
         return self.is_single_request() and not self.objective
-    
+
     def is_single_request(self) -> bool:
         unique_sequences = {prompt.sequence for prompt in self.prompts}
         return len(unique_sequences) <= 1
