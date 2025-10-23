@@ -9,7 +9,7 @@ from typing import Dict, Optional, Union
 import yaml
 
 from pyrit.common.path import LIKERT_SCALES_PATH
-from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore
+from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -104,28 +104,26 @@ class SelfAskLikertScorer(FloatScaleScorer):
 
         return likert_scale_description
 
-    async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
-        Scores the given request_piece using "self-ask" for the chat target.
+        Scores the given message_piece using "self-ask" for the chat target.
 
         Args:
-            request_piece (PromptRequestPiece): The prompt request piece containing the text to be scored.
+            message_piece (MessagePiece): The message piece containing the text to be scored.
             task (str): The task based on which the text should be scored (the original attacker model's objective).
                 Currently not supported for this scorer.
 
         Returns:
-            list[Score]: The request_piece scored.
+            list[Score]: The message_piece scored.
                          The category is configured from the likert_scale.
                          The score_value is a value from [0,1] that is scaled from the likert scale.
         """
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=self._system_prompt,
-            prompt_request_value=request_piece.converted_value,
-            prompt_request_data_type=request_piece.converted_value_data_type,
-            scored_prompt_id=request_piece.id,
+            prompt_request_value=message_piece.converted_value,
+            prompt_request_data_type=message_piece.converted_value_data_type,
+            scored_prompt_id=message_piece.id,
             category=self._score_category,
             objective=objective,
         )

@@ -167,7 +167,7 @@ print(result.score)
 from pyrit.memory import CentralMemory
 
 memory = CentralMemory.get_memory_instance()
-processing_response = memory.get_prompt_request_pieces(conversation_id=result.processing_conversation_id)
+processing_response = memory.get_message_pieces(conversation_id=result.processing_conversation_id)
 
 print(f"Attack result status: {result.status}")
 print(f"Response from processing callback: {processing_response}")

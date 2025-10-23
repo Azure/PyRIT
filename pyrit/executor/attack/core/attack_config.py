@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import List, Optional, Union
 
 from pyrit.executor.core import StrategyConverterConfig
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import SeedPrompt
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.score import Scorer, TrueFalseScorer
 

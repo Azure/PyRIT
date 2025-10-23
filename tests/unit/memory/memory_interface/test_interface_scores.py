@@ -12,14 +12,14 @@ import pytest
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.memory import MemoryInterface, PromptMemoryEntry
 from pyrit.models import (
-    PromptRequestPiece,
+    MessagePiece,
     Score,
     SeedPrompt,
 )
 
 
 def test_get_scores_by_attack_id_and_label(
-    sqlite_instance: MemoryInterface, sample_conversations: Sequence[PromptRequestPiece]
+    sqlite_instance: MemoryInterface, sample_conversations: Sequence[MessagePiece]
 ):
     # create list of scores that are associated with sample conversation entries
     # assert that that list of scores is the same as expected :-)
@@ -27,7 +27,7 @@ def test_get_scores_by_attack_id_and_label(
     prompt_id = sample_conversations[0].id
     assert prompt_id is not None, "Prompt ID should not be None"
 
-    sqlite_instance.add_request_pieces_to_memory(request_pieces=sample_conversations)
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=sample_conversations)
 
     score = Score(
         score_value=str(0.8),
@@ -37,7 +37,7 @@ def test_get_scores_by_attack_id_and_label(
         score_rationale="Test score",
         score_metadata={"test": "metadata"},
         scorer_class_identifier={"__type__": "TestScorer"},
-        prompt_request_response_id=prompt_id,
+        message_piece_id=prompt_id,
     )
 
     sqlite_instance.add_scores_to_memory(scores=[score])
@@ -53,7 +53,7 @@ def test_get_scores_by_attack_id_and_label(
     assert db_score[0].score_rationale == score.score_rationale
     assert db_score[0].score_metadata == score.score_metadata
     assert db_score[0].scorer_class_identifier == score.scorer_class_identifier
-    assert db_score[0].prompt_request_response_id == score.prompt_request_response_id
+    assert db_score[0].message_piece_id == score.message_piece_id
 
     db_score = sqlite_instance.get_prompt_scores(labels=sample_conversations[0].labels)
     assert len(db_score) == 1
@@ -99,7 +99,7 @@ def test_add_score_get_score(
         score_rationale="Test score",
         score_metadata={"test": "metadata"},
         scorer_class_identifier={"__type__": "TestScorer"},
-        prompt_request_response_id=prompt_id,
+        message_piece_id=prompt_id,
     )
 
     sqlite_instance.add_scores_to_memory(scores=[score])
@@ -115,7 +115,7 @@ def test_add_score_get_score(
     assert db_score[0].score_rationale == "Test score"
     assert db_score[0].score_metadata == {"test": "metadata"}
     assert db_score[0].scorer_class_identifier == {"__type__": "TestScorer"}
-    assert db_score[0].prompt_request_response_id == prompt_id
+    assert db_score[0].message_piece_id == prompt_id
 
 
 def test_add_score_duplicate_prompt(sqlite_instance: MemoryInterface):
@@ -124,7 +124,7 @@ def test_add_score_duplicate_prompt(sqlite_instance: MemoryInterface):
     attack = PromptSendingAttack(objective_target=MagicMock())
     conversation_id = str(uuid4())
     pieces = [
-        PromptRequestPiece(
+        MessagePiece(
             id=original_id,
             role="assistant",
             original_value="original prompt text",
@@ -135,14 +135,14 @@ def test_add_score_duplicate_prompt(sqlite_instance: MemoryInterface):
         )
     ]
     new_attack_id = str(uuid4())
-    sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=pieces)
     sqlite_instance.duplicate_conversation(new_attack_id=new_attack_id, conversation_id=conversation_id)
-    dupe_piece = sqlite_instance.get_prompt_request_pieces(attack_id=new_attack_id)[0]
+    dupe_piece = sqlite_instance.get_message_pieces(attack_id=new_attack_id)[0]
     dupe_id = dupe_piece.id
     assert dupe_id is not None, "Dupe ID should not be None"
 
     score_id = uuid4()
-    # score with prompt_request_response_id as dupe_id
+    # score with message_piece_id as dupe_id
     score = Score(
         id=score_id,
         score_value=str(0.8),
@@ -152,11 +152,11 @@ def test_add_score_duplicate_prompt(sqlite_instance: MemoryInterface):
         score_rationale="Test score",
         score_metadata={"test": "metadata"},
         scorer_class_identifier={"__type__": "TestScorer"},
-        prompt_request_response_id=dupe_id,
+        message_piece_id=dupe_id,
     )
     sqlite_instance.add_scores_to_memory(scores=[score])
 
-    assert score.prompt_request_response_id == original_id
+    assert score.message_piece_id == original_id
     assert sqlite_instance.get_prompt_scores(prompt_ids=[str(dupe_id)])[0].id == score_id
     assert sqlite_instance.get_prompt_scores(prompt_ids=[str(original_id)])[0].id == score_id
 
@@ -164,7 +164,7 @@ def test_add_score_duplicate_prompt(sqlite_instance: MemoryInterface):
 def test_get_scores_by_memory_labels(sqlite_instance: MemoryInterface):
     prompt_id = uuid4()
     pieces = [
-        PromptRequestPiece(
+        MessagePiece(
             id=prompt_id,
             role="user",
             original_value="original prompt text",
@@ -173,7 +173,7 @@ def test_get_scores_by_memory_labels(sqlite_instance: MemoryInterface):
             labels={"sample": "label"},
         )
     ]
-    sqlite_instance.add_request_pieces_to_memory(request_pieces=pieces)
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=pieces)
 
     score = Score(
         score_value=str(0.8),
@@ -183,7 +183,7 @@ def test_get_scores_by_memory_labels(sqlite_instance: MemoryInterface):
         score_rationale="Test score",
         score_metadata={"test": "metadata"},
         scorer_class_identifier={"__type__": "TestScorer"},
-        prompt_request_response_id=prompt_id,
+        message_piece_id=prompt_id,
     )
     sqlite_instance.add_scores_to_memory(scores=[score])
 
@@ -198,7 +198,7 @@ def test_get_scores_by_memory_labels(sqlite_instance: MemoryInterface):
     assert db_score[0].score_rationale == score.score_rationale
     assert db_score[0].score_metadata == score.score_metadata
     assert db_score[0].scorer_class_identifier == score.scorer_class_identifier
-    assert db_score[0].prompt_request_response_id == prompt_id
+    assert db_score[0].message_piece_id == prompt_id
 
 
 @pytest.mark.asyncio

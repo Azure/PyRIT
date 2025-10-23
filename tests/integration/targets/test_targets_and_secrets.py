@@ -114,7 +114,9 @@ async def test_connect_required_openai_response_targets(sqlite_instance, endpoin
 
     target = OpenAIResponseTarget(**args)
 
-    await _assert_can_send_prompt(target)
+    # OpenAIResponseTarget returns structured responses (reasoning JSON), so we just need to verify
+    # we can send a prompt and get a response, not that it contains specific text
+    await _assert_can_send_prompt(target, check_if_llm_interpreted_request=False)
 
 
 @pytest.mark.asyncio

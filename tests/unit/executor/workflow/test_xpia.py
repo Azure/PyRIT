@@ -12,7 +12,7 @@ from pyrit.executor.workflow.xpia import (
     XPIAStatus,
     XPIAWorkflow,
 )
-from pyrit.models import PromptRequestResponse, Score, SeedPrompt, SeedPromptGroup
+from pyrit.models import Message, Score, SeedPrompt, SeedPromptGroup
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.score import Scorer
@@ -326,10 +326,10 @@ class TestXPIAWorkflowPerform:
         assert response == "Processing response"
 
         # Verify memory addition
-        mock_memory_instance.add_request_response_to_memory.assert_called_once()
-        call_args = mock_memory_instance.add_request_response_to_memory.call_args
+        mock_memory_instance.add_message_to_memory.assert_called_once()
+        call_args = mock_memory_instance.add_message_to_memory.call_args
         assert call_args.kwargs["request"] is not None
-        assert isinstance(call_args.kwargs["request"], PromptRequestResponse)
+        assert isinstance(call_args.kwargs["request"], Message)
 
     @pytest.mark.asyncio
     async def test_score_response_async_with_no_scorer(

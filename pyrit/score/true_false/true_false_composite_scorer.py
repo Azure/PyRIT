@@ -4,9 +4,7 @@
 import asyncio
 from typing import List, Optional
 
-from pyrit.models import PromptRequestPiece, Score
-from pyrit.models.literals import ChatMessageRole
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import ChatMessageRole, Message, MessagePiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import TrueFalseAggregatorFunc
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
@@ -50,7 +48,7 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
 
     async def _score_async(
         self,
-        request_response: PromptRequestResponse,
+        message: Message,
         *,
         objective: Optional[str] = None,
         role_filter: Optional[ChatMessageRole] = None,
@@ -58,7 +56,7 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
         """Score a request/response by combining results from all constituent scorers.
 
         Args:
-            request_response (PromptRequestResponse): The request/response to score.
+            message (Message): The request/response to score.
             objective (Optional[str]): Scoring objective or context.
 
         Returns:
@@ -66,7 +64,7 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
         """
 
         tasks = [
-            scorer.score_async(request_response=request_response, objective=objective, role_filter=role_filter)
+            scorer.score_async(message=message, objective=objective, role_filter=role_filter)
             for scorer in self._scorers
         ]
 
@@ -85,9 +83,9 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
 
         result = self._score_aggregator(score_list)
 
-        # Ensure the request piece has an ID
-        piece_id = request_response.request_pieces[0].id
-        assert piece_id is not None, "Request piece must have an ID"
+        # Ensure the message piece has an ID
+        piece_id = message.message_pieces[0].id
+        assert piece_id is not None, "Message piece must have an ID"
 
         return_score = Score(
             score_value=str(result.value),
@@ -97,19 +95,17 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
             score_metadata=result.metadata,
             score_rationale=result.rationale,
             scorer_class_identifier=self.get_identifier(),
-            prompt_request_response_id=piece_id,
+            message_piece_id=piece_id,
             objective=objective,
         )
 
         return [return_score]
 
-    async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """Composite scorers do not support piecewise scoring.
 
         Args:
-            request_piece (PromptRequestPiece): Unused.
+            message_piece (MessagePiece): Unused.
             objective (Optional[str]): Unused.
 
         Raises:

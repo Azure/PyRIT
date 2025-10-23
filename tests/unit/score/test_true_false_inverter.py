@@ -5,30 +5,30 @@ import os
 from unittest.mock import MagicMock, patch
 
 import pytest
-from unit.mocks import get_image_request_piece
+from unit.mocks import get_image_message_piece
 
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece
+from pyrit.models import MessagePiece
 from pyrit.score import SubStringScorer, TrueFalseInverterScorer
 
 
 @pytest.fixture
-def image_request_piece() -> PromptRequestPiece:
-    return get_image_request_piece()
+def image_message_piece() -> MessagePiece:
+    return get_image_message_piece()
 
 
 @pytest.mark.asyncio
-async def test_inverter_scorer_validate(image_request_piece: PromptRequestPiece):
+async def test_inverter_scorer_validate(image_message_piece: MessagePiece):
     sub_scorer = SubStringScorer(substring="test", categories=["new_category"])
     scorer = TrueFalseInverterScorer(scorer=sub_scorer)
 
-    request = image_request_piece.to_prompt_request_response()
+    request = image_message_piece.to_message()
 
     with pytest.raises(ValueError, match="There are no valid pieces to score"):
         await scorer.score_async(request)
 
-    os.remove(image_request_piece.converted_value)
+    os.remove(image_message_piece.converted_value)
 
 
 @pytest.mark.asyncio
@@ -47,7 +47,7 @@ async def test_substring_scorer_score(patch_central_database, sub_string: str):
     assert score[0].score_value != str(sub_string in full_text)
     assert score[0].score_type == "true_false"
     assert score[0].score_category == ["new_category"]
-    assert score[0].prompt_request_response_id is None
+    assert score[0].message_piece_id is None
 
 
 @pytest.mark.asyncio

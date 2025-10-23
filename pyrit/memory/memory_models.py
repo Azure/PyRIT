@@ -29,10 +29,17 @@ from sqlalchemy.orm import (  # type: ignore
 from sqlalchemy.types import Uuid  # type: ignore
 
 from pyrit.common.utils import to_sha256
-from pyrit.models import PromptDataType, PromptRequestPiece, Score, SeedPrompt
-from pyrit.models.attack_result import AttackOutcome, AttackResult
-from pyrit.models.conversation_reference import ConversationReference, ConversationType
-from pyrit.models.literals import ChatMessageRole
+from pyrit.models import (
+    AttackOutcome,
+    AttackResult,
+    ChatMessageRole,
+    ConversationReference,
+    ConversationType,
+    MessagePiece,
+    PromptDataType,
+    Score,
+    SeedPrompt,
+)
 
 
 class CustomUUID(TypeDecorator):
@@ -138,7 +145,7 @@ class PromptMemoryEntry(Base):
         foreign_keys="ScoreEntry.prompt_request_response_id",
     )
 
-    def __init__(self, *, entry: PromptRequestPiece):
+    def __init__(self, *, entry: MessagePiece):
         self.id = entry.id
         self.role = entry.role
         self.conversation_id = entry.conversation_id
@@ -163,8 +170,8 @@ class PromptMemoryEntry(Base):
 
         self.original_prompt_id = entry.original_prompt_id
 
-    def get_prompt_request_piece(self) -> PromptRequestPiece:
-        prompt_request_piece = PromptRequestPiece(
+    def get_message_piece(self) -> MessagePiece:
+        message_piece = MessagePiece(
             role=self.role,
             original_value=self.original_value,
             original_value_sha256=self.original_value_sha256,
@@ -185,8 +192,8 @@ class PromptMemoryEntry(Base):
             original_prompt_id=self.original_prompt_id,
             timestamp=self.timestamp,
         )
-        prompt_request_piece.scores = [score.get_score() for score in self.scores]
-        return prompt_request_piece
+        message_piece.scores = [score.get_score() for score in self.scores]
+        return message_piece
 
     def __str__(self):
         if self.prompt_target_identifier:
@@ -248,7 +255,7 @@ class ScoreEntry(Base):  # type: ignore
         self.score_rationale = entry.score_rationale
         self.score_metadata = entry.score_metadata
         self.scorer_class_identifier = entry.scorer_class_identifier
-        self.prompt_request_response_id = entry.prompt_request_response_id if entry.prompt_request_response_id else None
+        self.prompt_request_response_id = entry.message_piece_id if entry.message_piece_id else None
         self.timestamp = entry.timestamp
         # Store in both columns for backward compatibility
         # New code should only read from objective
@@ -265,7 +272,7 @@ class ScoreEntry(Base):  # type: ignore
             score_rationale=self.score_rationale,
             score_metadata=self.score_metadata,
             scorer_class_identifier=self.scorer_class_identifier,
-            prompt_request_response_id=self.prompt_request_response_id,
+            message_piece_id=self.prompt_request_response_id,
             timestamp=self.timestamp,
             objective=self.objective,
         )
@@ -416,7 +423,7 @@ class AttackResultEntry(Base):
         objective (str): Natural-language description of the attacker's objective.
         attack_identifier (dict[str, str]): Identifier of the attack (e.g., name, module).
         objective_sha256 (str): The SHA256 hash of the objective.
-        last_response_id (Uuid): Foreign key to the last response PromptRequestPiece.
+        last_response_id (Uuid): Foreign key to the last response MessagePiece.
         last_score_id (Uuid): Foreign key to the last score ScoreEntry.
         executed_turns (int): Total number of turns that were executed.
         execution_time_ms (int): Total execution time of the attack in milliseconds.
@@ -565,7 +572,7 @@ class AttackResultEntry(Base):
             conversation_id=self.conversation_id,
             objective=self.objective,
             attack_identifier=self.attack_identifier,
-            last_response=self.last_response.get_prompt_request_piece() if self.last_response else None,
+            last_response=self.last_response.get_message_piece() if self.last_response else None,
             last_score=self.last_score.get_score() if self.last_score else None,
             executed_turns=self.executed_turns,
             execution_time_ms=self.execution_time_ms,
