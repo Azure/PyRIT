@@ -33,12 +33,13 @@ from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    PromptRequestResponse,
+    ConversationReference,
+    ConversationType,
+    Message,
     Score,
     SeedPrompt,
     SeedPromptGroup,
 )
-from pyrit.models.conversation_reference import ConversationReference, ConversationType
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import (
@@ -543,7 +544,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         *,
         attack_prompt: str,
         context: CrescendoAttackContext,
-    ) -> PromptRequestResponse:
+    ) -> Message:
         """
         Send the attack prompt to the objective target.
 
@@ -552,7 +553,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             context (CrescendoAttackContext): The attack context.
 
         Returns:
-            PromptRequestResponse: The response from the objective target.
+            Message: The response from the objective target.
 
         Raises:
             ValueError: If no response is received from the objective target.
@@ -592,7 +593,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         if not context.last_response:
             raise ValueError("No response available in context to check for refusal")
 
-        scores = await self._refusal_scorer.score_async(request_response=context.last_response, objective=objective)
+        scores = await self._refusal_scorer.score_async(message=context.last_response, objective=objective)
         return scores[0]
 
     async def _score_response_async(self, *, context: CrescendoAttackContext) -> Score:

@@ -14,7 +14,7 @@ from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    PromptRequestResponse,
+    Message,
     SeedPrompt,
     SeedPromptDataset,
     SeedPromptGroup,
@@ -151,9 +151,7 @@ class SkeletonKeyAttack(PromptSendingAttack):
 
         return result
 
-    async def _send_skeleton_key_prompt_async(
-        self, *, context: SingleTurnAttackContext
-    ) -> Optional[PromptRequestResponse]:
+    async def _send_skeleton_key_prompt_async(self, *, context: SingleTurnAttackContext) -> Optional[Message]:
         """
         Send the skeleton key prompt to the target to prime it for the attack.
 
@@ -161,7 +159,7 @@ class SkeletonKeyAttack(PromptSendingAttack):
             context (SingleTurnAttackContext): The attack context containing configuration.
 
         Returns:
-            Optional[PromptRequestResponse]: The response from the target, or None if filtered.
+            Optional[Message]: The response from the target, or None if filtered.
         """
         self._logger.debug("Sending skeleton key prompt to target")
 

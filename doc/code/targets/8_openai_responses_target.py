@@ -5,11 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -61,7 +57,12 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 # This showcases how agentic function execution works with PyRIT + OpenAI Responses API.
 
 # %%
+<<<<<<< HEAD
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
+=======
+from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.models import Message, MessagePiece
+>>>>>>> main
 from pyrit.prompt_target.openai.openai_response_target import OpenAIResponseTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit
 
@@ -107,16 +108,16 @@ target = OpenAIResponseTarget(
 )
 
 # Build the user prompt
-prompt_piece = PromptRequestPiece(
+message_piece = MessagePiece(
     role="user",
     original_value="What is the weather in Boston in celsius? Use the get_current_weather function.",
     original_value_data_type="text",
 )
-prompt_request = PromptRequestResponse(request_pieces=[prompt_piece])
+prompt_request = Message(message_pieces=[message_piece])
 
 response = await target.send_prompt_async(prompt_request=prompt_request)  # type: ignore
 
-for idx, piece in enumerate(response.request_pieces):
+for idx, piece in enumerate(response.message_pieces):
     print(f"{idx} | {piece.role}: {piece.original_value}")
 
 # %% [markdown]
@@ -136,7 +137,7 @@ for idx, piece in enumerate(response.request_pieces):
 import os
 
 from pyrit.common.tool_configs import web_search_tool
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target.openai.openai_response_target import OpenAIResponseTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit
 
@@ -154,14 +155,14 @@ target = OpenAIResponseTarget(
     httpx_client_kwargs={"timeout": 60},
 )
 
-prompt_piece = PromptRequestPiece(
+message_piece = MessagePiece(
     role="user", original_value="Briefly, what is one positive news story from today?", original_value_data_type="text"
 )
-prompt_request = PromptRequestResponse(request_pieces=[prompt_piece])
+prompt_request = Message(message_pieces=[message_piece])
 
 response = await target.send_prompt_async(prompt_request=prompt_request)  # type: ignore
 
-for idx, piece in enumerate(response.request_pieces):
+for idx, piece in enumerate(response.message_pieces):
     # Reasoning traces are necessary to be sent back to the endpoint for function calling even if they're empty.
     # They are excluded here for a cleaner output.
     if piece.original_value_data_type != "reasoning":

@@ -30,7 +30,7 @@ from pyrit.models import (
     AttackResult,
     ConversationReference,
     ConversationType,
-    PromptRequestResponse,
+    Message,
     Score,
     SeedPrompt,
     SeedPromptGroup,
@@ -461,21 +461,19 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
 
         return feedback
 
-    async def _send_prompt_to_objective_target_async(
-        self, *, context: MultiTurnAttackContext, prompt: str
-    ) -> PromptRequestResponse:
+    async def _send_prompt_to_objective_target_async(self, *, context: MultiTurnAttackContext, prompt: str) -> Message:
         """
         Send a prompt to the target system.
 
         Constructs a seed prompt group, sends it to the target via the prompt normalizer,
-        and returns the response as a PromptRequestResponse.
+        and returns the response as a Message.
 
         Args:
             context (MultiTurnAttackContext): The current attack context.
             prompt (str): The prompt to send to the target.
 
         Returns:
-            PromptRequestResponse: The system's response to the prompt.
+            Message: The system's response to the prompt.
         """
         logger.info(f"Sending prompt to target: {prompt[:50]}...")
 

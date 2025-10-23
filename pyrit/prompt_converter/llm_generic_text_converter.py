@@ -6,9 +6,9 @@ import uuid
 from typing import Optional
 
 from pyrit.models import (
+    Message,
+    MessagePiece,
     PromptDataType,
-    PromptRequestPiece,
-    PromptRequestResponse,
     SeedPrompt,
 )
 from pyrit.prompt_converter import ConverterResult, PromptConverter
@@ -97,9 +97,9 @@ class LLMGenericTextConverter(PromptConverter):
         if self._user_prompt_template_with_objective:
             prompt = self._user_prompt_template_with_objective.render_template_value(objective=prompt)
 
-        request = PromptRequestResponse(
+        request = Message(
             [
-                PromptRequestPiece(
+                MessagePiece(
                     role="user",
                     original_value=prompt,
                     conversation_id=conversation_id,

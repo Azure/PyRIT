@@ -15,8 +15,8 @@ from pyrit.executor.attack import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
+    MessagePiece,
 )
 from pyrit.prompt_converter import FlipConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
@@ -62,9 +62,9 @@ class TestFlipAttackInitialization:
         attack = FlipAttack(objective_target=mock_objective_target)
 
         assert attack._system_prompt is not None
-        assert len(attack._system_prompt.request_pieces) == 1
-        assert attack._system_prompt.request_pieces[0].role == "system"
-        assert "flipping each word" in attack._system_prompt.request_pieces[0].original_value
+        assert len(attack._system_prompt.message_pieces) == 1
+        assert attack._system_prompt.message_pieces[0].role == "system"
+        assert "flipping each word" in attack._system_prompt.message_pieces[0].original_value
 
     def test_init_adds_flip_converter_to_request_converters(self, mock_objective_target):
         """Test that FlipConverter is added to request converters"""
@@ -240,9 +240,7 @@ class TestAttackLifecycle:
 
         # Context with prepended conversation
         basic_context.prepended_conversation = [
-            PromptRequestResponse(
-                request_pieces=[PromptRequestPiece(role="user", original_value="Test prepended conversation")]
-            )
+            Message(message_pieces=[MessagePiece(role="user", original_value="Test prepended conversation")])
         ]
         attack._setup_async = AsyncMock()
         attack._perform_async = AsyncMock()

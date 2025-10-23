@@ -15,7 +15,7 @@ from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
 )
 from pyrit.models import (
     AttackResult,
-    PromptRequestResponse,
+    Message,
     SeedPrompt,
     SeedPromptGroup,
 )
@@ -67,7 +67,7 @@ class FlipAttack(PromptSendingAttack):
         system_prompt_path = pathlib.Path(DATASETS_PATH) / "executors" / "flip_attack.yaml"
         system_prompt = SeedPrompt.from_yaml_file(system_prompt_path).value
 
-        self._system_prompt = PromptRequestResponse.from_system_prompt(system_prompt=system_prompt)
+        self._system_prompt = Message.from_system_prompt(system_prompt=system_prompt)
 
     def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
         """

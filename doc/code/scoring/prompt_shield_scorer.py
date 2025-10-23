@@ -74,7 +74,7 @@ await ConsoleAttackResultPrinter().print_result_async(result=result)  # type: ig
 
 # Fetch prompts to score by conversation ID
 memory = CentralMemory.get_memory_instance()
-prompt_to_score = memory.get_prompt_request_pieces(conversation_id=result.conversation_id)[0]
+prompt_to_score = memory.get_message_pieces(conversation_id=result.conversation_id)[0]
 
 batch_scorer = BatchScorer()
 scores = await batch_scorer.score_responses_by_filters_async(  # type: ignore
@@ -82,5 +82,5 @@ scores = await batch_scorer.score_responses_by_filters_async(  # type: ignore
 )
 
 for score in scores:
-    prompt_text = memory.get_prompt_request_pieces(prompt_ids=[str(score.prompt_request_response_id)])[0].original_value
+    prompt_text = memory.get_message_pieces(prompt_ids=[str(score.message_piece_id)])[0].original_value
     print(f"{score} : {prompt_text}")  # We can see that the attack was detected

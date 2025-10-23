@@ -34,15 +34,22 @@ def analyze_results(attack_results: list[AttackResult]) -> dict:
     Analyze a list of AttackResult objects and return overall and grouped statistics.
 
     Returns:
-        {
-          "Overall": AttackStats,
-          "By_attack_identifier": dict[str, AttackStats]
-        }
+        A dictionary of AttackStats objects. The overall stats are accessible with the key
+        "Overall", and the stats of any attack can be retrieved using "By_attack_identifier"
+        followed by the identifier of the attack.
 
     Raises:
         ValueError: if attack_results is empty.
         TypeError: if any element is not an AttackResult.
+
+    Example:
+        >>> analyze_results(attack_results)
+        {
+            "Overall": AttackStats,
+            "By_attack_identifier": dict[str, AttackStats]
+        }
     """
+
     if not attack_results:
         raise ValueError("attack_results cannot be empty")
 

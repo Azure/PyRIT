@@ -6,7 +6,7 @@ from typing import Optional, Union
 
 from pyrit.common.path import SCORER_CONFIG_PATH
 from pyrit.exceptions.exception_classes import InvalidJsonException
-from pyrit.models import PromptRequestPiece, Score, SeedPrompt
+from pyrit.models import MessagePiece, Score, SeedPrompt
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -44,14 +44,12 @@ class InsecureCodeScorer(FloatScaleScorer):
         # Render the system prompt with the harm category
         self._system_prompt = scoring_instructions_template.render_template_value(harm_categories=self._harm_category)
 
-    async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
-        Scores the given request piece using LLM to detect security vulnerabilities.
+        Scores the given message piece using LLM to detect security vulnerabilities.
 
         Args:
-            request_piece (PromptRequestPiece): The code snippet to be scored.
+            message_piece (MessagePiece): The code snippet to be scored.
             objective (Optional[str]): Optional objective description for scoring. Defaults to None.
 
         Returns:
@@ -61,12 +59,12 @@ class InsecureCodeScorer(FloatScaleScorer):
         unvalidated_score = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=self._system_prompt,
-            prompt_request_value=request_piece.original_value,
-            prompt_request_data_type=request_piece.converted_value_data_type,
-            scored_prompt_id=request_piece.id,
+            prompt_request_value=message_piece.original_value,
+            prompt_request_data_type=message_piece.converted_value_data_type,
+            scored_prompt_id=message_piece.id,
             category=self._harm_category,
             objective=objective,
-            attack_identifier=request_piece.attack_identifier,
+            attack_identifier=message_piece.attack_identifier,
         )
 
         # Modify the UnvalidatedScore parsing to check for 'score_value'

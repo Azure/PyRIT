@@ -5,8 +5,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from pyrit.models import Score
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models import MessagePiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
     TrueFalseAggregatorFunc,
@@ -50,14 +49,12 @@ class QuestionAnswerScorer(TrueFalseScorer):
         self._correct_answer_matching_patterns = correct_answer_matching_patterns
         self._score_category = category if category is not None else []
 
-    async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
-        Score the request piece using question answering evaluation.
+        Score the message piece using question answering evaluation.
 
         Args:
-            request_piece (PromptRequestPiece): The answer given by the target, which must contain
+            message_piece (MessagePiece): The answer given by the target, which must contain
                 'correct_answer_index' and 'correct_answer' in prompt_metadata.
             objective (Optional[str]): The objective to evaluate against. Defaults to None.
                 Currently not used for this scorer.
@@ -69,12 +66,12 @@ class QuestionAnswerScorer(TrueFalseScorer):
         result = False
         matching_text = None
 
-        correct_index = request_piece.prompt_metadata["correct_answer_index"]
-        correct_answer = request_piece.prompt_metadata["correct_answer"]
+        correct_index = message_piece.prompt_metadata["correct_answer_index"]
+        correct_answer = message_piece.prompt_metadata["correct_answer"]
 
         for pattern in self._correct_answer_matching_patterns:
             text = pattern.format(correct_answer_index=correct_index, correct_answer=correct_answer).lower()
-            if text in request_piece.converted_value.lower():
+            if text in message_piece.converted_value.lower():
                 result = True
                 matching_text = text
                 break
@@ -92,7 +89,7 @@ class QuestionAnswerScorer(TrueFalseScorer):
                     else "No matching text found in response"
                 ),
                 scorer_class_identifier=self.get_identifier(),
-                prompt_request_response_id=request_piece.id,
+                message_piece_id=message_piece.id,
                 objective=objective,
             )
         ]

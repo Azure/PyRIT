@@ -72,5 +72,5 @@ sphinx:
         - "https://scikit-learn.org/stable"
         - null
       pytorch:
-        - "https://pytorch.org/docs/stable"
+        - "https://docs.pytorch.org/docs/stable"
         - null

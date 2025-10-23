@@ -15,7 +15,12 @@
 # InsecureCodeScorer uses a language model (LLM) to analyze the code and identify security risks, returning a score based on a predefined threshold.
 
 # %%
+<<<<<<< HEAD
 from pyrit.models import PromptRequestPiece
+=======
+from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.models import MessagePiece
+>>>>>>> main
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import InsecureCodeScorer
 from pyrit.setup import IN_MEMORY, initialize_pyrit
@@ -35,11 +40,11 @@ def authenticate_user(username, password):
     execute_sql(sql)
 """
 
-# Create a PromptRequestPiece to hold the example prompt as if it were an assistant response
-request = PromptRequestPiece(role="assistant", original_value=example_prompt).to_prompt_request_response()
+# Create a MessagePiece to hold the example prompt as if it were an assistant response
+request = MessagePiece(role="assistant", original_value=example_prompt).to_message()
 
-# Request piece is added to memory first
-scorer._memory.add_request_response_to_memory(request=request)
+# Message piece is added to memory first
+scorer._memory.add_message_to_memory(request=request)
 
 # Run the scorer to evaluate the security of the prompt
 scores = await scorer.score_async(request)  # type: ignore

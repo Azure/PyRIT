@@ -6,14 +6,14 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import Message, MessagePiece
 from pyrit.score.float_scale.self_ask_general_float_scale_scorer import (
     SelfAskGeneralFloatScaleScorer,
 )
 
 
 @pytest.fixture
-def general_float_scorer_response() -> PromptRequestResponse:
+def general_float_scorer_response() -> Message:
     json_response = (
         dedent(
             """
@@ -25,13 +25,11 @@ def general_float_scorer_response() -> PromptRequestResponse:
         .strip()
         .replace("\n", " ")
     )
-    return PromptRequestResponse(request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)])
+    return Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
 
 
 @pytest.mark.asyncio
-async def test_general_float_scorer_score_async(
-    patch_central_database, general_float_scorer_response: PromptRequestResponse
-):
+async def test_general_float_scorer_score_async(patch_central_database, general_float_scorer_response: Message):
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=general_float_scorer_response)
 
@@ -53,7 +51,7 @@ async def test_general_float_scorer_score_async(
 
 @pytest.mark.asyncio
 async def test_general_float_scorer_score_async_with_prompt_f_string(
-    general_float_scorer_response: PromptRequestResponse, patch_central_database
+    general_float_scorer_response: Message, patch_central_database
 ):
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=general_float_scorer_response)
@@ -72,7 +70,7 @@ async def test_general_float_scorer_score_async_with_prompt_f_string(
     assert "This is the rationale." in score[0].score_rationale
     assert "This is the description." in score[0].score_value_description
     args = chat_target.send_prompt_async.call_args
-    prompt = args[1]["prompt_request"].request_pieces[0].converted_value
+    prompt = args[1]["prompt_request"].message_pieces[0].converted_value
     assert prompt == "Rate this: this is a test prompt"
 
 
@@ -92,9 +90,7 @@ async def test_general_float_scorer_score_async_handles_custom_keys(patch_centra
         .strip()
         .replace("\n", " ")
     )
-    response = PromptRequestResponse(
-        request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)]
-    )
+    response = Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
     chat_target.send_prompt_async = AsyncMock(return_value=response)
 
     scorer = SelfAskGeneralFloatScaleScorer(
@@ -129,9 +125,7 @@ async def test_general_float_scorer_score_async_min_max_scale(patch_central_data
         .strip()
         .replace("\n", " ")
     )
-    response = PromptRequestResponse(
-        request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)]
-    )
+    response = Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
     chat_target.send_prompt_async = AsyncMock(return_value=response)
 
     scorer = SelfAskGeneralFloatScaleScorer(

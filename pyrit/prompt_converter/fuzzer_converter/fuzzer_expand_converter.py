@@ -6,10 +6,7 @@ import uuid
 from typing import Optional
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import SeedPrompt
-from pyrit.models.literals import PromptDataType
-from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import Message, MessagePiece, PromptDataType, SeedPrompt
 from pyrit.prompt_converter.fuzzer_converter.fuzzer_converter_base import (
     FuzzerConverter,
 )
@@ -57,9 +54,9 @@ class FuzzerExpandConverter(FuzzerConverter):
         formatted_prompt = f"===={self.template_label} BEGINS====\n{prompt}\n===={self.template_label} ENDS===="
 
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
-        request = PromptRequestResponse(
+        request = Message(
             [
-                PromptRequestPiece(
+                MessagePiece(
                     role="user",
                     original_value=formatted_prompt,
                     converted_value=formatted_prompt,

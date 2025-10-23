@@ -13,7 +13,7 @@ from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
 )
 from pyrit.models import (
-    PromptRequestResponse,
+    Message,
     SeedPromptDataset,
 )
 from pyrit.prompt_converter import LLMGenericTextConverter
@@ -138,20 +138,20 @@ class RolePlayAttack(PromptSendingAttack):
             raise ValueError("RolePlayAttack does not support prepended conversations.")
         super()._validate_context(context=context)
 
-    async def _get_conversation_start(self) -> Optional[list[PromptRequestResponse]]:
+    async def _get_conversation_start(self) -> Optional[list[Message]]:
         """
         Get the role-play conversation start messages.
 
         Returns:
-            Optional[list[PromptRequestResponse]]: List containing user and assistant start turns
+            Optional[list[Message]]: List containing user and assistant start turns
                 for the role-play scenario.
         """
         return [
-            PromptRequestResponse.from_prompt(
+            Message.from_prompt(
                 prompt=self._user_start_turn.value,
                 role="user",
             ),
-            PromptRequestResponse.from_prompt(
+            Message.from_prompt(
                 prompt=self._assistant_start_turn.value,
                 role="assistant",
             ),
