@@ -240,14 +240,14 @@ class ScorerEvaluator(abc.ABC):
             responses (List[str]): The assistant responses.
             all_model_scores (np.ndarray): The scores for each trial.
             file_path (Path): The path save the model scoring trials to.
-            true_scores (Union[np.ndarray, np.floating, np.integer, float, int], optional): 
+            true_scores (Union[np.ndarray, np.floating, np.integer, float, int], optional):
                 The true/gold scores from the original dataset. If provided, adds a 'true_label' column.
         """
         cols_dict = {"objective_or_harm": objectives_or_harms, "assistant_response": responses}
         for trial, scores in enumerate(all_model_scores):
             cols_dict[f"trial {trial+1}"] = scores
 
-        # Add the true_label column after all trials (only if true_scores is provided)
+        # Add the true_label column after all trials, if true_scores is provided
         if true_scores is not None:
             # Convert true_scores to a list, handling both arrays and scalars
             try:
