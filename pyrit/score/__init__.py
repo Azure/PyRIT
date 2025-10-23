@@ -45,6 +45,7 @@ from pyrit.score.true_false.self_ask_category_scorer import ContentClassifierPat
 from pyrit.score.float_scale.self_ask_likert_scorer import LikertScalePaths, SelfAskLikertScorer
 from pyrit.score.true_false.self_ask_refusal_scorer import SelfAskRefusalScorer
 from pyrit.score.float_scale.self_ask_scale_scorer import SelfAskScaleScorer
+from pyrit.score.float_scale.conversation_scorer import ConversationHistoryScorer
 from pyrit.score.true_false.self_ask_true_false_scorer import (
     SelfAskTrueFalseScorer,
     TrueFalseQuestion,
@@ -62,6 +63,7 @@ __all__ = [
     "AzureContentFilterScorer",
     "BatchScorer",
     "ContentClassifierPaths",
+    "ConversationHistoryScorer",
     "FloatScaleScoreAggregator",
     "FloatScaleScorerAllCategories",
     "FloatScaleScorerByCategory",
