@@ -122,18 +122,35 @@ class SeedDataset(YamlLoadable):
                     "Prompts should be either dicts, SeedPrompt objects, or SeedObjective objects. Got something else."
                 )
 
-    def get_values(self, first: Optional[PositiveInt] = None, last: Optional[PositiveInt] = None) -> Sequence[str]:
+    def get_values(
+        self,
+        *,
+        first: Optional[PositiveInt] = None,
+        last: Optional[PositiveInt] = None,
+        harm_categories: Optional[Sequence[str]] = None,
+    ) -> Sequence[str]:
         """
         Extracts and returns a list of prompt values from the dataset. By default, returns all of them.
 
         Args:
             first (Optional[int]): If provided, values from the first N prompts are included.
             last (Optional[int]): If provided, values from the last N prompts are included.
+            harm_categories (Optional[Sequence[str]]): If provided, only prompts containing at least one of
+                these harm categories are included.
 
         Returns:
             Sequence[str]: A list of prompt values.
         """
-        values = [prompt.value for prompt in self.prompts]
+        # Filter by harm categories if specified
+        prompts = self.prompts
+        if harm_categories:
+            prompts = [
+                prompt
+                for prompt in prompts
+                if prompt.harm_categories and any(cat in prompt.harm_categories for cat in harm_categories)
+            ]
+
+        values = [prompt.value for prompt in prompts]
 
         if first is None and last is None:
             return values
@@ -145,17 +162,21 @@ class SeedDataset(YamlLoadable):
 
         return first_part + last_part
 
-    def get_random_values(self, number: PositiveInt) -> Sequence[str]:
+    def get_random_values(
+        self, *, number: PositiveInt, harm_categories: Optional[Sequence[str]] = None
+    ) -> Sequence[str]:
         """
         Extracts and returns a list of random prompt values from the dataset.
 
         Args:
             number (int): The number of random prompt values to return.
+            harm_categories (Optional[Sequence[str]]): If provided, only prompts containing at least one of
+                these harm categories are included.
 
         Returns:
             Sequence[str]: A list of prompt values.
         """
-        prompts = self.get_values()
+        prompts = self.get_values(harm_categories=harm_categories)
         return random.sample(prompts, min(len(prompts), number))
 
     @classmethod
