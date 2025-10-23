@@ -54,7 +54,7 @@ class ExactTextMatching(TextMatching):
             ignore_whitespace (bool): Whether to ignore whitespace. Defaults to True.
         """
         self._case_sensitive = case_sensitive
-       self._ignore_whitespace = ignore_whitespace
+        self._ignore_whitespace = ignore_whitespace
 
     def is_match(self, *, target: str, text: str) -> bool:
         """
