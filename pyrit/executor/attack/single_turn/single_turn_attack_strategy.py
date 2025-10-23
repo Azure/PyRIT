@@ -90,7 +90,10 @@ class SingleTurnAttackStrategy(AttackStrategy[SingleTurnAttackContext, AttackRes
 
         # Validate parameters before creating context
         seed_group = get_kwarg_param(kwargs=kwargs, param_name="seed_group", expected_type=SeedGroup, required=False)
-        objective = get_kwarg_param(kwargs=kwargs, param_name="objective", expected_type=str, required=True)
+        objective = get_kwarg_param(kwargs=kwargs, param_name="objective", expected_type=str, required=False)
+
+        # Because objective is a required parameter for single-turn attacks, SeedGroups that have objectives
+        # are invalid
         if seed_group and not seed_group.is_single_turn():
             raise ValueError(
                 "Attack can only specify one objective per turn. Objective parameter '%s' and seed"

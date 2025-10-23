@@ -159,32 +159,6 @@ print(f"Objective: {seed_group_with_objective.objective}")
 
 
 # %% [markdown]
-# When you want to perform an attack using a seed group that has an objective associated with it,
-# you can simply pass the seed group to the attack execution method without needing to specify the objective again.
-# The attack will automatically use the objective defined in the seed group. Note that you cannot specify both an
-# objective and a seed group with an objective when executing an attack; doing so will raise an error.
-# %%
-from pyrit.executor.attack import (
-    AttackScoringConfig,
-    ConsoleAttackResultPrinter,
-    PromptSendingAttack,
-)
-from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import SelfAskRefusalScorer, TrueFalseInverterScorer
-
-# Initialize OpenAI chat target
-prompt_target = OpenAIChatTarget()
-objective_scorer = TrueFalseInverterScorer(scorer=SelfAskRefusalScorer(chat_target=prompt_target))
-
-scoring_config = AttackScoringConfig(objective_scorer=objective_scorer)
-
-
-attack = PromptSendingAttack(objective_target=prompt_target, attack_scoring_config=scoring_config)
-result = await attack.execute_async(seed_group=seed_group_with_objective)  # type: ignore
-
-printer = ConsoleAttackResultPrinter()
-await printer.print_conversation_async(result=result)  # type: ignore
-# %% [markdown]
 # ## Filtering seed prompts by objective
 # It may be useful to see which seed prompts are used as objectives in attacks. We can retrieve that prompt as follows:
 # %%
