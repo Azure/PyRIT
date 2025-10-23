@@ -45,7 +45,7 @@ class ExactTextMatching(TextMatching):
         *, 
         case_sensitive: bool = False,
         ignore_whitespace: bool = True
-    ) -> None:
+    def __init__(self, *, case_sensitive: bool = False, ignore_whitespace: bool = True) -> None:
         """
         Initialize the exact text matching strategy.
 
