@@ -3,7 +3,7 @@
 
 """Tests for the EncodingScenario class."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -36,9 +36,7 @@ def sample_seed_prompts():
 class TestEncodingScenarioInitialization:
     """Tests for EncodingScenario initialization."""
 
-    def test_init_with_custom_seed_prompts(
-        self, mock_objective_target, mock_objective_scorer, sample_seed_prompts
-    ):
+    def test_init_with_custom_seed_prompts(self, mock_objective_target, mock_objective_scorer, sample_seed_prompts):
         """Test initialization with custom seed prompts."""
         scenario = EncodingScenario(
             objective_target=mock_objective_target,
@@ -62,9 +60,7 @@ class TestEncodingScenarioInitialization:
         assert len(scenario._seed_prompts) > 0
         assert scenario._objective_target == mock_objective_target
 
-    def test_init_with_custom_scorer(
-        self, mock_objective_target, mock_objective_scorer, sample_seed_prompts
-    ):
+    def test_init_with_custom_scorer(self, mock_objective_target, mock_objective_scorer, sample_seed_prompts):
         """Test initialization with custom objective scorer."""
         scenario = EncodingScenario(
             objective_target=mock_objective_target,
@@ -74,9 +70,7 @@ class TestEncodingScenarioInitialization:
 
         assert scenario._scorer_config.objective_scorer == mock_objective_scorer
 
-    def test_init_creates_default_scorer_when_not_provided(
-        self, mock_objective_target, sample_seed_prompts
-    ):
+    def test_init_creates_default_scorer_when_not_provided(self, mock_objective_target, sample_seed_prompts):
         """Test that initialization creates default DecodingScorer when not provided."""
         scenario = EncodingScenario(
             objective_target=mock_objective_target,
@@ -87,9 +81,7 @@ class TestEncodingScenarioInitialization:
         assert scenario._scorer_config.objective_scorer is not None
         assert isinstance(scenario._scorer_config.objective_scorer, DecodingScorer)
 
-    def test_init_with_memory_labels(
-        self, mock_objective_target, mock_objective_scorer, sample_seed_prompts
-    ):
+    def test_init_with_memory_labels(self, mock_objective_target, mock_objective_scorer, sample_seed_prompts):
         """Test initialization with memory labels."""
         memory_labels = {"test": "encoding", "category": "scenario"}
 
@@ -117,9 +109,7 @@ class TestEncodingScenarioInitialization:
 
         assert scenario._encoding_templates == custom_templates
 
-    def test_init_with_max_concurrency(
-        self, mock_objective_target, mock_objective_scorer, sample_seed_prompts
-    ):
+    def test_init_with_max_concurrency(self, mock_objective_target, mock_objective_scorer, sample_seed_prompts):
         """Test initialization with custom max_concurrency."""
         scenario = EncodingScenario(
             objective_target=mock_objective_target,
@@ -130,9 +120,7 @@ class TestEncodingScenarioInitialization:
 
         assert scenario._max_concurrency == 20
 
-    def test_init_attack_strategies(
-        self, mock_objective_target, mock_objective_scorer, sample_seed_prompts
-    ):
+    def test_init_attack_strategies(self, mock_objective_target, mock_objective_scorer, sample_seed_prompts):
         """Test that attack strategies are set correctly."""
         scenario = EncodingScenario(
             objective_target=mock_objective_target,
@@ -196,14 +184,11 @@ class TestEncodingScenarioAttackRuns:
             objective_scorer=mock_objective_scorer,
         )
 
-        attack_runs = scenario._get_prompt_attacks(
-            converters=[Base64Converter()],
-            encoding_name="Base64"
-        )
+        attack_runs = scenario._get_prompt_attacks(converters=[Base64Converter()], encoding_name="Base64")
 
         # Should create attack runs
         assert len(attack_runs) > 0
-        
+
         # Each attack run should have the correct attack type
         for run in attack_runs:
             assert isinstance(run._attack, PromptSendingAttack)
@@ -224,10 +209,7 @@ class TestEncodingScenarioAttackRuns:
             objective_scorer=mock_objective_scorer,
         )
 
-        attack_runs = scenario._get_prompt_attacks(
-            converters=[Base64Converter()],
-            encoding_name="Base64"
-        )
+        attack_runs = scenario._get_prompt_attacks(converters=[Base64Converter()], encoding_name="Base64")
 
         # Check that objectives are created for each seed prompt
         for run in attack_runs:
@@ -242,9 +224,7 @@ class TestEncodingScenarioExecution:
     """Tests for EncodingScenario execution."""
 
     @pytest.mark.asyncio
-    async def test_scenario_initialization(
-        self, mock_objective_target, mock_objective_scorer, sample_seed_prompts
-    ):
+    async def test_scenario_initialization(self, mock_objective_target, mock_objective_scorer, sample_seed_prompts):
         """Test that scenario can be initialized successfully."""
         scenario = EncodingScenario(
             objective_target=mock_objective_target,
@@ -253,14 +233,12 @@ class TestEncodingScenarioExecution:
         )
 
         await scenario.initialize_async()
-        
+
         # Verify initialization creates attack runs
         assert scenario.attack_run_count > 0
 
     @pytest.mark.asyncio
-    async def test_get_default_dataset_loads_garak_data(
-        self, mock_objective_target, mock_objective_scorer
-    ):
+    async def test_get_default_dataset_loads_garak_data(self, mock_objective_target, mock_objective_scorer):
         """Test that _get_default_dataset loads data from Garak datasets."""
         scenario = EncodingScenario(
             objective_target=mock_objective_target,
@@ -269,7 +247,7 @@ class TestEncodingScenarioExecution:
 
         # Should load slur_terms_en and web_html_js from Garak
         assert len(scenario._seed_prompts) > 0
-        
+
         # Verify it's loading actual data (not empty)
         assert all(isinstance(prompt, str) for prompt in scenario._seed_prompts)
         assert all(len(prompt) > 0 for prompt in scenario._seed_prompts)
