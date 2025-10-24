@@ -32,7 +32,7 @@ def sample_harm_csv_path():
 
 @pytest.fixture
 def sample_objective_csv_path():
-    return f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/SAMPLE_mixed_objective_refusal.csv"
+    return f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/evaluation_datasets_09_22_2025/SAMPLE_mixed_objective_refusal.csv"
 
 
 @pytest.fixture
