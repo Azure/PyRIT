@@ -985,3 +985,132 @@ async def test_seed_prompt_hash_stored_and_retrieved(sqlite_instance: MemoryInte
     retrieved_prompts = sqlite_instance.get_seeds(value_sha256=[seed_prompt.value_sha256])
     assert len(retrieved_prompts) == 1
     assert retrieved_prompts[0].value_sha256 == seed_prompt.value_sha256
+
+
+def test_get_request_from_response_success(sqlite_instance: MemoryInterface):
+    """Test that get_request_from_response successfully retrieves the request that produced a response."""
+    conversation_id = str(uuid4())
+
+    # Create a conversation with user request followed by assistant response
+    pieces = [
+        MessagePiece(
+            role="user",
+            original_value="What is the weather?",
+            converted_value="What is the weather?",
+            conversation_id=conversation_id,
+            sequence=0,
+        ),
+        MessagePiece(
+            role="assistant",
+            original_value="It's sunny today.",
+            converted_value="It's sunny today.",
+            conversation_id=conversation_id,
+            sequence=1,
+        ),
+    ]
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=pieces)
+
+    # Get the conversation and extract the response
+    conversation = sqlite_instance.get_conversation(conversation_id=conversation_id)
+    response = conversation[1]
+
+    # Retrieve the request that produced this response
+    request = sqlite_instance.get_request_from_response(response=response)
+
+    assert request.role == "user"
+    assert request.sequence == 0
+    assert request.get_value() == "What is the weather?"
+    assert request.conversation_id == conversation_id
+
+
+def test_get_request_from_response_multi_turn_conversation(sqlite_instance: MemoryInterface):
+    """Test get_request_from_response in a multi-turn conversation."""
+    conversation_id = str(uuid4())
+
+    # Create a multi-turn conversation
+    pieces = [
+        MessagePiece(
+            role="user",
+            original_value="First question",
+            converted_value="First question",
+            conversation_id=conversation_id,
+            sequence=0,
+        ),
+        MessagePiece(
+            role="assistant",
+            original_value="First answer",
+            converted_value="First answer",
+            conversation_id=conversation_id,
+            sequence=1,
+        ),
+        MessagePiece(
+            role="user",
+            original_value="Second question",
+            converted_value="Second question",
+            conversation_id=conversation_id,
+            sequence=2,
+        ),
+        MessagePiece(
+            role="assistant",
+            original_value="Second answer",
+            converted_value="Second answer",
+            conversation_id=conversation_id,
+            sequence=3,
+        ),
+    ]
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=pieces)
+
+    conversation = sqlite_instance.get_conversation(conversation_id=conversation_id)
+
+    # Test getting request for the second response
+    second_response = conversation[3]
+    second_request = sqlite_instance.get_request_from_response(response=second_response)
+
+    assert second_request.role == "user"
+    assert second_request.sequence == 2
+    assert second_request.get_value() == "Second question"
+
+
+def test_get_request_from_response_raises_error_for_non_assistant_role(sqlite_instance: MemoryInterface):
+    """Test that get_request_from_response raises ValueError when given a non-assistant role."""
+    conversation_id = str(uuid4())
+
+    pieces = [
+        MessagePiece(
+            role="user",
+            original_value="Test message",
+            converted_value="Test message",
+            conversation_id=conversation_id,
+            sequence=0,
+        ),
+    ]
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=pieces)
+
+    conversation = sqlite_instance.get_conversation(conversation_id=conversation_id)
+    user_message = conversation[0]
+
+    with pytest.raises(ValueError, match="The provided request is not a response \\(role must be 'assistant'\\)."):
+        sqlite_instance.get_request_from_response(response=user_message)
+
+
+def test_get_request_from_response_raises_error_for_sequence_less_than_one(sqlite_instance: MemoryInterface):
+    """Test that get_request_from_response raises ValueError when sequence < 1."""
+    conversation_id = str(uuid4())
+
+    # Create a response with sequence 0 (which shouldn't have a preceding request)
+    pieces = [
+        MessagePiece(
+            role="assistant",
+            original_value="Response without request",
+            converted_value="Response without request",
+            conversation_id=conversation_id,
+            sequence=0,
+        ),
+    ]
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=pieces)
+
+    conversation = sqlite_instance.get_conversation(conversation_id=conversation_id)
+    response_without_request = conversation[0]
+
+    with pytest.raises(ValueError, match="The provided request does not have a preceding request \\(sequence < 1\\)."):
+        sqlite_instance.get_request_from_response(response=response_without_request)

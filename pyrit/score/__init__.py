@@ -51,6 +51,7 @@ from pyrit.score.true_false.self_ask_true_false_scorer import (
     TrueFalseQuestionPaths,
 )
 from pyrit.score.true_false.substring_scorer import SubStringScorer
+from pyrit.score.true_false.decoding_scorer import DecodingScorer
 from pyrit.score.true_false.true_false_inverter_scorer import TrueFalseInverterScorer
 from pyrit.score.true_false.self_ask_question_answer_scorer import SelfAskQuestionAnswerScorer
 from pyrit.score.float_scale.look_back_scorer import LookBackScorer
@@ -62,6 +63,7 @@ __all__ = [
     "AzureContentFilterScorer",
     "BatchScorer",
     "ContentClassifierPaths",
+    "DecodingScorer",
     "FloatScaleScoreAggregator",
     "FloatScaleScorerAllCategories",
     "FloatScaleScorerByCategory",
