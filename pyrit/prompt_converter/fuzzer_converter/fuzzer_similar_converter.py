@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import pathlib
+from typing import Optional
 
 from pyrit.common.apply_defaults import apply_defaults
 from pyrit.common.path import DATASETS_PATH
@@ -18,7 +19,9 @@ class FuzzerSimilarConverter(FuzzerConverter):
     """
 
     @apply_defaults
-    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: SeedPrompt = None):
+    def __init__(
+        self, *, converter_target: Optional[PromptChatTarget] = None, prompt_template: Optional[SeedPrompt] = None
+    ):
         prompt_template = (
             prompt_template
             if prompt_template

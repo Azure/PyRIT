@@ -37,7 +37,7 @@ class TranslationConverter(PromptConverter):
     def __init__(
         self,
         *,
-        converter_target: PromptChatTarget,
+        converter_target: Optional[PromptChatTarget] = None,
         language: str,
         prompt_template: Optional[SeedPrompt] = None,
         max_retries: int = 3,
@@ -48,14 +48,23 @@ class TranslationConverter(PromptConverter):
 
         Args:
             converter_target (PromptChatTarget): The target chat support for the conversion which will translate.
+                Can be omitted if a default has been configured via PyRIT initialization.
             language (str): The language for the conversion. E.g. Spanish, French, leetspeak, etc.
             prompt_template (SeedPrompt, Optional): The prompt template for the conversion.
             max_retries (int): Maximum number of retries for the conversion.
             max_wait_time_in_seconds (int): Maximum wait time in seconds between retries.
 
         Raises:
+            ValueError: If converter_target is not provided and no default has been configured.
             ValueError: If the language is not provided.
         """
+        if converter_target is None:
+            raise ValueError(
+                "converter_target is required for LLM-based converters. "
+                "Either pass it explicitly or configure a default via PyRIT initialization "
+                "(e.g., initialize_pyrit with SimpleInitializer or AIRTInitializer)."
+            )
+
         self.converter_target = converter_target
 
         # Retry strategy for the conversion

@@ -9,9 +9,6 @@
 #       jupytext_version: 1.17.3
 # ---
 
-from pyrit.executor.attack import ConsoleAttackResultPrinter, SkeletonKeyAttack
-from pyrit.prompt_target import OpenAIChatTarget
-
 # %% [markdown]
 # # Skeleton Key Attack (Single-Turn) - optional
 #
@@ -21,6 +18,8 @@ from pyrit.prompt_target import OpenAIChatTarget
 #
 # The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../../memory/0_memory.md).
 # %%
+from pyrit.executor.attack import ConsoleAttackResultPrinter, SkeletonKeyAttack
+from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)

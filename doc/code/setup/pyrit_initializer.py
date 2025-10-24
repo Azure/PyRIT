@@ -37,11 +37,11 @@ class CustomInitializer(PyRITInitializer):
     @property
     def name(self) -> str:
         return "Custom Configuration"
-    
+
     @property
     def execution_order(self) -> int:
         return 2  # Lower numbers run first (default is 1)
-    
+
     def initialize(self) -> None:
         set_default_value(class_type=OpenAIChatTarget, parameter_name="temperature", value=0.9)
 
@@ -65,10 +65,7 @@ from pyrit.setup import initialize_pyrit
 from pyrit.setup.initializers import SimpleInitializer
 
 # Using built-in initializer
-initialize_pyrit(
-    memory_db_type="InMemory",
-    initializers=[SimpleInitializer()]
-)
+initialize_pyrit(memory_db_type="InMemory", initializers=[SimpleInitializer()])
 
 # %% [markdown]
 # ## External Scripts
@@ -93,7 +90,7 @@ temp_dir = tempfile.mkdtemp()
 script_path = os.path.join(temp_dir, "custom_init.py")
 
 # This is the simple custom initializer from earlier
-script_content = '''
+script_content = """
 from pyrit.setup.initializers.base import PyRITInitializer
 from pyrit.common.apply_defaults import set_default_value
 from pyrit.prompt_target import OpenAIChatTarget
@@ -102,11 +99,11 @@ class CustomInitializer(PyRITInitializer):
     @property
     def name(self) -> str:
         return "Custom Configuration"
-    
+
     @property
     def execution_order(self) -> int:
         return 2  # Lower numbers run first (default is 1)
-    
+
     def initialize(self) -> None:
         set_default_value(class_type=OpenAIChatTarget, parameter_name="temperature", value=0.9)
 
@@ -114,18 +111,15 @@ class CustomInitializer(PyRITInitializer):
     def description(self) -> str:
         return "Sets custom temperature for OpenAI targets"
 
-'''
+"""
 
 with open(script_path, "w") as f:
     f.write(script_content)
-    
+
 print(f"Created: {script_path}")
 
 
-initialize_pyrit(
-    memory_db_type="InMemory",
-    initialization_scripts=[temp_dir + "/custom_init.py"]
-)
+initialize_pyrit(memory_db_type="InMemory", initialization_scripts=[temp_dir + "/custom_init.py"])
 
 
 if os.path.exists(temp_dir):
@@ -134,5 +128,5 @@ if os.path.exists(temp_dir):
 # %% [markdown]
 # ## More information:
 # - [Configuration notebook](0_configuration.ipynb) shows practical examples with custom targets
-# - [Default Values notebook](default_values.ipynb) explains how defaults work
+# - [Default Values notebook](default_values.md) explains how defaults work
 #

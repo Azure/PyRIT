@@ -50,7 +50,11 @@ initialize_pyrit(memory_db_type="InMemory")
 target1 = OpenAIChatTarget()
 
 # This is identical to target1
-target2 = OpenAIChatTarget(endpoint=os.getenv("OPENAI_CHAT_ENDPOINT"), api_key=os.getenv("OPENAI_CHAT_KEY"), model_name=os.getenv("OPENAI_CHAT_MODEL"))
+target2 = OpenAIChatTarget(
+    endpoint=os.getenv("OPENAI_CHAT_ENDPOINT"),
+    api_key=os.getenv("OPENAI_CHAT_KEY"),
+    model_name=os.getenv("OPENAI_CHAT_MODEL"),
+)
 
 # This is different from target1 because the environment variables are different from the default
 target3 = OpenAIChatTarget(
@@ -125,10 +129,7 @@ initialize_pyrit(memory_db_type="InMemory", initializers=[SimpleInitializer()])
 # Alternative approach - you can pass the path to the initializer class
 # This is how you provide your own file not part of the repo that defines a PyritInitializer class
 # This is equivelent to loading the class directly as above
-initialize_pyrit(
-    memory_db_type="InMemory", 
-    initialization_scripts=[f"{PYRIT_PATH}/setup/initializers/simple.py"]
-)
+initialize_pyrit(memory_db_type="InMemory", initialization_scripts=[f"{PYRIT_PATH}/setup/initializers/simple.py"])
 
 
 # SimpleInitializer is a class that initializes sensible defaults for someone who only has OPENAI_CHAT_ENDPOINT and OPENAI_CHAT_KEY configured
@@ -159,10 +160,7 @@ attack = PromptSendingAttack(
 )
 
 # Execute the attack - all components use sensible defaults
-results = await AttackExecutor().execute_single_turn_attacks_async(  # type: ignore
-    attack=attack,
-    objectives=objectives
-)
+results = await AttackExecutor().execute_single_turn_attacks_async(attack=attack, objectives=objectives)  # type: ignore
 
 for result in results:
     await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
@@ -174,10 +172,10 @@ for result in results:
 #
 # Imagine you are conducing a security assessment and want to include a new custom target. Yes, you could check out PyRIT in editable mode. But with initialize_scripts you don't have to. And this kind of operation can be used in front ends like GUI, CLI, etc.
 #
-# All you need to do is create a PyRITInitializer class (e.g. myinitializer.py). Then you can use `set_global_variable` and use it everywhere. Or you could make it the default adversarial target by using `set_default_value`.  
+# All you need to do is create a PyRITInitializer class (e.g. myinitializer.py). Then you can use `set_global_variable` and use it everywhere. Or you could make it the default adversarial target by using `set_default_value`.
 #
 #
 # ## Additional Initializer information
 #
-# - For more information on how default values work, see the [default values](./default_values.ipynb) section.
+# - For more information on how default values work, see the [default values](./default_values.md) section.
 # - For more information on how initializers work, see the [initializers](./pyrit_initializer.ipynb) section

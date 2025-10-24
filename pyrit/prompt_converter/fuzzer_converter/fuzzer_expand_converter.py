@@ -24,7 +24,7 @@ class FuzzerExpandConverter(FuzzerConverter):
     def __init__(
         self,
         *,
-        converter_target: PromptChatTarget,
+        converter_target: Optional[PromptChatTarget] = None,
         prompt_template: Optional[SeedPrompt] = None,
     ):
         prompt_template = (

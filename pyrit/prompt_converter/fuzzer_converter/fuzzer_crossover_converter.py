@@ -25,7 +25,7 @@ class FuzzerCrossOverConverter(FuzzerConverter):
     def __init__(
         self,
         *,
-        converter_target: PromptChatTarget,
+        converter_target: Optional[PromptChatTarget] = None,
         prompt_template: Optional[SeedPrompt] = None,
         prompt_templates: Optional[List[str]] = None,
     ):
@@ -34,6 +34,7 @@ class FuzzerCrossOverConverter(FuzzerConverter):
 
         Args:
             converter_target (PromptChatTarget): Chat target used to perform fuzzing on user prompt.
+                Can be omitted if a default has been configured via PyRIT initialization.
             prompt_template (SeedPrompt, Optional): Template to be used instead of the default system prompt with
                 instructions for the chat target.
             prompt_templates (List[str], Optional): List of prompt templates to use in addition to the default one.
