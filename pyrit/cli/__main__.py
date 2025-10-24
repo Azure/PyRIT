@@ -11,7 +11,7 @@ from pyrit.executor.attack import ConsoleAttackResultPrinter
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackStrategy,
 )
-from pyrit.models import SeedPromptDataset, SeedPromptGroup
+from pyrit.models import SeedDataset, SeedGroup
 from pyrit.setup import initialize_pyrit
 
 from .scanner_config import ScannerConfig
@@ -34,40 +34,40 @@ def parse_args(args=None) -> Namespace:
     return parser.parse_args(args)
 
 
-def load_seed_prompt_groups(dataset_paths: List[str]) -> List[SeedPromptGroup]:
+def load_seed_groups(dataset_paths: List[str]) -> List[SeedGroup]:
     """
     loads each dataset file path into a list of SeedPrompt objects.
     """
     if not dataset_paths:
         raise ValueError("No datasets provided in the configuration.")
 
-    all_prompt_groups: List[SeedPromptGroup] = []
+    all_prompt_groups: List[SeedGroup] = []
     for path_str in dataset_paths:
         path = Path(path_str)
         if not path.exists():
             raise FileNotFoundError(f"Dataset file '{path}' does not exist.")
-        dataset = SeedPromptDataset.from_yaml_file(path)
-        groups = SeedPromptDataset.group_seed_prompts_by_prompt_group_id(dataset.prompts)
+        dataset = SeedDataset.from_yaml_file(path)
+        groups = SeedDataset.group_seed_prompts_by_prompt_group_id(dataset.prompts)
         all_prompt_groups.extend(groups)
 
     return all_prompt_groups
 
 
-def _get_first_text_values_if_exist(prompt_groups: List[SeedPromptGroup]) -> List[str]:
+def _get_first_text_values_if_exist(prompt_groups: List[SeedGroup]) -> List[str]:
     """
     Get the first text value from the seed prompts in each of the provided prompt groups.
 
     If no text value exists, return the value of the first seed prompt.
 
     Args:
-        prompt_groups (List[SeedPromptGroup]): List of SeedPromptGroup objects.
+        prompt_groups (List[SeedGroup]): List of SeedGroup objects.
             Assumed to contain at least one group, and each group is assumed to
             contain at least one seed prompt.
     """
     first_text_values = []
     for group in prompt_groups:
         if not group.prompts:
-            raise ValueError("Seed prompt group is empty, no prompts available.")
+            raise ValueError("Seed group is empty, no prompts available.")
         # Find the first text prompt in the group.
         # If none exist, use the first prompt's value.
         first_text_value = group.prompts[0].value
@@ -88,13 +88,13 @@ async def run_scenarios_async(config: ScannerConfig) -> None:
     memory_labels = config.database.memory_labels or {}
     memory_labels[SCANNER_EXECUTION_START_TIME_MEMORY_LABEL] = datetime.now().isoformat()
 
-    seed_prompt_groups = load_seed_prompt_groups(config.datasets)
+    seed_groups = load_seed_groups(config.datasets)
     prompt_converters = config.create_prompt_converters()
     attacks = config.create_attacks(prompt_converters=prompt_converters)
 
     attack_results = []
     for attack in attacks:
-        objectives = _get_first_text_values_if_exist(seed_prompt_groups)
+        objectives = _get_first_text_values_if_exist(seed_groups)
         if hasattr(attack, "execute_async"):
             for i in range(len(objectives)):
                 objective = objectives[i]
@@ -102,8 +102,8 @@ async def run_scenarios_async(config: ScannerConfig) -> None:
                     "objective": objective,
                     "memory_labels": memory_labels,
                 }
-                if isinstance(attack, SingleTurnAttackStrategy) and len(seed_prompt_groups) > i:
-                    args["seed_prompt_group"] = seed_prompt_groups[i]  # type: ignore
+                if isinstance(attack, SingleTurnAttackStrategy) and len(seed_groups) > i:
+                    args["seed_group"] = seed_groups[i]  # type: ignore
                 attack_results.append(await attack.execute_async(**args))
         else:
             raise ValueError(f"The attack {type(attack).__name__} does not have execute_async.")

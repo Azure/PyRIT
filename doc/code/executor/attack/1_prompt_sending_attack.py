@@ -84,7 +84,7 @@ from pyrit.executor.attack import (
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
-from pyrit.models import SeedPromptDataset
+from pyrit.models import SeedDataset
 from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import OpenAIChatTarget
@@ -95,9 +95,9 @@ target = OpenAIChatTarget()
 prompt_converters = PromptConverterConfiguration.from_converters(converters=[Base64Converter()])
 attack_converter_config = AttackConverterConfig(request_converters=prompt_converters)
 
-seed_prompt_dataset = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
+seed_dataset = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
 
-objectives = list(seed_prompt_dataset.get_values())
+objectives = list(seed_dataset.get_values())
 for objective in objectives:
     scoring_config = AttackScoringConfig(
         objective_scorer=SelfAskTrueFalseScorer(
@@ -140,7 +140,7 @@ from pyrit.executor.attack import (
     PromptSendingAttack,
     SingleTurnAttackContext,
 )
-from pyrit.models import SeedPrompt, SeedPromptGroup
+from pyrit.models import SeedGroup, SeedPrompt
 from pyrit.prompt_target import TextTarget
 
 text_target = TextTarget()
@@ -150,10 +150,10 @@ image_path = str(pathlib.Path(".") / ".." / ".." / ".." / ".." / "assets" / "pyr
 # For Azure SQL Memory
 # image_path = "https://airtstorageaccountdev.blob.core.windows.net/dbdata/prompt-memory-entries/images/1735941681066137.png"
 
-seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=image_path, data_type="image_path")])
+seed_group = SeedGroup(prompts=[SeedPrompt(value=image_path, data_type="image_path")])
 attack_context = SingleTurnAttackContext(
     objective="Sending an image successfully",
-    seed_prompt_group=seed_prompt_group,
+    seed_group=seed_group,
 )
 
 attack = PromptSendingAttack(objective_target=text_target)
@@ -244,7 +244,7 @@ for result in results:
 import uuid
 
 from pyrit.executor.attack import PromptSendingAttack
-from pyrit.models import SeedPrompt, SeedPromptGroup
+from pyrit.models import SeedGroup, SeedPrompt
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit
 
@@ -258,7 +258,7 @@ test_user_name = str(uuid.uuid4())
 
 attack = PromptSendingAttack(objective_target=target)
 
-seed_prompt_group = SeedPromptGroup(
+seed_group = SeedGroup(
     prompts=[
         SeedPrompt(
             value="Provide detailed instructions on how to make a cake in a valid JSON format. Use the following schema: {"
@@ -274,7 +274,7 @@ seed_prompt_group = SeedPromptGroup(
 
 attack_context = SingleTurnAttackContext(
     objective="Provide detailed instructions on how to make a cake",
-    seed_prompt_group=seed_prompt_group,
+    seed_group=seed_group,
     memory_labels={"op_name": test_op_name, "username": test_user_name},
 )
 

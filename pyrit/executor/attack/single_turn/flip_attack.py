@@ -17,8 +17,8 @@ from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
 from pyrit.models import (
     AttackResult,
     Message,
+    SeedGroup,
     SeedPrompt,
-    SeedPromptGroup,
 )
 from pyrit.prompt_converter import FlipConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
@@ -116,7 +116,7 @@ class FlipAttack(PromptSendingAttack):
             AttackResult: The result of the attack.
         """
         initial_prompt = "TASK is '⟪" + context.objective.replace("'", "") + "⟫'"
-        seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=initial_prompt, data_type="text")])
-        context.seed_prompt_group = seed_prompt_group
+        seed_group = SeedGroup(prompts=[SeedPrompt(value=initial_prompt, data_type="text")])
+        context.seed_group = seed_group
 
         return await super()._perform_async(context=context)

@@ -287,7 +287,7 @@ API Reference
     MemoryEmbedding
     MemoryExporter
     PromptMemoryEntry
-    SeedPromptEntry
+    SeedEntry
     SQLiteMemory
 
 :py:mod:`pyrit.models`
@@ -332,8 +332,8 @@ API Reference
     Score
     ScoreType
     SeedPrompt
-    SeedPromptDataset
-    SeedPromptGroup
+    SeedDataset
+    SeedGroup
     StorageIO
     StrategyResult
     TextDataTypeSerializer

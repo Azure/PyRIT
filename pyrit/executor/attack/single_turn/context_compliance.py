@@ -19,9 +19,9 @@ from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
 from pyrit.models import (
     Message,
     MessagePiece,
+    SeedDataset,
+    SeedGroup,
     SeedPrompt,
-    SeedPromptDataset,
-    SeedPromptGroup,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
@@ -113,7 +113,7 @@ class ContextComplianceAttack(PromptSendingAttack):
             ValueError: If the instructions file is invalid or missing required prompts.
         """
         try:
-            context_description_instructions = SeedPromptDataset.from_yaml_file(instructions_path)
+            context_description_instructions = SeedDataset.from_yaml_file(instructions_path)
         except Exception as e:
             raise ValueError(f"Failed to load context description instructions from {instructions_path}: {e}")
 
@@ -169,8 +169,8 @@ class ContextComplianceAttack(PromptSendingAttack):
         # Update context with the prepended conversation
         context.prepended_conversation = prepended_conversation
 
-        # Create the affirmative seed prompt group
-        affirmative_seed_prompt = SeedPromptGroup(
+        # Create the affirmative seed group
+        affirmative_seed_prompt = SeedGroup(
             prompts=[
                 SeedPrompt(
                     value=self._affirmative_response,
@@ -179,8 +179,8 @@ class ContextComplianceAttack(PromptSendingAttack):
             ]
         )
 
-        # Set the seed prompt group in context
-        context.seed_prompt_group = affirmative_seed_prompt
+        # Set the seed group in context
+        context.seed_group = affirmative_seed_prompt
 
         await super()._setup_async(context=context)
 
@@ -245,7 +245,7 @@ class ContextComplianceAttack(PromptSendingAttack):
         Returns:
             str: The objective rephrased as a benign question.
         """
-        seed_prompt_group = SeedPromptGroup(
+        seed_group = SeedGroup(
             prompts=[
                 SeedPrompt(
                     value=self._rephrase_objective_to_user_turn.render_template_value(objective=objective),
@@ -255,7 +255,7 @@ class ContextComplianceAttack(PromptSendingAttack):
         )
 
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_prompt_group=seed_prompt_group,
+            seed_group=seed_group,
             target=self._adversarial_chat,
             attack_identifier=self.get_identifier(),
             labels=context.memory_labels,
@@ -276,7 +276,7 @@ class ContextComplianceAttack(PromptSendingAttack):
         Returns:
             str: The answer to the benign question.
         """
-        seed_prompt_group = SeedPromptGroup(
+        seed_group = SeedGroup(
             prompts=[
                 SeedPrompt(
                     value=self._answer_user_turn.render_template_value(benign_request=benign_user_query),
@@ -286,7 +286,7 @@ class ContextComplianceAttack(PromptSendingAttack):
         )
 
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_prompt_group=seed_prompt_group,
+            seed_group=seed_group,
             target=self._adversarial_chat,
             attack_identifier=self.get_identifier(),
             labels=context.memory_labels,
@@ -305,7 +305,7 @@ class ContextComplianceAttack(PromptSendingAttack):
         Returns:
             str: The objective rephrased as a question.
         """
-        seed_prompt_group = SeedPromptGroup(
+        seed_group = SeedGroup(
             prompts=[
                 SeedPrompt(
                     value=self._rephrase_objective_to_question.render_template_value(objective=objective),
@@ -315,7 +315,7 @@ class ContextComplianceAttack(PromptSendingAttack):
         )
 
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_prompt_group=seed_prompt_group,
+            seed_group=seed_group,
             target=self._adversarial_chat,
             attack_identifier=self.get_identifier(),
             labels=context.memory_labels,

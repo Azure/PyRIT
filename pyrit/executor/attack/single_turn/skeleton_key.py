@@ -16,9 +16,9 @@ from pyrit.models import (
     AttackOutcome,
     AttackResult,
     Message,
+    SeedDataset,
+    SeedGroup,
     SeedPrompt,
-    SeedPromptDataset,
-    SeedPromptGroup,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
@@ -94,7 +94,7 @@ class SkeletonKeyAttack(PromptSendingAttack):
         if skeleton_key_prompt:
             return skeleton_key_prompt
 
-        return SeedPromptDataset.from_yaml_file(self.DEFAULT_SKELETON_KEY_PROMPT_PATH).prompts[0].value
+        return SeedDataset.from_yaml_file(self.DEFAULT_SKELETON_KEY_PROMPT_PATH).prompts[0].value
 
     def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
         """
@@ -163,10 +163,8 @@ class SkeletonKeyAttack(PromptSendingAttack):
         """
         self._logger.debug("Sending skeleton key prompt to target")
 
-        # Create seed prompt group for skeleton key
-        skeleton_key_prompt_group = SeedPromptGroup(
-            prompts=[SeedPrompt(value=self._skeleton_key_prompt, data_type="text")]
-        )
+        # Create seed group for skeleton key
+        skeleton_key_prompt_group = SeedGroup(prompts=[SeedPrompt(value=self._skeleton_key_prompt, data_type="text")])
 
         # Send skeleton key prompt
         skeleton_response = await self._send_prompt_to_objective_target_async(
