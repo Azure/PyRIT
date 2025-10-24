@@ -184,16 +184,24 @@ for harm_category in harm_categories_to_evaluate:
     evaluator = cast(ObjectiveScorerEvaluator, ScorerEvaluator.from_scorer(scorer=true_false_scorer))
 
     # assistant_response_data_type_col_name is optional and can be used to specify the type of data for each response in the assistant response column.
-    metrics = await evaluator.run_evaluation_from_csv_async(  # type:ignore
-        csv_path=csv_path,
-        assistant_response_col_name="assistant_response",
-        human_label_col_names=["human_score"],
-        objective_or_harm_col_name="objective",
-        assistant_response_data_type_col_name="data_type",
-        num_scorer_trials=1,
-    )
+    # Run evaluation and get metrics directly (this would be in an async context)
+    # metrics = await evaluator.run_evaluation_from_csv_async(
+    #     csv_path=csv_path,
+    #     assistant_response_col_name="assistant_response",
+    #     human_label_col_names=["human_score"],
+    #     objective_or_harm_col_name="objective",
+    #     assistant_response_data_type_col_name="data_type",
+    #     num_scorer_trials=1,
+    # )
 
     print("Evaluation for harm category:", harm_category)
-    # Use evaluator.get_scorer_metrics() instead of scorer.get_scorer_metrics()
-    # The evaluator method accepts csv_path parameter
-    print(evaluator.get_scorer_metrics(dataset_name=dataset_name, csv_path=csv_path))
+    # For demonstration: after running evaluation, get metrics from default location
+    # print(metrics)
+
+    # Alternative: retrieve metrics that were previously saved during evaluation
+    # (only works if evaluation was already run and saved to default location)
+    try:
+        saved_metrics = evaluator.get_scorer_metrics(dataset_name=dataset_name)
+        print(saved_metrics)
+    except FileNotFoundError:
+        print(f"No saved metrics found for dataset {dataset_name}. Run evaluation first.")

@@ -268,13 +268,40 @@ class HarmScorerEvaluator(ScorerEvaluator):
     A class that evaluates a harm scorer against HumanLabeledDatasets of type HARM.
     """
 
-    def get_scorer_metrics(self, dataset_name, csv_path: Optional[Union[str, Path]] = None) -> HarmScorerMetrics:
-        metrics_path = self._get_metrics_path(dataset_name=dataset_name, csv_path=csv_path)
-        if not os.path.exists(metrics_path):
-            raise FileNotFoundError(
-                f"{metrics_path} does not exist. Evaluation may not have been run with this dataset yet."
-            )
-        return HarmScorerMetrics.from_json(metrics_path)
+    def get_scorer_metrics(self, dataset_name: str) -> HarmScorerMetrics:
+        # First try the default PyRIT location
+        metrics_path = self._get_metrics_path(dataset_name=dataset_name)
+        if os.path.exists(metrics_path):
+            return HarmScorerMetrics.from_json(metrics_path)
+
+        # If not found, try to find in results folders of common CSV locations
+        scorer_name = type(self.scorer).__name__
+        metrics_filename = f"{dataset_name}_{scorer_name}_metrics.json"
+
+        # Look for results folders in common locations
+        search_paths = [
+            Path.cwd() / "results" / metrics_filename,  # Current directory results
+            Path(SCORER_EVALS_HARM_PATH).parent / "results" / metrics_filename,  # Next to scorer_evals
+        ]
+
+        # Also search in any subdirectories that might contain results folders
+        for base_path in [Path.cwd(), Path(SCORER_EVALS_HARM_PATH).parent]:
+            for results_dir in base_path.rglob("results"):
+                if results_dir.is_dir():
+                    potential_path = results_dir / metrics_filename
+                    search_paths.append(potential_path)
+
+        # Try each path
+        for path in search_paths:
+            if path.exists():
+                return HarmScorerMetrics.from_json(path)
+
+        raise FileNotFoundError(
+            f"Metrics for dataset '{dataset_name}' not found. Tried:\n"
+            + f"- Default location: {metrics_path}\n"
+            + f"- Results folders: {[str(p) for p in search_paths[:5]]}...\n"
+            + "Evaluation may not have been run with this dataset yet."
+        )
 
     async def run_evaluation_from_csv_async(
         self,
@@ -321,7 +348,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
             labeled_dataset (HumanLabeledDataset): The HumanLabeledDataset to evaluate against.
             num_scorer_trials (int): The number of trials to run the scorer on all responses. Defaults to 1.
             save_results (bool): Whether to save the metrics and model scoring results. Defaults to True.
-
+            csv_path (Optional[Union[str, Path]]): The path to the CSV file to save results to.
         Returns:
             HarmScorerMetrics: The metrics for the harm scorer.
         """
@@ -470,15 +497,40 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
     A class that evaluates an objective scorer against HumanLabeledDatasets of type OBJECTIVE.
     """
 
-    def get_scorer_metrics(
-        self, dataset_name: str, csv_path: Optional[Union[str, Path]] = None
-    ) -> ObjectiveScorerMetrics:
-        metrics_path = self._get_metrics_path(dataset_name=dataset_name, csv_path=csv_path)
-        if not os.path.exists(metrics_path):
-            raise FileNotFoundError(
-                f"{metrics_path} does not exist. Evaluation may not have been run with this dataset yet."
-            )
-        return ObjectiveScorerMetrics.from_json(metrics_path)
+    def get_scorer_metrics(self, dataset_name: str) -> ObjectiveScorerMetrics:
+        # First try the default PyRIT location
+        metrics_path = self._get_metrics_path(dataset_name=dataset_name)
+        if os.path.exists(metrics_path):
+            return ObjectiveScorerMetrics.from_json(metrics_path)
+
+        # If not found, try to find in results folders of common CSV locations
+        scorer_name = type(self.scorer).__name__
+        metrics_filename = f"{dataset_name}_{scorer_name}_metrics.json"
+
+        # Look for results folders in common locations
+        search_paths = [
+            Path.cwd() / "results" / metrics_filename,  # Current directory results
+            Path(SCORER_EVALS_OBJECTIVE_PATH).parent / "results" / metrics_filename,  # Next to scorer_evals
+        ]
+
+        # Also search in any subdirectories that might contain results folders
+        for base_path in [Path.cwd(), Path(SCORER_EVALS_OBJECTIVE_PATH).parent]:
+            for results_dir in base_path.rglob("results"):
+                if results_dir.is_dir():
+                    potential_path = results_dir / metrics_filename
+                    search_paths.append(potential_path)
+
+        # Try each path
+        for path in search_paths:
+            if path.exists():
+                return ObjectiveScorerMetrics.from_json(path)
+
+        raise FileNotFoundError(
+            f"Metrics for dataset '{dataset_name}' not found. Tried:\n"
+            + f"- Default location: {metrics_path}\n"
+            + f"- Results folders: {[str(p) for p in search_paths[:5]]}...\n"
+            + "Evaluation may not have been run with this dataset yet."
+        )
 
     async def run_evaluation_from_csv_async(
         self,
