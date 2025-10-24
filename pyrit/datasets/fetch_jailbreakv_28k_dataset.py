@@ -8,7 +8,6 @@ import zipfile
 from typing import Dict, List, Literal, Optional
 
 from datasets import load_dataset
-from huggingface_hub import HfApi, hf_hub_download
 
 from pyrit.models import SeedPrompt, SeedPromptDataset
 
@@ -37,7 +36,7 @@ HarmLiteral = Literal[
 def fetch_jailbreakv_28k_dataset(
     *,
     data_home: Optional[str] = None,
-    zip_dir: Optional[str] = None,
+    zip_dir: str = str(pathlib.Path.home()),
     split: Literal["JailBreakV_28K", "mini_JailBreakV_28K"] = "mini_JailBreakV_28K",
     text_field: Literal["jailbreak_query", "redteam_query"] = "redteam_query",
     harm_categories: Optional[List[HarmLiteral]] = None,
@@ -45,19 +44,18 @@ def fetch_jailbreakv_28k_dataset(
 ) -> SeedPromptDataset:
     """
     Fetch examples from the JailBreakV 28k Dataset with optional filtering and create a SeedPromptDataset.
-    Many images are missing from the dataset in HF and the team host the full image file in Google Drive.
+    Many images are missing from the dataset in HF and the team hosts the full image files in Google Drive.
     Prioritizes the HF dataset and falls back to a cached download of Google Drive contents.
-    As of 10/2025 the HF dataset is missing most images, backup path should be provided.
-    Please download the zip file from the HF owners Google Drive at this share link:
-    https://drive.google.com/file/d/1ZrvSHklXiGYhpiVoxUH8FWc5k0fv2xVZ/view
-    Note that the file is 15 GB compressed due to images not compressing well.
-    To reduce disk usage after extracting the first time it is fine to delete the zip.
+    As of 10/2025 the HF dataset is missing most images, so it is ignored.
+    To use this dataset, please fill out this form and download images from Google Drive:
+    https://docs.google.com/forms/d/e/1FAIpQLSc_p1kCs3p9z-3FbtSeF7uLYsiQk0tvsGi6F0e_z5xCEmN1gQ/viewform
+    And provide the path to the zip file in the zip_dir parameter.
 
     Args:
         data_home: Directory used as cache_dir in call to HF to store cached data. Defaults to None.
             If None, the default cache directory will be used.
-        zip_dir (str): The directory containing the zip file. Defaults to None.
-            As of 10/2025 the HF dataset is missing most images, backup path should be provided.
+        zip_dir (str): The directory containing the zip file. Defaults to the home directory.
+            If the zip is not present there, an error is raised.
         split (str): The split of the dataset to fetch. Defaults to "mini_JailBreakV_28K".
             Options are "JailBreakV_28K" and "mini_JailBreakV_28K".
         text_field (str): The field to use as the prompt text. Defaults to "redteam_query".
@@ -86,20 +84,15 @@ def fetch_jailbreakv_28k_dataset(
     source = "JailbreakV-28K/JailBreakV-28k"
 
     # Unzip the file if it is not already extracted
-    zip_extracted_path = None
-    if zip_dir:
-        zip_file_path = pathlib.Path(zip_dir) / "JailBreakV_28K.zip"
-        zip_extracted_path = pathlib.Path(zip_dir) / "JailBreakV_28K"
-        # Check if the zip file exists
-        if not zip_file_path.exists():
-            raise FileNotFoundError("No zip file provided for JailBreakV-28K dataset. Many images likely missing.")
+    zip_file_path = pathlib.Path(zip_dir) / "JailBreakV_28K.zip"
+    zip_extracted_path = pathlib.Path(zip_dir) / "JailBreakV_28K"
+    if not zip_file_path.exists():
+        raise FileNotFoundError("No zip file provided. Images not present for multimodal prompts.")
+    else:
         # Only unzip if the target directory does not already exist
         if not zip_extracted_path.exists():
             with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
                 zip_ref.extractall(pathlib.Path(zip_dir))
-    else:
-        logger.warning("No zip file provided for JailBreakV-28K dataset. Many images likely missing.")
-
     try:
         logger.info(f"Loading JailBreakV-28k dataset from {source}")
 
@@ -141,10 +134,8 @@ def fetch_jailbreakv_28k_dataset(
                 image_abs_path = ""
                 if image_rel_path:
                     image_abs_path = _resolve_image_path(
-                        image_rel_path,
-                        repo_id=source,
-                        data_home=data_home,
-                        backup_root=zip_extracted_path,
+                        rel_path=image_rel_path,
+                        local_directory=zip_extracted_path,
                         call_cache=per_call_cache,
                     )
                 if not image_abs_path:
@@ -197,10 +188,9 @@ def _normalize_policy(policy: str) -> str:
 
 
 def _resolve_image_path(
+    *,
     rel_path: str,
-    repo_id: str,
-    data_home: Optional[str],
-    backup_root: Optional[pathlib.Path] = None,
+    local_directory: pathlib.Path = pathlib.Path.home(),
     call_cache: Dict[str, str] = {},
 ) -> str:
     """
@@ -209,10 +199,7 @@ def _resolve_image_path(
 
     Args:
         rel_path: path relative to the dataset repository root (e.g., "images/0001.png").
-        repo_id: HF dataset repo id, e.g., "JailbreakV-28K/JailBreakV-28k".
-        data_home: optional cache directory.
-        backup_root: optional path to a directory containing the zip file.
-            If provided, will be used as a backup source for images not found in the HF dataset.
+        local_directory: Directory to search for the image, defaults
         cache: optional dict to use instead of the module-level cache.
 
     Returns:
@@ -224,27 +211,13 @@ def _resolve_image_path(
     # check if image has already been cached
     if rel_path in call_cache:
         return call_cache[rel_path]
-    path_root = "JailBreakV_28K"
-    hf_path = f"{path_root}/{rel_path}"
-    backup_path = None if not backup_root else backup_root / hf_path
+    image_path = local_directory / rel_path
     try:
-        # first check if the path exists using HFApi()
-        repo_file_list = HfApi().list_repo_files(repo_id=repo_id, repo_type="dataset")
-        if hf_path in repo_file_list:
-            # download the image
-            abs_path = hf_hub_download(
-                repo_id=repo_id,
-                repo_type="dataset",
-                filename=hf_path,
-                cache_dir=data_home,
-            )
+        if image_path and image_path.exists():
+            abs_path = str(image_path)
         else:
-            logger.debug(f"File {hf_path} not found in dataset {repo_id}, trying backup path {backup_path}")
-            if backup_path and backup_path.exists():
-                abs_path = str(backup_path)
-            else:
-                logger.debug(f"File {hf_path} not found in dataset {repo_id} or backup path {backup_path}")
-                abs_path = ""
+            logger.debug(f"File {image_path} in {local_directory}")
+            abs_path = ""
 
         call_cache[rel_path] = abs_path
         return abs_path

@@ -12,7 +12,7 @@ from pyrit.datasets import (
     fetch_decoding_trust_stereotypes_dataset,
     fetch_equitymedqa_dataset_unique_values,
     fetch_forbidden_questions_dataset,
-    fetch_harmbench_dataset,    
+    fetch_harmbench_dataset,
     fetch_harmbench_multimodal_dataset_async,
     fetch_jailbreakv_28k_dataset,
     fetch_jbb_behaviors_by_harm_category,
@@ -110,30 +110,5 @@ def test_fetch_jbb_behaviors_by_jbb_category():
         hate_prompts = fetch_jbb_behaviors_by_jbb_category("Disinformation")
         assert isinstance(hate_prompts, SeedPromptDataset)
         assert len(hate_prompts.prompts) > 0
-    except Exception as e:
-        pytest.skip(f"Integration test skipped due to: {e}")
-
-
-def test_fetch_jailbreakv_28k_dataset():
-    """Integration test for fetching jailbreakv_28k dataset with real data."""
-    try:
-        jailbreakv_28k = fetch_jailbreakv_28k_dataset()
-        assert isinstance(jailbreakv_28k, SeedPromptDataset)
-        assert len(jailbreakv_28k.prompts) > 0
-        assert sum(p.data_type == "text" for p in jailbreakv_28k.prompts) == len(jailbreakv_28k.prompts) / 2
-        assert sum(p.data_type == "image_path" for p in jailbreakv_28k.prompts) == len(jailbreakv_28k.prompts) / 2
-    except Exception as e:
-        pytest.fail(f"Integration test failed due to: {e}")
-
-
-def test_fetch_jailbreakv_28k_dataset_by_harm_category():
-    """Integration test for filtering jailbreakv_28k git by harm category with real data."""
-    try:
-        # Filter for a category whose items have a valid image_path
-        jailbreakv_28k = fetch_jailbreakv_28k_dataset(harm_categories=["Economic Harm"])
-        assert isinstance(jailbreakv_28k, SeedPromptDataset)
-        assert len(jailbreakv_28k.prompts) > 0
-        assert sum(p.data_type == "text" for p in jailbreakv_28k.prompts) == len(jailbreakv_28k.prompts) / 2
-        assert sum(p.data_type == "image_path" for p in jailbreakv_28k.prompts) == len(jailbreakv_28k.prompts) / 2
     except Exception as e:
         pytest.skip(f"Integration test skipped due to: {e}")

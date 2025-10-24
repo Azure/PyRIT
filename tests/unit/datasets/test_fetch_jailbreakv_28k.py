@@ -1,8 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import pathlib
 from contextlib import nullcontext
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -19,11 +20,23 @@ class TestFetchJailbreakv28kDataset:
         [None, ["Economic Harm"], ["Government Decision"]],
     )
     @pytest.mark.parametrize("min_prompts", [0, 2, 5])
+    @patch("pyrit.datasets.fetch_jailbreakv_28k_dataset.pathlib.Path")
     @patch("pyrit.datasets.fetch_jailbreakv_28k_dataset._resolve_image_path")
     @patch("pyrit.datasets.fetch_jailbreakv_28k_dataset.load_dataset")
     def test_fetch_jailbreakv_28k_dataset_success(
-        self, mock_load_dataset, mock_resolve_image_path, text_field, harm_categories, min_prompts
+        self, mock_load_dataset, mock_resolve_image_path, mock_pathlib, text_field, harm_categories, min_prompts
     ):
+        # Mock Path to simulate zip file exists and is already extracted
+        mock_zip_path = MagicMock()
+        mock_zip_path.exists.return_value = True
+        mock_extracted_path = MagicMock()
+        mock_extracted_path.exists.return_value = True
+
+        mock_pathlib.Path.return_value.__truediv__.side_effect = [
+            mock_zip_path,  # First call: zip_file_path
+            mock_extracted_path,  # Second call: zip_extracted_path
+            mock_extracted_path,  # Additional calls for image resolution
+        ]
         # Mock dataset response
         mock_dataset = {
             "mini_JailBreakV_28K": [
@@ -49,7 +62,9 @@ class TestFetchJailbreakv28kDataset:
         }
         mock_load_dataset.return_value = mock_dataset
 
-        def fake_resolve_image_path(rel_path: str, **kwargs) -> str:
+        def fake_resolve_image_path(
+            *, rel_path: str = "", local_directory: pathlib.Path = pathlib.Path(), **kwargs
+        ) -> str:
             return "" if rel_path == "invalid" else f"mock_path/{rel_path}"
 
         mock_resolve_image_path.side_effect = fake_resolve_image_path
