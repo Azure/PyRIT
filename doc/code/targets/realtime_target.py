@@ -42,7 +42,7 @@ from pyrit.executor.attack import (
     PromptSendingAttack,
     SingleTurnAttackContext,
 )
-from pyrit.models import SeedPrompt, SeedPromptGroup
+from pyrit.models import SeedGroup, SeedPrompt
 
 # This is audio asking how to cut down a tree
 audio_path = Path("../../../assets/converted_audio.wav").resolve()
@@ -50,7 +50,7 @@ audio_path = Path("../../../assets/converted_audio.wav").resolve()
 # The objective string itself is not sent to the target
 objective = "Cutting down a tree"
 
-seed_prompt_group = SeedPromptGroup(
+seed_group = SeedGroup(
     prompts=[
         SeedPrompt(
             value=str(audio_path),
@@ -61,7 +61,7 @@ seed_prompt_group = SeedPromptGroup(
 
 context = SingleTurnAttackContext(
     objective=objective,
-    seed_prompt_group=seed_prompt_group,
+    seed_group=seed_group,
 )
 
 attack = PromptSendingAttack(objective_target=target)

@@ -3,10 +3,13 @@
 
 import functools
 import operator
-from typing import Callable, Dict, Iterable, List, Union
+from typing import Callable, Iterable, List
 
-from pyrit.common.utils import combine_dict
 from pyrit.models import Score
+from pyrit.score.aggregator_utils import (
+    combine_metadata_and_categories,
+    format_score_for_rationale,
+)
 from pyrit.score.score_aggregator_result import ScoreAggregatorResult
 
 BinaryBoolOp = Callable[[bool, bool], bool]
@@ -30,31 +33,9 @@ def _build_rationale(scores: List[Score], *, result: bool, true_msg: str, false_
         rationale = scores[0].score_rationale or ""
     else:
         description = true_msg if result else false_msg
-        sep = "-"
-        rationale = "\n".join(f"   {sep} {s.score_value}: {s.score_rationale or ''}" for s in scores)
+        rationale = "\n".join(format_score_for_rationale(s) for s in scores)
 
     return description, rationale
-
-
-def _combine_metadata_and_categories(scores: List[Score]) -> tuple[Dict[str, Union[str, int]], List[str]]:
-    """Combine metadata and categories from multiple scores with deduplication.
-
-    Args:
-        scores: List of Score objects.
-
-    Returns:
-        Tuple of (metadata dict, sorted category list with empty strings filtered).
-    """
-    metadata: Dict[str, Union[str, int]] = {}
-    category_set: set[str] = set()
-
-    for s in scores:
-        metadata = combine_dict(metadata, getattr(s, "score_metadata", None))
-        score_categories = getattr(s, "score_category", None) or []
-        category_set.update([c for c in score_categories if c])
-
-    category = sorted(category_set)
-    return metadata, category
 
 
 def _create_aggregator(
@@ -99,7 +80,7 @@ def _create_aggregator(
         result = result_func(bool_values)
 
         description, rationale = _build_rationale(scores_list, result=result, true_msg=true_msg, false_msg=false_msg)
-        metadata, category = _combine_metadata_and_categories(scores_list)
+        metadata, category = combine_metadata_and_categories(scores_list)
 
         return ScoreAggregatorResult(
             value=result,

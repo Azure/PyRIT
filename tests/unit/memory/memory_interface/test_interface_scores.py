@@ -202,14 +202,14 @@ def test_get_scores_by_memory_labels(sqlite_instance: MemoryInterface):
 
 
 @pytest.mark.asyncio
-async def test_get_seed_prompts_no_filters(sqlite_instance: MemoryInterface):
+async def test_get_seeds_no_filters(sqlite_instance: MemoryInterface):
     seed_prompts = [
         SeedPrompt(value="prompt1", dataset_name="dataset1", data_type="text"),
         SeedPrompt(value="prompt2", dataset_name="dataset2", data_type="text"),
     ]
-    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
+    await sqlite_instance.add_seeds_to_memory_async(prompts=seed_prompts, added_by="test")
 
-    result = sqlite_instance.get_seed_prompts()
+    result = sqlite_instance.get_seeds()
     assert len(result) == 2
     assert result[0].value == "prompt1"
     assert result[1].value == "prompt2"

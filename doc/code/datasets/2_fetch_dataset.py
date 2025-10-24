@@ -11,10 +11,10 @@
 # %% [markdown]
 # # 2. Fetching Datasets
 #
-# This notebook demonstrates how to load datasets as a `SeedPromptDataset` to perform red teaming on a target.
+# This notebook demonstrates how to load datasets as a `SeedDataset` to perform red teaming on a target.
 # There are several datasets which can be found in the `pyrit.datasets` module.
 # Three example datasets are shown in this notebook and can be used with attacks such as the `PromptSendingAttack`.
-# The example below demonstrates loading a HuggingFace dataset as a `SeedPromptDataset`.
+# The example below demonstrates loading a HuggingFace dataset as a `SeedDataset`.
 
 # %%
 from pyrit.common import IN_MEMORY, initialize_pyrit
@@ -53,7 +53,7 @@ for result in results:
 # %% [markdown]
 # # Example dataset from public URL
 #
-# The following example fetches DecodingTrust 'stereotypes' examples of involving potentially harmful stereotypes from the DecodingTrust repository which try to convince the assistant to agree and captures the responses. This is a scenario where the dataset resides in a public  URL and is also outputted as a `SeedPromptDataset`. By fetching these prompts, we can further use this `SeedPromptDataset` by sending the prompts to a target using the `PromptSendingAttack` as shown in the example below.
+# The following example fetches DecodingTrust 'stereotypes' examples of involving potentially harmful stereotypes from the DecodingTrust repository which try to convince the assistant to agree and captures the responses. This is a scenario where the dataset resides in a public  URL and is also outputted as a `SeedDataset`. By fetching these prompts, we can further use this `SeedDataset` by sending the prompts to a target using the `PromptSendingAttack` as shown in the example below.
 
 # %%
 from pyrit.datasets import fetch_decoding_trust_stereotypes_dataset

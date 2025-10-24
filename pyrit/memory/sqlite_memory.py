@@ -133,7 +133,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         """
         return text("JSON_EXTRACT(attack_identifier, '$.id') = :attack_id").bindparams(attack_id=str(attack_id))
 
-    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> Any:
+    def _get_seed_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> Any:
         """
         Generates SQLAlchemy filter conditions for filtering seed prompts by metadata.
         """

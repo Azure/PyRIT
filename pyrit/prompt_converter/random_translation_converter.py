@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import List, Optional, Union
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import PromptDataType, SeedPrompt, SeedPromptDataset
+from pyrit.models import PromptDataType, SeedDataset, SeedPrompt
 from pyrit.prompt_converter import ConverterResult, LLMGenericTextConverter
 from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 from pyrit.prompt_target import PromptChatTarget
@@ -70,7 +70,7 @@ class RandomTranslationConverter(LLMGenericTextConverter, WordLevelConverter):
         )
 
         if not languages:
-            default_languages = SeedPromptDataset.from_yaml_file(
+            default_languages = SeedDataset.from_yaml_file(
                 RandomTranslationConverter._DEFAULT_LANGUAGES_SEED_PROMPT_PATH
             )
             self.languages = [prompt.value for prompt in default_languages.prompts]

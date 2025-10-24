@@ -74,7 +74,7 @@ class TestAttackRunInitialization:
 
         assert attack_run._attack == mock_attack
         assert attack_run._objectives == sample_objectives
-        assert attack_run._prepended_conversation is None
+        assert attack_run._prepended_conversations is None
         assert attack_run._memory_labels == {}
         assert attack_run._attack_execute_params == {}
 
@@ -95,10 +95,10 @@ class TestAttackRunInitialization:
         attack_run = AttackRun(
             attack=mock_attack,
             objectives=sample_objectives,
-            prepended_conversation=sample_conversation,
+            prepended_conversations=sample_conversation,
         )
 
-        assert attack_run._prepended_conversation == sample_conversation
+        assert attack_run._prepended_conversations == sample_conversation
 
     def test_init_with_attack_execute_params(self, mock_attack, sample_objectives):
         """Test initialization with additional attack execute parameters."""
@@ -119,7 +119,7 @@ class TestAttackRunInitialization:
         attack_run = AttackRun(
             attack=mock_attack,
             objectives=sample_objectives,
-            prepended_conversation=sample_conversation,
+            prepended_conversations=sample_conversation,
             memory_labels=memory_labels,
             batch_size=10,
             timeout=30,
@@ -127,7 +127,7 @@ class TestAttackRunInitialization:
 
         assert attack_run._attack == mock_attack
         assert attack_run._objectives == sample_objectives
-        assert attack_run._prepended_conversation == sample_conversation
+        assert attack_run._prepended_conversations == sample_conversation
         assert attack_run._memory_labels == memory_labels
         assert attack_run._attack_execute_params["batch_size"] == 10
         assert attack_run._attack_execute_params["timeout"] == 30
@@ -251,7 +251,7 @@ class TestAttackRunExecution:
         attack_run = AttackRun(
             attack=mock_attack,
             objectives=sample_objectives,
-            prepended_conversation=sample_conversation,
+            prepended_conversations=sample_conversation,
         )
 
         with patch.object(AttackExecutor, "execute_multi_objective_attack_async", new_callable=AsyncMock) as mock_exec:
@@ -259,10 +259,12 @@ class TestAttackRunExecution:
 
             await attack_run.run_async()
 
-            # Check that prepended_conversation was passed
+            # Check that prepended_conversation was passed (singular for unknown attack types)
             call_kwargs = mock_exec.call_args.kwargs
             assert "prepended_conversation" in call_kwargs
-            assert call_kwargs["prepended_conversation"] == sample_conversation
+            # For unknown attack types, uses first conversation or None
+            expected_conversation = sample_conversation[0] if sample_conversation else None
+            assert call_kwargs["prepended_conversation"] == expected_conversation
 
     @pytest.mark.asyncio
     async def test_run_async_passes_attack_execute_params(self, mock_attack, sample_objectives, sample_attack_results):
@@ -294,7 +296,7 @@ class TestAttackRunExecution:
         attack_run = AttackRun(
             attack=mock_attack,
             objectives=sample_objectives,
-            prepended_conversation=sample_conversation,
+            prepended_conversations=sample_conversation,
             memory_labels=memory_labels,
             batch_size=5,
         )
@@ -308,7 +310,9 @@ class TestAttackRunExecution:
             call_kwargs = mock_exec.call_args.kwargs
             assert call_kwargs["attack"] == mock_attack
             assert call_kwargs["objectives"] == sample_objectives
-            assert call_kwargs["prepended_conversation"] == sample_conversation
+            # For unknown attack types, uses prepended_conversation (singular)
+            expected_conversation = sample_conversation[0] if sample_conversation else None
+            assert call_kwargs["prepended_conversation"] == expected_conversation
             assert call_kwargs["memory_labels"] == memory_labels
             assert call_kwargs["batch_size"] == 5
 
@@ -339,7 +343,7 @@ class TestAttackRunIntegration:
         attack_run = AttackRun(
             attack=mock_attack,
             objectives=sample_objectives,
-            prepended_conversation=sample_conversation,
+            prepended_conversations=sample_conversation,
             memory_labels=memory_labels,
             batch_size=2,
         )
@@ -371,7 +375,9 @@ class TestAttackRunIntegration:
             call_kwargs = mock_exec.call_args.kwargs
             assert call_kwargs["attack"] == mock_attack
             assert call_kwargs["objectives"] == sample_objectives
-            assert call_kwargs["prepended_conversation"] == sample_conversation
+            # For unknown attack types, uses prepended_conversation (singular)
+            expected_conversation = sample_conversation[0] if sample_conversation else None
+            assert call_kwargs["prepended_conversation"] == expected_conversation
             assert call_kwargs["memory_labels"] == memory_labels
             assert call_kwargs["batch_size"] == 2
 
@@ -406,6 +412,7 @@ class TestAttackRunIntegration:
             call_kwargs = mock_exec.call_args.kwargs
             assert call_kwargs["attack"] == mock_attack
             assert call_kwargs["objectives"] == sample_objectives
+            # For unknown attack types with no prepended_conversations, should be None
             assert call_kwargs["prepended_conversation"] is None
             assert call_kwargs["memory_labels"] == {}
 

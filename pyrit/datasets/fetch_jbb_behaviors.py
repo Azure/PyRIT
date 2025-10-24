@@ -6,7 +6,7 @@ from typing import Optional
 
 from datasets import load_dataset
 
-from pyrit.models import SeedPrompt, SeedPromptDataset
+from pyrit.models import SeedDataset, SeedPrompt
 
 logger = logging.getLogger(__name__)
 
@@ -14,9 +14,9 @@ logger = logging.getLogger(__name__)
 def fetch_jbb_behaviors_dataset(
     source: str = "JailbreakBench/JBB-Behaviors",
     data_home: Optional[str] = None,
-) -> SeedPromptDataset:
+) -> SeedDataset:
     """
-    Fetch the JailbreakBench JBB-Behaviors dataset from HuggingFace and create a SeedPromptDataset.
+    Fetch the JailbreakBench JBB-Behaviors dataset from HuggingFace and create a SeedDataset.
 
     This dataset contains harmful behaviors for jailbreaking evaluation,
     as described in the paper: https://arxiv.org/abs/2404.01318
@@ -26,7 +26,7 @@ def fetch_jbb_behaviors_dataset(
         data_home (str, optional): The directory to cache the dataset. If None, uses default cache.
 
     Returns:
-        SeedPromptDataset: A SeedPromptDataset containing the JBB behaviors with harm_categories set.
+        SeedDataset: A SeedDataset containing the JBB behaviors with harm_categories set.
 
     Raises:
         Exception: If the dataset cannot be loaded or processed.
@@ -90,13 +90,13 @@ def fetch_jbb_behaviors_dataset(
             seed_prompts.append(seed_prompt)
 
         if not seed_prompts:
-            raise ValueError("SeedPromptDataset cannot be empty.")
+            raise ValueError("SeedDataset cannot be empty.")
 
         logger.info(f"Successfully loaded {len(seed_prompts)} behaviors from JBB-Behaviors dataset")
 
-        # Create and return SeedPromptDataset
-        seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
-        return seed_prompt_dataset
+        # Create and return SeedDataset
+        seed_dataset = SeedDataset(prompts=seed_prompts)
+        return seed_dataset
 
     except Exception as e:
         logger.error(f"Failed to load JBB-Behaviors dataset: {str(e)}")
@@ -204,7 +204,7 @@ def _map_jbb_category_to_harm_category(jbb_category: str) -> list[str]:
     return ["unknown"]
 
 
-def fetch_jbb_behaviors_by_harm_category(harm_category: str, **kwargs) -> SeedPromptDataset:
+def fetch_jbb_behaviors_by_harm_category(harm_category: str, **kwargs) -> SeedDataset:
     """
     Fetch JBB-Behaviors filtered by a specific harm category.
 
@@ -213,7 +213,7 @@ def fetch_jbb_behaviors_by_harm_category(harm_category: str, **kwargs) -> SeedPr
         **kwargs: Additional arguments passed to fetch_jbb_behaviors_dataset.
 
     Returns:
-        SeedPromptDataset: Filtered SeedPromptDataset containing only prompts with the specified harm category.
+        SeedDataset: Filtered SeedDataset containing only prompts with the specified harm category.
     """
     # Get all prompts
     all_dataset = fetch_jbb_behaviors_dataset(**kwargs)
@@ -226,16 +226,16 @@ def fetch_jbb_behaviors_by_harm_category(harm_category: str, **kwargs) -> SeedPr
     ]
 
     if not filtered_prompts:
-        raise ValueError("SeedPromptDataset cannot be empty.")
+        raise ValueError("SeedDataset cannot be empty.")
 
     logger.info(f"Filtered {len(filtered_prompts)} prompts for harm category '{harm_category}'")
 
     # Create new dataset with filtered prompts
-    filtered_dataset = SeedPromptDataset(prompts=filtered_prompts)
+    filtered_dataset = SeedDataset(prompts=filtered_prompts)
     return filtered_dataset
 
 
-def fetch_jbb_behaviors_by_jbb_category(jbb_category: str, **kwargs) -> SeedPromptDataset:
+def fetch_jbb_behaviors_by_jbb_category(jbb_category: str, **kwargs) -> SeedDataset:
     """
     Fetch JBB-Behaviors filtered by the original JBB category.
 
@@ -244,7 +244,7 @@ def fetch_jbb_behaviors_by_jbb_category(jbb_category: str, **kwargs) -> SeedProm
         **kwargs: Additional arguments passed to fetch_jbb_behaviors_dataset.
 
     Returns:
-        SeedPromptDataset: Filtered SeedPromptDataset containing only prompts with the specified JBB category.
+        SeedDataset: Filtered SeedDataset containing only prompts with the specified JBB category.
     """
     # Get all prompts
     all_dataset = fetch_jbb_behaviors_dataset(**kwargs)
@@ -257,10 +257,10 @@ def fetch_jbb_behaviors_by_jbb_category(jbb_category: str, **kwargs) -> SeedProm
     ]
 
     if not filtered_prompts:
-        raise ValueError("SeedPromptDataset cannot be empty.")
+        raise ValueError("SeedDataset cannot be empty.")
 
     logger.info(f"Filtered {len(filtered_prompts)} prompts for JBB category '{jbb_category}'")
 
     # Create new dataset with filtered prompts
-    filtered_dataset = SeedPromptDataset(prompts=filtered_prompts)
+    filtered_dataset = SeedDataset(prompts=filtered_prompts)
     return filtered_dataset

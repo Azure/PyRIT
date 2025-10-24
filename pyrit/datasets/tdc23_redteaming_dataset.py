@@ -3,15 +3,15 @@
 
 from datasets import load_dataset
 
-from pyrit.models import SeedPrompt, SeedPromptDataset
+from pyrit.models import SeedDataset, SeedPrompt
 
 
-def fetch_tdc23_redteaming_dataset() -> SeedPromptDataset:
+def fetch_tdc23_redteaming_dataset() -> SeedDataset:
     """
-    Fetch TDC23-RedTeaming examples and create a SeedPromptDataset.
+    Fetch TDC23-RedTeaming examples and create a SeedDataset.
 
     Returns:
-        SeedPromptDataset: A SeedPromptDataset containing the examples.
+        SeedDataset: A SeedDataset containing the examples.
     """
     # Load the TDC23-RedTeaming dataset
     data = load_dataset("walledai/TDC23-RedTeaming", "default")
@@ -36,5 +36,5 @@ def fetch_tdc23_redteaming_dataset() -> SeedPromptDataset:
         for prompt in prompts
     ]
 
-    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
-    return seed_prompt_dataset
+    seed_dataset = SeedDataset(prompts=seed_prompts)
+    return seed_dataset

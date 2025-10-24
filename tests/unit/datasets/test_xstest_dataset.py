@@ -6,7 +6,7 @@ from unittest.mock import patch
 import pytest
 
 from pyrit.datasets import fetch_xstest_dataset
-from pyrit.models import SeedPromptDataset
+from pyrit.models import SeedDataset
 
 
 @pytest.fixture
@@ -53,7 +53,7 @@ def test_fetch_xstest_dataset(mock_fetch_examples, mock_xstest_data):
     dataset = fetch_xstest_dataset()
 
     # Check the dataset description to match the current static implementation
-    assert isinstance(dataset, SeedPromptDataset)
+    assert isinstance(dataset, SeedDataset)
     assert dataset.prompts[0].name == "XSTest Examples"
     assert (
         dataset.prompts[0].description

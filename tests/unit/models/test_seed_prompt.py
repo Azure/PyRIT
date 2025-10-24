@@ -13,7 +13,8 @@ from PIL import Image
 from scipy.io import wavfile
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import SeedPrompt, SeedPromptDataset, SeedPromptGroup
+from pyrit.models import SeedDataset, SeedGroup, SeedPrompt
+from pyrit.models.seed_objective import SeedObjective
 
 
 @pytest.fixture
@@ -92,26 +93,47 @@ def test_seed_prompt_template_missing_param(seed_prompt_fixture):
         seed_prompt_fixture.render_template_value(param1="value1")  # Missing param2
 
 
-def test_seed_prompt_group_initialization(seed_prompt_fixture):
-    group = SeedPromptGroup(prompts=[seed_prompt_fixture])
+def test_seed_group_initialization(seed_prompt_fixture):
+    group = SeedGroup(prompts=[seed_prompt_fixture])
     assert len(group.prompts) == 1
     assert group.prompts[0].sequence == 1
 
 
-def test_seed_prompt_group_sequence_default():
+def test_seed_group_with_one_objective_no_seed_prompts():
+    prompt = SeedObjective(value="Test prompt")
+    group = SeedGroup(prompts=[prompt])
+    assert len(group.prompts) == 0
+    assert group.objective.value == "Test prompt"
+
+
+def test_seed_group_with_one_objective_multiple_seed_prompts(seed_prompt_fixture):
+    group = SeedGroup(prompts=[seed_prompt_fixture, SeedObjective(value="Test prompt")])
+    assert len(group.prompts) == 1
+    assert group.objective.value == "Test prompt"
+
+
+def test_seed_group_with_multiple_objectives():
+    prompts = [SeedObjective(value="Test prompt"), SeedObjective(value="Test prompt 2")]
+    with pytest.raises(ValueError) as exc_info:
+        SeedGroup(prompts=prompts)
+
+    assert ("SeedGroups can only have one objective.") in str(exc_info.value)
+
+
+def test_seed_group_sequence_default():
     prompt = SeedPrompt(value="Test prompt", data_type="text")
-    seed_prompt_group = SeedPromptGroup(prompts=[prompt])
-    assert seed_prompt_group.prompts[0].sequence == 0
+    seed_group = SeedGroup(prompts=[prompt])
+    assert seed_group.prompts[0].sequence == 0
 
 
-def test_seed_prompt_dataset_initialization(seed_prompt_fixture):
-    dataset = SeedPromptDataset(prompts=[seed_prompt_fixture])
+def test_seed_dataset_initialization(seed_prompt_fixture):
+    dataset = SeedDataset(prompts=[seed_prompt_fixture])
     assert len(dataset.prompts) == 1
     assert dataset.prompts[0].value == "Test prompt"
 
 
-def test_seed_prompt_dataset_get_values():
-    dataset = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
+def test_seed_dataset_get_values():
+    dataset = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
     values = dataset.get_values()
 
     assert len(values) == 5
@@ -134,7 +156,7 @@ def test_seed_prompt_dataset_get_values():
 
 
 def test_prompt_dataset_from_yaml_defaults():
-    prompts = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
+    prompts = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
     assert len(prompts.prompts) == 5
     assert len(prompts.prompts) == 5
 
@@ -165,26 +187,26 @@ def test_prompt_dataset_from_yaml_defaults():
 
 
 @pytest.mark.asyncio
-async def test_group_seed_prompt_groups_from_yaml(sqlite_instance):
-    prompts = SeedPromptDataset.from_yaml_file(
+async def test_group_seed_groups_from_yaml(sqlite_instance):
+    prompts = SeedDataset.from_yaml_file(
         pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal-dataset.prompt"
     )
-    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=prompts.prompts, added_by="rlundeen")
+    await sqlite_instance.add_seeds_to_memory_async(prompts=prompts.prompts, added_by="rlundeen")
 
-    groups = sqlite_instance.get_seed_prompt_groups()
-    # there are 8 SeedPrompts, 6 SeedPromptGroups
+    groups = sqlite_instance.get_seed_groups()
+    # there are 8 SeedPrompts, 6 SeedGroups
     assert len(groups) == 6
 
 
 @pytest.mark.asyncio
 async def test_group_seed_prompt_alias_sets_group_id(sqlite_instance):
-    prompts = SeedPromptDataset.from_yaml_file(
+    prompts = SeedDataset.from_yaml_file(
         pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal-dataset.prompt"
     )
-    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=prompts.prompts, added_by="rlundeen")
+    await sqlite_instance.add_seeds_to_memory_async(prompts=prompts.prompts, added_by="rlundeen")
 
-    groups = sqlite_instance.get_seed_prompt_groups()
-    # there are 8 SeedPrompts, 6 SeedPromptGroups
+    groups = sqlite_instance.get_seed_groups()
+    # there are 8 SeedPrompts, 6 SeedGroups
     assert len(groups) == 6
 
     group = [group for group in groups if len(group.prompts) == 2][0]
@@ -193,7 +215,7 @@ async def test_group_seed_prompt_alias_sets_group_id(sqlite_instance):
 
 
 def test_group_id_from_empty_group_set_equally():
-    group = SeedPromptGroup(
+    group = SeedGroup(
         prompts=[
             SeedPrompt(value="Hello", data_type="text"),
             SeedPrompt(value="World", data_type="text"),
@@ -208,7 +230,7 @@ def test_group_id_from_empty_group_set_equally():
 
 def test_group_id_set_equally_success():
     id = uuid.uuid4()
-    group = SeedPromptGroup(
+    group = SeedGroup(
         prompts=[
             SeedPrompt(value="Hello", data_type="text", prompt_group_id=id),
             SeedPrompt(value="World", data_type="text", prompt_group_id=id),
@@ -221,7 +243,7 @@ def test_group_id_set_equally_success():
 
 def test_group_id_set_unequally_raises():
     with pytest.raises(ValueError) as exc_info:
-        SeedPromptGroup(
+        SeedGroup(
             prompts=[
                 SeedPrompt(value="Hello", data_type="text", prompt_group_id=uuid.uuid4()),
                 SeedPrompt(value="World", data_type="text", prompt_group_id=uuid.uuid4()),
@@ -238,7 +260,7 @@ def test_enforce_consistent_role_with_no_roles_by_sequence():
         SeedPrompt(value="test2", sequence=1),
         SeedPrompt(value="test3", sequence=2, role="user"),
     ]
-    group = SeedPromptGroup(prompts=prompts)
+    group = SeedGroup(prompts=prompts)
 
     assert all(prompt.role == "user" for prompt in group.prompts)
 
@@ -251,7 +273,7 @@ def test_enforce_consistent_role_with_undefined_role_by_sequence():
     ]
 
     with pytest.raises(ValueError) as exc_info:
-        SeedPromptGroup(prompts=prompts)
+        SeedGroup(prompts=prompts)
 
     assert (
         f"No roles set for sequence 2 in a multi-sequence group. Please ensure at least one prompt within a sequence"
@@ -265,7 +287,7 @@ def test_enforce_consistent_role_with_unassigned_role_single_sequence():
         SeedPrompt(value="test1", sequence=1),
         SeedPrompt(value="test2", sequence=1),
     ]
-    group = SeedPromptGroup(prompts=prompts)
+    group = SeedGroup(prompts=prompts)
 
     # Check sequence 1 prompts
     seq1_prompts = [p for p in group.prompts if p.sequence == 1]
@@ -279,7 +301,7 @@ def test_enforce_consistent_role_with_single_role_by_sequence():
         SeedPrompt(value="test2", sequence=1, role=None),
         SeedPrompt(value="test3", sequence=2, role="user"),  # Different sequence can have different role
     ]
-    group = SeedPromptGroup(prompts=prompts)
+    group = SeedGroup(prompts=prompts)
 
     # Check sequence 1 prompts
     seq1_prompts = [p for p in group.prompts if p.sequence == 1]
@@ -299,7 +321,7 @@ def test_enforce_consistent_role_with_conflicting_roles_in_sequence():
     ]
 
     with pytest.raises(ValueError) as exc_info:
-        SeedPromptGroup(prompts=prompts)
+        SeedGroup(prompts=prompts)
 
     assert "Inconsistent roles found for sequence 1" in str(exc_info.value)
 
@@ -313,7 +335,7 @@ def test_enforce_consistent_role_with_different_roles_across_sequences():
         SeedPrompt(value="test4", sequence=2, role="user"),
     ]
 
-    group = SeedPromptGroup(prompts=prompts)  # Should not raise an error
+    group = SeedGroup(prompts=prompts)  # Should not raise an error
 
     # Check that roles are maintained per sequence
     seq1_prompts = [p for p in group.prompts if p.sequence == 1]
@@ -358,8 +380,8 @@ async def test_memory_encoding_metadata_image(sqlite_instance):
         value="test.png",
         data_type="image_path",
     )
-    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=[sp], added_by="test")
-    entry = sqlite_instance.get_seed_prompts()[0]
+    await sqlite_instance.add_seeds_to_memory_async(prompts=[sp], added_by="test")
+    entry = sqlite_instance.get_seeds()[0]
     assert len(entry.metadata) == 1
     assert entry.metadata["format"] == "png"
     os.remove("test.png")
@@ -388,8 +410,8 @@ async def test_memory_encoding_metadata_audio(mock_tinytag, sqlite_instance):
     mock_tag.duration = 180
     mock_tinytag.get.return_value = mock_tag
 
-    await sqlite_instance.add_seed_prompts_to_memory_async(prompts=[sp], added_by="test")
-    entry = sqlite_instance.get_seed_prompts()[0]
+    await sqlite_instance.add_seeds_to_memory_async(prompts=[sp], added_by="test")
+    entry = sqlite_instance.get_seeds()[0]
     assert entry.metadata["format"] == "wav"
     assert entry.metadata["bitrate"] == 128
     assert entry.metadata["samplerate"] == 44100
@@ -588,3 +610,115 @@ metadata:
     assert seed_prompt.metadata is not None
     assert seed_prompt.metadata["complexity"] == "high"
     assert seed_prompt.metadata["version"] == 1
+
+
+def test_seed_group_single_seed_prompt_creates_objective():
+    prompt_dict = {"value": "Test prompt from dict", "is_objective": True, "sequence": 1}
+
+    group = SeedGroup(prompts=[prompt_dict])
+
+    # Should create objective from the single prompt
+    assert group.objective is not None
+
+    # Prompts list should be empty
+    assert len(group.prompts) == 0
+
+
+def test_seed_group_dict_with_is_objective_true():
+    """Test that a dictionary with is_objective=True creates an objective."""
+    prompt_dict = {
+        "value": "Test objective from dict",
+        "is_objective": True,
+    }
+
+    group = SeedGroup(prompts=[prompt_dict])
+
+    # Should create objective from the dictionary
+    assert group.objective is not None
+    assert group.objective.value == "Test objective from dict"
+
+    # Prompts list should be empty
+    assert len(group.prompts) == 0
+
+
+def test_seed_group_dict_with_is_objective_false():
+    """Test that a dictionary with is_objective=False creates a prompt."""
+    prompt_dict = {"value": "Test prompt from dict", "is_objective": False, "sequence": 1}
+
+    group = SeedGroup(prompts=[prompt_dict])
+
+    # Should create prompt from the dictionary
+    assert len(group.prompts) == 1
+    assert group.prompts[0].value == "Test prompt from dict"
+    assert group.prompts[0].sequence == 1
+
+    # No objective should be created
+    assert group.objective is None
+
+
+def test_seed_group_dict_without_is_objective():
+    """Test that a dictionary without is_objective creates a prompt."""
+    prompt_dict = {
+        "value": "Test prompt without is_objective",
+        "data_type": "text",
+        "name": "Default Prompt",
+        "sequence": 2,
+    }
+
+    group = SeedGroup(prompts=[prompt_dict])
+
+    # Should create prompt from the dictionary (default behavior)
+    assert len(group.prompts) == 1
+    assert group.prompts[0].value == "Test prompt without is_objective"
+    assert group.prompts[0].name == "Default Prompt"
+    assert group.prompts[0].sequence == 2
+
+    # No objective should be created
+    assert group.objective is None
+
+
+def test_seed_group_multiple_objectives_from_seed_objective():
+    """Test that multiple SeedObjective instances raises ValueError."""
+    objective1 = SeedObjective(value="First objective")
+    objective2 = SeedObjective(value="Second objective")
+
+    with pytest.raises(ValueError, match="SeedGroups can only have one objective."):
+        SeedGroup(prompts=[objective1, objective2])
+
+
+def test_seed_group_multiple_objectives_from_dict():
+    """Test that multiple dictionaries with is_objective=True raises ValueError."""
+    dict1 = {"value": "First dict objective", "data_type": "text", "is_objective": True}
+    dict2 = {"value": "Second dict objective", "data_type": "text", "is_objective": True}
+
+    with pytest.raises(ValueError, match="SeedGroups can only have one objective."):
+        SeedGroup(prompts=[dict1, dict2])
+
+
+def test_seed_group_mixed_objective_types():
+    """Test that mixing SeedObjective and dict with is_objective=True raises ValueError."""
+    objective = SeedObjective(value="Seed objective")
+    dict_objective = {"value": "Dict objective", "data_type": "text", "is_objective": True}
+
+    with pytest.raises(ValueError, match="SeedGroups can only have one objective."):
+        SeedGroup(prompts=[objective, dict_objective])
+
+
+def test_seed_group_mixed_prompt_types():
+    """Test that mixing different prompt types works correctly."""
+    seed_prompt = SeedPrompt(value="Seed prompt", data_type="text", sequence=1, role="user")
+    dict_prompt = {"value": "Dict prompt", "data_type": "text", "sequence": 2, "role": "user"}
+    objective = SeedObjective(value="Test objective")
+
+    group = SeedGroup(prompts=[seed_prompt, dict_prompt, objective])
+
+    # Should have both prompts
+    assert len(group.prompts) == 2
+    assert group.prompts[0].value == "Seed prompt"
+    assert group.prompts[0].sequence == 1
+    assert group.prompts[1].value == "Dict prompt"
+    assert group.prompts[1].sequence == 2
+
+    # Should have the objective
+    assert group.objective is not None
+    assert group.objective.value == "Test objective"

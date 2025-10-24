@@ -14,7 +14,7 @@ from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
 )
 from pyrit.models import (
     Message,
-    SeedPromptDataset,
+    SeedDataset,
 )
 from pyrit.prompt_converter import LLMGenericTextConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
@@ -93,7 +93,7 @@ class RolePlayAttack(PromptSendingAttack):
         self._adversarial_chat = adversarial_chat
 
         # Load role-play definitions
-        role_play_definition = SeedPromptDataset.from_yaml_file(role_play_definition_path)
+        role_play_definition = SeedDataset.from_yaml_file(role_play_definition_path)
 
         # Validate role-play definition structure
         self._parse_role_play_definition(role_play_definition)
@@ -155,12 +155,12 @@ class RolePlayAttack(PromptSendingAttack):
             ),
         ]
 
-    def _parse_role_play_definition(self, role_play_definition: SeedPromptDataset):
+    def _parse_role_play_definition(self, role_play_definition: SeedDataset):
         """
         Parses and validates the role-play definition structure.
 
         Args:
-            role_play_definition (SeedPromptDataset): The role-play definition dataset to validate.
+            role_play_definition (SeedDataset): The role-play definition dataset to validate.
 
         Raises:
             ValueError: If the definition does not contain exactly 3 prompts or if any prompt is empty.

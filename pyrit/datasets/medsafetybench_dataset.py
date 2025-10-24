@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Literal, Optional
 
 from pyrit.datasets.dataset_helper import fetch_examples
-from pyrit.models import SeedPrompt, SeedPromptDataset
+from pyrit.models import SeedDataset, SeedPrompt
 
 
 def fetch_medsafetybench_dataset(
@@ -13,9 +13,9 @@ def fetch_medsafetybench_dataset(
     cache: bool = True,
     data_home: Optional[Path] = None,
     output_csv_path: Optional[str] = None,
-) -> SeedPromptDataset:
+) -> SeedDataset:
     """
-    Fetch MedSafetyBench examples (merged) and return them as a SeedPromptDataset.
+    Fetch MedSafetyBench examples (merged) and return them as a SeedDataset.
 
     Args:
         subset_name (Literal): Choose from "train", "test", "generated", or "all".
@@ -24,7 +24,7 @@ def fetch_medsafetybench_dataset(
         output_csv_path (Optional[str]): Path where to save the combined CSV. If None, uses default naming.
 
     Returns:
-        SeedPromptDataset: A dataset of prompts from MedSafetyBench.
+        SeedDataset: A dataset of prompts from MedSafetyBench.
 
     Note:
         For more information and access to the original dataset and related materials, visit:
@@ -121,4 +121,4 @@ def fetch_medsafetybench_dataset(
                 }
             )
 
-    return SeedPromptDataset(prompts=all_prompts)
+    return SeedDataset(prompts=all_prompts)
